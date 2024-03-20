@@ -3,13 +3,6 @@ use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignm
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::NativeFungibleVault;
-use native_sdk::resource::NativeNonFungibleVault;
-use native_sdk::resource::NativeVault;
-use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::FieldValue;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, GenericArgs, ACTOR_STATE_SELF};
@@ -19,6 +12,13 @@ use radix_engine_interface::blueprints::hooks::OnVirtualizeOutput;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 use radix_engine_interface::metadata_init;
 use radix_engine_interface::object_modules::metadata::*;
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_native_sdk::resource::NativeFungibleVault;
+use radix_native_sdk::resource::NativeNonFungibleVault;
+use radix_native_sdk::resource::NativeVault;
+use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
+use radix_native_sdk::runtime::Runtime;
 
 // =================================================================================================
 // Notes:

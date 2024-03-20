@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::blueprints::pool::v1::errors::multi_resource_pool::Error as MultiResourcePoolError;
 use radix_engine::blueprints::pool::v1::events::multi_resource_pool::*;
@@ -6,14 +7,13 @@ use radix_engine::{
     errors::{ApplicationError, RuntimeError},
     transaction::{BalanceChange, TransactionReceipt},
 };
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_interface::prelude::*;
+use radix_transactions::prelude::*;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::{is_auth_error, DefaultLedgerSimulator, LedgerSimulatorBuilder};
-use transaction::prelude::*;
 
 #[test]
 fn multi_resource_pool_can_be_instantiated() {
@@ -51,9 +51,7 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
         .lock_fee_from_faucet()
         .set_metadata(global_address, key, MetadataValue::Bool(false))
         .build();
-    let receipt = ledger
-        .ledger
-        .execute_manifest(manifest, initial_proofs);
+    let receipt = ledger.ledger.execute_manifest(manifest, initial_proofs);
 
     // Assert
     result(receipt);
@@ -513,15 +511,11 @@ fn contribution_calculations_work_for_resources_with_divisibility_not_18() {
         ledger.pool_component_address.as_node_id(),
     );
     assert_eq!(
-        pool_balance_changes
-            .get(&ledger.pool_resources[0])
-            .cloned(),
+        pool_balance_changes.get(&ledger.pool_resources[0]).cloned(),
         Some(BalanceChange::Fungible(dec!("1.1111111111111")))
     );
     assert_eq!(
-        pool_balance_changes
-            .get(&ledger.pool_resources[1])
-            .cloned(),
+        pool_balance_changes.get(&ledger.pool_resources[1]).cloned(),
         Some(BalanceChange::Fungible(dec!("1.11")))
     );
 }
@@ -740,12 +734,8 @@ fn cant_withdraw_without_proper_signature() {
     ledger
         .protected_deposit(ledger.pool_resources[0], 10, true)
         .expect_commit_success();
-    let receipt = ledger.protected_withdraw(
-        ledger.pool_resources[0],
-        10,
-        WithdrawStrategy::Exact,
-        false,
-    );
+    let receipt =
+        ledger.protected_withdraw(ledger.pool_resources[0], 10, WithdrawStrategy::Exact, false);
 
     // Assert
     receipt.expect_specific_failure(is_auth_error)

@@ -31,20 +31,20 @@ use radix_engine_interface::blueprints::pool::{
     OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
 use radix_engine_interface::prelude::{dec, freeze_roles, rule};
-use std::path::{Path, PathBuf};
-use substate_store_impls::hash_tree_support::HashTreeUpdatingDatabase;
-use substate_store_impls::memory_db::InMemorySubstateDatabase;
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
-use substate_store_interface::interface::{
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
+use radix_substate_store_interface::interface::{
     CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
 };
-use substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
-use substate_store_queries::typed_native_events::to_typed_native_event;
-use substate_store_queries::typed_substate_layout::*;
-use transaction::validation::{
+use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
+use radix_substate_store_queries::typed_native_events::to_typed_native_event;
+use radix_substate_store_queries::typed_substate_layout::*;
+use radix_transactions::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
+use std::path::{Path, PathBuf};
 
 use super::Compile;
 
@@ -227,11 +227,11 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
 }
 
 impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
-    pub fn with_state_hashing(self) -> LedgerSimulatorBuilder<E, HashTreeUpdatingDatabase<D>> {
+    pub fn with_state_hashing(self) -> LedgerSimulatorBuilder<E, StateTreeUpdatingDatabase<D>> {
         LedgerSimulatorBuilder {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
-            custom_database: HashTreeUpdatingDatabase::new(self.custom_database),
+            custom_database: StateTreeUpdatingDatabase::new(self.custom_database),
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
             with_seconds_precision_update: self.with_seconds_precision_update,
@@ -688,7 +688,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         addresses
     }
 
-    pub fn get_package_blueprint_schema_inits(
+    pub fn get_package_radix_blueprint_schema_inits(
         &self,
         package_address: &PackageAddress,
     ) -> IndexMap<SchemaHash, VersionedScryptoSchema> {
@@ -747,7 +747,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> Vec<NodeId> {
         SubtreeVaults::new(&self.database)
             .get_all(component_address.as_node_id())
-            .remove(&resource_address)
+            .swap_remove(&resource_address)
             .unwrap_or_else(|| Vec::new())
     }
 
@@ -2374,17 +2374,17 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     }
 }
 
-impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, HashTreeUpdatingDatabase<D>> {
+impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, StateTreeUpdatingDatabase<D>> {
     pub fn get_state_hash(&self) -> Hash {
         self.database.get_current_root_hash()
     }
 
-    pub fn assert_state_hash_tree_matches_substate_store(&mut self) {
+    pub fn assert_state_tree_matches_substate_store(&mut self) {
         let hashes_from_tree = self.database.list_substate_hashes();
         assert_eq!(
             hashes_from_tree.keys().cloned().collect::<HashSet<_>>(),
             self.database.list_partition_keys().collect::<HashSet<_>>(),
-            "partitions captured in the state hash tree should match those in the substate store"
+            "partitions captured in the state tree should match those in the substate store"
         );
         for (db_partition_key, by_db_sort_key) in hashes_from_tree {
             assert_eq!(
@@ -2392,7 +2392,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, HashTreeUpdatingD
                 self.database.list_entries(&db_partition_key)
                     .map(|(db_sort_key, substate_value)| (db_sort_key, hash(substate_value)))
                     .collect::<HashMap<_, _>>(),
-                "partition's {:?} substates in the state hash tree should match those in the substate store",
+                "partition's {:?} substates in the state tree should match those in the substate store",
                 db_partition_key,
             )
         }

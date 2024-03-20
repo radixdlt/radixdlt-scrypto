@@ -1,13 +1,13 @@
-#[cfg(feature = "radix_engine_fuzzing")]
+#[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_common::types::RoyaltyAmount;
+use radix_common::types::RoyaltyAmount;
 use sbor::rust::prelude::*;
 
 use crate::internal_prelude::*;
 
 /// Royalty rules
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(Debug, Clone, Default, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -17,7 +17,7 @@ pub struct ComponentRoyaltyConfig {
 
 /// Royalty rules
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -28,7 +28,7 @@ pub enum PackageRoyalty {
 
 /// Royalty rules
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

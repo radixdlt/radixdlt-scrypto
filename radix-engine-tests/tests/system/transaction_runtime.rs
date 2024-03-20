@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
@@ -8,8 +8,7 @@ fn test_query_transaction_runtime_info() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, _) = ledger.new_allocated_account();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -35,8 +34,7 @@ fn test_generate_ruid() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, _) = ledger.new_allocated_account();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -69,8 +67,7 @@ fn test_generate_ruid() {
 fn test_instance_of_and_blueprint_id() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("transaction_runtime"));
 
     // Act
     let manifest = ManifestBuilder::new()

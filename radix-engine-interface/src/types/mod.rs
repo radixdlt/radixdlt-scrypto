@@ -25,4 +25,4 @@ pub use wasm::*;
 
 pub type SubstateHandle = u32;
 
-pub use radix_engine_common::types::*;
+pub use radix_common::types::*;

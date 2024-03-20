@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
@@ -10,8 +10,7 @@ fn test_fee_states() {
     let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("fee_reserve_states"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("fee_reserve_states"));
 
     // Run test case
     let fee_locked = dec!(500);

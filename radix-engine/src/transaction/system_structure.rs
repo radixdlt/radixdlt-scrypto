@@ -7,7 +7,7 @@ use crate::track::{
     TrackedNode, TrackedSubstateValue,
 };
 use radix_engine_interface::blueprints::package::*;
-use substate_store_interface::interface::SubstateDatabase;
+use radix_substate_store_interface::interface::SubstateDatabase;
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SubstateSystemStructure {

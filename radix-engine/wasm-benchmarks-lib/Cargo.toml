@@ -10,10 +10,10 @@ crate-type = ["cdylib", "rlib"]
 bench = false
 
 [dependencies]
-radix-engine-common = { path = "../../radix-engine-common", default-features = false }
+radix-common = { path = "../../radix-common", default-features = false }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["radix-engine-common/std"]
-alloc = ["radix-engine-common/alloc"]
+std = ["radix-common/std"]
+alloc = ["radix-common/alloc"]

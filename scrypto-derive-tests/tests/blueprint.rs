@@ -64,7 +64,7 @@ mod simple {
 
 #[blueprint]
 mod empty_with_use_statements {
-    use radix_engine_common::types::ComponentAddress;
+    use radix_common::types::ComponentAddress;
 
     struct EmptyWithUse {}
 

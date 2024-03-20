@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoVmV1Api;
-use radix_engine_common::data::scrypto::*;
+use radix_common::data::scrypto::*;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::types::SubstateHandle;
 use sbor::rust::fmt;

@@ -1,3 +1,5 @@
+use radix_common::constants::AuthAddresses;
+use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -7,8 +9,6 @@ use radix_engine::blueprints::{account, resource::*};
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::object_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine_common::constants::AuthAddresses;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ResourcePreference;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
@@ -22,10 +22,10 @@ use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
 use radix_engine_tests::common::*;
+use radix_transactions::model::InstructionV1;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::*;
-use transaction::model::InstructionV1;
 
 #[test]
 fn test_events_of_commit_failure() {
@@ -374,8 +374,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -414,8 +413,7 @@ fn vault_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -427,8 +425,7 @@ fn vault_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::RecallEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::RecallEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::RecallEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
@@ -437,8 +434,7 @@ fn vault_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::DepositEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
@@ -497,8 +493,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -574,8 +569,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -590,9 +584,7 @@ fn resource_manager_new_vault_emits_correct_events() {
                     ..,
                 ),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(2) {
@@ -609,8 +601,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::DepositEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
@@ -670,8 +661,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -683,8 +673,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<MintFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &MintFungibleResourceEvent { amount: 10.into() },
                     event_data
@@ -696,8 +685,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &BurnFungibleResourceEvent { amount: 10.into() },
                     event_data
@@ -761,8 +749,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -774,8 +761,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &MintNonFungibleResourceEvent {
                         ids: indexset!(id.clone())
@@ -789,8 +775,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &BurnNonFungibleResourceEvent { ids: indexset!(id) },
                     event_data
@@ -866,8 +851,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 10.into() },
                     event_data
@@ -879,8 +863,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &MintNonFungibleResourceEvent {
                         ids: indexset!(id.clone(), id2.clone())
@@ -1162,8 +1145,7 @@ fn validator_registration_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1175,8 +1157,7 @@ fn validator_registration_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger.is_event_name_equal::<RegisterValidatorEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<RegisterValidatorEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -1238,8 +1219,7 @@ fn validator_unregistration_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1251,8 +1231,7 @@ fn validator_unregistration_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger.is_event_name_equal::<UnregisterValidatorEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<UnregisterValidatorEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -1317,8 +1296,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1330,8 +1308,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::WithdrawEvent::new(100.into()),
                     event_data
@@ -1355,17 +1332,14 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(4) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::DepositEvent::new(100.into()), event_data) =>
                 true,
             _ => false,
@@ -1398,8 +1372,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1455,8 +1428,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1468,8 +1440,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::WithdrawEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
@@ -1493,8 +1464,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &BurnFungibleResourceEvent { amount: 1.into() },
                     event_data
@@ -1506,8 +1476,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1515,8 +1484,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1525,8 +1493,7 @@ fn validator_unstake_emits_correct_events() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), ..),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
                 && node_id == validator_substate.claim_nft.as_node_id() =>
                 true,
             _ => false,
@@ -1620,8 +1587,7 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1642,16 +1608,14 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger.is_event_name_equal::<account::WithdrawEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<account::WithdrawEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1659,8 +1623,7 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1675,8 +1638,7 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1744,8 +1706,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1800,8 +1761,7 @@ fn setting_metadata_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if ledger
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -2718,8 +2678,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
 fn event_replacements_occur_as_expected() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("event-replacement"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("event-replacement"));
 
     // Act
     let manifest = ManifestBuilder::new()

@@ -1,5 +1,5 @@
-use radix_engine_common::data::scrypto::ScryptoDecode;
-use radix_engine_common::prelude::{
+use radix_common::data::scrypto::ScryptoDecode;
+use radix_common::prelude::{
     scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoEncode, ScryptoValue,
     VersionedScryptoSchema,
 };
@@ -7,17 +7,19 @@ use radix_engine_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::prelude::*;
-use sbor::LocalTypeId;
-use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
-use substate_store_interface::db_key_mapper::{
+use radix_substate_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, SubstateKeyContent,
 };
-use substate_store_interface::interface::{CommittableSubstateDatabase, ListableSubstateDatabase};
-use substate_store_interface::{
+use radix_substate_store_interface::interface::{
+    CommittableSubstateDatabase, ListableSubstateDatabase,
+};
+use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
 };
+use sbor::rust::prelude::*;
+use sbor::LocalTypeId;
+use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
@@ -33,7 +35,7 @@ use crate::track::TrackedNode;
 use crate::transaction::{
     ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
 };
-use blueprint_schema_init::BlueprintCollectionSchema;
+use radix_blueprint_schema_init::BlueprintCollectionSchema;
 
 #[derive(Clone, Debug)]
 pub enum SystemPartitionDescription {

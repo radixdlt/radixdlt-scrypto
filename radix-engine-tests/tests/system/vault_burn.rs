@@ -1,6 +1,6 @@
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use radix_engine_tests::common::*;
@@ -101,10 +101,7 @@ fn can_burn_by_amount_from_fungible_vault() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        ledger.inspect_fungible_vault(vault_id).unwrap(),
-        dec!("50")
-    )
+    assert_eq!(ledger.inspect_fungible_vault(vault_id).unwrap(), dec!("50"))
 }
 
 #[test]
@@ -295,10 +292,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        ledger.inspect_fungible_vault(vault_id).unwrap(),
-        dec!("50")
-    )
+    assert_eq!(ledger.inspect_fungible_vault(vault_id).unwrap(), dec!("50"))
 }
 
 #[test]
@@ -692,10 +686,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        ledger.inspect_fungible_vault(vault_id).unwrap(),
-        dec!("50")
-    )
+    assert_eq!(ledger.inspect_fungible_vault(vault_id).unwrap(), dec!("50"))
 }
 
 #[test]

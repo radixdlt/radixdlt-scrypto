@@ -1,9 +1,9 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::blueprints::pool::v1::errors::one_resource_pool::Error as OneResourcePoolError;
 use radix_engine::blueprints::pool::v1::events::one_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
-use radix_engine_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
@@ -46,9 +46,7 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
         .lock_fee_from_faucet()
         .set_metadata(global_address, key, MetadataValue::Bool(false))
         .build();
-    let receipt = ledger
-        .ledger
-        .execute_manifest(manifest, initial_proofs);
+    let receipt = ledger.ledger.execute_manifest(manifest, initial_proofs);
 
     // Assert
     result(receipt);
@@ -359,9 +357,7 @@ fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming_after_p
     ledger.contribute(100, true).expect_commit_success();
 
     // Act
-    ledger
-        .protected_deposit(50, true)
-        .expect_commit_success();
+    ledger.protected_deposit(50, true).expect_commit_success();
     ledger
         .protected_withdraw(20, WithdrawStrategy::Exact, true)
         .expect_commit_success();
@@ -637,9 +633,7 @@ pub fn protected_withdraw_fails_without_proper_authority_present() {
     let mut ledger = TestEnvironment::new(18);
 
     // Act
-    ledger
-        .protected_deposit(10, true)
-        .expect_commit_success();
+    ledger.protected_deposit(10, true).expect_commit_success();
     let receipt = ledger.protected_withdraw(10, WithdrawStrategy::Exact, false);
 
     // Assert

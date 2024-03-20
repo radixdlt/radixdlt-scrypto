@@ -1,6 +1,6 @@
-use radix_engine_common::constants::CONSENSUS_MANAGER;
-use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_common::time::*;
+use radix_common::constants::CONSENSUS_MANAGER;
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_common::time::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerCompareCurrentTimeInputV2, ConsensusManagerGetCurrentTimeInputV2,
     TimePrecision, CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,

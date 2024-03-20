@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::heap::*;
 use radix_engine::kernel::id_allocator::*;
@@ -17,14 +18,13 @@ use radix_engine::transaction::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
-use radix_engine_common::prelude::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
-use substate_store_impls::memory_db::*;
-use substate_store_interface::db_key_mapper::DatabaseKeyMapper;
-use substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use substate_store_interface::interface::*;
-use transaction::model::*;
+use radix_substate_store_impls::memory_db::*;
+use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::*;
+use radix_transactions::model::*;
 
 use crate::sdk::PackageFactory;
 
@@ -331,9 +331,9 @@ where
 
         // Publishing the test-environment package.
         let test_environment_package = {
-            let code = include_bytes!("../../../assets/test_environment.wasm");
+            let code = include_bytes!("../../assets/test_environment.wasm");
             let package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
-                "../../../assets/test_environment.rpd"
+                "../../assets/test_environment.rpd"
             ))
             .expect("Must succeed");
 

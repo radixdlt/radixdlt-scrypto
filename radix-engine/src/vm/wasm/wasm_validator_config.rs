@@ -1,3 +1,5 @@
+extern crate radix_wasm_instrument as wasm_instrument;
+
 use crate::internal_prelude::*;
 use wasm_instrument::gas_metering::MemoryGrowCost;
 use wasm_instrument::gas_metering::Rules;

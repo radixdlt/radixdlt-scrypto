@@ -1,10 +1,12 @@
+extern crate radix_wasmi as wasmi;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use radix_engine_common::math::{traits::*, Decimal, PreciseDecimal};
+use radix_common::math::{traits::*, Decimal, PreciseDecimal};
 use std::process::Command;
 use wasm_benchmarks_lib::*;
-use wasmer::{self, WasmerEnv};
+use wasmer::WasmerEnv;
 use wasmer_compiler_singlepass;
-use wasmi::{self, AsContext, AsContextMut};
+use wasmi::{AsContext, AsContextMut};
 
 type HostState = u32;
 

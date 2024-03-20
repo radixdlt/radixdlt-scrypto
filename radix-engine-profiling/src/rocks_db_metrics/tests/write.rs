@@ -1,12 +1,12 @@
 use super::super::*;
 use super::common::*;
 use linreg::linear_regression_of;
-use rand::{seq::SliceRandom, Rng};
-use std::{io::Write, path::PathBuf};
-use substate_store_interface::{
+use radix_substate_store_interface::{
     db_key_mapper::*,
     interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, SubstateDatabase},
 };
+use rand::{seq::SliceRandom, Rng};
+use std::{io::Write, path::PathBuf};
 
 /// Number of nodes writes during test execution - measured.
 const WRITE_NODES_REPEAT_COUNT: usize = 4000;
@@ -26,9 +26,9 @@ const WRITE_NODES_COUNT: usize = 4000;
 /// Outputs are generated in png files: /tmp/scrypto_commit_per_size_rocksdb.png, /tmp/scrypto_commit_per_size_rocksdb_JMT.png, /tmp/scrypto_commit_per_size_rocksdb_diff.png
 /// point list is printed to stdout.
 /// To run the test case use command:
-///  cargo test -p radix-engine-profiling -p substate-store-impls --features rocksdb test_commit_per_size --release -- --nocapture
+///  cargo test -p radix-engine-profiling -p radix-substate-store-impls --features rocksdb test_commit_per_size --release -- --nocapture
 /// or
-///  cargo nextest run -p radix-engine-profiling -p substate-store-impls --no-capture --features rocksdb --release test_commit_per_size
+///  cargo nextest run -p radix-engine-profiling -p radix-substate-store-impls --no-capture --features rocksdb --release test_commit_per_size
 /// from main radixdlt-scrypto folder.
 /// Test can be parametrized using environment variables: READ_NODES_REPEAT_COUNT, MIN_SIZE, MAX_SIZE, SIZE_STEP, WRITE_NODES_COUNT
 fn test_commit_per_size() {
@@ -140,9 +140,9 @@ fn test_commit_per_size() {
 /// Outputs are generated in png files: /tmp/scrypto_commit_per_partition_rocksdb.png, /tmp/scrypto_commit_per_partition_rocksdb_JMT.png, /tmp/scrypto_commit_per_partition_rocksdb_diff.png
 /// point list is printed to stdout.
 /// To run the test case use command:
-///  cargo test -p radix-engine-profiling -p substate-store-impls --features rocksdb test_commit_per_partition --release -- --nocapture
+///  cargo test -p radix-engine-profiling -p radix-substate-store-impls --features rocksdb test_commit_per_partition --release -- --nocapture
 /// or
-///  cargo nextest run -p radix-engine-profiling -p substate-store-impls --no-capture --features rocksdb --release test_commit_per_partition
+///  cargo nextest run -p radix-engine-profiling -p radix-substate-store-impls --no-capture --features rocksdb --release test_commit_per_partition
 /// from main radixdlt-scrypto folder.
 fn test_commit_per_partition() {
     const N: usize = 100;

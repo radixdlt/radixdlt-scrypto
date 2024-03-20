@@ -1,5 +1,8 @@
-use radix_engine::{errors::{ApplicationError, RuntimeError, SystemError}, object_modules::metadata::{MetadataError, MetadataValidationError}};
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
+use radix_engine::{
+    errors::{ApplicationError, RuntimeError, SystemError},
+    object_modules::metadata::{MetadataError, MetadataValidationError},
+};
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
@@ -7,8 +10,7 @@ use scrypto_test::prelude::*;
 fn cannot_create_metadata_with_invalid_value() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("metadata_component"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -37,8 +39,7 @@ fn cannot_create_metadata_with_invalid_value() {
 fn cannot_set_metadata_with_invalid_value() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("metadata_component"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -100,8 +101,7 @@ fn cannot_set_metadata_with_invalid_value() {
 fn can_globalize_with_component_metadata() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("metadata_component"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -127,8 +127,7 @@ fn can_globalize_with_component_metadata() {
 fn can_set_metadata_after_globalized() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("metadata_component"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -155,8 +154,7 @@ fn can_set_metadata_after_globalized() {
 fn can_remove_metadata() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("metadata_component"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -190,8 +188,7 @@ fn can_remove_metadata() {
 fn can_set_metadata_through_manifest(entry: MetadataValue) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("metadata_component"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -263,8 +260,7 @@ fn can_set_decimal_metadata_through_manifest() {
 fn can_set_address_metadata_through_manifest() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("metadata_component"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = ledger
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
@@ -302,8 +298,7 @@ fn can_set_address_metadata_through_manifest() {
 fn cannot_set_address_metadata_after_freezing() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address =
-        ledger.publish_package_simple(PackageLoader::get("metadata_component"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = ledger
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));

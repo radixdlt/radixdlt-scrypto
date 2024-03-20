@@ -1,7 +1,7 @@
 use sbor::basic_well_known_types::*;
 use sbor::*;
-use scrypto::blueprint_schema_init::*;
 use scrypto::prelude::*;
+use scrypto::radix_blueprint_schema_init::*;
 
 static LARGE: u32 = u32::MAX / 2;
 static MAX: u32 = u32::MAX;

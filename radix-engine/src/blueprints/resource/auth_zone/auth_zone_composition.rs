@@ -4,10 +4,10 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
-use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
+use radix_native_sdk::resource::ResourceManager;
 
 use super::AuthZoneError;
 
@@ -256,7 +256,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
                 break 'outer;
             }
 
-            if let Some(quota) = per_container.remove(container) {
+            if let Some(quota) = per_container.swap_remove(container) {
                 let amount = Decimal::min(remaining, quota);
                 api.call_method(
                     container.as_node_id(),
@@ -362,7 +362,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
                     scrypto_args!(&ids),
                 )?;
                 for id in &ids {
-                    remaining.remove(id);
+                    remaining.swap_remove(id);
                 }
                 evidence.insert(container.clone(), ids);
             }

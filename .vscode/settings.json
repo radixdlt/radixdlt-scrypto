@@ -1,7 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
-        "simulator/Cargo.toml",
+        "radix-clis/Cargo.toml",
     ],
     "cSpell.words": [
         "accesscontroller",
@@ -46,6 +46,7 @@
         "Scrypto",
         "Secp",
         "SECURIFY",
+        "selfhosted",
         "signedintent",
         "Substate",
         "substates",

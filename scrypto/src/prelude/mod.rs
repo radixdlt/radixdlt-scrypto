@@ -25,7 +25,7 @@ pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
-pub use radix_engine_common::prelude::*;
+pub use radix_common::prelude::*;
 pub use radix_engine_interface::prelude::*;
 
 //=======
@@ -35,7 +35,7 @@ pub use radix_engine_interface::prelude::*;
 pub use sbor::{Categorize, Decode, DecodeError, Encode, Sbor};
 
 // Needed for macros
-pub extern crate radix_engine_common;
+pub extern crate radix_common;
 
 /// We should always `UncheckedUrl` in Scrypto, as the validation logic is heavy.
 /// Thus, this type alias is added.

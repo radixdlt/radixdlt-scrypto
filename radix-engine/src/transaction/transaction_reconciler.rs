@@ -4,17 +4,17 @@ use crate::blueprints::resource::{
 };
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::transaction::{BalanceChange, StateUpdateSummary};
-use radix_engine_common::prelude::scrypto_decode;
-use radix_engine_common::traits::ScryptoEvent;
-use radix_engine_common::types::ResourceAddress;
+use radix_common::prelude::scrypto_decode;
+use radix_common::traits::ScryptoEvent;
+use radix_common::types::ResourceAddress;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
+use radix_rust::prelude::IndexMap;
+use radix_rust::{btreeset, indexmap};
+use radix_substate_store_interface::interface::SubstateDatabase;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::ops::Neg;
 use sbor::rust::vec::Vec;
-use substate_store_interface::interface::SubstateDatabase;
-use utils::prelude::IndexMap;
-use utils::{btreeset, indexmap};
 
 pub fn reconcile_resource_state_and_events<'a, S: SubstateDatabase>(
     summary: &StateUpdateSummary,

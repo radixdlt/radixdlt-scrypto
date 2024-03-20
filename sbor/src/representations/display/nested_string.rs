@@ -509,7 +509,7 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomExtension>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::*;
+    use radix_rust::*;
 
     #[derive(Sbor, Hash, Eq, PartialEq)]
     enum TestEnum {

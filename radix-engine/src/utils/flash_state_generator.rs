@@ -6,20 +6,20 @@ use crate::internal_prelude::*;
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use crate::vm::*;
-use radix_engine_common::constants::*;
-use radix_engine_common::crypto::hash;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::prelude::ScopedTypeId;
-use radix_engine_common::prelude::{scrypto_encode, ScryptoCustomTypeKind};
-use radix_engine_common::types::SubstateKey;
+use radix_common::constants::*;
+use radix_common::crypto::hash;
+use radix_common::math::Decimal;
+use radix_common::prelude::ScopedTypeId;
+use radix_common::prelude::{scrypto_encode, ScryptoCustomTypeKind};
+use radix_common::types::SubstateKey;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::CollectionDescriptor;
+use radix_rust::indexmap;
+use radix_substate_store_interface::interface::*;
 use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
-use substate_store_interface::interface::*;
-use utils::indexmap;
 
 pub fn generate_vm_boot_scrypto_version_state_updates(version: ScryptoVmVersion) -> StateUpdates {
     let substate = scrypto_encode(&VmBoot::V1 {

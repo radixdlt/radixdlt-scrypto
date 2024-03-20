@@ -2,14 +2,14 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use native_sdk::resource::NativeBucket;
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
+use radix_native_sdk::resource::NativeBucket;
+use radix_native_sdk::runtime::Runtime;
 
 declare_native_blueprint_state! {
     blueprint_ident: FungibleVault,
@@ -610,7 +610,7 @@ impl FungibleVaultBlueprint {
         let max_locked = locked.amount();
         let cnt = locked
             .amounts
-            .remove(&amount)
+            .swap_remove(&amount)
             .expect("Attempted to unlock an amount that is not locked");
         if cnt > 1 {
             locked.amounts.insert(amount, cnt - 1);

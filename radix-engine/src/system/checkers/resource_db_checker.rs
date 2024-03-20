@@ -10,9 +10,9 @@ use crate::blueprints::resource::{
 };
 use crate::internal_prelude::*;
 use crate::system::checkers::ApplicationChecker;
-use radix_engine_common::math::Decimal;
-use radix_engine_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
-use radix_engine_common::types::{NodeId, ResourceAddress};
+use radix_common::math::Decimal;
+use radix_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
+use radix_common::types::{NodeId, ResourceAddress};
 use radix_engine_interface::api::FieldIndex;
 use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{

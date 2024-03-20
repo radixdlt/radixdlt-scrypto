@@ -1,0 +1,25 @@
+[package]
+name = "radix-common-derive"
+version = "1.2.0-dev"
+edition = "2021"
+description = "Macros for declaring Decimal and PreciseDecimal constants."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true, features = ["full", "extra-traits"] }
+paste = { workspace = true }
+radix-common= { workspace = true }
+
+[lib]
+doctest = false
+proc-macro = true
+bench = false
+
+[features]
+default = ["std"]
+std = ["radix-common/std"]
+alloc = ["radix-common/alloc"]

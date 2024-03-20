@@ -1,4 +1,4 @@
-use radix_engine_common::ScryptoSbor;
+use radix_common::ScryptoSbor;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(u8)]

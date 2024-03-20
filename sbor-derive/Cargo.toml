@@ -2,6 +2,10 @@
 name = "sbor-derive"
 version = "1.2.0-dev"
 edition = "2021"
+description = "A collection of macros for deriving SBOR implementations."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [lib]
 doctest = false
@@ -9,8 +13,8 @@ proc-macro = true
 bench = false
 
 [dependencies]
-proc-macro2 = { version = "1.0.38" }
-sbor-derive-common = { path = "../sbor-derive-common" }
+proc-macro2 = { workspace = true }
+sbor-derive-common = { workspace = true }
 
 [features]
 trace = ["sbor-derive-common/trace"]

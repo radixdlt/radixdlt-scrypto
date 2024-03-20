@@ -8,10 +8,7 @@ sbor = { path = "../../sbor" }
 scrypto = { path = "../../scrypto" }
 
 [dev-dependencies]
-transaction = { path = "../../transaction" }
-radix-engine = { path = "../../radix-engine" }
 scrypto-test = { path = "../../scrypto-test" }
-native-sdk = { path = "../../native-sdk" }
 
 [profile.release]
 opt-level = 'z'        # Optimize for size.

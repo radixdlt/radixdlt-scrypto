@@ -3,8 +3,8 @@
 set -x
 set -e
 
-resim="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin resim $@ --"
-scrypto_bindgen="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin scrypto-bindgen $@ --"
+resim="cargo run --manifest-path $PWD/radix-clis/Cargo.toml --bin resim $@ --"
+scrypto_bindgen="cargo run --manifest-path $PWD/radix-clis/Cargo.toml --bin scrypto-bindgen $@ --"
 
 file_contents="
 use radix_engine_interface::blueprints::access_controller::*;

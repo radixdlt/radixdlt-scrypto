@@ -7,7 +7,7 @@ use crate::kernel::substate_io::{
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{NodeId, SubstateHandle, SubstateKey};
-use substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 
 use super::heap::{Heap, HeapRemovePartitionError};
 
@@ -1020,7 +1020,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let mut opened_substate =
             self.open_substates
-                .remove(&lock_handle)
+                .swap_remove(&lock_handle)
                 .ok_or(CallbackError::Error(WriteSubstateError::HandleNotFound(
                     lock_handle,
                 )))?;
@@ -1070,7 +1070,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     ) -> Result<(), CloseSubstateError> {
         let mut open_substate = self
             .open_substates
-            .remove(&lock_handle)
+            .swap_remove(&lock_handle)
             .ok_or_else(|| CloseSubstateError::HandleNotFound(lock_handle))?;
 
         for node_id in open_substate.owned_nodes.iter() {
@@ -1503,7 +1503,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         for removed_own in &diff.removed_owns {
-            open_substate.owned_nodes.remove(removed_own);
+            open_substate.owned_nodes.swap_remove(removed_own);
             let mut transient_ref = transient_references.remove(removed_own).unwrap();
             if transient_ref.ref_count > 1 {
                 transient_ref.ref_count -= 1;
@@ -1529,7 +1529,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         for removed_ref in &diff.removed_refs {
-            open_substate.references.remove(removed_ref);
+            open_substate.references.swap_remove(removed_ref);
 
             if !removed_ref.is_global() {
                 let mut transient_ref = transient_references.remove(&removed_ref).unwrap();
@@ -1554,7 +1554,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             return Err(TakeNodeError::SubstateBorrowed(*node_id));
         }
 
-        if self.owned_root_nodes.remove(node_id) {
+        if self.owned_root_nodes.swap_remove(node_id) {
             Ok(())
         } else {
             Err(TakeNodeError::OwnNotFound(node_id.clone()))

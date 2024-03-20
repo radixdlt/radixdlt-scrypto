@@ -9,7 +9,7 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
-use radix_engine_common::math::Decimal;
+use radix_common::math::Decimal;
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
@@ -560,7 +560,7 @@ impl ExecutionTraceModule {
     ) {
         let child_traces = self
             .kernel_call_traces_stacks
-            .remove(&(self.current_kernel_call_depth + 1))
+            .swap_remove(&(self.current_kernel_call_depth + 1))
             .unwrap_or(vec![]);
 
         let (traced_input, origin, instruction_index) = self

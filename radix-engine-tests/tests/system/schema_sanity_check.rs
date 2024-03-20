@@ -1,4 +1,4 @@
-use blueprint_schema_init::*;
+use radix_blueprint_schema_init::*;
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     system::system_modules::costing::{
@@ -7,9 +7,11 @@ use radix_engine::{
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_substate_store_queries::typed_substate_layout::{
+    AccountNativePackage, BlueprintPayloadDef,
+};
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
-use substate_store_queries::typed_substate_layout::{AccountNativePackage, BlueprintPayloadDef};
 
 #[test]
 fn check_native_function_base_costs() {
@@ -95,7 +97,7 @@ fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
     for package_address in package_addresses {
         println!("\nChecking {}", package_address.to_string(&bech32));
 
-        let schemas_by_hash = ledger.get_package_blueprint_schema_inits(&package_address);
+        let schemas_by_hash = ledger.get_package_radix_blueprint_schema_inits(&package_address);
         println!("Found {} schemas", schemas_by_hash.len());
 
         let blueprint_definitions = ledger.get_package_blueprint_definitions(&package_address);
@@ -444,13 +446,13 @@ pub fn test_fake_bucket() {
 fn native_blueprints_with_typed_addresses_have_expected_schema() {
     let mut blueprint_definition = AccountNativePackage::definition()
         .blueprints
-        .remove("Account")
+        .swap_remove("Account")
         .unwrap();
     let TypeRef::Static(local_type_index) = blueprint_definition
         .schema
         .functions
         .functions
-        .remove("create_advanced")
+        .swap_remove("create_advanced")
         .unwrap()
         .output
     else {

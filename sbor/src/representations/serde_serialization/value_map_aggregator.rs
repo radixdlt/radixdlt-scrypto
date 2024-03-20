@@ -1,8 +1,8 @@
 use super::*;
 use crate::rust::prelude::*;
 use crate::*;
+use radix_rust::*;
 use serde::ser::*;
-use utils::*;
 
 // See https://www.possiblerust.com/pattern/3-things-to-try-when-you-can-t-make-a-trait-object
 pub enum SerializableType<'a, 't, 'de, 's1, 's2, E: SerializableCustomExtension> {

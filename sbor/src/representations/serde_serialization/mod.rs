@@ -7,7 +7,7 @@
 //! ```ignore
 //!     // Ensure the ContextualSerialize trait is in scope.
 //!     // You will need to enable the "sbor" feature of utils.
-//!     use utils::*;
+//!     use radix_rust::*;
 //!     use sbor::representations::*;
 //!
 //!     let payload = BasicPayload::new(&payload_bytes);

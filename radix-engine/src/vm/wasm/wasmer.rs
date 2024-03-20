@@ -81,11 +81,11 @@ pub struct WasmerInstanceEnv {
 pub struct WasmerEngine {
     store: Store,
     // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
-    #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
+    #[cfg(all(not(feature = "fuzzing"), not(feature = "moka")))]
     modules_cache: RefCell<lru::LruCache<CodeHash, Arc<WasmerModule>>>,
-    #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
+    #[cfg(all(not(feature = "fuzzing"), feature = "moka"))]
     modules_cache: moka::sync::Cache<CodeHash, Arc<WasmerModule>>,
-    #[cfg(feature = "radix_engine_fuzzing")]
+    #[cfg(feature = "fuzzing")]
     modules_cache: usize,
 }
 
@@ -1001,11 +1001,11 @@ impl WasmerEngine {
     pub fn new(options: WasmerEngineOptions) -> Self {
         let compiler = Singlepass::new();
 
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
+        #[cfg(all(not(feature = "fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
             NonZeroUsize::new(options.max_cache_size).unwrap(),
         ));
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
+        #[cfg(all(not(feature = "fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
             .weigher(
                 |_metered_code_key: &CodeHash, _value: &Arc<WasmerModule>| -> u32 {
@@ -1015,7 +1015,7 @@ impl WasmerEngine {
             )
             .max_capacity(options.max_cache_size as u64)
             .build();
-        #[cfg(feature = "radix_engine_fuzzing")]
+        #[cfg(feature = "fuzzing")]
         let modules_cache = options.max_cache_size;
 
         Self {
@@ -1029,7 +1029,7 @@ impl WasmEngine for WasmerEngine {
     type WasmInstance = WasmerInstance;
 
     fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> WasmerInstance {
-        #[cfg(not(feature = "radix_engine_fuzzing"))]
+        #[cfg(not(feature = "fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
             {
@@ -1049,7 +1049,7 @@ impl WasmEngine for WasmerEngine {
             code_size_bytes: instrumented_code.len(),
         });
 
-        #[cfg(not(feature = "radix_engine_fuzzing"))]
+        #[cfg(not(feature = "fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
             self.modules_cache

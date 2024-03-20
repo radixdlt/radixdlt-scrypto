@@ -2,35 +2,39 @@
 name = "sbor"
 version = "1.2.0-dev"
 edition = "2021"
+description = "Reference implementation of the SBOR binary data format."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-utils = { path = "../utils", default-features = false }
-hex = { version = "0.4.3", default-features = false }
-sbor-derive = { path = "../sbor-derive" }
-serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
-const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
-lazy_static = "1.4.0"
-paste = { version = "1.0.13" }
-arbitrary = { version = "1.3.0", features = ["derive"], optional = true }
+radix-rust = { workspace = true }
+hex = { workspace = true }
+sbor-derive = { workspace = true }
+serde = { workspace = true, optional = true, features=["derive"] }
+const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
+lazy_static = { workspace = true }
+paste = { workspace = true }
+arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
-serde_json = { version = "1.0.81", default-features = false }
+serde_json = { workspace = true }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["utils/std", "serde?/std", "serde_json/std", "serde_json/preserve_order", "hex/std"] # preserve_order requires std
-alloc = ["utils/alloc", "serde?/alloc", "lazy_static/spin_no_std", "serde_json/alloc", "hex/alloc"]
+std = ["radix-rust/std", "serde?/std", "serde_json/std", "serde_json/preserve_order", "hex/std"] # preserve_order requires std
+alloc = ["radix-rust/alloc", "serde?/alloc", "lazy_static/spin_no_std", "serde_json/alloc", "hex/alloc"]
 
 # Enable serde derives for SBOR value and type models
-serde = ["dep:serde", "utils/serde"]
+serde = ["dep:serde", "radix-rust/serde"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]
 
 # This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
 # to let fuzzing work
-radix_engine_fuzzing = ["arbitrary", "utils/radix_engine_fuzzing"]
+fuzzing = ["arbitrary", "radix-rust/fuzzing"]
 
 [lib]
 doctest = false

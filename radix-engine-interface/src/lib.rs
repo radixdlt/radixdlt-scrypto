@@ -25,7 +25,7 @@ pub extern crate self as radix_engine_interface;
 /// The idea is that we can just include the current crate's prelude and avoid messing around with tons of includes.
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
-    pub use radix_engine_macros::{dec, pdec};
+    pub use radix_common_derive::{dec, pdec};
 
     // Exports from this crate
     pub use crate::api::actor_api::*;
@@ -49,5 +49,5 @@ pub mod prelude {
 
 pub(crate) mod internal_prelude {
     pub use crate::prelude::*;
-    pub use radix_engine_common::prelude::*;
+    pub use radix_common::prelude::*;
 }
