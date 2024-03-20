@@ -498,11 +498,7 @@ impl Parser {
             span: match self.tokens.get(self.previous) {
                 Some(token) => Span {
                     start: token.span.end,
-                    end: Position {
-                        full_index: token.span.end.full_index + 1,
-                        line_number: token.span.end.line_number,
-                        line_char_index: token.span.end.line_char_index,
-                    },
+                    end: token.span.end,
                 },
                 None => span!(start = (0, 0, 0), end = (0, 0, 0)),
             },
@@ -1491,7 +1487,7 @@ mod tests {
             r#"Enum<0u8"#,
             ParserError {
                 error_kind: ParserErrorKind::UnexpectedEof,
-                span: span!(start = (8, 1, 8), end = (9, 1, 8))
+                span: span!(start = (8, 1, 8), end = (8, 1, 8))
             }
         );
         parse_value_error!(

@@ -51,7 +51,7 @@ impl LexerError {
 pub struct Lexer {
     /// The input text chars
     text: Vec<char>,
-    /// The current position in the text
+    /// The current position in the text (in case of end of file it equals to text length)
     current: Position,
 }
 
@@ -85,20 +85,17 @@ impl Lexer {
     }
 
     fn peek(&self) -> Result<char, LexerError> {
-        self.text
-            .get(self.current.full_index)
-            .cloned()
-            .ok_or(LexerError {
+        if self.is_eof() {
+            Err(LexerError {
                 error_kind: LexerErrorKind::UnexpectedEof,
                 span: Span {
                     start: self.current,
-                    end: Position {
-                        full_index: self.current.full_index + 1,
-                        line_number: self.current.line_number,
-                        line_char_index: self.current.line_char_index,
-                    },
+                    end: self.current,
                 },
             })
+        } else {
+            Ok(self.text[self.current.full_index])
+        }
     }
 
     fn advance(&mut self) -> Result<char, LexerError> {
@@ -538,7 +535,7 @@ mod tests {
             "123",
             LexerError {
                 error_kind: LexerErrorKind::UnexpectedEof,
-                span: span!(start = (3, 1, 3), end = (4, 1, 3))
+                span: span!(start = (3, 1, 3), end = (3, 1, 3))
             }
         );
     }
@@ -567,7 +564,7 @@ mod tests {
             "\"",
             LexerError {
                 error_kind: LexerErrorKind::UnexpectedEof,
-                span: span!(start = (1, 1, 1), end = (2, 1, 1))
+                span: span!(start = (1, 1, 1), end = (1, 1, 1))
             }
         );
     }

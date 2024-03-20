@@ -11,43 +11,51 @@ pub fn create_snippet(
     style: CompileErrorDiagnosticsStyle,
 ) -> String {
     let lines_cnt = s.lines().count();
-    let mut span = span.clone();
 
     // Surround span with few lines for more context
-    if span.start.line_number > 5 {
-        span.start.line_number -= 5;
+    let line_start = if span.start.line_number > 5 {
+        span.start.line_number - 5
     } else {
-        span.start.line_number = 1;
-    }
-    span.end.line_number = min(span.end.line_number + 5, lines_cnt);
+        1
+    };
+    let line_end = min(span.end.line_number + 5, lines_cnt);
 
     let mut source = String::new();
     let mut skipped_chars = 0;
     for (i, line) in s.lines().enumerate() {
-        if (i + 1) < span.start.line_number {
+        if (i + 1) < line_start {
             // Add 1 for '\n' character
             skipped_chars += line.chars().count() + 1;
-        } else if (i + 1) <= span.end.line_number {
+        } else if (i + 1) <= line_end {
             source.push_str(line.into());
             source.push('\n');
-        } else if (i + 1) > span.end.line_number {
+        } else if (i + 1) > line_end {
             break;
         }
     }
 
-    span.start.full_index -= skipped_chars;
-    span.end.full_index -= skipped_chars;
+    // Normalize spans indicating end of source
+    let mut annotation_start_index = min(span.start.full_index, s.len());
+    let mut annotation_end_index = min(span.end.full_index, s.len());
+
+    if annotation_start_index == annotation_end_index {
+        // Add 1 to let the ^ be displayed to indicate end of source
+        annotation_end_index += 1;
+    }
+
+    annotation_start_index -= skipped_chars;
+    annotation_end_index -= skipped_chars;
 
     let snippet = Snippet {
         slices: vec![Slice {
             source: source.as_str(),
-            line_start: span.start.line_number,
+            line_start: line_start,
             origin: None,
             fold: false,
             annotations: vec![SourceAnnotation {
                 label: label,
                 annotation_type: AnnotationType::Error,
-                range: (span.start.full_index, span.end.full_index),
+                range: (annotation_start_index, annotation_end_index),
             }],
         }],
         title: Some(Annotation {
