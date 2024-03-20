@@ -5,15 +5,16 @@ use sbor::rust::fmt::Debug;
 /// byte-based / UTF-8 index.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
-    /// The start of the span, exclusive
+    /// The start of the span, inclusive
     pub start: Position,
-    /// The end of the span, inclusive
+    /// The end of the span, exclusive
     pub end: Position,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Position {
     /// A 0-indexed cursor indicating the next unicode char from the start
+    /// In case of end of file it equals to text length.
     pub full_index: usize,
     /// A 1-indexed cursor indicating the line number (assuming \n is a line break)
     pub line_number: usize,
