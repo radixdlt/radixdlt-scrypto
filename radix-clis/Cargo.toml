@@ -11,22 +11,22 @@ license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-sbor = { path = "../sbor" }
-scrypto-compiler = { path = "../scrypto-compiler" }
-radix-engine = { path = "../radix-engine" }
-radix-substate-store-interface = { path = "../radix-substate-store-interface" }
-radix-substate-store-impls = { path = "../radix-substate-store-impls", features = ["rocksdb"] }
-radix-substate-store-queries = { path = "../radix-substate-store-queries" }
-radix-common = { path = "../radix-common" }
-radix-engine-interface = { path = "../radix-engine-interface" }
-radix-engine-profiling = { path = "../radix-engine-profiling", features = ["ram_metrics"] }
-radix-blueprint-schema-init = { path = "../radix-blueprint-schema-init" }
-radix-transactions = { path = "../radix-transactions" }
+radix-blueprint-schema-init = { version = "1.2.0-dev", path = "../radix-blueprint-schema-init" }
+radix-common = { version = "1.2.0-dev", path = "../radix-common" }
+radix-engine = { version = "1.2.0-dev", path = "../radix-engine" }
+radix-engine-interface = { version = "1.2.0-dev", path = "../radix-engine-interface" }
+radix-engine-profiling = { version = "1.2.0-dev", path = "../radix-engine-profiling", features = ["ram_metrics"] }
+radix-rust = { version = "1.2.0-dev", path = "../radix-rust" }
+radix-substate-store-impls = { version = "1.2.0-dev", path = "../radix-substate-store-impls", features = ["rocksdb"] }
+radix-substate-store-interface = { version = "1.2.0-dev", path = "../radix-substate-store-interface" }
+radix-substate-store-queries = { version = "1.2.0-dev", path = "../radix-substate-store-queries" }
+radix-transactions = { version = "1.2.0-dev", path = "../radix-transactions" }
+sbor = { version = "1.2.0-dev", path = "../sbor" }
+scrypto-compiler = { version = "1.2.0-dev", path = "../scrypto-compiler" }
 
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }
 rocksdb = { version = "0.21.0" }
-radix-rust = { path = "../radix-rust" }
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = { version = "1.0.81" }
 clap = { version = "3.1.17", features = ["derive", "cargo"] }
