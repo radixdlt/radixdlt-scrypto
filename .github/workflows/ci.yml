@@ -261,6 +261,9 @@ jobs:
       matrix:
         os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted]
     steps:
+      - name: Enable symlinks for Windows
+        if: runner.os == 'Windows'
+        run: git config --global --add core.symlinks true
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
@@ -287,6 +290,9 @@ jobs:
       matrix:
         os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted, macos-latest]
     steps:
+      - name: Enable symlinks for Windows
+        if: runner.os == 'Windows'
+        run: git config --global --add core.symlinks true
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
