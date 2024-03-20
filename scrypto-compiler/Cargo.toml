@@ -4,6 +4,7 @@ version = "1.2.0-dev"
 edition = "2021"
 description = "A library for compiling Scrypto code."
 readme = "README.md"
+license-file = "../LICENSE"
 
 [dependencies]
 radix-engine-interface = { workspace = true }
