@@ -5,6 +5,7 @@ edition = "2021"
 description = "A collection of macros for deriving SBOR implementations."
 readme = "README.md"
 license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [lib]
 doctest = false

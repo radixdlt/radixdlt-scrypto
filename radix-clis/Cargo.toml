@@ -8,6 +8,7 @@ edition = "2021"
 description = "A collection of CLIs for developing, building and testing Scrypto code."
 readme = "README.md"
 license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 sbor = { path = "../sbor" }

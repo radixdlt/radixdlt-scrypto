@@ -5,6 +5,7 @@ edition = "2021"
 description = "Reference implementation of the SBOR binary data format."
 readme = "README.md"
 license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 radix-rust = { workspace = true }

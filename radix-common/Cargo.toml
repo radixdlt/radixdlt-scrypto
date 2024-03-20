@@ -5,6 +5,7 @@ edition = "2021"
 description = "A library of common types and functions shared by all layers of the Radix stack."
 readme = "README.md"
 license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 sbor = { workspace = true }

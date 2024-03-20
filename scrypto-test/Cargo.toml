@@ -5,6 +5,7 @@ edition = "2021"
 description = "A library for testing Scrypto blueprints."
 readme = "README.md"
 license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 # The Radix Engine Stack

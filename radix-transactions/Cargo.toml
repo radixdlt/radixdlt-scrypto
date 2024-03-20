@@ -5,6 +5,7 @@ edition = "2021"
 description = "Various Radix transaction models and the manifest compiler/decompiler."
 readme = "README.md"
 license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 sbor = { workspace = true }
