@@ -445,12 +445,12 @@ impl Parser {
                 span: Span {
                     start: Position {
                         full_index: 0,
-                        line_number: 0,
+                        line_idx: 0,
                         line_char_index: 0,
                     },
                     end: Position {
                         full_index: 0,
-                        line_number: 0,
+                        line_idx: 0,
                         line_char_index: 0,
                     },
                 },
@@ -1250,11 +1250,11 @@ mod tests {
                 vec![
                     ValueWithSpan {
                         value: Value::String("Hello".into()),
-                        span: span!(start = (10, 1, 10), end = (17, 1, 17)),
+                        span: span!(start = (10, 0, 10), end = (17, 0, 17)),
                     },
                     ValueWithSpan {
                         value: Value::U8(123),
-                        span: span!(start = (19, 1, 19), end = (24, 1, 24)),
+                        span: span!(start = (19, 0, 19), end = (24, 0, 24)),
                     },
                 ],
             )
@@ -1272,11 +1272,11 @@ mod tests {
                 vec![
                     ValueWithSpan {
                         value: Value::String("Hello".into()),
-                        span: span!(start = (10, 1, 10), end = (17, 1, 17)),
+                        span: span!(start = (10, 0, 10), end = (17, 0, 17)),
                     },
                     ValueWithSpan {
                         value: Value::U8(123),
-                        span: span!(start = (19, 1, 19), end = (24, 1, 24)),
+                        span: span!(start = (19, 0, 19), end = (24, 0, 24)),
                     },
                 ],
             )
@@ -1290,16 +1290,16 @@ mod tests {
             Value::Array(
                 ValueKindWithSpan {
                     value_kind: ValueKind::U8,
-                    span: span!(start = (6, 1, 6), end = (8, 1, 8)),
+                    span: span!(start = (6, 0, 6), end = (8, 0, 8)),
                 },
                 vec![
                     ValueWithSpan {
                         value: Value::U8(1),
-                        span: span!(start = (10, 1, 10), end = (13, 1, 13)),
+                        span: span!(start = (10, 0, 10), end = (13, 0, 13)),
                     },
                     ValueWithSpan {
                         value: Value::U8(2),
-                        span: span!(start = (15, 1, 15), end = (18, 1, 18)),
+                        span: span!(start = (15, 0, 15), end = (18, 0, 18)),
                     }
                 ],
             )
@@ -1309,7 +1309,7 @@ mod tests {
             Value::Array(
                 ValueKindWithSpan {
                     value_kind: ValueKind::U8,
-                    span: span!(start = (6, 1, 6), end = (8, 1, 8)),
+                    span: span!(start = (6, 0, 6), end = (8, 0, 8)),
                 },
                 vec![]
             )
@@ -1320,16 +1320,16 @@ mod tests {
             Value::Array(
                 ValueKindWithSpan {
                     value_kind: ValueKind::U8,
-                    span: span!(start = (6, 1, 6), end = (8, 1, 8)),
+                    span: span!(start = (6, 0, 6), end = (8, 0, 8)),
                 },
                 vec![
                     ValueWithSpan {
                         value: Value::U8(1),
-                        span: span!(start = (10, 1, 10), end = (13, 1, 13)),
+                        span: span!(start = (10, 0, 10), end = (13, 0, 13)),
                     },
                     ValueWithSpan {
                         value: Value::U8(2),
-                        span: span!(start = (15, 1, 15), end = (18, 1, 18)),
+                        span: span!(start = (15, 0, 15), end = (18, 0, 18)),
                     }
                 ],
             )
@@ -1344,11 +1344,11 @@ mod tests {
             Value::Tuple(vec![
                 ValueWithSpan {
                     value: Value::String("Hello".into()),
-                    span: span!(start = (6, 1, 6), end = (13, 1, 13)),
+                    span: span!(start = (6, 0, 6), end = (13, 0, 13)),
                 },
                 ValueWithSpan {
                     value: Value::U8(123),
-                    span: span!(start = (15, 1, 15), end = (20, 1, 20)),
+                    span: span!(start = (15, 0, 15), end = (20, 0, 20)),
                 },
             ])
         );
@@ -1357,11 +1357,11 @@ mod tests {
             Value::Tuple(vec![
                 ValueWithSpan {
                     value: Value::U8(1),
-                    span: span!(start = (6, 1, 6), end = (9, 1, 9)),
+                    span: span!(start = (6, 0, 6), end = (9, 0, 9)),
                 },
                 ValueWithSpan {
                     value: Value::U8(2),
-                    span: span!(start = (11, 1, 11), end = (14, 1, 14)),
+                    span: span!(start = (11, 0, 11), end = (14, 0, 14)),
                 },
             ])
         );
@@ -1372,11 +1372,11 @@ mod tests {
             Value::Tuple(vec![
                 ValueWithSpan {
                     value: Value::U8(1),
-                    span: span!(start = (6, 1, 6), end = (9, 1, 9)),
+                    span: span!(start = (6, 0, 6), end = (9, 0, 9)),
                 },
                 ValueWithSpan {
                     value: Value::U8(2),
-                    span: span!(start = (11, 1, 11), end = (14, 1, 14)),
+                    span: span!(start = (11, 0, 11), end = (14, 0, 14)),
                 },
             ])
         );
@@ -1389,20 +1389,20 @@ mod tests {
             Value::Map(
                 ValueKindWithSpan {
                     value_kind: ValueKind::String,
-                    span: span!(start = (4, 1, 4), end = (10, 1, 10)),
+                    span: span!(start = (4, 0, 4), end = (10, 0, 10)),
                 },
                 ValueKindWithSpan {
                     value_kind: ValueKind::U8,
-                    span: span!(start = (12, 1, 12), end = (14, 1, 14)),
+                    span: span!(start = (12, 0, 12), end = (14, 0, 14)),
                 },
                 vec![(
                     ValueWithSpan {
                         value: Value::String("Hello".into()),
-                        span: span!(start = (16, 1, 16), end = (23, 1, 23)),
+                        span: span!(start = (16, 0, 16), end = (23, 0, 23)),
                     },
                     ValueWithSpan {
                         value: Value::U8(123),
-                        span: span!(start = (27, 1, 27), end = (32, 1, 32)),
+                        span: span!(start = (27, 0, 27), end = (32, 0, 32)),
                     }
                 )]
             )
@@ -1412,31 +1412,31 @@ mod tests {
             Value::Map(
                 ValueKindWithSpan {
                     value_kind: ValueKind::String,
-                    span: span!(start = (4, 1, 4), end = (10, 1, 10)),
+                    span: span!(start = (4, 0, 4), end = (10, 0, 10)),
                 },
                 ValueKindWithSpan {
                     value_kind: ValueKind::U8,
-                    span: span!(start = (12, 1, 12), end = (14, 1, 14)),
+                    span: span!(start = (12, 0, 12), end = (14, 0, 14)),
                 },
                 vec![
                     (
                         ValueWithSpan {
                             value: Value::String("Hello".into()),
-                            span: span!(start = (16, 1, 16), end = (23, 1, 23)),
+                            span: span!(start = (16, 0, 16), end = (23, 0, 23)),
                         },
                         ValueWithSpan {
                             value: Value::U8(123),
-                            span: span!(start = (27, 1, 27), end = (32, 1, 32)),
+                            span: span!(start = (27, 0, 27), end = (32, 0, 32)),
                         }
                     ),
                     (
                         ValueWithSpan {
                             value: Value::String("world!".into()),
-                            span: span!(start = (34, 1, 34), end = (42, 1, 42)),
+                            span: span!(start = (34, 0, 34), end = (42, 0, 42)),
                         },
                         ValueWithSpan {
                             value: Value::U8(1),
-                            span: span!(start = (46, 1, 46), end = (49, 1, 49)),
+                            span: span!(start = (46, 0, 46), end = (49, 0, 49)),
                         }
                     )
                 ]
@@ -1449,31 +1449,31 @@ mod tests {
             Value::Map(
                 ValueKindWithSpan {
                     value_kind: ValueKind::String,
-                    span: span!(start = (4, 1, 4), end = (10, 1, 10)),
+                    span: span!(start = (4, 0, 4), end = (10, 0, 10)),
                 },
                 ValueKindWithSpan {
                     value_kind: ValueKind::U8,
-                    span: span!(start = (12, 1, 12), end = (14, 1, 14)),
+                    span: span!(start = (12, 0, 12), end = (14, 0, 14)),
                 },
                 vec![
                     (
                         ValueWithSpan {
                             value: Value::String("Hello".into()),
-                            span: span!(start = (16, 1, 16), end = (23, 1, 23)),
+                            span: span!(start = (16, 0, 16), end = (23, 0, 23)),
                         },
                         ValueWithSpan {
                             value: Value::U8(123),
-                            span: span!(start = (27, 1, 27), end = (32, 1, 32)),
+                            span: span!(start = (27, 0, 27), end = (32, 0, 32)),
                         }
                     ),
                     (
                         ValueWithSpan {
                             value: Value::String("world!".into()),
-                            span: span!(start = (34, 1, 34), end = (42, 1, 42)),
+                            span: span!(start = (34, 0, 34), end = (42, 0, 42)),
                         },
                         ValueWithSpan {
                             value: Value::U8(1),
-                            span: span!(start = (46, 1, 46), end = (49, 1, 49)),
+                            span: span!(start = (46, 0, 46), end = (49, 0, 49)),
                         }
                     )
                 ]
@@ -1487,7 +1487,7 @@ mod tests {
             r#"Enum<0u8"#,
             ParserError {
                 error_kind: ParserErrorKind::UnexpectedEof,
-                span: span!(start = (8, 1, 8), end = (8, 1, 8))
+                span: span!(start = (8, 0, 8), end = (8, 0, 8))
             }
         );
         parse_value_error!(
@@ -1497,7 +1497,7 @@ mod tests {
                     expected: TokenType::Exact(Token::GreaterThan),
                     actual: Token::CloseParenthesis,
                 },
-                span: span!(start = (8, 1, 8), end = (9, 1, 9))
+                span: span!(start = (8, 0, 8), end = (9, 0, 9))
             }
         );
         parse_value_error!(
@@ -1507,7 +1507,7 @@ mod tests {
                     actual: 2,
                     expected: 1,
                 },
-                span: span!(start = (8, 1, 8), end = (20, 1, 20)),
+                span: span!(start = (8, 0, 8), end = (20, 0, 20)),
             }
         );
     }
@@ -1532,7 +1532,7 @@ mod tests {
                     actual: 21,
                     max: 20,
                 },
-                span: span!(start = (120, 1, 120), end = (125, 1, 125))
+                span: span!(start = (120, 0, 120), end = (125, 0, 125))
             }
         );
     }

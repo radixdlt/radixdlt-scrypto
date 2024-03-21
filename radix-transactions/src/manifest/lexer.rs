@@ -74,7 +74,7 @@ impl Lexer {
             text: text.chars().collect(),
             current: Position {
                 full_index: 0,
-                line_number: 1,
+                line_idx: 0,
                 line_char_index: 0,
             },
         }
@@ -532,7 +532,7 @@ mod tests {
             "123",
             LexerError {
                 error_kind: LexerErrorKind::UnexpectedEof,
-                span: span!(start = (3, 1, 3), end = (3, 1, 3))
+                span: span!(start = (3, 0, 3), end = (3, 0, 3))
             }
         );
     }
@@ -561,7 +561,7 @@ mod tests {
             "\"",
             LexerError {
                 error_kind: LexerErrorKind::UnexpectedEof,
-                span: span!(start = (1, 1, 1), end = (1, 1, 1))
+                span: span!(start = (1, 0, 1), end = (1, 0, 1))
             }
         );
     }
@@ -642,7 +642,7 @@ mod tests {
             "-_28u32",
             LexerError {
                 error_kind: LexerErrorKind::InvalidIntegerLiteral("-_".to_string()),
-                span: span!(start = (0, 1, 0), end = (2, 1, 2))
+                span: span!(start = (0, 0, 0), end = (2, 0, 2))
             }
         );
 
@@ -650,7 +650,7 @@ mod tests {
             "1i128\n 1u64 \n 1i37",
             LexerError {
                 error_kind: LexerErrorKind::InvalidIntegerType("i37".to_string()),
-                span: span!(start = (15, 3, 2), end = (18, 3, 5))
+                span: span!(start = (15, 2, 2), end = (18, 2, 5))
             }
         );
 
@@ -658,7 +658,7 @@ mod tests {
             "3_0i8",
             LexerError {
                 error_kind: LexerErrorKind::InvalidIntegerType("_".to_string()),
-                span: span!(start = (1, 1, 1), end = (2, 1, 2))
+                span: span!(start = (1, 0, 1), end = (2, 0, 2))
             }
         );
     }
@@ -672,7 +672,7 @@ mod tests {
                     '+',
                     ExpectedChar::DigitLetterQuotePunctuation
                 ),
-                span: span!(start = (4, 1, 4), end = (5, 1, 5))
+                span: span!(start = (4, 0, 4), end = (5, 0, 5))
             }
         );
 
@@ -680,7 +680,7 @@ mod tests {
             "x=7",
             LexerError {
                 error_kind: LexerErrorKind::UnexpectedChar('7', ExpectedChar::Exact('>')),
-                span: span!(start = (2, 1, 2), end = (3, 1, 3))
+                span: span!(start = (2, 0, 2), end = (3, 0, 3))
             }
         );
     }
@@ -698,7 +698,7 @@ mod tests {
             r#""\uDCAC\u1234""#,
             LexerError {
                 error_kind: LexerErrorKind::InvalidUnicode(1238580),
-                span: span!(start = (2, 1, 2), end = (13, 1, 13))
+                span: span!(start = (2, 0, 2), end = (13, 0, 13))
             }
         );
     }

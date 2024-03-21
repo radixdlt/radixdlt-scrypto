@@ -16,8 +16,8 @@ pub struct Position {
     /// A 0-indexed cursor indicating the next unicode char from the start
     /// In case of end of file it equals to text length.
     pub full_index: usize,
-    /// A 1-indexed cursor indicating the line number (assuming \n is a line break)
-    pub line_number: usize,
+    /// A 0-indexed cursor indicating the line number (assuming \n is a line break)
+    pub line_idx: usize,
     /// A 0-indexed cursor indicating the character offset in the line
     pub line_char_index: usize,
 }
@@ -26,21 +26,25 @@ impl Position {
     pub fn advance(mut self, next_char: char) -> Self {
         self.full_index += 1;
         if next_char == '\n' {
-            self.line_number += 1;
+            self.line_idx += 1;
             self.line_char_index = 0;
         } else {
             self.line_char_index += 1;
         }
         self
     }
+
+    pub fn line_number(self) -> usize {
+        self.line_idx + 1
+    }
 }
 
 #[macro_export]
 macro_rules! position {
-    ($full_index:expr, $line_number:expr, $line_char_index:expr) => {
+    ($full_index:expr, $line_idx:expr, $line_char_index:expr) => {
         Position {
             full_index: $full_index,
-            line_number: $line_number,
+            line_idx: $line_idx,
             line_char_index: $line_char_index,
         }
     };
@@ -48,11 +52,11 @@ macro_rules! position {
 
 #[macro_export]
 macro_rules! span {
-    (start = ($st_full_index:expr, $st_line_number:expr, $st_line_char_index:expr),
-         end = ($end_full_index:expr, $end_line_number:expr, $end_line_char_index:expr)) => {
+    (start = ($start_full_index:expr, $start_line_idx:expr, $start_line_char_index:expr),
+         end = ($end_full_index:expr, $end_line_idx:expr, $end_line_char_index:expr)) => {
         Span {
-            start: position!($st_full_index, $st_line_number, $st_line_char_index),
-            end: position!($end_full_index, $end_line_number, $end_line_char_index),
+            start: position!($start_full_index, $start_line_idx, $start_line_char_index),
+            end: position!($end_full_index, $end_line_idx, $end_line_char_index),
         }
     };
 }

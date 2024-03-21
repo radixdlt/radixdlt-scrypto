@@ -2053,7 +2053,7 @@ mod tests {
                     expected_type: vec![ast::ValueKind::String],
                     actual: ast::Value::U32(100),
                 },
-                span: span!(start = (8, 1, 8), end = (14, 1, 14)),
+                span: span!(start = (8, 0, 8), end = (14, 0, 14)),
             }
         );
         generate_value_error!(
@@ -2062,7 +2062,7 @@ mod tests {
                 error_kind: GeneratorErrorKind::InvalidGlobalAddress(
                     "invalid_package_address".into(),
                 ),
-                span: span!(start = (8, 1, 8), end = (33, 1, 33))
+                span: span!(start = (8, 0, 8), end = (33, 0, 33))
             }
         );
         generate_value_error!(
@@ -2072,7 +2072,7 @@ mod tests {
                     actual: "invalid_decimal".to_string(),
                     err: "InvalidDigit".to_string(),
                 },
-                span: span!(start = (8, 1, 8), end = (25, 1, 25))
+                span: span!(start = (8, 0, 8), end = (25, 0, 25))
             }
         );
         generate_value_error!(
@@ -2082,7 +2082,7 @@ mod tests {
                     actual: "i".to_string(),
                     err: "InvalidDigit".to_string(),
                 },
-                span: span!(start = (8, 1, 8), end = (11, 1, 11))
+                span: span!(start = (8, 0, 8), end = (11, 0, 11))
             }
         );
 
@@ -2094,7 +2094,7 @@ mod tests {
                     actual: "🤓".to_string(),
                     err: "InvalidDigit".to_string(),
                 },
-                span: span!(start = (8, 1, 8), end = (11, 1, 11))
+                span: span!(start = (8, 0, 8), end = (11, 0, 11))
             }
         );
 
@@ -2105,7 +2105,7 @@ mod tests {
                     actual: "\u{1f469}".to_string(), // this is a value of '👩'
                     err: "InvalidDigit".to_string(),
                 },
-                span: span!(start = (8, 1, 8), end = (22, 1, 22))
+                span: span!(start = (8, 0, 8), end = (22, 0, 22))
             }
         );
         generate_value_error!(
@@ -2115,7 +2115,7 @@ mod tests {
                     actual: "👩".to_string(),
                     err: "InvalidDigit".to_string(),
                 },
-                span: span!(start = (8, 1, 8), end = (11, 1, 11))
+                span: span!(start = (8, 0, 8), end = (11, 0, 11))
             }
         );
     }
@@ -2636,7 +2636,7 @@ mod tests {
                 actual: 21,
                 max: 20,
             },
-            span: span!(start = (231, 1, 231), end = (236, 1, 236)),
+            span: span!(start = (231, 0, 231), end = (236, 0, 236)),
         });
 
         match result {

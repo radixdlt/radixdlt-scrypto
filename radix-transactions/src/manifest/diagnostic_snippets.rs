@@ -13,12 +13,12 @@ pub fn create_snippet(
     let lines_cnt = s.lines().count();
 
     // Surround span with few lines for more context
-    let line_start = if span.start.line_number > 5 {
-        span.start.line_number - 5
+    let line_start = if span.start.line_number() > 5 {
+        span.start.line_number() - 5
     } else {
         1
     };
-    let line_end = min(span.end.line_number + 5, lines_cnt);
+    let line_end = min(span.end.line_number() + 5, lines_cnt);
 
     let mut source = String::new();
     let mut skipped_chars = 0;
