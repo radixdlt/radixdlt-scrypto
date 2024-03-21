@@ -29,6 +29,18 @@ pub struct ParserError {
     pub span: Span,
 }
 
+impl ParserError {
+    fn unexpected_token(token: TokenWithSpan, expected: TokenType) -> Self {
+        Self {
+            error_kind: ParserErrorKind::UnexpectedToken {
+                expected,
+                actual: token.token,
+            },
+            span: token.span,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenType {
     Instruction,
@@ -426,13 +438,10 @@ macro_rules! advance_match {
     ( $self:expr, $expected:expr ) => {{
         let token = $self.advance()?;
         if token.token != $expected {
-            return Err(ParserError {
-                error_kind: ParserErrorKind::UnexpectedToken {
-                    expected: TokenType::Exact($expected),
-                    actual: token.token,
-                },
-                span: token.span,
-            });
+            return Err(ParserError::unexpected_token(
+                token,
+                TokenType::Exact($expected),
+            ));
         }
     }};
 }
@@ -557,23 +566,11 @@ impl Parser {
     pub fn parse_instruction(&mut self) -> Result<InstructionWithSpan, ParserError> {
         let token = self.advance()?;
         let instruction_ident = match &token.token {
-            Token::Ident(ident_str) => {
-                InstructionIdent::from_ident(ident_str).ok_or(ParserError {
-                    error_kind: ParserErrorKind::UnexpectedToken {
-                        expected: TokenType::Instruction,
-                        actual: token.token,
-                    },
-                    span: token.span,
-                })?
-            }
+            Token::Ident(ident_str) => InstructionIdent::from_ident(ident_str).ok_or(
+                ParserError::unexpected_token(token.clone(), TokenType::Instruction),
+            )?,
             _ => {
-                return Err(ParserError {
-                    error_kind: ParserErrorKind::UnexpectedToken {
-                        expected: TokenType::Instruction,
-                        actual: token.token,
-                    },
-                    span: token.span,
-                });
+                return Err(ParserError::unexpected_token(token, TokenType::Instruction));
             }
         };
         let instruction_start = token.span.start;
@@ -865,13 +862,9 @@ impl Parser {
             Token::I128Literal(value) => Value::I128(*value),
             Token::StringLiteral(value) => Value::String(value.clone()),
             Token::Ident(ident_str) => {
-                let value_ident = SborValueIdent::from_ident(ident_str).ok_or(ParserError {
-                    error_kind: ParserErrorKind::UnexpectedToken {
-                        expected: TokenType::Value,
-                        actual: token.token.clone(),
-                    },
-                    span: token.span,
-                })?;
+                let value_ident = SborValueIdent::from_ident(ident_str).ok_or(
+                    ParserError::unexpected_token(token.clone(), TokenType::Value),
+                )?;
                 match value_ident {
                     SborValueIdent::Enum => self.parse_enum_content()?,
                     SborValueIdent::Array => self.parse_array_content()?,
@@ -916,13 +909,7 @@ impl Parser {
                 }
             }
             _ => {
-                return Err(ParserError {
-                    error_kind: ParserErrorKind::UnexpectedToken {
-                        expected: TokenType::Value,
-                        actual: token.token,
-                    },
-                    span: token.span,
-                });
+                return Err(ParserError::unexpected_token(token, TokenType::Value));
             }
         };
         self.track_stack_depth_decrease()?;
@@ -947,13 +934,10 @@ impl Parser {
                     span: discriminator_token.span,
                 })?,
             _ => {
-                return Err(ParserError {
-                    error_kind: ParserErrorKind::UnexpectedToken {
-                        expected: TokenType::EnumDiscriminator,
-                        actual: discriminator_token.token,
-                    },
-                    span: discriminator_token.span,
-                })
+                return Err(ParserError::unexpected_token(
+                    discriminator_token,
+                    TokenType::EnumDiscriminator,
+                ))
             }
         };
         advance_match!(self, Token::GreaterThan);
@@ -1076,14 +1060,9 @@ impl Parser {
         let token = self.advance()?;
         let value_kind = match &token.token {
             Token::Ident(ident_str) => {
-                let value_kind_ident =
-                    SborValueKindIdent::from_ident(&ident_str).ok_or(ParserError {
-                        error_kind: ParserErrorKind::UnexpectedToken {
-                            expected: TokenType::ValueKind,
-                            actual: token.token.clone(),
-                        },
-                        span: token.span,
-                    })?;
+                let value_kind_ident = SborValueKindIdent::from_ident(&ident_str).ok_or(
+                    ParserError::unexpected_token(token.clone(), TokenType::ValueKind),
+                )?;
                 match value_kind_ident {
                     // ==============
                     // Simple basic value kinds
@@ -1131,13 +1110,7 @@ impl Parser {
                 }
             }
             _ => {
-                return Err(ParserError {
-                    error_kind: ParserErrorKind::UnexpectedToken {
-                        expected: TokenType::ValueKind,
-                        actual: token.token,
-                    },
-                    span: token.span,
-                });
+                return Err(ParserError::unexpected_token(token, TokenType::ValueKind));
             }
         };
         Ok(ValueKindWithSpan {
