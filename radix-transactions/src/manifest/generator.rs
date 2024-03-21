@@ -1756,7 +1756,12 @@ pub fn generator_error_diagnostics(
             expected_type,
             actual,
         } => {
-            // TODO: Consider better messages for aliases (eg. Bytes)
+            // TODO: Consider better messages for aliases
+            // eg. Bytes are reported as follows:
+            //   error: expected String, found Array
+            //     ...
+            //   12 |       Bytes(1u32),
+            //      |       ^^^^^ expected String
             let title = format!("expected {}, found {}", expected_type, actual.value_kind());
             let label = format!("expected {}", expected_type);
             (title, label)
