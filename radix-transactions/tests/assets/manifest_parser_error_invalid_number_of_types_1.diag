@@ -6,7 +6,7 @@
 [1m[94m22 |[0m     )
 [1m[94m23 |[0m     Tuple(
 [1m[94m24 |[0m         Map<String, Tuple, Tuple>(
-[1m[94m   |[0m[1m[91m             ^^^^^^^^^^^^^^^^^^^^[0m [1m[91minvalid number of types[0m
+[1m[94m   |[0m[1m[91m             ^^^^^^^^^^^^^^^^^^^^[0m [1m[91mexpected 2 number of types[0m
 [1m[94m25 |[0m         "name" => Tuple(
 [1m[94m26 |[0m                 Some(Enum<Metadata::String>("MyResource")),
 [1m[94m27 |[0m                 true

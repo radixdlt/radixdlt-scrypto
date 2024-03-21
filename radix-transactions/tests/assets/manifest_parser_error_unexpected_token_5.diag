@@ -6,6 +6,6 @@
 [1m[94m 7 |[0m     "method_with_no_package_royalty"
 [1m[94m 8 |[0m     Enum<0u8>();
 [1m[94m 9 |[0m     true
-[1m[94m   |[0m[1m[91m     ^^^^[0m [1m[91munexpected token[0m
+[1m[94m   |[0m[1m[91m     ^^^^[0m [1m[91mexpected an instruction[0m
 [1m[94m10 |[0m ;
 [1m[94m   |[0m

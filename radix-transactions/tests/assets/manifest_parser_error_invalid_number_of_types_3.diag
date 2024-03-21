@@ -6,6 +6,6 @@
 [1m[94m 8 |[0m     "some_method"
 [1m[94m 9 |[0m     # Invalid array specification
 [1m[94m10 |[0m     Array<>
-[1m[94m   |[0m[1m[91m          ^^[0m [1m[91minvalid number of types[0m
+[1m[94m   |[0m[1m[91m          ^^[0m [1m[91mexpected 1 number of types[0m
 [1m[94m11 |[0m ;
 [1m[94m   |[0m

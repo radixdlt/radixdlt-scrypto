@@ -6,7 +6,7 @@
 [1m[94m 6 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
 [1m[94m 7 |[0m     "some_method"
 [1m[94m 8 |[0m     Some("radix", "is", "fun")
-[1m[94m   |[0m[1m[91m          ^^^^^^^^^^^^^^^^^^^^[0m [1m[91minvalid number of values[0m
+[1m[94m   |[0m[1m[91m          ^^^^^^^^^^^^^^^^^^^^[0m [1m[91mexpected 1 number of values[0m
 [1m[94m 9 |[0m     Enum<0u8>()
 [1m[94m10 |[0m ;
 [1m[94m   |[0m
