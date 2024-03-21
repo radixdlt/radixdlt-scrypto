@@ -494,6 +494,11 @@ pub struct ValueKindWithSpan {
     pub span: Span,
 }
 
+/// In case of composite Value variants, eg. Enum, Tuple
+/// span information of the delimiters such as (, ) or <, >
+/// commas, discriminators is not stored.
+/// This is acceptable, since we still are able to produce error messages,
+/// which are precise enough.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValueWithSpan {
     pub value: Value,
