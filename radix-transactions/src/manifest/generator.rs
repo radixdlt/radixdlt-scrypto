@@ -64,15 +64,15 @@ use sbor::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorErrorKind {
     InvalidAstType {
-        expected_type: ast::ValueKind,
+        expected_value_kind: ast::ValueKind,
         actual: ast::ValueKind,
     },
     InvalidAstValue {
-        expected_type: Vec<ast::ValueKind>,
+        expected_value_kind: Vec<ast::ValueKind>,
         actual: ast::Value,
     },
     UnexpectedValue {
-        expected_type: ManifestValueKind,
+        expected_value_kind: ManifestValueKind,
         actual: ast::Value,
     },
     InvalidPackageAddress(String),
@@ -899,7 +899,7 @@ macro_rules! invalid_type {
     ( $span:expr, $v:expr, $($exp:expr),+ ) => {
         Err(GeneratorError {
             error_kind: GeneratorErrorKind::InvalidAstValue {
-                expected_type: vec!($($exp),+),
+                expected_value_kind: vec!($($exp),+),
                 actual: $v.clone(),
             },
             span: $span,
@@ -1433,7 +1433,7 @@ fn generate_non_fungible_local_ids(
             if kind.value_kind != ast::ValueKind::NonFungibleLocalId {
                 return Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidAstType {
-                        expected_type: ast::ValueKind::NonFungibleLocalId,
+                        expected_value_kind: ast::ValueKind::NonFungibleLocalId,
                         actual: kind.value_kind.clone(),
                     },
                     span: kind.span,
@@ -1462,7 +1462,7 @@ fn generate_byte_vec_from_hex(value: &ast::ValueWithSpan) -> Result<Vec<u8>, Gen
 
 pub fn generate_value<B>(
     value_with_span: &ast::ValueWithSpan,
-    expected_type: Option<ManifestValueKind>,
+    expected_value_kind: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
     address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
@@ -1470,12 +1470,12 @@ pub fn generate_value<B>(
 where
     B: IsBlobProvider,
 {
-    if let Some(ty) = expected_type {
-        if ty != value_with_span.value.value_kind() {
+    if let Some(value_kind) = expected_value_kind {
+        if value_kind != value_with_span.value.value_kind() {
             return Err(GeneratorError {
                 span: value_with_span.span,
                 error_kind: GeneratorErrorKind::UnexpectedValue {
-                    expected_type: ty,
+                    expected_value_kind: value_kind,
                     actual: value_with_span.value.clone(),
                 },
             });
@@ -1718,42 +1718,42 @@ pub fn generator_error_diagnostics(
 ) -> String {
     let (title, label) = match err.error_kind {
         GeneratorErrorKind::InvalidAstType {
-            expected_type,
+            expected_value_kind,
             actual,
         } => {
             let title = format!(
                 "expected {}, found {}",
-                expected_type.value_kind(),
+                expected_value_kind.value_kind(),
                 actual.value_kind()
             );
-            let label = format!("expected {}", expected_type.value_kind());
+            let label = format!("expected {}", expected_value_kind.value_kind());
             (title, label)
         }
         GeneratorErrorKind::InvalidAstValue {
-            expected_type,
+            expected_value_kind,
             actual,
         } => {
-            let mut types: Vec<String> = vec![];
+            let mut value_kinds: Vec<String> = vec![];
 
             // Remove potential duplicates.
             // Duplicates might occure due to aliases,
             // eg. PackageAddress, ComponentAddress are both Address
-            for ty in expected_type.iter() {
+            for ty in expected_value_kind.iter() {
                 let ty = ty.value_kind().to_string();
-                if !types.contains(&ty) {
-                    types.push(ty)
+                if !value_kinds.contains(&ty) {
+                    value_kinds.push(ty)
                 }
             }
             let title = format!(
                 "expected {}, found {}",
-                types.join(" or "),
+                value_kinds.join(" or "),
                 actual.value_kind()
             );
-            let label = format!("expected {}", types.join(" or "));
+            let label = format!("expected {}", value_kinds.join(" or "));
             (title, label)
         }
         GeneratorErrorKind::UnexpectedValue {
-            expected_type,
+            expected_value_kind,
             actual,
         } => {
             // TODO: Consider better messages for aliases
@@ -1762,8 +1762,12 @@ pub fn generator_error_diagnostics(
             //     ...
             //   12 |       Bytes(1u32),
             //      |       ^^^^^ expected String
-            let title = format!("expected {}, found {}", expected_type, actual.value_kind());
-            let label = format!("expected {}", expected_type);
+            let title = format!(
+                "expected {}, found {}",
+                expected_value_kind,
+                actual.value_kind()
+            );
+            let label = format!("expected {}", expected_value_kind);
             (title, label)
         }
         GeneratorErrorKind::InvalidPackageAddress(string) => {
@@ -2056,7 +2060,7 @@ mod tests {
             r#"Address(100u32)"#,
             GeneratorError {
                 error_kind: GeneratorErrorKind::InvalidAstValue {
-                    expected_type: vec![ast::ValueKind::String],
+                    expected_value_kind: vec![ast::ValueKind::String],
                     actual: ast::Value::U32(100),
                 },
                 span: span!(start = (8, 0, 8), end = (14, 0, 14)),
