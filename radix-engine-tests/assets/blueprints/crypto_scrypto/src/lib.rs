@@ -15,6 +15,14 @@ mod component_module {
             CryptoUtils::bls12381_v1_verify(message, pub_key, signature)
         }
 
+        pub fn bls12381_v1_verify_in_wasm(
+            message: Vec<u8>,
+            pub_key: Bls12381G1PublicKey,
+            signature: Bls12381G2Signature,
+        ) -> bool {
+            verify_bls12381_v1(&message, &pub_key, &signature)
+        }
+
         pub fn bls12381_v1_aggregate_verify(
             pub_keys_msgs: Vec<(Bls12381G1PublicKey, Vec<u8>)>,
             signature: Bls12381G2Signature,

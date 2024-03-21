@@ -70,6 +70,10 @@ harness = false
 name = "transaction_validation"
 harness = false
 
+[[bench]]
+name = "wasm_vs_native"
+harness = false
+
 [lib]
 bench = false
 test = false
