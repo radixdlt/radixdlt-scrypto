@@ -453,8 +453,8 @@ pub fn lexer_error_diagnostics(
             "invalid integer value".to_string(),
         ),
         LexerErrorKind::InvalidUnicode(value) => (
-            format!("invalid unicode point {}", value),
-            "invalid unicode".to_string(),
+            format!("invalid unicode code point {}", value),
+            "invalid unicode code point".to_string(),
         ),
         LexerErrorKind::MissingUnicodeSurrogate(value) => (
             format!("missing unicode '{:X}' surrogate pair", value),
