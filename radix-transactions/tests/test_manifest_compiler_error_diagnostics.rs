@@ -234,6 +234,7 @@ fn test_manifest_generator_error_invalid_global_address() {
 fn test_manifest_generator_error_invalid_package_address() {
     // InvalidPackageAddress
     check_manifest!("manifest_generator_error_invalid_package_address_1");
+    check_manifest!("manifest_generator_error_invalid_package_address_2");
 }
 
 #[test]

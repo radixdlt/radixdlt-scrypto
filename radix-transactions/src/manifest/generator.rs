@@ -984,7 +984,7 @@ fn generate_package_address(
                     }
                 }
                 return Err(GeneratorError {
-                    error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
+                    error_kind: GeneratorErrorKind::InvalidPackageAddress(s.into()),
                     span: inner.span,
                 });
             }
@@ -1772,7 +1772,7 @@ pub fn generator_error_diagnostics(
         }
         GeneratorErrorKind::InvalidPackageAddress(string) => {
             let title = format!("invalid package address '{}'", string);
-            (title, "".to_string())
+            (title, "invalid package address".to_string())
         }
         GeneratorErrorKind::InvalidDecimal { actual, err } => {
             let title = format!("invalid decimal '{}' - {}", actual, err);
