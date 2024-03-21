@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1munknown enum discriminator found `Metadata::StingArray`[0m
+[1m[91merror[0m: [1munknown enum discriminator found 'Metadata::StingArray'[0m
 [1m[94m   |[0m
 [1m[94m 3 |[0m     "lock_fee"
 [1m[94m 4 |[0m ;

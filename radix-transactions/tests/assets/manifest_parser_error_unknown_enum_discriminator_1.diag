@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1munknown enum discriminator found `OwnerRol::Updatable`[0m
+[1m[91merror[0m: [1munknown enum discriminator found 'OwnerRol::Updatable'[0m
 [1m[94m   |[0m
 [1m[94m 1 |[0m CALL_METHOD
 [1m[94m 2 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
