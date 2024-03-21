@@ -16,4 +16,14 @@ MINT_FUNGIBLE
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
     "deposit_batch"
+    Expression("ENTIRE_WORKTOP");
+
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "deposit_batch"
+    Expression("ENTIRE_AUTH_ZONE");
+
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "deposit_batch"
     Expression("FULL_WORKTOP");

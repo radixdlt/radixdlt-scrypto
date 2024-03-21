@@ -1375,7 +1375,7 @@ fn generate_expression(value: &ast::ValueWithSpan) -> Result<ManifestExpression,
         ast::Value::Expression(inner) => match &inner.value {
             ast::Value::String(s) => match s.as_str() {
                 "ENTIRE_WORKTOP" => Ok(ManifestExpression::EntireWorktop),
-                "ENTIRE_AUT" => Ok(ManifestExpression::EntireAuthZone),
+                "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
                 _ => Err(GeneratorError {
                     error_kind: GeneratorErrorKind::InvalidExpression(s.into()),
                     span: inner.span,
@@ -2045,6 +2045,12 @@ mod tests {
             r#"Expression("ENTIRE_WORKTOP")"#,
             Value::Custom {
                 value: ManifestCustomValue::Expression(ManifestExpression::EntireWorktop)
+            }
+        );
+        generate_value_ok!(
+            r#"Expression("ENTIRE_AUTH_ZONE")"#,
+            Value::Custom {
+                value: ManifestCustomValue::Expression(ManifestExpression::EntireAuthZone)
             }
         );
     }
