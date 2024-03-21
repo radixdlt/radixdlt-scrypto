@@ -102,14 +102,14 @@ impl fmt::Display for TokenKind {
             TokenKind::U64Literal(value) => write!(f, "'{:?}u64'", value),
             TokenKind::U128Literal(value) => write!(f, "'{:?}u128'", value),
             TokenKind::StringLiteral(value) => write!(f, "{:?}", value),
-            TokenKind::Ident(value) => write!(f, "ident '{}'", value),
-            TokenKind::OpenParenthesis => write!(f, "token '('"),
-            TokenKind::CloseParenthesis => write!(f, "token ')'",),
-            TokenKind::LessThan => write!(f, "token '<'"),
-            TokenKind::GreaterThan => write!(f, "token '>'",),
-            TokenKind::Comma => write!(f, "token ','"),
-            TokenKind::Semicolon => write!(f, "token ';'",),
-            TokenKind::FatArrow => write!(f, "token '=>'"),
+            TokenKind::Ident(value) => write!(f, "'{}'", value),
+            TokenKind::OpenParenthesis => write!(f, "'('"),
+            TokenKind::CloseParenthesis => write!(f, "')'",),
+            TokenKind::LessThan => write!(f, "'<'"),
+            TokenKind::GreaterThan => write!(f, "'>'",),
+            TokenKind::Comma => write!(f, "','"),
+            TokenKind::Semicolon => write!(f, "';'",),
+            TokenKind::FatArrow => write!(f, "'=>'"),
         }
     }
 }
