@@ -14,7 +14,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Blob("invalid_hash")
+    Blob("aabbcc")
     Map<String, Tuple>()
     Some(AddressReservation("my_reservation"))
 ;

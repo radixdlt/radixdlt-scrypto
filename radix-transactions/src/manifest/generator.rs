@@ -1390,7 +1390,9 @@ fn generate_expression(value: &ast::ValueWithSpan) -> Result<ManifestExpression,
 fn translate_parse_hash_error(err: ParseHashError) -> String {
     match err {
         ParseHashError::InvalidHex(_) => "invalid hex value".to_string(),
-        ParseHashError::InvalidLength(len) => format!("invalid hash length '{}'", len),
+        ParseHashError::InvalidLength { actual, expected } => {
+            format!("invalid hash length {}, expected {}", actual, expected)
+        }
     }
 }
 
