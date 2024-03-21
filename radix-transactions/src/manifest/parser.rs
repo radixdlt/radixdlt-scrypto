@@ -16,7 +16,7 @@ pub const PARSER_MAX_DEPTH: usize = MANIFEST_SBOR_V1_MAX_DEPTH - 4;
 pub enum ParserErrorKind {
     UnexpectedEof,
     UnexpectedToken { expected: TokenType, actual: Token },
-    UnexpectedTokenOrMissingSemicolon { expected: TokenType, actual: Token },
+    InvalidArgument { expected: TokenType, actual: Token },
     InvalidNumberOfValues { expected: usize, actual: usize },
     InvalidNumberOfTypes { expected: usize, actual: usize },
     UnknownEnumDiscriminator { actual: String },
@@ -532,17 +532,18 @@ impl Parser {
             match result {
                 Ok(value) => args.push(value),
                 Err(err) => match err.error_kind {
-                    // parse_value() is recursive so we need to check the stack depth to determine
-                    // if semicolon might be missing
+                    // We wish to return a more specific error if the instruction's argument list is invalid.
+                    // We check if the error from parse_value comes from parsing the argument itself
+                    // by verifying it:
+                    // (a) Was an UnexpectedToken error when a Value was expected.
+                    // (b) It originated at a stack_depth directly under the argument list, so the expected
+                    // value was an argument rather than an internal value inside an argument.
                     ParserErrorKind::UnexpectedToken { expected, actual }
                         if expected == TokenType::Value
                             && (stack_depth + 1 == self.stack_depth) =>
                     {
                         return Err(ParserError {
-                            error_kind: ParserErrorKind::UnexpectedTokenOrMissingSemicolon {
-                                expected,
-                                actual,
-                            },
+                            error_kind: ParserErrorKind::InvalidArgument { expected, actual },
                             span: err.span,
                         })
                     }
@@ -1158,19 +1159,26 @@ pub fn parser_error_diagnostics(
         ),
         ParserErrorKind::UnexpectedToken { expected, actual } => {
             let title = format!("expected {}, found {}", expected, actual);
-            (title, "unexpected token".to_string())
+            let label = format!("expected {}", expected);
+            (title, label)
         }
-        ParserErrorKind::UnexpectedTokenOrMissingSemicolon { expected, actual } => {
-            let title = format!("expected `;` or {}, found {}", expected, actual);
-            (title, "unexpected token".to_string())
+        ParserErrorKind::InvalidArgument { expected, actual } => {
+            let title = format!(
+                "expected {} or ';' to end an argument list, found {}",
+                expected, actual
+            );
+            let label = format!("expected {} or ';' to end an argument list", expected);
+            (title, label)
         }
         ParserErrorKind::InvalidNumberOfValues { expected, actual } => {
             let title = format!("expected {} number of values, found {}", expected, actual);
-            (title, "invalid number of values".to_string())
+            let label = format!("expected {} number of values", expected);
+            (title, label)
         }
         ParserErrorKind::InvalidNumberOfTypes { expected, actual } => {
             let title = format!("expected {} number of types, found {}", expected, actual);
-            (title, "invalid number of types".to_string())
+            let label = format!("expected {} number of types", expected);
+            (title, label)
         }
         ParserErrorKind::MaxDepthExceeded { actual, max } => {
             let title = format!("manifest actual depth {} exceeded max {}", actual, max);
