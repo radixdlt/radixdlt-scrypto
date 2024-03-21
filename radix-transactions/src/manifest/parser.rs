@@ -425,27 +425,6 @@ pub struct Parser {
     stack_depth: usize,
 }
 
-#[macro_export]
-macro_rules! advance_ok {
-    ( $self:expr, $v:expr ) => {{
-        $self.advance()?;
-        Ok($v)
-    }};
-}
-
-#[macro_export]
-macro_rules! advance_match {
-    ( $self:expr, $expected:expr ) => {{
-        let token = $self.advance()?;
-        if token.token != $expected {
-            return Err(ParserError::unexpected_token(
-                token,
-                TokenType::Exact($expected),
-            ));
-        }
-    }};
-}
-
 impl Parser {
     pub fn new(tokens: Vec<TokenWithSpan>, max_depth: usize) -> Result<Self, ParserError> {
         if tokens.is_empty() {
@@ -521,6 +500,19 @@ impl Parser {
         let token = self.peek()?;
         self.current += 1;
         Ok(token)
+    }
+
+    fn advance_exact(&mut self, expected: Token) -> Result<TokenWithSpan, ParserError> {
+        let token = self.advance()?;
+
+        if token.token != expected {
+            Err(ParserError::unexpected_token(
+                token,
+                TokenType::Exact(expected),
+            ))
+        } else {
+            Ok(token)
+        }
     }
 
     pub fn parse_manifest(&mut self) -> Result<Vec<InstructionWithSpan>, ParserError> {
@@ -829,9 +821,8 @@ impl Parser {
                 args: self.parse_instruction_arguments()?,
             },
         };
-        let instruction_end = self.peek()?.span.end;
 
-        advance_match!(self, Token::Semicolon);
+        let instruction_end = self.advance_exact(Token::Semicolon)?.span.end;
 
         Ok(InstructionWithSpan {
             instruction,
@@ -920,7 +911,8 @@ impl Parser {
     }
 
     pub fn parse_enum_content(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, Token::LessThan);
+        self.advance_exact(Token::LessThan)?;
+
         let discriminator_token = self.advance()?;
         let discriminator = match discriminator_token.token {
             Token::U8Literal(discriminator) => discriminator,
@@ -940,7 +932,7 @@ impl Parser {
                 ))
             }
         };
-        advance_match!(self, Token::GreaterThan);
+        self.advance_exact(Token::GreaterThan)?;
 
         let fields = self.parse_values_any(Token::OpenParenthesis, Token::CloseParenthesis)?;
 
@@ -964,18 +956,19 @@ impl Parser {
 
     pub fn parse_map_content(&mut self) -> Result<Value, ParserError> {
         let generics = self.parse_generics(2)?;
-        advance_match!(self, Token::OpenParenthesis);
+        self.advance_exact(Token::OpenParenthesis)?;
         let mut entries = Vec::new();
+
         while self.peek()?.token != Token::CloseParenthesis {
             let key = self.parse_value()?;
-            advance_match!(self, Token::FatArrow);
+            self.advance_exact(Token::FatArrow)?;
             let value = self.parse_value()?;
             entries.push((key, value));
             if self.peek()?.token != Token::CloseParenthesis {
-                advance_match!(self, Token::Comma);
+                self.advance_exact(Token::Comma)?;
             }
         }
-        advance_match!(self, Token::CloseParenthesis);
+        self.advance_exact(Token::CloseParenthesis)?;
         Ok(Value::Map(
             generics[0].clone(),
             generics[1].clone(),
@@ -989,15 +982,15 @@ impl Parser {
         open: Token,
         close: Token,
     ) -> Result<Vec<ValueWithSpan>, ParserError> {
-        advance_match!(self, open);
+        self.advance_exact(open)?;
         let mut values = Vec::new();
         while self.peek()?.token != close {
             values.push(self.parse_value()?);
             if self.peek()?.token != close {
-                advance_match!(self, Token::Comma);
+                self.advance_exact(Token::Comma)?;
             }
         }
-        advance_match!(self, close);
+        self.advance_exact(close)?;
         Ok(values)
     }
 
@@ -1020,20 +1013,18 @@ impl Parser {
     }
 
     fn parse_generics(&mut self, n: usize) -> Result<Vec<ValueKindWithSpan>, ParserError> {
-        let mut span_start = self.peek()?.span.start;
-        advance_match!(self, Token::LessThan);
+        let mut span_start = self.advance_exact(Token::LessThan)?.span.start;
         let mut value_kinds = Vec::new();
 
         while self.peek()?.token != Token::GreaterThan {
             let token_value_kind = self.parse_value_kind()?;
             value_kinds.push(token_value_kind);
             if self.peek()?.token != Token::GreaterThan {
-                advance_match!(self, Token::Comma);
+                self.advance_exact(Token::Comma)?;
             }
         }
 
-        let mut span_end = self.peek()?.span.end;
-        advance_match!(self, Token::GreaterThan);
+        let mut span_end = self.advance_exact(Token::GreaterThan)?.span.end;
 
         if value_kinds.len() != 0 {
             span_start = value_kinds[0].span.start;
