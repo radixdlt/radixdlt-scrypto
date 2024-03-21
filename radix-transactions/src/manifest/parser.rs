@@ -4,7 +4,7 @@ use crate::manifest::ast::{
 use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
-use crate::manifest::token::{Position, Span, Token, TokenKind};
+use crate::manifest::token::{Position, Span, Token, TokenWithSpan};
 use crate::{position, span};
 use radix_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 use sbor::prelude::*;
@@ -16,29 +16,12 @@ pub const PARSER_MAX_DEPTH: usize = MANIFEST_SBOR_V1_MAX_DEPTH - 4;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParserErrorKind {
     UnexpectedEof,
-    UnexpectedToken {
-        expected: TokenType,
-        actual: TokenKind,
-    },
-    UnexpectedTokenOrMissingSemicolon {
-        expected: TokenType,
-        actual: TokenKind,
-    },
-    InvalidNumberOfValues {
-        expected: usize,
-        actual: usize,
-    },
-    InvalidNumberOfTypes {
-        expected: usize,
-        actual: usize,
-    },
-    UnknownEnumDiscriminator {
-        actual: String,
-    },
-    MaxDepthExceeded {
-        actual: usize,
-        max: usize,
-    },
+    UnexpectedToken { expected: TokenType, actual: Token },
+    UnexpectedTokenOrMissingSemicolon { expected: TokenType, actual: Token },
+    InvalidNumberOfValues { expected: usize, actual: usize },
+    InvalidNumberOfTypes { expected: usize, actual: usize },
+    UnknownEnumDiscriminator { actual: String },
+    MaxDepthExceeded { actual: usize, max: usize },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +36,7 @@ pub enum TokenType {
     Value,
     ValueKind,
     EnumDiscriminator,
-    Exact(TokenKind),
+    Exact(Token),
 }
 
 impl fmt::Display for TokenType {
@@ -65,7 +48,7 @@ impl fmt::Display for TokenType {
             TokenType::EnumDiscriminator => {
                 write!(f, "a u8 enum discriminator or valid discriminator alias")
             }
-            TokenType::Exact(token_kind) => write!(f, "exactly {}", token_kind),
+            TokenType::Exact(token) => write!(f, "exactly {}", token),
         }
     }
 }
@@ -425,7 +408,7 @@ impl SborValueKindIdent {
 }
 
 pub struct Parser {
-    tokens: Vec<Token>,
+    tokens: Vec<TokenWithSpan>,
     current: usize,
     previous: usize,
     max_depth: usize,
@@ -444,11 +427,11 @@ macro_rules! advance_ok {
 macro_rules! advance_match {
     ( $self:expr, $expected:expr ) => {{
         let token = $self.advance()?;
-        if token.kind != $expected {
+        if token.token != $expected {
             return Err(ParserError {
                 error_kind: ParserErrorKind::UnexpectedToken {
                     expected: TokenType::Exact($expected),
-                    actual: token.kind,
+                    actual: token.token,
                 },
                 span: token.span,
             });
@@ -457,7 +440,7 @@ macro_rules! advance_match {
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>, max_depth: usize) -> Self {
+    pub fn new(tokens: Vec<TokenWithSpan>, max_depth: usize) -> Self {
         Self {
             tokens,
             current: 0,
@@ -494,7 +477,7 @@ impl Parser {
         self.current == self.tokens.len()
     }
 
-    pub fn peek(&mut self) -> Result<Token, ParserError> {
+    pub fn peek(&mut self) -> Result<TokenWithSpan, ParserError> {
         self.tokens.get(self.current).cloned().ok_or(ParserError {
             error_kind: ParserErrorKind::UnexpectedEof,
             span: match self.tokens.get(self.previous) {
@@ -507,7 +490,7 @@ impl Parser {
         })
     }
 
-    pub fn advance(&mut self) -> Result<Token, ParserError> {
+    pub fn advance(&mut self) -> Result<TokenWithSpan, ParserError> {
         let token = self.peek()?;
         self.previous = self.current;
         self.current += 1;
@@ -526,7 +509,7 @@ impl Parser {
 
     fn parse_values_till_semicolon(&mut self) -> Result<Vec<ValueWithSpan>, ParserError> {
         let mut values = Vec::new();
-        while self.peek()?.kind != TokenKind::Semicolon {
+        while self.peek()?.token != Token::Semicolon {
             let stack_depth = self.stack_depth;
             let result = self.parse_value();
             match result {
@@ -555,12 +538,12 @@ impl Parser {
 
     pub fn parse_instruction(&mut self) -> Result<InstructionWithSpan, ParserError> {
         let token = self.advance()?;
-        let instruction_ident = match &token.kind {
-            TokenKind::Ident(ident_str) => {
+        let instruction_ident = match &token.token {
+            Token::Ident(ident_str) => {
                 InstructionIdent::from_ident(ident_str).ok_or(ParserError {
                     error_kind: ParserErrorKind::UnexpectedToken {
                         expected: TokenType::Instruction,
-                        actual: token.kind,
+                        actual: token.token,
                     },
                     span: token.span,
                 })?
@@ -569,7 +552,7 @@ impl Parser {
                 return Err(ParserError {
                     error_kind: ParserErrorKind::UnexpectedToken {
                         expected: TokenType::Instruction,
-                        actual: token.kind,
+                        actual: token.token,
                     },
                     span: token.span,
                 });
@@ -833,7 +816,7 @@ impl Parser {
         };
         let instruction_end = self.peek()?.span.end;
 
-        advance_match!(self, TokenKind::Semicolon);
+        advance_match!(self, Token::Semicolon);
 
         Ok(InstructionWithSpan {
             instruction,
@@ -847,27 +830,27 @@ impl Parser {
     pub fn parse_value(&mut self) -> Result<ValueWithSpan, ParserError> {
         self.track_stack_depth_increase()?;
         let token = self.advance()?;
-        let value = match &token.kind {
+        let value = match &token.token {
             // ==============
             // Basic Types
             // ==============
-            TokenKind::BoolLiteral(value) => Value::Bool(*value),
-            TokenKind::U8Literal(value) => Value::U8(*value),
-            TokenKind::U16Literal(value) => Value::U16(*value),
-            TokenKind::U32Literal(value) => Value::U32(*value),
-            TokenKind::U64Literal(value) => Value::U64(*value),
-            TokenKind::U128Literal(value) => Value::U128(*value),
-            TokenKind::I8Literal(value) => Value::I8(*value),
-            TokenKind::I16Literal(value) => Value::I16(*value),
-            TokenKind::I32Literal(value) => Value::I32(*value),
-            TokenKind::I64Literal(value) => Value::I64(*value),
-            TokenKind::I128Literal(value) => Value::I128(*value),
-            TokenKind::StringLiteral(value) => Value::String(value.clone()),
-            TokenKind::Ident(ident_str) => {
+            Token::BoolLiteral(value) => Value::Bool(*value),
+            Token::U8Literal(value) => Value::U8(*value),
+            Token::U16Literal(value) => Value::U16(*value),
+            Token::U32Literal(value) => Value::U32(*value),
+            Token::U64Literal(value) => Value::U64(*value),
+            Token::U128Literal(value) => Value::U128(*value),
+            Token::I8Literal(value) => Value::I8(*value),
+            Token::I16Literal(value) => Value::I16(*value),
+            Token::I32Literal(value) => Value::I32(*value),
+            Token::I64Literal(value) => Value::I64(*value),
+            Token::I128Literal(value) => Value::I128(*value),
+            Token::StringLiteral(value) => Value::String(value.clone()),
+            Token::Ident(ident_str) => {
                 let value_ident = SborValueIdent::from_ident(ident_str).ok_or(ParserError {
                     error_kind: ParserErrorKind::UnexpectedToken {
                         expected: TokenType::Value,
-                        actual: token.kind.clone(),
+                        actual: token.token.clone(),
                     },
                     span: token.span,
                 })?;
@@ -918,7 +901,7 @@ impl Parser {
                 return Err(ParserError {
                     error_kind: ParserErrorKind::UnexpectedToken {
                         expected: TokenType::Value,
-                        actual: token.kind,
+                        actual: token.token,
                     },
                     span: token.span,
                 });
@@ -932,11 +915,11 @@ impl Parser {
     }
 
     pub fn parse_enum_content(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::LessThan);
+        advance_match!(self, Token::LessThan);
         let discriminator_token = self.advance()?;
-        let discriminator = match discriminator_token.kind {
-            TokenKind::U8Literal(discriminator) => discriminator,
-            TokenKind::Ident(discriminator) => KNOWN_ENUM_DISCRIMINATORS
+        let discriminator = match discriminator_token.token {
+            Token::U8Literal(discriminator) => discriminator,
+            Token::Ident(discriminator) => KNOWN_ENUM_DISCRIMINATORS
                 .get(discriminator.as_str())
                 .cloned()
                 .ok_or(ParserError {
@@ -949,16 +932,15 @@ impl Parser {
                 return Err(ParserError {
                     error_kind: ParserErrorKind::UnexpectedToken {
                         expected: TokenType::EnumDiscriminator,
-                        actual: discriminator_token.kind,
+                        actual: discriminator_token.token,
                     },
                     span: discriminator_token.span,
                 })
             }
         };
-        advance_match!(self, TokenKind::GreaterThan);
+        advance_match!(self, Token::GreaterThan);
 
-        let fields =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        let fields = self.parse_values_any(Token::OpenParenthesis, Token::CloseParenthesis)?;
 
         Ok(Value::Enum(discriminator, fields))
     }
@@ -967,31 +949,31 @@ impl Parser {
         let generics = self.parse_generics(1)?;
         Ok(Value::Array(
             generics[0].clone(),
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
+            self.parse_values_any(Token::OpenParenthesis, Token::CloseParenthesis)?,
         ))
     }
 
     pub fn parse_tuple_content(&mut self) -> Result<Value, ParserError> {
         Ok(Value::Tuple(self.parse_values_any(
-            TokenKind::OpenParenthesis,
-            TokenKind::CloseParenthesis,
+            Token::OpenParenthesis,
+            Token::CloseParenthesis,
         )?))
     }
 
     pub fn parse_map_content(&mut self) -> Result<Value, ParserError> {
         let generics = self.parse_generics(2)?;
-        advance_match!(self, TokenKind::OpenParenthesis);
+        advance_match!(self, Token::OpenParenthesis);
         let mut entries = Vec::new();
-        while self.peek()?.kind != TokenKind::CloseParenthesis {
+        while self.peek()?.token != Token::CloseParenthesis {
             let key = self.parse_value()?;
-            advance_match!(self, TokenKind::FatArrow);
+            advance_match!(self, Token::FatArrow);
             let value = self.parse_value()?;
             entries.push((key, value));
-            if self.peek()?.kind != TokenKind::CloseParenthesis {
-                advance_match!(self, TokenKind::Comma);
+            if self.peek()?.token != Token::CloseParenthesis {
+                advance_match!(self, Token::Comma);
             }
         }
-        advance_match!(self, TokenKind::CloseParenthesis);
+        advance_match!(self, Token::CloseParenthesis);
         Ok(Value::Map(
             generics[0].clone(),
             generics[1].clone(),
@@ -1002,15 +984,15 @@ impl Parser {
     /// Parse a comma-separated value list, enclosed by a pair of marks.
     fn parse_values_any(
         &mut self,
-        open: TokenKind,
-        close: TokenKind,
+        open: Token,
+        close: Token,
     ) -> Result<Vec<ValueWithSpan>, ParserError> {
         advance_match!(self, open);
         let mut values = Vec::new();
-        while self.peek()?.kind != close {
+        while self.peek()?.token != close {
             values.push(self.parse_value()?);
-            if self.peek()?.kind != close {
-                advance_match!(self, TokenKind::Comma);
+            if self.peek()?.token != close {
+                advance_match!(self, Token::Comma);
             }
         }
         advance_match!(self, close);
@@ -1018,8 +1000,7 @@ impl Parser {
     }
 
     fn parse_values_one(&mut self) -> Result<ValueWithSpan, ParserError> {
-        let values =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        let values = self.parse_values_any(Token::OpenParenthesis, Token::CloseParenthesis)?;
         if values.len() != 1 {
             Err(ParserError {
                 error_kind: ParserErrorKind::InvalidNumberOfValues {
@@ -1038,19 +1019,19 @@ impl Parser {
 
     fn parse_generics(&mut self, n: usize) -> Result<Vec<ValueKindWithSpan>, ParserError> {
         let mut span_start = self.peek()?.span.start;
-        advance_match!(self, TokenKind::LessThan);
+        advance_match!(self, Token::LessThan);
         let mut types = Vec::new();
 
-        while self.peek()?.kind != TokenKind::GreaterThan {
+        while self.peek()?.token != Token::GreaterThan {
             let token_value_kind = self.parse_type()?;
             types.push(token_value_kind);
-            if self.peek()?.kind != TokenKind::GreaterThan {
-                advance_match!(self, TokenKind::Comma);
+            if self.peek()?.token != Token::GreaterThan {
+                advance_match!(self, Token::Comma);
             }
         }
 
         let mut span_end = self.peek()?.span.end;
-        advance_match!(self, TokenKind::GreaterThan);
+        advance_match!(self, Token::GreaterThan);
 
         if types.len() != 0 {
             span_start = types[0].span.start;
@@ -1075,13 +1056,13 @@ impl Parser {
 
     fn parse_type(&mut self) -> Result<ValueKindWithSpan, ParserError> {
         let token = self.advance()?;
-        let value_kind = match &token.kind {
-            TokenKind::Ident(ident_str) => {
+        let value_kind = match &token.token {
+            Token::Ident(ident_str) => {
                 let value_kind_ident =
                     SborValueKindIdent::from_ident(&ident_str).ok_or(ParserError {
                         error_kind: ParserErrorKind::UnexpectedToken {
                             expected: TokenType::ValueKind,
-                            actual: token.kind.clone(),
+                            actual: token.token.clone(),
                         },
                         span: token.span,
                     })?;
@@ -1135,7 +1116,7 @@ impl Parser {
                 return Err(ParserError {
                     error_kind: ParserErrorKind::UnexpectedToken {
                         expected: TokenType::ValueKind,
-                        actual: token.kind,
+                        actual: token.token,
                     },
                     span: token.span,
                 });
@@ -1496,8 +1477,8 @@ mod tests {
             r#"Enum<0u8)"#,
             ParserError {
                 error_kind: ParserErrorKind::UnexpectedToken {
-                    expected: TokenType::Exact(TokenKind::GreaterThan),
-                    actual: TokenKind::CloseParenthesis,
+                    expected: TokenType::Exact(Token::GreaterThan),
+                    actual: Token::CloseParenthesis,
                 },
                 span: span!(start = (8, 1, 8), end = (9, 1, 9))
             }

@@ -1,6 +1,6 @@
 use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
-use crate::manifest::token::{Position, Span, Token, TokenKind};
+use crate::manifest::token::{Position, Span, Token, TokenWithSpan};
 use sbor::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -55,7 +55,7 @@ pub struct Lexer {
     current: Position,
 }
 
-pub fn tokenize(s: &str) -> Result<Vec<Token>, LexerError> {
+pub fn tokenize(s: &str) -> Result<Vec<TokenWithSpan>, LexerError> {
     let mut lexer = Lexer::new(s);
     let mut tokens = Vec::new();
     loop {
@@ -134,7 +134,7 @@ impl Lexer {
         c == ' ' || c == '\t' || c == '\r' || c == '\n'
     }
 
-    pub fn next_token(&mut self) -> Result<Option<Token>, LexerError> {
+    pub fn next_token(&mut self) -> Result<Option<TokenWithSpan>, LexerError> {
         // skip comment and whitespace
         let mut in_comment = false;
         while !self.is_eof() {
@@ -174,7 +174,7 @@ impl Lexer {
     }
 
     // TODO: consider using DFA
-    fn tokenize_number(&mut self) -> Result<Token, LexerError> {
+    fn tokenize_number(&mut self) -> Result<TokenWithSpan, LexerError> {
         let literal_start = self.current;
         let mut s = String::new();
 
@@ -209,55 +209,55 @@ impl Lexer {
             'i' => match self.advance_and_append(&mut t)? {
                 '1' => match self.advance_and_append(&mut t)? {
                     '2' => match self.advance_and_append(&mut t)? {
-                        '8' => self.parse_int(&s, "i128", TokenKind::I128Literal, literal_start),
+                        '8' => self.parse_int(&s, "i128", Token::I128Literal, literal_start),
                         _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                     },
-                    '6' => self.parse_int(&s, "i16", TokenKind::I16Literal, literal_start),
+                    '6' => self.parse_int(&s, "i16", Token::I16Literal, literal_start),
                     _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '3' => match self.advance_and_append(&mut t)? {
-                    '2' => self.parse_int(&s, "i32", TokenKind::I32Literal, literal_start),
+                    '2' => self.parse_int(&s, "i32", Token::I32Literal, literal_start),
                     _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '6' => match self.advance_and_append(&mut t)? {
-                    '4' => self.parse_int(&s, "i64", TokenKind::I64Literal, literal_start),
+                    '4' => self.parse_int(&s, "i64", Token::I64Literal, literal_start),
                     _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
-                '8' => self.parse_int(&s, "i8", TokenKind::I8Literal, literal_start),
+                '8' => self.parse_int(&s, "i8", Token::I8Literal, literal_start),
                 _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
             },
             'u' => match self.advance_and_append(&mut t)? {
                 '1' => match self.advance_and_append(&mut t)? {
                     '2' => match self.advance_and_append(&mut t)? {
-                        '8' => self.parse_int(&s, "u128", TokenKind::U128Literal, literal_start),
+                        '8' => self.parse_int(&s, "u128", Token::U128Literal, literal_start),
                         _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                     },
-                    '6' => self.parse_int(&s, "u16", TokenKind::U16Literal, literal_start),
+                    '6' => self.parse_int(&s, "u16", Token::U16Literal, literal_start),
                     _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '3' => match self.advance_and_append(&mut t)? {
-                    '2' => self.parse_int(&s, "u32", TokenKind::U32Literal, literal_start),
+                    '2' => self.parse_int(&s, "u32", Token::U32Literal, literal_start),
                     _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
                 '6' => match self.advance_and_append(&mut t)? {
-                    '4' => self.parse_int(&s, "u64", TokenKind::U64Literal, literal_start),
+                    '4' => self.parse_int(&s, "u64", Token::U64Literal, literal_start),
                     _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
-                '8' => self.parse_int(&s, "u8", TokenKind::U8Literal, literal_start),
+                '8' => self.parse_int(&s, "u8", Token::U8Literal, literal_start),
                 _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
             },
             _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
         }
-        .map(|kind| self.new_token(kind, literal_start, self.current))
+        .map(|token| self.new_token(token, literal_start, self.current))
     }
 
     fn parse_int<T>(
         &self,
         int: &str,
         ty: &str,
-        map: fn(T) -> TokenKind,
+        map: fn(T) -> Token,
         token_start: Position,
-    ) -> Result<TokenKind, LexerError>
+    ) -> Result<Token, LexerError>
     where
         T: FromStr,
         <T as FromStr>::Err: Display,
@@ -276,7 +276,7 @@ impl Lexer {
         })
     }
 
-    fn tokenize_string(&mut self) -> Result<Token, LexerError> {
+    fn tokenize_string(&mut self) -> Result<TokenWithSpan, LexerError> {
         let start = self.current;
         assert_eq!(self.advance()?, '"');
 
@@ -340,7 +340,7 @@ impl Lexer {
         }
         self.advance()?;
 
-        Ok(self.new_token(TokenKind::StringLiteral(s), start, self.current))
+        Ok(self.new_token(Token::StringLiteral(s), start, self.current))
     }
 
     fn read_utf16_unit(&mut self) -> Result<u32, LexerError> {
@@ -354,7 +354,7 @@ impl Lexer {
         Ok(code)
     }
 
-    fn tokenize_identifier(&mut self) -> Result<Token, LexerError> {
+    fn tokenize_identifier(&mut self) -> Result<TokenWithSpan, LexerError> {
         let start = self.current;
 
         let mut id = String::from(self.advance()?);
@@ -368,43 +368,43 @@ impl Lexer {
             id.push(self.advance()?);
         }
 
-        let kind = match id.as_str() {
-            "true" => TokenKind::BoolLiteral(true),
-            "false" => TokenKind::BoolLiteral(false),
-            other => TokenKind::Ident(other.to_string()),
+        let token = match id.as_str() {
+            "true" => Token::BoolLiteral(true),
+            "false" => Token::BoolLiteral(false),
+            other => Token::Ident(other.to_string()),
         };
-        Ok(self.new_token(kind, start, self.current))
+        Ok(self.new_token(token, start, self.current))
     }
 
-    fn tokenize_punctuation(&mut self) -> Result<Token, LexerError> {
+    fn tokenize_punctuation(&mut self) -> Result<TokenWithSpan, LexerError> {
         let start = self.current;
 
         let expected = vec!['(', ')', '<', '>', ',', ';', '='];
-        let token_kind = match self.advance_matching(
+        let token = match self.advance_matching(
             |c| expected.contains(&c),
             ExpectedChar::OneOf(expected.clone()),
         )? {
-            '(' => TokenKind::OpenParenthesis,
-            ')' => TokenKind::CloseParenthesis,
-            '<' => TokenKind::LessThan,
-            '>' => TokenKind::GreaterThan,
-            ',' => TokenKind::Comma,
-            ';' => TokenKind::Semicolon,
+            '(' => Token::OpenParenthesis,
+            ')' => Token::CloseParenthesis,
+            '<' => Token::LessThan,
+            '>' => Token::GreaterThan,
+            ',' => Token::Comma,
+            ';' => Token::Semicolon,
             '=' => {
                 self.advance_expected('>')?;
-                TokenKind::FatArrow
+                Token::FatArrow
             }
             _ => {
                 unreachable!();
             }
         };
 
-        Ok(self.new_token(token_kind, start, self.current))
+        Ok(self.new_token(token, start, self.current))
     }
 
-    fn new_token(&self, kind: TokenKind, start: Position, end: Position) -> Token {
-        Token {
-            kind,
+    fn new_token(&self, token: Token, start: Position, end: Position) -> TokenWithSpan {
+        TokenWithSpan {
+            token,
             span: Span { start, end },
         }
     }
@@ -475,7 +475,7 @@ mod tests {
             let mut lexer = Lexer::new($s);
             for i in 0..$expected.len() {
                 assert_eq!(
-                    lexer.next_token().map(|opt| opt.map(|t| t.kind)),
+                    lexer.next_token().map(|opt| opt.map(|t| t.token)),
                     Ok(Some($expected[i].clone()))
                 );
             }
@@ -504,16 +504,16 @@ mod tests {
 
     #[test]
     fn test_empty_strings() {
-        lex_ok!("", Vec::<TokenKind>::new());
-        lex_ok!("  ", Vec::<TokenKind>::new());
-        lex_ok!("\r\n\t", Vec::<TokenKind>::new());
+        lex_ok!("", Vec::<Token>::new());
+        lex_ok!("  ", Vec::<Token>::new());
+        lex_ok!("\r\n\t", Vec::<Token>::new());
     }
 
     #[test]
     fn test_bool() {
-        lex_ok!("true", vec![TokenKind::BoolLiteral(true)]);
-        lex_ok!("false", vec![TokenKind::BoolLiteral(false)]);
-        lex_ok!("false123u8", vec![TokenKind::Ident("false123u8".into())]);
+        lex_ok!("true", vec![Token::BoolLiteral(true)]);
+        lex_ok!("false", vec![Token::BoolLiteral(false)]);
+        lex_ok!("false123u8", vec![Token::Ident("false123u8".into())]);
     }
 
     #[test]
@@ -521,16 +521,13 @@ mod tests {
         lex_ok!(
             "1u82u1283i84i128",
             vec![
-                TokenKind::U8Literal(1),
-                TokenKind::U128Literal(2),
-                TokenKind::I8Literal(3),
-                TokenKind::I128Literal(4),
+                Token::U8Literal(1),
+                Token::U128Literal(2),
+                Token::I8Literal(3),
+                Token::I128Literal(4),
             ]
         );
-        lex_ok!(
-            "1u8 2u32",
-            vec![TokenKind::U8Literal(1), TokenKind::U32Literal(2)]
-        );
+        lex_ok!("1u8 2u32", vec![Token::U8Literal(1), Token::U32Literal(2)]);
         lex_error!(
             "123",
             LexerError {
@@ -542,11 +539,11 @@ mod tests {
 
     #[test]
     fn test_comment() {
-        lex_ok!("# 1u8", Vec::<TokenKind>::new());
-        lex_ok!("1u8 # comment", vec![TokenKind::U8Literal(1),]);
+        lex_ok!("# 1u8", Vec::<Token>::new());
+        lex_ok!("1u8 # comment", vec![Token::U8Literal(1),]);
         lex_ok!(
             "# multiple\n# line\nCALL_FUNCTION",
-            vec![TokenKind::Ident("CALL_FUNCTION".to_string()),]
+            vec![Token::Ident("CALL_FUNCTION".to_string()),]
         );
     }
 
@@ -555,9 +552,9 @@ mod tests {
         lex_ok!(
             r#"  "" "abc" "abc\r\n\"def\uD83C\uDF0D"  "#,
             vec![
-                TokenKind::StringLiteral("".into()),
-                TokenKind::StringLiteral("abc".into()),
-                TokenKind::StringLiteral("abc\r\n\"def🌍".into()),
+                Token::StringLiteral("".into()),
+                Token::StringLiteral("abc".into()),
+                Token::StringLiteral("abc\r\n\"def🌍".into()),
             ]
         );
         lex_error!(
@@ -574,25 +571,25 @@ mod tests {
         lex_ok!(
             r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
             vec![
-                TokenKind::Ident("CALL_FUNCTION".to_string()),
-                TokenKind::Ident("Map".to_string()),
-                TokenKind::LessThan,
-                TokenKind::Ident("String".to_string()),
-                TokenKind::Comma,
-                TokenKind::Ident("Array".to_string()),
-                TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("test".into()),
-                TokenKind::Comma,
-                TokenKind::Ident("Array".to_string()),
-                TokenKind::LessThan,
-                TokenKind::Ident("String".to_string()),
-                TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("abc".into()),
-                TokenKind::CloseParenthesis,
-                TokenKind::CloseParenthesis,
-                TokenKind::Semicolon,
+                Token::Ident("CALL_FUNCTION".to_string()),
+                Token::Ident("Map".to_string()),
+                Token::LessThan,
+                Token::Ident("String".to_string()),
+                Token::Comma,
+                Token::Ident("Array".to_string()),
+                Token::GreaterThan,
+                Token::OpenParenthesis,
+                Token::StringLiteral("test".into()),
+                Token::Comma,
+                Token::Ident("Array".to_string()),
+                Token::LessThan,
+                Token::Ident("String".to_string()),
+                Token::GreaterThan,
+                Token::OpenParenthesis,
+                Token::StringLiteral("abc".into()),
+                Token::CloseParenthesis,
+                Token::CloseParenthesis,
+                Token::Semicolon,
             ]
         );
     }
@@ -602,10 +599,10 @@ mod tests {
         lex_ok!(
             "PreciseDecimal(\"12\")",
             vec![
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("12".into()),
-                TokenKind::CloseParenthesis,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::OpenParenthesis,
+                Token::StringLiteral("12".into()),
+                Token::CloseParenthesis,
             ]
         );
     }
@@ -615,26 +612,26 @@ mod tests {
         lex_ok!(
             "Array<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
             vec![
-                TokenKind::Ident("Array".to_string()),
-                TokenKind::LessThan,
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("12".into()),
-                TokenKind::CloseParenthesis,
-                TokenKind::Comma,
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("212".into()),
-                TokenKind::CloseParenthesis,
-                TokenKind::Comma,
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("1984".into()),
-                TokenKind::CloseParenthesis,
-                TokenKind::CloseParenthesis,
+                Token::Ident("Array".to_string()),
+                Token::LessThan,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::GreaterThan,
+                Token::OpenParenthesis,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::OpenParenthesis,
+                Token::StringLiteral("12".into()),
+                Token::CloseParenthesis,
+                Token::Comma,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::OpenParenthesis,
+                Token::StringLiteral("212".into()),
+                Token::CloseParenthesis,
+                Token::Comma,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::OpenParenthesis,
+                Token::StringLiteral("1984".into()),
+                Token::CloseParenthesis,
+                Token::CloseParenthesis,
             ]
         );
     }
@@ -690,19 +687,13 @@ mod tests {
 
     #[test]
     fn test_unicode() {
-        lex_ok!(
-            r#""\u2764""#,
-            vec![TokenKind::StringLiteral("❤".to_string())]
-        );
-        lex_ok!(
-            r#""\uFA84""#,
-            vec![TokenKind::StringLiteral("彩".to_string())]
-        );
+        lex_ok!(r#""\u2764""#, vec![Token::StringLiteral("❤".to_string())]);
+        lex_ok!(r#""\uFA84""#, vec![Token::StringLiteral("彩".to_string())]);
         lex_ok!(
             r#""\uD83D\uDC69""#,
-            vec![TokenKind::StringLiteral("👩".to_string())]
+            vec![Token::StringLiteral("👩".to_string())]
         );
-        lex_ok!(r#""👩""#, vec![TokenKind::StringLiteral("👩".to_string())]);
+        lex_ok!(r#""👩""#, vec![Token::StringLiteral("👩".to_string())]);
         lex_error!(
             r#""\uDCAC\u1234""#,
             LexerError {

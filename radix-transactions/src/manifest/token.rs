@@ -58,7 +58,7 @@ macro_rules! span {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TokenKind {
+pub enum Token {
     // ==============
     // Literals
     // ==============
@@ -87,35 +87,35 @@ pub enum TokenKind {
     FatArrow,
 }
 
-impl fmt::Display for TokenKind {
+impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            TokenKind::BoolLiteral(value) => write!(f, "'{:?}'", value),
-            TokenKind::I8Literal(value) => write!(f, "'{:?}i8'", value),
-            TokenKind::I16Literal(value) => write!(f, "'{:?}i16'", value),
-            TokenKind::I32Literal(value) => write!(f, "'{:?}i32'", value),
-            TokenKind::I64Literal(value) => write!(f, "'{:?}i64'", value),
-            TokenKind::I128Literal(value) => write!(f, "'{:?}i128'", value),
-            TokenKind::U8Literal(value) => write!(f, "'{:?}u8'", value),
-            TokenKind::U16Literal(value) => write!(f, "'{:?}u16'", value),
-            TokenKind::U32Literal(value) => write!(f, "'{:?}u32'", value),
-            TokenKind::U64Literal(value) => write!(f, "'{:?}u64'", value),
-            TokenKind::U128Literal(value) => write!(f, "'{:?}u128'", value),
-            TokenKind::StringLiteral(value) => write!(f, "{:?}", value),
-            TokenKind::Ident(value) => write!(f, "'{}'", value),
-            TokenKind::OpenParenthesis => write!(f, "'('"),
-            TokenKind::CloseParenthesis => write!(f, "')'",),
-            TokenKind::LessThan => write!(f, "'<'"),
-            TokenKind::GreaterThan => write!(f, "'>'",),
-            TokenKind::Comma => write!(f, "','"),
-            TokenKind::Semicolon => write!(f, "';'",),
-            TokenKind::FatArrow => write!(f, "'=>'"),
+            Token::BoolLiteral(value) => write!(f, "'{:?}'", value),
+            Token::I8Literal(value) => write!(f, "'{:?}i8'", value),
+            Token::I16Literal(value) => write!(f, "'{:?}i16'", value),
+            Token::I32Literal(value) => write!(f, "'{:?}i32'", value),
+            Token::I64Literal(value) => write!(f, "'{:?}i64'", value),
+            Token::I128Literal(value) => write!(f, "'{:?}i128'", value),
+            Token::U8Literal(value) => write!(f, "'{:?}u8'", value),
+            Token::U16Literal(value) => write!(f, "'{:?}u16'", value),
+            Token::U32Literal(value) => write!(f, "'{:?}u32'", value),
+            Token::U64Literal(value) => write!(f, "'{:?}u64'", value),
+            Token::U128Literal(value) => write!(f, "'{:?}u128'", value),
+            Token::StringLiteral(value) => write!(f, "{:?}", value),
+            Token::Ident(value) => write!(f, "'{}'", value),
+            Token::OpenParenthesis => write!(f, "'('"),
+            Token::CloseParenthesis => write!(f, "')'",),
+            Token::LessThan => write!(f, "'<'"),
+            Token::GreaterThan => write!(f, "'>'",),
+            Token::Comma => write!(f, "','"),
+            Token::Semicolon => write!(f, "';'",),
+            Token::FatArrow => write!(f, "'=>'"),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Token {
-    pub kind: TokenKind,
+pub struct TokenWithSpan {
+    pub token: Token,
     pub span: Span,
 }
