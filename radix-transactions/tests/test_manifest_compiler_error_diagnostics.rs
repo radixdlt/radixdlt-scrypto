@@ -238,6 +238,12 @@ fn test_manifest_generator_error_invalid_package_address() {
 }
 
 #[test]
+fn test_manifest_generator_error_invalid_resource_address() {
+    // InvalidResourceAddress
+    check_manifest!("manifest_generator_error_invalid_resource_address_1");
+}
+
+#[test]
 fn test_manifest_generator_error_invalid_internal_address_1() {
     // InvalidInternalAddress
     check_manifest!("manifest_generator_error_invalid_internal_address_1");

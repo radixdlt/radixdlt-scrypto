@@ -1,0 +1,23 @@
+CALL_METHOD
+  Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+  "withdraw"
+  Address("resource_sim1t45r6lyr36ypj64sumrmkk9pjesfyl9na849jz00qrwnx28c8sletw")
+  Decimal("5.0");
+
+TAKE_FROM_WORKTOP
+  Address("resource_sim1t45r6lyr36ypj64sumrmkk9pjesfyl9na849jz00qrwnx28c8sletw")
+  Decimal("2.0")
+  Bucket("xrd_bucket");
+
+CALL_METHOD
+  Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+  "buy_gumball"
+  Bucket("xrd_bucket");
+
+ASSERT_WORKTOP_CONTAINS_ANY
+  Address("resource_address");
+
+ASSERT_WORKTOP_CONTAINS
+  Address("resource_sim1t5q5qqum600pwwu27zl7m4rpr8g0400e72n368g09tgnptqe6kuwst")
+  Decimal("3.0");
+

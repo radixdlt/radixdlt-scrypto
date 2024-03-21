@@ -76,6 +76,7 @@ pub enum GeneratorErrorKind {
         actual: ast::Value,
     },
     InvalidPackageAddress(String),
+    InvalidResourceAddress(String),
     InvalidDecimal {
         actual: String,
         err: String,
@@ -1007,7 +1008,7 @@ fn generate_resource_address(
                     }
                 }
                 return Err(GeneratorError {
-                    error_kind: GeneratorErrorKind::InvalidGlobalAddress(s.into()),
+                    error_kind: GeneratorErrorKind::InvalidResourceAddress(s.into()),
                     span: inner.span,
                 });
             }
@@ -1773,6 +1774,10 @@ pub fn generator_error_diagnostics(
         GeneratorErrorKind::InvalidPackageAddress(string) => {
             let title = format!("invalid package address '{}'", string);
             (title, "invalid package address".to_string())
+        }
+        GeneratorErrorKind::InvalidResourceAddress(string) => {
+            let title = format!("invalid resource address '{}'", string);
+            (title, "invalid resource address".to_string())
         }
         GeneratorErrorKind::InvalidDecimal { actual, err } => {
             let title = format!("invalid decimal '{}' - {}", actual, err);
