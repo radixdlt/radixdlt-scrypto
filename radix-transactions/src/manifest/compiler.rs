@@ -37,6 +37,7 @@ where
 
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;
     let instructions = parser::Parser::new(tokens, parser::PARSER_MAX_DEPTH)
+        .map_err(CompileError::ParserError)?
         .parse_manifest()
         .map_err(CompileError::ParserError)?;
     generator::generate_manifest(&instructions, &address_bech32_decoder, blobs)

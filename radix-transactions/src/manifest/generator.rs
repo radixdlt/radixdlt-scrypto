@@ -1912,6 +1912,7 @@ mod tests {
     macro_rules! generate_value_ok {
         ( $s:expr,   $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
+                .unwrap()
                 .parse_value()
                 .unwrap();
             let mut resolver = NameResolver::new();
@@ -1934,6 +1935,7 @@ mod tests {
             // If you use the following output for test cases, make sure you've checked the diff
             // println!("{}", crate::manifest::decompile(&[$expected.clone()], &NetworkDefinition::simulator()).unwrap());
             let instruction = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
+                .unwrap()
                 .parse_instruction()
                 .unwrap();
             let mut id_validator = ManifestValidator::new();
@@ -1955,6 +1957,7 @@ mod tests {
     macro_rules! generate_value_error {
         ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH)
+                .unwrap()
                 .parse_value()
                 .unwrap();
             match generate_value(
@@ -2551,6 +2554,7 @@ mod tests {
             "#
         ).unwrap();
         let instruction = Parser::new(tokens, PARSER_MAX_DEPTH)
+            .unwrap()
             .parse_instruction()
             .unwrap();
         let mut id_validator = ManifestValidator::new();
@@ -2607,6 +2611,7 @@ mod tests {
                 .unwrap();
 
             let instructions = parser::Parser::new(tokens, $depth)
+                .unwrap()
                 .parse_manifest()
                 .unwrap();
             let blobs = BlobProvider::new();

@@ -5,7 +5,6 @@ use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::token::{Position, Span, Token, TokenWithSpan};
-use crate::{position, span};
 use radix_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
 use sbor::prelude::*;
 
@@ -410,7 +409,6 @@ impl SborValueKindIdent {
 pub struct Parser {
     tokens: Vec<TokenWithSpan>,
     current: usize,
-    previous: usize,
     max_depth: usize,
     stack_depth: usize,
 }
@@ -440,13 +438,30 @@ macro_rules! advance_match {
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<TokenWithSpan>, max_depth: usize) -> Self {
-        Self {
-            tokens,
-            current: 0,
-            previous: 0,
-            max_depth,
-            stack_depth: 0,
+    pub fn new(tokens: Vec<TokenWithSpan>, max_depth: usize) -> Result<Self, ParserError> {
+        if tokens.is_empty() {
+            Err(ParserError {
+                error_kind: ParserErrorKind::UnexpectedEof,
+                span: Span {
+                    start: Position {
+                        full_index: 0,
+                        line_number: 0,
+                        line_char_index: 0,
+                    },
+                    end: Position {
+                        full_index: 0,
+                        line_number: 0,
+                        line_char_index: 0,
+                    },
+                },
+            })
+        } else {
+            Ok(Self {
+                tokens,
+                current: 0,
+                max_depth,
+                stack_depth: 0,
+            })
         }
     }
 
@@ -478,21 +493,23 @@ impl Parser {
     }
 
     pub fn peek(&mut self) -> Result<TokenWithSpan, ParserError> {
-        self.tokens.get(self.current).cloned().ok_or(ParserError {
-            error_kind: ParserErrorKind::UnexpectedEof,
-            span: match self.tokens.get(self.previous) {
-                Some(token) => Span {
-                    start: token.span.end,
-                    end: token.span.end,
+        match self.tokens.get(self.current) {
+            Some(token) => Ok(token.clone()),
+            None => Err(ParserError {
+                error_kind: ParserErrorKind::UnexpectedEof,
+                span: {
+                    let position = self.tokens[self.current - 1].span.end;
+                    Span {
+                        start: position,
+                        end: position,
+                    }
                 },
-                None => span!(start = (0, 0, 0), end = (0, 0, 0)),
-            },
-        })
+            }),
+        }
     }
 
     pub fn advance(&mut self) -> Result<TokenWithSpan, ParserError> {
         let token = self.peek()?;
-        self.previous = self.current;
         self.current += 1;
         Ok(token)
     }
@@ -1172,12 +1189,12 @@ pub fn parser_error_diagnostics(
 mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
-    use crate::manifest::token::{Position, Span};
+    use crate::{position, span};
 
     #[macro_export]
     macro_rules! parse_instruction_ok {
         ( $s:expr, $expected:expr ) => {{
-            let mut parser = Parser::new(tokenize($s).unwrap()), PARSER_MAX_DEPTH;
+            let mut parser = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH).unwrap();
             assert_eq!(parser.parse_instruction(), Ok($expected));
             assert!(parser.is_eof());
         }};
@@ -1186,7 +1203,7 @@ mod tests {
     #[macro_export]
     macro_rules! parse_value_ok {
         ( $s:expr, $expected:expr ) => {{
-            let mut parser = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH);
+            let mut parser = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH).unwrap();
             assert_eq!(parser.parse_value().map(|tv| tv.value), Ok($expected));
             assert!(parser.is_eof());
         }};
@@ -1195,7 +1212,7 @@ mod tests {
     #[macro_export]
     macro_rules! parse_value_error {
         ( $s:expr, $expected:expr ) => {{
-            let mut parser = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH);
+            let mut parser = Parser::new(tokenize($s).unwrap(), PARSER_MAX_DEPTH).unwrap();
             match parser.parse_value() {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
