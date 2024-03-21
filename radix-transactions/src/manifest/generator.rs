@@ -1055,9 +1055,6 @@ fn generate_dynamic_global_address(
             value.span,
             v,
             ast::ValueKind::Address,
-            ast::ValueKind::PackageAddress,
-            ast::ValueKind::ResourceAddress,
-            ast::ValueKind::ComponentAddress,
             ast::ValueKind::NamedAddress
         ),
     }
