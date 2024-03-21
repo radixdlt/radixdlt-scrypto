@@ -1179,7 +1179,7 @@ pub fn parser_error_diagnostics(
             (title, "max depth exceeded".to_string())
         }
         ParserErrorKind::UnknownEnumDiscriminator { actual } => {
-            let title = format!("unknown enum discriminator found `{}`", actual);
+            let title = format!("unknown enum discriminator found '{}'", actual);
             (title, "unknown enum discriminator".to_string())
         }
     };
