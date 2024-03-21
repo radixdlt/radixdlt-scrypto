@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1mexpected an Instruction, found token ';'[0m
+[1m[91merror[0m: [1mexpected an instruction, found token ';'[0m
 [1m[94m  |[0m
 [1m[94m1 |[0m ;
 [1m[94m  |[0m[1m[91m ^[0m [1m[91munexpected token[0m

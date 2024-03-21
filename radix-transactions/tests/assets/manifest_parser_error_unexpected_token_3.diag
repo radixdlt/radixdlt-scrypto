@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1mexpected an Instruction, found '1u32'[0m
+[1m[91merror[0m: [1mexpected an instruction, found '1u32'[0m
 [1m[94m   |[0m
 [1m[94m 4 |[0m ;
 [1m[94m 5 |[0m SET_COMPONENT_ROYALTY

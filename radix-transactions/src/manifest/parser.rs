@@ -59,11 +59,13 @@ pub enum TokenType {
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            TokenType::Instruction => write!(f, "an Instruction"),
-            TokenType::Value => write!(f, "a Value"),
-            TokenType::ValueKind => write!(f, "a Value kind"),
-            TokenType::EnumDiscriminator => write!(f, "a valid enum discriminator"),
-            TokenType::Exact(token_kind) => write!(f, "{}", token_kind),
+            TokenType::Instruction => write!(f, "an instruction"),
+            TokenType::Value => write!(f, "a manifest SBOR value"),
+            TokenType::ValueKind => write!(f, "a manifest SBOR value kind"),
+            TokenType::EnumDiscriminator => {
+                write!(f, "a u8 enum discriminator or valid discriminator alias")
+            }
+            TokenType::Exact(token_kind) => write!(f, "exactly {}", token_kind),
         }
     }
 }
