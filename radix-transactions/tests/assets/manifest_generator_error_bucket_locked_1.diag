@@ -1,4 +1,4 @@
-[1m[91merror[0m: [1mbucket 'some_bucket' locked[0m
+[1m[91merror[0m: [1mcannot consume bucket 'some_bucket' because it's believed to be currently locked[0m
 [1m[94m   |[0m
 [1m[94m18 |[0m   Bucket("some_bucket")
 [1m[94m19 |[0m   Decimal("1")

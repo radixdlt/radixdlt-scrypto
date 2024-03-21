@@ -1832,48 +1832,50 @@ pub fn generator_error_diagnostics(
                 (title, "name already defined".to_string())
             }
         },
-        GeneratorErrorKind::IdValidationError { err, name } => match err {
-            ManifestIdValidationError::BucketNotFound(bucket_id) => {
-                let title = if let Some(name) = name {
-                    format!("bucket '{}' not found", name)
-                } else {
-                    format!("bucket id '{:?}' not found", bucket_id)
-                };
-                (title, "bucket not found".to_string())
+        GeneratorErrorKind::IdValidationError { err, name } => {
+            match err {
+                ManifestIdValidationError::BucketNotFound(bucket_id) => {
+                    let title = if let Some(name) = name {
+                        format!("bucket '{}' not found", name)
+                    } else {
+                        format!("bucket id '{:?}' not found", bucket_id)
+                    };
+                    (title, "bucket not found".to_string())
+                }
+                ManifestIdValidationError::ProofNotFound(proof_id) => {
+                    let title = if let Some(name) = name {
+                        format!("proof '{}' not found", name)
+                    } else {
+                        format!("proof id '{:?}' not found", proof_id)
+                    };
+                    (title, "proof not found".to_string())
+                }
+                ManifestIdValidationError::BucketLocked(bucket_id) => {
+                    let title = if let Some(name) = name {
+                        format!("cannot consume bucket '{}' because it's believed to be currently locked", name)
+                    } else {
+                        format!("cannot consume bucket id '{:?}' because it's believed to be currently locked", bucket_id)
+                    };
+                    (title, "bucket locked".to_string())
+                }
+                ManifestIdValidationError::AddressReservationNotFound(reservation) => {
+                    let title = if let Some(name) = name {
+                        format!("address reservation '{}' not found", name)
+                    } else {
+                        format!("address reservation id '{:?}' not found", reservation)
+                    };
+                    (title, "address reservation not found".to_string())
+                }
+                ManifestIdValidationError::AddressNotFound(address) => {
+                    let title = if let Some(name) = name {
+                        format!("address '{}' not found", name)
+                    } else {
+                        format!("address id '{:?}' not found", address)
+                    };
+                    (title, "address not found".to_string())
+                }
             }
-            ManifestIdValidationError::ProofNotFound(proof_id) => {
-                let title = if let Some(name) = name {
-                    format!("proof '{}' not found", name)
-                } else {
-                    format!("proof id '{:?}' not found", proof_id)
-                };
-                (title, "proof not found".to_string())
-            }
-            ManifestIdValidationError::BucketLocked(bucket_id) => {
-                let title = if let Some(name) = name {
-                    format!("bucket '{}' locked", name)
-                } else {
-                    format!("bucket id '{:?}' locked", bucket_id)
-                };
-                (title, "bucket locked".to_string())
-            }
-            ManifestIdValidationError::AddressReservationNotFound(reservation) => {
-                let title = if let Some(name) = name {
-                    format!("address reservation '{}' not found", name)
-                } else {
-                    format!("address reservation id '{:?}' not found", reservation)
-                };
-                (title, "address reservation not found".to_string())
-            }
-            ManifestIdValidationError::AddressNotFound(address) => {
-                let title = if let Some(name) = name {
-                    format!("address '{}' not found", name)
-                } else {
-                    format!("address id '{:?}' not found", address)
-                };
-                (title, "address not found".to_string())
-            }
-        },
+        }
         GeneratorErrorKind::InvalidGlobalAddress(string) => {
             let title = format!("invalid global address '{}'", string);
             (title, "invalid global address".to_string())
