@@ -1720,15 +1720,11 @@ pub fn generator_error_diagnostics(
             actual,
         } => {
             let title = format!(
-                "expected value kind {}, found {}",
-                expected_type.value_kind(),
-                actual.value_kind()
-            );
-            let label = format!(
                 "expected {}, found {}",
                 expected_type.value_kind(),
                 actual.value_kind()
             );
+            let label = format!("expected {}", expected_type.value_kind());
             (title, label)
         }
         GeneratorErrorKind::InvalidAstValue {
@@ -1747,15 +1743,11 @@ pub fn generator_error_diagnostics(
                 }
             }
             let title = format!(
-                "expected value kind {}, found {}",
-                types.join(" or "),
-                actual.value_kind()
-            );
-            let label = format!(
                 "expected {}, found {}",
                 types.join(" or "),
                 actual.value_kind()
             );
+            let label = format!("expected {}", types.join(" or "));
             (title, label)
         }
         GeneratorErrorKind::UnexpectedValue {
@@ -1763,12 +1755,8 @@ pub fn generator_error_diagnostics(
             actual,
         } => {
             // TODO: Consider better messages for aliases (eg. Bytes)
-            let title = format!(
-                "expected value kind {}, found {}",
-                expected_type,
-                actual.value_kind()
-            );
-            let label = format!("expected {}, found {}", expected_type, actual.value_kind());
+            let title = format!("expected {}, found {}", expected_type, actual.value_kind());
+            let label = format!("expected {}", expected_type);
             (title, label)
         }
         GeneratorErrorKind::InvalidPackageAddress(string) => {
