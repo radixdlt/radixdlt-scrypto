@@ -377,13 +377,9 @@ impl Lexer {
     }
 
     fn tokenize_punctuation(&mut self) -> Result<TokenWithSpan, LexerError> {
-        let start = self.current;
+        let token_start = self.current;
 
-        let expected = vec!['(', ')', '<', '>', ',', ';', '='];
-        let token = match self.advance_matching(
-            |c| expected.contains(&c),
-            ExpectedChar::OneOf(expected.clone()),
-        )? {
+        let token = match self.advance()? {
             '(' => Token::OpenParenthesis,
             ')' => Token::CloseParenthesis,
             '<' => Token::LessThan,
@@ -394,12 +390,16 @@ impl Lexer {
                 self.advance_expected('>')?;
                 Token::FatArrow
             }
-            _ => {
-                unreachable!();
+            c => {
+                return Err(LexerError::unexpected_char(
+                    token_start,
+                    c,
+                    ExpectedChar::OneOf(vec!['(', ')', '<', '>', ',', ';', '=']),
+                ))
             }
         };
 
-        Ok(self.new_token(token, start, self.current))
+        Ok(self.new_token(token, token_start, self.current))
     }
 
     fn new_token(&self, token: Token, start: Position, end: Position) -> TokenWithSpan {
