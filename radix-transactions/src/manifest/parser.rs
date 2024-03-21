@@ -524,13 +524,13 @@ impl Parser {
         Ok(instructions)
     }
 
-    fn parse_values_till_semicolon(&mut self) -> Result<Vec<ValueWithSpan>, ParserError> {
-        let mut values = Vec::new();
+    fn parse_instruction_arguments(&mut self) -> Result<Vec<ValueWithSpan>, ParserError> {
+        let mut args = Vec::new();
         while self.peek()?.token != Token::Semicolon {
             let stack_depth = self.stack_depth;
             let result = self.parse_value();
             match result {
-                Ok(value) => values.push(value),
+                Ok(value) => args.push(value),
                 Err(err) => match err.error_kind {
                     // parse_value() is recursive so we need to check the stack depth to determine
                     // if semicolon might be missing
@@ -550,7 +550,7 @@ impl Parser {
                 },
             }
         }
-        Ok(values)
+        Ok(args)
     }
 
     pub fn parse_instruction(&mut self) -> Result<InstructionWithSpan, ParserError> {
@@ -677,32 +677,32 @@ impl Parser {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
                 function_name: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CallMethod => Instruction::CallMethod {
                 address: self.parse_value()?,
                 method_name: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CallRoyaltyMethod => Instruction::CallRoyaltyMethod {
                 address: self.parse_value()?,
                 method_name: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CallMetadataMethod => Instruction::CallMetadataMethod {
                 address: self.parse_value()?,
                 method_name: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CallRoleAssignmentMethod => Instruction::CallRoleAssignmentMethod {
                 address: self.parse_value()?,
                 method_name: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CallDirectVaultMethod => Instruction::CallDirectVaultMethod {
                 address: self.parse_value()?,
                 method_name: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::DropNamedProofs => Instruction::DropNamedProofs,
             InstructionIdent::DropAllProofs => Instruction::DropAllProofs,
@@ -716,119 +716,119 @@ impl Parser {
             /* Call direct vault method aliases */
             InstructionIdent::RecallFromVault => Instruction::RecallFromVault {
                 vault_id: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::FreezeVault => Instruction::FreezeVault {
                 vault_id: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::UnfreezeVault => Instruction::UnfreezeVault {
                 vault_id: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::RecallNonFungiblesFromVault => {
                 Instruction::RecallNonFungiblesFromVault {
                     vault_id: self.parse_value()?,
-                    args: self.parse_values_till_semicolon()?,
+                    args: self.parse_instruction_arguments()?,
                 }
             }
 
             /* Call function aliases */
             InstructionIdent::PublishPackage => Instruction::PublishPackage {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::PublishPackageAdvanced => Instruction::PublishPackageAdvanced {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CreateFungibleResource => Instruction::CreateFungibleResource {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CreateFungibleResourceWithInitialSupply => {
                 Instruction::CreateFungibleResourceWithInitialSupply {
-                    args: self.parse_values_till_semicolon()?,
+                    args: self.parse_instruction_arguments()?,
                 }
             }
             InstructionIdent::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CreateNonFungibleResourceWithInitialSupply => {
                 Instruction::CreateNonFungibleResourceWithInitialSupply {
-                    args: self.parse_values_till_semicolon()?,
+                    args: self.parse_instruction_arguments()?,
                 }
             }
             InstructionIdent::CreateAccessController => Instruction::CreateAccessController {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CreateIdentity => Instruction::CreateIdentity {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CreateIdentityAdvanced => Instruction::CreateIdentityAdvanced {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CreateAccount => Instruction::CreateAccount {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CreateAccountAdvanced => Instruction::CreateAccountAdvanced {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
 
             /* Call non-main method aliases */
             InstructionIdent::SetMetadata => Instruction::SetMetadata {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::RemoveMetadata => Instruction::RemoveMetadata {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::LockMetadata => Instruction::LockMetadata {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::SetComponentRoyalty => Instruction::SetComponentRoyalty {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::LockComponentRoyalty => Instruction::LockComponentRoyalty {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::ClaimComponentRoyalties => Instruction::ClaimComponentRoyalties {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::SetOwnerRole => Instruction::SetOwnerRole {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::LockOwnerRole => Instruction::LockOwnerRole {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::SetRole => Instruction::SetRole {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
 
             /* Call main method aliases */
             InstructionIdent::MintFungible => Instruction::MintFungible {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::MintNonFungible => Instruction::MintNonFungible {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::MintRuidNonFungible => Instruction::MintRuidNonFungible {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::ClaimPackageRoyalties => Instruction::ClaimPackageRoyalties {
                 address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
             InstructionIdent::CreateValidator => Instruction::CreateValidator {
-                args: self.parse_values_till_semicolon()?,
+                args: self.parse_instruction_arguments()?,
             },
         };
         let instruction_end = self.peek()?.span.end;
@@ -1037,11 +1037,11 @@ impl Parser {
     fn parse_generics(&mut self, n: usize) -> Result<Vec<ValueKindWithSpan>, ParserError> {
         let mut span_start = self.peek()?.span.start;
         advance_match!(self, Token::LessThan);
-        let mut types = Vec::new();
+        let mut value_kinds = Vec::new();
 
         while self.peek()?.token != Token::GreaterThan {
-            let token_value_kind = self.parse_type()?;
-            types.push(token_value_kind);
+            let token_value_kind = self.parse_value_kind()?;
+            value_kinds.push(token_value_kind);
             if self.peek()?.token != Token::GreaterThan {
                 advance_match!(self, Token::Comma);
             }
@@ -1050,16 +1050,16 @@ impl Parser {
         let mut span_end = self.peek()?.span.end;
         advance_match!(self, Token::GreaterThan);
 
-        if types.len() != 0 {
-            span_start = types[0].span.start;
-            span_end = types[types.len() - 1].span.end;
+        if value_kinds.len() != 0 {
+            span_start = value_kinds[0].span.start;
+            span_end = value_kinds[value_kinds.len() - 1].span.end;
         }
 
-        if types.len() != n {
+        if value_kinds.len() != n {
             Err(ParserError {
                 error_kind: ParserErrorKind::InvalidNumberOfTypes {
                     expected: n,
-                    actual: types.len(),
+                    actual: value_kinds.len(),
                 },
                 span: Span {
                     start: span_start,
@@ -1067,11 +1067,11 @@ impl Parser {
                 },
             })
         } else {
-            Ok(types)
+            Ok(value_kinds)
         }
     }
 
-    fn parse_type(&mut self) -> Result<ValueKindWithSpan, ParserError> {
+    fn parse_value_kind(&mut self) -> Result<ValueKindWithSpan, ParserError> {
         let token = self.advance()?;
         let value_kind = match &token.token {
             Token::Ident(ident_str) => {
