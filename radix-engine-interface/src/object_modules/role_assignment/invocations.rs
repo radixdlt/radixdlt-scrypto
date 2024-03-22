@@ -66,7 +66,7 @@ pub const ROLE_ASSIGNMENT_LOCK_OWNER_IDENT: &str = "lock_owner";
 )]
 pub struct RoleAssignmentLockOwnerInput {}
 
-pub type RoleAssingmentLockOwnerOutput = ();
+pub type RoleAssignmentLockOwnerOutput = ();
 
 pub const ROLE_ASSIGNMENT_GET_IDENT: &str = "get";
 

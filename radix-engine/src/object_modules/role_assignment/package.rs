@@ -83,7 +83,7 @@ impl RoleAssignmentNativePackage {
                     aggregator.add_child_type_and_descendents::<RoleAssignmentLockOwnerInput>(),
                 ),
                 output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<RoleAssingmentLockOwnerOutput>(),
+                    aggregator.add_child_type_and_descendents::<RoleAssignmentLockOwnerOutput>(),
                 ),
                 export: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
             },
