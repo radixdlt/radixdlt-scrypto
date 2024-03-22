@@ -1,7 +1,8 @@
 use crate::internal_prelude::*;
 
 /// Generates types and typed-interfaces for native blueprints, their
-/// state models, features, and schemas.
+/// state models, features, partitions, and their interaction with
+/// the substate store.
 ///
 /// See the below structure for detail on how it should look - or check
 /// out [../package/substates.rs](the package substates definition).
@@ -399,6 +400,224 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
 
+                //--------------------------------------
+                // Application - Typed State API (TODO!)
+                //--------------------------------------
+
+                pub struct [<$blueprint_ident StateApi>]<'a, Y: ClientApi<RuntimeError>> {
+                    api: &'a mut Y,
+                }
+
+                impl<'a, Y: ClientApi<RuntimeError>> [<$blueprint_ident StateApi>]<'a, Y> {
+                    pub fn with(client_api: &'a mut Y) -> Self {
+                        Self {
+                            api: client_api,
+                        }
+                    }
+
+                    // For each field:
+                    // x_open_readwrite(OnDrop::SaveAndClose) -> MutableTypedField<'a, T>
+                    // > Reads + caches the initial value bytes, and current T
+                    // > Impls into<T> / Deref<Target = T> / DerefMut<Target = T>
+                    // > field_lock_and_close
+                    // > field_save_and_close(SaveMode::OnlyIfChanged) // If changed
+                    // > field_save(SaveMode::OnlyIfChanged)
+                    // > field_close_without_saving
+                    // > Drop > OnDrop::SaveAndClose(SaveMode) or OnDrop::PanicIfNotClosed
+                    // x_open_readonly() -> ImmutableTypedField<'a, T>
+                    // read_x() -> T
+
+                    // For each KV collection:
+                }
+
+                impl<'a, Y: ClientApi<$crate::errors::RuntimeError>> From<&'a mut Y> for [<$blueprint_ident StateApi>]<'a, Y> {
+                    fn from(value: &'a mut Y) -> Self {
+                        Self::with(value)
+                    }
+                }
+
+                //--------------------------------
+                // System - Object Initialization
+                //--------------------------------
+
+                /// Used for initializing blueprint state.
+                ///
+                /// Note - this doesn't support:
+                /// * IndexEntries (because the underlying new_object API doesn't support them)
+                ///   > these panic at create time
+                #[derive(Debug, Default)]
+                pub struct [<$blueprint_ident StateInit>] {
+                    $(
+                        pub $field_property_name: Option<[<$blueprint_ident $field_ident FieldSubstate>]>,
+                    )*
+                    $(
+                        pub $collection_property_name: IndexMap<
+                            [<$blueprint_ident $collection_ident KeyPayload>],
+                            [<$blueprint_ident $collection_ident EntrySubstate>]
+                        >,
+                    )*
+                }
+
+                type [<$blueprint_ident FeatureChecks>] = [<$(ignore_arg!($outer_blueprint_ident) InnerObject)? FeatureChecks>]::<
+                    [<$blueprint_ident FeatureSet>],
+                    $([<$outer_blueprint_ident FeatureSet>],)?
+                >;
+
+                impl [<$blueprint_ident StateInit>] {
+                    pub fn into_system_substates(self, feature_checks: [<$blueprint_ident FeatureChecks>]) -> Result<(IndexMap<u8, FieldValue>, IndexMap<u8, IndexMap<Vec<u8>, KVEntry>>), RuntimeError> {
+                        let mut field_values = IndexMap::default();
+                        $(
+                            {
+                                feature_checks.assert_valid(
+                                    stringify!($field_ident),
+                                    &optional_or_fallback!($({ $field_condition })?, { Condition::Always }),
+                                    self.$field_property_name.is_some(),
+                                )?;
+                                if let Some(field) = self.$field_property_name {
+                                    let payload = scrypto_encode(&field.payload()).unwrap();
+                                    let locked = match field.lock_status() {
+                                        LockStatus::Unlocked => true,
+                                        LockStatus::Locked => false,
+                                    };
+                                    field_values.insert(
+                                        [<$blueprint_ident Field>]::$field_ident.into(),
+                                        FieldValue {
+                                            value: payload,
+                                            locked,
+                                        }
+                                    );
+                                }
+                            }
+                        )*
+                        let mut all_collection_entries = IndexMap::new();
+                        let mut collection_index: u8 = 0;
+                        $(
+                            {
+                                let this_collection_entries = self.$collection_property_name
+                                    .into_iter()
+                                    .map(|(key, entry_substate)| {
+                                        let key = scrypto_encode(&key).unwrap();
+                                        let value = map_entry_substate_to_kv_entry!($collection_type, entry_substate);
+                                        (key, value)
+                                    })
+                                    .collect();
+                                all_collection_entries.insert(collection_index, this_collection_entries);
+                                collection_index += 1;
+                            }
+                        )*
+                        Ok((field_values, all_collection_entries))
+                    }
+
+                    pub fn into_new_object<Y: ClientObjectApi<RuntimeError>>(
+                        self,
+                        api: &mut Y,
+                        own_features: [<$blueprint_ident FeatureSet>],
+                        $(outer_object_features: [<$outer_blueprint_ident FeatureSet>],)?
+                        generic_args: GenericArgs,
+                    ) -> Result<NodeId, RuntimeError> {
+                        let (field_values, all_collection_entries) = self.into_system_substates(
+                            [<$blueprint_ident FeatureChecks>]::ForFeatures {
+                                own_features,
+                                $(ignore_arg!($outer_blueprint_ident) outer_object_features,)?
+                            }
+                        )?;
+                        api.new_object(
+                            stringify!($blueprint_ident),
+                            own_features.feature_names_str(),
+                            generic_args,
+                            field_values,
+                            all_collection_entries, // TODO: Change to take other collections, not just KVEntry
+                        )
+                    }
+                }
+
+                //--------------------------------------------------------
+                // System/DB - Node Partitions & Layout
+                //--------------------------------------------------------
+
+                /// A list of all logical (real) and physical (mapped) partitions for the
+                /// $blueprint_ident blueprint.
+                ///
+                /// Note: In future, we could add a separate LogicalPartition enum, to
+                /// not include physical partitions - however it's very hard to do in
+                /// declarative macro land, because enum variants can't be
+                /// macro invocations (to eg filter out the physical partition types)
+                #[repr(u8)]
+                #[derive(Debug, Clone, Copy, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord)]
+                pub enum [<$blueprint_ident Partition>] {
+                    Field,
+                    $([<$collection_ident $collection_type>],)*
+                }
+
+                impl [<$blueprint_ident Partition>] {
+                    pub const fn description(&self) -> PartitionDescription {
+                        // NOTE: This should really be a fixed mapping - but it's hard to do with declarative macros
+                        // It's a const function, so might hopefully be compiled away
+                        let mut module_partition_offset = 0;
+                        if (*self as u8) == (Self::Field as u8) {
+                            return PartitionDescription::Logical(PartitionOffset(module_partition_offset));
+                        }
+                        $(
+                            let current_partition_description = optional_or_fallback!(
+                                $({
+                                    PartitionDescription::Physical($mapped_physical_partition)
+                                })?,
+                                {
+                                    module_partition_offset += 1;
+                                    PartitionDescription::Logical(PartitionOffset(module_partition_offset))
+                                }
+                            );
+                            if (*self as u8) == (Self::[<$collection_ident $collection_type>] as u8) {
+                                return current_partition_description;
+                            }
+                        )*
+                        panic!("Partition somehow did not match for calculating its description")
+                    }
+
+                    pub const fn as_main_partition(&self) -> PartitionNumber {
+                        match self.description() {
+                            PartitionDescription::Physical(partition_num) => partition_num,
+                            PartitionDescription::Logical(offset) => {
+                                match MAIN_BASE_PARTITION.at_offset(offset) {
+                                    // This map works around unwrap/expect on Option not being const
+                                    Some(x) => x,
+                                    None => panic!("Offset larger than allowed value")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                impl TryFrom<[<$blueprint_ident Partition>]> for PartitionOffset {
+                    type Error = ();
+
+                    fn try_from(value: [<$blueprint_ident Partition>]) -> Result<Self, Self::Error> {
+                        match value.description() {
+                            PartitionDescription::Logical(offset) => Ok(offset),
+                            PartitionDescription::Physical(partition_num) => Err(()),
+                        }
+                    }
+                }
+
+                impl TryFrom<PartitionOffset> for [<$blueprint_ident Partition>] {
+                    type Error = ();
+
+                    fn try_from(offset: PartitionOffset) -> Result<Self, Self::Error> {
+                        // NOTE: This should really be a fixed mapping - but it's hard to do with declarative macros
+                        // Hopefully this will be compiled away because Partition::description is const
+                        let description = PartitionDescription::Logical(offset);
+                        if description == Self::Field.description() {
+                            return Ok(Self::Field);
+                        }
+                        $(
+                            if description == Self::[<$collection_ident $collection_type>].description() {
+                                return Ok(Self::[<$collection_ident $collection_type>]);
+                            }
+                        )*
+                        Err(())
+                    }
+                }
+
                 //---------------------------------
                 // Typed - Substate Keys and Values
                 //---------------------------------
@@ -546,6 +765,85 @@ macro_rules! declare_native_blueprint_state {
                         });
                         Ok(substate_value)
                     }
+                }
+
+                //-------------
+                // Flashing
+                //-------------
+
+                /// This method converts the state init into the node substates,
+                /// at a kernel / flash level of abstraction.
+                ///
+                /// This can further be mapped to level 0 with a call to:
+                /// `.into_database_updates::<SpreadPrefixKeyMapper>(&node_id)`
+                ///
+                /// We decided to have this as a separate function away from
+                /// the impl of [<$blueprint_ident StateInit>], as it's conceptually
+                /// a helper method at a different abstraction level.
+                pub fn [<map_ $blueprint_property_name _state_into_main_partition_node_substate_flash>](
+                    state_init: [<$blueprint_ident StateInit>],
+                    feature_checks: [<$blueprint_ident FeatureChecks>],
+                ) -> Result<NodeSubstates, RuntimeError> {
+                    // PartitionNumber => SubstateKey => IndexedScryptoValue
+                    let mut partitions: NodeSubstates = BTreeMap::new();
+                    let (mut field_values, mut kv_entries) = state_init.into_system_substates(feature_checks)?;
+
+                    // Fields
+                    {
+                        let mut field_partition_substates = BTreeMap::new();
+                        for (field_index, field_value) in field_values {
+                            field_partition_substates.insert(
+                                SubstateKey::Field(field_index),
+                                IndexedScryptoValue::from_typed(&field_value),
+                            );
+                        }
+                        partitions.insert(
+                            [<$blueprint_ident Partition>]::Field.as_main_partition(),
+                            field_partition_substates,
+                        );
+                    }
+
+                    // Each Collection
+                    let mut collection_index = 0u8;
+                    $({
+                        let collection_kv_entries = kv_entries.swap_remove(&collection_index).unwrap();
+                        let collection_partition = [<$blueprint_ident Partition>]::[<$collection_ident $collection_type>];
+                        let collection_partition_substates = collection_kv_entries
+                            .into_iter()
+                            .filter_map(|(key_bytes, kv_entry)| {
+                                let substate = match kv_entry {
+                                    KVEntry { value: Some(value_bytes), locked: false } => {
+                                        KeyValueEntrySubstate::unlocked_entry(
+                                            scrypto_decode::<ScryptoValue>(&value_bytes).unwrap()
+                                        )
+                                    }
+                                    KVEntry { value: Some(value_bytes), locked: true } => {
+                                        KeyValueEntrySubstate::locked_entry(
+                                            scrypto_decode::<ScryptoValue>(&value_bytes).unwrap()
+                                        )
+                                    }
+                                    KVEntry { value: None, locked: true } => {
+                                        KeyValueEntrySubstate::locked_empty_entry()
+                                    }
+                                    KVEntry { value: None, locked: false } => {
+                                        return None;
+                                    }
+                                };
+
+                                Some((
+                                    SubstateKey::Map(key_bytes),
+                                    IndexedScryptoValue::from_typed(&substate)
+                                ))
+                            })
+                            .collect();
+                        partitions.insert(
+                            collection_partition.as_main_partition(),
+                            collection_partition_substates,
+                        );
+                        collection_index += 1;
+                    })*
+
+                    Ok(partitions)
                 }
             }
         }
@@ -852,11 +1150,11 @@ mod helper_macros {
         (KeyValue, $entry_substate:ident) => {
             paste::paste! {
                 KVEntry {
-                    value: $entry_substate.value.map(|v| scrypto_encode(&v).unwrap()),
-                    locked: match $entry_substate.lock_status {
+                    locked: match $entry_substate.lock_status() {
                         LockStatus::Locked => true,
                         LockStatus::Unlocked => false,
                     },
+                    value: $entry_substate.into_value().map(|v| scrypto_encode(&v).unwrap()),
                 }
             }
         };
