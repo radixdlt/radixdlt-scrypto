@@ -184,7 +184,9 @@ impl RoleAssignmentNativePackage {
             ROLE_ASSIGNMENT_LOCK_OWNER_IDENT => {
                 Self::resolve_update_owner_role_method_permission(global_address.as_node_id(), api)?
             }
-            ROLE_ASSIGNMENT_GET_IDENT => ResolvedPermission::AllowAll,
+            ROLE_ASSIGNMENT_GET_IDENT | ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT => {
+                ResolvedPermission::AllowAll
+            }
             _ => {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::AuthError(AuthError::NoMethodMapping(FnIdentifier {
@@ -598,5 +600,75 @@ impl RoleAssignmentNativePackage {
         api.key_value_entry_close(handle)?;
 
         Ok(rule.map(|v| v.into_latest()))
+    }
+}
+
+pub struct RoleAssignmentBottlenoseExtension;
+
+impl RoleAssignmentBottlenoseExtension {
+    pub fn added_functions_schema() -> (
+        IndexMap<String, FunctionSchemaInit>,
+        VersionedSchema<ScryptoCustomSchema>,
+    ) {
+        let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
+        let mut functions = index_map_new();
+        functions.insert(
+            ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<RoleAssignmentGetOwnerRoleInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<RoleAssignmentGetOwnerRoleOutput>(),
+                ),
+                export: ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT.to_string(),
+            },
+        );
+        let schema = generate_full_schema(aggregator);
+        (functions, schema)
+    }
+
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        match export_name {
+            ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT => {
+                input
+                    .as_typed::<RoleAssignmentGetOwnerRoleInput>()
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = Self::get_owner_role(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
+            )),
+        }
+    }
+
+    pub(crate) fn get_owner_role<Y>(api: &mut Y) -> Result<OwnerRoleEntry, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            RoleAssignmentField::Owner.field_index(),
+            LockFlags::read_only(),
+        )?;
+        let owner_role_entry = api
+            .field_read_typed::<RoleAssignmentOwnerFieldPayload>(handle)?
+            .into_latest()
+            .owner_role_entry;
+        api.field_close(handle)?;
+
+        Ok(owner_role_entry)
     }
 }

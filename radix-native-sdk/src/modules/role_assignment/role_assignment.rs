@@ -158,11 +158,11 @@ pub trait RoleAssignmentObject {
         module: ModuleId,
         role_key: R,
         api: &mut Y,
-    ) -> Result<(), E> {
+    ) -> Result<RoleAssignmentGetOutput, E> {
         let (node_id, module_id) = self.self_id();
         match module_id {
-            None => {
-                api.call_method(
+            None => api
+                .call_method(
                     node_id,
                     ROLE_ASSIGNMENT_GET_IDENT,
                     scrypto_encode(&RoleAssignmentGetInput {
@@ -170,10 +170,10 @@ pub trait RoleAssignmentObject {
                         role_key: role_key.into(),
                     })
                     .unwrap(),
-                )?;
-            }
-            Some(module_id) => {
-                api.call_module_method(
+                )
+                .map(|response| scrypto_decode(&response).unwrap()),
+            Some(module_id) => api
+                .call_module_method(
                     node_id,
                     module_id,
                     ROLE_ASSIGNMENT_GET_IDENT,
@@ -182,10 +182,32 @@ pub trait RoleAssignmentObject {
                         role_key: role_key.into(),
                     })
                     .unwrap(),
-                )?;
-            }
+                )
+                .map(|response| scrypto_decode(&response).unwrap()),
         }
+    }
 
-        Ok(())
+    fn get_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
+        &self,
+        api: &mut Y,
+    ) -> Result<RoleAssignmentGetOutput, E> {
+        let (node_id, module_id) = self.self_id();
+        match module_id {
+            None => api
+                .call_method(
+                    node_id,
+                    ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT,
+                    scrypto_encode(&RoleAssignmentGetOwnerRoleInput).unwrap(),
+                )
+                .map(|response| scrypto_decode(&response).unwrap()),
+            Some(module_id) => api
+                .call_module_method(
+                    node_id,
+                    module_id,
+                    ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT,
+                    scrypto_encode(&RoleAssignmentGetOwnerRoleInput).unwrap(),
+                )
+                .map(|response| scrypto_decode(&response).unwrap()),
+        }
     }
 }

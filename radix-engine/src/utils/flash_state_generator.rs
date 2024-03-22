@@ -3,6 +3,7 @@ use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
 use crate::internal_prelude::*;
+use crate::object_modules::role_assignment::*;
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use crate::vm::*;
@@ -20,6 +21,15 @@ use radix_rust::indexmap;
 use radix_substate_store_interface::interface::*;
 use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
+
+/// A quick macro for encoding and unwrapping.
+macro_rules! scrypto_encode {
+    (
+        $expr: expr
+    ) => {
+        ::radix_common::prelude::scrypto_encode($expr).unwrap()
+    };
+}
 
 pub fn generate_vm_boot_scrypto_version_state_updates(version: ScryptoVmVersion) -> StateUpdates {
     let substate = scrypto_encode(&VmBoot::V1 {
@@ -378,6 +388,140 @@ pub fn generate_validator_fee_fix_state_updates<S: SubstateDatabase>(db: &S) -> 
                             )
                         }
                     },
+                }
+            }
+        ),
+    }
+}
+
+pub fn generate_role_assignment_bottlenose_extension_state_updates<S: SubstateDatabase>(
+    db: &S,
+) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
+    let node_id = ROLE_ASSIGNMENT_MODULE_PACKAGE.into_node_id();
+    let blueprint_version_key = BlueprintVersionKey {
+        blueprint: ROLE_ASSIGNMENT_BLUEPRINT.to_string(),
+        version: Default::default(),
+    };
+
+    // Creating the original code substates for extension.
+    let (code_hash, (code_substate, vm_type_substate)) = {
+        let original_code = ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID
+            .to_be_bytes()
+            .to_vec();
+
+        let code_hash = CodeHash::from_hash(hash(&original_code));
+        let code_substate = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
+            code: original_code,
+        })
+        .into_locked_substate();
+        let vm_type_substate = PackageCodeVmTypeV1 {
+            vm_type: VmType::Native,
+        }
+        .into_locked_substate();
+
+        (code_hash, (code_substate, vm_type_substate))
+    };
+
+    // Creating the new schema substate with the methods added by the extension
+    let (added_functions, schema) = RoleAssignmentBottlenoseExtension::added_functions_schema();
+    let (schema_hash, schema_substate) =
+        (schema.generate_schema_hash(), schema.into_locked_substate());
+
+    // Updating the blueprint definition of the existing blueprint with the added functions.
+    let blueprint_definition_substate = {
+        let mut blueprint_definition = reader
+            .read_object_collection_entry::<_, VersionedPackageBlueprintVersionDefinition>(
+                &node_id,
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                    &blueprint_version_key,
+                ),
+            )
+            .unwrap()
+            .unwrap()
+            .into_latest();
+
+        for (function_name, added_function) in added_functions.into_iter() {
+            let TypeRef::Static(input_local_id) = added_function.input else {
+                unreachable!()
+            };
+            let TypeRef::Static(output_local_id) = added_function.output else {
+                unreachable!()
+            };
+
+            blueprint_definition.function_exports.insert(
+                function_name.clone(),
+                PackageExport {
+                    code_hash,
+                    export_name: function_name.clone(),
+                },
+            );
+            blueprint_definition.interface.functions.insert(
+                function_name,
+                FunctionSchema {
+                    receiver: added_function.receiver,
+                    input: BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, input_local_id)),
+                    output: BlueprintPayloadDef::Static(ScopedTypeId(schema_hash, output_local_id)),
+                },
+            );
+        }
+
+        blueprint_definition.into_locked_substate()
+    };
+
+    // Getting the partition number of the various collections that we're updating
+    let [blueprint_version_definition_partition_number, code_vm_type_partition_number, code_original_code_partition_number, schema_partition_number] =
+        [
+            PackageCollection::BlueprintVersionDefinitionKeyValue,
+            PackageCollection::CodeVmTypeKeyValue,
+            PackageCollection::CodeOriginalCodeKeyValue,
+            PackageCollection::SchemaKeyValue,
+        ]
+        .map(|package_collection| {
+            reader
+                .get_partition_of_collection(
+                    &node_id,
+                    ObjectModuleId::Main,
+                    package_collection.collection_index(),
+                )
+                .unwrap()
+        });
+
+    // Generating the state updates
+    StateUpdates {
+        by_node: indexmap!(
+            node_id => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    blueprint_version_definition_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&blueprint_version_key)) => DatabaseUpdate::Set(
+                                scrypto_encode!(&blueprint_definition_substate)
+                            )
+                        }
+                    },
+                    code_vm_type_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&code_hash)) => DatabaseUpdate::Set(
+                                scrypto_encode!(&vm_type_substate)
+                            )
+                        }
+                    },
+                    code_original_code_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&code_hash)) => DatabaseUpdate::Set(
+                                scrypto_encode!(&code_substate)
+                            )
+                        }
+                    },
+                    schema_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&schema_hash)) => DatabaseUpdate::Set(
+                                scrypto_encode!(&schema_substate)
+                            )
+                        }
+                    }
                 }
             }
         ),
