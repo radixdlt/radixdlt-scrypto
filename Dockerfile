@@ -1,4 +1,10 @@
-FROM rust:slim-bullseye as base-image
+# Below version includes rust 1.76.0
+ARG RUST_IMAGE_VERSION=@sha256:2a6147ed8a879621f27d2c7a966868de438801084a276498b3a937e326ef7f65
+# If you want to use latest version then uncomment next line
+# ARG RUST_IMAGE_VERSION=:slim-bullseye
+# Alternatively you can build docker with argument: --build-arg="RUST_IMAGE_VERSION=:slim-bullseye"
+
+FROM rust${RUST_IMAGE_VERSION} as base-image
 
 RUN apt update && apt install -y \
     cmake=3.18.4-2+deb11u1 \
