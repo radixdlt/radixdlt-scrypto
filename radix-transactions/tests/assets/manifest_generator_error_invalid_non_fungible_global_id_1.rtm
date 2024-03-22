@@ -1,0 +1,10 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+;
+CALL_FUNCTION
+    Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+    "Hello"
+    "instantiate_hello"
+    NonFungibleGlobalId("resource_sim1n2n538l5hpaagvl0phkff3qkdd6pxh0kskh8umuknr8c3whsl62dxp:some_id")
+;

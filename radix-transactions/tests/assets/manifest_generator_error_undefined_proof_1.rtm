@@ -1,0 +1,20 @@
+CALL_METHOD
+  Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+  "withdraw"
+  Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+  Decimal("5.0");
+
+TAKE_ALL_FROM_WORKTOP
+  Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+  Bucket("some_xrd");
+
+CREATE_PROOF_FROM_BUCKET_OF_AMOUNT Bucket("some_xrd")
+  Decimal("1")
+  Proof("proof_1");
+
+CLONE_PROOF
+  Proof("proof_2")
+  Proof("cloned_proof");
+
+DROP_PROOF Proof("proof_1");
+DROP_PROOF Proof("cloned_proof");

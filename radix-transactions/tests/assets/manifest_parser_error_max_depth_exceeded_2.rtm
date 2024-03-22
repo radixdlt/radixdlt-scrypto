@@ -1,0 +1,5 @@
+CALL_FUNCTION
+  Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+  "blueprint"
+  "func"
+  Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(Tuple(0u8)))))))))))))))))))))))))))));

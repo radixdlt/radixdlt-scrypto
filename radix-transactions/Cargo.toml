@@ -17,6 +17,7 @@ serde = { workspace = true, optional = true }
 lazy_static = { workspace = true }
 strum = { workspace = true }
 bech32 = { workspace = true }
+annotate-snippets = { version = "0.10.2"}
 
 [dev-dependencies]
 scrypto = { path = "../scrypto" }

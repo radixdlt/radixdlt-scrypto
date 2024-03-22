@@ -4,7 +4,11 @@ use radix_common::{
     network::{NetworkDefinition, ParseNetworkError},
 };
 use radix_engine::utils::*;
-use radix_transactions::manifest::{compile, BlobProvider, CompileError};
+use radix_transactions::manifest::{
+    compile, compiler::compile_error_diagnostics, compiler::CompileErrorDiagnosticsStyle,
+    BlobProvider,
+};
+use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -33,12 +37,24 @@ pub struct Args {
 pub enum Error {
     IoError(std::io::Error),
     EncodeError(sbor::EncodeError),
-    CompileError(CompileError),
     ParseNetworkError(ParseNetworkError),
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
 
-pub fn run() -> Result<(), Error> {
+impl fmt::Display for Error {
+    // TODO Implement pretty error printing
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<Error> for String {
+    fn from(err: Error) -> String {
+        err.to_string()
+    }
+}
+
+pub fn run() -> Result<(), String> {
     let args = Args::parse();
 
     let content = std::fs::read_to_string(&args.input).map_err(Error::IoError)?;
@@ -52,8 +68,16 @@ pub fn run() -> Result<(), Error> {
             blobs.push(std::fs::read(path).map_err(Error::IoError)?);
         }
     }
-    let transaction = compile(&content, &network, BlobProvider::new_with_blobs(blobs))
-        .map_err(Error::CompileError)?;
+
+    let transaction =
+        compile(&content, &network, BlobProvider::new_with_blobs(blobs)).map_err(|err| {
+            compile_error_diagnostics(
+                &content,
+                err,
+                CompileErrorDiagnosticsStyle::TextTerminalColors,
+            )
+        })?;
+
     validate_call_arguments_to_native_components(&transaction.instructions)
         .map_err(Error::InstructionSchemaValidationError)?;
     std::fs::write(

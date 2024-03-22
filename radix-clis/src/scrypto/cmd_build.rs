@@ -65,7 +65,7 @@ pub struct Build {
 }
 
 impl Build {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), String> {
         let mut compiler_builder = ScryptoCompiler::builder();
 
         if let Some(manifest_path) = &self.path {
@@ -114,7 +114,7 @@ impl Build {
                 } else if v.len() == 2 {
                     compiler_builder.env(v[0], EnvironmentVariableAction::Set(v[1].into()));
                 } else {
-                    return Err(Error::BuildError(BuildError::ProfileNameError));
+                    return Err(Error::BuildError(BuildError::ProfileNameError).into());
                 }
             }
         }
@@ -137,6 +137,6 @@ impl Build {
         compiler_builder
             .compile()
             .map(|_| ())
-            .map_err(|e| Error::BuildError(BuildError::ScryptoCompilerError(e)))
+            .map_err(|e| Error::BuildError(BuildError::ScryptoCompilerError(e)).into())
     }
 }

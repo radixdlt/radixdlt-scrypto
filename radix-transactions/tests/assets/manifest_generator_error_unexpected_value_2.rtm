@@ -1,0 +1,15 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+;
+CALL_METHOD
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+    "some_method"
+    Array<String>(
+      "one",
+      # Bytes is an alias of Array so the below error is expected
+      # error: expected value of type String, found Array
+      Bytes(1u32),
+      "three"
+    )
+;

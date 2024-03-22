@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io;
 use std::path::PathBuf;
 
@@ -10,7 +11,7 @@ use radix_engine::vm::wasm::PrepareError;
 use radix_engine_interface::types::ParseNonFungibleGlobalIdError;
 use radix_engine_interface::types::SchemaHash;
 use radix_transactions::errors::*;
-use radix_transactions::manifest::{CompileError, DecompileError};
+use radix_transactions::manifest::DecompileError;
 use radix_transactions::model::PrepareError as TransactionPrepareError;
 use sbor::*;
 
@@ -60,8 +61,6 @@ pub enum Error {
 
     LedgerDumpError(EntityDumpError),
 
-    CompileError(CompileError),
-
     DecompileError(DecompileError),
 
     InvalidId(String),
@@ -84,4 +83,17 @@ pub enum Error {
     InvalidResourceSpecifier(String),
 
     RemoteGenericSubstitutionNotSupported,
+}
+
+impl fmt::Display for Error {
+    // TODO Implement pretty error printing
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<Error> for String {
+    fn from(err: Error) -> String {
+        err.to_string()
+    }
 }

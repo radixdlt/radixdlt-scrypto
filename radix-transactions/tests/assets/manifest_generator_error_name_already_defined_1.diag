@@ -1,0 +1,15 @@
+[1m[91merror[0m: [1mname already defined 'my_reservation'[0m
+[1m[94m   |[0m
+[1m[94m10 |[0m     NamedAddress("my_package")
+[1m[94m11 |[0m ;
+[1m[94m12 |[0m ALLOCATE_GLOBAL_ADDRESS
+[1m[94m13 |[0m     Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+[1m[94m14 |[0m     "Package"
+[1m[94m15 |[0m     AddressReservation("my_reservation")
+[1m[94m   |[0m[1m[91m                        ^^^^^^^^^^^^^^^^[0m [1m[91mname already defined[0m
+[1m[94m16 |[0m     NamedAddress("my_second_package")
+[1m[94m17 |[0m ;
+[1m[94m18 |[0m PUBLISH_PACKAGE_ADVANCED
+[1m[94m19 |[0m     Enum<AccessRule::AllowAll>()
+[1m[94m20 |[0m     Tuple(
+[1m[94m   |[0m

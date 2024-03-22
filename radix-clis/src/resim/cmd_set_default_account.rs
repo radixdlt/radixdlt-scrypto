@@ -17,7 +17,7 @@ pub struct SetDefaultAccount {
 }
 
 impl SetDefaultAccount {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let mut configs = get_configs()?;
         let private_key = parse_private_key_from_str(&self.private_key).map_err(|e| {
             if Secp256k1PublicKey::from_str(&self.private_key).is_ok() {

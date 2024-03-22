@@ -1,11 +1,13 @@
+use crate::resim::*;
 use clap::Parser;
 use radix_engine::utils::validate_call_arguments_to_native_components;
-use radix_transactions::manifest::{compile, BlobProvider};
+use radix_transactions::manifest::{
+    compile, compiler::compile_error_diagnostics, compiler::CompileErrorDiagnosticsStyle,
+    BlobProvider,
+};
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
-
-use crate::resim::*;
 
 /// Compiles, signs and runs a transaction manifest
 #[derive(Parser, Debug)]
@@ -39,7 +41,7 @@ impl Run {
         .into()
     }
 
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
         let network = match &self.network {
@@ -57,7 +59,13 @@ impl Run {
             &network,
             BlobProvider::new_with_blobs(blobs),
         )
-        .map_err(Error::CompileError)?;
+        .map_err(|err| {
+            compile_error_diagnostics(
+                &pre_processed_manifest,
+                err,
+                CompileErrorDiagnosticsStyle::TextTerminalColors,
+            )
+        })?;
 
         validate_call_arguments_to_native_components(&compiled_manifest.instructions)
             .map_err(Error::InstructionSchemaValidationError)?;
@@ -72,5 +80,6 @@ impl Run {
             out,
         )
         .map(|_| ())
+        .map_err(|err| err.into())
     }
 }

@@ -20,7 +20,7 @@ pub struct NewPackage {
 }
 
 impl NewPackage {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), String> {
         let wasm_name = self.package_name.replace("-", "_");
         let path = self
             .path
@@ -65,7 +65,7 @@ impl NewPackage {
         };
 
         if path.exists() {
-            Err(Error::PackageAlreadyExists)
+            Err(Error::PackageAlreadyExists.into())
         } else {
             fs::create_dir_all(child_of(&path, "src")).map_err(Error::IOError)?;
             fs::create_dir_all(child_of(&path, "tests")).map_err(Error::IOError)?;

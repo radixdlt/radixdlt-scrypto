@@ -12,3 +12,5 @@ pub mod scrypto;
 pub mod scrypto_bindgen;
 /// Utility functions.
 pub mod utils;
+
+pub mod error;

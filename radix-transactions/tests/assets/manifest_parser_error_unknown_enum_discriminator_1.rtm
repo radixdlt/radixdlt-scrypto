@@ -1,0 +1,12 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+;
+CREATE_ACCOUNT_ADVANCED
+    Enum<OwnerRol::Updatable>(
+        Enum<AccessRule::AllowAll>()
+    )
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("${resource_address}")
+    Bucket("temp1");

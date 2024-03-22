@@ -35,7 +35,7 @@ pub struct Mint {
 }
 
 impl Mint {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let address_bech32_decoder = AddressBech32Decoder::for_simulator();
 
         let default_account = get_default_account()?;

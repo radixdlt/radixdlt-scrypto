@@ -59,7 +59,7 @@ pub struct Publish {
 }
 
 impl Publish {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         // Load wasm code
         let (code_path, definition_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             let build_artifacts = build_package(
@@ -71,7 +71,7 @@ impl Publish {
             )
             .map_err(Error::BuildError)?;
             if build_artifacts.len() > 1 {
-                return Err(Error::BuildError(BuildError::WorkspaceNotSupported));
+                return Err(Error::BuildError(BuildError::WorkspaceNotSupported).into());
             } else {
                 build_artifacts
                     .first()

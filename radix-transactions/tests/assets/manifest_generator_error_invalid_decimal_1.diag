@@ -1,0 +1,11 @@
+[1m[91merror[0m: [1minvalid decimal '1.000000000000000011111111' - MoreThanEighteenDecimalPlaces[0m
+[1m[94m   |[0m
+[1m[94m 8 |[0m     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+[1m[94m 9 |[0m     Bucket("some_xrd");
+[1m[94m10 |[0m 
+[1m[94m11 |[0m CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
+[1m[94m12 |[0m   Bucket("some_xrd")
+[1m[94m13 |[0m   Decimal("1.000000000000000011111111")
+[1m[94m   |[0m[1m[91m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[91minvalid decimal[0m
+[1m[94m14 |[0m   Proof("proof1a");
+[1m[94m   |[0m

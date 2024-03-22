@@ -40,7 +40,7 @@ pub struct TxnSync {
 }
 
 impl TxnSync {
-    pub fn sync(&self) -> Result<(), Error> {
+    pub fn sync(&self) -> Result<(), String> {
         let network = match &self.network {
             Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
             None => NetworkDefinition::mainnet(),

@@ -50,7 +50,7 @@ pub struct NewTokenFixed {
 }
 
 impl NewTokenFixed {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let default_account = get_default_account()?;
         let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {

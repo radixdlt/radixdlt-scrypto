@@ -5,6 +5,7 @@ use radix_common::prelude::*;
 use radix_engine::utils::validate_call_arguments_to_native_components;
 use radix_transactions::manifest::{decompile, DecompileError};
 use radix_transactions::prelude::*;
+use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -38,7 +39,20 @@ pub enum Error {
     InstructionSchemaValidationError(radix_engine::utils::LocatedInstructionSchemaValidationError),
 }
 
-pub fn run() -> Result<(), Error> {
+impl fmt::Display for Error {
+    // TODO Implement pretty error printing
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<Error> for String {
+    fn from(err: Error) -> String {
+        err.to_string()
+    }
+}
+
+pub fn run() -> Result<(), String> {
     let args = Args::parse();
 
     let content = std::fs::read(&args.input).map_err(Error::IoError)?;
@@ -90,7 +104,7 @@ pub fn run() -> Result<(), Error> {
                     }
                     Err(_) => {
                         // return original error
-                        return Err(e);
+                        return Err(e.into());
                     }
                 }
             }

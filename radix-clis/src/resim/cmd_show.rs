@@ -11,10 +11,10 @@ pub struct Show {
 }
 
 impl Show {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let SimulatorEnvironment { db, .. } = SimulatorEnvironment::new()?;
 
-        match &self.address {
+        let result = match &self.address {
             Some(address) => {
                 if let Ok(a) = SimulatorPackageAddress::from_str(address) {
                     dump_package(a.0, &db, out).map_err(Error::LedgerDumpError)
@@ -33,6 +33,7 @@ impl Show {
                     ))
                 })
                 .and_then(|x| dump_component(x, &db, out).map_err(Error::LedgerDumpError)),
-        }
+        };
+        result.map_err(|err| err.into())
     }
 }

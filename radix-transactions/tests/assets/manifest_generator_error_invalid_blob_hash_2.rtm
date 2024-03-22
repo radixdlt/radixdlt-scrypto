@@ -1,0 +1,28 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("500")
+;
+ALLOCATE_GLOBAL_ADDRESS
+    Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+    "Package"
+    AddressReservation("my_reservation")
+    NamedAddress("my_package")
+;
+PUBLISH_PACKAGE_ADVANCED
+    Enum<AccessRule::AllowAll>()
+    Tuple(
+        Map<String, Tuple>()
+    )
+    Blob("aabbcc")
+    Map<String, Tuple>()
+    Some(AddressReservation("my_reservation"))
+;
+CALL_FUNCTION
+    NamedAddress("my_package")
+    "BlueprintName"
+    "no_such_function"
+    Decimal("1.0")
+    NamedAddress("my_package")
+;
+

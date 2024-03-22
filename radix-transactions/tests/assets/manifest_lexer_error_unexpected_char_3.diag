@@ -1,0 +1,5 @@
+[1m[91merror[0m: [1munexpected character '7', expected '>'[0m
+[1m[94m  |[0m
+[1m[94m1 |[0m x=7
+[1m[94m  |[0m[1m[91m   ^[0m [1m[91munexpected character[0m
+[1m[94m  |[0m

@@ -17,13 +17,13 @@ pub struct Test {
 }
 
 impl Test {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), String> {
         test_package(
             self.path.clone().unwrap_or(current_dir().unwrap()),
             self.arguments.clone(),
             false,
         )
         .map(|_| ())
-        .map_err(Error::TestError)
+        .map_err(|err| Error::TestError(err).into())
     }
 }

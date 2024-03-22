@@ -70,7 +70,7 @@ impl Coverage {
 
     fn check_command_availability(command: String) -> Result<(), Error> {
         if Command::new(&command).arg("--version").output().is_err() {
-            eprintln!("Missing command: {}. Please install LLVM version matching rustc LLVM version, which is {}.", 
+            eprintln!("Missing command: {}. Please install LLVM version matching rustc LLVM version, which is {}.",
                 command, command.split('-').last().unwrap_or("Unknown"));
             eprintln!("For more information, check https://apt.llvm.org/");
             Err(Error::CoverageError(CoverageError::MissingLLVM))
@@ -79,7 +79,7 @@ impl Coverage {
         }
     }
 
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), String> {
         // Verify rust version and wasm target
         Self::check_wasm_target(false)?;
 
@@ -93,7 +93,7 @@ impl Coverage {
                 eprintln!("Coverage tool requries nightly version of rust toolchain");
                 eprintln!("You can install it by using the following commands:");
                 eprintln!("rustup target add wasm32-unknown-unknown --toolchain=nightly");
-                return Err(Error::CoverageError(CoverageError::IncorrectRustVersion));
+                return Err(Error::CoverageError(CoverageError::IncorrectRustVersion).into());
             }
             Self::check_wasm_target(true)?;
             unset_rustup_toolchain = true;
@@ -119,7 +119,7 @@ impl Coverage {
         )
         .map_err(Error::BuildError)?;
         if build_artifacts.len() > 1 {
-            return Err(Error::BuildError(BuildError::WorkspaceNotSupported));
+            return Err(Error::BuildError(BuildError::WorkspaceNotSupported).into());
         }
         let (wasm_path, _) = build_artifacts
             .first()
@@ -171,7 +171,7 @@ impl Coverage {
 
         if profraw_files.is_empty() {
             eprintln!("No .profraw files found in the coverage/data directory");
-            return Err(Error::CoverageError(CoverageError::NoProfrawFiles));
+            return Err(Error::CoverageError(CoverageError::NoProfrawFiles).into());
         }
 
         let profdata_path = data_path.join("coverage.profdata");
@@ -186,7 +186,7 @@ impl Coverage {
                 "llvm-profdata failed: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
-            return Err(Error::CoverageError(CoverageError::ProfdataMergeFailed));
+            return Err(Error::CoverageError(CoverageError::ProfdataMergeFailed).into());
         }
 
         // Generate object file from intermediate representation (.ll) file
@@ -231,7 +231,7 @@ impl Coverage {
 
         if !output.status.success() {
             eprintln!("clang failed: {}", String::from_utf8_lossy(&output.stderr));
-            return Err(Error::CoverageError(CoverageError::ClangFailed));
+            return Err(Error::CoverageError(CoverageError::ClangFailed).into());
         }
 
         // Generate Coverage Report
@@ -259,7 +259,7 @@ impl Coverage {
                 "llvm-cov failed: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
-            return Err(Error::CoverageError(CoverageError::LlvmCovFailed));
+            return Err(Error::CoverageError(CoverageError::LlvmCovFailed).into());
         }
 
         println!("Coverage report was succesfully generated, it is available in {coverage_report_path:?} directory.");

@@ -15,7 +15,7 @@ pub struct SetCurrentTime {
 }
 
 impl SetCurrentTime {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), String> {
         let instant = self.date_time.to_instant();
         db_upsert_timestamps(
             ProposerMilliTimestampSubstate {

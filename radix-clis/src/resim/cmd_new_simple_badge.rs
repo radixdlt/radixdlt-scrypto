@@ -54,7 +54,7 @@ impl NewSimpleBadge {
     pub fn run<O: std::io::Write>(
         &self,
         out: &mut O,
-    ) -> Result<Option<NonFungibleGlobalId>, Error> {
+    ) -> Result<Option<NonFungibleGlobalId>, String> {
         let network_definition = NetworkDefinition::simulator();
         let default_account = get_default_account()?;
         let mut metadata = MetadataInit::new();

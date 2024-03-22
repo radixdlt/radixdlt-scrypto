@@ -1,0 +1,12 @@
+[1m[91merror[0m: [1mexpected 1 number of values, found 3[0m
+[1m[94m   |[0m
+[1m[94m 3 |[0m     "lock_fee"
+[1m[94m 4 |[0m ;
+[1m[94m 5 |[0m CALL_METHOD
+[1m[94m 6 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+[1m[94m 7 |[0m     "some_method"
+[1m[94m 8 |[0m     Some("radix", "is", "fun")
+[1m[94m   |[0m[1m[91m          ^^^^^^^^^^^^^^^^^^^^[0m [1m[91mexpected 1 number of values[0m
+[1m[94m 9 |[0m     Enum<0u8>()
+[1m[94m10 |[0m ;
+[1m[94m   |[0m

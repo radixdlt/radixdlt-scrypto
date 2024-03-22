@@ -1,79 +1,61 @@
-use sbor::rust::str::FromStr;
+use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
+use crate::manifest::diagnostic_snippets::create_snippet;
+use crate::manifest::token::{Position, Span, Token, TokenWithSpan};
+use sbor::prelude::*;
 
-/// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
-/// byte-based / UTF-8 index.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Span {
-    /// The start of the span, exclusive
-    pub start: Position,
-    /// The end of the span, inclusive
-    pub end: Position,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Position {
-    /// A 0-indexed cursor indicating the next unicode char from the start
-    pub full_index: usize,
-    /// A 1-indexed cursor indicating the line number (assuming \n is a line break)
-    pub line_number: usize,
-    /// A 0-indexed cursor indicating the character offset in the line
-    pub line_char_index: usize,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExpectedChar {
+    Exact(char),
+    OneOf(Vec<char>),
+    HexDigit,
+    DigitLetterQuotePunctuation,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TokenKind {
-    // ==============
-    // Literals
-    // ==============
-    BoolLiteral(bool),
-    I8Literal(i8),
-    I16Literal(i16),
-    I32Literal(i32),
-    I64Literal(i64),
-    I128Literal(i128),
-    U8Literal(u8),
-    U16Literal(u16),
-    U32Literal(u32),
-    U64Literal(u64),
-    U128Literal(u128),
-    StringLiteral(String),
-
-    Ident(String),
-
-    /* Punctuations */
-    OpenParenthesis,
-    CloseParenthesis,
-    LessThan,
-    GreaterThan,
-    Comma,
-    Semicolon,
-    FatArrow,
+pub enum LexerErrorKind {
+    UnexpectedEof,
+    UnexpectedChar(char, ExpectedChar),
+    InvalidIntegerLiteral(String),
+    InvalidIntegerType(String),
+    InvalidInteger(String),
+    InvalidUnicode(u32),
+    MissingUnicodeSurrogate(u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Token {
-    pub kind: TokenKind,
+pub struct LexerError {
+    pub error_kind: LexerErrorKind,
     pub span: Span,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum LexerError {
-    UnexpectedEof,
-    UnexpectedChar(char, Position),
-    InvalidInteger(String, Position),
-    InvalidUnicode(u32, Position),
-    UnknownIdentifier(String, Position),
+impl LexerError {
+    fn unexpected_char(position: Position, c: char, expected: ExpectedChar) -> Self {
+        Self {
+            error_kind: LexerErrorKind::UnexpectedChar(c, expected),
+            span: Span {
+                start: position,
+                end: position.advance(c),
+            },
+        }
+    }
+
+    fn invalid_integer_type(ty: String, start: Position, end: Position) -> Self {
+        Self {
+            error_kind: LexerErrorKind::InvalidIntegerType(ty),
+            span: Span { start, end },
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct Lexer {
     /// The input text chars
     text: Vec<char>,
-    /// The current position in the text
+    /// The current position in the text (in case of end of file it equals to text length)
     current: Position,
 }
 
-pub fn tokenize(s: &str) -> Result<Vec<Token>, LexerError> {
+pub fn tokenize(s: &str) -> Result<Vec<TokenWithSpan>, LexerError> {
     let mut lexer = Lexer::new(s);
     let mut tokens = Vec::new();
     loop {
@@ -92,7 +74,7 @@ impl Lexer {
             text: text.chars().collect(),
             current: Position {
                 full_index: 0,
-                line_number: 1,
+                line_idx: 0,
                 line_char_index: 0,
             },
         }
@@ -103,21 +85,46 @@ impl Lexer {
     }
 
     fn peek(&self) -> Result<char, LexerError> {
-        self.text
-            .get(self.current.full_index)
-            .cloned()
-            .ok_or(LexerError::UnexpectedEof)
+        if self.is_eof() {
+            Err(LexerError {
+                error_kind: LexerErrorKind::UnexpectedEof,
+                span: Span {
+                    start: self.current,
+                    end: self.current,
+                },
+            })
+        } else {
+            Ok(self.text[self.current.full_index])
+        }
     }
 
     fn advance(&mut self) -> Result<char, LexerError> {
         let c = self.peek()?;
-        self.current.full_index += 1;
-        if c == '\n' {
-            self.current.line_number += 1;
-            self.current.line_char_index = 0;
+        self.current = self.current.advance(c);
+        Ok(c)
+    }
+
+    fn advance_expected(&mut self, expected: char) -> Result<char, LexerError> {
+        self.advance_matching(|c| c == expected, ExpectedChar::Exact(expected))
+    }
+
+    fn advance_matching(
+        &mut self,
+        matcher: impl Fn(char) -> bool,
+        expected: ExpectedChar,
+    ) -> Result<char, LexerError> {
+        let previous = self.current;
+        let c = self.advance()?;
+        if !matcher(c) {
+            Err(LexerError::unexpected_char(previous, c, expected))
         } else {
-            self.current.line_char_index += 1;
+            Ok(c)
         }
+    }
+
+    fn advance_and_append(&mut self, s: &mut String) -> Result<char, LexerError> {
+        let c = self.advance()?;
+        s.push(c);
         Ok(c)
     }
 
@@ -127,7 +134,7 @@ impl Lexer {
         c == ' ' || c == '\t' || c == '\r' || c == '\n'
     }
 
-    pub fn next_token(&mut self) -> Result<Option<Token>, LexerError> {
+    pub fn next_token(&mut self) -> Result<Option<TokenWithSpan>, LexerError> {
         // skip comment and whitespace
         let mut in_comment = false;
         while !self.is_eof() {
@@ -157,17 +164,18 @@ impl Lexer {
             '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' | '=' => {
                 self.tokenize_punctuation()
             }
-            _ => Err(LexerError::UnexpectedChar(
-                self.text[self.current.full_index],
+            c => Err(LexerError::unexpected_char(
                 self.current,
+                c,
+                ExpectedChar::DigitLetterQuotePunctuation,
             )),
         }
         .map(Option::from)
     }
 
     // TODO: consider using DFA
-    fn tokenize_number(&mut self) -> Result<Token, LexerError> {
-        let start = self.current;
+    fn tokenize_number(&mut self) -> Result<TokenWithSpan, LexerError> {
+        let literal_start = self.current;
         let mut s = String::new();
 
         // negative sign
@@ -176,78 +184,99 @@ impl Lexer {
         }
 
         // integer
-        match self.advance()? {
-            c @ '0' => s.push(c),
-            c @ '1'..='9' => {
-                s.push(c);
+        match self.advance_and_append(&mut s)? {
+            '0' => {}
+            '1'..='9' => {
                 while self.peek()?.is_ascii_digit() {
                     s.push(self.advance()?);
                 }
             }
             _ => {
-                return Err(self.unexpected_char());
+                return Err(LexerError {
+                    error_kind: LexerErrorKind::InvalidIntegerLiteral(s),
+                    span: Span {
+                        start: literal_start,
+                        end: self.current,
+                    },
+                });
             }
         }
 
         // type
-        match self.advance()? {
-            'i' => match self.advance()? {
-                '1' => match self.advance()? {
-                    '2' => match self.advance()? {
-                        '8' => self.parse_int(&s, "i128", TokenKind::I128Literal),
-                        _ => Err(self.unexpected_char()),
+        let ty_start = self.current;
+        let mut t = String::new();
+        match self.advance_and_append(&mut t)? {
+            'i' => match self.advance_and_append(&mut t)? {
+                '1' => match self.advance_and_append(&mut t)? {
+                    '2' => match self.advance_and_append(&mut t)? {
+                        '8' => self.parse_int(&s, "i128", Token::I128Literal, literal_start),
+                        _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                     },
-                    '6' => self.parse_int(&s, "i16", TokenKind::I16Literal),
-                    _ => Err(self.unexpected_char()),
+                    '6' => self.parse_int(&s, "i16", Token::I16Literal, literal_start),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
-                '3' => match self.advance()? {
-                    '2' => self.parse_int(&s, "i32", TokenKind::I32Literal),
-                    _ => Err(self.unexpected_char()),
+                '3' => match self.advance_and_append(&mut t)? {
+                    '2' => self.parse_int(&s, "i32", Token::I32Literal, literal_start),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
-                '6' => match self.advance()? {
-                    '4' => self.parse_int(&s, "i64", TokenKind::I64Literal),
-                    _ => Err(self.unexpected_char()),
+                '6' => match self.advance_and_append(&mut t)? {
+                    '4' => self.parse_int(&s, "i64", Token::I64Literal, literal_start),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
-                '8' => self.parse_int(&s, "i8", TokenKind::I8Literal),
-                _ => Err(self.unexpected_char()),
+                '8' => self.parse_int(&s, "i8", Token::I8Literal, literal_start),
+                _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
             },
-            'u' => match self.advance()? {
-                '1' => match self.advance()? {
-                    '2' => match self.advance()? {
-                        '8' => self.parse_int(&s, "u128", TokenKind::U128Literal),
-                        _ => Err(self.unexpected_char()),
+            'u' => match self.advance_and_append(&mut t)? {
+                '1' => match self.advance_and_append(&mut t)? {
+                    '2' => match self.advance_and_append(&mut t)? {
+                        '8' => self.parse_int(&s, "u128", Token::U128Literal, literal_start),
+                        _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                     },
-                    '6' => self.parse_int(&s, "u16", TokenKind::U16Literal),
-                    _ => Err(self.unexpected_char()),
+                    '6' => self.parse_int(&s, "u16", Token::U16Literal, literal_start),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
-                '3' => match self.advance()? {
-                    '2' => self.parse_int(&s, "u32", TokenKind::U32Literal),
-                    _ => Err(self.unexpected_char()),
+                '3' => match self.advance_and_append(&mut t)? {
+                    '2' => self.parse_int(&s, "u32", Token::U32Literal, literal_start),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
-                '6' => match self.advance()? {
-                    '4' => self.parse_int(&s, "u64", TokenKind::U64Literal),
-                    _ => Err(self.unexpected_char()),
+                '6' => match self.advance_and_append(&mut t)? {
+                    '4' => self.parse_int(&s, "u64", Token::U64Literal, literal_start),
+                    _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
                 },
-                '8' => self.parse_int(&s, "u8", TokenKind::U8Literal),
-                _ => Err(self.unexpected_char()),
+                '8' => self.parse_int(&s, "u8", Token::U8Literal, literal_start),
+                _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
             },
-            _ => Err(self.unexpected_char()),
+            _ => Err(LexerError::invalid_integer_type(t, ty_start, self.current)),
         }
-        .map(|kind| self.new_token(kind, start, self.current))
+        .map(|token| self.new_token(token, literal_start, self.current))
     }
 
-    fn parse_int<T: FromStr>(
+    fn parse_int<T>(
         &self,
         int: &str,
         ty: &str,
-        map: fn(T) -> TokenKind,
-    ) -> Result<TokenKind, LexerError> {
-        int.parse::<T>()
-            .map(map)
-            .map_err(|_| LexerError::InvalidInteger(format!("{}{}", int, ty), self.current))
+        map: fn(T) -> Token,
+        token_start: Position,
+    ) -> Result<Token, LexerError>
+    where
+        T: FromStr,
+        <T as FromStr>::Err: Display,
+    {
+        int.parse::<T>().map(map).map_err(|err| LexerError {
+            error_kind: LexerErrorKind::InvalidInteger(format!(
+                "'{}{}' - {}",
+                int,
+                ty,
+                err.to_string()
+            )),
+            span: Span {
+                start: token_start,
+                end: self.current,
+            },
+        })
     }
 
-    fn tokenize_string(&mut self) -> Result<Token, LexerError> {
+    fn tokenize_string(&mut self) -> Result<TokenWithSpan, LexerError> {
         let start = self.current;
         assert_eq!(self.advance()?, '"');
 
@@ -255,6 +284,9 @@ impl Lexer {
         while self.peek()? != '"' {
             let c = self.advance()?;
             if c == '\\' {
+                // Remember '\\' position
+                let token_start = self.current;
+
                 // See the JSON string specifications
                 match self.advance()? {
                     '"' => s.push('\"'),
@@ -270,22 +302,36 @@ impl Lexer {
                         // Check unicode surrogate pair
                         // (see https://unicodebook.readthedocs.io/unicode_encodings.html#surrogates)
                         if (0xD800..=0xDFFF).contains(&unicode) {
+                            let position = self.current;
                             if self.advance()? == '\\' && self.advance()? == 'u' {
                                 unicode = 0x10000
                                     + ((unicode - 0xD800) << 10)
                                     + self.read_utf16_unit()?
                                     - 0xDC00;
                             } else {
-                                return Err(self.unexpected_char());
+                                return Err(LexerError {
+                                    error_kind: LexerErrorKind::MissingUnicodeSurrogate(unicode),
+                                    span: Span {
+                                        start: token_start,
+                                        end: position,
+                                    },
+                                });
                             }
                         }
-                        s.push(
-                            char::from_u32(unicode)
-                                .ok_or(LexerError::InvalidUnicode(unicode, self.current))?,
-                        );
+                        s.push(char::from_u32(unicode).ok_or(LexerError {
+                            error_kind: LexerErrorKind::InvalidUnicode(unicode),
+                            span: Span {
+                                start: token_start,
+                                end: self.current,
+                            },
+                        })?);
                     }
-                    _ => {
-                        return Err(self.unexpected_char());
+                    c => {
+                        return Err(LexerError::unexpected_char(
+                            token_start,
+                            c,
+                            ExpectedChar::OneOf(vec!['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']),
+                        ));
                     }
                 }
             } else {
@@ -294,25 +340,21 @@ impl Lexer {
         }
         self.advance()?;
 
-        Ok(self.new_token(TokenKind::StringLiteral(s), start, self.current))
+        Ok(self.new_token(Token::StringLiteral(s), start, self.current))
     }
 
     fn read_utf16_unit(&mut self) -> Result<u32, LexerError> {
         let mut code: u32 = 0;
 
         for _ in 0..4 {
-            let c = self.advance()?;
-            if c.is_ascii_hexdigit() {
-                code = code * 16 + c.to_digit(16).unwrap();
-            } else {
-                return Err(self.unexpected_char());
-            }
+            let c = self.advance_matching(|c| c.is_ascii_hexdigit(), ExpectedChar::HexDigit)?;
+            code = code * 16 + c.to_digit(16).unwrap();
         }
 
         Ok(code)
     }
 
-    fn tokenize_identifier(&mut self) -> Result<Token, LexerError> {
+    fn tokenize_identifier(&mut self) -> Result<TokenWithSpan, LexerError> {
         let start = self.current;
 
         let mut id = String::from(self.advance()?);
@@ -326,51 +368,106 @@ impl Lexer {
             id.push(self.advance()?);
         }
 
-        let kind = match id.as_str() {
-            "true" => TokenKind::BoolLiteral(true),
-            "false" => TokenKind::BoolLiteral(false),
-            other => TokenKind::Ident(other.to_string()),
+        let token = match id.as_str() {
+            "true" => Token::BoolLiteral(true),
+            "false" => Token::BoolLiteral(false),
+            other => Token::Ident(other.to_string()),
         };
-        Ok(self.new_token(kind, start, self.current))
+        Ok(self.new_token(token, start, self.current))
     }
 
-    fn tokenize_punctuation(&mut self) -> Result<Token, LexerError> {
-        let start = self.current;
+    fn tokenize_punctuation(&mut self) -> Result<TokenWithSpan, LexerError> {
+        let token_start = self.current;
 
-        let token_kind = match self.advance()? {
-            '(' => TokenKind::OpenParenthesis,
-            ')' => TokenKind::CloseParenthesis,
-            '<' => TokenKind::LessThan,
-            '>' => TokenKind::GreaterThan,
-            ',' => TokenKind::Comma,
-            ';' => TokenKind::Semicolon,
-            '=' => match self.advance()? {
-                '>' => TokenKind::FatArrow,
-                _ => return Err(self.unexpected_char()),
-            },
-            _ => {
-                return Err(self.unexpected_char());
+        let token = match self.advance()? {
+            '(' => Token::OpenParenthesis,
+            ')' => Token::CloseParenthesis,
+            '<' => Token::LessThan,
+            '>' => Token::GreaterThan,
+            ',' => Token::Comma,
+            ';' => Token::Semicolon,
+            '=' => {
+                self.advance_expected('>')?;
+                Token::FatArrow
+            }
+            c => {
+                return Err(LexerError::unexpected_char(
+                    token_start,
+                    c,
+                    ExpectedChar::OneOf(vec!['(', ')', '<', '>', ',', ';', '=']),
+                ))
             }
         };
 
-        Ok(self.new_token(token_kind, start, self.current))
+        Ok(self.new_token(token, token_start, self.current))
     }
 
-    fn new_token(&self, kind: TokenKind, start: Position, end: Position) -> Token {
-        Token {
-            kind,
+    fn new_token(&self, token: Token, start: Position, end: Position) -> TokenWithSpan {
+        TokenWithSpan {
+            token,
             span: Span { start, end },
         }
     }
+}
 
-    fn unexpected_char(&self) -> LexerError {
-        LexerError::UnexpectedChar(self.text[self.current.full_index - 1], self.current)
-    }
+pub fn lexer_error_diagnostics(
+    s: &str,
+    err: LexerError,
+    style: CompileErrorDiagnosticsStyle,
+) -> String {
+    let (title, label) = match err.error_kind {
+        LexerErrorKind::UnexpectedEof => (
+            "unexpected end of file".to_string(),
+            "unexpected end of file".to_string(),
+        ),
+        LexerErrorKind::UnexpectedChar(c, expected) => {
+            let expected = match expected {
+                ExpectedChar::Exact(exact) => format!("'{}'", exact),
+                ExpectedChar::OneOf(one_of) => {
+                    let v: Vec<String> = one_of.iter().map(|c| format!("'{}'", c)).collect();
+                    if let Some((last, init)) =  v.split_last() {
+                        format!("{} or {}", init.join(", "), last)
+                    }
+                    else {
+                        "unknown".to_string()
+                    }
+                }
+                ExpectedChar::HexDigit => "hex digit".to_string(),
+                ExpectedChar::DigitLetterQuotePunctuation => "digit, letter, quotation mark or one of punctuation characters '(', ')', '<', '>', ',', ';', '='".to_string(),
+            };
+            (
+                format!("unexpected character {:?}, expected {}", c, expected),
+                "unexpected character".to_string(),
+            )
+        }
+        LexerErrorKind::InvalidIntegerLiteral(string) => (
+            format!("invalid integer literal '{}'", string),
+            "invalid integer literal".to_string(),
+        ),
+        LexerErrorKind::InvalidIntegerType(string) => (
+            format!("invalid integer type '{}'", string),
+            "invalid integer type".to_string(),
+        ),
+        LexerErrorKind::InvalidInteger(string) => (
+            format!("invalid integer value {}", string),
+            "invalid integer value".to_string(),
+        ),
+        LexerErrorKind::InvalidUnicode(value) => (
+            format!("invalid unicode code point {}", value),
+            "invalid unicode code point".to_string(),
+        ),
+        LexerErrorKind::MissingUnicodeSurrogate(value) => (
+            format!("missing unicode '{:X}' surrogate pair", value),
+            "missing unicode surrogate pair".to_string(),
+        ),
+    };
+    create_snippet(s, &err.span, &title, &label, style)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{position, span};
 
     #[macro_export]
     macro_rules! lex_ok {
@@ -378,7 +475,7 @@ mod tests {
             let mut lexer = Lexer::new($s);
             for i in 0..$expected.len() {
                 assert_eq!(
-                    lexer.next_token().map(|opt| opt.map(|t| t.kind)),
+                    lexer.next_token().map(|opt| opt.map(|t| t.token)),
                     Ok(Some($expected[i].clone()))
                 );
             }
@@ -407,16 +504,16 @@ mod tests {
 
     #[test]
     fn test_empty_strings() {
-        lex_ok!("", Vec::<TokenKind>::new());
-        lex_ok!("  ", Vec::<TokenKind>::new());
-        lex_ok!("\r\n\t", Vec::<TokenKind>::new());
+        lex_ok!("", Vec::<Token>::new());
+        lex_ok!("  ", Vec::<Token>::new());
+        lex_ok!("\r\n\t", Vec::<Token>::new());
     }
 
     #[test]
     fn test_bool() {
-        lex_ok!("true", vec![TokenKind::BoolLiteral(true)]);
-        lex_ok!("false", vec![TokenKind::BoolLiteral(false)]);
-        lex_ok!("false123u8", vec![TokenKind::Ident("false123u8".into())]);
+        lex_ok!("true", vec![Token::BoolLiteral(true)]);
+        lex_ok!("false", vec![Token::BoolLiteral(false)]);
+        lex_ok!("false123u8", vec![Token::Ident("false123u8".into())]);
     }
 
     #[test]
@@ -424,26 +521,29 @@ mod tests {
         lex_ok!(
             "1u82u1283i84i128",
             vec![
-                TokenKind::U8Literal(1),
-                TokenKind::U128Literal(2),
-                TokenKind::I8Literal(3),
-                TokenKind::I128Literal(4),
+                Token::U8Literal(1),
+                Token::U128Literal(2),
+                Token::I8Literal(3),
+                Token::I128Literal(4),
             ]
         );
-        lex_ok!(
-            "1u8 2u32",
-            vec![TokenKind::U8Literal(1), TokenKind::U32Literal(2)]
+        lex_ok!("1u8 2u32", vec![Token::U8Literal(1), Token::U32Literal(2)]);
+        lex_error!(
+            "123",
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedEof,
+                span: span!(start = (3, 0, 3), end = (3, 0, 3))
+            }
         );
-        lex_error!("123", LexerError::UnexpectedEof);
     }
 
     #[test]
     fn test_comment() {
-        lex_ok!("# 1u8", Vec::<TokenKind>::new());
-        lex_ok!("1u8 # comment", vec![TokenKind::U8Literal(1),]);
+        lex_ok!("# 1u8", Vec::<Token>::new());
+        lex_ok!("1u8 # comment", vec![Token::U8Literal(1),]);
         lex_ok!(
             "# multiple\n# line\nCALL_FUNCTION",
-            vec![TokenKind::Ident("CALL_FUNCTION".to_string()),]
+            vec![Token::Ident("CALL_FUNCTION".to_string()),]
         );
     }
 
@@ -452,12 +552,18 @@ mod tests {
         lex_ok!(
             r#"  "" "abc" "abc\r\n\"def\uD83C\uDF0D"  "#,
             vec![
-                TokenKind::StringLiteral("".into()),
-                TokenKind::StringLiteral("abc".into()),
-                TokenKind::StringLiteral("abc\r\n\"def🌍".into()),
+                Token::StringLiteral("".into()),
+                Token::StringLiteral("abc".into()),
+                Token::StringLiteral("abc\r\n\"def🌍".into()),
             ]
         );
-        lex_error!("\"", LexerError::UnexpectedEof);
+        lex_error!(
+            "\"",
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedEof,
+                span: span!(start = (1, 0, 1), end = (1, 0, 1))
+            }
+        );
     }
 
     #[test]
@@ -465,25 +571,25 @@ mod tests {
         lex_ok!(
             r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
             vec![
-                TokenKind::Ident("CALL_FUNCTION".to_string()),
-                TokenKind::Ident("Map".to_string()),
-                TokenKind::LessThan,
-                TokenKind::Ident("String".to_string()),
-                TokenKind::Comma,
-                TokenKind::Ident("Array".to_string()),
-                TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("test".into()),
-                TokenKind::Comma,
-                TokenKind::Ident("Array".to_string()),
-                TokenKind::LessThan,
-                TokenKind::Ident("String".to_string()),
-                TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("abc".into()),
-                TokenKind::CloseParenthesis,
-                TokenKind::CloseParenthesis,
-                TokenKind::Semicolon,
+                Token::Ident("CALL_FUNCTION".to_string()),
+                Token::Ident("Map".to_string()),
+                Token::LessThan,
+                Token::Ident("String".to_string()),
+                Token::Comma,
+                Token::Ident("Array".to_string()),
+                Token::GreaterThan,
+                Token::OpenParenthesis,
+                Token::StringLiteral("test".into()),
+                Token::Comma,
+                Token::Ident("Array".to_string()),
+                Token::LessThan,
+                Token::Ident("String".to_string()),
+                Token::GreaterThan,
+                Token::OpenParenthesis,
+                Token::StringLiteral("abc".into()),
+                Token::CloseParenthesis,
+                Token::CloseParenthesis,
+                Token::Semicolon,
             ]
         );
     }
@@ -493,10 +599,10 @@ mod tests {
         lex_ok!(
             "PreciseDecimal(\"12\")",
             vec![
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("12".into()),
-                TokenKind::CloseParenthesis,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::OpenParenthesis,
+                Token::StringLiteral("12".into()),
+                Token::CloseParenthesis,
             ]
         );
     }
@@ -506,27 +612,54 @@ mod tests {
         lex_ok!(
             "Array<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
             vec![
-                TokenKind::Ident("Array".to_string()),
-                TokenKind::LessThan,
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("12".into()),
-                TokenKind::CloseParenthesis,
-                TokenKind::Comma,
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("212".into()),
-                TokenKind::CloseParenthesis,
-                TokenKind::Comma,
-                TokenKind::Ident("PreciseDecimal".to_string()),
-                TokenKind::OpenParenthesis,
-                TokenKind::StringLiteral("1984".into()),
-                TokenKind::CloseParenthesis,
-                TokenKind::CloseParenthesis,
+                Token::Ident("Array".to_string()),
+                Token::LessThan,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::GreaterThan,
+                Token::OpenParenthesis,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::OpenParenthesis,
+                Token::StringLiteral("12".into()),
+                Token::CloseParenthesis,
+                Token::Comma,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::OpenParenthesis,
+                Token::StringLiteral("212".into()),
+                Token::CloseParenthesis,
+                Token::Comma,
+                Token::Ident("PreciseDecimal".to_string()),
+                Token::OpenParenthesis,
+                Token::StringLiteral("1984".into()),
+                Token::CloseParenthesis,
+                Token::CloseParenthesis,
             ]
+        );
+    }
+
+    #[test]
+    fn test_invalid_integer() {
+        lex_error!(
+            "-_28u32",
+            LexerError {
+                error_kind: LexerErrorKind::InvalidIntegerLiteral("-_".to_string()),
+                span: span!(start = (0, 0, 0), end = (2, 0, 2))
+            }
+        );
+
+        lex_error!(
+            "1i128\n 1u64 \n 1i37",
+            LexerError {
+                error_kind: LexerErrorKind::InvalidIntegerType("i37".to_string()),
+                span: span!(start = (15, 2, 2), end = (18, 2, 5))
+            }
+        );
+
+        lex_error!(
+            "3_0i8",
+            LexerError {
+                error_kind: LexerErrorKind::InvalidIntegerType("_".to_string()),
+                span: span!(start = (1, 0, 1), end = (2, 0, 2))
+            }
         );
     }
 
@@ -534,64 +667,39 @@ mod tests {
     fn test_unexpected_char() {
         lex_error!(
             "1u8 +2u32",
-            LexerError::UnexpectedChar(
-                '+',
-                Position {
-                    full_index: 4,
-                    line_number: 1,
-                    line_char_index: 4
-                }
-            )
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedChar(
+                    '+',
+                    ExpectedChar::DigitLetterQuotePunctuation
+                ),
+                span: span!(start = (4, 0, 4), end = (5, 0, 5))
+            }
         );
 
         lex_error!(
             "x=7",
-            LexerError::UnexpectedChar(
-                '7',
-                Position {
-                    full_index: 3,
-                    line_number: 1,
-                    line_char_index: 3
-                }
-            )
-        );
-        lex_error!(
-            "1i128\n 1u64 \n 1i37",
-            LexerError::UnexpectedChar(
-                '7',
-                Position {
-                    full_index: 18,
-                    line_number: 3,
-                    line_char_index: 5
-                }
-            )
+            LexerError {
+                error_kind: LexerErrorKind::UnexpectedChar('7', ExpectedChar::Exact('>')),
+                span: span!(start = (2, 0, 2), end = (3, 0, 3))
+            }
         );
     }
 
     #[test]
     fn test_unicode() {
-        lex_ok!(
-            r#""\u2764""#,
-            vec![TokenKind::StringLiteral("❤".to_string())]
-        );
-        lex_ok!(
-            r#""\uFA84""#,
-            vec![TokenKind::StringLiteral("彩".to_string())]
-        );
+        lex_ok!(r#""\u2764""#, vec![Token::StringLiteral("❤".to_string())]);
+        lex_ok!(r#""\uFA84""#, vec![Token::StringLiteral("彩".to_string())]);
         lex_ok!(
             r#""\uD83D\uDC69""#,
-            vec![TokenKind::StringLiteral("👩".to_string())]
+            vec![Token::StringLiteral("👩".to_string())]
         );
+        lex_ok!(r#""👩""#, vec![Token::StringLiteral("👩".to_string())]);
         lex_error!(
             r#""\uDCAC\u1234""#,
-            LexerError::InvalidUnicode(
-                1238580,
-                Position {
-                    full_index: 13,
-                    line_number: 1,
-                    line_char_index: 13
-                }
-            )
+            LexerError {
+                error_kind: LexerErrorKind::InvalidUnicode(1238580),
+                span: span!(start = (2, 0, 2), end = (13, 0, 13))
+            }
         );
     }
 }

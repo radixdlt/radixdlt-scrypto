@@ -1,0 +1,11 @@
+[1m[91merror[0m: [1mexpected String, found Decimal[0m
+[1m[94m   |[0m
+[1m[94m 6 |[0m CALL_METHOD
+[1m[94m 7 |[0m     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+[1m[94m 8 |[0m     "create_proof_of_amount"
+[1m[94m 9 |[0m     Address("resource_sim1t5lam43hk5fg9h2x7a8zgpfxsd78539kzm4h0xugldymfexuh2wzru")
+[1m[94m10 |[0m     Expression(
+[1m[94m11 |[0m       Decimal("1")
+[1m[94m   |[0m[1m[91m       ^^^^^^^[0m [1m[91mexpected String[0m
+[1m[94m12 |[0m     );
+[1m[94m   |[0m

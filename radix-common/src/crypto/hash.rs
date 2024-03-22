@@ -78,7 +78,7 @@ pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum ParseHashError {
     InvalidHex(String),
-    InvalidLength(usize),
+    InvalidLength { actual: usize, expected: usize },
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -100,7 +100,10 @@ impl TryFrom<&[u8]> for Hash {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != Hash::LENGTH {
-            return Err(ParseHashError::InvalidLength(slice.len()));
+            return Err(ParseHashError::InvalidLength {
+                actual: slice.len(),
+                expected: Hash::LENGTH,
+            });
         }
         Ok(Self(copy_u8_array(slice)))
     }

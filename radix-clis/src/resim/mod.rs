@@ -131,7 +131,7 @@ pub enum Command {
     Transfer(Transfer),
 }
 
-pub fn run() -> Result<(), Error> {
+pub fn run() -> Result<(), String> {
     let cli = ResimCli::parse();
 
     let mut out = std::io::stdout();
@@ -221,7 +221,7 @@ pub fn handle_manifest<O: std::io::Write>(
     trace: bool,
     print_receipt: bool,
     out: &mut O,
-) -> Result<Option<TransactionReceipt>, Error> {
+) -> Result<Option<TransactionReceipt>, String> {
     let network = match network {
         Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
         None => NetworkDefinition::simulator(),
@@ -283,7 +283,9 @@ pub fn handle_manifest<O: std::io::Write>(
             }
             drop(db);
 
-            process_receipt(receipt).map(Option::Some)
+            process_receipt(receipt)
+                .map(Option::Some)
+                .map_err(|err| err.into())
         }
     }
 }

@@ -1,0 +1,11 @@
+CALL_METHOD Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh") "withdraw" Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3") Decimal("5.0");
+
+# Create a proof from bucket, clone it and drop both
+TAKE_ALL_FROM_WORKTOP Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3") Bucket("some_xrd");
+CREATE_PROOF_FROM_BUCKET_OF_AMOUNT Bucket("some_xrd") Decimal("1") Proof("proof1a");
+CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES Bucket("some_xrd") Array<NonFungibleLocalId>(NonFungibleLocalId("some_id")) Proof("proof1b");
+CREATE_PROOF_FROM_BUCKET_OF_ALL Bucket("some_xrd") Proof("proof1c");
+CLONE_PROOF Proof("proof1c") Proof("proof1d");
+DROP_PROOF Proof("proof1d");
+DROP_PROOF Proof("proof1c");
+DROP_AUTH_ZONE_PROOFS;
