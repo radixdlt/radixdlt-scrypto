@@ -195,6 +195,13 @@ pub const TRANSACTION_TRACKER_PACKAGE: PackageAddress = PackageAddress::new_or_p
 ]);
 pub const TRANSACTION_TRACKER_BLUEPRINT: &str = "TransactionTracker";
 
+/// The native package for lockers.
+/// TODO: Get a vanity address
+pub const LOCKER_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+    13, 144, 99, 24, 198, 49, 140, 101, 153, 99, 237, 140, 99, 24, 198, 49, 140, 247, 190, 133,
+    161, 125, 72, 188, 166, 49, 140, 99, 24, 200,
+]);
+
 //=========================================================================
 // SYSTEM SINGLETON COMPONENTS - NATIVE
 //=========================================================================
