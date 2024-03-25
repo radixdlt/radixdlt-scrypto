@@ -2,10 +2,11 @@ use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
- use radix_engine_tests::common::PackageLoader;
+use radix_engine::updates::state_updates::generate_bls128_and_keccak256_state_updates;
+use radix_engine::updates::ProtocolUpdates;
+use radix_engine_tests::common::PackageLoader;
 use radix_engine_tests::common::*;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 use scrypto_test::prelude::*;
 use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
 
@@ -22,15 +23,14 @@ fn publishing_crypto_utils_with_state_flash_should_succeed() {
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .without_crypto_utils_update()
+        .with_custom_protocol_updates(ProtocolUpdates::none())
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
         .build();
     if flash_substates {
-        let state_updates =
-            generate_bls128_and_keccak256_state_updates( );
+        let state_updates = generate_bls128_and_keccak256_state_updates();
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         ledger.substate_db_mut().commit(&db_updates);
     }
@@ -68,9 +68,9 @@ fn run_flash_test_test_environment(flash_substates: bool, expect_success: bool) 
     let test_env_builder = TestEnvironmentBuilder::new();
 
     let mut test_env = if flash_substates {
-        test_env_builder.with_crypto_utils_protocol_update()
+        test_env_builder.protocol_updates(ProtocolUpdates::none().with_anemone())
     } else {
-        test_env_builder.without_crypto_utils_protocol_update()
+        test_env_builder.protocol_updates(ProtocolUpdates::none())
     }
     .build();
 

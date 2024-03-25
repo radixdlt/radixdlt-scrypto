@@ -40,10 +40,10 @@ impl ProtocolUpdates {
     }
 
     pub fn all() -> Self {
-        Self::none().anemone().bottlenose()
+        Self::none().with_anemone().with_bottlenose()
     }
 
-    pub fn anemone(mut self) -> Self {
+    pub fn with_anemone(mut self) -> Self {
         self.updates.extend(btreeset!(
             ProtocolUpdate::Bls12381AndKeccak256,
             ProtocolUpdate::SecondPrecisionTimestamp,
@@ -53,12 +53,22 @@ impl ProtocolUpdates {
         self
     }
 
-    pub fn bottlenose(mut self) -> Self {
+    pub fn with_bottlenose(mut self) -> Self {
         self.updates.extend(btreeset!(
             ProtocolUpdate::OwnerRoleGetter,
             ProtocolUpdate::SystemPatches,
             ProtocolUpdate::AccountLocker
         ));
+        self
+    }
+
+    pub fn with_update(mut self, update: ProtocolUpdate) -> Self {
+        self.updates.insert(update);
+        self
+    }
+
+    pub fn without_update(mut self, update: ProtocolUpdate) -> Self {
+        self.updates.remove(&update);
         self
     }
 
@@ -78,15 +88,10 @@ impl ProtocolUpdates {
                 ProtocolUpdate::ValidatorCreationFeeFix => {
                     generate_validator_creation_fee_fix_state_updates(db)
                 }
-                ProtocolUpdate::OwnerRoleGetter => {
-                    unimplemented!()
-                }
-                ProtocolUpdate::SystemPatches => {
-                    unimplemented!()
-                }
-                ProtocolUpdate::AccountLocker => {
-                    unimplemented!()
-                }
+                // TODO implement the following
+                ProtocolUpdate::OwnerRoleGetter => StateUpdates::default(),
+                ProtocolUpdate::SystemPatches => StateUpdates::default(),
+                ProtocolUpdate::AccountLocker => StateUpdates::default(),
             });
         }
         results
