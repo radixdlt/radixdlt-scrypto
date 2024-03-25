@@ -247,7 +247,7 @@ fn get_arguments_schema<'s>(
                 EntityType::InternalNonFungibleVault => RESOURCE_PACKAGE_DEFINITION
                     .blueprints
                     .get(NON_FUNGIBLE_VAULT_BLUEPRINT),
-
+                EntityType::GlobalLocker => todo!(),
                 EntityType::GlobalGenericComponent
                 | EntityType::InternalGenericComponent
                 | EntityType::InternalKeyValueStore => None,

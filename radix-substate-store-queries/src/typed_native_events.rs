@@ -159,6 +159,7 @@ fn resolve_typed_event_key_from_event_type_identifier(
                 TypedMultiResourcePoolBlueprintEventKey::new(&event_name)
                     .map(TypedNativeEventKey::from)
             }
+            EntityType::GlobalLocker => todo!(),
             EntityType::GlobalFungibleResourceManager => {
                 TypedFungibleResourceManagerBlueprintEventKey::new(&event_name)
                     .map(TypedNativeEventKey::from)

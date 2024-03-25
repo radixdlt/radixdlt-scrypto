@@ -345,6 +345,7 @@ fn to_typed_object_substate_key_internal(
                 substate_key,
             )?,
         ),
+        EntityType::GlobalLocker => todo!(),
         EntityType::GlobalTransactionTracker => {
             if partition_offset == PartitionOffset(0) {
                 TypedMainModuleSubstateKey::TransactionTrackerField(
