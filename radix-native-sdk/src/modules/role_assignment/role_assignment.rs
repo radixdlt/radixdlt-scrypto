@@ -190,7 +190,7 @@ pub trait RoleAssignmentObject {
     fn get_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
         &self,
         api: &mut Y,
-    ) -> Result<RoleAssignmentGetOutput, E> {
+    ) -> Result<RoleAssignmentGetOwnerRoleOutput, E> {
         let (node_id, module_id) = self.self_id();
         match module_id {
             None => api
