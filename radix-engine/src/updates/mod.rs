@@ -26,6 +26,9 @@ pub enum ProtocolUpdate {
 
     /// Introduces the account locker blueprint.
     AccountLocker,
+
+    /// Moves various protocol parameters to state.
+    ProtocolParamsToState,
 }
 
 pub struct ProtocolUpdates {
@@ -57,7 +60,8 @@ impl ProtocolUpdates {
         self.updates.extend(btreeset!(
             ProtocolUpdate::OwnerRoleGetter,
             ProtocolUpdate::SystemPatches,
-            ProtocolUpdate::AccountLocker
+            ProtocolUpdate::AccountLocker,
+            ProtocolUpdate::ProtocolParamsToState,
         ));
         self
     }
@@ -92,6 +96,7 @@ impl ProtocolUpdates {
                 ProtocolUpdate::OwnerRoleGetter => StateUpdates::default(),
                 ProtocolUpdate::SystemPatches => StateUpdates::default(),
                 ProtocolUpdate::AccountLocker => StateUpdates::default(),
+                ProtocolUpdate::ProtocolParamsToState => StateUpdates::default(),
             });
         }
         results
