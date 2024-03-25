@@ -236,14 +236,12 @@ where
 
         // Determine if any protocol updates need to be run against the database.
         if self.protocol_updates.consensus_manager_seconds_precision {
-            let state_updates = generate_seconds_precision_state_updates(&self.database);
+            let state_updates = generate_seconds_precision_timestamp_state_updates(&self.database);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
         if self.protocol_updates.crypto_utils {
-            let state_updates = generate_vm_boot_scrypto_version_state_updates(
-                ScryptoVmVersion::crypto_utils_added(),
-            );
+            let state_updates = generate_bls128_and_keccak256_state_updates();
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
@@ -253,7 +251,7 @@ where
             self.database.commit(&db_updates);
         }
         if self.protocol_updates.updated_pools {
-            let state_updates = generate_pools_v1_1_state_updates(&self.database);
+            let state_updates = generate_pool_math_precision_fix_state_updates(&self.database);
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }

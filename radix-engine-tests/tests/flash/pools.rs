@@ -66,7 +66,7 @@ fn database_is_consistent_before_and_after_protocol_update() {
     // Act
     {
         let substate_db = ledger.substate_db_mut();
-        let state_updates = generate_pools_v1_1_state_updates(substate_db);
+        let state_updates = generate_pool_math_precision_fix_state_updates(substate_db);
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         substate_db.commit(&db_updates);
     }
@@ -194,7 +194,7 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
     // Act
     {
         let substate_db = ledger.substate_db_mut();
-        let state_updates = generate_pools_v1_1_state_updates(substate_db);
+        let state_updates = generate_pool_math_precision_fix_state_updates(substate_db);
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         substate_db.commit(&db_updates);
     }
@@ -348,7 +348,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
     // Act
     {
         let substate_db = ledger.substate_db_mut();
-        let state_updates = generate_pools_v1_1_state_updates(substate_db);
+        let state_updates = generate_pool_math_precision_fix_state_updates(substate_db);
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         substate_db.commit(&db_updates);
     }

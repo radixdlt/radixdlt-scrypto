@@ -2,8 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
-use radix_engine::utils::generate_vm_boot_scrypto_version_state_updates;
-use radix_engine_tests::common::PackageLoader;
+ use radix_engine_tests::common::PackageLoader;
 use radix_engine_tests::common::*;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
@@ -31,7 +30,7 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
         .build();
     if flash_substates {
         let state_updates =
-            generate_vm_boot_scrypto_version_state_updates(ScryptoVmVersion::crypto_utils_added());
+            generate_bls128_and_keccak256_state_updates( );
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         ledger.substate_db_mut().commit(&db_updates);
     }

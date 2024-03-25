@@ -5,7 +5,7 @@ use radix_common::prelude::{manifest_args, Round};
 use radix_common::types::Epoch;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine::utils::generate_seconds_precision_state_updates;
+use radix_engine::utils::generate_seconds_precision_timestamp_state_updates;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
@@ -38,7 +38,7 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
 
     // Act
     if flash_substates {
-        let state_updates = generate_seconds_precision_state_updates(ledger.substate_db());
+        let state_updates = generate_seconds_precision_timestamp_state_updates(ledger.substate_db());
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         ledger.substate_db_mut().commit(&db_updates);
     }

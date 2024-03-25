@@ -16,6 +16,7 @@ use radix_engine::transaction::{
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
     WrappedSystem,
 };
+use radix_engine::updates::state_updates::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
@@ -405,15 +406,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         // Protocol Updates
         {
             if self.with_seconds_precision_update {
-                let state_updates = generate_seconds_precision_state_updates(&substate_db);
+                let state_updates =
+                    generate_seconds_precision_timestamp_state_updates(&substate_db);
                 let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 substate_db.commit(&db_updates);
             };
 
             if self.with_crypto_utils_update {
-                let state_updates = generate_vm_boot_scrypto_version_state_updates(
-                    ScryptoVmVersion::crypto_utils_added(),
-                );
+                let state_updates = generate_bls128_and_keccak256_state_updates();
                 let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 substate_db.commit(&db_updates);
             }
@@ -425,7 +425,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             }
 
             if self.with_pools_v1_1 {
-                let state_updates = generate_pools_v1_1_state_updates(&substate_db);
+                let state_updates = generate_pool_math_precision_fix_state_updates(&substate_db);
                 let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 substate_db.commit(&db_updates);
             }
