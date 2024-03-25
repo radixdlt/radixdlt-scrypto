@@ -8,6 +8,8 @@ use radix_common::*;
 
 define_type_info_marker!(Some(LOCKER_PACKAGE), AccountLocker);
 
+pub const ACCOUNT_LOCKER_BLUEPRINT: &str = "AccountLocker";
+
 //===========
 // Functions
 //===========
