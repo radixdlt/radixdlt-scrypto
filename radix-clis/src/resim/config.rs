@@ -1,6 +1,6 @@
 use crate::resim::*;
 use radix_common::prelude::*;
-use radix_engine::updates::state_updates::*;
+use radix_engine::updates::ProtocolUpdates;
 use radix_substate_store_interface::db_key_mapper::*;
 use radix_substate_store_interface::interface::*;
 use std::env;
@@ -53,18 +53,7 @@ impl SimulatorEnvironment {
 
         // Run the protocol updates - unlike the test runner, the user has no way in whether they
         // get these protocol updates or not.
-        {
-            let state_updates = generate_seconds_precision_timestamp_state_updates(&self.db);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.db.commit(&db_updates);
-        }
-        {
-            let state_updates = generate_bls128_and_keccak256_state_updates();
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.db.commit(&db_updates);
-        }
-        {
-            let state_updates = generate_pool_math_precision_fix_state_updates(&self.db);
+        for state_updates in ProtocolUpdates::all().generate_state_updates(&self.db) {
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.db.commit(&db_updates);
         }

@@ -15,7 +15,7 @@ use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
 use radix_engine::track::*;
 use radix_engine::transaction::*;
-use radix_engine::utils::*;
+use radix_engine::updates::ProtocolUpdates;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::package::*;
@@ -51,7 +51,7 @@ where
     bootstrap: bool,
 
     /// The protocol updates the the user has opt in to get. This defaults to all true.
-    protocol_updates: ProtocolUpdateOptIns,
+    protocol_updates: ProtocolUpdates,
 }
 
 impl Default for TestEnvironmentBuilder<InMemorySubstateDatabase> {
@@ -67,7 +67,7 @@ impl TestEnvironmentBuilder<InMemorySubstateDatabase> {
             flash_database: FlashSubstateDatabase::standard(),
             added_global_references: Default::default(),
             bootstrap: true,
-            protocol_updates: ProtocolUpdateOptIns::default(),
+            protocol_updates: ProtocolUpdates::all(),
         }
     }
 }
@@ -179,33 +179,8 @@ where
         }
     }
 
-    pub fn with_consensus_manager_seconds_precision_protocol_update(mut self) -> Self {
-        self.protocol_updates.consensus_manager_seconds_precision = true;
-        self
-    }
-
-    pub fn with_crypto_utils_protocol_update(mut self) -> Self {
-        self.protocol_updates.crypto_utils = true;
-        self
-    }
-
-    pub fn with_updated_pools_protocol_update(mut self) -> Self {
-        self.protocol_updates.updated_pools = true;
-        self
-    }
-
-    pub fn without_consensus_manager_seconds_precision_protocol_update(mut self) -> Self {
-        self.protocol_updates.consensus_manager_seconds_precision = false;
-        self
-    }
-
-    pub fn without_crypto_utils_protocol_update(mut self) -> Self {
-        self.protocol_updates.crypto_utils = false;
-        self
-    }
-
-    pub fn without_updated_pools_protocol_update(mut self) -> Self {
-        self.protocol_updates.updated_pools = false;
+    pub fn protocol_updates(mut self, protocol_updates: ProtocolUpdates) -> Self {
+        self.protocol_updates = protocol_updates;
         self
     }
 
@@ -235,23 +210,7 @@ where
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
 
         // Determine if any protocol updates need to be run against the database.
-        if self.protocol_updates.consensus_manager_seconds_precision {
-            let state_updates = generate_seconds_precision_timestamp_state_updates(&self.database);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.database.commit(&db_updates);
-        }
-        if self.protocol_updates.crypto_utils {
-            let state_updates = generate_bls128_and_keccak256_state_updates();
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.database.commit(&db_updates);
-        }
-        if self.protocol_updates.validator_fee_update {
-            let state_updates = generate_validator_fee_fix_state_updates(&self.database);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.database.commit(&db_updates);
-        }
-        if self.protocol_updates.updated_pools {
-            let state_updates = generate_pool_math_precision_fix_state_updates(&self.database);
+        for state_updates in self.protocol_updates.generate_state_updates(&self.database) {
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
@@ -516,24 +475,6 @@ impl CommittableSubstateDatabase for FlashSubstateDatabase {
                     self.partitions.remove(&partition_key);
                 }
             }
-        }
-    }
-}
-
-struct ProtocolUpdateOptIns {
-    pub consensus_manager_seconds_precision: bool,
-    pub crypto_utils: bool,
-    pub validator_fee_update: bool,
-    pub updated_pools: bool,
-}
-
-impl Default for ProtocolUpdateOptIns {
-    fn default() -> Self {
-        Self {
-            consensus_manager_seconds_precision: true,
-            crypto_utils: true,
-            validator_fee_update: true,
-            updated_pools: true,
         }
     }
 }

@@ -33,10 +33,14 @@ pub struct ProtocolUpdates {
 }
 
 impl ProtocolUpdates {
-    pub fn new() -> Self {
+    pub fn none() -> Self {
         Self {
             updates: BTreeSet::new(),
         }
+    }
+
+    pub fn all() -> Self {
+        Self::none().anemone().bottlenose()
     }
 
     pub fn anemone(mut self) -> Self {
@@ -58,7 +62,7 @@ impl ProtocolUpdates {
         self
     }
 
-    pub fn to_state_updates<S: SubstateDatabase>(&self, db: &S) -> Vec<StateUpdates> {
+    pub fn generate_state_updates<S: SubstateDatabase>(&self, db: &S) -> Vec<StateUpdates> {
         let mut results = Vec::new();
         for update in &self.updates {
             results.push(match update {
