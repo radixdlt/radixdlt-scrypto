@@ -66,7 +66,7 @@ pub const ROLE_ASSIGNMENT_LOCK_OWNER_IDENT: &str = "lock_owner";
 )]
 pub struct RoleAssignmentLockOwnerInput {}
 
-pub type RoleAssingmentLockOwnerOutput = ();
+pub type RoleAssignmentLockOwnerOutput = ();
 
 pub const ROLE_ASSIGNMENT_GET_IDENT: &str = "get";
 
@@ -83,6 +83,20 @@ pub struct RoleAssignmentGetInput {
 }
 
 pub type RoleAssignmentGetOutput = Option<AccessRule>;
+
+// Part of the Bottlenose protocol update with the role assignment blueprint extension.
+pub const ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT: &str = "get_owner_role";
+
+#[cfg_attr(
+    feature = "fuzzing",
+    derive(Arbitrary, serde::Serialize, serde::Deserialize)
+)]
+#[derive(
+    Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestCategorize, ManifestEncode, ManifestDecode,
+)]
+pub struct RoleAssignmentGetOwnerRoleInput;
+
+pub type RoleAssignmentGetOwnerRoleOutput = OwnerRoleEntry;
 
 pub trait ToRoleEntry {
     fn to_role_entry(self) -> Option<AccessRule>;

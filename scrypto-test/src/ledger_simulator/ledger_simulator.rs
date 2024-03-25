@@ -208,6 +208,7 @@ pub struct LedgerSimulatorBuilder<E, D> {
     with_crypto_utils_update: bool,
     with_validator_fee_update: bool,
     with_pools_v1_1: bool,
+    with_role_assignment_bottlenose_extension: bool,
 }
 
 impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -222,6 +223,7 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             with_crypto_utils_update: true,
             with_validator_fee_update: true,
             with_pools_v1_1: true,
+            with_role_assignment_bottlenose_extension: true,
         }
     }
 }
@@ -238,6 +240,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_validator_fee_update: self.with_validator_fee_update,
             with_pools_v1_1: self.with_pools_v1_1,
+            with_role_assignment_bottlenose_extension: self
+                .with_role_assignment_bottlenose_extension,
         }
     }
 
@@ -280,6 +284,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_validator_fee_update: self.with_validator_fee_update,
             with_pools_v1_1: self.with_pools_v1_1,
+            with_role_assignment_bottlenose_extension: self
+                .with_role_assignment_bottlenose_extension,
         }
     }
 
@@ -297,6 +303,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             with_crypto_utils_update: self.with_crypto_utils_update,
             with_validator_fee_update: self.with_validator_fee_update,
             with_pools_v1_1: self.with_pools_v1_1,
+            with_role_assignment_bottlenose_extension: self
+                .with_role_assignment_bottlenose_extension,
         }
     }
 
@@ -317,6 +325,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
     pub fn without_pools_v1_1(mut self) -> Self {
         self.with_pools_v1_1 = false;
+        self
+    }
+
+    pub fn without_role_assignment_bottlenose_extension(mut self) -> Self {
+        self.with_role_assignment_bottlenose_extension = false;
         self
     }
 
@@ -426,6 +439,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
             if self.with_pools_v1_1 {
                 let state_updates = generate_pools_v1_1_state_updates(&substate_db);
+                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+                substate_db.commit(&db_updates);
+            }
+
+            if self.with_role_assignment_bottlenose_extension {
+                let state_updates =
+                    generate_role_assignment_bottlenose_extension_state_updates(&substate_db);
                 let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 substate_db.commit(&db_updates);
             }

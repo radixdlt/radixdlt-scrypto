@@ -9,6 +9,7 @@ fn test_stake_reconciliation() {
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_seconds_precision_update()
         .without_crypto_utils_update()
+        .without_role_assignment_bottlenose_extension()
         .build();
     let (account_pk, _, account) = ledger.new_account(false);
 
