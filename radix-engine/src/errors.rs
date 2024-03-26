@@ -47,8 +47,6 @@ pub trait CanBeAbortion {
 /// Represents an error which causes a transaction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionReason {
-    SuccessButFeeLoanNotRepaid,
-    ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
     TransactionEpochNotYetValid {
         valid_from: Epoch,
         current_epoch: Epoch,
@@ -59,12 +57,39 @@ pub enum RejectionReason {
     },
     IntentHashPreviouslyCommitted,
     IntentHashPreviouslyCancelled,
+
+    BootloadingError(BootloadingError),
+
+    ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
 }
 
 impl fmt::Display for RejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum TransactionExecutionError {
+    /// An error ocurred when bootloading a kernel.
+    BootloadingError(BootloadingError),
+
+    /// A runtime error
+    RuntimeError(RuntimeError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum BootloadingError {
+    ReferenceDoesNotExist(NodeId),
+    ReferenceIsNotAnObject(NodeId),
+    ReferenceDoesNotSupportDirectAccess(NodeId),
+
+    FailedToApplyDeferredCosts(CostingError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum FinalizingError {
+    CostingError(CostingError),
 }
 
 /// Represents an error when executing a transaction.
@@ -89,6 +114,8 @@ pub enum RuntimeError {
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
+
+    FinalizationCostingError(CostingError),
 }
 
 impl From<KernelError> for RuntimeError {
@@ -124,6 +151,7 @@ impl CanBeAbortion for RuntimeError {
             RuntimeError::SystemUpstreamError(_) => None,
             RuntimeError::SystemModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
+            RuntimeError::FinalizationCostingError(_) => None,
         }
     }
 }
@@ -135,10 +163,6 @@ pub enum KernelError {
 
     // ID allocation
     IdAllocationError(IdAllocationError),
-
-    // Reference management
-    InvalidDirectAccess,
-    InvalidReference(NodeId),
 
     // Substate lock/read/write/unlock
     SubstateHandleDoesNotExist(SubstateHandle),

@@ -15,7 +15,7 @@ pub trait InitSystemModule {
     // System module setup
     //======================
     #[inline(always)]
-    fn on_init(&mut self) -> Result<(), RuntimeError> {
+    fn on_init(&mut self) -> Result<(), BootloadingError> {
         Ok(())
     }
 }

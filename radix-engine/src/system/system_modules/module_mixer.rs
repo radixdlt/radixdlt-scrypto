@@ -1,4 +1,4 @@
-use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
+use super::costing::{CostingError, ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::internal_prelude::*;
@@ -196,7 +196,7 @@ impl SystemModuleMixer {
 
 impl InitSystemModule for SystemModuleMixer {
     #[trace_resources]
-    fn on_init(&mut self) -> Result<(), RuntimeError> {
+    fn on_init(&mut self) -> Result<(), BootloadingError> {
         let modules: EnabledModules = self.enabled_modules;
 
         // Enable execution trace
@@ -655,7 +655,9 @@ impl SystemModuleMixer {
         costing_entry: ExecutionCostingEntry,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing.apply_execution_cost(costing_entry)
+            self.costing
+                .apply_execution_cost(costing_entry)
+                .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))
         } else {
             Ok(())
         }
@@ -664,7 +666,7 @@ impl SystemModuleMixer {
     pub fn apply_finalization_cost(
         &mut self,
         costing_entry: FinalizationCostingEntry,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), CostingError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_finalization_cost(costing_entry)
         } else {
@@ -676,7 +678,7 @@ impl SystemModuleMixer {
         &mut self,
         storage_type: StorageType,
         size_increase: usize,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), CostingError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_storage_cost(storage_type, size_increase)
         } else {

@@ -353,8 +353,9 @@ where
                 // is only enabled when compiling with the standard library since the panic catching
                 // machinery and `SystemPanic` errors are only implemented in `std`.
                 #[cfg(feature = "std")]
-                if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) =
-                    interpretation_result
+                if let Err(TransactionExecutionError::RuntimeError(RuntimeError::SystemError(
+                    SystemError::SystemPanic(..),
+                ))) = interpretation_result
                 {
                     panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{interpretation_result:?}\"")
                 }
@@ -623,7 +624,7 @@ where
         fee_table: FeeTable,
         init: T::Init,
     ) -> (
-        Result<Vec<InstructionOutput>, RuntimeError>,
+        Result<Vec<InstructionOutput>, TransactionExecutionError>,
         (
             CostingModule,
             TransactionRuntimeModule,
@@ -658,7 +659,7 @@ where
         };
 
         let interpretation_result = kernel_boot
-            .call_transaction_processor(
+            .execute(
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
                 executable.references(),
@@ -673,38 +674,70 @@ where
                 /* finalization costs: computation on Node side */
                 let info = track.get_commit_info();
                 for store_commit in &info {
-                    system.modules.apply_finalization_cost(
-                        FinalizationCostingEntry::CommitStateUpdates { store_commit },
-                    )?;
+                    system
+                        .modules
+                        .apply_finalization_cost(FinalizationCostingEntry::CommitStateUpdates {
+                            store_commit,
+                        })
+                        .map_err(|e| {
+                            TransactionExecutionError::RuntimeError(
+                                RuntimeError::FinalizationCostingError(e),
+                            )
+                        })?;
                 }
                 system
                     .modules
                     .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
                         events: &system.modules.events().clone(),
+                    })
+                    .map_err(|e| {
+                        TransactionExecutionError::RuntimeError(
+                            RuntimeError::FinalizationCostingError(e),
+                        )
                     })?;
                 system
                     .modules
                     .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
                         logs: &system.modules.logs().clone(),
+                    })
+                    .map_err(|e| {
+                        TransactionExecutionError::RuntimeError(
+                            RuntimeError::FinalizationCostingError(e),
+                        )
                     })?;
 
                 /* state storage costs */
                 for store_commit in &info {
                     system
                         .modules
-                        .apply_storage_cost(StorageType::State, store_commit.len_increase())?;
+                        .apply_storage_cost(StorageType::State, store_commit.len_increase())
+                        .map_err(|e| {
+                            TransactionExecutionError::RuntimeError(
+                                RuntimeError::FinalizationCostingError(e),
+                            )
+                        })?;
                 }
 
                 /* archive storage costs */
                 let total_event_size = system.modules.events().iter().map(|x| x.len()).sum();
                 system
                     .modules
-                    .apply_storage_cost(StorageType::Archive, total_event_size)?;
+                    .apply_storage_cost(StorageType::Archive, total_event_size)
+                    .map_err(|e| {
+                        TransactionExecutionError::RuntimeError(
+                            RuntimeError::FinalizationCostingError(e),
+                        )
+                    })?;
 
                 let total_log_size = system.modules.logs().iter().map(|x| x.1.len()).sum();
                 system
                     .modules
-                    .apply_storage_cost(StorageType::Archive, total_log_size)?;
+                    .apply_storage_cost(StorageType::Archive, total_log_size)
+                    .map_err(|e| {
+                        TransactionExecutionError::RuntimeError(
+                            RuntimeError::FinalizationCostingError(e),
+                        )
+                    })?;
 
                 Ok(x)
             })
@@ -727,45 +760,36 @@ where
     }
 
     fn determine_result_type(
-        mut interpretation_result: Result<Vec<InstructionOutput>, RuntimeError>,
+        interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
         fee_reserve: &mut SystemLoanFeeReserve,
     ) -> TransactionResultType {
-        // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before
-        // the SYSTEM_LOAN_AMOUNT is reached (which trigger a repay event) and even though
-        // enough fee has been locked.
-        //
-        // Do another `repay` try during finalization to remedy it.
-        if let Err(err) = fee_reserve.repay_all() {
-            if interpretation_result.is_ok() {
-                interpretation_result = Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::CostingError(CostingError::FeeReserveError(err)),
-                ));
-            }
-        }
-
-        // First - check for required rejections from explicit invoke result errors
-        match &interpretation_result {
-            Err(err) => {
-                if let Some(abort_reason) = err.abortion() {
-                    return TransactionResultType::Abort(abort_reason.clone());
+        match interpretation_result {
+            Ok(output) => {
+                if fee_reserve.fully_repaid() {
+                    TransactionResultType::Commit(Ok(output))
+                } else {
+                    panic!("Manifest interpretation result was okay, but fee reserve wasn't fully repaid.")
                 }
             }
-            _ => {}
-        }
-
-        // Check for errors before loan is repaid - in which case, we also reject
-        if !fee_reserve.fully_repaid() {
-            return match interpretation_result {
-                Ok(..) => {
-                    TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
+            Err(e) => match e {
+                TransactionExecutionError::BootloadingError(e) => {
+                    TransactionResultType::Reject(RejectionReason::BootloadingError(e))
                 }
-                Err(error) => TransactionResultType::Reject(
-                    RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(error),
-                ),
-            };
+                TransactionExecutionError::RuntimeError(e) => {
+                    if let Some(abort_reason) = e.abortion() {
+                        TransactionResultType::Abort(abort_reason.clone())
+                    } else {
+                        if fee_reserve.fully_repaid() {
+                            TransactionResultType::Commit(Err(e))
+                        } else {
+                            TransactionResultType::Reject(
+                                RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(e),
+                            )
+                        }
+                    }
+                }
+            },
         }
-
-        TransactionResultType::Commit(interpretation_result)
     }
 
     fn finalize_fees(

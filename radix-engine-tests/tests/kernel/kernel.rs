@@ -52,7 +52,7 @@ impl KernelCallbackObject for TestCallbackObject {
     type CallFrameData = TestCallFrameData;
     type CallbackState = ();
 
-    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), RuntimeError> {
+    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), BootloadingError> {
         Ok(())
     }
 

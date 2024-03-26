@@ -69,7 +69,7 @@ impl KernelCallbackObject for TestCallbackObject {
         unreachable!()
     }
 
-    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), RuntimeError> {
+    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), BootloadingError> {
         Ok(())
     }
 
