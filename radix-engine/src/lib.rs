@@ -29,7 +29,11 @@ pub mod track;
 pub mod errors;
 
 pub mod utils;
+
 pub mod vm;
+
+/// Protocol updates
+pub mod updates;
 
 pub(crate) mod internal_prelude {
     pub use crate::blueprints::internal_prelude::*;

@@ -31,9 +31,9 @@ macro_rules! scrypto_encode {
     };
 }
 
-pub fn generate_vm_boot_scrypto_version_state_updates(version: ScryptoVmVersion) -> StateUpdates {
+pub fn generate_bls128_and_keccak256_state_updates() -> StateUpdates {
     let substate = scrypto_encode(&VmBoot::V1 {
-        scrypto_version: version.into(),
+        scrypto_version: ScryptoVmVersion::crypto_utils_added().into(),
     })
     .unwrap();
 
@@ -54,7 +54,9 @@ pub fn generate_vm_boot_scrypto_version_state_updates(version: ScryptoVmVersion)
 
 /// Generates the state updates required for updating the Consensus Manager blueprint
 /// to use seconds precision
-pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+pub fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase>(
+    db: &S,
+) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
     let consensus_mgr_pkg_node_id = CONSENSUS_MANAGER_PACKAGE.into_node_id();
     let bp_version_key = BlueprintVersionKey {
@@ -234,7 +236,7 @@ pub fn generate_seconds_precision_state_updates<S: SubstateDatabase>(db: &S) -> 
 /// * Removes the old code_hash => original_code substate.
 /// * Adds a new code_hash => original_code substate.
 /// * Updates the function exports in the blueprint definitions to point to the new code hash.
-pub fn generate_pools_v1_1_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+pub fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
 
     let pool_package_node_id = POOL_PACKAGE.into_node_id();
@@ -360,7 +362,9 @@ pub fn generate_pools_v1_1_state_updates<S: SubstateDatabase>(db: &S) -> StateUp
     }
 }
 
-pub fn generate_validator_fee_fix_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+pub fn generate_validator_creation_fee_fix_state_updates<S: SubstateDatabase>(
+    db: &S,
+) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
     let consensus_mgr_node_id = CONSENSUS_MANAGER.into_node_id();
 
@@ -394,9 +398,7 @@ pub fn generate_validator_fee_fix_state_updates<S: SubstateDatabase>(db: &S) -> 
     }
 }
 
-pub fn generate_role_assignment_bottlenose_extension_state_updates<S: SubstateDatabase>(
-    db: &S,
-) -> StateUpdates {
+pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
     let node_id = ROLE_ASSIGNMENT_MODULE_PACKAGE.into_node_id();
     let blueprint_version_key = BlueprintVersionKey {
