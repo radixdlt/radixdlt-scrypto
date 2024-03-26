@@ -901,10 +901,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         if let Some(result) =
             self.fetch_substate_from_state_updates::<M, D>(node_id, partition_num, key)
         {
-            // If result can be determined from the state updates
+            // If result can be determined from the state updates.
             result
         } else {
-            // otherwise, read the the substate database
+            // Otherwise, read from the substate database.
             self.fetch_substate_from_database::<M, D>(node_id, partition_num, key)
         }
     }

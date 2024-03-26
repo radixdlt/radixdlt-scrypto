@@ -467,7 +467,7 @@ pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
 ) -> (IndexSet<NodeId>, StateUpdates) {
     let mut new_nodes = index_set_new();
     let mut system_updates = index_map_new();
-    for (node_id, tracked_node) in tracked.touched_substates {
+    for (node_id, tracked_node) in tracked.tracked_nodes {
         if tracked_node.is_new {
             new_nodes.insert(node_id);
         }

@@ -24,7 +24,7 @@ pub struct StateUpdateSummary {
 impl StateUpdateSummary {
     pub fn new<S: SubstateDatabase>(
         substate_db: &S,
-        new_nodes: IndexSet<NodeId>,
+        new_node_ids: IndexSet<NodeId>,
         updates: &StateUpdates,
     ) -> Self {
         let mut new_packages = index_set_new();
@@ -32,7 +32,7 @@ impl StateUpdateSummary {
         let mut new_resources = index_set_new();
         let mut new_vaults = index_set_new();
 
-        for node_id in new_nodes {
+        for node_id in new_node_ids {
             if node_id.is_global_package() {
                 new_packages.insert(PackageAddress::new_or_panic(node_id.0));
             }

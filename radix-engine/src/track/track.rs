@@ -42,7 +42,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
 ///
 /// `NodeId` in this struct isn't always valid.
 pub struct TrackedSubstates {
-    pub touched_substates: IndexMap<NodeId, TrackedNode>,
+    pub tracked_nodes: IndexMap<NodeId, TrackedNode>,
     pub deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 }
 
@@ -209,7 +209,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         }
 
         Ok(TrackedSubstates {
-            touched_substates: self.tracked_nodes,
+            tracked_nodes: self.tracked_nodes,
             deleted_partitions: self.deleted_partitions,
         })
     }
