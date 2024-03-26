@@ -1,27 +1,19 @@
 use crate::rust::prelude::*;
 use crate::*;
 
-define_versioned!(
+define_single_versioned!(
     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
     #[sbor(child_types = "S::CustomTypeKind<LocalTypeId>, S::CustomTypeValidation")]
-    pub enum VersionedSchema<S: CustomSchema> {
-        latest_version: {
-            1 => Schema<S> = SchemaV1::<S>,
-        }
-    }
+    pub enum VersionedSchema<S: CustomSchema> => Schema<S> = SchemaV1::<S>
 );
 
 impl<S: CustomSchema> VersionedSchema<S> {
     pub fn v1(&self) -> &SchemaV1<S> {
-        match self {
-            VersionedSchema::V1(schema) => schema,
-        }
+        self.as_unique_latest_ref()
     }
 
     pub fn v1_mut(&mut self) -> &mut SchemaV1<S> {
-        match self {
-            VersionedSchema::V1(schema) => schema,
-        }
+        self.as_unique_latest_mut()
     }
 }
 
