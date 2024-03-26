@@ -4,7 +4,7 @@ use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, ReadOnly, StateUpdates,
-    TrackedNode, TrackedSubstateValue,
+    TrackedNode, TrackedSubstateValue, TrackedSubstates,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
@@ -96,16 +96,17 @@ pub struct SystemStructure {
 impl SystemStructure {
     pub fn resolve<S: SubstateDatabase>(
         substate_db: &S,
-        updates: &IndexMap<NodeId, TrackedNode>,
+        state_updates: &StateUpdates,
         application_events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
     ) -> Self {
-        let mut substate_schema_mapper =
-            SubstateSchemaMapper::new(SystemDatabaseReader::new_with_overlay(substate_db, updates));
-        substate_schema_mapper.add_all_written_substate_structures(updates);
+        let mut substate_schema_mapper = SubstateSchemaMapper::new(
+            SystemDatabaseReader::new_with_overlay(substate_db, state_updates),
+        );
+        substate_schema_mapper.add_all_written_substate_structures(state_updates);
         let substate_system_structures = substate_schema_mapper.done();
 
         let event_system_structures =
-            EventSchemaMapper::new(substate_db, &updates, application_events).run();
+            EventSchemaMapper::new(substate_db, state_updates, application_events).run();
 
         SystemStructure {
             substate_system_structures,
@@ -385,7 +386,7 @@ pub struct EventSchemaMapper<'a, S: SubstateDatabase> {
 impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
     pub fn new(
         substate_db: &'a S,
-        tracked: &'a IndexMap<NodeId, TrackedNode>,
+        tracked: &'a TrackedSubstates,
         application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
     ) -> Self {
         Self {

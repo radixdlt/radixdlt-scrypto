@@ -11,7 +11,7 @@ use radix_substate_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, SubstateKeyContent,
 };
 use radix_substate_store_interface::interface::{
-    CommittableSubstateDatabase, ListableSubstateDatabase,
+    CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase,
 };
 use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
@@ -31,7 +31,9 @@ use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::TrackedNode;
+use crate::track::{
+    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
+};
 use crate::transaction::{
     ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
 };
@@ -104,20 +106,17 @@ pub enum SystemReaderError {
 /// A System Layer (Layer 2) abstraction over an underlying substate database
 pub struct SystemDatabaseReader<'a, S: SubstateDatabase> {
     substate_db: &'a S,
-    tracked: Option<&'a IndexMap<NodeId, TrackedNode>>,
+    state_updates: Option<&'a StateUpdates>,
 
     blueprint_cache: RefCell<NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>>,
     schema_cache: RefCell<NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>>,
 }
 
 impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
-    pub fn new_with_overlay(
-        substate_db: &'a S,
-        tracked: &'a IndexMap<NodeId, TrackedNode>,
-    ) -> Self {
+    pub fn new_with_overlay(substate_db: &'a S, state_updates: &'a StateUpdates) -> Self {
         Self {
             substate_db,
-            tracked: Some(tracked),
+            state_updates: Some(state_updates),
             blueprint_cache: RefCell::new(NonIterMap::new()),
             schema_cache: RefCell::new(NonIterMap::new()),
         }
@@ -126,7 +125,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     pub fn new(substate_db: &'a S) -> Self {
         Self {
             substate_db,
-            tracked: None,
+            state_updates: None,
             blueprint_cache: RefCell::new(NonIterMap::new()),
             schema_cache: RefCell::new(NonIterMap::new()),
         }
@@ -350,7 +349,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         node_id: &NodeId,
         from_key: Option<&MapKey>,
     ) -> Result<Box<dyn Iterator<Item = (MapKey, Vec<u8>)> + '_>, SystemReaderError> {
-        if self.tracked.is_some() {
+        if self.state_updates.is_some() {
             panic!("substates_iter with overlay not supported.");
         }
 
@@ -405,7 +404,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         ),
         SystemReaderError,
     > {
-        if self.tracked.is_some() {
+        if self.state_updates.is_some() {
             panic!("substates_iter with overlay not supported.");
         }
 
@@ -899,8 +898,15 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         partition_num: PartitionNumber,
         key: &SubstateKey,
     ) -> Option<D> {
-        self.fetch_substate_from_state_updates::<M, D>(node_id, partition_num, key)
-            .or_else(|| self.fetch_substate_from_database::<M, D>(node_id, partition_num, key))
+        if let Some(result) =
+            self.fetch_substate_from_state_updates::<M, D>(node_id, partition_num, key)
+        {
+            // If result can be determined from the state updates
+            result
+        } else {
+            // otherwise, read the the substate database
+            self.fetch_substate_from_database::<M, D>(node_id, partition_num, key)
+        }
     }
 
     pub fn fetch_substate_from_database<M: DatabaseKeyMapper, D: ScryptoDecode>(
@@ -918,21 +924,41 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Option<D> {
-        if let Some(tracked) = self.tracked {
-            tracked
+    ) -> Option<Option<D>> {
+        if let Some(updates) = self.state_updates {
+            updates
+                .by_node
                 .get(node_id)
-                .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
-                .and_then(|tracked_module| {
-                    tracked_module
-                        .substates
-                        .get(&M::to_db_sort_key(&substate_key))
+                .and_then(|node_updates| match node_updates {
+                    NodeStateUpdates::Delta { by_partition } => by_partition.get(&partition_num),
                 })
-                .and_then(|tracked_key| {
-                    tracked_key
-                        .substate_value
-                        .get()
-                        .map(|e| e.as_typed().unwrap())
+                .and_then(|partition_updates| match partition_updates {
+                    PartitionStateUpdates::Delta { by_substate } => {
+                        match by_substate.get(substate_key) {
+                            Some(e) => match e {
+                                DatabaseUpdate::Set(value) => {
+                                    Some(Some(scrypto_decode(value).unwrap()))
+                                }
+                                DatabaseUpdate::Delete => {
+                                    // Return `Some(None)` if the substate is deleted.
+                                    Some(None)
+                                }
+                            },
+                            None => None,
+                        }
+                    }
+                    PartitionStateUpdates::Batch(e) => match e {
+                        BatchPartitionStateUpdate::Reset {
+                            new_substate_values,
+                        } => {
+                            // Return `Some(None)` if the substate key isn't in the new value set.
+                            Some(
+                                new_substate_values
+                                    .get(substate_key)
+                                    .map(|value| scrypto_decode(value).unwrap()),
+                            )
+                        }
+                    },
                 })
         } else {
             None
@@ -1080,7 +1106,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         node_id: &NodeId,
         partition_number: PartitionNumber,
     ) -> Box<dyn Iterator<Item = (SubstateKey, Vec<u8>)> + '_> {
-        if self.tracked.is_some() {
+        if self.state_updates.is_some() {
             panic!("substates_iter with overlay not supported.");
         }
 
@@ -1141,7 +1167,7 @@ impl<'a, S: SubstateDatabase> ValidationContext for ValidationPayloadCheckerCont
 
 impl<'a, S: SubstateDatabase + ListableSubstateDatabase> SystemDatabaseReader<'a, S> {
     pub fn partitions_iter(&self) -> Box<dyn Iterator<Item = (NodeId, PartitionNumber)> + '_> {
-        if self.tracked.is_some() {
+        if self.state_updates.is_some() {
             panic!("partitions_iter with overlay not supported.");
         }
 

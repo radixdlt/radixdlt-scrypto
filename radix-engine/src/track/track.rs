@@ -38,6 +38,14 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
     phantom_data: PhantomData<M>,
 }
 
+/// Records all the substates that have been read or written into, and all the partitions to delete.
+///
+/// `NodeId` in this struct isn't always valid.
+pub struct TrackedSubstates {
+    pub touched_substates: IndexMap<NodeId, TrackedNode>,
+    pub deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
+}
+
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     pub fn new(substate_db: &'s S) -> Self {
         Self {
@@ -179,15 +187,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
-    pub fn finalize(
-        mut self,
-    ) -> Result<
-        (
-            IndexMap<NodeId, TrackedNode>,
-            IndexSet<(NodeId, PartitionNumber)>,
-        ),
-        TrackFinalizeError,
-    > {
+    pub fn finalize(mut self) -> Result<TrackedSubstates, TrackFinalizeError> {
         for (node_id, transient_substates) in self.transient_substates.transient_substates {
             for (partition, substate_key) in transient_substates {
                 if let Some(tracked_partition) = self
@@ -208,7 +208,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
             }
         }
 
-        Ok((self.tracked_nodes, self.deleted_partitions))
+        Ok(TrackedSubstates {
+            touched_substates: self.tracked_nodes,
+            deleted_partitions: self.deleted_partitions,
+        })
     }
 
     fn get_tracked_partition(

@@ -411,7 +411,7 @@ where
                             execution_trace_module.finalize(&paying_vaults, is_success);
 
                         // Finalize track
-                        let (tracked_nodes, deleted_partitions) = {
+                        let mut tracked_substates = {
                             match track.finalize() {
                                 Ok(result) => result,
                                 Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
@@ -420,33 +420,32 @@ where
                             }
                         };
 
+                        // Generate state updates from tracked substates
+                        // Note that this will prune invalid reads
+                        let (new_nodes, state_updates) =
+                            to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
+
+                        // Summarizes state updates
                         let system_structure = SystemStructure::resolve(
                             self.substate_db,
-                            &tracked_nodes,
+                            &state_updates,
                             &application_events,
                         );
-
                         let state_update_summary =
-                            StateUpdateSummary::new(self.substate_db, &tracked_nodes);
-
-                        let system_reader = SystemDatabaseReader::new_with_overlay(
-                            self.substate_db,
-                            &tracked_nodes,
-                        );
+                            StateUpdateSummary::new(self.substate_db, new_nodes, &state_updates);
 
                         // Resource reconciliation does not currently work in preview mode
                         if executable.costing_parameters().free_credit_in_xrd.is_zero() {
+                            let system_reader = SystemDatabaseReader::new_with_overlay(
+                                self.substate_db,
+                                &state_updates,
+                            );
                             reconcile_resource_state_and_events(
                                 &state_update_summary,
                                 &application_events,
                                 system_reader,
                             );
                         }
-
-                        let state_updates = to_state_updates::<SpreadPrefixKeyMapper>(
-                            tracked_nodes,
-                            deleted_partitions,
-                        );
 
                         (
                             fee_reserve_finalization.into(),
