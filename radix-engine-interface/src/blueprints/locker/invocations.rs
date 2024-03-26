@@ -134,13 +134,13 @@ define_invocation! {
     input: struct {
         claimant: Global<AccountObjectTypeInfo>,
         resource_address: ResourceAddress,
-        amount: IndexSet<NonFungibleLocalId>
+        ids: IndexSet<NonFungibleLocalId>
     },
     output: type Bucket,
     manifest_input: struct {
         claimant: ComponentAddress,
         resource_address: ResourceAddress,
-        amount: IndexSet<NonFungibleLocalId>
+        ids: IndexSet<NonFungibleLocalId>
     }
 }
 
@@ -170,13 +170,13 @@ define_invocation! {
     input: struct {
         claimant: Global<AccountObjectTypeInfo>,
         resource_address: ResourceAddress,
-        amount: IndexSet<NonFungibleLocalId>
+        ids: IndexSet<NonFungibleLocalId>
     },
     output: type Bucket,
     manifest_input: struct {
         claimant: ComponentAddress,
         resource_address: ResourceAddress,
-        amount: IndexSet<NonFungibleLocalId>
+        ids: IndexSet<NonFungibleLocalId>
     }
 }
 
@@ -222,4 +222,12 @@ define_invocation! {
 pub enum ResourceSpecifier {
     Fungible(ResourceAddress, Decimal),
     NonFungible(ResourceAddress, IndexSet<NonFungibleLocalId>),
+}
+
+impl ResourceSpecifier {
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            Self::Fungible(address, _) | Self::NonFungible(address, _) => *address,
+        }
+    }
 }
