@@ -220,14 +220,42 @@ define_invocation! {
 
 #[derive(Clone, Debug, ScryptoSbor, ManifestSbor, PartialEq, Eq)]
 pub enum ResourceSpecifier {
-    Fungible(ResourceAddress, Decimal),
-    NonFungible(ResourceAddress, IndexSet<NonFungibleLocalId>),
+    Fungible(Decimal),
+    NonFungible(IndexSet<NonFungibleLocalId>),
 }
 
 impl ResourceSpecifier {
-    pub fn resource_address(&self) -> ResourceAddress {
-        match self {
-            Self::Fungible(address, _) | Self::NonFungible(address, _) => *address,
+    pub fn new_empty(resource_address: ResourceAddress) -> Self {
+        if resource_address.is_fungible() {
+            Self::Fungible(Default::default())
+        } else {
+            Self::NonFungible(Default::default())
+        }
+    }
+
+    pub fn checked_add(&self, other: &Self) -> Option<Self> {
+        match (self, other) {
+            (ResourceSpecifier::Fungible(amount1), ResourceSpecifier::Fungible(amount2)) => amount1
+                .checked_add(*amount2)
+                .map(ResourceSpecifier::Fungible),
+            (ResourceSpecifier::NonFungible(ids1), ResourceSpecifier::NonFungible(ids2)) => Some(
+                ResourceSpecifier::NonFungible(ids1.clone().union(ids2).cloned().collect()),
+            ),
+            (ResourceSpecifier::Fungible(_), ResourceSpecifier::NonFungible(_))
+            | (ResourceSpecifier::NonFungible(_), ResourceSpecifier::Fungible(_)) => None,
+        }
+    }
+
+    pub fn checked_sub(&self, other: &Self) -> Option<Self> {
+        match (self, other) {
+            (ResourceSpecifier::Fungible(amount1), ResourceSpecifier::Fungible(amount2)) => amount1
+                .checked_sub(*amount2)
+                .map(ResourceSpecifier::Fungible),
+            (ResourceSpecifier::NonFungible(ids1), ResourceSpecifier::NonFungible(ids2)) => Some(
+                ResourceSpecifier::NonFungible(ids1.clone().difference(ids2).cloned().collect()),
+            ),
+            (ResourceSpecifier::Fungible(_), ResourceSpecifier::NonFungible(_))
+            | (ResourceSpecifier::NonFungible(_), ResourceSpecifier::Fungible(_)) => None,
         }
     }
 }

@@ -243,12 +243,12 @@ impl AccountLockerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Bucket info.
-        let resource_specifier = bucket_to_resource_specifier(&bucket, api)?;
+        let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
 
         // Store in the vault.
         Self::with_vault_create_on_traversal(
             claimant.0,
-            resource_specifier.resource_address(),
+            resource_address,
             api,
             |mut vault, api| vault.put(bucket, api),
         )??;
@@ -258,6 +258,7 @@ impl AccountLockerBlueprint {
             api,
             StoreEvent {
                 claimant,
+                resource_address,
                 resources: resource_specifier,
             },
         )?;
@@ -273,24 +274,31 @@ impl AccountLockerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // Store in the vaults
+        let resource_address = bucket.resource_address(api)?;
         for (account_address, specifier) in claimants.iter() {
             let claim_bucket = match specifier {
-                ResourceSpecifier::Fungible(address, amount) => bucket.take(*amount, api)?,
-                ResourceSpecifier::NonFungible(address, ids) => {
+                ResourceSpecifier::Fungible(amount) => bucket.take(*amount, api)?,
+                ResourceSpecifier::NonFungible(ids) => {
                     bucket.take_non_fungibles(ids.clone(), api)?
                 }
             };
 
             Self::with_vault_create_on_traversal(
                 account_address.0,
-                specifier.resource_address(),
+                resource_address,
                 api,
                 |mut vault, api| vault.put(claim_bucket, api),
             )??;
         }
 
         // Emit an event
-        Runtime::emit_event(api, BatchStoreEvent { claimants })?;
+        Runtime::emit_event(
+            api,
+            BatchStoreEvent {
+                claimants,
+                resource_address,
+            },
+        )?;
 
         // Return the change
         if bucket.is_empty(api)? {
@@ -321,7 +329,10 @@ impl AccountLockerBlueprint {
                 ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                 scrypto_encode(&AccountTryDepositOrRefundInput {
                     bucket,
-                    authorized_depositor_badge: Some(global_caller_non_fungible_global_id),
+                    // TODO: Add the global caller badge later on once we change the account
+                    // behavior.
+                    // authorized_depositor_badge: Some(global_caller_non_fungible_global_id),
+                    authorized_depositor_badge: None,
                 })
                 .unwrap(),
             )
@@ -349,11 +360,12 @@ impl AccountLockerBlueprint {
             global_caller(GlobalAddress::new_or_panic(actor_node_id.0));
 
         // First attempt to deposit the resources into their accounts
+        let resource_address = bucket.resource_address(api)?;
         let mut failed_deposits = indexmap! {};
         for (account_address, specifier) in claimants.into_iter() {
             let claim_bucket = match specifier {
-                ResourceSpecifier::Fungible(address, amount) => bucket.take(amount, api)?,
-                ResourceSpecifier::NonFungible(address, ref ids) => {
+                ResourceSpecifier::Fungible(amount) => bucket.take(amount, api)?,
+                ResourceSpecifier::NonFungible(ref ids) => {
                     bucket.take_non_fungibles(ids.clone(), api)?
                 }
             };
@@ -364,9 +376,10 @@ impl AccountLockerBlueprint {
                     ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                     scrypto_encode(&AccountTryDepositOrRefundInput {
                         bucket: claim_bucket,
-                        authorized_depositor_badge: Some(
-                            global_caller_non_fungible_global_id.clone(),
-                        ),
+                        // TODO: Add the global caller badge later on once we change the account
+                        // behavior.
+                        // authorized_depositor_badge: Some(global_caller_non_fungible_global_id.clone()),
+                        authorized_depositor_badge: None,
                     })
                     .unwrap(),
                 )
@@ -377,7 +390,7 @@ impl AccountLockerBlueprint {
                 // Store in the vault.
                 Self::with_vault_create_on_traversal(
                     account_address.0,
-                    specifier.resource_address(),
+                    resource_address,
                     api,
                     |mut vault, api| vault.put(bucket, api),
                 )??;
@@ -392,6 +405,7 @@ impl AccountLockerBlueprint {
             api,
             BatchStoreEvent {
                 claimants: failed_deposits,
+                resource_address,
             },
         )?;
 
@@ -423,11 +437,12 @@ impl AccountLockerBlueprint {
         )??;
 
         // Emitting the event
-        let resource_specifier = bucket_to_resource_specifier(&bucket, api)?;
+        let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
         Runtime::emit_event(
             api,
             RecoveryEvent {
                 claimant,
+                resource_address,
                 resources: resource_specifier,
             },
         )?;
@@ -456,11 +471,12 @@ impl AccountLockerBlueprint {
         )??;
 
         // Emitting the event
-        let resource_specifier = bucket_to_resource_specifier(&bucket, api)?;
+        let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
         Runtime::emit_event(
             api,
             RecoveryEvent {
                 claimant,
+                resource_address,
                 resources: resource_specifier,
             },
         )?;
@@ -500,11 +516,12 @@ impl AccountLockerBlueprint {
         )??;
 
         // Emitting the event
-        let resource_specifier = bucket_to_resource_specifier(&bucket, api)?;
+        let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
         Runtime::emit_event(
             api,
             RecoveryEvent {
                 claimant,
+                resource_address,
                 resources: resource_specifier,
             },
         )?;
@@ -544,11 +561,12 @@ impl AccountLockerBlueprint {
         )??;
 
         // Emitting the event
-        let resource_specifier = bucket_to_resource_specifier(&bucket, api)?;
+        let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
         Runtime::emit_event(
             api,
             RecoveryEvent {
                 claimant,
+                resource_address,
                 resources: resource_specifier,
             },
         )?;
@@ -731,16 +749,16 @@ impl AccountLockerBlueprint {
 fn bucket_to_resource_specifier<Y>(
     bucket: &Bucket,
     api: &mut Y,
-) -> Result<ResourceSpecifier, RuntimeError>
+) -> Result<(ResourceAddress, ResourceSpecifier), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
     let resource_address = bucket.resource_address(api)?;
     if resource_address.is_fungible() {
         let amount = bucket.amount(api)?;
-        Ok(ResourceSpecifier::Fungible(resource_address, amount))
+        Ok((resource_address, ResourceSpecifier::Fungible(amount)))
     } else {
         let ids = bucket.non_fungible_local_ids(api)?;
-        Ok(ResourceSpecifier::NonFungible(resource_address, ids))
+        Ok((resource_address, ResourceSpecifier::NonFungible(ids)))
     }
 }
