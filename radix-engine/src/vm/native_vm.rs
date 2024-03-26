@@ -14,7 +14,7 @@ use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::object_modules::metadata::MetadataNativePackage;
-use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::object_modules::role_assignment::*;
 use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback::SystemLockData;
 use crate::vm::{VmApi, VmInvoke};
@@ -146,6 +146,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     ROYALTY_CODE_ID => RoyaltyNativePackage::invoke_export(export_name, input, api),
                     ROLE_ASSIGNMENT_CODE_ID => {
                         RoleAssignmentNativePackage::invoke_export(export_name, input, api)
+                    }
+                    ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID => {
+                        RoleAssignmentBottlenoseExtension::invoke_export(export_name, input, api)
                     }
                     POOL_V1_0_CODE_ID => PoolNativePackage::invoke_export(
                         export_name,

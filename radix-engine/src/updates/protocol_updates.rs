@@ -56,7 +56,7 @@ impl ProtocolUpdates {
     }
 
     /// Enables all the protocol updates included in the `bottlenose` release.
-    /// 
+    ///
     /// Note that this does not include `anemone` protocol updates.
     pub fn with_bottlenose(mut self) -> Self {
         self.updates.extend(btreeset!(
@@ -94,8 +94,10 @@ impl ProtocolUpdates {
                 ProtocolUpdate::ValidatorCreationFeeFix => {
                     generate_validator_creation_fee_fix_state_updates(db)
                 }
+                ProtocolUpdate::OwnerRoleGetter => {
+                    generate_owner_role_getter_state_updates(db)
+                }
                 // TODO implement the following
-                ProtocolUpdate::OwnerRoleGetter => StateUpdates::default(),
                 ProtocolUpdate::SystemPatches => StateUpdates::default(),
                 ProtocolUpdate::AccountLocker => StateUpdates::default(),
                 ProtocolUpdate::ProtocolParamsToState => StateUpdates::default(),
