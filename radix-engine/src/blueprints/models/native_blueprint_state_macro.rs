@@ -126,6 +126,7 @@ macro_rules! declare_native_blueprint_state {
                 use $crate::errors::*;
                 use $crate::system::system::*;
                 use radix_engine_interface::api::*;
+                use radix_native_sdk::prelude::*;
                 //--------------------------------------------------------
                 // MODELS
                 //--------------------------------------------------------
@@ -133,10 +134,10 @@ macro_rules! declare_native_blueprint_state {
                 // Generate models for each field
                 $(
                     // Value
-                    // > Set up Versioned types (if relevant). Assumes __FieldV1 exists and then creates
-                    //   - Versioned__Field
-                    //   - __Field (alias for __FieldV1)
-                    // > Set up the (transparent) _FieldPayload new type for the content of the field
+                    // > Set up Versioned types (if relevant). Assumes XXFieldV1 exists and then creates
+                    //   - VersionedXXField
+                    //   - XXField (alias for XXFieldV1)
+                    // > Set up the (transparent) XXFieldPayload new type to represent the content of the field
                     // > Set up the FieldContent trait for anything which can be resolved into the field payload
                     generate_content_type!(
                         content_trait: FieldContentSource,
@@ -151,6 +152,14 @@ macro_rules! declare_native_blueprint_state {
                         Field,
                         type [<$blueprint_ident $field_ident FieldSubstate>] = WRAPPED [<$blueprint_ident $field_ident FieldPayload>]
                     );
+
+                    pub enum [<$blueprint_ident $field_ident FieldDefinition>] {}
+
+                    impl FieldDefinition for [<$blueprint_ident $field_ident FieldDefinition>] {
+                        const FIELD_INDEX: u8 = [<$blueprint_ident Field>]::$field_ident.field_index();
+                        type Payload = [<$blueprint_ident $field_ident FieldPayload>];
+                        type Content = < [<$blueprint_ident $field_ident FieldPayload>] as FieldPayload >::Content;
+                    }
                 )*
 
                 // Generate models for each collection
@@ -400,40 +409,36 @@ macro_rules! declare_native_blueprint_state {
                     }
                 }
 
-                //--------------------------------------
-                // Application - Typed State API (TODO!)
-                //--------------------------------------
+                //------------------------------
+                // Application - Typed State API
+                //------------------------------
 
                 pub struct [<$blueprint_ident StateApi>]<'a, Y: ClientApi<RuntimeError>> {
-                    api: &'a mut Y,
+                    native_api: NativeClientApi::<'a, Y, RuntimeError>,
                 }
 
                 impl<'a, Y: ClientApi<RuntimeError>> [<$blueprint_ident StateApi>]<'a, Y> {
-                    pub fn with(client_api: &'a mut Y) -> Self {
+                    pub fn new<T: Into<NativeClientApi::<'a, Y, RuntimeError>>>(client_api: T) -> Self {
                         Self {
-                            api: client_api,
+                            native_api: client_api.into(),
                         }
                     }
 
-                    // For each field:
-                    // x_open_readwrite(OnDrop::SaveAndClose) -> MutableTypedField<'a, T>
-                    // > Reads + caches the initial value bytes, and current T
-                    // > Impls into<T> / Deref<Target = T> / DerefMut<Target = T>
-                    // > field_lock_and_close
-                    // > field_save_and_close(SaveMode::OnlyIfChanged) // If changed
-                    // > field_save(SaveMode::OnlyIfChanged)
-                    // > field_close_without_saving
-                    // > Drop > OnDrop::SaveAndClose(SaveMode) or OnDrop::PanicIfNotClosed
-                    // x_open_readonly() -> ImmutableTypedField<'a, T>
-                    // read_x() -> T
-
-                    // For each KV collection:
-                }
-
-                impl<'a, Y: ClientApi<$crate::errors::RuntimeError>> From<&'a mut Y> for [<$blueprint_ident StateApi>]<'a, Y> {
-                    fn from(value: &'a mut Y) -> Self {
-                        Self::with(value)
+                    /// This is intended as an "escape-glass" fallback, but in future will be
+                    /// removed when it's no longer needed.
+                    /// 
+                    /// You can get a &mut ClientApi by doing `*api.raw_api()`
+                    pub fn raw_api(&self) -> RefMut<'_, &'a mut Y> {
+                        self.native_api.raw_api()
                     }
+
+                    $(
+                        pub fn [<$field_property_name _field>](&self) -> FieldSource<'_, [<$blueprint_ident $field_ident FieldDefinition>], NativeClientApi::<'a, Y, RuntimeError>, RuntimeError> {
+                            FieldSource::new(&self.native_api, ACTOR_STATE_SELF)
+                        }
+                    )*
+
+                    // TODO: Implement for various collections
                 }
 
                 //--------------------------------
@@ -911,6 +916,10 @@ mod helper_macros {
 
                     fn as_latest_ref(&self) -> Option<&Self::Latest> {
                         self.as_ref().as_latest_ref()
+                    }
+
+                    fn as_latest_mut(&mut self) -> Option<&mut Self::Latest> {
+                        self.as_mut().as_latest_mut()
                     }
                 }
 
