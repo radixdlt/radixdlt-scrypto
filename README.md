@@ -21,10 +21,19 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
    - macOS:
      - Make sure you have the `xcode` command line tools: `xcode-select --install`.
      - Install cmake: `brew install cmake llvm`<br>
-       Add LLVM to the system path by adding below line to the `~/.profile`
+       Add LLVM to the system path by adding below line to the:
+       - `~/.profile` if `bash` is the default shell
+       - `~/.zshrc` if `zsh` is the default shell
+       - respective config file in case of other shell
        ```
-       PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+       PATH="$(brew --prefix llvm)/bin:$PATH"
        ```
+
+       You can check, which shell is the default one by inspecting `$SHELL` variable:
+       ```bash
+       echo $SHELL
+       ```
+
      - Install the Rust compiler:
      ```bash
      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
