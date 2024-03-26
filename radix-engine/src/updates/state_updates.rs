@@ -1,4 +1,5 @@
 use crate::blueprints::consensus_manager::*;
+use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
@@ -527,5 +528,54 @@ pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase>(db: &S) -> 
                 }
             }
         ),
+    }
+}
+
+pub fn generate_locker_package_state_updates() -> StateUpdates {
+    let package_definition = LockerNativePackage::definition();
+    let package_structure = PackageNativePackage::validate_and_build_package_structure(
+        package_definition,
+        VmType::Native,
+        LOCKER_CODE_ID.to_be_bytes().to_vec(),
+        Default::default(),
+        &VmVersion::latest(),
+    )
+    .unwrap_or_else(|err| {
+        panic!(
+            "Invalid flashed Package definition with native_code_id {}: {:?}",
+            LOCKER_CODE_ID, err
+        )
+    });
+
+    let partitions = create_package_partition_substates(
+        package_structure,
+        metadata_init! {
+            "name" => "Locker Package", locked;
+            "description" => "A native package that defines a set of blueprints for locking resources to be claimed later by users.", locked;
+        },
+        None,
+    );
+
+    StateUpdates {
+        by_node: indexmap! {
+            LOCKER_PACKAGE.into_node_id() => NodeStateUpdates::Delta {
+                by_partition: partitions
+                    .into_iter()
+                    .map(|(partition_num, substates)| {
+                        (
+                            partition_num,
+                            PartitionStateUpdates::Delta {
+                                by_substate: substates
+                                    .into_iter()
+                                    .map(|(key, value)| {
+                                        (key, DatabaseUpdate::Set(value.as_vec_ref().clone()))
+                                    })
+                                    .collect(),
+                            },
+                        )
+                    })
+                    .collect(),
+            }
+        },
     }
 }

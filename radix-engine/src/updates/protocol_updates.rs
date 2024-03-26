@@ -97,7 +97,7 @@ impl ProtocolUpdates {
                 ProtocolUpdate::OwnerRoleGetter => generate_owner_role_getter_state_updates(db),
                 // TODO implement the following
                 ProtocolUpdate::SystemPatches => StateUpdates::default(),
-                ProtocolUpdate::AccountLocker => StateUpdates::default(),
+                ProtocolUpdate::AccountLocker => generate_locker_package_state_updates(),
                 ProtocolUpdate::ProtocolParamsToState => StateUpdates::default(),
             });
         }

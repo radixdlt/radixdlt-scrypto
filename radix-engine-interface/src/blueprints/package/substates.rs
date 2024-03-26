@@ -18,6 +18,7 @@ pub const TEST_UTILS_CODE_ID: u64 = 15u64;
 pub const CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID: u64 = 16u64;
 pub const POOL_V1_1_CODE_ID: u64 = 17u64;
 pub const ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID: u64 = 18u64;
+pub const LOCKER_CODE_ID: u64 = 19u64;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);

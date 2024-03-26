@@ -60,7 +60,7 @@ pub enum EntityType {
     // Standard Global Components (start with char d since c is fully taken)
     //=========================================================================
     /// A global native locker component (104 in decimal). Gives Bech32 prefix: `d` followed by one of `q`, `p`, `z` or `r`.
-    GlobalLocker = 0b01101000, //--------- 01101 => d, 000xx => qpzr (001 = locker)
+    GlobalAccountLocker = 0b01101000, //--------- 01101 => d, 000xx => qpzr (001 = locker)
 
     //=========================================================================
     // Secp256k1 Virtual Global Components (start with char 6 for Secp256k1)
@@ -133,7 +133,7 @@ impl EntityType {
             | EntityType::GlobalTwoResourcePool
             | EntityType::GlobalMultiResourcePool
             | EntityType::GlobalTransactionTracker
-            | EntityType::GlobalLocker => true,
+            | EntityType::GlobalAccountLocker => true,
             EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
             | EntityType::InternalGenericComponent
@@ -161,7 +161,7 @@ impl EntityType {
             | EntityType::GlobalTwoResourcePool
             | EntityType::GlobalMultiResourcePool
             | EntityType::GlobalTransactionTracker
-            | EntityType::GlobalLocker => true,
+            | EntityType::GlobalAccountLocker => true,
             EntityType::GlobalPackage
             | EntityType::GlobalFungibleResourceManager
             | EntityType::GlobalNonFungibleResourceManager

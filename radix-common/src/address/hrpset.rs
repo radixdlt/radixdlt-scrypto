@@ -53,7 +53,7 @@ impl HrpSet {
             EntityType::GlobalOneResourcePool
             | EntityType::GlobalTwoResourcePool
             | EntityType::GlobalMultiResourcePool => &self.pool,
-            EntityType::GlobalLocker => &self.locker,
+            EntityType::GlobalAccountLocker => &self.locker,
             EntityType::GlobalTransactionTracker => &self.transaction_tracker,
         }
     }

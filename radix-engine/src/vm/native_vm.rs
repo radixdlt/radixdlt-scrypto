@@ -4,6 +4,7 @@ use crate::blueprints::consensus_manager::{
     ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
 };
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::ResourceNativePackage;
@@ -168,6 +169,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     TEST_UTILS_CODE_ID => {
                         TestUtilsNativePackage::invoke_export(export_name, input, api)
                     }
+                    LOCKER_CODE_ID => LockerNativePackage::invoke_export(export_name, input, api),
                     _ => {
                         return Err(RuntimeError::VmError(VmError::Native(
                             NativeRuntimeError::InvalidCodeId,

@@ -9,6 +9,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::locker::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::*;
 use radix_engine_interface::object_modules::role_assignment::*;
@@ -247,7 +248,9 @@ fn get_arguments_schema<'s>(
                 EntityType::InternalNonFungibleVault => RESOURCE_PACKAGE_DEFINITION
                     .blueprints
                     .get(NON_FUNGIBLE_VAULT_BLUEPRINT),
-                EntityType::GlobalLocker => todo!(),
+                EntityType::GlobalAccountLocker => LOCKER_PACKAGE_DEFINITION
+                    .blueprints
+                    .get(ACCOUNT_LOCKER_BLUEPRINT),
                 EntityType::GlobalGenericComponent
                 | EntityType::InternalGenericComponent
                 | EntityType::InternalKeyValueStore => None,
