@@ -40,7 +40,7 @@ macro_rules! function_schema {
                         output: TypeRef::Static(
                             $aggregator.add_child_type_and_descendents::<[<$blueprint_name:camel $ident:camel Output >]>(),
                         ),
-                        export: [<$blueprint_name:snake:upper _ $ident:snake:upper _IDENT>].to_string(),
+                        export: [<$blueprint_name:snake:upper _ $ident:snake:upper _EXPORT_NAME>].to_string(),
                     },
                 );
             )*

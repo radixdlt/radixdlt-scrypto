@@ -42,7 +42,7 @@ define_invocation! {
     input: struct {
         allow_forceful_withdraws: bool
     },
-    output: type Global<AccountLockerObjectTypeInfo>,
+    output: type (Global<AccountLockerObjectTypeInfo>, Bucket),
     manifest_input: struct {
         allow_forceful_withdraws: bool
     }

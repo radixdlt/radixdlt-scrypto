@@ -189,24 +189,30 @@ impl AccountLockerBlueprint {
         })?;
         let badge_address = ResourceAddress::new_or_panic(badge_address.as_node_id().0);
 
-        api.call_function(
-            RESOURCE_PACKAGE,
-            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-            scrypto_encode(&FungibleResourceManagerCreateInput {
-                owner_role: OwnerRole::Updatable(rule!(require(badge_address))),
-                track_total_supply: true,
-                divisibility: 0,
-                resource_roles: Default::default(),
-                metadata: metadata! {
-                    init {
-                        "name" => "Account Locker Admin Badge".to_owned(), locked;
-                    }
-                },
-                address_reservation: Some(badge_reservation),
-            })
-            .unwrap(),
-        )?;
+        let (_, badge) = api
+            .call_function(
+                RESOURCE_PACKAGE,
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                    owner_role: OwnerRole::Updatable(rule!(require(badge_address))),
+                    track_total_supply: true,
+                    divisibility: 0,
+                    resource_roles: Default::default(),
+                    metadata: metadata! {
+                        init {
+                            "name" => "Account Locker Admin Badge".to_owned(), locked;
+                        }
+                    },
+                    address_reservation: Some(badge_reservation),
+                    initial_supply: dec!(1),
+                })
+                .unwrap(),
+            )
+            .map(|rtn| {
+                scrypto_decode::<FungibleResourceManagerCreateWithInitialSupplyOutput>(&rtn)
+                    .unwrap()
+            })?;
 
         // Preparing all of the roles and rules.
         let rule = rule!(require(badge_address));
@@ -226,6 +232,7 @@ impl AccountLockerBlueprint {
             },
             api,
         )
+        .map(|rtn| (rtn, badge))
     }
 
     fn store<Y>(
@@ -603,7 +610,11 @@ impl AccountLockerBlueprint {
             &scrypto_encode(&account_address).unwrap(),
             LockFlags::MUTABLE,
         )?;
-        let account_claims = api.key_value_entry_get_typed::<Own>(account_claims_handle)?;
+        let account_claims = api
+            .key_value_entry_get_typed::<VersionedAccountLockerAccountClaims>(
+                account_claims_handle,
+            )?
+            .map(|entry| entry.into_latest());
 
         let account_claims_kv_store = match account_claims {
             Some(account_claims_kv_store) => account_claims_kv_store,
@@ -618,7 +629,10 @@ impl AccountLockerBlueprint {
                     )
                     .map(Own)?;
                 // Write the kv-store's node id to the collection entry.
-                api.key_value_entry_set_typed(account_claims_handle, key_value_store)?;
+                api.key_value_entry_set_typed(
+                    account_claims_handle,
+                    VersionedAccountLockerAccountClaims::V1(key_value_store),
+                )?;
                 // Return the NodeId of the kv-store.
                 key_value_store
             }
@@ -674,7 +688,11 @@ impl AccountLockerBlueprint {
             &scrypto_encode(&account_address).unwrap(),
             LockFlags::read_only(),
         )?;
-        let account_claims = api.key_value_entry_get_typed::<Own>(account_claims_handle)?;
+        let account_claims = api
+            .key_value_entry_get_typed::<VersionedAccountLockerAccountClaims>(
+                account_claims_handle,
+            )?
+            .map(|entry| entry.into_latest());
 
         let account_claims_kv_store = match account_claims {
             Some(account_claims_kv_store) => account_claims_kv_store,

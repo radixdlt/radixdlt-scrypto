@@ -23,5 +23,5 @@ declare_native_blueprint_state! {
     }
 }
 
-/// An [`Own`] which is a KeyValueStore<ResourceAddress, Vault>.
+/// A [`Own`] which is a KeyValueStore<ResourceAddress, Vault>.
 pub type AccountLockerAccountClaimsV1 = Own;
