@@ -16,6 +16,7 @@ use radix_engine::transaction::{
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
     WrappedSystem,
 };
+use radix_engine::updates::ProtocolUpdates;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
@@ -198,17 +199,11 @@ pub struct LedgerSimulatorBuilder<E, D> {
     custom_genesis: Option<CustomGenesis>,
     custom_extension: E,
     custom_database: D,
+    custom_protocol_updates: ProtocolUpdates,
 
     // General options
     with_kernel_trace: bool,
     with_receipt_substate_check: bool,
-
-    // The following are protocol updates on mainnet
-    with_seconds_precision_update: bool,
-    with_crypto_utils_update: bool,
-    with_validator_fee_update: bool,
-    with_pools_v1_1: bool,
-    with_role_assignment_bottlenose_extension: bool,
 }
 
 impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -217,13 +212,9 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
+            custom_protocol_updates: ProtocolUpdates::all(),
             with_kernel_trace: true,
             with_receipt_substate_check: true,
-            with_seconds_precision_update: true,
-            with_crypto_utils_update: true,
-            with_validator_fee_update: true,
-            with_pools_v1_1: true,
-            with_role_assignment_bottlenose_extension: true,
         }
     }
 }
@@ -234,14 +225,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: StateTreeUpdatingDatabase::new(self.custom_database),
+            custom_protocol_updates: self.custom_protocol_updates,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
-            with_seconds_precision_update: self.with_seconds_precision_update,
-            with_crypto_utils_update: self.with_crypto_utils_update,
-            with_validator_fee_update: self.with_validator_fee_update,
-            with_pools_v1_1: self.with_pools_v1_1,
-            with_role_assignment_bottlenose_extension: self
-                .with_role_assignment_bottlenose_extension,
         }
     }
 
@@ -278,14 +264,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: extension,
             custom_database: self.custom_database,
+            custom_protocol_updates: self.custom_protocol_updates,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
-            with_seconds_precision_update: self.with_seconds_precision_update,
-            with_crypto_utils_update: self.with_crypto_utils_update,
-            with_validator_fee_update: self.with_validator_fee_update,
-            with_pools_v1_1: self.with_pools_v1_1,
-            with_role_assignment_bottlenose_extension: self
-                .with_role_assignment_bottlenose_extension,
         }
     }
 
@@ -297,39 +278,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: database,
+            custom_protocol_updates: self.custom_protocol_updates,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
-            with_seconds_precision_update: self.with_seconds_precision_update,
-            with_crypto_utils_update: self.with_crypto_utils_update,
-            with_validator_fee_update: self.with_validator_fee_update,
-            with_pools_v1_1: self.with_pools_v1_1,
-            with_role_assignment_bottlenose_extension: self
-                .with_role_assignment_bottlenose_extension,
         }
     }
 
-    pub fn without_seconds_precision_update(mut self) -> Self {
-        self.with_seconds_precision_update = false;
-        self
-    }
-
-    pub fn without_crypto_utils_update(mut self) -> Self {
-        self.with_crypto_utils_update = false;
-        self
-    }
-
-    pub fn without_validator_fee_update(mut self) -> Self {
-        self.with_validator_fee_update = false;
-        self
-    }
-
-    pub fn without_pools_v1_1(mut self) -> Self {
-        self.with_pools_v1_1 = false;
-        self
-    }
-
-    pub fn without_role_assignment_bottlenose_extension(mut self) -> Self {
-        self.with_role_assignment_bottlenose_extension = false;
+    pub fn with_custom_protocol_updates(mut self, protocol_updates: ProtocolUpdates) -> Self {
+        self.custom_protocol_updates = protocol_updates;
         self
     }
 
@@ -416,39 +372,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         let next_transaction_nonce = 100;
 
         // Protocol Updates
+        for state_updates in self
+            .custom_protocol_updates
+            .generate_state_updates(&substate_db)
         {
-            if self.with_seconds_precision_update {
-                let state_updates = generate_seconds_precision_state_updates(&substate_db);
-                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-                substate_db.commit(&db_updates);
-            };
-
-            if self.with_crypto_utils_update {
-                let state_updates = generate_vm_boot_scrypto_version_state_updates(
-                    ScryptoVmVersion::crypto_utils_added(),
-                );
-                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-                substate_db.commit(&db_updates);
-            }
-
-            if self.with_validator_fee_update {
-                let state_updates = generate_validator_fee_fix_state_updates(&substate_db);
-                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-                substate_db.commit(&db_updates);
-            }
-
-            if self.with_pools_v1_1 {
-                let state_updates = generate_pools_v1_1_state_updates(&substate_db);
-                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-                substate_db.commit(&db_updates);
-            }
-
-            if self.with_role_assignment_bottlenose_extension {
-                let state_updates =
-                    generate_role_assignment_bottlenose_extension_state_updates(&substate_db);
-                let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-                substate_db.commit(&db_updates);
-            }
+            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            substate_db.commit(&db_updates);
         }
 
         let runner = LedgerSimulator {

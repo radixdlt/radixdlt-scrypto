@@ -1,14 +1,11 @@
-use std::fs;
-use std::path::PathBuf;
-
+use crate::resim::*;
 use radix_common::prelude::*;
-use radix_engine::utils::*;
-use radix_engine::vm::ScryptoVmVersion;
+use radix_engine::updates::ProtocolUpdates;
 use radix_substate_store_interface::db_key_mapper::*;
 use radix_substate_store_interface::interface::*;
-
-use crate::resim::*;
 use std::env;
+use std::fs;
+use std::path::PathBuf;
 
 /// The environment that the simulator runs in.
 pub struct SimulatorEnvironment {
@@ -56,19 +53,7 @@ impl SimulatorEnvironment {
 
         // Run the protocol updates - unlike the test runner, the user has no way in whether they
         // get these protocol updates or not.
-        {
-            let state_updates = generate_seconds_precision_state_updates(&self.db);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.db.commit(&db_updates);
-        }
-        {
-            let state_updates =
-                generate_vm_boot_scrypto_version_state_updates(ScryptoVmVersion::latest());
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.db.commit(&db_updates);
-        }
-        {
-            let state_updates = generate_pools_v1_1_state_updates(&self.db);
+        for state_updates in ProtocolUpdates::all().generate_state_updates(&self.db) {
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.db.commit(&db_updates);
         }
