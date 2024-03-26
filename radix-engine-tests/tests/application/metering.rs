@@ -417,9 +417,9 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
     mode.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
-fn run_radiswap(mode: Mode, use_v1_1_pools: bool) {
+fn run_radiswap(mode: Mode, pool_math_precision_fix: bool) {
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(if use_v1_1_pools {
+        .with_custom_protocol_updates(if pool_math_precision_fix {
             ProtocolUpdates::none().with_anemone()
         } else {
             ProtocolUpdates::none()

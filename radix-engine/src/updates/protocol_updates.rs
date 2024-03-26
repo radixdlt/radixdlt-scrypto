@@ -44,6 +44,7 @@ impl ProtocolUpdates {
         Self::none().with_anemone().with_bottlenose()
     }
 
+    /// Enables all the protocol updates included in the `anemone` release.
     pub fn with_anemone(mut self) -> Self {
         self.updates.extend(btreeset!(
             ProtocolUpdate::Bls12381AndKeccak256,
@@ -54,6 +55,9 @@ impl ProtocolUpdates {
         self
     }
 
+    /// Enables all the protocol updates included in the `bottlenose` release.
+    /// 
+    /// Note that this does not include `anemone` protocol updates.
     pub fn with_bottlenose(mut self) -> Self {
         self.updates.extend(btreeset!(
             ProtocolUpdate::OwnerRoleGetter,
