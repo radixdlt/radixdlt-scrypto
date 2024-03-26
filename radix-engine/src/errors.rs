@@ -87,11 +87,6 @@ pub enum BootloadingError {
     FailedToApplyDeferredCosts(CostingError),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum FinalizingError {
-    CostingError(CostingError),
-}
-
 /// Represents an error when executing a transaction.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RuntimeError {
