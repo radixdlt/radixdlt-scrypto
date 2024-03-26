@@ -94,9 +94,7 @@ impl ProtocolUpdates {
                 ProtocolUpdate::ValidatorCreationFeeFix => {
                     generate_validator_creation_fee_fix_state_updates(db)
                 }
-                ProtocolUpdate::OwnerRoleGetter => {
-                    generate_owner_role_getter_state_updates(db)
-                }
+                ProtocolUpdate::OwnerRoleGetter => generate_owner_role_getter_state_updates(db),
                 // TODO implement the following
                 ProtocolUpdate::SystemPatches => StateUpdates::default(),
                 ProtocolUpdate::AccountLocker => StateUpdates::default(),
