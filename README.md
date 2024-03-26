@@ -26,7 +26,7 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
        - `~/.zshrc` if `zsh` is the default shell
        - respective config file in case of other shell
        ```
-       PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+       PATH="$(brew --prefix llvm)/bin:$PATH"
        ```
 
        You can check, which shell is the default one by inspecting `$SHELL` variable:
