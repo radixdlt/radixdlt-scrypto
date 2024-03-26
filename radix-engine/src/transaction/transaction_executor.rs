@@ -411,7 +411,7 @@ where
                             execution_trace_module.finalize(&paying_vaults, is_success);
 
                         // Finalize track
-                        let mut tracked_substates = {
+                        let tracked_substates = {
                             match track.finalize() {
                                 Ok(result) => result,
                                 Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
@@ -421,8 +421,8 @@ where
                         };
 
                         // Generate state updates from tracked substates
-                        // Note that this will prune invalid reads
-                        let (new_nodes, state_updates) =
+                        // Note that this process will prune invalid reads
+                        let (new_node_ids, state_updates) =
                             to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
 
                         // Summarizes state updates
@@ -432,7 +432,7 @@ where
                             &application_events,
                         );
                         let state_update_summary =
-                            StateUpdateSummary::new(self.substate_db, new_nodes, &state_updates);
+                            StateUpdateSummary::new(self.substate_db, new_node_ids, &state_updates);
 
                         // Resource reconciliation does not currently work in preview mode
                         if executable.costing_parameters().free_credit_in_xrd.is_zero() {
