@@ -25,7 +25,7 @@ bench = false
 
 [features]
 default = []
-resource_tracker = ["dep:shared_memory"]
+resource_tracker = ["dep:shared_memory", "radix-common/resource_tracker"]
 rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "radix-substate-store-impls/std", 
            "radix-substate-store-interface/std", "radix-common/std", "radix-engine-interface/std"]
 ram_metrics = []
