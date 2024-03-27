@@ -79,7 +79,7 @@ wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 moka = ["dep:moka"]
 lru = ["dep:lru"]
 
-resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling/resource_tracker", "radix-engine-profiling-derive/resource_tracker"]
+resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling/resource_tracker", "radix-engine-profiling-derive/resource_tracker", "radix-common/resource_tracker"]
 
 # System/Application Database Checker
 db_checker = []
