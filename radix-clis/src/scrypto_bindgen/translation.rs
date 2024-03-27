@@ -205,7 +205,16 @@ where
                     ReferenceValidation::IsGlobalTyped(package_address, blueprint_name) => {
                         if package_address.is_none()
                             || package_address.is_some_and(|package_address| {
-                                package_address == schema_resolver.package_address()
+                                [
+                                    package_address,
+                                    ACCOUNT_PACKAGE,
+                                    CONSENSUS_MANAGER_PACKAGE,
+                                    IDENTITY_PACKAGE,
+                                    LOCKER_PACKAGE,
+                                    ACCESS_CONTROLLER_PACKAGE,
+                                    FAUCET_PACKAGE,
+                                ]
+                                .contains(&schema_resolver.package_address())
                             })
                         {
                             format!("Global<{}>", blueprint_name)
@@ -249,7 +258,16 @@ where
                         OwnValidation::IsTypedObject(package_address, blueprint_name) => {
                             if package_address.is_none()
                                 || package_address.is_some_and(|package_address| {
-                                    package_address == schema_resolver.package_address()
+                                    [
+                                        package_address,
+                                        ACCOUNT_PACKAGE,
+                                        CONSENSUS_MANAGER_PACKAGE,
+                                        IDENTITY_PACKAGE,
+                                        LOCKER_PACKAGE,
+                                        ACCESS_CONTROLLER_PACKAGE,
+                                        FAUCET_PACKAGE,
+                                    ]
+                                    .contains(&schema_resolver.package_address())
                                 })
                             {
                                 format!("Own<{}>", blueprint_name)
