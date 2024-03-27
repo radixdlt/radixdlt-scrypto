@@ -109,6 +109,42 @@ fn account_locker_has_an_account_locker_entity_type() {
 }
 
 #[test]
+fn account_locker_component_address_have_the_expected_bech32m_encoding() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_account(false);
+
+    // Act
+    let account_locker = ledger
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_function(
+                    LOCKER_PACKAGE,
+                    ACCOUNT_LOCKER_BLUEPRINT,
+                    ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                    AccountLockerInstantiateSimpleManifestInput {
+                        allow_forceful_withdraws: false,
+                    },
+                )
+                .try_deposit_entire_worktop_or_abort(account, None)
+                .build(),
+            vec![],
+        )
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .copied()
+        .unwrap();
+    let encoded = AddressBech32Encoder::new(&NetworkDefinition::mainnet())
+        .encode(&account_locker.as_node_id().0)
+        .unwrap();
+
+    // Assert
+    assert!(encoded.starts_with("locker_rdx1"),);
+}
+
+#[test]
 fn store_can_only_be_called_by_storer_role() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
@@ -564,6 +600,205 @@ fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
             });
         }
     }
+}
+
+#[test]
+fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the_locker_is_not_and_authorized_depositor(
+) {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (badge_holder_public_key, _, badge_holder_account) = ledger.new_account(false);
+    let (user_account_public_key, _, user_account) = ledger.new_account(false);
+
+    let (account_locker, account_locker_badge) = {
+        let commit_result = ledger
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_function(
+                        LOCKER_PACKAGE,
+                        ACCOUNT_LOCKER_BLUEPRINT,
+                        ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                        AccountLockerInstantiateSimpleManifestInput {
+                            allow_forceful_withdraws: false,
+                        },
+                    )
+                    .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success()
+            .clone();
+
+        let locker = commit_result
+            .new_component_addresses()
+            .first()
+            .copied()
+            .unwrap();
+        let badge = commit_result
+            .new_resource_addresses()
+            .first()
+            .copied()
+            .unwrap();
+
+        (locker, badge)
+    };
+
+    ledger
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_method(
+                    user_account,
+                    ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+                    AccountSetResourcePreferenceInput {
+                        resource_address: XRD,
+                        resource_preference: ResourcePreference::Disallowed,
+                    },
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(
+                &user_account_public_key,
+            )],
+        )
+        .expect_commit_success();
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(
+                badge_holder_account,
+                account_locker_badge,
+                dec!(1),
+            )
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
+                    AccountLockerSendOrStoreManifestInput {
+                        claimant: user_account,
+                        bucket,
+                    },
+                )
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(
+            &badge_holder_public_key,
+        )],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        ledger.get_component_balance(user_account, XRD),
+        dec!(10_000) // The initial 10_000 we get when we create a new account. Nothing more.
+    )
+}
+
+#[test]
+#[ignore = "Fixed in another PR"]
+fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (badge_holder_public_key, _, badge_holder_account) = ledger.new_account(false);
+    let (user_account_public_key, _, user_account) = ledger.new_account(false);
+
+    let (account_locker, account_locker_badge) = {
+        let commit_result = ledger
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_function(
+                        LOCKER_PACKAGE,
+                        ACCOUNT_LOCKER_BLUEPRINT,
+                        ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                        AccountLockerInstantiateSimpleManifestInput {
+                            allow_forceful_withdraws: false,
+                        },
+                    )
+                    .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success()
+            .clone();
+
+        let locker = commit_result
+            .new_component_addresses()
+            .first()
+            .copied()
+            .unwrap();
+        let badge = commit_result
+            .new_resource_addresses()
+            .first()
+            .copied()
+            .unwrap();
+
+        (locker, badge)
+    };
+
+    ledger
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_method(
+                    user_account,
+                    ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+                    AccountSetResourcePreferenceInput {
+                        resource_address: XRD,
+                        resource_preference: ResourcePreference::Disallowed,
+                    },
+                )
+                .call_method(
+                    user_account,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    AccountAddAuthorizedDepositorInput {
+                        badge: global_caller(account_locker),
+                    },
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(
+                &user_account_public_key,
+            )],
+        )
+        .expect_commit_success();
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(
+                badge_holder_account,
+                account_locker_badge,
+                dec!(1),
+            )
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
+                    AccountLockerSendOrStoreManifestInput {
+                        claimant: user_account,
+                        bucket,
+                    },
+                )
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(
+            &badge_holder_public_key,
+        )],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        ledger.get_component_balance(user_account, XRD),
+        dec!(20_000) // The initial 10_000 we get when we create a new account. Nothing more.
+    )
 }
 
 #[test]
@@ -1777,24 +2012,19 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::Store {
                 claimant: user_account1,
                 resource_to_mint: non_fungible_resource1,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(1),
-                        NonFungibleLocalId::integer(2),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
@@ -1814,24 +2044,19 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account1,
                 resource_to_mint: non_fungible_resource1,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(3),
-                        NonFungibleLocalId::integer(4),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(3),
+                    NonFungibleLocalId::integer(4),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
@@ -1848,24 +2073,19 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account2,
                 resource_to_mint: non_fungible_resource1,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(5),
-                        NonFungibleLocalId::integer(6),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(5),
+                    NonFungibleLocalId::integer(6),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
@@ -1882,24 +2102,19 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account3,
                 resource_to_mint: non_fungible_resource1,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(7),
-                        NonFungibleLocalId::integer(8),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(7),
+                    NonFungibleLocalId::integer(8),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
@@ -1911,12 +2126,10 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -1925,24 +2138,19 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account1,
                 resource_to_mint: non_fungible_resource2,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(1),
-                        NonFungibleLocalId::integer(2),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
@@ -1952,12 +2160,10 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -1966,24 +2172,19 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account2,
                 resource_to_mint: non_fungible_resource2,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(3),
-                        NonFungibleLocalId::integer(4),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(3),
+                    NonFungibleLocalId::integer(4),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 // User Account 2 rejects the deposits of non-fungible resource 2. So, the locker
@@ -1991,23 +2192,19 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2016,46 +2213,37 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account3,
                 resource_to_mint: non_fungible_resource2,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(5),
-                        NonFungibleLocalId::integer(6),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(5),
+                    NonFungibleLocalId::integer(6),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2064,13 +2252,10 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account1,
                 resource_to_mint: non_fungible_resource3,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(1),
-                        NonFungibleLocalId::integer(2),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(1),
+                    NonFungibleLocalId::integer(2),
+                )),
             },
             state_after: btreemap! {
                 // User Account 1 rejects the deposits of non-fungible resource 3. So, the locker
@@ -2078,41 +2263,33 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2121,53 +2298,42 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account2,
                 resource_to_mint: non_fungible_resource3,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(3),
-                        NonFungibleLocalId::integer(4),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(3),
+                    NonFungibleLocalId::integer(4),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2176,53 +2342,42 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::SendOrStore {
                 claimant: user_account3,
                 resource_to_mint: non_fungible_resource3,
-                items_to_mint: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(5),
-                        NonFungibleLocalId::integer(6),
-                    ]
-                    .into(),
-                ),
+                items_to_mint: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(5),
+                    NonFungibleLocalId::integer(6),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2233,26 +2388,20 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         Item {
             action: LockerAction::StoreBatch {
                 claimants: btreemap! {
-                    user_account1 => ResourceSpecifier::NonFungible(
-                        [
+                    user_account1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(10),
                             NonFungibleLocalId::integer(11),
-                        ]
-                        .into()
+                        )
                     ),
-                    user_account2 => ResourceSpecifier::NonFungible(
-                        [
+                    user_account2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(12),
                             NonFungibleLocalId::integer(13),
-                        ]
-                        .into()
+                        )
                     ),
-                    user_account3 => ResourceSpecifier::NonFungible(
-                        [
+                    user_account3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(14),
                             NonFungibleLocalId::integer(15),
-                        ]
-                        .into()
+                        )
                     ),
                 },
                 resource_to_mint: non_fungible_resource1,
@@ -2261,52 +2410,42 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
                             NonFungibleLocalId::integer(10),
                             NonFungibleLocalId::integer(11),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(12),
                             NonFungibleLocalId::integer(13),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
                             NonFungibleLocalId::integer(14),
                             NonFungibleLocalId::integer(15),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2317,26 +2456,20 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         Item {
             action: LockerAction::SendOrStoreBatch {
                 claimants: btreemap! {
-                    user_account1 => ResourceSpecifier::NonFungible(
-                        [
+                    user_account1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(16),
                             NonFungibleLocalId::integer(17),
-                        ]
-                        .into()
+                        )
                     ),
-                    user_account2 => ResourceSpecifier::NonFungible(
-                        [
+                    user_account2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(18),
                             NonFungibleLocalId::integer(19),
-                        ]
-                        .into()
+                        )
                     ),
-                    user_account3 => ResourceSpecifier::NonFungible(
-                        [
+                    user_account3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(20),
                             NonFungibleLocalId::integer(21),
-                        ]
-                        .into()
+                        )
                     ),
                 },
                 resource_to_mint: non_fungible_resource1,
@@ -2345,54 +2478,44 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
                             NonFungibleLocalId::integer(10),
                             NonFungibleLocalId::integer(11),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(12),
                             NonFungibleLocalId::integer(13),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(7),
                             NonFungibleLocalId::integer(8),
                             NonFungibleLocalId::integer(14),
                             NonFungibleLocalId::integer(15),
                             NonFungibleLocalId::integer(20),
                             NonFungibleLocalId::integer(21),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2404,64 +2527,51 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::Recover {
                 claimant: user_account3,
                 resource_to_recover: non_fungible_resource1,
-                items_to_recover: ResourceSpecifier::NonFungible(
-                    [
-                        NonFungibleLocalId::integer(7),
-                        NonFungibleLocalId::integer(8),
-                    ]
-                    .into(),
-                ),
+                items_to_recover: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(7),
+                    NonFungibleLocalId::integer(8),
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
                             NonFungibleLocalId::integer(10),
                             NonFungibleLocalId::integer(11),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(12),
                             NonFungibleLocalId::integer(13),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(14),
                             NonFungibleLocalId::integer(15),
                             NonFungibleLocalId::integer(20),
                             NonFungibleLocalId::integer(21),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2476,51 +2586,41 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
                             NonFungibleLocalId::integer(10),
                             NonFungibleLocalId::integer(11),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(12),
                             NonFungibleLocalId::integer(13),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(14),
                             NonFungibleLocalId::integer(15),
                             NonFungibleLocalId::integer(20),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2532,58 +2632,48 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             action: LockerAction::Claim {
                 claimant: user_account3,
                 resource_to_claim: non_fungible_resource1,
-                items_to_claim: ResourceSpecifier::NonFungible(
-                    [NonFungibleLocalId::integer(20)].into(),
-                ),
+                items_to_claim: ResourceSpecifier::NonFungible(indexset!(
+                    NonFungibleLocalId::integer(20)
+                )),
             },
             state_after: btreemap! {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
                             NonFungibleLocalId::integer(10),
                             NonFungibleLocalId::integer(11),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(12),
                             NonFungibleLocalId::integer(13),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(14),
                             NonFungibleLocalId::integer(15),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },
@@ -2598,49 +2688,39 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 user_account1 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(2)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
                             NonFungibleLocalId::integer(10),
                             NonFungibleLocalId::integer(11),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource3 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource3 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(1),
                             NonFungibleLocalId::integer(2),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(12),
                             NonFungibleLocalId::integer(13),
-                        ]
-                        .into(),
+                        ),
                     ),
-                    non_fungible_resource2 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource2 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(3),
                             NonFungibleLocalId::integer(4),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1)),
                     fungible_resource3 => ResourceSpecifier::Fungible(dec!(2)),
-                    non_fungible_resource1 => ResourceSpecifier::NonFungible(
-                        [
+                    non_fungible_resource1 => ResourceSpecifier::NonFungible(indexset!(
                             NonFungibleLocalId::integer(14),
-                        ]
-                        .into(),
+                        ),
                     )
                 },
             },

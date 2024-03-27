@@ -385,3 +385,71 @@ extern_blueprint_internal! {
         fn mint_recovery_badges(&mut self, non_fungible_local_ids: Vec<NonFungibleLocalId>) -> Bucket;
     }
 }
+
+extern_blueprint_internal! {
+    PackageAddress::new_or_panic([
+        13u8, 144u8, 99u8, 24u8, 198u8, 49u8, 140u8, 111u8, 191u8, 22u8, 200u8, 204u8, 99u8, 24u8,
+        198u8, 49u8, 140u8, 247u8, 171u8, 74u8, 45u8, 52u8, 114u8, 235u8, 198u8, 49u8, 140u8, 99u8,
+        24u8, 198u8,
+    ]),
+    AccountLocker,
+    "AccountLocker",
+    "OwnedAccountLocker",
+    "GlobalAccountLocker",
+    AccountLockerFunctions {
+        fn instantiate(
+            owner_role: OwnerRole,
+            storer_role: AccessRule,
+            storer_updater_role: AccessRule,
+            recoverer_role: AccessRule,
+            recoverer_updater_role: AccessRule,
+            address_reservation: Option<GlobalAddressReservation>,
+        ) -> Global<AccountLocker>;
+        fn instantiate_simple(allow_forceful_withdraws: bool) -> (Global<AccountLocker>, Bucket);
+    },
+    {
+        fn store(&mut self, claimant: Global<Account>, bucket: Bucket);
+        fn store_batch(
+            &mut self,
+            claimants: IndexMap<Global<Account>, ResourceSpecifier>,
+            bucket: Bucket,
+        ) -> Option<Bucket>;
+        fn send_or_store(&mut self, claimant: Global<Account>, bucket: Bucket);
+        fn send_or_store_batch(
+            &mut self,
+            claimants: IndexMap<Global<Account>, ResourceSpecifier>,
+            bucket: Bucket,
+        ) -> Option<Bucket>;
+        fn recover(
+            &mut self,
+            claimant: Global<Account>,
+            resource_address: ResourceAddress,
+            amount: Decimal,
+        ) -> Bucket;
+        fn recover_non_fungibles(
+            &mut self,
+            claimant: Global<Account>,
+            resource_address: ResourceAddress,
+            ids: Vec<NonFungibleLocalId>,
+        ) -> Bucket;
+        fn claim(
+            &mut self,
+            claimant: Global<Account>,
+            resource_address: ResourceAddress,
+            amount: Decimal,
+        ) -> Bucket;
+        fn claim_non_fungibles(
+            &mut self,
+            claimant: Global<Account>,
+            resource_address: ResourceAddress,
+            ids: Vec<NonFungibleLocalId>,
+        ) -> Bucket;
+        fn get_amount(&self, claimant: Global<Account>, resource_address: ResourceAddress) -> Decimal;
+        fn get_non_fungible_local_ids(
+            &self,
+            claimant: Global<Account>,
+            resource_address: ResourceAddress,
+            limit: u32,
+        ) -> Vec<NonFungibleLocalId>;
+    }
+}

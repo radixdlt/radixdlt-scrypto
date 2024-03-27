@@ -72,6 +72,7 @@ impl PackageAddress {
             || self.0 == crate::constants::ROYALTY_MODULE_PACKAGE.0
             || self.0 == crate::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE.0
             || self.0 == crate::constants::TRANSACTION_TRACKER_PACKAGE.0
+            || self.0 == crate::constants::LOCKER_PACKAGE.0
     }
 }
 
