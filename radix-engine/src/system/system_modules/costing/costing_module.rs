@@ -256,19 +256,6 @@ impl InitSystemModule for CostingModule {
 }
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
-    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
-            .fee_reserve
-            .repay_all()
-            .map_err(|e| {
-                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                    CostingError::FeeReserveError(e),
-                ))
-            })
-    }
-
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,

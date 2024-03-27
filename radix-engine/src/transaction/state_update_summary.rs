@@ -235,23 +235,24 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                         for (substate_key, substate_update) in by_substate {
                             let id: NonFungibleLocalId =
                                 scrypto_decode(substate_key.for_map().unwrap()).unwrap();
+                                let previous_value = self
+                                .system_reader
+                                .fetch_substate_from_database::<SpreadPrefixKeyMapper, ScryptoValue>(
+                                    vault_id,
+                                    partition_num,
+                                    substate_key,
+                                );
 
                             match substate_update {
                                 DatabaseUpdate::Set(_) => {
-                                    if self
-                                        .system_reader
-                                        .fetch_substate_from_database::<SpreadPrefixKeyMapper, ScryptoValue>(
-                                            vault_id,
-                                            partition_num,
-                                            substate_key,
-                                        )
-                                        .is_none()
-                                    {
+                                    if previous_value.is_none() {
                                         added.insert(id);
                                     }
                                 }
                                 DatabaseUpdate::Delete => {
-                                    removed.insert(id);
+                                    if previous_value.is_some() {
+                                        removed.insert(id);
+                                    }
                                 }
                             }
                         }

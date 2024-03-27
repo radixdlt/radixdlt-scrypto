@@ -261,9 +261,6 @@ where
             costing_parameters,
             executable.costing_parameters(),
             execution_config.abort_when_loan_repaid,
-            execution_config
-                .enabled_modules
-                .contains(EnabledModules::COSTING),
         );
         let fee_table = FeeTable::new();
 
@@ -762,9 +759,24 @@ where
     }
 
     fn determine_result_type(
-        interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
+        mut interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
         fee_reserve: &mut SystemLoanFeeReserve,
     ) -> TransactionResultType {
+        // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before
+        // the SYSTEM_LOAN_AMOUNT is reached (which trigger a repay event) and even though
+        // enough fee has been locked.
+        //
+        // Do another `repay` try during finalization to remedy it.
+        if let Err(err) = fee_reserve.repay_all() {
+            if interpretation_result.is_ok() {
+                interpretation_result = Err(TransactionExecutionError::RuntimeError(
+                    RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                        CostingError::FeeReserveError(err),
+                    )),
+                ));
+            }
+        }
+
         match interpretation_result {
             Ok(output) => {
                 if fee_reserve.fully_repaid() {
