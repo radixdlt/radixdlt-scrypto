@@ -699,7 +699,6 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
 }
 
 #[test]
-#[ignore = "The account blueprint needs to be changed to not fail if the provided authorized depositor is not actually an authorized depositor"]
 fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
