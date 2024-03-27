@@ -59,7 +59,6 @@ secp256k1_sign_and_validate = ["secp256k1"]
 # to let fuzzing work
 fuzzing = ["arbitrary", "serde", "bnum/arbitrary", "bnum/serde", "sbor/fuzzing", "radix-rust/fuzzing"]
 
-resource_tracker=[]
 full_math_benches = [ "dep:rug", "dep:ethnum"]
 
 coverage = []

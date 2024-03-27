@@ -36,7 +36,7 @@ alloc = ["lru", "sbor/alloc", "radix-native-sdk/alloc", "scrypto-compiler/alloc"
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]
 
-resource_tracker = []
+resource_tracker = ["radix-engine/resource_tracker"]
 
 rocksdb = ["radix-substate-store-impls/rocksdb"]
 post_run_db_check = []
