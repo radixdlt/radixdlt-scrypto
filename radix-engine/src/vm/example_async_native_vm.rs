@@ -97,6 +97,7 @@ impl <F: Fn(&mut DummyApi, Input) -> Result<Output, RuntimeError> + 'static, Inp
 }
 
 struct NativeRuntime {
+    // TODO - Change this into a Queue so that join!(..) doesn't cause a panic
     pending_action: RefCell<Option<PendingAction>>,
 }
 
@@ -111,7 +112,7 @@ impl NativeRuntime {
         }
     }
 
-    fn register_pending_action(&self, pending_action: PendingAction) {
+    fn perform_action(&self, pending_action: PendingAction) {
         // This is performed by the native blueprint, therefore allowed to panic
         match self.pending_action.borrow_mut().replace(pending_action) {
             None => {},
@@ -187,11 +188,10 @@ impl<'r, R: DummyApiRequest + 'static> Future for DummyApiRequestFuture<'r, R> {
         // Note - panics here are allowed and indicate a misbehaving native component
         match self.request_state.borrow_mut().deref_mut() {
             RequestState::Requested { already_polled, .. } => {
-                if *already_polled {
-                    panic!();
+                if !*already_polled {
+                    *already_polled = true;
+                    self.runtime.perform_action(PendingAction::DummyApiRequest(self.request_state.clone()));
                 }
-                *already_polled = true;
-                self.runtime.register_pending_action(PendingAction::DummyApiRequest(self.request_state.clone()));
                 Poll::Pending
             },
             RequestState::Executing => panic!(),
