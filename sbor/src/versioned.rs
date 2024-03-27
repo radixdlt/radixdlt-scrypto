@@ -7,8 +7,12 @@ pub enum UpdateResult<T> {
 /// This can be used for type bounds for requiring that types are versioned.
 pub trait HasLatestVersion {
     type Latest;
+    fn is_latest(&self) -> bool;
     fn into_latest(self) -> Self::Latest;
+    fn into_latest_mut(&mut self) -> &mut Self::Latest;
+    fn from_latest(latest: Self::Latest) -> Self;
     fn as_latest_ref(&self) -> Option<&Self::Latest>;
+    fn as_latest_mut(&mut self) -> Option<&mut Self::Latest>;
 }
 
 pub trait CloneIntoLatest {
@@ -50,6 +54,23 @@ macro_rules! define_single_versioned {
                 },
             }
         );
+
+        $crate::paste::paste! {
+            #[allow(dead_code)]
+            impl
+            $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            $name
+            $(< $( $lt ),+ >)?
+            {
+                pub fn as_unique_latest_ref(&self) -> &$latest_version_type {
+                    self.as_latest_ref().unwrap()
+                }
+
+                pub fn as_unique_latest_mut(&mut self) -> &mut $latest_version_type {
+                    self.as_latest_mut().unwrap()
+                }
+            }
+        }
     };
 }
 
@@ -114,6 +135,7 @@ macro_rules! define_versioned {
                     [<V $version_num>]($version_type) = $version_num,
                 )*)?
                 [<V $latest_version>]($latest_version_type) = $latest_version,
+                InternalUpdateInProgress = 255,
             }
 
             #[allow(dead_code)]
@@ -122,20 +144,17 @@ macro_rules! define_versioned {
             $name
             $(< $( $lt ),+ >)?
             {
-                pub fn new_latest(value: $latest_version_type) -> Self {
-                    Self::[<V $latest_version>](value)
-                }
-
-                pub fn update_once(self) -> $crate::UpdateResult<Self> {
+                fn update_once(self) -> $crate::UpdateResult<Self> {
                     match self {
                     $($(
                         Self::[<V $version_num>](value) => $crate::UpdateResult::Updated(Self::[<V $update_to_version_num>](value.into())),
                     )*)?
                         Self::[<V $latest_version>](value) => $crate::UpdateResult::AtLatest(Self::[<V $latest_version>](value)),
+                        Self::InternalUpdateInProgress => panic!("Update is already in progress"),
                     }
                 }
 
-                pub fn update_to_latest(mut self) -> Self {
+                fn update_to_latest(mut self) -> Self {
                     loop {
                         match self.update_once() {
                             $crate::UpdateResult::Updated(new) => {
@@ -154,6 +173,14 @@ macro_rules! define_versioned {
                 {
                     type Latest = $latest_version_type;
 
+                    #[allow(unreachable_patterns)]
+                    fn is_latest(&self) -> bool {
+                        match self {
+                            Self::[<V $latest_version>](_) => true,
+                            _ => false,
+                        }
+                    }
+
                     #[allow(irrefutable_let_patterns)]
                     fn into_latest(self) -> Self::Latest {
                         let Self::[<V $latest_version>](latest) = self.update_to_latest() else {
@@ -162,8 +189,28 @@ macro_rules! define_versioned {
                         return latest;
                     }
 
+                    fn into_latest_mut(&mut self) -> &mut $latest_version_type {
+                        if !self.is_latest() {
+                            let current = radix_rust::prelude::mem::replace(self, Self::InternalUpdateInProgress);
+                            *self = current.update_to_latest();
+                        }
+                        self.as_latest_mut().unwrap()
+                    }
+
+                    fn from_latest(latest: Self::Latest) -> Self {
+                        Self::[<V $latest_version>](latest)
+                    }
+
                     #[allow(unreachable_patterns)]
                     fn as_latest_ref(&self) -> Option<&Self::Latest> {
+                        match self {
+                            Self::[<V $latest_version>](latest) => Some(latest),
+                            _ => None,
+                        }
+                    }
+
+                    #[allow(unreachable_patterns)]
+                    fn as_latest_mut(&mut self) -> Option<&mut Self::Latest> {
                         match self {
                             Self::[<V $latest_version>](latest) => Some(latest),
                             _ => None,

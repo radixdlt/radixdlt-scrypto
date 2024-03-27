@@ -1163,6 +1163,28 @@ impl AccountBlueprint {
         Ok(())
     }
 
+    pub fn set_default_deposit_rule_v2_example<Y>(
+        default: DefaultDepositRule,
+        api: AccountStateApi::<'_, Y>,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        api.deposit_rule_field()
+            .open_readwrite()?
+            .into_latest_mut() // Could even have an `open_readwrite_latest() -> FieldLatestContentMut`
+            .default_deposit_rule = default;
+
+        Runtime::emit_event(
+            *api.raw_api(), // Could be replaced with api.emit_event
+            SetDefaultDepositRuleEvent {
+                default_deposit_rule: default,
+            },
+        )?;
+
+        Ok(())
+    }
+
     pub fn set_resource_preference<Y>(
         resource_address: ResourceAddress,
         resource_preference: ResourcePreference,
