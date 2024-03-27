@@ -27,6 +27,10 @@ pub enum ProtocolUpdate {
 
     /// Moves various protocol parameters to state.
     ProtocolParamsToState,
+
+    /// Makes some behavioral changes to the try_deposit_or_refund (and batch variants too) method
+    /// on the account blueprint.
+    AccountTryDepositOrRefundBehaviorChanges,
 }
 
 pub struct ProtocolUpdates {
@@ -64,6 +68,7 @@ impl ProtocolUpdates {
             ProtocolUpdate::SystemPatches,
             ProtocolUpdate::AccountLocker,
             ProtocolUpdate::ProtocolParamsToState,
+            ProtocolUpdate::AccountTryDepositOrRefundBehaviorChanges,
         ));
         self
     }
@@ -95,9 +100,12 @@ impl ProtocolUpdates {
                     generate_validator_creation_fee_fix_state_updates(db)
                 }
                 ProtocolUpdate::OwnerRoleGetter => generate_owner_role_getter_state_updates(db),
+                ProtocolUpdate::AccountLocker => generate_locker_package_state_updates(),
+                ProtocolUpdate::AccountTryDepositOrRefundBehaviorChanges => {
+                    generate_account_bottlenose_extension_state_updates(db)
+                }
                 // TODO implement the following
                 ProtocolUpdate::SystemPatches => StateUpdates::default(),
-                ProtocolUpdate::AccountLocker => generate_locker_package_state_updates(),
                 ProtocolUpdate::ProtocolParamsToState => StateUpdates::default(),
             });
         }
