@@ -148,6 +148,7 @@ impl Default for SystemLoanFeeReserve {
             &CostingParameters::default(),
             &TransactionCostingParameters::default(),
             false,
+            true,
         )
     }
 }
@@ -168,6 +169,7 @@ impl SystemLoanFeeReserve {
         costing_parameters: &CostingParameters,
         transaction_costing_parameters: &TransactionCostingParameters,
         abort_when_loan_repaid: bool,
+        with_system_loan: bool,
     ) -> Self {
         // Sanity checks
         assert!(!costing_parameters.execution_cost_unit_price.is_negative());
@@ -199,9 +201,13 @@ impl SystemLoanFeeReserve {
             .checked_mul(tip_percentage)
             .unwrap();
 
-        let system_loan_in_xrd = effective_execution_cost_unit_price
-            .checked_mul(costing_parameters.execution_cost_unit_loan)
-            .unwrap();
+        let system_loan_in_xrd = if with_system_loan {
+            effective_execution_cost_unit_price
+                .checked_mul(costing_parameters.execution_cost_unit_loan)
+                .unwrap()
+        } else {
+            Decimal::ZERO
+        };
 
         Self {
             // Execution costing parameters
@@ -604,6 +610,7 @@ mod tests {
             &costing_parameters,
             &transaction_costing_parameters,
             abort_when_loan_repaid,
+            true,
         )
     }
 

@@ -80,9 +80,9 @@ pub enum TransactionExecutionError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum BootloadingError {
-    ReferenceDoesNotExist(NodeId),
-    ReferenceIsNotAnObject(NodeId),
-    ReferenceDoesNotSupportDirectAccess(NodeId),
+    ReferencedNodeDoesNotExist(NodeId),
+    ReferencedNodeIsNotAnObject(NodeId),
+    ReferencedNodeDoesNotAllowDirectAccess(NodeId),
 
     FailedToApplyDeferredCosts(CostingError),
 }

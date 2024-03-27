@@ -71,8 +71,13 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
         for reference in references.iter() {
             let node_id = &reference.0;
 
+            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                // Allow always visible node and do not add reference
+                continue;
+            }
+
             if node_id.is_global_virtual() {
-                // Always allow virtual addresses
+                // Allow global virtual and add reference
                 global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                 continue;
             }
@@ -84,7 +89,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
                 )
-                .ok_or_else(|| BootloadingError::ReferenceDoesNotExist(*node_id))?;
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             match &type_substate {
                 TypeInfoSubstate::Object(
@@ -103,13 +108,15 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                         direct_accesses
                             .insert(InternalAddress::new_or_panic(node_id.clone().into()));
                     } else {
-                        return Err(BootloadingError::ReferenceDoesNotSupportDirectAccess(
+                        return Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
                             node_id.clone(),
                         ));
                     }
                 }
                 _ => {
-                    return Err(BootloadingError::ReferenceIsNotAnObject(node_id.clone()));
+                    return Err(BootloadingError::ReferencedNodeIsNotAnObject(
+                        node_id.clone(),
+                    ));
                 }
             }
         }

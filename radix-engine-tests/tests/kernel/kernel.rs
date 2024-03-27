@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
     CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
     PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,

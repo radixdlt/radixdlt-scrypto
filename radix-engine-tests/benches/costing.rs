@@ -118,6 +118,7 @@ fn bench_spin_loop(c: &mut Criterion) {
                     tip_percentage: DEFAULT_TIP_PERCENTAGE,
                 },
                 false,
+                true,
             );
             wasm_execution_units_consumed = 0;
             let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(

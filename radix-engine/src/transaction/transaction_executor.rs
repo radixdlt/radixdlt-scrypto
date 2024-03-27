@@ -261,6 +261,9 @@ where
             costing_parameters,
             executable.costing_parameters(),
             execution_config.abort_when_loan_repaid,
+            execution_config
+                .enabled_modules
+                .contains(EnabledModules::COSTING),
         );
         let fee_table = FeeTable::new();
 

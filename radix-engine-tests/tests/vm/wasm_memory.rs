@@ -74,6 +74,7 @@ fn test_wasm_memory_grow_read_write() {
         &CostingParameters::default(),
         &TransactionCostingParameters::default(),
         false,
+        true,
     );
     let mut wasm_execution_units_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
@@ -167,6 +168,7 @@ fn test_wasm_memory_is_clean() {
         &CostingParameters::default(),
         &TransactionCostingParameters::default(),
         false,
+        true,
     );
     let mut wasm_execution_units_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(

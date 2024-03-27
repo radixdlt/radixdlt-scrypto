@@ -45,6 +45,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
             free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
         },
         false,
+        true,
     );
     let mut wasm_execution_units_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
