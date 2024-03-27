@@ -57,10 +57,10 @@ impl Transfer {
                 .map_err(|_| Error::InvalidResourceSpecifier(self.resource_specifier.clone()))?;
 
         builder = match resource_specifier {
-            ResourceSpecifier::Amount(amount, resource_address) => {
+            crate::utils::ResourceSpecifier::Amount(amount, resource_address) => {
                 builder.withdraw_from_account(default_account, resource_address, amount)
             }
-            ResourceSpecifier::Ids(ids, resource_address) => {
+            crate::utils::ResourceSpecifier::Ids(ids, resource_address) => {
                 builder.withdraw_non_fungibles_from_account(default_account, resource_address, ids)
             }
         };
