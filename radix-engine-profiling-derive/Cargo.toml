@@ -20,5 +20,5 @@ radix-engine-profiling = { workspace = true }
 
 [features]
 default = []
-resource_tracker = []
+resource_tracker = ["radix-engine-profiling/resource_tracker"]
 
