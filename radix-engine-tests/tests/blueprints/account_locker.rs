@@ -109,6 +109,42 @@ fn account_locker_has_an_account_locker_entity_type() {
 }
 
 #[test]
+fn account_locker_component_address_have_the_expected_bech32m_encoding() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_account(false);
+
+    // Act
+    let account_locker = ledger
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_function(
+                    LOCKER_PACKAGE,
+                    ACCOUNT_LOCKER_BLUEPRINT,
+                    ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                    AccountLockerInstantiateSimpleManifestInput {
+                        allow_forceful_withdraws: false,
+                    },
+                )
+                .try_deposit_entire_worktop_or_abort(account, None)
+                .build(),
+            vec![],
+        )
+        .expect_commit_success()
+        .new_component_addresses()
+        .first()
+        .copied()
+        .unwrap();
+    let encoded = AddressBech32Encoder::new(&NetworkDefinition::mainnet())
+        .encode(&account_locker.as_node_id().0)
+        .unwrap();
+
+    // Assert
+    assert!(encoded.starts_with("locker_rdx1"),);
+}
+
+#[test]
 fn store_can_only_be_called_by_storer_role() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
@@ -564,6 +600,205 @@ fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
             });
         }
     }
+}
+
+#[test]
+fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the_locker_is_not_and_authorized_depositor(
+) {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (badge_holder_public_key, _, badge_holder_account) = ledger.new_account(false);
+    let (user_account_public_key, _, user_account) = ledger.new_account(false);
+
+    let (account_locker, account_locker_badge) = {
+        let commit_result = ledger
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_function(
+                        LOCKER_PACKAGE,
+                        ACCOUNT_LOCKER_BLUEPRINT,
+                        ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                        AccountLockerInstantiateSimpleManifestInput {
+                            allow_forceful_withdraws: false,
+                        },
+                    )
+                    .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success()
+            .clone();
+
+        let locker = commit_result
+            .new_component_addresses()
+            .first()
+            .copied()
+            .unwrap();
+        let badge = commit_result
+            .new_resource_addresses()
+            .first()
+            .copied()
+            .unwrap();
+
+        (locker, badge)
+    };
+
+    ledger
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_method(
+                    user_account,
+                    ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+                    AccountSetResourcePreferenceInput {
+                        resource_address: XRD,
+                        resource_preference: ResourcePreference::Disallowed,
+                    },
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(
+                &user_account_public_key,
+            )],
+        )
+        .expect_commit_success();
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(
+                badge_holder_account,
+                account_locker_badge,
+                dec!(1),
+            )
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
+                    AccountLockerSendOrStoreManifestInput {
+                        claimant: user_account,
+                        bucket,
+                    },
+                )
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(
+            &badge_holder_public_key,
+        )],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        ledger.get_component_balance(user_account, XRD),
+        dec!(10_000) // The initial 10_000 we get when we create a new account. Nothing more.
+    )
+}
+
+#[test]
+#[ignore = "The account blueprint needs to be changed to not fail if the provided authorized depositor is not actually an authorized depositor"]
+fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (badge_holder_public_key, _, badge_holder_account) = ledger.new_account(false);
+    let (user_account_public_key, _, user_account) = ledger.new_account(false);
+
+    let (account_locker, account_locker_badge) = {
+        let commit_result = ledger
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_function(
+                        LOCKER_PACKAGE,
+                        ACCOUNT_LOCKER_BLUEPRINT,
+                        ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                        AccountLockerInstantiateSimpleManifestInput {
+                            allow_forceful_withdraws: false,
+                        },
+                    )
+                    .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success()
+            .clone();
+
+        let locker = commit_result
+            .new_component_addresses()
+            .first()
+            .copied()
+            .unwrap();
+        let badge = commit_result
+            .new_resource_addresses()
+            .first()
+            .copied()
+            .unwrap();
+
+        (locker, badge)
+    };
+
+    ledger
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee_from_faucet()
+                .call_method(
+                    user_account,
+                    ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+                    AccountSetResourcePreferenceInput {
+                        resource_address: XRD,
+                        resource_preference: ResourcePreference::Disallowed,
+                    },
+                )
+                .call_method(
+                    user_account,
+                    ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                    AccountAddAuthorizedDepositorInput {
+                        badge: global_caller(account_locker),
+                    },
+                )
+                .build(),
+            vec![NonFungibleGlobalId::from_public_key(
+                &user_account_public_key,
+            )],
+        )
+        .expect_commit_success();
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(
+                badge_holder_account,
+                account_locker_badge,
+                dec!(1),
+            )
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
+                    AccountLockerSendOrStoreManifestInput {
+                        claimant: user_account,
+                        bucket,
+                    },
+                )
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(
+            &badge_holder_public_key,
+        )],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    assert_eq!(
+        ledger.get_component_balance(user_account, XRD),
+        dec!(20_000) // The initial 10_000 we get when we create a new account. Nothing more.
+    )
 }
 
 #[test]
