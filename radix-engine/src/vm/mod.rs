@@ -1,4 +1,5 @@
 mod native_vm;
+mod example_async_native_vm;
 mod scrypto_vm;
 mod versions;
 mod vm;
