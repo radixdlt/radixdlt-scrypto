@@ -1503,7 +1503,18 @@ impl AccountBlueprintBottlenoseExtension {
                 Ok(_) => {}
                 // The badge that they claim to be an authorized depositor is not one. Return the
                 // resources back to them.
-                Err(AccountError::NotAnAuthorizedDepositor { .. }) => return Ok(Some(bucket)),
+                Err(AccountError::NotAnAuthorizedDepositor { .. }) => {
+                    let event = if resource_address.is_fungible() {
+                        RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
+                    } else {
+                        RejectedDepositEvent::NonFungible(
+                            resource_address,
+                            bucket.non_fungible_local_ids(api)?,
+                        )
+                    };
+                    Runtime::emit_event(api, event)?;
+                    return Ok(Some(bucket));
+                }
                 // Some other account error is encountered - impossible case since the function
                 // will not return it. In either way, we propagate it.
                 Err(error) => return Err(error.into()),
@@ -1563,7 +1574,21 @@ impl AccountBlueprintBottlenoseExtension {
                 Ok(_) => {}
                 // The badge that they claim to be an authorized depositor is not one. Return the
                 // resources back to them.
-                Err(AccountError::NotAnAuthorizedDepositor { .. }) => return Ok(Some(buckets)),
+                Err(AccountError::NotAnAuthorizedDepositor { .. }) => {
+                    for bucket in offending_buckets {
+                        let resource_address = bucket.resource_address(api)?;
+                        let event = if resource_address.is_fungible() {
+                            RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
+                        } else {
+                            RejectedDepositEvent::NonFungible(
+                                resource_address,
+                                bucket.non_fungible_local_ids(api)?,
+                            )
+                        };
+                        Runtime::emit_event(api, event)?;
+                    }
+                    return Ok(Some(buckets));
+                }
                 // Some other account error is encountered - impossible case since the function
                 // will not return it. In either way, we propagate it.
                 Err(error) => return Err(error.into()),
