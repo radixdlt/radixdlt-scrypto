@@ -62,6 +62,7 @@ pub use radix_engine_interface::blueprints::access_controller::*;
 pub use radix_engine_interface::blueprints::account::*;
 pub use radix_engine_interface::blueprints::consensus_manager::*;
 pub use radix_engine_interface::blueprints::identity::*;
+pub use radix_engine_interface::blueprints::locker::*;
 pub use radix_engine_interface::blueprints::macros::*;
 pub use radix_engine_interface::blueprints::package::*;
 pub use radix_engine_interface::blueprints::pool::*;
