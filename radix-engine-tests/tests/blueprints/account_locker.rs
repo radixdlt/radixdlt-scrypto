@@ -39,8 +39,8 @@ fn account_locker_cant_be_instantiated_before_protocol_update() {
     // Assert
     receipt.expect_specific_rejection(|error| {
         error
-            == &RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError::KernelError(
-                KernelError::InvalidReference(LOCKER_PACKAGE.into_node_id()),
+            == &RejectionReason::BootloadingError(BootloadingError::ReferencedNodeDoesNotExist(
+                LOCKER_PACKAGE.into_node_id(),
             ))
     });
 }
