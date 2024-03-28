@@ -5,6 +5,7 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionFeeDetails;
 use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine::updates::ProtocolUpdateEntry;
 use radix_engine::updates::ProtocolUpdates;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -420,7 +421,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
 fn run_radiswap(mode: Mode, pool_math_precision_fix: bool) {
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol_updates(if pool_math_precision_fix {
-            ProtocolUpdates::none().with_anemone()
+            ProtocolUpdates::none().and(ProtocolUpdateEntry::PoolMathPrecisionFix)
         } else {
             ProtocolUpdates::none()
         })

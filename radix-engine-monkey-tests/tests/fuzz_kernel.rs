@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::RuntimeError;
+use radix_engine::errors::{BootloadingError, RuntimeError};
 use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::{BootLoader, Kernel};
@@ -518,7 +518,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
         callback: &mut callback,
         store: &mut track,
     };
-    let mut kernel = boot_loader.boot()?;
+    let mut kernel = boot_loader.boot().unwrap();
 
     let mut fuzzer = KernelFuzzer::new(seed);
 
@@ -534,9 +534,8 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     }
 
     let result = track.finalize();
-    if let Ok((tracked_nodes, deleted_partitions)) = result {
-        let state_updates =
-            to_state_updates::<SpreadPrefixKeyMapper>(tracked_nodes, deleted_partitions);
+    if let Ok(tracked_substates) = result {
+        let (_, state_updates) = to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
 
         let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         substate_db.commit(&database_updates);
