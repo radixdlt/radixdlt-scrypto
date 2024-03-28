@@ -28,7 +28,7 @@ fn account_locker_cant_be_instantiated_before_protocol_update() {
                 ACCOUNT_LOCKER_BLUEPRINT,
                 ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                 AccountLockerInstantiateSimpleManifestInput {
-                    allow_forceful_withdraws: false,
+                    allow_recover: false,
                 },
             )
             .try_deposit_entire_worktop_or_abort(account, None)
@@ -60,7 +60,7 @@ fn account_locker_can_be_instantiated_after_protocol_update() {
                 ACCOUNT_LOCKER_BLUEPRINT,
                 ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                 AccountLockerInstantiateSimpleManifestInput {
-                    allow_forceful_withdraws: false,
+                    allow_recover: false,
                 },
             )
             .try_deposit_entire_worktop_or_abort(account, None)
@@ -88,7 +88,7 @@ fn account_locker_has_an_account_locker_entity_type() {
                     ACCOUNT_LOCKER_BLUEPRINT,
                     ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                     AccountLockerInstantiateSimpleManifestInput {
-                        allow_forceful_withdraws: false,
+                        allow_recover: false,
                     },
                 )
                 .try_deposit_entire_worktop_or_abort(account, None)
@@ -124,7 +124,7 @@ fn account_locker_component_address_have_the_expected_bech32m_encoding() {
                     ACCOUNT_LOCKER_BLUEPRINT,
                     ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                     AccountLockerInstantiateSimpleManifestInput {
-                        allow_forceful_withdraws: false,
+                        allow_recover: false,
                     },
                 )
                 .try_deposit_entire_worktop_or_abort(account, None)
@@ -620,7 +620,7 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: false,
+                            allow_recover: false,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
@@ -715,7 +715,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: false,
+                            allow_recover: false,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
@@ -967,7 +967,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: false,
+                            allow_recover: false,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
@@ -1065,7 +1065,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: false,
+                            allow_recover: false,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
@@ -1163,7 +1163,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: true,
+                            allow_recover: true,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
@@ -1261,7 +1261,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: false,
+                            allow_recover: false,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
@@ -1362,7 +1362,7 @@ fn get_amount_method_reports_the_correct_amount_in_the_vault() {
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: false,
+                            allow_recover: false,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
@@ -1455,7 +1455,7 @@ fn get_non_fungible_local_ids_method_reports_the_correct_ids_in_the_vault() {
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: false,
+                            allow_recover: false,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
@@ -1603,7 +1603,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         ACCOUNT_LOCKER_BLUEPRINT,
                         ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
                         AccountLockerInstantiateSimpleManifestInput {
-                            allow_forceful_withdraws: true,
+                            allow_recover: true,
                         },
                     )
                     .try_deposit_entire_worktop_or_abort(badge_holder_account, None)

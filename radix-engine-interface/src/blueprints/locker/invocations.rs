@@ -40,11 +40,11 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: instantiate_simple,
     input: struct {
-        allow_forceful_withdraws: bool
+        allow_recover: bool
     },
     output: type (Global<AccountLockerMarker>, Bucket),
     manifest_input: struct {
-        allow_forceful_withdraws: bool
+        allow_recover: bool
     }
 }
 

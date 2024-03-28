@@ -405,7 +405,7 @@ extern_blueprint_internal! {
             recoverer_updater_role: AccessRule,
             address_reservation: Option<GlobalAddressReservation>,
         ) -> Global<AccountLocker>;
-        fn instantiate_simple(allow_forceful_withdraws: bool) -> (Global<AccountLocker>, Bucket);
+        fn instantiate_simple(allow_recover: bool) -> (Global<AccountLocker>, Bucket);
     },
     {
         fn store(&mut self, claimant: Global<Account>, bucket: Bucket);

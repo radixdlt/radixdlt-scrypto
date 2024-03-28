@@ -172,9 +172,7 @@ impl AccountLockerBlueprint {
     }
 
     fn instantiate_simple<Y>(
-        AccountLockerInstantiateSimpleInput {
-            allow_forceful_withdraws,
-        }: AccountLockerInstantiateSimpleInput,
+        AccountLockerInstantiateSimpleInput { allow_recover }: AccountLockerInstantiateSimpleInput,
         api: &mut Y,
     ) -> Result<AccountLockerInstantiateSimpleOutput, RuntimeError>
     where
@@ -216,7 +214,7 @@ impl AccountLockerBlueprint {
 
         // Preparing all of the roles and rules.
         let rule = rule!(require(badge_address));
-        let recoverer_rule = match allow_forceful_withdraws {
+        let recoverer_rule = match allow_recover {
             true => rule.clone(),
             false => rule!(deny_all),
         };
