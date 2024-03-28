@@ -57,6 +57,7 @@ impl ProtocolUpdateEntry {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProtocolUpdate {
     Anemone,
 
@@ -90,6 +91,7 @@ impl ProtocolUpdate {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ProtocolUpdates {
     protocol_updates: Vec<ProtocolUpdate>,
     additional_updates: Vec<ProtocolUpdateEntry>,
