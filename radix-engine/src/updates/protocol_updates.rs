@@ -2,7 +2,7 @@ use super::state_updates::*;
 use crate::{internal_prelude::*, track::StateUpdates};
 use radix_substate_store_interface::interface::SubstateDatabase;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProtocolUpdateEntry {
     /// Introduces BLS12-381 and Keccak-256 features.
     Bls12381AndKeccak256,
@@ -57,7 +57,7 @@ impl ProtocolUpdateEntry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProtocolUpdate {
     Anemone,
 
@@ -71,19 +71,18 @@ impl ProtocolUpdate {
         network: &NetworkDefinition,
     ) -> Vec<StateUpdates> {
         match self {
-            ProtocolUpdate::Anemone => btreeset!(
+            ProtocolUpdate::Anemone => vec![
                 ProtocolUpdateEntry::Bls12381AndKeccak256,
                 ProtocolUpdateEntry::SecondPrecisionTimestamp,
                 ProtocolUpdateEntry::PoolMathPrecisionFix,
                 ProtocolUpdateEntry::ValidatorCreationFeeFix,
-            ),
-
-            ProtocolUpdate::Bottlenose => btreeset!(
+            ],
+            ProtocolUpdate::Bottlenose => vec![
                 ProtocolUpdateEntry::OwnerRoleGetter,
                 ProtocolUpdateEntry::SystemPatches,
                 ProtocolUpdateEntry::AccountLocker,
                 ProtocolUpdateEntry::ProtocolParamsToState,
-            ),
+            ],
         }
         .iter()
         .map(|update| update.generate_state_updates(db, network))
