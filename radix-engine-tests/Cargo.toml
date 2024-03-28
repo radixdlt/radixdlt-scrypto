@@ -38,6 +38,7 @@ paste = { workspace = true }
 hex = { workspace = true }
 trybuild = { workspace = true }
 automod = { workspace = true }
+extend = { workspace = true }
 
 [build-dependencies]
 walkdir = { workspace = true, optional = true }

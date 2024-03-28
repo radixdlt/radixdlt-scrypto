@@ -7,7 +7,7 @@ use sbor::rust::fmt::Debug;
 
 pub const IDENTITY_BLUEPRINT: &str = "Identity";
 
-define_type_info_marker!(Some(IDENTITY_PACKAGE), Identity);
+define_type_marker!(Some(IDENTITY_PACKAGE), Identity);
 
 pub const IDENTITY_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 
@@ -17,7 +17,7 @@ pub struct IdentityCreateAdvancedInput {
     pub owner_role: OwnerRole,
 }
 
-pub type IdentityCreateAdvancedOutput = Global<IdentityObjectTypeInfo>;
+pub type IdentityCreateAdvancedOutput = Global<IdentityMarker>;
 
 pub const IDENTITY_CREATE_IDENT: &str = "create";
 
@@ -25,7 +25,7 @@ pub const IDENTITY_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct IdentityCreateInput {}
 
-pub type IdentityCreateOutput = (Global<IdentityObjectTypeInfo>, Bucket);
+pub type IdentityCreateOutput = (Global<IdentityMarker>, Bucket);
 
 pub const IDENTITY_SECURIFY_IDENT: &str = "securify";
 

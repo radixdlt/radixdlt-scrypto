@@ -31,7 +31,7 @@ pub enum DefaultDepositRule {
 
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
-define_type_info_marker!(Some(ACCOUNT_PACKAGE), Account);
+define_type_marker!(Some(ACCOUNT_PACKAGE), Account);
 
 //=============
 // Account Create Advanced
@@ -53,7 +53,7 @@ pub struct AccountCreateAdvancedManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-pub type AccountCreateAdvancedOutput = Global<AccountObjectTypeInfo>;
+pub type AccountCreateAdvancedOutput = Global<AccountMarker>;
 
 //================
 // Account Create
@@ -65,7 +65,7 @@ pub const ACCOUNT_CREATE_IDENT: &str = "create";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct AccountCreateInput {}
 
-pub type AccountCreateOutput = (Global<AccountObjectTypeInfo>, Bucket);
+pub type AccountCreateOutput = (Global<AccountMarker>, Bucket);
 
 //==================
 // Account Securify

@@ -1,9 +1,10 @@
 use crate::blueprints::access_controller::AccessControllerNativePackage;
-use crate::blueprints::account::AccountNativePackage;
+use crate::blueprints::account::{AccountBlueprintBottlenoseExtension, AccountNativePackage};
 use crate::blueprints::consensus_manager::{
     ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
 };
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::ResourceNativePackage;
@@ -134,6 +135,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         IdentityNativePackage::invoke_export(export_name, input, api)
                     }
                     ACCOUNT_CODE_ID => AccountNativePackage::invoke_export(export_name, input, api),
+                    ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID => {
+                        AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
+                    }
                     ACCESS_CONTROLLER_CODE_ID => {
                         AccessControllerNativePackage::invoke_export(export_name, input, api)
                     }
@@ -168,6 +172,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     TEST_UTILS_CODE_ID => {
                         TestUtilsNativePackage::invoke_export(export_name, input, api)
                     }
+                    LOCKER_CODE_ID => LockerNativePackage::invoke_export(export_name, input, api),
                     _ => {
                         return Err(RuntimeError::VmError(VmError::Native(
                             NativeRuntimeError::InvalidCodeId,

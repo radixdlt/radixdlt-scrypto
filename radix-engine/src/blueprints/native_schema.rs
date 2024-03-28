@@ -5,6 +5,7 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::*;
 use crate::blueprints::consensus_manager::*;
 use crate::blueprints::identity::*;
+use crate::blueprints::locker::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::*;
@@ -35,6 +36,7 @@ lazy_static! {
         PackageNativePackage::definition();
     pub static ref TRANSACTION_PROCESSOR_PACKAGE_DEFINITION: PackageDefinition =
         TransactionProcessorNativePackage::definition();
+    pub static ref LOCKER_PACKAGE_DEFINITION: PackageDefinition = LockerNativePackage::definition();
     pub static ref METADATA_PACKAGE_DEFINITION: PackageDefinition =
         MetadataNativePackage::definition();
     pub static ref ROYALTY_PACKAGE_DEFINITION: PackageDefinition =

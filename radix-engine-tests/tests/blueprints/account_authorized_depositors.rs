@@ -4,6 +4,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::prelude::*;
+use radix_substate_store_queries::typed_substate_layout::*;
 use radix_transactions::prelude::*;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
 
@@ -87,7 +88,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account2, XRD, 1)
+        .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
@@ -101,12 +102,14 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
                 },
             )
         })
+        .deposit_batch(account2)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
-    receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
+    receipt.expect_commit_success();
+    assert_eq!(ledger.get_component_balance(account2, XRD), dec!(20_000));
 }
 
 #[test]
@@ -309,7 +312,7 @@ fn authorized_depositor_can_be_removed_later() {
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert 2
-    receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
+    receipt.expect_specific_failure(is_fungible_resource_manager_drop_non_empty_bucket_error);
 }
 
 #[test]
@@ -344,7 +347,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(account2, XRD, 1)
+        .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "bucket")
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(
@@ -358,12 +361,14 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
                 },
             )
         })
+        .deposit_batch(account2)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
 
     // Assert
-    receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
+    receipt.expect_commit_success();
+    assert_eq!(ledger.get_component_balance(account2, XRD), dec!(20_000))
 }
 
 #[test]
@@ -877,11 +882,12 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
+    let (sink_pk, _, sink) = ledger.new_account(false);
 
     // Act
-    for method_name in [
-        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-        ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+    for (method_name, should_refund) in [
+        (ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT, false),
+        (ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT, true),
     ] {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
@@ -904,12 +910,19 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
                     ),
                 )
             })
+            .deposit_batch(sink)
             .build();
-        let receipt =
-            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        let receipt = ledger.execute_manifest(
+            manifest,
+            [&sink_pk, &pk].map(NonFungibleGlobalId::from_public_key),
+        );
 
         // Assert
-        receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
+        if should_refund {
+            assert_eq!(ledger.get_component_balance(sink, XRD), dec!(20_000));
+        } else {
+            receipt.expect_specific_failure(is_account_not_an_authorized_depositor_error);
+        }
     }
 }
 
@@ -967,6 +980,15 @@ fn is_account_not_an_authorized_depositor_error(error: &RuntimeError) -> bool {
         error,
         RuntimeError::ApplicationError(ApplicationError::AccountError(
             AccountError::NotAnAuthorizedDepositor { .. }
+        ))
+    )
+}
+
+fn is_fungible_resource_manager_drop_non_empty_bucket_error(error: &RuntimeError) -> bool {
+    matches!(
+        error,
+        RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+            FungibleResourceManagerError::DropNonEmptyBucket
         ))
     )
 }

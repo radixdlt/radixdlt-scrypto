@@ -243,6 +243,7 @@ fn typed_native_event_type_contains_all_native_events() {
         "Resource" => RESOURCE_PACKAGE_DEFINITION.deref(),
         "Package" => PACKAGE_PACKAGE_DEFINITION.deref(),
         "TransactionProcessor" => TRANSACTION_PROCESSOR_PACKAGE_DEFINITION.deref(),
+        "Locker" => LOCKER_PACKAGE_DEFINITION.deref(),
         "Metadata" => METADATA_PACKAGE_DEFINITION.deref(),
         "Royalty" => ROYALTY_PACKAGE_DEFINITION.deref(),
         "RoleAssignment" => ROLE_ASSIGNMENT_PACKAGE_DEFINITION.deref(),

@@ -53,8 +53,14 @@ pub enum EntityType {
     /// A global native pool entity (197 in decimal). Gives Bech32 prefix: `c` followed by one of `5`, `4`, `k` or `h`.
     GlobalTwoResourcePool = 0b11000101, //----------- 11000 => c, 101xx => 54kh (101 = pool)
 
-    /// A global native pool entity (197 in decimal). Gives Bech32 prefix: `c` followed by one of `c`, `e`, `6` or `m`.
+    /// A global native pool entity (198 in decimal). Gives Bech32 prefix: `c` followed by one of `c`, `e`, `6` or `m`.
     GlobalMultiResourcePool = 0b11000110, //--------- 11000 => c, 110xx => ce6m (101 = pool)
+
+    //=========================================================================
+    // Standard Global Components (start with char d since c is fully taken)
+    //=========================================================================
+    /// A global native locker component (104 in decimal). Gives Bech32 prefix: `d` followed by one of `q`, `p`, `z` or `r`.
+    GlobalAccountLocker = 0b01101000, //--------- 01101 => d, 000xx => qpzr (001 = locker)
 
     //=========================================================================
     // Secp256k1 Virtual Global Components (start with char 6 for Secp256k1)
@@ -126,7 +132,8 @@ impl EntityType {
             | EntityType::GlobalOneResourcePool
             | EntityType::GlobalTwoResourcePool
             | EntityType::GlobalMultiResourcePool
-            | EntityType::GlobalTransactionTracker => true,
+            | EntityType::GlobalTransactionTracker
+            | EntityType::GlobalAccountLocker => true,
             EntityType::InternalFungibleVault
             | EntityType::InternalNonFungibleVault
             | EntityType::InternalGenericComponent
@@ -153,7 +160,8 @@ impl EntityType {
             | EntityType::GlobalOneResourcePool
             | EntityType::GlobalTwoResourcePool
             | EntityType::GlobalMultiResourcePool
-            | EntityType::GlobalTransactionTracker => true,
+            | EntityType::GlobalTransactionTracker
+            | EntityType::GlobalAccountLocker => true,
             EntityType::GlobalPackage
             | EntityType::GlobalFungibleResourceManager
             | EntityType::GlobalNonFungibleResourceManager

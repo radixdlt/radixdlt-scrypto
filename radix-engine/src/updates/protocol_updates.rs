@@ -23,10 +23,14 @@ pub enum ProtocolUpdateEntry {
     SystemPatches,
 
     /// Introduces the account locker blueprint.
-    AccountLocker,
+    LockerPackage,
 
     /// Moves various protocol parameters to state.
     ProtocolParamsToState,
+
+    /// Makes some behavioral changes to the try_deposit_or_refund (and batch variants too) method
+    /// on the account blueprint.
+    AccountTryDepositOrRefundBehaviorChanges,
 }
 
 impl ProtocolUpdateEntry {
@@ -49,9 +53,12 @@ impl ProtocolUpdateEntry {
                 generate_validator_creation_fee_fix_state_updates(db)
             }
             ProtocolUpdateEntry::OwnerRoleGetter => generate_owner_role_getter_state_updates(db),
+            ProtocolUpdateEntry::LockerPackage => generate_locker_package_state_updates(),
+            ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges => {
+                generate_account_bottlenose_extension_state_updates(db)
+            }
             // TODO implement the following
             ProtocolUpdateEntry::SystemPatches => StateUpdates::default(),
-            ProtocolUpdateEntry::AccountLocker => StateUpdates::default(),
             ProtocolUpdateEntry::ProtocolParamsToState => StateUpdates::default(),
         }
     }
@@ -80,7 +87,8 @@ impl ProtocolUpdate {
             ProtocolUpdate::Bottlenose => vec![
                 ProtocolUpdateEntry::OwnerRoleGetter,
                 ProtocolUpdateEntry::SystemPatches,
-                ProtocolUpdateEntry::AccountLocker,
+                ProtocolUpdateEntry::LockerPackage,
+                ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges,
                 ProtocolUpdateEntry::ProtocolParamsToState,
             ],
         }

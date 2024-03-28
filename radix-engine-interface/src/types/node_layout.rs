@@ -270,6 +270,12 @@ blueprint_partition_offset!(
 );
 
 blueprint_partition_offset!(
+    pub enum AccountLockerPartitionOffset {
+        AccountClaimsKeyValue,
+    }
+);
+
+blueprint_partition_offset!(
     pub enum OneResourcePoolPartitionOffset {
         Field,
     }

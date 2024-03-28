@@ -10,6 +10,7 @@ pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, AccountNativePackage};
 use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
 pub use radix_engine::blueprints::consensus_manager::*;
+pub use radix_engine::blueprints::locker::*;
 pub use radix_engine::blueprints::package::*;
 pub use radix_engine::blueprints::pool::v1::substates::multi_resource_pool;
 use radix_engine::blueprints::pool::v1::substates::multi_resource_pool::{
@@ -156,6 +157,7 @@ pub enum TypedMainModuleSubstateKey {
     OneResourcePool(OneResourcePoolTypedSubstateKey),
     TwoResourcePool(TwoResourcePoolTypedSubstateKey),
     MultiResourcePool(MultiResourcePoolTypedSubstateKey),
+    AccountLocker(AccountLockerTypedSubstateKey),
     TransactionTrackerField(TransactionTrackerField),
     TransactionTrackerCollectionEntry(IntentHash),
     // Objects - Generic Scrypto Components
@@ -345,6 +347,12 @@ fn to_typed_object_substate_key_internal(
                 substate_key,
             )?,
         ),
+        EntityType::GlobalAccountLocker => TypedMainModuleSubstateKey::AccountLocker(
+            AccountLockerTypedSubstateKey::for_key_in_partition(
+                &AccountLockerPartitionOffset::try_from(partition_offset)?,
+                substate_key,
+            )?,
+        ),
         EntityType::GlobalTransactionTracker => {
             if partition_offset == PartitionOffset(0) {
                 TypedMainModuleSubstateKey::TransactionTrackerField(
@@ -423,6 +431,7 @@ pub enum TypedMainModuleSubstateValue {
     OneResourcePool(OneResourcePoolTypedSubstateValue),
     TwoResourcePool(TwoResourcePoolTypedSubstateValue),
     MultiResourcePool(MultiResourcePoolTypedSubstateValue),
+    AccountLocker(AccountLockerTypedSubstateValue),
     TransactionTracker(TypedTransactionTrackerFieldValue),
     TransactionTrackerCollectionEntry(KeyValueEntrySubstate<TransactionStatusSubstateContents>),
     // Generic Scrypto Components and KV Stores
@@ -587,6 +596,11 @@ fn to_typed_object_substate_value(
         }
         TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(_) => {
             TypedMainModuleSubstateValue::TransactionTrackerCollectionEntry(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::AccountLocker(key) => {
+            TypedMainModuleSubstateValue::AccountLocker(
+                AccountLockerTypedSubstateValue::from_key_and_data(key, data)?,
+            )
         }
     };
     Ok(substate_value)

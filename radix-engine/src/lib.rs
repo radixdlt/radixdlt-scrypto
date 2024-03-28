@@ -39,9 +39,12 @@ pub(crate) mod internal_prelude {
     pub use crate::blueprints::internal_prelude::*;
     pub use crate::errors::*;
     pub use crate::system::system_substates::*;
-    pub use crate::{event_schema, method_auth_template, roles_template};
+    pub use crate::{
+        dispatch, event_schema, function_schema, method_auth_template, roles_template,
+    };
     pub use radix_blueprint_schema_init::*;
     pub use radix_common::prelude::*;
+    pub use radix_engine_interface::blueprints::component::*;
     pub use radix_engine_interface::prelude::*;
     pub use sbor::rust::ops::AddAssign;
     pub use sbor::rust::ops::SubAssign;

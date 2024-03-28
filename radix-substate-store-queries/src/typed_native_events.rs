@@ -5,6 +5,7 @@
 use crate::typed_substate_layout::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::account;
+use radix_engine::blueprints::locker::*;
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::blueprints::pool::v1::events as pool_events;
 use radix_engine::object_modules::metadata::*;
@@ -159,6 +160,9 @@ fn resolve_typed_event_key_from_event_type_identifier(
                 TypedMultiResourcePoolBlueprintEventKey::new(&event_name)
                     .map(TypedNativeEventKey::from)
             }
+            EntityType::GlobalAccountLocker => {
+                TypedAccountLockerBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
+            }
             EntityType::GlobalFungibleResourceManager => {
                 TypedFungibleResourceManagerBlueprintEventKey::new(&event_name)
                     .map(TypedNativeEventKey::from)
@@ -282,6 +286,14 @@ define_structure! {
     },
     TransactionTracker => {
         TransactionTracker => []
+    },
+    Locker => {
+        AccountLocker => [
+            StoreEvent,
+            BatchStoreEvent,
+            RecoverEvent,
+            ClaimEvent
+        ]
     },
 
     /* Node Module Packages */

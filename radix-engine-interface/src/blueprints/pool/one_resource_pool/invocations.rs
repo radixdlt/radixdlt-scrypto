@@ -6,7 +6,7 @@ use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_common::*;
 
-define_type_info_marker!(Some(POOL_PACKAGE), OneResourcePool);
+define_type_marker!(Some(POOL_PACKAGE), OneResourcePool);
 
 define_invocation! {
     blueprint_name: OneResourcePool,
@@ -17,7 +17,7 @@ define_invocation! {
         resource_address: ResourceAddress,
         address_reservation: Option<GlobalAddressReservation>
     },
-    output: type Global<OneResourcePoolObjectTypeInfo>,
+    output: type Global<OneResourcePoolMarker>,
     manifest_input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,

@@ -17,6 +17,70 @@ macro_rules! event_schema {
 }
 
 #[macro_export]
+macro_rules! function_schema {
+    (
+        $aggregator: expr,
+        $blueprint_name: ident {
+            $(
+                $ident: ident: $receiver: expr
+            ),* $(,)?
+        } $(,)?
+    ) => {{
+        paste::paste! {
+            let mut functions = index_map_new();
+
+            $(
+                functions.insert(
+                    [<$blueprint_name:snake:upper _ $ident:snake:upper _IDENT>].to_string(),
+                    FunctionSchemaInit {
+                        receiver: $receiver,
+                        input: TypeRef::Static(
+                            $aggregator.add_child_type_and_descendents::<[<$blueprint_name:camel $ident:camel Input >]>(),
+                        ),
+                        output: TypeRef::Static(
+                            $aggregator.add_child_type_and_descendents::<[<$blueprint_name:camel $ident:camel Output >]>(),
+                        ),
+                        export: [<$blueprint_name:snake:upper _ $ident:snake:upper _EXPORT_NAME>].to_string(),
+                    },
+                );
+            )*
+
+            functions
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! dispatch {
+    (
+        $export_name: expr,
+        $input: expr,
+        $api: expr,
+        $blueprint_ident: ident,
+        [
+            $($function_ident: ident),* $(,)?
+        ] $(,)?
+    ) => {
+        paste::paste! {
+            match $export_name {
+                $(
+                    [< $blueprint_ident:snake:upper _ $function_ident:snake:upper _EXPORT_NAME >] => {
+                        let input: [< $blueprint_ident:camel $function_ident:camel Input >] = $input.as_typed().map_err(|e| {
+                            RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                        })?;
+                        let rtn: [< $blueprint_ident:camel $function_ident:camel Output >] = Self::$function_ident(input, $api)?;
+                        Ok(IndexedScryptoValue::from_typed(&rtn))
+                    }
+                ),*
+                _ => Err(RuntimeError::ApplicationError(
+                    ApplicationError::ExportDoesNotExist($export_name.to_string()),
+                )),
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! add_role {
     ($roles:expr, $role:expr) => {{
         $roles.insert(

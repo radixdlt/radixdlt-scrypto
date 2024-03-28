@@ -15,8 +15,8 @@ use sbor::rust::vec::Vec;
 pub const CONSENSUS_MANAGER_BLUEPRINT: &str = "ConsensusManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";
 
-define_type_info_marker!(Some(CONSENSUS_MANAGER_PACKAGE), ConsensusManager);
-define_type_info_marker!(Some(CONSENSUS_MANAGER_PACKAGE), Validator);
+define_type_marker!(Some(CONSENSUS_MANAGER_PACKAGE), ConsensusManager);
+define_type_marker!(Some(CONSENSUS_MANAGER_PACKAGE), Validator);
 
 pub const CONSENSUS_MANAGER_CREATE_IDENT: &str = "create";
 
@@ -338,7 +338,7 @@ pub struct ConsensusManagerCreateValidatorManifestInput {
     pub xrd_payment: ManifestBucket,
 }
 
-pub type ConsensusManagerCreateValidatorOutput = (Global<ValidatorObjectTypeInfo>, Bucket, Bucket);
+pub type ConsensusManagerCreateValidatorOutput = (Global<ValidatorMarker>, Bucket, Bucket);
 
 pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 

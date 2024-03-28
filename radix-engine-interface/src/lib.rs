@@ -34,6 +34,7 @@ pub mod prelude {
     pub use crate::api::key_value_store_api::*;
     pub use crate::api::*;
     pub use crate::blueprints::consensus_manager::*;
+    pub use crate::blueprints::locker::*;
     pub use crate::blueprints::resource::*;
     pub use crate::object_modules::metadata::*;
     pub use crate::object_modules::role_assignment::*;

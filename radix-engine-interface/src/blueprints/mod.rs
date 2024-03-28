@@ -4,6 +4,7 @@ pub mod component;
 pub mod consensus_manager;
 pub mod hooks;
 pub mod identity;
+pub mod locker;
 pub mod macros;
 pub mod package;
 pub mod pool;
