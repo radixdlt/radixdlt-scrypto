@@ -8,6 +8,8 @@
         "aliasable",
         "bech",
         "bincode",
+        "Bootloader",
+        "Bootloading",
         "btreemap",
         "btreeset",
         "callframe",

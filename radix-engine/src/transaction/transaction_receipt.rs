@@ -394,7 +394,7 @@ impl TransactionReceipt {
     pub fn expect_commit_ignore_outcome(&self) -> &CommitResult {
         match &self.result {
             TransactionResult::Commit(c) => c,
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Reject(e) => panic!("Transaction was rejected: {:?}", e),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
     }
@@ -402,7 +402,7 @@ impl TransactionReceipt {
     pub fn into_commit_ignore_outcome(self) -> CommitResult {
         match self.result {
             TransactionResult::Commit(c) => c,
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Reject(e) => panic!("Transaction was rejected: {:?}", e),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
     }

@@ -75,7 +75,7 @@ pub enum VmBoot {
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
     type CallbackState = VmVersion;
 
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError> {
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError> {
         let vm_boot = store
             .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),

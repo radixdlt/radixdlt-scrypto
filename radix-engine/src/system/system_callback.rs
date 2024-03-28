@@ -104,7 +104,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     type LockData = SystemLockData;
     type CallbackState = C::CallbackState;
 
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<C::CallbackState, RuntimeError> {
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<C::CallbackState, BootloadingError> {
         self.modules.on_init()?;
 
         let callback_state = self.callback_obj.init(store)?;

@@ -1,4 +1,5 @@
 use radix_common::prelude::*;
+use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
@@ -100,7 +101,7 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
     type CallFrameData = K::CallFrameData;
     type CallbackState = K::CallbackState;
 
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError> {
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError> {
         self.callback_object.init(store)
     }
 

@@ -38,7 +38,7 @@ pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + 
 
 impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
     /// Creates a new kernel with data loaded from the substate store
-    pub fn boot(&mut self) -> Result<Kernel<M, S>, RuntimeError> {
+    pub fn boot(&mut self) -> Result<Kernel<M, S>, BootloadingError> {
         let callback_state = self.callback.init(self.store)?;
 
         let kernel = Kernel {
@@ -62,53 +62,34 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Bo
 }
 
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
-    /// Executes a transaction
-    pub fn call_transaction_processor<'a>(
-        mut self,
-        manifest_encoded_instructions: &'a [u8],
-        pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
-        references: &'a IndexSet<Reference>,
-        blobs: &'a IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        #[cfg(feature = "resource_tracker")]
-        radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
-            v.borrow_mut();
-        });
-
-        let mut kernel = self.boot()?;
-
-        // Reference management
+    pub fn check_references(
+        &mut self,
+        references: &IndexSet<Reference>,
+    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
+        let mut global_addresses = indexset!();
+        let mut direct_accesses = indexset!();
         for reference in references.iter() {
             let node_id = &reference.0;
 
+            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                // Allow always visible node and do not add reference
+                continue;
+            }
+
             if node_id.is_global_virtual() {
-                // For virtual accounts, create a reference directly
-                kernel
-                    .current_frame
-                    .add_global_reference(GlobalAddress::new_or_panic(node_id.clone().into()));
+                // Allow global virtual and add reference
+                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                 continue;
             }
 
-            if kernel
-                .current_frame
-                .get_node_visibility(node_id)
-                .can_be_invoked(false)
-            {
-                continue;
-            }
-
-            // We have a reference to a node which can't be invoked - so it must be a direct access,
-            // let's validate it as such
-
-            let substate_ref = kernel
-                .substate_io
+            let substate_ref = self
                 .store
                 .read_substate(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
                 )
-                .ok_or_else(|| KernelError::InvalidReference(*node_id))?;
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             match &type_substate {
                 TypeInfoSubstate::Object(
@@ -118,35 +99,73 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                     },
                 ) => {
                     if info.is_global() {
-                        kernel
-                            .current_frame
-                            .add_global_reference(GlobalAddress::new_or_panic(
-                                node_id.clone().into(),
-                            ));
+                        global_addresses
+                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                     } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                         && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
                             || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
-                        kernel.current_frame.add_direct_access_reference(
-                            InternalAddress::new_or_panic(node_id.clone().into()),
-                        );
+                        direct_accesses
+                            .insert(InternalAddress::new_or_panic(node_id.clone().into()));
                     } else {
-                        return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                        return Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
+                            node_id.clone(),
+                        ));
                     }
                 }
                 _ => {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidDirectAccess));
+                    return Err(BootloadingError::ReferencedNodeIsNotAnObject(
+                        node_id.clone(),
+                    ));
                 }
             }
         }
 
+        Ok((global_addresses, direct_accesses))
+    }
+
+    /// Executes a transaction
+    pub fn execute<'a>(
+        mut self,
+        manifest_encoded_instructions: &'a [u8],
+        pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
+        manifest_references: &'a IndexSet<Reference>,
+        blobs: &'a IndexMap<Hash, Vec<u8>>,
+    ) -> Result<Vec<u8>, TransactionExecutionError> {
+        #[cfg(feature = "resource_tracker")]
+        radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
+            v.borrow_mut();
+        });
+
+        // Check reference
+        let engine_references = self
+            .check_references(manifest_references)
+            .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
+
+        // Boot kernel
+        let mut kernel = self
+            .boot()
+            .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
+
+        // Add visibility
+        for global_ref in engine_references.0 {
+            kernel.current_frame.add_global_reference(global_ref);
+        }
+        for direct_access in engine_references.1 {
+            kernel
+                .current_frame
+                .add_direct_access_reference(direct_access);
+        }
+
+        // Invoke transaction processor
         let rtn = M::start(
             &mut kernel,
             manifest_encoded_instructions,
             pre_allocated_addresses,
-            references,
+            manifest_references,
             blobs,
-        )?;
+        )
+        .map_err(|e| TransactionExecutionError::RuntimeError(e))?;
 
         // Sanity check call frame
         assert!(kernel.prev_frame_stack.is_empty());
@@ -154,7 +173,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
         // Sanity check heap
         assert!(kernel.substate_io.heap.is_empty());
 
-        M::on_teardown(&mut kernel)?;
+        M::on_teardown(&mut kernel).map_err(|e| TransactionExecutionError::RuntimeError(e))?;
 
         Ok(rtn)
     }

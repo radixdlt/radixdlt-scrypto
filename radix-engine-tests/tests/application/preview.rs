@@ -9,6 +9,38 @@ use radix_transactions::validation::NotarizedTransactionValidator;
 use radix_transactions::validation::{TransactionValidator, ValidationConfig};
 
 #[test]
+fn test_preview_invalid_direct_access() {
+    let mut sim = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (public_key, _, _) = sim.new_allocated_account();
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_direct_access_method(
+            InternalAddress::new_or_panic([0x58; NodeId::LENGTH]),
+            "x",
+            (),
+        )
+        .build();
+
+    sim.preview_manifest(
+        manifest.clone(),
+        vec![],
+        0,
+        PreviewFlags {
+            use_free_credit: true,
+            assume_all_signature_proofs: true,
+            skip_epoch_check: true,
+            disable_auth: false,
+        },
+    );
+
+    sim.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+}
+
+#[test]
 fn test_transaction_preview_cost_estimate() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
