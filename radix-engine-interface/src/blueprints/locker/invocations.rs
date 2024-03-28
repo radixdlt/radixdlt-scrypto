@@ -6,7 +6,7 @@ use radix_common::data::manifest::model::*;
 use radix_common::prelude::*;
 use radix_common::*;
 
-define_type_info_marker!(Some(LOCKER_PACKAGE), AccountLocker);
+define_type_marker!(Some(LOCKER_PACKAGE), AccountLocker);
 
 pub const ACCOUNT_LOCKER_BLUEPRINT: &str = "AccountLocker";
 
@@ -25,7 +25,7 @@ define_invocation! {
         recoverer_updater_role: AccessRule,
         address_reservation: Option<GlobalAddressReservation>
     },
-    output: type Global<AccountLockerObjectTypeInfo>,
+    output: type Global<AccountLockerMarker>,
     manifest_input: struct {
         owner_role: OwnerRole,
         storer_role: AccessRule,
@@ -42,7 +42,7 @@ define_invocation! {
     input: struct {
         allow_forceful_withdraws: bool
     },
-    output: type (Global<AccountLockerObjectTypeInfo>, Bucket),
+    output: type (Global<AccountLockerMarker>, Bucket),
     manifest_input: struct {
         allow_forceful_withdraws: bool
     }
@@ -56,7 +56,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: store,
     input: struct {
-        claimant: Global<AccountObjectTypeInfo>,
+        claimant: Global<AccountMarker>,
         bucket: Bucket
     },
     output: type (),
@@ -70,7 +70,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: store_batch,
     input: struct {
-        claimants: IndexMap<Global<AccountObjectTypeInfo>, ResourceSpecifier>,
+        claimants: IndexMap<Global<AccountMarker>, ResourceSpecifier>,
         bucket: Bucket
     },
     output: type Option<Bucket>,
@@ -84,7 +84,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: send_or_store,
     input: struct {
-        claimant: Global<AccountObjectTypeInfo>,
+        claimant: Global<AccountMarker>,
         bucket: Bucket
     },
     output: type (),
@@ -98,7 +98,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: send_or_store_batch,
     input: struct {
-        claimants: IndexMap<Global<AccountObjectTypeInfo>, ResourceSpecifier>,
+        claimants: IndexMap<Global<AccountMarker>, ResourceSpecifier>,
         bucket: Bucket
     },
     output: type Option<Bucket>,
@@ -116,7 +116,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: recover,
     input: struct {
-        claimant: Global<AccountObjectTypeInfo>,
+        claimant: Global<AccountMarker>,
         resource_address: ResourceAddress,
         amount: Decimal
     },
@@ -132,7 +132,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: recover_non_fungibles,
     input: struct {
-        claimant: Global<AccountObjectTypeInfo>,
+        claimant: Global<AccountMarker>,
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>
     },
@@ -152,7 +152,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: claim,
     input: struct {
-        claimant: Global<AccountObjectTypeInfo>,
+        claimant: Global<AccountMarker>,
         resource_address: ResourceAddress,
         amount: Decimal
     },
@@ -168,7 +168,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: claim_non_fungibles,
     input: struct {
-        claimant: Global<AccountObjectTypeInfo>,
+        claimant: Global<AccountMarker>,
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>
     },
@@ -188,7 +188,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: get_amount,
     input: struct {
-        claimant: Global<AccountObjectTypeInfo>,
+        claimant: Global<AccountMarker>,
         resource_address: ResourceAddress,
     },
     output: type Decimal,
@@ -202,7 +202,7 @@ define_invocation! {
     blueprint_name: AccountLocker,
     function_name: get_non_fungible_local_ids,
     input: struct {
-        claimant: Global<AccountObjectTypeInfo>,
+        claimant: Global<AccountMarker>,
         resource_address: ResourceAddress,
         limit: u32
     },
@@ -248,12 +248,24 @@ impl ResourceSpecifier {
 
     pub fn checked_sub(&self, other: &Self) -> Option<Self> {
         match (self, other) {
-            (ResourceSpecifier::Fungible(amount1), ResourceSpecifier::Fungible(amount2)) => amount1
-                .checked_sub(*amount2)
-                .map(ResourceSpecifier::Fungible),
-            (ResourceSpecifier::NonFungible(ids1), ResourceSpecifier::NonFungible(ids2)) => Some(
-                ResourceSpecifier::NonFungible(ids1.clone().difference(ids2).cloned().collect()),
-            ),
+            (ResourceSpecifier::Fungible(amount1), ResourceSpecifier::Fungible(amount2)) => {
+                // Ensure that amount 2 is smaller than or equal to amount 1
+                if amount2 <= amount1 {
+                    amount1.checked_sub(*amount2).map(Self::Fungible)
+                } else {
+                    None
+                }
+            }
+            (ResourceSpecifier::NonFungible(ids1), ResourceSpecifier::NonFungible(ids2)) => {
+                // Ensure that ids2 is a subset of ids1
+                if ids2.is_subset(ids1) {
+                    Some(Self::NonFungible(
+                        ids1.clone().difference(ids2).cloned().collect(),
+                    ))
+                } else {
+                    None
+                }
+            }
             (ResourceSpecifier::Fungible(_), ResourceSpecifier::NonFungible(_))
             | (ResourceSpecifier::NonFungible(_), ResourceSpecifier::Fungible(_)) => None,
         }

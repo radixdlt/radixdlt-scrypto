@@ -6,6 +6,18 @@ use crate::{ident, token_stream_from_str};
 use radix_blueprint_schema_init::*;
 use radix_common::prelude::*;
 
+/// A list of the packages that we generate bindings for. This must match the list in the
+/// update-bindings.sh script.
+const PACKAGES_WITH_BINDINGS: &'static [PackageAddress] = &[
+    FAUCET_PACKAGE,
+    CONSENSUS_MANAGER_PACKAGE,
+    IDENTITY_PACKAGE,
+    ACCOUNT_PACKAGE,
+    POOL_PACKAGE,
+    ACCESS_CONTROLLER_PACKAGE,
+    LOCKER_PACKAGE,
+];
+
 pub fn package_schema_interface_to_ast_interface<S>(
     schema_interface: schema::PackageInterface,
     package_address: PackageAddress,
@@ -203,18 +215,11 @@ where
                     ReferenceValidation::IsGlobalComponent => "ComponentAddress".to_owned(),
                     ReferenceValidation::IsGlobalResourceManager => "ResourceAddress".to_owned(),
                     ReferenceValidation::IsGlobalTyped(package_address, blueprint_name) => {
+                        let this_package_address = schema_resolver.package_address();
                         if package_address.is_none()
+                            || PACKAGES_WITH_BINDINGS.contains(&this_package_address)
                             || package_address.is_some_and(|package_address| {
-                                [
-                                    package_address,
-                                    ACCOUNT_PACKAGE,
-                                    CONSENSUS_MANAGER_PACKAGE,
-                                    IDENTITY_PACKAGE,
-                                    LOCKER_PACKAGE,
-                                    ACCESS_CONTROLLER_PACKAGE,
-                                    FAUCET_PACKAGE,
-                                ]
-                                .contains(&schema_resolver.package_address())
+                                this_package_address == package_address
                             })
                         {
                             format!("Global<{}>", blueprint_name)
@@ -256,18 +261,11 @@ where
                             metadata_type_name.unwrap_or("GlobalAddressReservation".to_owned())
                         }
                         OwnValidation::IsTypedObject(package_address, blueprint_name) => {
+                            let this_package_address = schema_resolver.package_address();
                             if package_address.is_none()
+                                || PACKAGES_WITH_BINDINGS.contains(&this_package_address)
                                 || package_address.is_some_and(|package_address| {
-                                    [
-                                        package_address,
-                                        ACCOUNT_PACKAGE,
-                                        CONSENSUS_MANAGER_PACKAGE,
-                                        IDENTITY_PACKAGE,
-                                        LOCKER_PACKAGE,
-                                        ACCESS_CONTROLLER_PACKAGE,
-                                        FAUCET_PACKAGE,
-                                    ]
-                                    .contains(&schema_resolver.package_address())
+                                    this_package_address == package_address
                                 })
                             {
                                 format!("Own<{}>", blueprint_name)

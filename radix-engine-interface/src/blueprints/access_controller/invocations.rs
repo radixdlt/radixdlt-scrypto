@@ -9,7 +9,7 @@ use sbor::rust::fmt::Debug;
 
 pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 
-define_type_info_marker!(Some(ACCESS_CONTROLLER_PACKAGE), AccessController);
+define_type_marker!(Some(ACCESS_CONTROLLER_PACKAGE), AccessController);
 
 //=================================
 // Access Controller Create Global
@@ -33,7 +33,7 @@ pub struct AccessControllerCreateManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-pub type AccessControllerCreateGlobalOutput = Global<AccessControllerObjectTypeInfo>;
+pub type AccessControllerCreateGlobalOutput = Global<AccessControllerMarker>;
 
 //================================
 // Access Controller Create Proof

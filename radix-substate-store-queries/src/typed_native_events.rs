@@ -291,7 +291,7 @@ define_structure! {
         AccountLocker => [
             StoreEvent,
             BatchStoreEvent,
-            RecoveryEvent,
+            RecoverEvent,
             ClaimEvent
         ]
     },

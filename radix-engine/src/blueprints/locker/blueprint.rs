@@ -45,7 +45,7 @@ impl AccountLockerBlueprint {
             [
                 StoreEvent,
                 BatchStoreEvent,
-                RecoveryEvent,
+                RecoverEvent,
                 ClaimEvent,
             ]
         };
@@ -440,7 +440,7 @@ impl AccountLockerBlueprint {
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
         Runtime::emit_event(
             api,
-            RecoveryEvent {
+            RecoverEvent {
                 claimant,
                 resource_address,
                 resources: resource_specifier,
@@ -474,7 +474,7 @@ impl AccountLockerBlueprint {
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
         Runtime::emit_event(
             api,
-            RecoveryEvent {
+            RecoverEvent {
                 claimant,
                 resource_address,
                 resources: resource_specifier,
@@ -519,7 +519,7 @@ impl AccountLockerBlueprint {
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
         Runtime::emit_event(
             api,
-            RecoveryEvent {
+            ClaimEvent {
                 claimant,
                 resource_address,
                 resources: resource_specifier,
@@ -564,7 +564,7 @@ impl AccountLockerBlueprint {
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
         Runtime::emit_event(
             api,
-            RecoveryEvent {
+            ClaimEvent {
                 claimant,
                 resource_address,
                 resources: resource_specifier,

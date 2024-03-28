@@ -4,27 +4,27 @@ use radix_engine_interface::blueprints::locker::*;
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, Clone, PartialEq, Eq)]
 pub struct StoreEvent {
-    pub claimant: Global<AccountObjectTypeInfo>,
+    pub claimant: Global<AccountMarker>,
     pub resource_address: ResourceAddress,
     pub resources: ResourceSpecifier,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, Clone, PartialEq, Eq)]
 pub struct BatchStoreEvent {
-    pub claimants: IndexMap<Global<AccountObjectTypeInfo>, ResourceSpecifier>,
+    pub claimants: IndexMap<Global<AccountMarker>, ResourceSpecifier>,
     pub resource_address: ResourceAddress,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, Clone, PartialEq, Eq)]
-pub struct RecoveryEvent {
-    pub claimant: Global<AccountObjectTypeInfo>,
+pub struct RecoverEvent {
+    pub claimant: Global<AccountMarker>,
     pub resource_address: ResourceAddress,
     pub resources: ResourceSpecifier,
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, Clone, PartialEq, Eq)]
 pub struct ClaimEvent {
-    pub claimant: Global<AccountObjectTypeInfo>,
+    pub claimant: Global<AccountMarker>,
     pub resource_address: ResourceAddress,
     pub resources: ResourceSpecifier,
 }

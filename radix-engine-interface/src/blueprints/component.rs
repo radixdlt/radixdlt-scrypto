@@ -139,14 +139,14 @@ impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Owned<T> {
     fn add_all_dependencies(_aggregator: &mut TypeAggregator<ScryptoCustomTypeKind>) {}
 }
 
-macro_rules! define_type_info_marker {
+macro_rules! define_type_marker {
     ($package_address: expr, $blueprint_name: ident) => {
         paste::paste! {
             #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-            pub struct [< $blueprint_name ObjectTypeInfo >];
+            pub struct [< $blueprint_name Marker >];
 
             impl crate::blueprints::component::TypeInfoMarker
-                for [< $blueprint_name ObjectTypeInfo >]
+                for [< $blueprint_name Marker >]
             {
                 const PACKAGE_ADDRESS: Option<PackageAddress> = $package_address;
                 const BLUEPRINT_NAME: &'static str = stringify!($blueprint_name);
@@ -156,7 +156,7 @@ macro_rules! define_type_info_marker {
         }
     };
 }
-pub(crate) use define_type_info_marker;
+pub(crate) use define_type_marker;
 
 #[cfg(test)]
 mod tests {
@@ -167,7 +167,7 @@ mod tests {
     pub const SOME_ADDRESS: PackageAddress =
         PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]);
 
-    define_type_info_marker!(Some(SOME_ADDRESS), SomeType);
+    define_type_marker!(Some(SOME_ADDRESS), SomeType);
 
     #[test]
     fn global_encode_decode() {
@@ -175,7 +175,7 @@ mod tests {
             [EntityType::GlobalGenericComponent as u8; NodeId::LENGTH],
         );
 
-        let object = Global::<SomeTypeObjectTypeInfo>::new(addr);
+        let object = Global::<SomeTypeMarker>::new(addr);
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ScryptoCustomValueKind>::new(&mut buf, 1);
         assert!(object.encode_value_kind(&mut encoder).is_ok());
@@ -184,13 +184,13 @@ mod tests {
         let buf_decode = buf.into_iter().skip(1).collect::<Vec<u8>>(); // skip Global value kind, not used in decode_body_with_value_kind() decoding function
 
         let mut decoder = VecDecoder::<ScryptoCustomValueKind>::new(&buf_decode, 1);
-        let output = Global::<SomeTypeObjectTypeInfo>::decode_body_with_value_kind(
+        let output = Global::<SomeTypeMarker>::decode_body_with_value_kind(
             &mut decoder,
             ComponentAddress::value_kind(),
         );
         assert!(output.is_ok());
 
-        let describe = Global::<SomeTypeObjectTypeInfo>::type_data();
+        let describe = Global::<SomeTypeMarker>::type_data();
         assert_eq!(
             describe.kind,
             TypeKind::Custom(ScryptoCustomTypeKind::Reference)
@@ -207,7 +207,7 @@ mod tests {
             [EntityType::InternalGenericComponent as u8; NodeId::LENGTH],
         );
 
-        let object = Owned::<SomeTypeObjectTypeInfo>::new(addr);
+        let object = Owned::<SomeTypeMarker>::new(addr);
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ScryptoCustomValueKind>::new(&mut buf, 1);
         assert!(object.encode_value_kind(&mut encoder).is_ok());
@@ -216,13 +216,13 @@ mod tests {
         let buf_decode = buf.into_iter().skip(1).collect::<Vec<u8>>(); // skip Owned value kind, not used in decode_body_with_value_kind() decoding function
 
         let mut decoder = VecDecoder::<ScryptoCustomValueKind>::new(&buf_decode, 1);
-        let output = Owned::<SomeTypeObjectTypeInfo>::decode_body_with_value_kind(
+        let output = Owned::<SomeTypeMarker>::decode_body_with_value_kind(
             &mut decoder,
             InternalAddress::value_kind(),
         );
         assert_eq!(output.err(), None);
 
-        let describe = Owned::<SomeTypeObjectTypeInfo>::type_data();
+        let describe = Owned::<SomeTypeMarker>::type_data();
         assert_eq!(describe.kind, TypeKind::Custom(ScryptoCustomTypeKind::Own));
         assert_eq!(
             describe.metadata.type_name.unwrap().to_string(),

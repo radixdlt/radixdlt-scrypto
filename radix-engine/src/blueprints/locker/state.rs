@@ -13,7 +13,7 @@ declare_native_blueprint_state! {
             entry_ident: AccountClaims,
             key_type: {
                 kind: Static,
-                content_type: Global<AccountObjectTypeInfo>,
+                content_type: Global<AccountMarker>,
             },
             value_type: {
                 kind: StaticSingleVersioned,

@@ -3061,7 +3061,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         *entry = entry.checked_add(&resources).expect("Can't fail!");
                     }
                 }
-                AccountLockerEvent::RecoveryEvent(RecoveryEvent {
+                AccountLockerEvent::RecoveryEvent(RecoverEvent {
                     claimant,
                     resource_address,
                     resources,
@@ -3131,7 +3131,7 @@ pub enum LockerAction {
 pub enum AccountLockerEvent {
     StoreEvent(StoreEvent),
     BatchStoreEvent(BatchStoreEvent),
-    RecoveryEvent(RecoveryEvent),
+    RecoveryEvent(RecoverEvent),
     ClaimEvent(ClaimEvent),
 }
 
@@ -3153,7 +3153,7 @@ impl AccountLockerEvent {
                     ClaimEvent::EVENT_NAME => scrypto_decode(event_data)
                         .map(AccountLockerEvent::ClaimEvent)
                         .ok(),
-                    RecoveryEvent::EVENT_NAME => scrypto_decode(event_data)
+                    RecoverEvent::EVENT_NAME => scrypto_decode(event_data)
                         .map(AccountLockerEvent::RecoveryEvent)
                         .ok(),
                     BatchStoreEvent::EVENT_NAME => scrypto_decode(event_data)
