@@ -3,6 +3,7 @@ use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::updates::state_updates::generate_bls128_and_keccak256_state_updates;
+use radix_engine::updates::ProtocolUpdateEntry;
 use radix_engine::updates::ProtocolUpdates;
 use radix_engine_tests::common::PackageLoader;
 use radix_engine_tests::common::*;
@@ -63,12 +64,14 @@ fn publishing_crypto_utils_using_test_environment_with_state_flash_should_succee
     run_flash_test_test_environment(true, true);
 }
 
-fn run_flash_test_test_environment(flash_substates: bool, expect_success: bool) {
+fn run_flash_test_test_environment(enable_bls: bool, expect_success: bool) {
     // Arrange
     let test_env_builder = TestEnvironmentBuilder::new();
 
-    let mut test_env = if flash_substates {
-        test_env_builder.protocol_updates(ProtocolUpdates::none().with_anemone())
+    let mut test_env = if enable_bls {
+        test_env_builder.protocol_updates(
+            ProtocolUpdates::none().and(ProtocolUpdateEntry::Bls12381AndKeccak256),
+        )
     } else {
         test_env_builder.protocol_updates(ProtocolUpdates::none())
     }

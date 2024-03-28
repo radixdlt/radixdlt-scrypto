@@ -374,7 +374,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         // Protocol Updates
         for state_updates in self
             .custom_protocol_updates
-            .generate_state_updates(&substate_db)
+            .generate_state_updates(&substate_db, &NetworkDefinition::simulator())
         {
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             substate_db.commit(&db_updates);

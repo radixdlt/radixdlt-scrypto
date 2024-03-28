@@ -210,7 +210,10 @@ where
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
 
         // Determine if any protocol updates need to be run against the database.
-        for state_updates in self.protocol_updates.generate_state_updates(&self.database) {
+        for state_updates in self
+            .protocol_updates
+            .generate_state_updates(&self.database, &NetworkDefinition::simulator())
+        {
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }

@@ -3,7 +3,7 @@ use crate::{internal_prelude::*, track::StateUpdates};
 use radix_substate_store_interface::interface::SubstateDatabase;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum ProtocolUpdate {
+pub enum ProtocolUpdateEntry {
     /// Introduces BLS12-381 and Keccak-256 features.
     Bls12381AndKeccak256,
 
@@ -23,7 +23,7 @@ pub enum ProtocolUpdate {
     SystemPatches,
 
     /// Introduces the account locker blueprint.
-    AccountLocker,
+    LockerPackage,
 
     /// Moves various protocol parameters to state.
     ProtocolParamsToState,
@@ -33,81 +33,117 @@ pub enum ProtocolUpdate {
     AccountTryDepositOrRefundBehaviorChanges,
 }
 
+impl ProtocolUpdateEntry {
+    pub fn generate_state_updates<S: SubstateDatabase>(
+        &self,
+        db: &S,
+        _network: &NetworkDefinition,
+    ) -> StateUpdates {
+        match self {
+            ProtocolUpdateEntry::Bls12381AndKeccak256 => {
+                generate_bls128_and_keccak256_state_updates()
+            }
+            ProtocolUpdateEntry::SecondPrecisionTimestamp => {
+                generate_seconds_precision_timestamp_state_updates(db)
+            }
+            ProtocolUpdateEntry::PoolMathPrecisionFix => {
+                generate_pool_math_precision_fix_state_updates(db)
+            }
+            ProtocolUpdateEntry::ValidatorCreationFeeFix => {
+                generate_validator_creation_fee_fix_state_updates(db)
+            }
+            ProtocolUpdateEntry::OwnerRoleGetter => generate_owner_role_getter_state_updates(db),
+            ProtocolUpdateEntry::LockerPackage => generate_locker_package_state_updates(),
+            ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges => {
+                generate_account_bottlenose_extension_state_updates(db)
+            }
+            // TODO implement the following
+            ProtocolUpdateEntry::SystemPatches => StateUpdates::default(),
+            ProtocolUpdateEntry::ProtocolParamsToState => StateUpdates::default(),
+        }
+    }
+}
+
+pub enum ProtocolUpdate {
+    Anemone,
+
+    Bottlenose,
+}
+
+impl ProtocolUpdate {
+    pub fn generate_state_updates<S: SubstateDatabase>(
+        &self,
+        db: &S,
+        network: &NetworkDefinition,
+    ) -> Vec<StateUpdates> {
+        match self {
+            ProtocolUpdate::Anemone => btreeset!(
+                ProtocolUpdateEntry::Bls12381AndKeccak256,
+                ProtocolUpdateEntry::SecondPrecisionTimestamp,
+                ProtocolUpdateEntry::PoolMathPrecisionFix,
+                ProtocolUpdateEntry::ValidatorCreationFeeFix,
+            ),
+
+            ProtocolUpdate::Bottlenose => btreeset!(
+                ProtocolUpdateEntry::OwnerRoleGetter,
+                ProtocolUpdateEntry::SystemPatches,
+                ProtocolUpdateEntry::LockerPackage,
+                ProtocolUpdateEntry::ProtocolParamsToState,
+            ),
+        }
+        .iter()
+        .map(|update| update.generate_state_updates(db, network))
+        .collect()
+    }
+}
+
 pub struct ProtocolUpdates {
-    updates: BTreeSet<ProtocolUpdate>,
+    protocol_updates: Vec<ProtocolUpdate>,
+    additional_updates: Vec<ProtocolUpdateEntry>,
 }
 
 impl ProtocolUpdates {
     pub fn none() -> Self {
         Self {
-            updates: BTreeSet::new(),
+            protocol_updates: vec![],
+            additional_updates: vec![],
+        }
+    }
+
+    pub fn up_to_anemone() -> Self {
+        Self {
+            protocol_updates: vec![ProtocolUpdate::Anemone],
+            additional_updates: vec![],
+        }
+    }
+
+    pub fn up_to_bottlenose() -> Self {
+        Self {
+            protocol_updates: vec![ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose],
+            additional_updates: vec![],
         }
     }
 
     pub fn all() -> Self {
-        Self::none().with_anemone().with_bottlenose()
+        Self::up_to_bottlenose()
     }
 
-    /// Enables all the protocol updates included in the `anemone` release.
-    pub fn with_anemone(mut self) -> Self {
-        self.updates.extend(btreeset!(
-            ProtocolUpdate::Bls12381AndKeccak256,
-            ProtocolUpdate::SecondPrecisionTimestamp,
-            ProtocolUpdate::PoolMathPrecisionFix,
-            ProtocolUpdate::ValidatorCreationFeeFix,
-        ));
+    pub fn and(mut self, protocol_update: ProtocolUpdateEntry) -> Self {
+        self.additional_updates.push(protocol_update);
         self
     }
 
-    /// Enables all the protocol updates included in the `bottlenose` release.
-    ///
-    /// Note that this does not include `anemone` protocol updates.
-    pub fn with_bottlenose(mut self) -> Self {
-        self.updates.extend(btreeset!(
-            ProtocolUpdate::OwnerRoleGetter,
-            ProtocolUpdate::SystemPatches,
-            ProtocolUpdate::AccountLocker,
-            ProtocolUpdate::ProtocolParamsToState,
-            ProtocolUpdate::AccountTryDepositOrRefundBehaviorChanges,
-        ));
-        self
-    }
-
-    pub fn with_update(mut self, update: ProtocolUpdate) -> Self {
-        self.updates.insert(update);
-        self
-    }
-
-    pub fn without_update(mut self, update: ProtocolUpdate) -> Self {
-        self.updates.remove(&update);
-        self
-    }
-
-    pub fn generate_state_updates<S: SubstateDatabase>(&self, db: &S) -> Vec<StateUpdates> {
+    pub fn generate_state_updates<S: SubstateDatabase>(
+        &self,
+        db: &S,
+        network: &NetworkDefinition,
+    ) -> Vec<StateUpdates> {
         let mut results = Vec::new();
-        for update in &self.updates {
-            results.push(match update {
-                ProtocolUpdate::Bls12381AndKeccak256 => {
-                    generate_bls128_and_keccak256_state_updates()
-                }
-                ProtocolUpdate::SecondPrecisionTimestamp => {
-                    generate_seconds_precision_timestamp_state_updates(db)
-                }
-                ProtocolUpdate::PoolMathPrecisionFix => {
-                    generate_pool_math_precision_fix_state_updates(db)
-                }
-                ProtocolUpdate::ValidatorCreationFeeFix => {
-                    generate_validator_creation_fee_fix_state_updates(db)
-                }
-                ProtocolUpdate::OwnerRoleGetter => generate_owner_role_getter_state_updates(db),
-                ProtocolUpdate::AccountLocker => generate_locker_package_state_updates(),
-                ProtocolUpdate::AccountTryDepositOrRefundBehaviorChanges => {
-                    generate_account_bottlenose_extension_state_updates(db)
-                }
-                // TODO implement the following
-                ProtocolUpdate::SystemPatches => StateUpdates::default(),
-                ProtocolUpdate::ProtocolParamsToState => StateUpdates::default(),
-            });
+        for protocol_update in &self.protocol_updates {
+            results.extend(protocol_update.generate_state_updates(db, network));
+        }
+        for protocol_update in &self.additional_updates {
+            results.push(protocol_update.generate_state_updates(db, network));
         }
         results
     }
