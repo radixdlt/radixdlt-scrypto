@@ -329,10 +329,7 @@ impl AccountLockerBlueprint {
                 ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                 scrypto_encode(&AccountTryDepositOrRefundInput {
                     bucket,
-                    // TODO: Add the global caller badge later on once we change the account
-                    // behavior.
-                    // authorized_depositor_badge: Some(global_caller_non_fungible_global_id),
-                    authorized_depositor_badge: None,
+                    authorized_depositor_badge: Some(global_caller_non_fungible_global_id),
                 })
                 .unwrap(),
             )
@@ -376,10 +373,9 @@ impl AccountLockerBlueprint {
                     ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
                     scrypto_encode(&AccountTryDepositOrRefundInput {
                         bucket: claim_bucket,
-                        // TODO: Add the global caller badge later on once we change the account
-                        // behavior.
-                        // authorized_depositor_badge: Some(global_caller_non_fungible_global_id.clone()),
-                        authorized_depositor_badge: None,
+                        authorized_depositor_badge: Some(
+                            global_caller_non_fungible_global_id.clone(),
+                        ),
                     })
                     .unwrap(),
                 )

@@ -699,7 +699,6 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
 }
 
 #[test]
-#[ignore = "Fixed in another PR"]
 fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
