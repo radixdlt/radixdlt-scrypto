@@ -88,6 +88,7 @@ impl ProtocolUpdate {
                 ProtocolUpdateEntry::OwnerRoleGetter,
                 ProtocolUpdateEntry::SystemPatches,
                 ProtocolUpdateEntry::LockerPackage,
+                ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges,
                 ProtocolUpdateEntry::ProtocolParamsToState,
             ],
         }
