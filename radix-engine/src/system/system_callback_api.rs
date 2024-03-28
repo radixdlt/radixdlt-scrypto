@@ -11,7 +11,7 @@ pub trait SystemCallbackObject: Sized {
     type CallbackState;
 
     /// Initialize the layer above the system with data from the substate store
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError>;
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError>;
 
     fn invoke<Y>(
         package_address: &PackageAddress,

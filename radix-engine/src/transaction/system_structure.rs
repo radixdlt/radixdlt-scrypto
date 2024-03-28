@@ -3,8 +3,7 @@ use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
-    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, ReadOnly, StateUpdates,
-    TrackedNode, TrackedSubstateValue,
+    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
@@ -96,16 +95,17 @@ pub struct SystemStructure {
 impl SystemStructure {
     pub fn resolve<S: SubstateDatabase>(
         substate_db: &S,
-        updates: &IndexMap<NodeId, TrackedNode>,
+        state_updates: &StateUpdates,
         application_events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
     ) -> Self {
-        let mut substate_schema_mapper =
-            SubstateSchemaMapper::new(SystemDatabaseReader::new_with_overlay(substate_db, updates));
-        substate_schema_mapper.add_all_written_substate_structures(updates);
+        let mut substate_schema_mapper = SubstateSchemaMapper::new(
+            SystemDatabaseReader::new_with_overlay(substate_db, state_updates),
+        );
+        substate_schema_mapper.add_substate_structures(state_updates);
         let substate_system_structures = substate_schema_mapper.done();
 
         let event_system_structures =
-            EventSchemaMapper::new(substate_db, &updates, application_events).run();
+            EventSchemaMapper::new(substate_db, state_updates, application_events).run();
 
         SystemStructure {
             substate_system_structures,
@@ -157,37 +157,20 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 
     /// A batch `add_substate_structure()` counterpart, tailored for processing all substates
     /// *written* to the track (i.e. skipping reads).
-    pub fn add_all_written_substate_structures(&mut self, tracked: &IndexMap<NodeId, TrackedNode>) {
-        for (node_id, tracked_node) in tracked {
-            for (partition_num, tracked_partition) in &tracked_node.tracked_partitions {
-                for (_, tracked_substate) in &tracked_partition.substates {
-                    match &tracked_substate.substate_value {
-                        TrackedSubstateValue::New(_)
-                        | TrackedSubstateValue::ReadExistAndWrite(_, _)
-                        | TrackedSubstateValue::ReadNonExistAndWrite(_)
-                        | TrackedSubstateValue::WriteOnly(_) => {
-                            // The substate has been written - so process this substate structure
-                        }
-                        TrackedSubstateValue::ReadOnly(ReadOnly::Existent(_))
-                        | TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent)
-                        | TrackedSubstateValue::Garbage => {
-                            // We don't process substates which were only read
-                            // NOTE:
-                            //   If in future we want to enable this for reads too, it should be possible to
-                            //     enable this for TrackedSubstateValue::ReadOnly(ReadOnly::Existent(_))
-                            //     but it is not possible for NonExistent reads.
-                            //   If a transaction fails, it's possible to get reads of non-existent substates
-                            //     where the type info can't be resolved below. For example, if bootstrap fails,
-                            //     consensus manager substates are read but the type info is not written.
-                            continue;
+    pub fn add_substate_structures(&mut self, state_updates: &StateUpdates) {
+        for (node_id, node_updates) in &state_updates.by_node {
+            let NodeStateUpdates::Delta { by_partition } = &node_updates;
+
+            for (partition_num, partition_update) in by_partition {
+                match partition_update {
+                    PartitionStateUpdates::Delta { by_substate } => {
+                        for substate_key in by_substate.keys() {
+                            self.add_substate_structure(node_id, partition_num, substate_key);
                         }
                     }
-
-                    self.add_substate_structure(
-                        node_id,
-                        partition_num,
-                        &tracked_substate.substate_key,
-                    );
+                    PartitionStateUpdates::Batch(_) => {
+                        // Do not add substate structures for partition deletions.
+                    }
                 }
             }
         }
@@ -385,11 +368,11 @@ pub struct EventSchemaMapper<'a, S: SubstateDatabase> {
 impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
     pub fn new(
         substate_db: &'a S,
-        tracked: &'a IndexMap<NodeId, TrackedNode>,
+        state_updates: &'a StateUpdates,
         application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
     ) -> Self {
         Self {
-            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, tracked),
+            system_reader: SystemDatabaseReader::new_with_overlay(substate_db, state_updates),
             application_events,
         }
     }

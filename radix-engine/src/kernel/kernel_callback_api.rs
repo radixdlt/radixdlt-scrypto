@@ -133,7 +133,7 @@ pub trait KernelCallbackObject: Sized {
     type CallbackState;
 
     /// Initialize the system layer with data loaded from the substate store
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError>;
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError>;
 
     fn start<Y>(
         api: &mut Y,
