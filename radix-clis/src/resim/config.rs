@@ -53,7 +53,9 @@ impl SimulatorEnvironment {
 
         // Run the protocol updates - unlike the test runner, the user has no way in whether they
         // get these protocol updates or not.
-        for state_updates in ProtocolUpdates::all().generate_state_updates(&self.db, &NetworkDefinition::simulator()) {
+        for state_updates in
+            ProtocolUpdates::all().generate_state_updates(&self.db, &NetworkDefinition::simulator())
+        {
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.db.commit(&db_updates);
         }
