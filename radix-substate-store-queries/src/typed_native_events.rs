@@ -290,7 +290,6 @@ define_structure! {
     Locker => {
         AccountLocker => [
             StoreEvent,
-            BatchStoreEvent,
             RecoverEvent,
             ClaimEvent
         ]

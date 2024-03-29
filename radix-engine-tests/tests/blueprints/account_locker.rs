@@ -1805,7 +1805,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
-                    fungible_resource2 => ResourceSpecifier::Fungible(dec!(1))
+                    fungible_resource2 => ResourceSpecifier::Fungible(dec!(2))
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1))
@@ -1825,7 +1825,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
-                    fungible_resource2 => ResourceSpecifier::Fungible(dec!(1))
+                    fungible_resource2 => ResourceSpecifier::Fungible(dec!(2))
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1))
@@ -3047,19 +3047,6 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         .or_insert(ResourceSpecifier::new_empty(resource_address));
                     *entry = entry.checked_add(&resources).expect("Can't fail!");
                 }
-                AccountLockerEvent::BatchStoreEvent(BatchStoreEvent {
-                    claimants,
-                    resource_address,
-                }) => {
-                    for (claimant, resources) in claimants {
-                        let entry = state_reconciled_from_events
-                            .entry(claimant.0)
-                            .or_default()
-                            .entry(resource_address)
-                            .or_insert(ResourceSpecifier::new_empty(resource_address));
-                        *entry = entry.checked_add(&resources).expect("Can't fail!");
-                    }
-                }
                 AccountLockerEvent::RecoveryEvent(RecoverEvent {
                     claimant,
                     resource_address,
@@ -3078,15 +3065,15 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     *entry = entry.checked_sub(&resources).expect("Can't fail!");
                 }
             }
-
-            // Assert that the state reconciled from the events is the same as what we expect it to
-            // be.
-            assert_eq!(
-                state_reconciled_from_events, state_after,
-                "Events State: {:#?}\nExpected: {:#?}",
-                state_reconciled_from_events, state_after
-            );
         }
+
+        // Assert that the state reconciled from the events is the same as what we expect it to
+        // be.
+        assert_eq!(
+            state_reconciled_from_events, state_after,
+            "Events State: {:#?}\nExpected: {:#?}",
+            state_reconciled_from_events, state_after
+        );
     }
 }
 
@@ -3095,6 +3082,7 @@ pub struct Item {
     state_after: BTreeMap<ComponentAddress, BTreeMap<ResourceAddress, ResourceSpecifier>>,
 }
 
+#[derive(Clone, Debug)]
 pub enum LockerAction {
     Store {
         claimant: ComponentAddress,
@@ -3129,7 +3117,6 @@ pub enum LockerAction {
 #[derive(Clone, Debug)]
 pub enum AccountLockerEvent {
     StoreEvent(StoreEvent),
-    BatchStoreEvent(BatchStoreEvent),
     RecoveryEvent(RecoverEvent),
     ClaimEvent(ClaimEvent),
 }
@@ -3154,9 +3141,6 @@ impl AccountLockerEvent {
                         .ok(),
                     RecoverEvent::EVENT_NAME => scrypto_decode(event_data)
                         .map(AccountLockerEvent::RecoveryEvent)
-                        .ok(),
-                    BatchStoreEvent::EVENT_NAME => scrypto_decode(event_data)
-                        .map(AccountLockerEvent::BatchStoreEvent)
                         .ok(),
                     _ => None,
                 }

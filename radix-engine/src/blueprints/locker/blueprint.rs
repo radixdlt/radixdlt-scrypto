@@ -44,7 +44,6 @@ impl AccountLockerBlueprint {
             aggregator,
             [
                 StoreEvent,
-                BatchStoreEvent,
                 RecoverEvent,
                 ClaimEvent,
             ]
@@ -271,7 +270,7 @@ impl AccountLockerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Store in the vaults
+        // Distribute and call `store`
         let resource_address = bucket.resource_address(api)?;
         for (account_address, specifier) in claimants.iter() {
             let claim_bucket = match specifier {
@@ -281,22 +280,14 @@ impl AccountLockerBlueprint {
                 }
             };
 
-            Self::with_vault_create_on_traversal(
-                account_address.0,
-                resource_address,
+            Self::store(
+                AccountLockerStoreInput {
+                    claimant: *account_address,
+                    bucket: claim_bucket,
+                },
                 api,
-                |mut vault, api| vault.put(claim_bucket, api),
-            )??;
+            )?;
         }
-
-        // Emit an event
-        Runtime::emit_event(
-            api,
-            BatchStoreEvent {
-                claimants,
-                resource_address,
-            },
-        )?;
 
         // Return the change
         if bucket.is_empty(api)? {
@@ -354,54 +345,24 @@ impl AccountLockerBlueprint {
         let global_caller_non_fungible_global_id =
             global_caller(GlobalAddress::new_or_panic(actor_node_id.0));
 
-        // First attempt to deposit the resources into their accounts
+        // Distribute and call `send_or_store`
         let resource_address = bucket.resource_address(api)?;
-        let mut failed_deposits = indexmap! {};
-        for (account_address, specifier) in claimants.into_iter() {
+        for (account_address, specifier) in claimants.iter() {
             let claim_bucket = match specifier {
-                ResourceSpecifier::Fungible(amount) => bucket.take(amount, api)?,
-                ResourceSpecifier::NonFungible(ref ids) => {
+                ResourceSpecifier::Fungible(amount) => bucket.take(*amount, api)?,
+                ResourceSpecifier::NonFungible(ids) => {
                     bucket.take_non_fungibles(ids.clone(), api)?
                 }
             };
 
-            let bucket = api
-                .call_method(
-                    account_address.0.as_node_id(),
-                    ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-                    scrypto_encode(&AccountTryDepositOrRefundInput {
-                        bucket: claim_bucket,
-                        authorized_depositor_badge: Some(
-                            global_caller_non_fungible_global_id.clone(),
-                        ),
-                    })
-                    .unwrap(),
-                )
-                .map(|rtn| scrypto_decode::<AccountTryDepositOrRefundOutput>(&rtn).unwrap())?;
-
-            // If the deposit failed then insert it into the failed deposits map and store it.
-            if let Some(bucket) = bucket {
-                // Store in the vault.
-                Self::with_vault_create_on_traversal(
-                    account_address.0,
-                    resource_address,
-                    api,
-                    |mut vault, api| vault.put(bucket, api),
-                )??;
-
-                // Insert in map
-                failed_deposits.insert(account_address, specifier);
-            }
+            Self::send_or_store(
+                AccountLockerSendOrStoreInput {
+                    claimant: *account_address,
+                    bucket: claim_bucket,
+                },
+                api,
+            )?;
         }
-
-        // Emit a batch store event with the ones that we failed to deposit.
-        Runtime::emit_event(
-            api,
-            BatchStoreEvent {
-                claimants: failed_deposits,
-                resource_address,
-            },
-        )?;
 
         if bucket.is_empty(api)? {
             bucket.drop_empty(api)?;

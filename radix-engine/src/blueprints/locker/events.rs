@@ -10,12 +10,6 @@ pub struct StoreEvent {
 }
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, Clone, PartialEq, Eq)]
-pub struct BatchStoreEvent {
-    pub claimants: IndexMap<Global<AccountMarker>, ResourceSpecifier>,
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(ScryptoSbor, ScryptoEvent, Debug, Clone, PartialEq, Eq)]
 pub struct RecoverEvent {
     pub claimant: Global<AccountMarker>,
     pub resource_address: ResourceAddress,

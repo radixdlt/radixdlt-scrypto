@@ -9,7 +9,7 @@ pub trait TypeInfoMarker {
     const GLOBAL_TYPE_NAME: &'static str;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Global<T>(pub ComponentAddress, PhantomData<T>)
 where
     T: TypeInfoMarker;
@@ -142,7 +142,7 @@ impl<T: TypeInfoMarker> Describe<ScryptoCustomTypeKind> for Owned<T> {
 macro_rules! define_type_marker {
     ($package_address: expr, $blueprint_name: ident) => {
         paste::paste! {
-            #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+            #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
             pub struct [< $blueprint_name Marker >];
 
             impl crate::blueprints::component::TypeInfoMarker
