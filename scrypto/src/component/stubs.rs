@@ -389,8 +389,8 @@ extern_blueprint_internal! {
 extern_blueprint_internal! {
     PackageAddress::new_or_panic([
         13u8, 144u8, 99u8, 24u8, 198u8, 49u8, 140u8, 111u8, 226u8, 217u8, 25u8, 140u8, 99u8, 24u8,
-        198u8, 49u8, 158u8, 247u8, 189u8, 245u8, 84u8, 105u8, 167u8, 150u8, 166u8, 49u8, 140u8,
-        99u8, 24u8, 198u8,
+        198u8, 49u8, 140u8, 247u8, 189u8, 79u8, 59u8, 245u8, 85u8, 87u8, 198u8, 49u8, 140u8, 99u8,
+        24u8, 198u8,
     ]),
     AccountLocker,
     "AccountLocker",
