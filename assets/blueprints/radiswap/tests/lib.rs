@@ -68,11 +68,10 @@ fn reading_and_asserting_against_radiswap_pool_state() -> Result<(), RuntimeErro
         })?;
     let (amount1, amount2) = env.with_component_state::<VersionedTwoResourcePoolState, _, _, _>(
         pool_component,
-        |VersionedTwoResourcePoolState::V1(TwoResourcePoolStateV1 {
-             vaults: [(_, vault1), (_, vault2)],
-             ..
-         }),
-         env| { (vault1.amount(env).unwrap(), vault2.amount(env).unwrap()) },
+        |state, env| {
+            let [(_, vault1), (_, vault2)] = &mut state.to_latest_mut().vaults;
+            (vault1.amount(env).unwrap(), vault2.amount(env).unwrap())
+        },
     )?;
     assert_eq!(amount1, dec!("100"));
     assert_eq!(amount2, dec!("100"));

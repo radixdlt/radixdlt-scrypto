@@ -56,7 +56,7 @@ impl<T: HasLatestVersion<Latest = Latest> + Clone, Latest> CloneIntoLatest for T
 ///
 /// This macro is just a simpler wrapper around the [`crate::define_versioned`] macro,
 /// for use when there's just a single version.
-/// 
+///
 /// Example usage:
 /// ```rust
 /// # use ::sbor::prelude::*;
@@ -71,7 +71,7 @@ impl<T: HasLatestVersion<Latest = Latest> + Clone, Latest> CloneIntoLatest for T
 ///    #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 ///    pub enum VersionedFoo => Foo = FooV1
 /// }
-/// 
+///
 /// // `Foo` is created as an alias for `FooV1`
 /// let versioned = VersionedFoo::V1(Foo { bar: 42 });
 ///
@@ -135,7 +135,7 @@ macro_rules! define_single_versioned {
 /// pub struct FooV1 {
 ///    bar: u8,
 /// }
-/// 
+///
 /// #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 /// pub struct FooV2 {
 ///    bar: u8,
@@ -163,7 +163,7 @@ macro_rules! define_single_versioned {
 ///         },
 ///     }
 /// );
-/// 
+///
 /// let mut versioned_old = VersionedFoo::V1(FooV1 { bar: 42 });
 /// // `Foo` is created as an alias for the latest content, `FooV2`
 /// let versioned_new = VersionedFoo::V2(Foo { bar: 42, baz: None });
