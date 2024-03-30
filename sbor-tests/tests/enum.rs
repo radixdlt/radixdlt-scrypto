@@ -14,6 +14,28 @@ pub enum Abc {
     Variant2,
 }
 
+#[derive(Sbor, PartialEq, Eq, Debug)]
+#[sbor(type_name = "Abc")]
+pub enum AbcV2 {
+    #[sbor(discriminator(VARIANT_1))]
+    Variant1,
+    #[sbor(ignore_as_unreachable)]
+    UnreachableVariant,
+    #[sbor(discriminator(VARIANT_2))]
+    Variant2,
+}
+
+#[derive(PermitSborAttributes, PartialEq, Eq, Debug)]
+#[sbor(type_name = "Abc")]
+pub enum TestThatPermitSborAttributesCanCompile {
+    #[sbor(discriminator(VARIANT_1))]
+    Variant1,
+    #[sbor(ignore_as_unreachable)]
+    UnreachableVariant,
+    #[sbor(discriminator(VARIANT_2))]
+    Variant2,
+}
+
 const CONST_55_U8: u8 = 55;
 const CONST_32_U32: u32 = 32;
 const CONST_32_U8: u8 = 32;
@@ -57,6 +79,8 @@ pub enum Mixed {
 fn can_encode_and_decode() {
     check_encode_decode_schema(&Abc::Variant1);
     check_encode_decode_schema(&Abc::Variant2);
+    check_encode_decode_schema(&AbcV2::Variant1);
+    check_encode_decode_schema(&AbcV2::Variant2);
     check_encode_decode_schema(&Mixed::A);
     check_encode_decode_schema(&Mixed::B);
     check_encode_decode_schema(&Mixed::C {
@@ -68,6 +92,8 @@ fn can_encode_and_decode() {
     check_encode_decode_schema(&Mixed::G);
     check_encode_decode_schema(&Mixed::H);
     check_encode_decode_schema(&Mixed::I);
+
+    check_schema_equality::<Abc, AbcV2>();
 
     check_encode_identically(
         &Mixed::C {
@@ -86,7 +112,15 @@ fn can_encode_and_decode() {
             discriminator: 14,
             fields: vec![],
         },
-    )
+    );
+    check_encode_identically(&Abc::Variant1, &AbcV2::Variant1);
+    check_encode_identically(&Abc::Variant2, &AbcV2::Variant2);
+}
+
+#[test]
+#[should_panic]
+fn test_encoding_unreachable_variant_panics() {
+    let _ignored = basic_encode(&AbcV2::UnreachableVariant);
 }
 
 fn check_encode_decode_schema<T: BasicEncode + BasicDecode + BasicDescribe + Eq + Debug>(
@@ -110,4 +144,11 @@ fn check_encode_decode_schema<T: BasicEncode + BasicDecode + BasicDescribe + Eq 
 
 fn check_encode_identically<T1: BasicEncode, T2: BasicEncode>(value1: &T1, value2: &T2) {
     assert_eq!(basic_encode(value1).unwrap(), basic_encode(value2).unwrap());
+}
+
+fn check_schema_equality<T1: BasicDescribe, T2: BasicDescribe>() {
+    assert_eq!(
+        generate_full_schema_from_single_type::<T1, NoCustomSchema>(),
+        generate_full_schema_from_single_type::<T2, NoCustomSchema>(),
+    );
 }

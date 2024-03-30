@@ -67,7 +67,7 @@ pub use versioned::*;
 extern crate sbor_derive;
 pub use sbor_derive::{
     BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor, Categorize, Decode,
-    Describe, Encode, Sbor,
+    Describe, Encode, PermitSborAttributes, Sbor,
 };
 
 // This is to make derives work within this crate.

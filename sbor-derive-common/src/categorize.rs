@@ -83,10 +83,22 @@ fn handle_normal_categorize(
                         empty_fields_unpacking,
                         ..
                     } = process_fields_for_encode(&v.fields)?;
-                    Ok((
-                        quote! { Self::#v_id #empty_fields_unpacking => #discriminator, },
-                        quote! { Self::#v_id #empty_fields_unpacking => #unskipped_field_count, },
-                    ))
+
+                    Ok(match discriminator {
+                        VariantDiscriminator::Expr(discriminator) => {
+                            (
+                                quote! { Self::#v_id #empty_fields_unpacking => #discriminator, },
+                                quote! { Self::#v_id #empty_fields_unpacking => #unskipped_field_count, },
+                            )
+                        },
+                        VariantDiscriminator::IgnoreAsUnreachable => {
+                            let panic_message = format!("Variant with index {i} ignored as unreachable");
+                            (
+                                quote! { Self::#v_id #empty_fields_unpacking => panic!(#panic_message), },
+                                quote! { Self::#v_id #empty_fields_unpacking => panic!(#panic_message), },
+                            )
+                        },
+                    })
                 })
                 .collect::<Result<Vec<_>>>()?
                 .into_iter()

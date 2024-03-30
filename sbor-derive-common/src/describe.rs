@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
@@ -217,53 +218,61 @@ fn handle_normal_describe(
         },
         Data::Enum(DataEnum { variants, .. }) => {
             let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
-            let variant_discriminators = (0..variants.len())
-                .into_iter()
-                .map(|i| &discriminator_mapping[&i])
-                .collect::<Vec<_>>();
+
             let mut all_field_types = Vec::new();
 
-            let variant_type_data: Vec<_> = {
-                variants
-                    .iter()
-                    .map(|v| {
-                        let variant_name = v.ident.to_string();
-                        let FieldsData {
-                            unskipped_field_types,
-                            unskipped_field_name_strings,
-                            ..
-                        } = process_fields_for_describe(&v.fields)?;
-                        all_field_types.extend_from_slice(&unskipped_field_types);
-                        Ok(match &v.fields {
-                            Fields::Named(FieldsNamed { .. }) => {
-                                quote! {
-                                    ::sbor::TypeData::struct_with_named_fields(
-                                        #variant_name,
-                                        ::sbor::rust::vec![
-                                            #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
-                                        ],
-                                    )
-                                }
+            let match_arms = variants
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let variant_name_str = v.ident.to_string();
+
+                    let discriminator = match &discriminator_mapping[&i] {
+                        VariantDiscriminator::Expr(d) => d,
+                        VariantDiscriminator::IgnoreAsUnreachable => return Ok(None),
+                    };
+
+                    let FieldsData {
+                        unskipped_field_types,
+                        unskipped_field_name_strings,
+                        ..
+                    } = process_fields_for_describe(&v.fields)?;
+
+                    all_field_types.extend_from_slice(&unskipped_field_types);
+
+                    let variant_type_data = match &v.fields {
+                        Fields::Named(FieldsNamed { .. }) => {
+                            quote! {
+                                ::sbor::TypeData::struct_with_named_fields(
+                                    #variant_name_str,
+                                    ::sbor::rust::vec![
+                                        #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
+                                    ],
+                                )
                             }
-                            Fields::Unnamed(FieldsUnnamed { .. }) => {
-                                quote! {
-                                    ::sbor::TypeData::struct_with_unnamed_fields(
-                                        #variant_name,
-                                        ::sbor::rust::vec![
-                                            #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
-                                        ],
-                                    )
-                                }
+                        }
+                        Fields::Unnamed(FieldsUnnamed { .. }) => {
+                            quote! {
+                                ::sbor::TypeData::struct_with_unnamed_fields(
+                                    #variant_name_str,
+                                    ::sbor::rust::vec![
+                                        #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
+                                    ],
+                                )
                             }
-                            Fields::Unit => {
-                                quote! {
-                                    ::sbor::TypeData::struct_with_unit_fields(#variant_name)
-                                }
+                        }
+                        Fields::Unit => {
+                            quote! {
+                                ::sbor::TypeData::struct_with_unit_fields(#variant_name_str)
                             }
-                        })
-                    })
-                    .collect::<Result<_>>()?
-            };
+                        }
+                    };
+                    Ok(Some(quote! {
+                        #discriminator => #variant_type_data,
+                    }))
+                })
+                .filter_map_ok(|x| x)
+                .collect::<Result<Vec<_>>>()?;
 
             let unique_field_types = get_unique_types(&all_field_types);
 
@@ -276,7 +285,7 @@ fn handle_normal_describe(
                         ::sbor::TypeData::enum_variants(
                             #type_name,
                             ::sbor::rust::prelude::indexmap![
-                                #(#variant_discriminators => #variant_type_data,)*
+                                #(#match_arms)*
                             ],
                         )
                     }

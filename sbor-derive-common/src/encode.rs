@@ -137,11 +137,23 @@ pub fn handle_normal_encode(
                         unskipped_unpacked_field_names,
                         ..
                     } = process_fields_for_encode(&v.fields)?;
-                    Ok(quote! {
-                        Self::#v_id #fields_unpacking => {
-                            encoder.write_discriminator(#discriminator)?;
-                            encoder.write_size(#unskipped_field_count)?;
-                            #(encoder.encode(#unskipped_unpacked_field_names)?;)*
+
+                    Ok(match discriminator {
+                        VariantDiscriminator::Expr(discriminator) => {
+                            quote! {
+                                Self::#v_id #fields_unpacking => {
+                                    encoder.write_discriminator(#discriminator)?;
+                                    encoder.write_size(#unskipped_field_count)?;
+                                    #(encoder.encode(#unskipped_unpacked_field_names)?;)*
+                                }
+                            }
+                        }
+                        VariantDiscriminator::IgnoreAsUnreachable => {
+                            let panic_message =
+                                format!("Variant with index {i} ignored as unreachable");
+                            quote! {
+                                Self::#v_id #fields_unpacking => panic!(#panic_message),
+                            }
                         }
                     })
                 })

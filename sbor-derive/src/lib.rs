@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use proc_macro::TokenStream;
 
 /// Derive code that returns the value kind.
@@ -39,6 +41,27 @@ pub fn sbor(input: TokenStream) -> TokenStream {
     sbor_derive_common::sbor::handle_sbor(proc_macro2::TokenStream::from(input), None, None)
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
+}
+
+/// An empty derive which exists solely to allow the helper "sbor" attribute
+/// to be used without generating a compile error.
+///
+/// The intended use-case is as a utility for building other macros,
+/// which wish to add sbor attribute annotations to types for when they do
+/// use an Sbor derive - but wish to avoid the following error when they don't:
+/// ```text
+/// error: cannot find attribute `sbor` in this scope
+/// ```
+///
+/// Ideally this would output an empty token stream, but instead we
+/// return a simply comment, to avoid the proc macro system thinking
+/// the macro build has broken and returning this error:
+/// ```text
+/// proc macro `PermitSborAttributes` not expanded: internal error
+/// ```
+#[proc_macro_derive(PermitSborAttributes, attributes(sbor))]
+pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
+    TokenStream::from_str(&"// Empty PermitSborAttributes expansion").unwrap()
 }
 
 const BASIC_CUSTOM_VALUE_KIND: &str = "sbor::NoCustomValueKind";

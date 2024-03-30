@@ -198,12 +198,19 @@ pub fn extract_typed_attributes(
 enum VariantValue {
     Byte(LitByte),
     Path(Path), // EG a constant
+    UseDefaultIndex,
+    IgnoreAsUnreachable,
+}
+
+pub enum VariantDiscriminator {
+    Expr(Expr),
+    IgnoreAsUnreachable,
 }
 
 pub fn get_variant_discriminator_mapping(
     enum_attributes: &[Attribute],
     variants: &Punctuated<Variant, Comma>,
-) -> Result<BTreeMap<usize, Expr>> {
+) -> Result<BTreeMap<usize, VariantDiscriminator>> {
     if variants.len() > 255 {
         return Err(Error::new(
             Span::call_site(),
@@ -213,82 +220,102 @@ pub fn get_variant_discriminator_mapping(
 
     let use_repr_discriminators =
         get_sbor_attribute_bool_value(enum_attributes, "use_repr_discriminators")?;
-    let mut variant_ids: BTreeMap<usize, VariantValue> = BTreeMap::new();
-
-    for (i, variant) in variants.iter().enumerate() {
-        let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
-        if let Some(attribute) = variant_attributes.remove("discriminator") {
-            let id = match attribute {
-                AttributeValue::None(span) => {
-                    return Err(Error::new(span, format!("No discriminator was provided")));
-                }
-                AttributeValue::Path(path) => VariantValue::Path(path),
-                AttributeValue::Lit(literal) => parse_u8_from_literal(&literal)
-                    .map(|b| VariantValue::Byte(LitByte::new(b, literal.span())))
-                    .ok_or_else(|| {
-                        Error::new(
-                            literal.span(),
-                            format!("This discriminator is not a u8-convertible value"),
-                        )
-                    })?,
-            };
-
-            variant_ids.insert(i, id);
-            continue;
-        }
-        if use_repr_discriminators {
-            if let Some(discriminant) = &variant.discriminant {
-                let expression = &discriminant.1;
-
-                let id = match expression {
-                    Expr::Lit(literal_expression) => parse_u8_from_literal(&literal_expression.lit)
-                        .map(|b| VariantValue::Byte(LitByte::new(b, literal_expression.span()))),
-                    Expr::Path(path_expression) => {
-                        Some(VariantValue::Path(path_expression.path.clone()))
-                    }
-                    _ => None,
-                };
-
-                let Some(id) = id else {
-                    return Err(Error::new(
-                        expression.span(),
-                        format!("This discriminator is not a u8-convertible value or a path. Add an #[sbor(discriminator(X))] annotation with a u8-compatible literal or path to const/static variable to fix."),
-                    ));
-                };
-
-                variant_ids.insert(i, id);
-                continue;
+    let variant_ids: Vec<VariantValue> = variants.iter()
+        .map(|variant| -> Result<VariantValue> {
+            let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
+            if let Some(_) = variant_attributes.remove("ignore_as_unreachable") {
+                return Ok(VariantValue::IgnoreAsUnreachable);
             }
-        }
-    }
+            if let Some(attribute) = variant_attributes.remove("discriminator") {
+                return Ok(match attribute {
+                    AttributeValue::None(span) => {
+                        return Err(Error::new(span, format!("No discriminator was provided")));
+                    }
+                    AttributeValue::Path(path) => VariantValue::Path(path),
+                    AttributeValue::Lit(literal) => parse_u8_from_literal(&literal)
+                        .map(|b| VariantValue::Byte(LitByte::new(b, literal.span())))
+                        .ok_or_else(|| {
+                            Error::new(
+                                literal.span(),
+                                format!("This discriminator is not a u8-convertible value"),
+                            )
+                        })?,
+                });
+            }
+            if use_repr_discriminators {
+                if let Some(discriminant) = &variant.discriminant {
+                    let expression = &discriminant.1;
 
-    if variant_ids.len() > 0 {
-        if variant_ids.len() < variants.len() {
+                    let id = match expression {
+                        Expr::Lit(literal_expression) => parse_u8_from_literal(&literal_expression.lit)
+                            .map(|b| VariantValue::Byte(LitByte::new(b, literal_expression.span()))),
+                        Expr::Path(path_expression) => {
+                            Some(VariantValue::Path(path_expression.path.clone()))
+                        }
+                        _ => None,
+                    };
+
+                    let Some(id) = id else {
+                        return Err(Error::new(
+                            expression.span(),
+                            format!("This discriminator is not a u8-convertible value or a path. Add an #[sbor(discriminator(X))] annotation with a u8-compatible literal or path to const/static variable to fix."),
+                        ));
+                    };
+                    return Ok(id);
+                }
+            }
+            Ok(VariantValue::UseDefaultIndex)
+        })
+        .collect::<Result<_>>()?;
+
+    let explicit_indices_count = variant_ids
+        .iter()
+        .filter(|v| matches!(v, VariantValue::Byte(_) | VariantValue::Path(_)))
+        .count();
+
+    let default_indices_count = variant_ids
+        .iter()
+        .filter(|v| matches!(v, VariantValue::UseDefaultIndex))
+        .count();
+
+    if explicit_indices_count > 0 {
+        if default_indices_count > 0 {
             return Err(Error::new(
                 Span::call_site(),
-                format!("Either all or no variants must be assigned an id. Currently {} of {} variants have one.", variant_ids.len(), variants.len()),
+                format!("Either all or no variants must be assigned an id. Currently {} of {} variants have one.", explicit_indices_count, explicit_indices_count + default_indices_count),
             ));
         }
-        return Ok(variant_ids
+        let output = variant_ids
             .into_iter()
-            .map(|(i, id)| {
-                let expression = match id {
-                    VariantValue::Byte(id) => parse_quote!(#id),
-                    VariantValue::Path(id) => parse_quote!(#id),
-                };
-                (i, expression)
+            .map(|id| match id {
+                VariantValue::Byte(id) => VariantDiscriminator::Expr(parse_quote!(#id)),
+                VariantValue::Path(id) => VariantDiscriminator::Expr(parse_quote!(#id)),
+                VariantValue::IgnoreAsUnreachable => VariantDiscriminator::IgnoreAsUnreachable,
+                VariantValue::UseDefaultIndex => unreachable!("default_indices_count was 0"),
             })
-            .collect());
+            .enumerate()
+            .collect();
+
+        return Ok(output);
     }
     // If no explicit indices, use default indices
-    Ok(variants
+    let output = variant_ids
         .iter()
         .enumerate()
-        .map(|(i, _)| {
-            let i_as_u8 = u8::try_from(i).unwrap();
-            (i, parse_quote!(#i_as_u8))
+        .map(|(i, id)| {
+            let discriminator = match id {
+                VariantValue::Byte(_) => unreachable!("explicit_indices_count was 0"),
+                VariantValue::Path(_) => unreachable!("explicit_indices_count was 0"),
+                VariantValue::IgnoreAsUnreachable => VariantDiscriminator::IgnoreAsUnreachable,
+                VariantValue::UseDefaultIndex => {
+                    let i_as_u8 = u8::try_from(i).unwrap();
+                    VariantDiscriminator::Expr(parse_quote!(#i_as_u8))
+                }
+            };
+            (i, discriminator)
         })
-        .collect())
+        .collect();
+    Ok(output)
 }
 
 fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {

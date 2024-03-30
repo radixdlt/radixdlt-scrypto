@@ -6,9 +6,33 @@ pub enum UpdateResult<T> {
 /// A marker trait to indicate that the type is versioned.
 /// This can be used for type bounds for requiring that types are versioned.
 pub trait HasLatestVersion {
+    /// The type for the latest content.
     type Latest;
+
+    /// Returns true if the versioned enum is at the latest version.
+    fn is_latest(&self) -> bool;
+    /// Consumes the versioned enum to update it to the latest version,
+    /// then returns the latest content
     fn into_latest(self) -> Self::Latest;
+    /// Updates the versioned enum to the latest version in place,
+    /// and then returns a mutable reference to the latest content
+    fn to_latest_mut(&mut self) -> &mut Self::Latest;
+    /// Constructs the versioned enum from the latest content
+    fn from_latest(latest: Self::Latest) -> Self;
+    /// If the versioned enum is at the latest version, it returns
+    /// an immutable reference to the latest content, otherwise it returns `None`.
+    ///
+    /// If you require the latest version unconditionally, consider using
+    /// [`to_latest_mut`] to update to the latest version first - or, if
+    /// there is only a single version, use [`as_unique_latest_ref`].
     fn as_latest_ref(&self) -> Option<&Self::Latest>;
+    /// If the versioned enum is at the latest version, it returns
+    /// a mutable reference to the latest content, otherwise it returns `None`.
+    ///
+    /// If you require the latest version unconditionally, consider using
+    /// [`to_latest_mut`] to update to the latest version first  - or, if
+    /// there is only a single version, use [`as_unique_latest_mut`].
+    fn as_latest_mut(&mut self) -> Option<&mut Self::Latest>;
 }
 
 pub trait CloneIntoLatest {
@@ -26,10 +50,33 @@ impl<T: HasLatestVersion<Latest = Latest> + Clone, Latest> CloneIntoLatest for T
 
 /// This macro is intended for creating a data model which supports versioning.
 /// This is useful for creating an SBOR data model which can be updated in future.
-/// In future, enum variants can be added, and automatically mapped to.
+///
+/// In future, the type can be converted to `define_versioned`, enum variants can
+/// be added, and automatically mapped to the latest version.
 ///
 /// This macro is just a simpler wrapper around the [`crate::define_versioned`] macro,
 /// for use when there's just a single version.
+/// 
+/// Example usage:
+/// ```rust
+/// # use ::sbor::prelude::*;
+/// # use ::sbor::define_single_versioned;
+///
+/// #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+/// pub struct FooV1 {
+///    bar: u8,
+/// }
+///
+/// define_single_versioned! {
+///    #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+///    pub enum VersionedFoo => Foo = FooV1
+/// }
+/// 
+/// // `Foo` is created as an alias for `FooV1`
+/// let versioned = VersionedFoo::V1(Foo { bar: 42 });
+///
+/// assert_eq!(42, versioned.as_unique_latest_ref().bar);
+/// ```
 #[macro_export]
 macro_rules! define_single_versioned {
     (
@@ -50,6 +97,23 @@ macro_rules! define_single_versioned {
                 },
             }
         );
+
+        $crate::paste::paste! {
+            #[allow(dead_code)]
+            impl
+            $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            $name
+            $(< $( $lt ),+ >)?
+            {
+                pub fn as_unique_latest_ref(&self) -> &$latest_version_type {
+                    self.as_latest_ref().unwrap()
+                }
+
+                pub fn as_unique_latest_mut(&mut self) -> &mut $latest_version_type {
+                    self.as_latest_mut().unwrap()
+                }
+            }
+        }
     };
 }
 
@@ -61,6 +125,55 @@ macro_rules! define_single_versioned {
 ///
 /// In the future, this may become a programmatic macro to support better error handling /
 /// edge case detection, and opting into more explicit SBOR handling.
+///
+/// Example usage:
+/// ```rust
+/// use sbor::prelude::*;
+/// use sbor::define_versioned;
+///
+/// #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+/// pub struct FooV1 {
+///    bar: u8,
+/// }
+/// 
+/// #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+/// pub struct FooV2 {
+///    bar: u8,
+///    baz: Option<u8>,
+/// }
+///
+/// impl From<FooV1> for FooV2 {
+///     fn from(value: FooV1) -> FooV2 {
+///         FooV2 {
+///             bar: value.bar,
+///             // Could also use `value.bar` as sensible default during inline update
+///             baz: None,
+///         }
+///     }
+/// }
+///
+/// define_versioned!(
+///     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+///     enum VersionedFoo {
+///         previous_versions: [
+///             1 => FooV1: { updates_to: 2 },
+///         ],
+///         latest_version: {
+///             2 => Foo = FooV2,
+///         },
+///     }
+/// );
+/// 
+/// let mut versioned_old = VersionedFoo::V1(FooV1 { bar: 42 });
+/// // `Foo` is created as an alias for the latest content, `FooV2`
+/// let versioned_new = VersionedFoo::V2(Foo { bar: 42, baz: None });
+///
+/// assert_ne!(&versioned_new, &versioned_old);
+/// assert_eq!(versioned_new.as_latest_ref().unwrap(), &*versioned_old.to_latest_mut());
+///
+/// // After a call to `to_latest_mut`, `versioned_old` has been updated:
+/// assert_eq!(versioned_new, versioned_old);
+/// ```
 #[macro_export]
 macro_rules! define_versioned {
     (
@@ -104,7 +217,10 @@ macro_rules! define_versioned {
             #[allow(dead_code)]
             $vis type $latest_version_alias = $latest_version_type;
 
+            use $crate::PermitSborAttributes as [<$name _PermitSborAttributes>];
+
             $(#[$attributes])*
+            #[derive([<$name _PermitSborAttributes>])]
             // We include the repr(u8) so that the SBOR discriminants are assigned
             // to match the version numbers if SBOR is used on the versioned enum
             #[repr(u8)]
@@ -114,6 +230,18 @@ macro_rules! define_versioned {
                     [<V $version_num>]($version_type) = $version_num,
                 )*)?
                 [<V $latest_version>]($latest_version_type) = $latest_version,
+                #[sbor(ignore_as_unreachable)]
+                /// This variant is not intended to be used, except inside private
+                /// versioning code as a marker for transient internal state during
+                /// inline updates.
+                ///
+                /// If matching on this enum, consider instead using `.to_latest_mut()`
+                /// or `.into_latest()`, which updates the versioned enum to the latest
+                /// version, and exposes the latest content.
+                ///
+                /// If matching on the enum is required, the match arm for this variant
+                /// should panic!().
+                __InternalUpdateInProgress = 255,
             }
 
             #[allow(dead_code)]
@@ -122,20 +250,17 @@ macro_rules! define_versioned {
             $name
             $(< $( $lt ),+ >)?
             {
-                pub fn new_latest(value: $latest_version_type) -> Self {
-                    Self::[<V $latest_version>](value)
-                }
-
-                pub fn update_once(self) -> $crate::UpdateResult<Self> {
+                fn update_once(self) -> $crate::UpdateResult<Self> {
                     match self {
                     $($(
                         Self::[<V $version_num>](value) => $crate::UpdateResult::Updated(Self::[<V $update_to_version_num>](value.into())),
                     )*)?
                         Self::[<V $latest_version>](value) => $crate::UpdateResult::AtLatest(Self::[<V $latest_version>](value)),
+                        Self::__InternalUpdateInProgress => panic!("Update is already in progress"),
                     }
                 }
 
-                pub fn update_to_latest(mut self) -> Self {
+                fn update_to_latest(mut self) -> Self {
                     loop {
                         match self.update_once() {
                             $crate::UpdateResult::Updated(new) => {
@@ -154,6 +279,14 @@ macro_rules! define_versioned {
                 {
                     type Latest = $latest_version_type;
 
+                    #[allow(unreachable_patterns)]
+                    fn is_latest(&self) -> bool {
+                        match self {
+                            Self::[<V $latest_version>](_) => true,
+                            _ => false,
+                        }
+                    }
+
                     #[allow(irrefutable_let_patterns)]
                     fn into_latest(self) -> Self::Latest {
                         let Self::[<V $latest_version>](latest) = self.update_to_latest() else {
@@ -162,8 +295,28 @@ macro_rules! define_versioned {
                         return latest;
                     }
 
+                    fn to_latest_mut(&mut self) -> &mut $latest_version_type {
+                        if !self.is_latest() {
+                            let current = radix_rust::prelude::mem::replace(self, Self::__InternalUpdateInProgress);
+                            *self = current.update_to_latest();
+                        }
+                        self.as_latest_mut().unwrap()
+                    }
+
+                    fn from_latest(latest: Self::Latest) -> Self {
+                        Self::[<V $latest_version>](latest)
+                    }
+
                     #[allow(unreachable_patterns)]
                     fn as_latest_ref(&self) -> Option<&Self::Latest> {
+                        match self {
+                            Self::[<V $latest_version>](latest) => Some(latest),
+                            _ => None,
+                        }
+                    }
+
+                    #[allow(unreachable_patterns)]
+                    fn as_latest_mut(&mut self) -> Option<&mut Self::Latest> {
                         match self {
                             Self::[<V $latest_version>](latest) => Some(latest),
                             _ => None,
@@ -297,7 +450,7 @@ mod tests {
         assert_eq!(versioned_actual.into_latest(), expected,);
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
     struct GenericModelV1<T>(T);
 
     define_single_versioned!(

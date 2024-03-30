@@ -1902,6 +1902,7 @@ impl WasmEngine for WasmiEngine {
 mod tests {
     use super::*;
     use wabt::{wat2wasm, wat2wasm_with_features, ErrorKind, Features};
+    use wasmi::Global;
 
     static MODULE_MUTABLE_GLOBALS: &str = r#"
             (module

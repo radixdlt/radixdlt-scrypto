@@ -224,12 +224,7 @@ fn references_read_from_state_are_visible_in_tests1() {
         .with_component_state::<VersionedTwoResourcePoolState, _, _, _>(
             radiswap_pool_component,
             |state, env| {
-                let VersionedTwoResourcePoolState::V1(
-                    radix_engine::blueprints::pool::v1::substates::two_resource_pool::Substate {
-                        vaults: [(_, vault1), (_, _)],
-                        ..
-                    },
-                ) = state;
+                let [(_, vault1), (_, _)] = &mut state.to_latest_mut().vaults;
                 vault1.amount(env)
             },
         )

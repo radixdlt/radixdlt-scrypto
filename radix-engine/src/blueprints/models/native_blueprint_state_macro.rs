@@ -592,12 +592,31 @@ mod helper_macros {
                 impl HasLatestVersion for $payload_type_name
                 {
                     type Latest = <[<Versioned $ident_core>] as HasLatestVersion>::Latest;
+
+                    fn is_latest(&self) -> bool {
+                        self.as_ref().is_latest()
+                    }
+
                     fn into_latest(self) -> Self::Latest {
                         self.into_content().into_latest()
                     }
 
+                    fn to_latest_mut(&mut self) -> &mut Self::Latest {
+                        self.as_mut().to_latest_mut()
+                    }
+
+                    fn from_latest(latest: Self::Latest) -> Self {
+                        Self {
+                            content: <[<Versioned $ident_core>] as HasLatestVersion>::from_latest(latest),
+                        }
+                    }
+
                     fn as_latest_ref(&self) -> Option<&Self::Latest> {
                         self.as_ref().as_latest_ref()
+                    }
+
+                    fn as_latest_mut(&mut self) -> Option<&mut Self::Latest> {
+                        self.as_mut().as_latest_mut()
                     }
                 }
 

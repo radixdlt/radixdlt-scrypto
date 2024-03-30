@@ -419,9 +419,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
         )
         .unwrap()?;
 
-    let bp_interface = match bp_definition {
-        VersionedPackageBlueprintVersionDefinition::V1(blueprint) => blueprint.interface,
-    };
+    let bp_interface = bp_definition.into_latest().interface;
 
     let event_def = bp_interface.events.get(event_name)?;
     match event_def {
