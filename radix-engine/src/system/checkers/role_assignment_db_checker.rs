@@ -154,7 +154,7 @@ impl RoleAssignmentDatabaseChecker {
         F: FnMut(RoleAssignmentDatabaseCheckerError),
     {
         let key = key.content;
-        let value = value.content.into_latest();
+        let value = value.into_latest();
 
         Self::check_access_rule_limits(value, add_error);
         Self::check_is_role_key_reserved(&key, add_error);

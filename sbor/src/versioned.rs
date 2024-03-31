@@ -35,17 +35,20 @@ pub trait HasLatestVersion {
     fn as_latest_mut(&mut self) -> Option<&mut Self::Latest>;
 }
 
-pub trait CloneIntoLatest {
-    type Latest;
+pub trait CloneIntoLatest: HasLatestVersion {
     fn clone_into_latest(&self) -> Self::Latest;
 }
 
-impl<T: HasLatestVersion<Latest = Latest> + Clone, Latest> CloneIntoLatest for T {
-    type Latest = Latest;
-
+impl<T: Clone + HasLatestVersion> CloneIntoLatest for T {
     fn clone_into_latest(&self) -> Self::Latest {
         self.clone().into_latest()
     }
+}
+
+pub trait HasUniqueLatestVersion: HasLatestVersion {
+    fn as_unique_latest_ref(&self) -> &Self::Latest;
+
+    fn as_unique_latest_mut(&mut self) -> &mut Self::Latest;
 }
 
 /// This macro is intended for creating a data model which supports versioning.
@@ -102,15 +105,22 @@ macro_rules! define_single_versioned {
             #[allow(dead_code)]
             impl
             $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            HasUniqueLatestVersion for
             $name
             $(< $( $lt ),+ >)?
             {
-                pub fn as_unique_latest_ref(&self) -> &$latest_version_type {
-                    self.as_latest_ref().unwrap()
+                fn as_unique_latest_ref(&self) -> &Self::Latest {
+                    match self {
+                        Self::V1(content) => content,
+                        Self::__InternalUpdateInProgress => panic!("Unexpected variant __InternalUpdateInProgress"),
+                    }
                 }
 
-                pub fn as_unique_latest_mut(&mut self) -> &mut $latest_version_type {
-                    self.as_latest_mut().unwrap()
+                fn as_unique_latest_mut(&mut self) -> &mut Self::Latest {
+                    match self {
+                        Self::V1(content) => content,
+                        Self::__InternalUpdateInProgress => panic!("Unexpected variant __InternalUpdateInProgress"),
+                    }
                 }
             }
         }

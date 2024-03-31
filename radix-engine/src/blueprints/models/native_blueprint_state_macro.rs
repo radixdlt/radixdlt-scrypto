@@ -620,6 +620,16 @@ mod helper_macros {
                     }
                 }
 
+                impl HasUniqueLatestVersion for $payload_type_name {
+                    fn as_unique_latest_ref(&self) -> &Self::Latest {
+                        self.as_ref().as_unique_latest_ref()
+                    }
+
+                    fn as_unique_latest_mut(&mut self) -> &mut Self::Latest {
+                        self.as_mut().as_unique_latest_mut()
+                    }
+                }
+
                 // Now implement other relevant content traits, for:
                 // > The "latest" type: $ident_core
                 impl $content_trait<$payload_type_name> for $ident_core {
