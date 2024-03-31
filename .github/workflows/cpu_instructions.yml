@@ -3,7 +3,6 @@ run-name: QEMU costing - CPU instructions, branch = ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
-  push:
 
 env:
   CARGO_TERM_COLOR: always
