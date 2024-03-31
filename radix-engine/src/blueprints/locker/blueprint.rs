@@ -28,9 +28,7 @@ impl AccountLockerBlueprint {
                 instantiate: None,
                 instantiate_simple: None,
                 store: Some(ReceiverInfo::normal_ref_mut()),
-                store_batch: Some(ReceiverInfo::normal_ref_mut()),
-                send_or_store: Some(ReceiverInfo::normal_ref_mut()),
-                send_or_store_batch: Some(ReceiverInfo::normal_ref_mut()),
+                airdrop: Some(ReceiverInfo::normal_ref_mut()),
                 recover: Some(ReceiverInfo::normal_ref_mut()),
                 recover_non_fungibles: Some(ReceiverInfo::normal_ref_mut()),
                 claim: Some(ReceiverInfo::normal_ref_mut()),
@@ -78,9 +76,7 @@ impl AccountLockerBlueprint {
                     },
                     methods {
                         ACCOUNT_LOCKER_STORE_IDENT => [STORER_ROLE];
-                        ACCOUNT_LOCKER_STORE_BATCH_IDENT => [STORER_ROLE];
-                        ACCOUNT_LOCKER_SEND_OR_STORE_IDENT => [STORER_ROLE];
-                        ACCOUNT_LOCKER_SEND_OR_STORE_BATCH_IDENT => [STORER_ROLE];
+                        ACCOUNT_LOCKER_AIRDROP_IDENT => [STORER_ROLE];
 
                         ACCOUNT_LOCKER_RECOVER_IDENT => [RECOVERER_ROLE];
                         ACCOUNT_LOCKER_RECOVER_NON_FUNGIBLES_IDENT => [RECOVERER_ROLE];
@@ -112,9 +108,7 @@ impl AccountLockerBlueprint {
                 instantiate,
                 instantiate_simple,
                 store,
-                store_batch,
-                send_or_store,
-                send_or_store_batch,
+                airdrop,
                 recover,
                 recover_non_fungibles,
                 claim,
@@ -233,12 +227,46 @@ impl AccountLockerBlueprint {
     }
 
     fn store<Y>(
-        AccountLockerStoreInput { claimant, bucket }: AccountLockerStoreInput,
+        AccountLockerStoreInput {
+            claimant,
+            bucket,
+            try_direct_send,
+        }: AccountLockerStoreInput,
         api: &mut Y,
     ) -> Result<AccountLockerStoreOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        // If we should try to send first then attempt the deposit into the account
+        let bucket = if try_direct_send {
+            // Getting the node-id of the actor and constructing the non-fungible global id of the
+            // global caller.
+            let actor_node_id = api.actor_get_node_id(ACTOR_STATE_SELF)?;
+            let global_caller_non_fungible_global_id =
+                global_caller(GlobalAddress::new_or_panic(actor_node_id.0));
+
+            let bucket = api
+                .call_method(
+                    claimant.0.as_node_id(),
+                    ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                    scrypto_encode(&AccountTryDepositOrRefundInput {
+                        bucket,
+                        authorized_depositor_badge: Some(global_caller_non_fungible_global_id),
+                    })
+                    .unwrap(),
+                )
+                .map(|rtn| scrypto_decode::<AccountTryDepositOrRefundOutput>(&rtn).unwrap())?;
+            match bucket {
+                Some(bucket) => bucket,
+                None => return Ok(()),
+            }
+        } else {
+            bucket
+        };
+
+        // Deposit into the account either was not requested or failed. Store the resources into the
+        // account locker.
+
         // Bucket info.
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
 
@@ -263,10 +291,14 @@ impl AccountLockerBlueprint {
         Ok(())
     }
 
-    fn store_batch<Y>(
-        AccountLockerStoreBatchInput { claimants, bucket }: AccountLockerStoreBatchInput,
+    fn airdrop<Y>(
+        AccountLockerAirdropInput {
+            claimants,
+            bucket,
+            try_direct_send,
+        }: AccountLockerAirdropInput,
         api: &mut Y,
-    ) -> Result<AccountLockerStoreBatchOutput, RuntimeError>
+    ) -> Result<AccountLockerAirdropOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -284,81 +316,7 @@ impl AccountLockerBlueprint {
                 AccountLockerStoreInput {
                     claimant: *account_address,
                     bucket: claim_bucket,
-                },
-                api,
-            )?;
-        }
-
-        // Return the change
-        if bucket.is_empty(api)? {
-            bucket.drop_empty(api)?;
-            Ok(None)
-        } else {
-            Ok(Some(bucket))
-        }
-    }
-
-    fn send_or_store<Y>(
-        AccountLockerSendOrStoreInput { claimant, bucket }: AccountLockerSendOrStoreInput,
-        api: &mut Y,
-    ) -> Result<AccountLockerSendOrStoreOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Getting the node-id of the actor and constructing the non-fungible global id of the
-        // global caller.
-        let actor_node_id = api.actor_get_node_id(ACTOR_STATE_SELF)?;
-        let global_caller_non_fungible_global_id =
-            global_caller(GlobalAddress::new_or_panic(actor_node_id.0));
-
-        // Attempting to deposit the resources into the account.
-        let bucket = api
-            .call_method(
-                claimant.0.as_node_id(),
-                ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-                scrypto_encode(&AccountTryDepositOrRefundInput {
-                    bucket,
-                    authorized_depositor_badge: Some(global_caller_non_fungible_global_id),
-                })
-                .unwrap(),
-            )
-            .map(|rtn| scrypto_decode::<AccountTryDepositOrRefundOutput>(&rtn).unwrap())?;
-
-        // If we got a bucket back then we need to store it.
-        if let Some(bucket) = bucket {
-            Self::store(AccountLockerStoreInput { claimant, bucket }, api)?;
-        }
-
-        Ok(())
-    }
-
-    fn send_or_store_batch<Y>(
-        AccountLockerSendOrStoreBatchInput { claimants, bucket  }: AccountLockerSendOrStoreBatchInput,
-        api: &mut Y,
-    ) -> Result<AccountLockerSendOrStoreBatchOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Getting the node-id of the actor and constructing the non-fungible global id of the
-        // global caller.
-        let actor_node_id = api.actor_get_node_id(ACTOR_STATE_SELF)?;
-        let global_caller_non_fungible_global_id =
-            global_caller(GlobalAddress::new_or_panic(actor_node_id.0));
-
-        // Distribute and call `send_or_store`
-        let resource_address = bucket.resource_address(api)?;
-        for (account_address, specifier) in claimants.iter() {
-            let claim_bucket = match specifier {
-                ResourceSpecifier::Fungible(amount) => bucket.take(*amount, api)?,
-                ResourceSpecifier::NonFungible(ids) => {
-                    bucket.take_non_fungibles(ids.clone(), api)?
-                }
-            };
-
-            Self::send_or_store(
-                AccountLockerSendOrStoreInput {
-                    claimant: *account_address,
-                    bucket: claim_bucket,
+                    try_direct_send,
                 },
                 api,
             )?;

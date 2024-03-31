@@ -408,17 +408,12 @@ extern_blueprint_internal! {
         fn instantiate_simple(allow_recover: bool) -> (Global<AccountLocker>, Bucket);
     },
     {
-        fn store(&mut self, claimant: Global<Account>, bucket: Bucket);
-        fn store_batch(
+        fn store(&mut self, claimant: Global<Account>, bucket: Bucket, try_direct_send: bool);
+        fn airdrop(
             &mut self,
             claimants: IndexMap<Global<Account>, ResourceSpecifier>,
             bucket: Bucket,
-        ) -> Option<Bucket>;
-        fn send_or_store(&mut self, claimant: Global<Account>, bucket: Bucket);
-        fn send_or_store_batch(
-            &mut self,
-            claimants: IndexMap<Global<Account>, ResourceSpecifier>,
-            bucket: Bucket,
+            try_direct_send: bool,
         ) -> Option<Bucket>;
         fn recover(
             &mut self,

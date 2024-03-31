@@ -57,54 +57,30 @@ define_invocation! {
     function_name: store,
     input: struct {
         claimant: Global<AccountMarker>,
-        bucket: Bucket
+        bucket: Bucket,
+        try_direct_send: bool
     },
     output: type (),
     manifest_input: struct {
         claimant: ComponentAddress,
-        bucket: ManifestBucket
+        bucket: ManifestBucket,
+        try_direct_send: bool
     }
 }
 
 define_invocation! {
     blueprint_name: AccountLocker,
-    function_name: store_batch,
+    function_name: airdrop,
     input: struct {
         claimants: IndexMap<Global<AccountMarker>, ResourceSpecifier>,
-        bucket: Bucket
+        bucket: Bucket,
+        try_direct_send: bool
     },
     output: type Option<Bucket>,
     manifest_input: struct {
         claimants: IndexMap<ComponentAddress, ResourceSpecifier>,
-        bucket: ManifestBucket
-    }
-}
-
-define_invocation! {
-    blueprint_name: AccountLocker,
-    function_name: send_or_store,
-    input: struct {
-        claimant: Global<AccountMarker>,
-        bucket: Bucket
-    },
-    output: type (),
-    manifest_input: struct {
-        claimant: ComponentAddress,
-        bucket: ManifestBucket
-    }
-}
-
-define_invocation! {
-    blueprint_name: AccountLocker,
-    function_name: send_or_store_batch,
-    input: struct {
-        claimants: IndexMap<Global<AccountMarker>, ResourceSpecifier>,
-        bucket: Bucket
-    },
-    output: type Option<Bucket>,
-    manifest_input: struct {
-        claimants: IndexMap<ComponentAddress, ResourceSpecifier>,
-        bucket: ManifestBucket
+        bucket: ManifestBucket,
+        try_direct_send: bool
     }
 }
 
