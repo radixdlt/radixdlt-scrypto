@@ -569,8 +569,7 @@ impl AccountLockerBlueprint {
             }
         };
 
-        // Lock the entry in the key-value store which contains the vault and attempt to get it. If
-        // we're allowed to create the vault.
+        // Lock the entry in the key-value store which contains the vault and attempt to get it.
         let vault_entry_handle = api.key_value_store_open_entry(
             account_claims_kv_store.as_node_id(),
             &scrypto_encode(&resource_address).unwrap(),
