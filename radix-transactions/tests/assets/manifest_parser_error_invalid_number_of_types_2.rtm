@@ -1,0 +1,41 @@
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee"
+    Decimal("500");
+
+CREATE_NON_FUNGIBLE_RESOURCE
+    Enum<OwnerRole::None>()
+    Enum<NonFungibleIdType::Integer>()
+    true
+    Enum<0u8>(Enum<0u8>(Tuple(Array<String, Tuple>(), Array<Tuple>(), Array<Enum>())), Enum<0u8>(66u8), Array<String>())
+    Tuple(
+        Some(
+            Tuple(
+                Some(Enum<AccessRule::AllowAll>()),
+                Some(Enum<AccessRule::DenyAll>())
+            )
+        ),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Some(Enum<Metadata::String>("MyResource")),
+                true
+            )
+        ),
+        Map<String, Enum>(
+            "metadata_setter" => Some(Enum<AccessRule::AllowAll>()),
+            "metadata_setter_updater" => None,
+            "metadata_locker" => Some(Enum<AccessRule::DenyAll>()),
+            "metadata_locker_updater" => None
+        )
+    )
+    None;
+
+

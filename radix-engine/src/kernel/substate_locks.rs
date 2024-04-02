@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 
 pub struct SubstateLockError;
 
@@ -140,7 +140,7 @@ impl<D> SubstateLocks<D> {
     }
 
     pub fn unlock(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey, D) {
-        let (node_id, partition_num, substate_key, data) = self.locks.remove(&handle).unwrap();
+        let (node_id, partition_num, substate_key, data) = self.locks.swap_remove(&handle).unwrap();
         let full_key = (node_id, partition_num, substate_key);
 
         let lock_state = self.substate_lock_states.get_mut(&full_key).unwrap();

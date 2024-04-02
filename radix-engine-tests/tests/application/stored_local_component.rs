@@ -1,13 +1,12 @@
+use radix_common::prelude::*;
 use radix_engine_tests::common::*;
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("local_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -19,7 +18,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -28,8 +27,8 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
 #[test]
 fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("local_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -41,7 +40,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -50,8 +49,8 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
 #[test]
 fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("local_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -61,7 +60,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
             manifest_args!(34567u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -69,7 +68,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
         .lock_fee_from_faucet()
         .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let rtn: u32 = receipt.expect_commit(true).output(1);
@@ -79,8 +78,8 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
 #[test]
 fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("local_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -90,7 +89,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
             manifest_args!(34567u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -103,7 +102,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
         )
         .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let rtn: u32 = receipt.expect_commit(true).output(2);
@@ -113,8 +112,8 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
 #[test]
 fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("local_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -126,7 +125,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -135,8 +134,8 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
 #[test]
 fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("local_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -148,7 +147,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -157,8 +156,8 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
 #[test]
 fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("local_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -168,7 +167,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
             manifest_args!(34567u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -176,7 +175,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
         .lock_fee_from_faucet()
         .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let rtn: u32 = receipt.expect_commit(true).output(1);
@@ -186,8 +185,8 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
 #[test]
 fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("local_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("local_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -197,7 +196,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
             manifest_args!(34567u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -210,7 +209,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
         )
         .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let rtn: u32 = receipt.expect_commit(true).output(2);

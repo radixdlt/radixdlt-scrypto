@@ -1,13 +1,13 @@
 use super::call_frame::CallFrameMessage;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
 use crate::track::BootStore;
-use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use transaction::prelude::PreAllocatedAddress;
+use radix_transactions::prelude::PreAllocatedAddress;
 
 pub trait CallFrameReferences {
     fn root() -> Self;
@@ -133,7 +133,7 @@ pub trait KernelCallbackObject: Sized {
     type CallbackState;
 
     /// Initialize the system layer with data loaded from the substate store
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError>;
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError>;
 
     fn start<Y>(
         api: &mut Y,

@@ -1,8 +1,8 @@
 #[cfg(feature = "compile-blueprints-at-build-time")]
 #[allow(unused)]
 pub mod package_loader {
-    use radix_engine_common::prelude::*;
-    use radix_engine_queries::typed_substate_layout::*;
+    use radix_common::prelude::*;
+    use radix_substate_store_queries::typed_substate_layout::*;
 
     const PACKAGES_BINARY: &[u8] =
         include_bytes!(concat!(env!("OUT_DIR"), "/compiled_packages.bin"));
@@ -28,8 +28,8 @@ pub mod package_loader {
 #[cfg(not(feature = "compile-blueprints-at-build-time"))]
 #[allow(unused)]
 pub mod package_loader {
-    use radix_engine_common::prelude::*;
-    use radix_engine_queries::typed_substate_layout::*;
+    use radix_common::prelude::*;
+    use radix_substate_store_queries::typed_substate_layout::*;
     use std::path::PathBuf;
 
     pub struct PackageLoader;
@@ -37,7 +37,7 @@ pub mod package_loader {
         pub fn get(name: &str) -> (Vec<u8>, PackageDefinition) {
             let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
             let package_dir = manifest_dir.join("assets").join("blueprints").join(name);
-            scrypto_unit::Compile::compile(package_dir)
+            scrypto_test::prelude::Compile::compile(package_dir)
         }
     }
 }
@@ -75,7 +75,7 @@ pub mod path_macros {
         ($name: expr) => {
             concat!(
                 env!("CARGO_MANIFEST_DIR"),
-                "/../transaction/examples/",
+                "/../radix-transactions/examples/",
                 $name
             )
         };

@@ -1,0 +1,15 @@
+[1m[91merror[0m: [1mundefined named address 'package_address'[0m
+[1m[94m   |[0m
+[1m[94m17 |[0m     Blob("f531e5e82dc195a7a9f6709f5ee048d9541d51c52904b7a76295a13ddfa377b1")
+[1m[94m18 |[0m     Map<String, Tuple>()
+[1m[94m19 |[0m     Some(AddressReservation("my_reservation"))
+[1m[94m20 |[0m ;
+[1m[94m21 |[0m CALL_FUNCTION
+[1m[94m22 |[0m     NamedAddress("package_address")
+[1m[94m   |[0m[1m[91m                  ^^^^^^^^^^^^^^^^^[0m [1m[91mundefined named address[0m
+[1m[94m23 |[0m     "BlueprintName"
+[1m[94m24 |[0m     "no_such_function"
+[1m[94m25 |[0m     Decimal("1.0")
+[1m[94m26 |[0m     NamedAddress("my_package")
+[1m[94m27 |[0m ;
+[1m[94m   |[0m

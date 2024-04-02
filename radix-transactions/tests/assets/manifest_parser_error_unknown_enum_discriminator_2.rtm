@@ -1,0 +1,14 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+;
+SET_METADATA
+    Address("resource_sim1n2pqvufl0fmexzpkl6rzk50n2seaz49jgfaqensv7ujxdlf6szr08f")
+    "field_name"
+    Enum<Metadata::StingArray>(
+        Array<String>(
+            "some_string",
+            "another_string",
+            "yet_another_string"
+        )
+    );

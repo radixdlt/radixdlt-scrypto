@@ -2,30 +2,29 @@ use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
-use crate::types::*;
 use crate::{event_schema, roles_template};
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::{
-    AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
+use radix_blueprint_schema_init::{
+    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
-use native_sdk::resource::NativeBucket;
-use native_sdk::resource::NativeVault;
-use native_sdk::runtime::Runtime;
+use radix_common::time::Instant;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::{
-    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, ReceiverInfo, TypeRef,
-};
-use radix_engine_interface::time::Instant;
+use radix_engine_interface::object_modules::metadata::*;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::{
+    AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
+};
+use radix_native_sdk::resource::NativeBucket;
+use radix_native_sdk::resource::NativeVault;
+use radix_native_sdk::runtime::Runtime;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]

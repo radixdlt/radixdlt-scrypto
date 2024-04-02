@@ -1,4 +1,5 @@
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
@@ -8,14 +9,13 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::actor::Actor;
-use crate::types::*;
 
 pub trait InitSystemModule {
     //======================
     // System module setup
     //======================
     #[inline(always)]
-    fn on_init(&mut self) -> Result<(), RuntimeError> {
+    fn on_init(&mut self) -> Result<(), BootloadingError> {
         Ok(())
     }
 }

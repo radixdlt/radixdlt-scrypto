@@ -1,6 +1,6 @@
 [package]
 name = "global_n_owned"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 edition = "2021"
 
 [dependencies]
@@ -8,9 +8,7 @@ sbor = { path = "../../../sbor" }
 scrypto = { path = "../../../scrypto" }
 
 [dev-dependencies]
-transaction = { path = "../../../transaction" }
-radix-engine = { path = "../../../radix-engine" }
-scrypto-unit = { path = "../../../scrypto-unit" }
+scrypto-test = { path = "../../../scrypto-test" }
 
 [lib]
 doctest = false

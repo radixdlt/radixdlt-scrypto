@@ -1,10 +1,9 @@
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError},
     system::system_modules::limits::TransactionLimitsError,
-    types::*,
 };
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_interface::prelude::*;
+use scrypto_test::prelude::*;
 
 fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
     wat2wasm(
@@ -68,8 +67,8 @@ fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
 fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<RuntimeError>) {
     // Arrange
     let code = prepare_code(message_size, iterations);
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.publish_package(
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let package_address = ledger.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
@@ -82,7 +81,7 @@ fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<Ru
         .build();
 
     // Assert
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     if let Some(e) = expected_err {
         receipt.expect_specific_failure(|x| x.eq(&e));
     } else {

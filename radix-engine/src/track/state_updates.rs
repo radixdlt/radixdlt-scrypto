@@ -1,13 +1,15 @@
+use crate::internal_prelude::*;
 use crate::track::LegacyStateUpdates;
-use crate::types::*;
-use radix_engine_store_interface::interface::{
+use radix_substate_store_interface::interface::{
     DatabaseUpdates, DbSubstateValue, NodeDatabaseUpdates, PartitionDatabaseUpdates,
 };
-use radix_engine_store_interface::{
+use radix_substate_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DatabaseUpdate, DbSortKey},
 };
 use sbor::rust::{cmp::*, iter::*, mem};
+
+use super::TrackedSubstates;
 
 /// A tree-like description of all updates that happened to a stored state, to be included as a part
 /// of a transaction receipt.
@@ -116,7 +118,7 @@ impl PartitionStateUpdates {
                             new_substate_values.insert(substate_key, new_value);
                         }
                         DatabaseUpdate::Delete => {
-                            let existed = new_substate_values.remove(&substate_key).is_some();
+                            let existed = new_substate_values.swap_remove(&substate_key).is_some();
                             if !existed {
                                 panic!("inconsistent update: delete of substate {:?} not existing in reset partition", substate_key);
                             }
@@ -461,11 +463,15 @@ impl TrackedNode {
 }
 
 pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
-    index: IndexMap<NodeId, TrackedNode>,
-    partition_deletions: IndexSet<(NodeId, PartitionNumber)>,
-) -> StateUpdates {
+    tracked: TrackedSubstates,
+) -> (IndexSet<NodeId>, StateUpdates) {
+    let mut new_nodes = index_set_new();
     let mut system_updates = index_map_new();
-    for (node_id, tracked_node) in index {
+    for (node_id, tracked_node) in tracked.tracked_nodes {
+        if tracked_node.is_new {
+            new_nodes.insert(node_id);
+        }
+
         for (partition_num, tracked_partition) in tracked_node.tracked_partitions {
             let mut partition_updates = index_map_new();
             for tracked in tracked_partition.substates.into_values() {
@@ -489,10 +495,13 @@ pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
         }
     }
 
-    StateUpdates::from(LegacyStateUpdates {
-        partition_deletions,
-        system_updates,
-    })
+    (
+        new_nodes,
+        StateUpdates::from(LegacyStateUpdates {
+            partition_deletions: tracked.deleted_partitions,
+            system_updates,
+        }),
+    )
 }
 
 pub struct IterationCountedIter<'a, E> {

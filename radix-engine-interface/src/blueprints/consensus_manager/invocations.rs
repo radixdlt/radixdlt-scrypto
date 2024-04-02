@@ -1,13 +1,13 @@
 use crate::blueprints::component::*;
 use crate::blueprints::resource::*;
-use crate::*;
-use radix_engine_common::data::manifest::model::ManifestAddressReservation;
-use radix_engine_common::prelude::ManifestBucket;
-use radix_engine_common::prelude::CONSENSUS_MANAGER_PACKAGE;
-use radix_engine_common::time::{Instant, TimeComparisonOperator};
-use radix_engine_common::types::*;
-use radix_engine_interface::crypto::Secp256k1PublicKey;
-use radix_engine_interface::math::{traits::*, Decimal};
+use crate::internal_prelude::*;
+use radix_common::crypto::Secp256k1PublicKey;
+use radix_common::data::manifest::model::ManifestAddressReservation;
+use radix_common::math::{traits::*, Decimal};
+use radix_common::prelude::ManifestBucket;
+use radix_common::prelude::CONSENSUS_MANAGER_PACKAGE;
+use radix_common::time::{Instant, TimeComparisonOperator};
+use radix_common::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -15,8 +15,8 @@ use sbor::rust::vec::Vec;
 pub const CONSENSUS_MANAGER_BLUEPRINT: &str = "ConsensusManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";
 
-define_type_info_marker!(Some(CONSENSUS_MANAGER_PACKAGE), ConsensusManager);
-define_type_info_marker!(Some(CONSENSUS_MANAGER_PACKAGE), Validator);
+define_type_marker!(Some(CONSENSUS_MANAGER_PACKAGE), ConsensusManager);
+define_type_marker!(Some(CONSENSUS_MANAGER_PACKAGE), Validator);
 
 pub const CONSENSUS_MANAGER_CREATE_IDENT: &str = "create";
 
@@ -338,7 +338,7 @@ pub struct ConsensusManagerCreateValidatorManifestInput {
     pub xrd_payment: ManifestBucket,
 }
 
-pub type ConsensusManagerCreateValidatorOutput = (Global<ValidatorObjectTypeInfo>, Bucket, Bucket);
+pub type ConsensusManagerCreateValidatorOutput = (Global<ValidatorMarker>, Bucket, Bucket);
 
 pub const VALIDATOR_REGISTER_IDENT: &str = "register";
 

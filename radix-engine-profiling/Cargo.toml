@@ -1,18 +1,23 @@
 [package]
 name = "radix-engine-profiling"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 edition = "2021"
+description = "A library used by Radix Engine profiling."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false, optional = true }
-radix-engine-stores = { path = "../radix-engine-stores", default-features = false, optional = true }
-radix-engine-interface = { path = "../radix-engine-interface", default-features = false, optional = true }
-fixedstr = "0.2.9"
-shared_memory = { version = "0.12.4", optional = true }
-plotters = { version = "0.3.4", optional = true }
-linreg = { version = "0.2.0", optional = true }
-blake2 = { version = "0.10.6", default-features = false, optional = true }
-rand = { version = "0.8.5", optional = true }
+radix-substate-store-interface = { workspace = true, optional = true }
+radix-substate-store-impls = { workspace = true, optional = true }
+radix-common = { workspace = true, optional = true }
+radix-engine-interface = { workspace = true, optional = true }
+fixedstr = { workspace = true }
+shared_memory = { workspace = true, optional = true }
+plotters = { workspace = true, optional = true }
+linreg = { workspace = true, optional = true }
+blake2 = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
 
 [lib]
 doctest = false
@@ -20,7 +25,7 @@ bench = false
 
 [features]
 default = []
-resource_tracker = ["dep:shared_memory"]
-rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "radix-engine-stores/std", 
-           "radix-engine-store-interface/std", "radix-engine-interface/std"]
+resource_tracker = ["dep:shared_memory", "radix-common/resource_tracker"]
+rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "radix-substate-store-impls/std", 
+           "radix-substate-store-interface/std", "radix-common/std", "radix-engine-interface/std"]
 ram_metrics = []

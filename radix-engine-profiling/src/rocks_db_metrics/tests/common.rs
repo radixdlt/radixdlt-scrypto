@@ -1,7 +1,7 @@
 use super::super::*;
 use linreg::linear_regression_of;
 use plotters::prelude::*;
-use radix_engine_store_interface::{
+use radix_substate_store_interface::{
     db_key_mapper::*,
     interface::{
         CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey,

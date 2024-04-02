@@ -60,7 +60,7 @@ test_cli() {
     local clis="${1:-}"
     for c in $clis
     do
-        (cd simulator; bash $c)
+        (cd radix-clis; bash $c)
     done
 }
 

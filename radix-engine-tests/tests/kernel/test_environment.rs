@@ -1,8 +1,8 @@
 #![allow(clippy::type_complexity)]
 
-use native_sdk::resource::*;
-use radix_engine_queries::typed_substate_layout::two_resource_pool::*;
 use radix_engine_tests::common::*;
+use radix_native_sdk::resource::*;
+use radix_substate_store_queries::typed_substate_layout::two_resource_pool::*;
 use scrypto_test::prelude::*;
 
 #[test]
@@ -144,7 +144,7 @@ fn references_read_from_state_are_visible_in_tests() {
     let definition = manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
 
     let (radiswap_package, _) =
-        Package::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
+        PackageFactory::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
 
     let radiswap_component = env
         .call_function_typed::<_, ComponentAddress>(
@@ -202,7 +202,7 @@ fn references_read_from_state_are_visible_in_tests1() {
     let definition = manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
 
     let (radiswap_package, _) =
-        Package::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
+        PackageFactory::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
 
     let radiswap_component = env
         .call_function_typed::<_, ComponentAddress>(

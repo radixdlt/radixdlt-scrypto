@@ -12,6 +12,7 @@ use crate::blueprints::transaction_tracker::{
 };
 use crate::errors::*;
 use crate::internal_prelude::KeyValueEntrySubstateV1;
+use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
@@ -27,16 +28,15 @@ use crate::system::system_substates::{FieldSubstate, LockStatus};
 use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, Track, TrackFinalizeError};
 use crate::transaction::*;
-use crate::types::*;
-use radix_engine_common::constants::*;
+use radix_common::constants::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
-use transaction::model::*;
+use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
+use radix_transactions::model::*;
 
 /// Protocol-defined costing parameters
-#[derive(Debug, Copy, Clone, ScryptoSbor)]
+#[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct CostingParameters {
     /// The price of execution cost unit in XRD.
     pub execution_cost_unit_price: Decimal,
@@ -88,8 +88,13 @@ impl Default for CostingParameters {
 }
 
 impl CostingParameters {
-    pub fn with_execution_cost_unit_limit(mut self, execution_cost_unit_limit: u32) -> Self {
-        self.execution_cost_unit_limit = execution_cost_unit_limit;
+    pub fn with_execution_cost_unit_limit(mut self, limit: u32) -> Self {
+        self.execution_cost_unit_limit = limit;
+        self
+    }
+
+    pub fn with_finalization_cost_unit_limit(mut self, limit: u32) -> Self {
+        self.finalization_cost_unit_limit = limit;
         self
     }
 }
@@ -176,6 +181,14 @@ impl ExecutionConfig {
     pub fn for_preview(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_preview(),
+            enable_cost_breakdown: true,
+            ..Self::default(network_definition)
+        }
+    }
+
+    pub fn for_preview_no_auth(network_definition: NetworkDefinition) -> Self {
+        Self {
+            enabled_modules: EnabledModules::for_preview_no_auth(),
             enable_cost_breakdown: true,
             ..Self::default(network_definition)
         }
@@ -340,8 +353,9 @@ where
                 // is only enabled when compiling with the standard library since the panic catching
                 // machinery and `SystemPanic` errors are only implemented in `std`.
                 #[cfg(feature = "std")]
-                if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) =
-                    interpretation_result
+                if let Err(TransactionExecutionError::RuntimeError(RuntimeError::SystemError(
+                    SystemError::SystemPanic(..),
+                ))) = interpretation_result
                 {
                     panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{interpretation_result:?}\"")
                 }
@@ -397,7 +411,7 @@ where
                             execution_trace_module.finalize(&paying_vaults, is_success);
 
                         // Finalize track
-                        let (tracked_nodes, deleted_partitions) = {
+                        let tracked_substates = {
                             match track.finalize() {
                                 Ok(result) => result,
                                 Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
@@ -406,33 +420,32 @@ where
                             }
                         };
 
+                        // Generate state updates from tracked substates
+                        // Note that this process will prune invalid reads
+                        let (new_node_ids, state_updates) =
+                            to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
+
+                        // Summarizes state updates
                         let system_structure = SystemStructure::resolve(
                             self.substate_db,
-                            &tracked_nodes,
+                            &state_updates,
                             &application_events,
                         );
-
                         let state_update_summary =
-                            StateUpdateSummary::new(self.substate_db, &tracked_nodes);
-
-                        let system_reader = SystemDatabaseReader::new_with_overlay(
-                            self.substate_db,
-                            &tracked_nodes,
-                        );
+                            StateUpdateSummary::new(self.substate_db, new_node_ids, &state_updates);
 
                         // Resource reconciliation does not currently work in preview mode
                         if executable.costing_parameters().free_credit_in_xrd.is_zero() {
+                            let system_reader = SystemDatabaseReader::new_with_overlay(
+                                self.substate_db,
+                                &state_updates,
+                            );
                             reconcile_resource_state_and_events(
                                 &state_update_summary,
                                 &application_events,
                                 system_reader,
                             );
                         }
-
-                        let state_updates = to_state_updates::<SpreadPrefixKeyMapper>(
-                            tracked_nodes,
-                            deleted_partitions,
-                        );
 
                         (
                             fee_reserve_finalization.into(),
@@ -610,7 +623,7 @@ where
         fee_table: FeeTable,
         init: T::Init,
     ) -> (
-        Result<Vec<InstructionOutput>, RuntimeError>,
+        Result<Vec<InstructionOutput>, TransactionExecutionError>,
         (
             CostingModule,
             TransactionRuntimeModule,
@@ -645,7 +658,7 @@ where
         };
 
         let interpretation_result = kernel_boot
-            .call_transaction_processor(
+            .execute(
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
                 executable.references(),
@@ -660,38 +673,70 @@ where
                 /* finalization costs: computation on Node side */
                 let info = track.get_commit_info();
                 for store_commit in &info {
-                    system.modules.apply_finalization_cost(
-                        FinalizationCostingEntry::CommitStateUpdates { store_commit },
-                    )?;
+                    system
+                        .modules
+                        .apply_finalization_cost(FinalizationCostingEntry::CommitStateUpdates {
+                            store_commit,
+                        })
+                        .map_err(|e| {
+                            TransactionExecutionError::RuntimeError(
+                                RuntimeError::FinalizationCostingError(e),
+                            )
+                        })?;
                 }
                 system
                     .modules
                     .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
                         events: &system.modules.events().clone(),
+                    })
+                    .map_err(|e| {
+                        TransactionExecutionError::RuntimeError(
+                            RuntimeError::FinalizationCostingError(e),
+                        )
                     })?;
                 system
                     .modules
                     .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
                         logs: &system.modules.logs().clone(),
+                    })
+                    .map_err(|e| {
+                        TransactionExecutionError::RuntimeError(
+                            RuntimeError::FinalizationCostingError(e),
+                        )
                     })?;
 
                 /* state storage costs */
                 for store_commit in &info {
                     system
                         .modules
-                        .apply_storage_cost(StorageType::State, store_commit.len_increase())?;
+                        .apply_storage_cost(StorageType::State, store_commit.len_increase())
+                        .map_err(|e| {
+                            TransactionExecutionError::RuntimeError(
+                                RuntimeError::FinalizationCostingError(e),
+                            )
+                        })?;
                 }
 
                 /* archive storage costs */
                 let total_event_size = system.modules.events().iter().map(|x| x.len()).sum();
                 system
                     .modules
-                    .apply_storage_cost(StorageType::Archive, total_event_size)?;
+                    .apply_storage_cost(StorageType::Archive, total_event_size)
+                    .map_err(|e| {
+                        TransactionExecutionError::RuntimeError(
+                            RuntimeError::FinalizationCostingError(e),
+                        )
+                    })?;
 
                 let total_log_size = system.modules.logs().iter().map(|x| x.1.len()).sum();
                 system
                     .modules
-                    .apply_storage_cost(StorageType::Archive, total_log_size)?;
+                    .apply_storage_cost(StorageType::Archive, total_log_size)
+                    .map_err(|e| {
+                        TransactionExecutionError::RuntimeError(
+                            RuntimeError::FinalizationCostingError(e),
+                        )
+                    })?;
 
                 Ok(x)
             })
@@ -714,7 +759,7 @@ where
     }
 
     fn determine_result_type(
-        mut interpretation_result: Result<Vec<InstructionOutput>, RuntimeError>,
+        mut interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
         fee_reserve: &mut SystemLoanFeeReserve,
     ) -> TransactionResultType {
         // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before
@@ -724,35 +769,41 @@ where
         // Do another `repay` try during finalization to remedy it.
         if let Err(err) = fee_reserve.repay_all() {
             if interpretation_result.is_ok() {
-                interpretation_result = Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::CostingError(CostingError::FeeReserveError(err)),
+                interpretation_result = Err(TransactionExecutionError::RuntimeError(
+                    RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                        CostingError::FeeReserveError(err),
+                    )),
                 ));
             }
         }
 
-        // First - check for required rejections from explicit invoke result errors
-        match &interpretation_result {
-            Err(err) => {
-                if let Some(abort_reason) = err.abortion() {
-                    return TransactionResultType::Abort(abort_reason.clone());
+        match interpretation_result {
+            Ok(output) => {
+                if fee_reserve.fully_repaid() {
+                    TransactionResultType::Commit(Ok(output))
+                } else {
+                    panic!("Manifest interpretation result was okay, but fee reserve wasn't fully repaid.")
                 }
             }
-            _ => {}
-        }
-
-        // Check for errors before loan is repaid - in which case, we also reject
-        if !fee_reserve.fully_repaid() {
-            return match interpretation_result {
-                Ok(..) => {
-                    TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
+            Err(e) => match e {
+                TransactionExecutionError::BootloadingError(e) => {
+                    TransactionResultType::Reject(RejectionReason::BootloadingError(e))
                 }
-                Err(error) => TransactionResultType::Reject(
-                    RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(error),
-                ),
-            };
+                TransactionExecutionError::RuntimeError(e) => {
+                    if let Some(abort_reason) = e.abortion() {
+                        TransactionResultType::Abort(abort_reason.clone())
+                    } else {
+                        if fee_reserve.fully_repaid() {
+                            TransactionResultType::Commit(Err(e))
+                        } else {
+                            TransactionResultType::Reject(
+                                RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(e),
+                            )
+                        }
+                    }
+                }
+            },
         }
-
-        TransactionResultType::Commit(interpretation_result)
     }
 
     fn finalize_fees(

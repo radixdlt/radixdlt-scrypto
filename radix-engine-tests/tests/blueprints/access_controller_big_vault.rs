@@ -1,26 +1,27 @@
+use radix_common::prelude::*;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::{TestRunner, TestRunnerBuilder};
+use radix_engine_interface::prelude::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_transactions::prelude::*;
+use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder};
 use std::iter;
-use transaction::prelude::*;
 
 #[test]
 pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
     // Arrange
-    let (mut test_runner, access_controller) = arrange_access_controller_big_vault();
+    let (mut ledger, access_controller) = arrange_access_controller_big_vault();
 
     // Act
-    let (key, _, account) = test_runner.new_account(false);
-    let receipt = test_runner.execute_manifest(
+    let (key, _, account) = ledger.new_account(false);
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_method(
                 access_controller,
                 ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
@@ -43,12 +44,12 @@ pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
 #[test]
 pub fn should_be_able_to_create_proof_from_maximum_vault_access_controller() {
     // Arrange
-    let (mut test_runner, access_controller) = arrange_access_controller_big_vault();
+    let (mut ledger, access_controller) = arrange_access_controller_big_vault();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_method(
                 access_controller,
                 ACCESS_CONTROLLER_CREATE_PROOF_IDENT,
@@ -130,14 +131,14 @@ impl VmInvoke for TestInvoke {
 }
 
 fn arrange_access_controller_big_vault() -> (
-    TestRunner<OverridePackageCode<TestInvoke>, InMemorySubstateDatabase>,
+    LedgerSimulator<OverridePackageCode<TestInvoke>, InMemorySubstateDatabase>,
     ComponentAddress,
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -150,9 +151,9 @@ fn arrange_access_controller_big_vault() -> (
         // Start by incrementing non fungible bucket size by 100 until failure
         let mut bucket_size = 100usize;
         loop {
-            let receipt = test_runner.execute_manifest(
+            let receipt = ledger.execute_manifest(
                 ManifestBuilder::new()
-                    .lock_fee(test_runner.faucet_component(), 500u32)
+                    .lock_fee(ledger.faucet_component(), 500u32)
                     .call_function(
                         package_address,
                         BLUEPRINT_NAME,
@@ -172,9 +173,9 @@ fn arrange_access_controller_big_vault() -> (
 
         // Decrement failure bucket size by 1 until success
         loop {
-            let receipt = test_runner.execute_manifest(
+            let receipt = ledger.execute_manifest(
                 ManifestBuilder::new()
-                    .lock_fee(test_runner.faucet_component(), 500u32)
+                    .lock_fee(ledger.faucet_component(), 500u32)
                     .call_function(
                         package_address,
                         BLUEPRINT_NAME,
@@ -188,7 +189,7 @@ fn arrange_access_controller_big_vault() -> (
             if commit.outcome.is_success() {
                 let access_controller =
                     receipt.expect_commit_success().new_component_addresses()[0];
-                return (test_runner, access_controller);
+                return (ledger, access_controller);
             }
             bucket_size -= 1;
         }

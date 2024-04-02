@@ -1,0 +1,70 @@
+[package]
+name = "radix-common"
+version = "1.2.0-dev"
+edition = "2021"
+description = "A library of common types and functions shared by all layers of the Radix stack."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+sbor = { workspace = true }
+radix-rust = { workspace = true }
+radix-sbor-derive = { workspace = true }
+serde = { workspace = true, optional = true, features=["derive"] }
+hex = { workspace = true }
+num-traits = { workspace = true }
+num-integer = { workspace = true }
+num-bigint = { workspace = true }
+bnum = { workspace = true, features = ["numtraits"] }
+bech32 = { workspace = true }
+paste = { workspace = true }
+blake2 = { workspace = true }
+lazy_static = { workspace = true }
+strum = { workspace = true, features = ["derive"] }
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+# This is for math benchmarks for comparison purposes.
+# Fast alternative to bigint but unfortunately not cross-compiled to WASM
+rug = { workspace = true, optional = true }
+ethnum = {workspace = true, optional = true }
+ed25519-dalek = { workspace = true, features = ["u64_backend"] }
+secp256k1 = { workspace = true, features = ["recovery"], optional = true }
+blst = { workspace = true, optional = false }
+sha3 = { workspace = true, optional = false }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+criterion = { workspace = true, features = ["html_reports"] }
+
+[[bench]]
+name = "math"
+harness = false
+
+[[bench]]
+name = "schema"
+harness = false
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+serde = ["dep:serde", "radix-rust/serde", "sbor/serde", "hex/serde"]
+std = ["hex/std", "sbor/std", "radix-rust/std", "radix-sbor-derive/std", "serde_json/std", "ed25519-dalek/std", "secp256k1?/std", "blake2/std", "sha3/std" ]
+alloc = ["hex/alloc", "sbor/alloc", "radix-rust/alloc", "radix-sbor-derive/alloc", "serde_json/alloc", "ed25519-dalek/alloc", "secp256k1?/alloc", "lazy_static/spin_no_std", "blst/no-threads" ]
+
+# By default, secp256k1 signing and validation is not enabled to mimimize code size
+# If your project requires these functionalities, enable this feature 
+secp256k1_sign_and_validate = ["secp256k1"]
+
+# This flag is set by fuzz-tests framework and it is used to disable/enable some optional features
+# to let fuzzing work
+fuzzing = ["arbitrary", "serde", "bnum/arbitrary", "bnum/serde", "sbor/fuzzing", "radix-rust/fuzzing"]
+
+resource_tracker = []
+full_math_benches = [ "dep:rug", "dep:ethnum"]
+
+coverage = []
+
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+[lib]
+doctest = false
+bench = false

@@ -7,20 +7,19 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_init::type_info_partition;
 use crate::system::type_info::TypeInfoBlueprint;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::types::*;
-use native_sdk::resource::NativeFungibleBucket;
-use native_sdk::resource::NativeNonFungibleBucket;
-use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
-use native_sdk::runtime::LocalAuthZone;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
+use radix_native_sdk::resource::NativeFungibleBucket;
+use radix_native_sdk::resource::NativeNonFungibleBucket;
+use radix_native_sdk::resource::{NativeBucket, NativeProof, Worktop};
+use radix_native_sdk::runtime::LocalAuthZone;
+use radix_transactions::data::transform;
+use radix_transactions::data::TransformHandler;
+use radix_transactions::model::*;
+use radix_transactions::validation::*;
 use sbor::rust::prelude::*;
-use transaction::data::transform;
-use transaction::data::TransformHandler;
-use transaction::model::*;
-use transaction::validation::*;
 
 pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 1024 * 1024;
 
@@ -566,14 +565,14 @@ impl TransactionProcessor {
     }
 
     fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
-        let real_id = self
-            .proof_mapping
-            .remove(proof_id)
-            .ok_or(RuntimeError::ApplicationError(
-                ApplicationError::TransactionProcessorError(
-                    TransactionProcessorError::ProofNotFound(proof_id.0),
-                ),
-            ))?;
+        let real_id =
+            self.proof_mapping
+                .swap_remove(proof_id)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ProofNotFound(proof_id.0),
+                    ),
+                ))?;
         Ok(Proof(Own(real_id)))
     }
 

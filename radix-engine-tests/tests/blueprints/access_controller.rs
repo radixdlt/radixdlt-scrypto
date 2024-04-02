@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::ApplicationError;
@@ -5,21 +6,21 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemModuleError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
-use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
-use transaction::prelude::*;
+use radix_engine_interface::prelude::*;
+use radix_transactions::prelude::*;
+use scrypto_test::prelude::{CustomGenesis, DefaultLedgerSimulator, LedgerSimulatorBuilder};
 
 #[test]
 pub fn creating_an_access_controller_succeeds() {
-    AccessControllerTestRunner::new(Some(10));
+    AccessControllerLedgerSimulator::new(Some(10));
 }
 
 #[test]
 pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner.initiate_recovery(
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger.initiate_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
@@ -28,7 +29,7 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     );
 
     // Act
-    let receipt = test_runner.quick_confirm_recovery(
+    let receipt = ledger.quick_confirm_recovery(
         Role::Recovery,
         Role::Recovery,
         rule!(require(XRD)),
@@ -44,8 +45,8 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
 #[test]
 pub fn quick_confirm_non_existent_recovery_fails() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner.initiate_recovery(
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger.initiate_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
@@ -54,7 +55,7 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     );
 
     // Act
-    let receipt = test_runner.quick_confirm_recovery(
+    let receipt = ledger.quick_confirm_recovery(
         Role::Primary,
         Role::Recovery,
         rule!(require(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)),
@@ -70,8 +71,8 @@ pub fn quick_confirm_non_existent_recovery_fails() {
 #[test]
 pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner.initiate_recovery(
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger.initiate_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
@@ -80,7 +81,7 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
     );
 
     // Act
-    let receipt = test_runner.initiate_recovery(
+    let receipt = ledger.initiate_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
@@ -95,18 +96,18 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
 #[test]
 pub fn timed_confirm_recovery_before_delay_passes_fails() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner.initiate_recovery(
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger.initiate_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
         rule!(require(XRD)),
         Some(10),
     );
-    test_runner.set_current_minute(9);
+    ledger.set_current_minute(9);
 
     // Act
-    let receipt = test_runner.timed_confirm_recovery(
+    let receipt = ledger.timed_confirm_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
@@ -121,18 +122,18 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
 #[test]
 pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner.initiate_recovery(
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger.initiate_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
         rule!(require(XRD)),
         Some(10),
     );
-    test_runner.set_current_minute(10);
+    ledger.set_current_minute(10);
 
     // Act
-    let receipt = test_runner.timed_confirm_recovery(
+    let receipt = ledger.timed_confirm_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
@@ -147,18 +148,18 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
 #[test]
 pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(None);
-    test_runner.initiate_recovery(
+    let mut ledger = AccessControllerLedgerSimulator::new(None);
+    ledger.initiate_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
         rule!(require(XRD)),
         Some(10),
     );
-    test_runner.set_current_minute(10);
+    ledger.set_current_minute(10);
 
     // Act
-    let receipt = test_runner.timed_confirm_recovery(
+    let receipt = ledger.timed_confirm_recovery(
         Role::Recovery,
         rule!(require(XRD)),
         rule!(require(XRD)),
@@ -173,24 +174,24 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
 #[test]
 pub fn primary_is_unlocked_after_a_successful_recovery() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner.initiate_recovery(
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger.initiate_recovery(
         Role::Recovery,
-        rule!(require(test_runner.primary_role_badge)),
+        rule!(require(ledger.primary_role_badge)),
         rule!(require(XRD)),
         rule!(require(XRD)),
         Some(10),
     );
-    test_runner
+    ledger
         .lock_primary_role(Role::Recovery)
         .expect_commit_success();
 
-    test_runner.set_current_minute(10);
+    ledger.set_current_minute(10);
 
-    test_runner
+    ledger
         .timed_confirm_recovery(
             Role::Recovery,
-            rule!(require(test_runner.primary_role_badge)),
+            rule!(require(ledger.primary_role_badge)),
             rule!(require(XRD)),
             rule!(require(XRD)),
             Some(10),
@@ -198,7 +199,7 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
         .expect_commit_success();
 
     // Act
-    let receipt = test_runner.create_proof(Role::Primary);
+    let receipt = ledger.create_proof(Role::Primary);
 
     // Assert
     receipt.expect_commit_success();
@@ -207,11 +208,12 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
 #[test]
 pub fn stop_timed_recovery_with_no_access_fails() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(
-            test_runner.access_controller_address,
+            ledger.access_controller_address,
             "stop_timed_recovery",
             AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
@@ -225,7 +227,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest);
+    let receipt = ledger.execute_manifest(manifest);
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error)
@@ -234,8 +236,8 @@ pub fn stop_timed_recovery_with_no_access_fails() {
 #[test]
 pub fn cancel_recovery() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger
         .initiate_recovery(
             Role::Primary,
             AccessRule::AllowAll,
@@ -246,7 +248,7 @@ pub fn cancel_recovery() {
         .expect_commit_success();
 
     // Act
-    let receipt = test_runner.cancel_recovery_attempt(Role::Primary);
+    let receipt = ledger.cancel_recovery_attempt(Role::Primary);
 
     //Assert
     receipt.expect_commit_success();
@@ -273,8 +275,8 @@ pub fn quick_confirm_semantics_are_correct() {
     ];
 
     for (proposer, role, error_assertion_function) in test_vectors {
-        let mut test_runner = AccessControllerTestRunner::new(Some(10));
-        test_runner
+        let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+        ledger
             .initiate_recovery(
                 proposer.into(),
                 rule!(require(XRD)),
@@ -285,7 +287,7 @@ pub fn quick_confirm_semantics_are_correct() {
             .expect_commit_success();
 
         // Act
-        let receipt = test_runner.quick_confirm_recovery(
+        let receipt = ledger.quick_confirm_recovery(
             role,
             proposer.into(),
             rule!(require(XRD)),
@@ -308,10 +310,10 @@ pub fn quick_confirm_semantics_are_correct() {
 pub fn primary_or_recovery_can_initiate_a_badge_withdraw_attempt() {
     // Arrange
     for role in [Role::Primary, Role::Recovery] {
-        let mut test_runner = AccessControllerTestRunner::new(Some(10));
+        let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
 
         // Act
-        let receipt = test_runner.initiate_badge_withdraw_attempt(role, true);
+        let receipt = ledger.initiate_badge_withdraw_attempt(role, true);
 
         // Assert
         receipt.expect_commit_success();
@@ -322,10 +324,10 @@ pub fn primary_or_recovery_can_initiate_a_badge_withdraw_attempt() {
 pub fn cant_initiate_a_badge_withdraw_attempt_without_valid_proofs() {
     // Arrange
     for role in [Role::Primary, Role::Recovery] {
-        let mut test_runner = AccessControllerTestRunner::new(Some(10));
+        let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
 
         // Act
-        let receipt = test_runner.initiate_badge_withdraw_attempt(role, false);
+        let receipt = ledger.initiate_badge_withdraw_attempt(role, false);
 
         // Assert
         receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -339,18 +341,18 @@ pub fn confirmation_role_cant_initiate_a_badge_withdraw_attempt_as_primary_or_re
         ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT,
         ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT,
     ] {
-        let mut test_runner = AccessControllerTestRunner::new(Some(10));
+        let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
 
         // Act
-        let manifest = test_runner
+        let manifest = ledger
             .manifest_builder(Role::Confirmation)
             .call_method(
-                test_runner.access_controller_address,
+                ledger.access_controller_address,
                 ident,
                 AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput,
             )
             .build();
-        let receipt = test_runner.execute_manifest(manifest);
+        let receipt = ledger.execute_manifest(manifest);
 
         // Assert
         receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -386,13 +388,13 @@ pub fn badge_withdraw_only_succeeds_when_confirmation_is_performed_by_allowed_ro
     ];
 
     for (proposer, confirmor, expected_error) in test_vectors {
-        let mut test_runner = AccessControllerTestRunner::new(Some(10));
-        test_runner
+        let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+        ledger
             .initiate_badge_withdraw_attempt(proposer, true)
             .expect_commit_success();
 
         // Act
-        let receipt = test_runner.quick_confirm_badge_withdraw_attempt(confirmor, proposer);
+        let receipt = ledger.quick_confirm_badge_withdraw_attempt(confirmor, proposer);
 
         // Assert
         if let Some(error_check_fn) = expected_error {
@@ -406,14 +408,14 @@ pub fn badge_withdraw_only_succeeds_when_confirmation_is_performed_by_allowed_ro
 #[test]
 pub fn primary_can_cancel_their_badge_withdraw_attempt() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger
         .initiate_badge_withdraw_attempt(Role::Primary, true)
         .expect_commit_success();
 
     {
         // Act
-        let receipt = test_runner.cancel_badge_withdraw_attempt(Role::Primary);
+        let receipt = ledger.cancel_badge_withdraw_attempt(Role::Primary);
 
         // Assert
         receipt.expect_commit_success();
@@ -421,8 +423,7 @@ pub fn primary_can_cancel_their_badge_withdraw_attempt() {
 
     {
         // Act
-        let receipt =
-            test_runner.quick_confirm_badge_withdraw_attempt(Role::Recovery, Role::Primary);
+        let receipt = ledger.quick_confirm_badge_withdraw_attempt(Role::Recovery, Role::Primary);
 
         // Assert
         receipt.expect_specific_failure(is_no_badge_withdraw_attempts_exists_for_proposer_error);
@@ -432,14 +433,14 @@ pub fn primary_can_cancel_their_badge_withdraw_attempt() {
 #[test]
 pub fn recovery_can_cancel_their_badge_withdraw_attempt() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(10));
+    ledger
         .initiate_badge_withdraw_attempt(Role::Recovery, true)
         .expect_commit_success();
 
     {
         // Act
-        let receipt = test_runner.cancel_badge_withdraw_attempt(Role::Recovery);
+        let receipt = ledger.cancel_badge_withdraw_attempt(Role::Recovery);
 
         // Assert
         receipt.expect_commit_success();
@@ -448,7 +449,7 @@ pub fn recovery_can_cancel_their_badge_withdraw_attempt() {
     {
         // Act
         let receipt =
-            test_runner.quick_confirm_badge_withdraw_attempt(Role::Confirmation, Role::Recovery);
+            ledger.quick_confirm_badge_withdraw_attempt(Role::Confirmation, Role::Recovery);
 
         // Assert
         receipt.expect_specific_failure(is_no_badge_withdraw_attempts_exists_for_proposer_error);
@@ -458,13 +459,13 @@ pub fn recovery_can_cancel_their_badge_withdraw_attempt() {
 #[test]
 pub fn minting_of_recovery_badges_succeeds_for_primary_role() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(100));
 
     let mut non_fungible_local_ids = index_set_new();
     non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
 
     // Act
-    let receipt = test_runner.mint_recovery_badges(Role::Primary, non_fungible_local_ids);
+    let receipt = ledger.mint_recovery_badges(Role::Primary, non_fungible_local_ids);
 
     // Assert
     receipt.expect_commit_success();
@@ -473,13 +474,13 @@ pub fn minting_of_recovery_badges_succeeds_for_primary_role() {
 #[test]
 pub fn minting_of_recovery_badges_succeeds_for_recovery_role() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(100));
 
     let mut non_fungible_local_ids = index_set_new();
     non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
 
     // Act
-    let receipt = test_runner.mint_recovery_badges(Role::Recovery, non_fungible_local_ids);
+    let receipt = ledger.mint_recovery_badges(Role::Recovery, non_fungible_local_ids);
 
     // Assert
     receipt.expect_commit_success();
@@ -488,13 +489,13 @@ pub fn minting_of_recovery_badges_succeeds_for_recovery_role() {
 #[test]
 pub fn minting_of_recovery_badges_fails_for_confirmation_role() {
     // Arrange
-    let mut test_runner = AccessControllerTestRunner::new(Some(100));
+    let mut ledger = AccessControllerLedgerSimulator::new(Some(100));
 
     let mut non_fungible_local_ids = index_set_new();
     non_fungible_local_ids.insert(NonFungibleLocalId::integer(1));
 
     // Act
-    let receipt = test_runner.mint_recovery_badges(Role::Confirmation, non_fungible_local_ids);
+    let receipt = ledger.mint_recovery_badges(Role::Confirmation, non_fungible_local_ids);
 
     // Assert
     receipt.expect_specific_failure(is_auth_unauthorized_error);
@@ -509,8 +510,8 @@ mod no_recovery_with_primary_unlocked {
 
     const TIMED_RECOVERY_DELAY_IN_MINUTES: Option<u32> = Some(10);
 
-    fn setup_environment() -> AccessControllerTestRunner {
-        AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_MINUTES)
+    fn setup_environment() -> AccessControllerLedgerSimulator {
+        AccessControllerLedgerSimulator::new(TIMED_RECOVERY_DELAY_IN_MINUTES)
     }
 
     #[test]
@@ -523,10 +524,10 @@ mod no_recovery_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.create_proof(role);
+            let receipt = ledger.create_proof(role);
 
             // Assert
             match error_assertion_function {
@@ -545,10 +546,10 @@ mod no_recovery_with_primary_unlocked {
             [(Role::Primary, None), (Role::Recovery, None)];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.initiate_recovery(
+            let receipt = ledger.initiate_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -576,10 +577,10 @@ mod no_recovery_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.lock_primary_role(role);
+            let receipt = ledger.lock_primary_role(role);
 
             // Assert
             match error_assertion_function {
@@ -601,10 +602,10 @@ mod no_recovery_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.unlock_primary_role(role);
+            let receipt = ledger.unlock_primary_role(role);
 
             // Assert
             match error_assertion_function {
@@ -638,10 +639,10 @@ mod no_recovery_with_primary_unlocked {
         ];
 
         for (role, proposer, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.quick_confirm_recovery(
+            let receipt = ledger.quick_confirm_recovery(
                 role,
                 proposer,
                 rule!(require(XRD)),
@@ -669,10 +670,10 @@ mod no_recovery_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.timed_confirm_recovery(
+            let receipt = ledger.timed_confirm_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -705,10 +706,10 @@ mod no_recovery_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.cancel_recovery_attempt(role);
+            let receipt = ledger.cancel_recovery_attempt(role);
 
             // Assert
             match error_assertion_function {
@@ -730,10 +731,10 @@ mod no_recovery_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.stop_timed_recovery(
+            let receipt = ledger.stop_timed_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -757,12 +758,12 @@ mod no_recovery_with_primary_locked {
 
     const TIMED_RECOVERY_DELAY_IN_MINUTES: Option<u32> = Some(10);
 
-    fn setup_environment() -> AccessControllerTestRunner {
-        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_MINUTES);
-        test_runner
+    fn setup_environment() -> AccessControllerLedgerSimulator {
+        let mut ledger = AccessControllerLedgerSimulator::new(TIMED_RECOVERY_DELAY_IN_MINUTES);
+        ledger
             .lock_primary_role(Role::Recovery)
             .expect_commit_success();
-        test_runner
+        ledger
     }
 
     #[test]
@@ -778,10 +779,10 @@ mod no_recovery_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.create_proof(role);
+            let receipt = ledger.create_proof(role);
 
             // Assert
             match error_assertion_function {
@@ -800,10 +801,10 @@ mod no_recovery_with_primary_locked {
             [(Role::Primary, None), (Role::Recovery, None)];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.initiate_recovery(
+            let receipt = ledger.initiate_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -831,10 +832,10 @@ mod no_recovery_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.lock_primary_role(role);
+            let receipt = ledger.lock_primary_role(role);
 
             // Assert
             match error_assertion_function {
@@ -856,10 +857,10 @@ mod no_recovery_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.unlock_primary_role(role);
+            let receipt = ledger.unlock_primary_role(role);
 
             // Assert
             match error_assertion_function {
@@ -893,10 +894,10 @@ mod no_recovery_with_primary_locked {
         ];
 
         for (role, proposer, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.quick_confirm_recovery(
+            let receipt = ledger.quick_confirm_recovery(
                 role,
                 proposer,
                 rule!(require(XRD)),
@@ -924,10 +925,10 @@ mod no_recovery_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.timed_confirm_recovery(
+            let receipt = ledger.timed_confirm_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -960,10 +961,10 @@ mod no_recovery_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.cancel_recovery_attempt(role);
+            let receipt = ledger.cancel_recovery_attempt(role);
 
             // Assert
             match error_assertion_function {
@@ -985,10 +986,10 @@ mod no_recovery_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.stop_timed_recovery(
+            let receipt = ledger.stop_timed_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -1012,9 +1013,9 @@ mod recovery_mode_with_primary_unlocked {
 
     const TIMED_RECOVERY_DELAY_IN_MINUTES: Option<u32> = Some(10);
 
-    fn setup_environment() -> AccessControllerTestRunner {
-        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_MINUTES);
-        test_runner
+    fn setup_environment() -> AccessControllerLedgerSimulator {
+        let mut ledger = AccessControllerLedgerSimulator::new(TIMED_RECOVERY_DELAY_IN_MINUTES);
+        ledger
             .initiate_recovery(
                 Role::Recovery,
                 rule!(require(XRD)),
@@ -1023,7 +1024,7 @@ mod recovery_mode_with_primary_unlocked {
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             )
             .expect_commit_success();
-        test_runner
+        ledger
     }
 
     #[test]
@@ -1036,10 +1037,10 @@ mod recovery_mode_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.create_proof(role);
+            let receipt = ledger.create_proof(role);
 
             // Assert
             match error_assertion_function {
@@ -1063,10 +1064,10 @@ mod recovery_mode_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.initiate_recovery(
+            let receipt = ledger.initiate_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -1094,10 +1095,10 @@ mod recovery_mode_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.lock_primary_role(role);
+            let receipt = ledger.lock_primary_role(role);
 
             // Assert
             match error_assertion_function {
@@ -1119,10 +1120,10 @@ mod recovery_mode_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.unlock_primary_role(role);
+            let receipt = ledger.unlock_primary_role(role);
 
             // Assert
             match error_assertion_function {
@@ -1156,10 +1157,10 @@ mod recovery_mode_with_primary_unlocked {
         ];
 
         for (role, proposer, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.quick_confirm_recovery(
+            let receipt = ledger.quick_confirm_recovery(
                 role,
                 proposer,
                 rule!(require(XRD)),
@@ -1193,10 +1194,10 @@ mod recovery_mode_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.timed_confirm_recovery(
+            let receipt = ledger.timed_confirm_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -1226,10 +1227,10 @@ mod recovery_mode_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.cancel_recovery_attempt(role);
+            let receipt = ledger.cancel_recovery_attempt(role);
 
             // Assert
             match error_assertion_function {
@@ -1251,10 +1252,10 @@ mod recovery_mode_with_primary_unlocked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.stop_timed_recovery(
+            let receipt = ledger.stop_timed_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -1278,12 +1279,12 @@ mod recovery_mode_with_primary_locked {
 
     const TIMED_RECOVERY_DELAY_IN_MINUTES: Option<u32> = Some(10);
 
-    fn setup_environment() -> AccessControllerTestRunner {
-        let mut test_runner = AccessControllerTestRunner::new(TIMED_RECOVERY_DELAY_IN_MINUTES);
-        test_runner
+    fn setup_environment() -> AccessControllerLedgerSimulator {
+        let mut ledger = AccessControllerLedgerSimulator::new(TIMED_RECOVERY_DELAY_IN_MINUTES);
+        ledger
             .lock_primary_role(Role::Recovery)
             .expect_commit_success();
-        test_runner
+        ledger
             .initiate_recovery(
                 Role::Recovery,
                 rule!(require(XRD)),
@@ -1292,7 +1293,7 @@ mod recovery_mode_with_primary_locked {
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             )
             .expect_commit_success();
-        test_runner
+        ledger
     }
 
     #[test]
@@ -1308,10 +1309,10 @@ mod recovery_mode_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.create_proof(role);
+            let receipt = ledger.create_proof(role);
 
             // Assert
             match error_assertion_function {
@@ -1335,10 +1336,10 @@ mod recovery_mode_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.initiate_recovery(
+            let receipt = ledger.initiate_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -1366,10 +1367,10 @@ mod recovery_mode_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.lock_primary_role(role);
+            let receipt = ledger.lock_primary_role(role);
 
             // Assert
             match error_assertion_function {
@@ -1391,10 +1392,10 @@ mod recovery_mode_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.unlock_primary_role(role);
+            let receipt = ledger.unlock_primary_role(role);
 
             // Assert
             match error_assertion_function {
@@ -1428,10 +1429,10 @@ mod recovery_mode_with_primary_locked {
         ];
 
         for (role, proposer, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.quick_confirm_recovery(
+            let receipt = ledger.quick_confirm_recovery(
                 role,
                 proposer,
                 rule!(require(XRD)),
@@ -1465,10 +1466,10 @@ mod recovery_mode_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.timed_confirm_recovery(
+            let receipt = ledger.timed_confirm_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -1498,10 +1499,10 @@ mod recovery_mode_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.cancel_recovery_attempt(role);
+            let receipt = ledger.cancel_recovery_attempt(role);
 
             // Assert
             match error_assertion_function {
@@ -1523,10 +1524,10 @@ mod recovery_mode_with_primary_locked {
         ];
 
         for (role, error_assertion_function) in test_vectors {
-            let mut test_runner = setup_environment();
+            let mut ledger = setup_environment();
 
             // Act
-            let receipt = test_runner.stop_timed_recovery(
+            let receipt = ledger.stop_timed_recovery(
                 role,
                 rule!(require(XRD)),
                 rule!(require(XRD)),
@@ -1633,8 +1634,8 @@ fn is_drop_non_empty_bucket_error(error: &RuntimeError) -> bool {
 }
 
 #[allow(dead_code)]
-struct AccessControllerTestRunner {
-    pub test_runner: DefaultTestRunner,
+struct AccessControllerLedgerSimulator {
+    pub ledger: DefaultLedgerSimulator,
 
     pub account: (ComponentAddress, PublicKey),
 
@@ -1647,10 +1648,10 @@ struct AccessControllerTestRunner {
 }
 
 #[allow(dead_code)]
-impl AccessControllerTestRunner {
+impl AccessControllerLedgerSimulator {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
-        let mut test_runner = TestRunnerBuilder::new()
-            .without_trace()
+        let mut ledger = LedgerSimulatorBuilder::new()
+            .without_kernel_trace()
             .with_custom_genesis(CustomGenesis::default(
                 Epoch::of(1),
                 CustomGenesis::default_consensus_manager_config(),
@@ -1658,15 +1659,15 @@ impl AccessControllerTestRunner {
             .build();
 
         // Creating a new account - this is where the badges will be held
-        let (public_key, _, account) = test_runner.new_account(false);
+        let (public_key, _, account) = ledger.new_account(false);
 
         // Creating the resource to be protected
-        let controlled_asset = test_runner.create_fungible_resource(1.into(), 0, account);
+        let controlled_asset = ledger.create_fungible_resource(1.into(), 0, account);
 
         // Creating three badges for the three roles.
-        let primary_role_badge = test_runner.create_fungible_resource(1.into(), 0, account);
-        let recovery_role_badge = test_runner.create_fungible_resource(1.into(), 0, account);
-        let confirmation_role_badge = test_runner.create_fungible_resource(1.into(), 0, account);
+        let primary_role_badge = ledger.create_fungible_resource(1.into(), 0, account);
+        let recovery_role_badge = ledger.create_fungible_resource(1.into(), 0, account);
+        let confirmation_role_badge = ledger.create_fungible_resource(1.into(), 0, account);
 
         // Creating the access controller component
         let manifest = ManifestBuilder::new()
@@ -1681,7 +1682,7 @@ impl AccessControllerTestRunner {
                 timed_recovery_delay_in_minutes,
             )
             .build();
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -1690,7 +1691,7 @@ impl AccessControllerTestRunner {
         let access_controller_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
-            test_runner,
+            ledger,
             account: (account, public_key.into()),
 
             access_controller_address,
@@ -1761,7 +1762,7 @@ impl AccessControllerTestRunner {
         let manifest_builder = if create_proof {
             self.manifest_builder(as_role)
         } else {
-            ManifestBuilder::new()
+            ManifestBuilder::new().lock_fee_from_faucet()
         };
 
         let manifest = manifest_builder
@@ -1979,7 +1980,7 @@ impl AccessControllerTestRunner {
     }
 
     fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {
-        self.test_runner.execute_manifest_ignoring_fee(
+        self.ledger.execute_manifest(
             manifest,
             [NonFungibleGlobalId::from_public_key(&self.account.1)],
         )
@@ -1991,16 +1992,14 @@ impl AccessControllerTestRunner {
             Role::Recovery => self.recovery_role_badge,
             Role::Confirmation => self.confirmation_role_badge,
         };
-        ManifestBuilder::new().create_proof_from_account_of_amount(
-            self.account.0,
-            resource_address,
-            dec!(1),
-        )
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(self.account.0, resource_address, dec!(1))
     }
 
     fn set_current_minute(&mut self, minutes: i64) {
         // we use a single-round epochs, so the only possible round advance is to round 1
-        self.test_runner
+        self.ledger
             .advance_to_round_at_timestamp(Round::of(1), minutes * 60 * 1000)
             .expect_commit_success();
     }

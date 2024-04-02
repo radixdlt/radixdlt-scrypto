@@ -11,9 +11,9 @@ use crate::track::StateUpdates;
 use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_engine_store_interface::interface::DatabaseUpdate;
+use radix_substate_store_interface::interface::DatabaseUpdate;
+use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::representations::*;
-use transaction::prelude::TransactionCostingParameters;
 
 define_single_versioned! {
     /// We define a versioned transaction receipt for encoding in the preview API.
@@ -24,7 +24,7 @@ define_single_versioned! {
     pub enum VersionedTransactionReceipt => TransactionReceipt = TransactionReceiptV1
 }
 
-#[derive(Clone, ScryptoSbor)]
+#[derive(Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct TransactionReceiptV1 {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
@@ -42,7 +42,7 @@ pub struct TransactionReceiptV1 {
     pub resources_usage: Option<ResourcesUsage>,
 }
 
-#[derive(Default, Debug, Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct TransactionFeeSummary {
     /// Total execution cost units consumed.
     pub total_execution_cost_units_consumed: u32,
@@ -61,7 +61,7 @@ pub struct TransactionFeeSummary {
     pub total_royalty_cost_in_xrd: Decimal,
 }
 
-#[derive(Default, Debug, Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct TransactionFeeDetails {
     /// Execution cost breakdown
     pub execution_cost_breakdown: BTreeMap<String, u32>,
@@ -70,14 +70,14 @@ pub struct TransactionFeeDetails {
 }
 
 /// Captures whether a transaction should be committed, and its other results
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
     Abort(AbortResult),
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct CommitResult {
     /// Substate updates
     pub state_updates: StateUpdates,
@@ -100,12 +100,12 @@ pub struct CommitResult {
     pub execution_trace: Option<TransactionExecutionTrace>,
 }
 
-#[derive(Debug, Clone, Default, ScryptoSbor)]
+#[derive(Debug, Clone, Default, ScryptoSbor, PartialEq, Eq)]
 pub struct FeeSource {
     pub paying_vaults: IndexMap<NodeId, Decimal>,
 }
 
-#[derive(Debug, Clone, Default, ScryptoSbor)]
+#[derive(Debug, Clone, Default, ScryptoSbor, PartialEq, Eq)]
 pub struct FeeDestination {
     pub to_proposer: Decimal,
     pub to_validator_set: Decimal,
@@ -114,13 +114,13 @@ pub struct FeeDestination {
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum TransactionOutcome {
     Success(Vec<InstructionOutput>),
     Failure(RuntimeError),
 }
 
-#[derive(Debug, Clone, ScryptoSbor, Default)]
+#[derive(Debug, Clone, ScryptoSbor, Default, PartialEq, Eq)]
 pub struct TransactionExecutionTrace {
     pub execution_traces: Vec<ExecutionTrace>,
     pub resource_changes: IndexMap<usize, Vec<ResourceChange>>,
@@ -133,12 +133,12 @@ pub struct FeeLocks {
     pub contingent_lock: Decimal,
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct RejectResult {
     pub reason: RejectionReason,
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct AbortResult {
     pub reason: AbortReason,
 }
@@ -148,7 +148,7 @@ pub enum AbortReason {
     ConfiguredAbortTriggeredOnFeeLoanRepayment,
 }
 
-#[derive(Debug, Clone, Default, ScryptoSbor)]
+#[derive(Debug, Clone, Default, ScryptoSbor, PartialEq, Eq)]
 pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
     pub heap_peak_memory: usize,
@@ -394,7 +394,7 @@ impl TransactionReceipt {
     pub fn expect_commit_ignore_outcome(&self) -> &CommitResult {
         match &self.result {
             TransactionResult::Commit(c) => c,
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Reject(e) => panic!("Transaction was rejected: {:?}", e),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
     }
@@ -402,7 +402,7 @@ impl TransactionReceipt {
     pub fn into_commit_ignore_outcome(self) -> CommitResult {
         match self.result {
             TransactionResult::Commit(c) => c,
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Reject(e) => panic!("Transaction was rejected: {:?}", e),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
     }

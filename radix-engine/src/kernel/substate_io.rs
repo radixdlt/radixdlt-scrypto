@@ -9,12 +9,12 @@ use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{
     CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
-use radix_engine_common::prelude::{NodeId, PartitionNumber};
-use radix_engine_common::types::{SortedKey, SubstateKey};
-use radix_engine_common::ScryptoSbor;
+use radix_common::prelude::{NodeId, PartitionNumber};
+use radix_common::types::{SortedKey, SubstateKey};
+use radix_common::ScryptoSbor;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::LinkedList;

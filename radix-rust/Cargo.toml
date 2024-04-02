@@ -1,0 +1,26 @@
+[package]
+name = "radix-rust"
+version = "1.2.0-dev"
+edition = "2021"
+description = "A very thin abstraction over Rust std library for convenience."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+serde = { workspace = true, optional = true }
+hashbrown = { workspace = true, optional = true }
+indexmap = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["indexmap/std"]
+alloc = ["hashbrown"]
+serde = ["serde/derive", "indexmap/serde"]
+# This flag is set by fuzz-tests framework and it enables StubHasher (instead of RandomHasher) for
+# Map and Set structs to prevent non-determinism when fuzzing.
+fuzzing = ["indexmap/arbitrary"]
+
+[lib]
+doctest = false
+bench = false

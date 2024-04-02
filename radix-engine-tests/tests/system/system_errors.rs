@@ -1,15 +1,15 @@
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_transactions::builder::ManifestBuilder;
+use scrypto_test::prelude::*;
 
 const BLUEPRINT_NAME: &str = "MyBlueprint";
 const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
@@ -104,10 +104,10 @@ impl VmInvoke for TestInvoke {
 
 fn run<F: FnOnce(TransactionReceipt)>(method: &str, is_method: bool, on_receipt: F) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_with_field_test_definition(
             BLUEPRINT_NAME,
@@ -131,9 +131,9 @@ fn run<F: FnOnce(TransactionReceipt)>(method: &str, is_method: bool, on_receipt:
             ],
         ),
     );
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "new", manifest_args!())
             .build(),
         vec![],
@@ -142,17 +142,17 @@ fn run<F: FnOnce(TransactionReceipt)>(method: &str, is_method: bool, on_receipt:
 
     // Act
     let receipt = if is_method {
-        test_runner.execute_manifest(
+        ledger.execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 500u32)
+                .lock_fee(ledger.faucet_component(), 500u32)
                 .call_method(component_address, method, manifest_args!())
                 .build(),
             vec![],
         )
     } else {
-        test_runner.execute_manifest(
+        ledger.execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 500u32)
+                .lock_fee(ledger.faucet_component(), 500u32)
                 .call_function(package_address, BLUEPRINT_NAME, method, manifest_args!())
                 .build(),
             vec![],

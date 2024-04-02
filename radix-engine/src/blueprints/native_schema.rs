@@ -5,14 +5,15 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::*;
 use crate::blueprints::consensus_manager::*;
 use crate::blueprints::identity::*;
+use crate::blueprints::locker::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::*;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
-use crate::system::attached_modules::metadata::*;
-use crate::system::attached_modules::role_assignment::*;
-use crate::system::attached_modules::royalty::*;
+use crate::object_modules::metadata::*;
+use crate::object_modules::role_assignment::*;
+use crate::object_modules::royalty::*;
 
 lazy_static! {
     pub static ref CONSENSUS_MANAGER_PACKAGE_DEFINITION: PackageDefinition =
@@ -35,6 +36,7 @@ lazy_static! {
         PackageNativePackage::definition();
     pub static ref TRANSACTION_PROCESSOR_PACKAGE_DEFINITION: PackageDefinition =
         TransactionProcessorNativePackage::definition();
+    pub static ref LOCKER_PACKAGE_DEFINITION: PackageDefinition = LockerNativePackage::definition();
     pub static ref METADATA_PACKAGE_DEFINITION: PackageDefinition =
         MetadataNativePackage::definition();
     pub static ref ROYALTY_PACKAGE_DEFINITION: PackageDefinition =

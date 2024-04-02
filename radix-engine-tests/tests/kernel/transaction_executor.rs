@@ -1,26 +1,26 @@
+use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{CostingParameters, ExecutionConfig};
-use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::*;
-use transaction::errors::TransactionValidationError;
-use transaction::prelude::*;
-use transaction::validation::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_transactions::errors::TransactionValidationError;
+use scrypto_test::prelude::*;
+
+use radix_transactions::validation::*;
 
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let current_epoch = Epoch::of(150);
     let valid_from_epoch = Epoch::of(151);
     let valid_until_epoch = Epoch::of(151);
 
-    test_runner.set_current_epoch(current_epoch);
+    ledger.set_current_epoch(current_epoch);
 
     let transaction = create_notarized_transaction(
         TransactionParams {
@@ -34,7 +34,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     );
 
     // Act
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
         CostingParameters::default(),
         ExecutionConfig::for_test_transaction(),
@@ -54,13 +54,13 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 #[test]
 fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let current_epoch = Epoch::of(157);
     let valid_from_epoch = Epoch::of(151);
     let valid_until_epoch = Epoch::of(154);
 
-    test_runner.set_current_epoch(current_epoch);
+    ledger.set_current_epoch(current_epoch);
 
     let transaction = create_notarized_transaction(
         TransactionParams {
@@ -74,7 +74,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     );
 
     // Act
-    let receipt = test_runner.execute_transaction(
+    let receipt = ledger.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
         CostingParameters::default(),
         ExecutionConfig::for_test_transaction(),

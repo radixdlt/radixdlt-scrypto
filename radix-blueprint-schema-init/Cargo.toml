@@ -1,0 +1,27 @@
+[package]
+name = "radix-blueprint-schema-init"
+version = "1.2.0-dev"
+edition = "2021"
+description = "The model of blueprint schema initialization."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+sbor = { workspace = true }
+radix-common = { workspace = true }
+serde = { workspace = true, optional = true }
+bitflags = { workspace = true }
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["sbor/std", "radix-common/std", "serde?/std"]
+alloc = ["sbor/alloc", "radix-common/alloc", "serde?/alloc"]
+
+# Enable serde derives
+serde = ["serde/derive", "sbor/serde", "radix-common/serde"]
+
+[lib]
+doctest = false
+bench = false

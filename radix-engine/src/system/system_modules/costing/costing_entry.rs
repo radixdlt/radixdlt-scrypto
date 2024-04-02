@@ -1,4 +1,5 @@
 use super::FeeTable;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
     OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -7,7 +8,6 @@ use crate::kernel::kernel_callback_api::{
 use crate::system::actor::Actor;
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::track::interface::StoreCommit;
-use crate::types::*;
 use radix_engine_interface::*;
 
 #[derive(Debug, IntoStaticStr)]

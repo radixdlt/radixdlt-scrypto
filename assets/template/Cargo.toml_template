@@ -2,19 +2,13 @@
 name = "${package_name}"
 version = "1.0.0"
 edition = "2021"
-resolver = "2"
 
 [dependencies]
 sbor = ${sbor}
 scrypto = ${scrypto}
 
 [dev-dependencies]
-transaction = ${transaction}
-radix-engine = ${radix-engine}
-scrypto-unit = ${scrypto-unit}
 scrypto-test = ${scrypto-test}
-radix-engine-interface = ${radix-engine-interface}
-${package_name} = { path = ".", features = ["test"] }
 
 [profile.release]
 opt-level = 'z'        # Optimize for size.
@@ -26,7 +20,6 @@ overflow-checks = true # Panic in the case of an overflow.
 
 [features]
 default = []
-test = []
 
 [lib]
 crate-type = ["cdylib", "lib"]

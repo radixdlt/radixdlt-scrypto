@@ -1,15 +1,15 @@
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltiesInput, PackageDefinition, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };
-use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use radix_transactions::builder::ManifestBuilder;
+use scrypto_test::prelude::*;
 
 #[test]
 fn claiming_royalties_on_native_packages_should_be_unauthorized() {
@@ -44,10 +44,10 @@ fn claiming_royalties_on_native_packages_should_be_unauthorized() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -56,9 +56,9 @@ fn claiming_royalties_on_native_packages_should_be_unauthorized() {
     );
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
             .build(),
         vec![],

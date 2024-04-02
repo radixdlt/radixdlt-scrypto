@@ -1,4 +1,4 @@
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use radix_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::{ActorStateHandle, CollectionIndex, LockFlags};
 use sbor::rust::fmt::Debug;

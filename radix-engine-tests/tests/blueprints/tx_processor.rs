@@ -3,19 +3,20 @@ use radix_engine::{
         TransactionProcessorError, MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
     },
     errors::{ApplicationError, RuntimeError},
-    types::*,
     vm::NoExtension,
 };
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use radix_engine_tests::include_local_wasm_str;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_transactions::prelude::*;
+use scrypto::{crypto::hash, data::manifest::model::ManifestBlobRef, types::PackageAddress};
+use scrypto_test::prelude::*;
+use wabt::wat2wasm;
 
 #[test]
 fn test_blob_replacement_beyond_blob_size_limit() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = publish_test_package(&mut test_runner);
+    let mut sim = LedgerSimulatorBuilder::new().build();
+    let package_address = publish_test_package(&mut sim);
 
     // Act
     let blob = vec![0u8; 1024];
@@ -35,7 +36,7 @@ fn test_blob_replacement_beyond_blob_size_limit() {
             builder
         })
         .build();
-    let result = test_runner.execute_manifest(manifest, vec![]);
+    let result = sim.execute_manifest(manifest, vec![]);
 
     // Assert
     result.expect_specific_failure(|e| {
@@ -51,8 +52,8 @@ fn test_blob_replacement_beyond_blob_size_limit() {
 #[test]
 fn test_blob_replacement_within_blob_size_limit() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = publish_test_package(&mut test_runner);
+    let mut sim = LedgerSimulatorBuilder::new().build();
+    let package_address = publish_test_package(&mut sim);
 
     // Act
     let blob = vec![0u8; 1024];
@@ -80,16 +81,16 @@ fn test_blob_replacement_within_blob_size_limit() {
             builder
         })
         .build();
-    let result = test_runner.execute_manifest(manifest, vec![]);
+    let result = sim.execute_manifest(manifest, vec![]);
 
     // Assert
     result.expect_commit_success();
 }
 
 fn publish_test_package(
-    test_runner: &mut TestRunner<NoExtension, InMemorySubstateDatabase>,
+    sim: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
 ) -> PackageAddress {
-    let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
+    let code = wat2wasm(include_local_wasm_str!("basic_package.wat")).unwrap();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
@@ -100,6 +101,6 @@ fn publish_test_package(
             OwnerRole::None,
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = sim.execute_manifest(manifest, vec![]);
     receipt.expect_commit(true).new_package_addresses()[0]
 }

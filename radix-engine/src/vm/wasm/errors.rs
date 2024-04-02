@@ -1,7 +1,7 @@
 use crate::errors::{CanBeAbortion, InvokeError, RuntimeError, SelfError, VmError};
+use crate::internal_prelude::*;
 use crate::system::system_modules::costing::FeeReserveError;
 use crate::transaction::AbortReason;
-use crate::types::*;
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
@@ -64,6 +64,12 @@ pub enum PrepareError {
 pub enum InvalidImport {
     /// The import is not allowed
     ImportNotAllowed(String),
+    /// Scrypto VM version protocol mismatch
+    ProtocolVersionMismatch {
+        name: String,
+        current_version: u64,
+        expected_version: u64,
+    },
     InvalidFunctionType(String),
 }
 

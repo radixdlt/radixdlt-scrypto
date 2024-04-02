@@ -1,14 +1,15 @@
-use radix_engine_tests::common::*;
+use radix_blueprint_schema_init::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::resource::ResourceNativePackage;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
-use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use radix_engine_tests::common::*;
+use radix_transactions::builder::ManifestBuilder;
+use scrypto_test::prelude::*;
 
 #[test]
 fn global_address_access_from_frame_owned_object_should_not_succeed() {
@@ -45,10 +46,10 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -60,9 +61,9 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
     );
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
             .build(),
         vec![],
@@ -115,31 +116,31 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             ResourceNativePackage::invoke_export(export_name, input, api)
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
             RESOURCE_CODE_ID,
             ResourceOverride(resource_direct_access_methods),
         ))
         .build();
 
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("recall"));
-    let receipt = test_runner.execute_manifest(
+    let package_address = ledger.publish_package_simple(PackageLoader::get("recall"));
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, "RecallTest", "new", manifest_args!())
             .build(),
         vec![],
     );
     let (component_address, recallable): (ComponentAddress, ResourceAddress) =
         receipt.expect_commit(true).output(1);
-    let vault_id = test_runner.get_component_vaults(component_address, recallable)[0];
+    let vault_id = ledger.get_component_vaults(component_address, recallable)[0];
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_method(
                 component_address,
                 "recall_on_direct_access_ref_method",

@@ -1,17 +1,16 @@
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_common::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn lock_fee_on_empty_faucet_should_give_nice_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(CustomGenesis::with_faucet_supply(Decimal::ZERO))
         .build();
 
     // Act
     let manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let rejection = receipt.expect_rejection();
@@ -21,13 +20,13 @@ fn lock_fee_on_empty_faucet_should_give_nice_error() {
 #[test]
 fn fee_xrd_on_empty_faucet_should_give_nice_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(CustomGenesis::with_faucet_supply(Decimal::ZERO))
         .build();
 
     // Act
     let manifest = ManifestBuilder::new().get_free_xrd_from_faucet().build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let rejection = receipt.expect_rejection();

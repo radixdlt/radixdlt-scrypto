@@ -1,6 +1,6 @@
 use crate::blueprints::resource::Proof;
-use crate::*;
-use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
+use crate::internal_prelude::*;
+use radix_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::blueprints::resource::Bucket;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::prelude::*;

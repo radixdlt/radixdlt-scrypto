@@ -1,0 +1,15 @@
+[1m[91merror[0m: [1mbucket id 'ManifestBucket(1)' not found[0m
+[1m[94m   |[0m
+[1m[94m 7 |[0m TAKE_ALL_FROM_WORKTOP
+[1m[94m 8 |[0m   Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+[1m[94m 9 |[0m   Bucket("some_xrd");
+[1m[94m10 |[0m 
+[1m[94m11 |[0m CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
+[1m[94m12 |[0m   Bucket(1u32)
+[1m[94m   |[0m[1m[91m          ^^^^[0m [1m[91mbucket not found[0m
+[1m[94m13 |[0m   Decimal("1")
+[1m[94m14 |[0m   Proof("proof");
+[1m[94m15 |[0m 
+[1m[94m16 |[0m DROP_PROOF
+[1m[94m17 |[0m   Proof("proof");
+[1m[94m   |[0m

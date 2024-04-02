@@ -1,8 +1,8 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
+
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
 enum ExpectedResult {
@@ -13,15 +13,15 @@ enum ExpectedResult {
 
 fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedResult) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("package_schema"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("package_schema"));
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function_raw(package_address, "SchemaComponent2", method_name, args)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     match expected_result {

@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent,
@@ -9,7 +10,6 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::IOAccess;
-use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -40,9 +40,9 @@ pub struct TransactionLimitsConfig {
     pub max_number_of_events: usize,
 }
 
-/// Tracks and verifies transaction limits during transactino execution,
+/// Tracks and verifies transaction limits during transaction execution,
 /// if exceeded breaks execution with appropriate error.
-/// Default limits values are defined in radix-engine-common/constants.
+/// Default limits values are defined in radix-common/constants.
 /// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct LimitsModule {
     config: TransactionLimitsConfig,

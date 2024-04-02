@@ -1,0 +1,27 @@
+CALL_METHOD
+    Address("${component_address}")
+    "complicated_method"
+    Decimal("1")
+    PreciseDecimal("2");
+
+CALL_ROYALTY_METHOD
+    Address("${component_address}")
+    "set_royalty"
+    "my_method"
+    Enum<0u8>();
+
+CALL_METADATA_METHOD
+    Address("${component_address}")
+    "get"
+    "HelloWorld";
+
+CALL_ROLE_ASSIGNMENT_METHOD
+    Address("${component_address}")
+    "get"
+    Enum<0u8>()
+    "hello";
+
+CALL_DIRECT_VAULT_METHOD
+    Address("${vault_address}")
+    "unknown"
+    123u8;

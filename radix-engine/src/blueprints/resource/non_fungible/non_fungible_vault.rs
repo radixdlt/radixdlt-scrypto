@@ -2,14 +2,13 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::types::*;
-use native_sdk::resource::NativeBucket;
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
+use radix_native_sdk::resource::NativeBucket;
+use radix_native_sdk::runtime::Runtime;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NonFungibleVaultError {
@@ -708,7 +707,7 @@ impl NonFungibleVaultBlueprint {
         for id in ids {
             let cnt = locked
                 .ids
-                .remove(&id)
+                .swap_remove(&id)
                 .expect("Attempted to unlock non-fungible that was not locked");
             if cnt > 1 {
                 locked.ids.insert(id, cnt - 1);

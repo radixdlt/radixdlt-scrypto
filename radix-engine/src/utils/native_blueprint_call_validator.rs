@@ -1,19 +1,20 @@
 use crate::blueprints::native_schema::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
-use radix_engine_common::data::manifest::*;
-use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::*;
+use radix_blueprint_schema_init::*;
+use radix_common::data::manifest::*;
+use radix_common::prelude::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::locker::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::schema::*;
-use transaction::prelude::*;
+use radix_engine_interface::object_modules::metadata::*;
+use radix_engine_interface::object_modules::role_assignment::*;
+use radix_engine_interface::object_modules::royalty::*;
+use radix_transactions::prelude::*;
 
 pub fn validate_call_arguments_to_native_components(
     instructions: &[InstructionV1],
@@ -247,7 +248,9 @@ fn get_arguments_schema<'s>(
                 EntityType::InternalNonFungibleVault => RESOURCE_PACKAGE_DEFINITION
                     .blueprints
                     .get(NON_FUNGIBLE_VAULT_BLUEPRINT),
-
+                EntityType::GlobalAccountLocker => LOCKER_PACKAGE_DEFINITION
+                    .blueprints
+                    .get(ACCOUNT_LOCKER_BLUEPRINT),
                 EntityType::GlobalGenericComponent
                 | EntityType::InternalGenericComponent
                 | EntityType::InternalKeyValueStore => None,

@@ -1,22 +1,20 @@
+use radix_common::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_fee_states() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("fee_reserve_states"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("fee_reserve_states"));
 
     // Run test case
     let fee_locked = dec!(500);
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, fee_locked)
             .call_function(

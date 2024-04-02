@@ -1,6 +1,6 @@
 use crate::blueprints::resource::{Bucket, Proof};
-use crate::data::scrypto::model::*;
-use crate::*;
+use crate::internal_prelude::*;
+use radix_common::data::scrypto::model::*;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 

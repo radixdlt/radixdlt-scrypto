@@ -1,18 +1,19 @@
 use self::private::NoNonFungibleDataSchema;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
-use radix_engine_common::prelude::ScryptoCategorize;
-use radix_engine_common::prelude::ScryptoDecode;
-use radix_engine_common::prelude::ScryptoEncode;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_common::constants::RESOURCE_PACKAGE;
+use radix_common::data::scrypto::model::*;
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_common::math::Decimal;
+use radix_common::prelude::ScryptoCategorize;
+use radix_common::prelude::ScryptoDecode;
+use radix_common::prelude::ScryptoEncode;
+use radix_common::traits::NonFungibleData;
+use radix_common::types::NonFungibleGlobalId;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_PACKAGE;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NonFungibleData;
+use radix_engine_interface::object_modules::metadata::MetadataInit;
+use radix_engine_interface::object_modules::role_assignment::RoleDefinition;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
@@ -961,7 +962,8 @@ impl<
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
+    use radix_common::types::NonFungibleGlobalId;
+    use radix_engine_interface::blueprints::resource::ResourceFeature;
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;

@@ -1,16 +1,15 @@
 use crate::blueprints::access_controller::*;
 use crate::blueprints::component::*;
 use crate::blueprints::resource::*;
-use crate::*;
-use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_common::prelude::*;
-use radix_engine_common::types::GlobalAddressReservation;
+use radix_common::data::scrypto::model::NonFungibleLocalId;
+use radix_common::prelude::*;
+use radix_common::types::GlobalAddressReservation;
+use radix_rust::rust::prelude::IndexSet;
 use sbor::rust::fmt::Debug;
-use utils::rust::prelude::IndexSet;
 
 pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 
-define_type_info_marker!(Some(ACCESS_CONTROLLER_PACKAGE), AccessController);
+define_type_marker!(Some(ACCESS_CONTROLLER_PACKAGE), AccessController);
 
 //=================================
 // Access Controller Create Global
@@ -34,7 +33,7 @@ pub struct AccessControllerCreateManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-pub type AccessControllerCreateGlobalOutput = Global<AccessControllerObjectTypeInfo>;
+pub type AccessControllerCreateGlobalOutput = Global<AccessControllerMarker>;
 
 //================================
 // Access Controller Create Proof

@@ -2,6 +2,7 @@ pub mod access_controller;
 pub mod account;
 pub mod consensus_manager;
 pub mod identity;
+pub mod locker;
 pub mod models;
 pub mod native_schema;
 pub mod package;

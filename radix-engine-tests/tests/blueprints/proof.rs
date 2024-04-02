@@ -1,19 +1,18 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::types::FromPublicKey;
+use radix_engine_tests::common::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_non_fungible_resource(account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -30,7 +29,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         })
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -46,12 +45,12 @@ fn can_create_clone_and_drop_bucket_proof() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(
+        ledger.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -78,7 +77,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
             manifest_args!(dec!("3"), dec!(1)),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     println!(
         "{}",
         receipt.display(&AddressBech32Encoder::for_simulator())
@@ -91,11 +90,11 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_ids() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_non_fungible_resource(account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -128,7 +127,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             manifest_args!(non_fungible_local_ids, proof_non_fungible_local_ids),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -137,11 +136,11 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 #[test]
 fn can_use_bucket_for_authorization() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
-        test_runner.create_restricted_burn_token(account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+        ledger.create_restricted_burn_token(account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -162,7 +161,7 @@ fn can_use_bucket_for_authorization() {
         })
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -174,12 +173,12 @@ fn can_use_bucket_for_authorization() {
 #[test]
 fn can_use_vault_for_authorization() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let (auth_resource_address, burnable_resource_address) =
-        test_runner.create_restricted_burn_token(account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(
+        ledger.create_restricted_burn_token(account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -210,7 +209,7 @@ fn can_use_vault_for_authorization() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -222,11 +221,11 @@ fn can_use_vault_for_authorization() {
 #[test]
 fn can_create_proof_from_account_and_pass_on() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+        ledger.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -243,7 +242,7 @@ fn can_create_proof_from_account_and_pass_on() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -255,11 +254,11 @@ fn can_create_proof_from_account_and_pass_on() {
 #[test]
 fn cant_move_restricted_proof_to_auth_zone() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+        ledger.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -275,7 +274,7 @@ fn cant_move_restricted_proof_to_auth_zone() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -294,11 +293,11 @@ fn cant_move_restricted_proof_to_auth_zone() {
 #[test]
 fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+        ledger.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -314,7 +313,7 @@ fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -333,11 +332,11 @@ fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
 #[test]
 fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+        ledger.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -353,7 +352,7 @@ fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -365,19 +364,21 @@ fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
 #[test]
 fn can_move_restricted_proofs_internally() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let (public_key, _, account) = ledger.new_allocated_account();
     let component_address = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .call_function(package_address, "Outer", "instantiate", manifest_args!())
             .build();
-        let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+        let receipt = ledger.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success().new_component_addresses()[0]
     };
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof")
         .with_name_lookup(|builder, lookup| {
@@ -388,7 +389,7 @@ fn can_move_restricted_proofs_internally() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -400,11 +401,11 @@ fn can_move_restricted_proofs_internally() {
 #[test]
 fn can_move_locked_bucket() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+        ledger.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -421,7 +422,7 @@ fn can_move_locked_bucket() {
         })
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -433,12 +434,12 @@ fn can_move_locked_bucket() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(
+        ledger.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -468,7 +469,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -480,11 +481,11 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_ids() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_non_fungible_resource(account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
@@ -538,7 +539,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -550,10 +551,10 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 #[test]
 fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_non_fungible_resource(account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -595,7 +596,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -607,9 +608,9 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
 #[test]
 fn can_not_call_vault_lock_fungible_amount_directly() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(btreeset![], |builder| {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
             "VaultLockUnlockAuth",
@@ -627,7 +628,7 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -641,9 +642,9 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
 #[test]
 fn can_not_call_vault_unlock_fungible_amount_directly() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(btreeset![], |builder| {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
             "VaultLockUnlockAuth",
@@ -661,7 +662,7 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -675,9 +676,9 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
 #[test]
 fn can_not_call_vault_lock_non_fungibles_directly() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(btreeset![], |builder| {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
             "VaultLockUnlockAuth",
@@ -695,7 +696,7 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -709,9 +710,9 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
 #[test]
 fn can_not_call_vault_unlock_non_fungibles_directly() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
-    let component_address = test_runner.new_component(btreeset![], |builder| {
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+    let component_address = ledger.new_component(btreeset![], |builder| {
         builder.call_function(
             package_address,
             "VaultLockUnlockAuth",
@@ -729,7 +730,7 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -743,8 +744,8 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
 #[test]
 fn can_not_call_bucket_lock_fungible_amount_directly() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -756,7 +757,7 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -770,8 +771,8 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
 #[test]
 fn can_not_call_bucket_unlock_fungible_amount_directly() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -783,7 +784,7 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -797,8 +798,8 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
 #[test]
 fn can_not_call_bucket_lock_non_fungibles_directly() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -810,7 +811,7 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -824,8 +825,8 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
 #[test]
 fn can_not_call_bucket_unlock_non_fungibles_directly() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -837,7 +838,7 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -851,10 +852,10 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
 #[test]
 fn test_proof_check() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_fungible_resource(dec!(100), 0, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_fungible_resource(dec!(100), 0, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -870,7 +871,7 @@ fn test_proof_check() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -885,10 +886,10 @@ fn test_proof_check() {
 #[test]
 fn test_proof_check_with_message() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_fungible_resource(dec!(100), 0, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_fungible_resource(dec!(100), 0, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -904,7 +905,7 @@ fn test_proof_check_with_message() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

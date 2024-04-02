@@ -1,8 +1,6 @@
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ACTOR_STATE_SELF;
-use radix_engine_interface::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode,
-};
 use radix_engine_interface::types::*;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;

@@ -1,8 +1,8 @@
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::track::BootStore;
-use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::PackageExport;
 
@@ -11,7 +11,7 @@ pub trait SystemCallbackObject: Sized {
     type CallbackState;
 
     /// Initialize the layer above the system with data from the substate store
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, RuntimeError>;
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError>;
 
     fn invoke<Y>(
         package_address: &PackageAddress,

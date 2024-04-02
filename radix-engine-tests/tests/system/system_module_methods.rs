@@ -1,19 +1,19 @@
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::node_modules::royalty::{
-    ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
 use radix_engine_interface::api::{
     AttachedModuleId, ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use radix_engine_interface::object_modules::royalty::{
+    ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+};
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_transactions::builder::ManifestBuilder;
+use scrypto_test::prelude::*;
 
 fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     // Arrange
@@ -50,10 +50,10 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -62,7 +62,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     );
 
     let args = if resource {
-        let resource_address = test_runner
+        let resource_address = ledger
             .create_everything_allowed_non_fungible_resource(OwnerRole::Fixed(rule!(allow_all)));
         manifest_args!(resource_address)
     } else {
@@ -70,9 +70,9 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     };
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", args)
             .build(),
         vec![],
@@ -139,10 +139,10 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -151,9 +151,9 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
     );
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
             .build(),
         vec![],
@@ -250,13 +250,13 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
             CUSTOM_PACKAGE_CODE_ID,
             TestInvoke { globalized_parent },
         ))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_with_field_test_definition(
             BLUEPRINT_NAME,
@@ -268,9 +268,9 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
     );
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
             .build(),
         vec![],

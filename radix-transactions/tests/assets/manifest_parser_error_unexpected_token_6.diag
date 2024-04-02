@@ -1,0 +1,11 @@
+[1m[91merror[0m: [1mexpected a u8 enum discriminator or valid discriminator alias, found '1u128'[0m
+[1m[94m  |[0m
+[1m[94m3 |[0m     "lock_fee"
+[1m[94m4 |[0m ;
+[1m[94m5 |[0m SET_COMPONENT_ROYALTY
+[1m[94m6 |[0m     Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
+[1m[94m7 |[0m     "method_with_no_package_royalty"
+[1m[94m8 |[0m     Enum<1u128>()
+[1m[94m  |[0m[1m[91m          ^^^^^[0m [1m[91mexpected a u8 enum discriminator or valid discriminator alias[0m
+[1m[94m9 |[0m ;
+[1m[94m  |[0m

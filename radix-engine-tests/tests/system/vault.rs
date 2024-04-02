@@ -1,4 +1,4 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
@@ -7,21 +7,20 @@ use radix_engine::kernel::call_frame::{
     CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
 };
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::KeyOrValue;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_tests::common::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_deposit_event_when_creating_vault_with_bucket() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, _) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, _) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -33,7 +32,7 @@ fn test_deposit_event_when_creating_vault_with_bucket() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -43,7 +42,7 @@ fn test_deposit_event_when_creating_vault_with_bucket() {
         .expect_commit_ignore_outcome()
         .application_events
         .iter()
-        .map(|event| test_runner.event_name(&event.0))
+        .map(|event| ledger.event_name(&event.0))
         .filter(|name| name.eq("DepositEvent"))
         .next()
         .expect("Missing deposit event");
@@ -52,8 +51,8 @@ fn test_deposit_event_when_creating_vault_with_bucket() {
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -65,7 +64,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -79,13 +78,13 @@ fn non_existent_vault_in_component_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "NonExistentVault", "new", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -97,7 +96,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -111,8 +110,8 @@ fn non_existent_vault_in_committed_component_should_fail() {
 #[test]
 fn non_existent_vault_in_kv_store_creation_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -124,7 +123,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -140,13 +139,13 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_kv_store_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "NonExistentVault", "new", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -158,7 +157,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -174,8 +173,8 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
 #[test]
 fn create_mutable_vault_into_map() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -187,7 +186,7 @@ fn create_mutable_vault_into_map() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -196,8 +195,8 @@ fn create_mutable_vault_into_map() {
 #[test]
 fn invalid_double_ownership_of_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -209,7 +208,7 @@ fn invalid_double_ownership_of_vault() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -227,8 +226,8 @@ fn invalid_double_ownership_of_vault() {
 #[test]
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -240,7 +239,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -249,8 +248,8 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 #[test]
 fn cannot_overwrite_vault_in_map() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -260,7 +259,7 @@ fn cannot_overwrite_vault_in_map() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -272,7 +271,7 @@ fn cannot_overwrite_vault_in_map() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -290,8 +289,8 @@ fn cannot_overwrite_vault_in_map() {
 #[test]
 fn create_mutable_vault_into_vector() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -303,7 +302,7 @@ fn create_mutable_vault_into_vector() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -312,8 +311,8 @@ fn create_mutable_vault_into_vector() {
 #[test]
 fn cannot_remove_vaults() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -323,7 +322,7 @@ fn cannot_remove_vaults() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -331,7 +330,7 @@ fn cannot_remove_vaults() {
         .lock_fee_from_faucet()
         .call_method(component_address, "clear_vector", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -349,8 +348,8 @@ fn cannot_remove_vaults() {
 #[test]
 fn can_push_vault_into_vector() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -360,7 +359,7 @@ fn can_push_vault_into_vector() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -372,7 +371,7 @@ fn can_push_vault_into_vector() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -381,8 +380,8 @@ fn can_push_vault_into_vector() {
 #[test]
 fn create_fungible_vault_with_take() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -394,7 +393,7 @@ fn create_fungible_vault_with_take() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -403,8 +402,8 @@ fn create_fungible_vault_with_take() {
 #[test]
 fn create_non_fungible_vault_with_take() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -416,7 +415,7 @@ fn create_non_fungible_vault_with_take() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -425,8 +424,8 @@ fn create_non_fungible_vault_with_take() {
 #[test]
 fn create_non_fungible_vault_with_take_twice() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -438,7 +437,7 @@ fn create_non_fungible_vault_with_take_twice() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -447,8 +446,8 @@ fn create_non_fungible_vault_with_take_twice() {
 #[test]
 fn create_non_fungible_vault_with_take_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -460,7 +459,7 @@ fn create_non_fungible_vault_with_take_non_fungible() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -469,8 +468,8 @@ fn create_non_fungible_vault_with_take_non_fungible() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -482,7 +481,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -491,8 +490,8 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_id() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -504,7 +503,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -513,8 +512,8 @@ fn create_mutable_vault_with_get_nonfungible_id() {
 #[test]
 fn create_mutable_vault_with_get_amount() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -526,7 +525,7 @@ fn create_mutable_vault_with_get_amount() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -535,8 +534,8 @@ fn create_mutable_vault_with_get_amount() {
 #[test]
 fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -548,7 +547,7 @@ fn create_mutable_vault_with_get_resource_manager() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -557,8 +556,8 @@ fn create_mutable_vault_with_get_resource_manager() {
 #[test]
 fn take_on_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -568,7 +567,7 @@ fn take_on_non_fungible_vault() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let address = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
@@ -576,7 +575,7 @@ fn take_on_non_fungible_vault() {
         .lock_fee_from_faucet()
         .call_method(address, "take", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -585,8 +584,8 @@ fn take_on_non_fungible_vault() {
 #[test]
 fn take_twice_on_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -596,7 +595,7 @@ fn take_twice_on_non_fungible_vault() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let address = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
@@ -604,7 +603,7 @@ fn take_twice_on_non_fungible_vault() {
         .lock_fee_from_faucet()
         .call_method(address, "take_twice", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -613,9 +612,9 @@ fn take_twice_on_non_fungible_vault() {
 #[test]
 fn withdraw_with_over_specified_divisibility_should_result_in_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_fungible_resource(100u32.into(), 4, account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_fungible_resource(100u32.into(), 4, account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -624,7 +623,7 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -640,9 +639,9 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
 #[test]
 fn create_proof_with_over_specified_divisibility_should_result_in_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_fungible_resource(100u32.into(), 4, account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_fungible_resource(100u32.into(), 4, account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -650,7 +649,7 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
         .create_proof_from_account_of_amount(account, resource_address, dec!("5.55555"))
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -666,11 +665,12 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
 #[test]
 fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("vault"));
-    let (_, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("vault"));
+    let (_, _, account) = ledger.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -680,14 +680,15 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();
-        test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![])
+        ledger
+            .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_resource_addresses()[0]
     };
 
     let component_address = {
         let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -705,15 +706,16 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
                 )
             })
             .build();
-        test_runner
-            .execute_manifest_ignoring_fee(manifest, vec![])
+        ledger
+            .execute_manifest(manifest, vec![])
             .expect_commit_success()
             .new_component_addresses()[0]
     };
-    let vault_id = get_vault_id(&mut test_runner, component_address);
+    let vault_id = get_vault_id(&mut ledger, component_address);
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "take_ids",
@@ -721,33 +723,34 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
+        ledger.inspect_non_fungible_vault(vault_id).unwrap().0,
         dec!(1)
     );
 }
 
 fn get_vault_id(
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
     component_address: ComponentAddress,
 ) -> NodeId {
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success().output(1)
 }
 
 #[test]
 fn withdraw_with_invalid_amount_from_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -756,7 +759,7 @@ fn withdraw_with_invalid_amount_from_non_fungible() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

@@ -1,0 +1,9 @@
+[workspace]
+resolver = "1"
+
+members = [
+    "some_project",
+]
+
+[profile.custom]
+inherits = "dev"

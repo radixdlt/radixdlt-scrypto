@@ -1,0 +1,83 @@
+[workspace]
+# It's its own workspace - hide it from the root workspace
+
+[package]
+name = "radix-clis"
+version = "1.2.0-dev"
+edition = "2021"
+description = "A collection of CLIs for developing, building and testing Scrypto code."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+radix-blueprint-schema-init = { version = "1.2.0-dev", path = "../radix-blueprint-schema-init" }
+radix-common = { version = "1.2.0-dev", path = "../radix-common" }
+radix-engine = { version = "1.2.0-dev", path = "../radix-engine" }
+radix-engine-interface = { version = "1.2.0-dev", path = "../radix-engine-interface" }
+radix-engine-profiling = { version = "1.2.0-dev", path = "../radix-engine-profiling", features = ["ram_metrics"] }
+radix-rust = { version = "1.2.0-dev", path = "../radix-rust" }
+radix-substate-store-impls = { version = "1.2.0-dev", path = "../radix-substate-store-impls", features = ["rocksdb"] }
+radix-substate-store-interface = { version = "1.2.0-dev", path = "../radix-substate-store-interface" }
+radix-substate-store-queries = { version = "1.2.0-dev", path = "../radix-substate-store-queries" }
+radix-transactions = { version = "1.2.0-dev", path = "../radix-transactions" }
+sbor = { version = "1.2.0-dev", path = "../sbor" }
+scrypto-compiler = { version = "1.2.0-dev", path = "../scrypto-compiler" }
+
+flate2 = { version = "1.0.27" }
+tar = { version = "0.4.40" }
+rocksdb = { version = "0.21.0" }
+serde = { version = "1.0.137", features = ["derive"] }
+serde_json = { version = "1.0.81" }
+clap = { version = "3.1.17", features = ["derive", "cargo"] }
+dirs = { version = "4.0.0" }
+colored = { version = "2.0.0" }
+hex = { version = "0.4.3" }
+rand = { version = "0.8.5" }
+regex = { version = "1.5.5" }
+temp-env = { version = "0.2.0" }
+wasm-opt = { version = "0.114.1" }
+syn = { version = "1.0.93", features = ["full", "extra-traits"] }
+quote = { version = "1.0.18" }
+proc-macro2 = { version = "1.0.38" }
+heck = "0.4.1"
+tempfile = "3.8.0"
+flume = { version = "0.11.0" }
+walkdir = "2.3.3"
+
+[[bin]]
+name = "resim"
+path = "src/bin/resim.rs"
+bench = false
+
+[[bin]]
+name = "scrypto"
+path = "src/bin/scrypto.rs"
+bench = false
+
+[[bin]]
+name = "rtmc"
+path = "src/bin/rtmc.rs"
+bench = false
+
+[[bin]]
+name = "rtmd"
+path = "src/bin/rtmd.rs"
+bench = false
+
+[[bin]]
+name = "scrypto-bindgen"
+path = "src/bin/scrypto_bindgen.rs"
+bench = false
+
+[[bin]]
+name = "replay"
+path = "src/bin/replay.rs"
+bench = false
+
+[lib]
+doctest = false
+bench = false
+
+[profile.bench]
+debug = true

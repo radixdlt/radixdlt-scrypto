@@ -1,5 +1,5 @@
-use crate::*;
-use radix_engine_common::data::scrypto::{scrypto_decode, ScryptoDecode};
+use crate::internal_prelude::*;
+use radix_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use sbor::rust::prelude::*;
 
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";

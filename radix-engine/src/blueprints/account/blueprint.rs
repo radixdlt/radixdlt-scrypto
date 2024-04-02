@@ -3,23 +3,22 @@ use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignm
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::types::*;
-use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::NativeFungibleVault;
-use native_sdk::resource::NativeNonFungibleVault;
-use native_sdk::resource::NativeVault;
-use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::FieldValue;
 use radix_engine_interface::api::{AttachedModuleId, ClientApi, GenericArgs, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::hooks::OnVirtualizeInput;
+use radix_engine_interface::blueprints::hooks::OnVirtualizeOutput;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
-use radix_engine_interface::hooks::OnVirtualizeInput;
-use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::metadata_init;
+use radix_engine_interface::object_modules::metadata::*;
+use radix_native_sdk::modules::metadata::Metadata;
+use radix_native_sdk::modules::role_assignment::RoleAssignment;
+use radix_native_sdk::resource::NativeFungibleVault;
+use radix_native_sdk::resource::NativeNonFungibleVault;
+use radix_native_sdk::resource::NativeVault;
+use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
+use radix_native_sdk::runtime::Runtime;
 
 // =================================================================================================
 // Notes:
@@ -1442,4 +1441,175 @@ pub struct AccountOwnerBadgeData {
 
 impl NonFungibleData for AccountOwnerBadgeData {
     const MUTABLE_FIELDS: &'static [&'static str] = &[];
+}
+
+pub struct AccountBlueprintBottlenoseExtension;
+
+impl AccountBlueprintBottlenoseExtension {
+    pub fn invoke_export<Y>(
+        export_name: &str,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        match export_name {
+            ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => {
+                let AccountTryDepositOrRefundInput {
+                    bucket,
+                    authorized_depositor_badge,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = Self::try_deposit_or_refund(bucket, authorized_depositor_badge, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
+                let AccountTryDepositBatchOrRefundInput {
+                    buckets,
+                    authorized_depositor_badge,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn =
+                    Self::try_deposit_batch_or_refund(buckets, authorized_depositor_badge, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            _ => Err(RuntimeError::ApplicationError(
+                ApplicationError::ExportDoesNotExist(export_name.to_string()),
+            )),
+        }
+    }
+
+    pub fn try_deposit_or_refund<Y>(
+        bucket: Bucket,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
+        api: &mut Y,
+    ) -> Result<Option<Bucket>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let resource_address = bucket.resource_address(api)?;
+        let is_deposit_allowed = AccountBlueprint::is_deposit_allowed(&resource_address, api)?;
+        if is_deposit_allowed {
+            AccountBlueprint::deposit(bucket, api)?;
+            Ok(None)
+        } else if let Some(badge) = authorized_depositor_badge {
+            match AccountBlueprint::validate_badge_is_authorized_depositor(&badge, api)? {
+                // The passed authorized depositor badge is indeed an authorized depositor.
+                Ok(_) => {}
+                // The badge that they claim to be an authorized depositor is not one. Return the
+                // resources back to them.
+                Err(AccountError::NotAnAuthorizedDepositor { .. }) => {
+                    let event = if resource_address.is_fungible() {
+                        RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
+                    } else {
+                        RejectedDepositEvent::NonFungible(
+                            resource_address,
+                            bucket.non_fungible_local_ids(api)?,
+                        )
+                    };
+                    Runtime::emit_event(api, event)?;
+                    return Ok(Some(bucket));
+                }
+                // Some other account error is encountered - impossible case since the function
+                // will not return it. In either way, we propagate it.
+                Err(error) => return Err(error.into()),
+            }
+            AccountBlueprint::validate_badge_is_present(badge, api)?;
+            AccountBlueprint::deposit(bucket, api)?;
+            Ok(None)
+        } else {
+            let event = if resource_address.is_fungible() {
+                RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
+            } else {
+                RejectedDepositEvent::NonFungible(
+                    resource_address,
+                    bucket.non_fungible_local_ids(api)?,
+                )
+            };
+            Runtime::emit_event(api, event)?;
+            Ok(Some(bucket))
+        }
+    }
+
+    pub fn try_deposit_batch_or_refund<Y>(
+        buckets: Vec<Bucket>,
+        authorized_depositor_badge: Option<ResourceOrNonFungible>,
+        api: &mut Y,
+    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let offending_buckets = buckets
+            .iter()
+            .map(|bucket| {
+                bucket
+                    .resource_address(api)
+                    .and_then(|resource_address| {
+                        AccountBlueprint::is_deposit_allowed(&resource_address, api)
+                    })
+                    .map(|can_be_deposited| (bucket, can_be_deposited))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .filter_map(|(bucket, can_be_deposited)| {
+                if !can_be_deposited {
+                    Some(Bucket(bucket.0))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if offending_buckets.is_empty() {
+            AccountBlueprint::deposit_batch(buckets, api)?;
+            Ok(None)
+        } else if let Some(badge) = authorized_depositor_badge {
+            match AccountBlueprint::validate_badge_is_authorized_depositor(&badge, api)? {
+                // The passed authorized depositor badge is indeed an authorized depositor.
+                Ok(_) => {}
+                // The badge that they claim to be an authorized depositor is not one. Return the
+                // resources back to them.
+                Err(AccountError::NotAnAuthorizedDepositor { .. }) => {
+                    for bucket in offending_buckets {
+                        let resource_address = bucket.resource_address(api)?;
+                        let event = if resource_address.is_fungible() {
+                            RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
+                        } else {
+                            RejectedDepositEvent::NonFungible(
+                                resource_address,
+                                bucket.non_fungible_local_ids(api)?,
+                            )
+                        };
+                        Runtime::emit_event(api, event)?;
+                    }
+                    return Ok(Some(buckets));
+                }
+                // Some other account error is encountered - impossible case since the function
+                // will not return it. In either way, we propagate it.
+                Err(error) => return Err(error.into()),
+            }
+            AccountBlueprint::validate_badge_is_present(badge, api)?;
+            AccountBlueprint::deposit_batch(buckets, api)?;
+            Ok(None)
+        } else {
+            for bucket in offending_buckets {
+                let resource_address = bucket.resource_address(api)?;
+                let event = if resource_address.is_fungible() {
+                    RejectedDepositEvent::Fungible(resource_address, bucket.amount(api)?)
+                } else {
+                    RejectedDepositEvent::NonFungible(
+                        resource_address,
+                        bucket.non_fungible_local_ids(api)?,
+                    )
+                };
+                Runtime::emit_event(api, event)?;
+            }
+            Ok(Some(buckets))
+        }
+    }
 }

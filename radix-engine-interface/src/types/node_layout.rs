@@ -1,6 +1,6 @@
 use crate::api::*;
+use crate::internal_prelude::*;
 use crate::types::*;
-use crate::*;
 use sbor::rust::prelude::*;
 
 //=========================================================================
@@ -266,6 +266,12 @@ blueprint_partition_offset!(
         ResourceVaultKeyValue,
         ResourcePreferenceKeyValue,
         AuthorizedDepositorKeyValue,
+    }
+);
+
+blueprint_partition_offset!(
+    pub enum AccountLockerPartitionOffset {
+        AccountClaimsKeyValue,
     }
 );
 

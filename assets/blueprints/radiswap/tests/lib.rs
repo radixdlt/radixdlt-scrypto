@@ -1,12 +1,12 @@
-use radiswap::test_bindings::*;
-use scrypto::*;
+use radiswap::radiswap_test::*;
+use scrypto_test::prelude::pool::substates::two_resource_pool::*;
 use scrypto_test::prelude::*;
 
 #[test]
 fn simple_radiswap_test() -> Result<(), RuntimeError> {
     // Arrange
     let mut env = TestEnvironment::new();
-    let package_address = Package::compile_and_publish(this_package!(), &mut env)?;
+    let package_address = PackageFactory::compile_and_publish(this_package!(), &mut env)?;
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
         .divisibility(18)
@@ -38,7 +38,7 @@ fn simple_radiswap_test() -> Result<(), RuntimeError> {
 fn reading_and_asserting_against_radiswap_pool_state() -> Result<(), RuntimeError> {
     // Arrange
     let mut env = TestEnvironment::new();
-    let package_address = Package::compile_and_publish(this_package!(), &mut env)?;
+    let package_address = PackageFactory::compile_and_publish(this_package!(), &mut env)?;
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
         .divisibility(18)
@@ -60,16 +60,20 @@ fn reading_and_asserting_against_radiswap_pool_state() -> Result<(), RuntimeErro
 
     // Act
     let _ = radiswap.add_liquidity(bucket1, bucket2, &mut env)?;
-    let radiswap_state = env.read_component_state::<RadiswapState, _>(radiswap)?;
-
-    let VersionedTwoResourcePoolState::V1(TwoResourcePoolSubstate {
-        vaults: [(_, vault1), (_, vault2)],
-        ..
-    }) = env.read_component_state(radiswap_state.pool_component)?;
 
     // Assert
-    let amount1 = vault1.amount(&mut env)?;
-    let amount2 = vault2.amount(&mut env)?;
+    let pool_component = env
+        .with_component_state::<RadiswapState, _, _, _>(radiswap, |substate, _| {
+            substate.pool_component.clone()
+        })?;
+    let (amount1, amount2) = env.with_component_state::<VersionedTwoResourcePoolState, _, _, _>(
+        pool_component,
+        |VersionedTwoResourcePoolState::V1(TwoResourcePoolStateV1 {
+             vaults: [(_, vault1), (_, vault2)],
+             ..
+         }),
+         env| { (vault1.amount(env).unwrap(), vault2.amount(env).unwrap()) },
+    )?;
     assert_eq!(amount1, dec!("100"));
     assert_eq!(amount2, dec!("100"));
 

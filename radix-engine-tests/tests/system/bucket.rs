@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::resource::{
     FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError, VaultError,
 };
@@ -8,17 +7,16 @@ use radix_engine::{
     blueprints::resource::BucketError,
     errors::{ApplicationError, CallFrameError, KernelError, RuntimeError},
     kernel::call_frame::DropNodeError,
-    types::*,
 };
-use scrypto_unit::*;
-use transaction::prelude::*;
-use utils::ContextualDisplay;
+use radix_engine_interface::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
 
 fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: bool) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -26,7 +24,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
         .call_function_raw(package_address, "BucketTest", method_name, args)
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -45,9 +43,9 @@ fn test_bucket_internal2<F: FnOnce(TransactionReceipt)>(
     on_receipt: F,
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -55,7 +53,7 @@ fn test_bucket_internal2<F: FnOnce(TransactionReceipt)>(
         .call_function_raw(package_address, "BucketTest", method_name, args)
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -175,9 +173,9 @@ fn test_bucket_empty_non_fungible() {
 
 #[test]
 fn test_bucket_of_badges() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
@@ -187,7 +185,7 @@ fn test_bucket_of_badges() {
         .call_function(package_address, "BadgeTest", "query", manifest_args!())
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -197,10 +195,10 @@ fn test_bucket_of_badges() {
 #[test]
 fn test_take_with_invalid_granularity() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_fungible_resource(100.into(), 2, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -216,7 +214,7 @@ fn test_take_with_invalid_granularity() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -235,10 +233,10 @@ fn test_take_with_invalid_granularity() {
 #[test]
 fn test_take_with_negative_amount() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address = ledger.create_fungible_resource(100.into(), 2, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -255,7 +253,7 @@ fn test_take_with_negative_amount() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -274,9 +272,9 @@ fn test_take_with_negative_amount() {
 #[test]
 fn create_empty_bucket() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let non_fungible_resource = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let non_fungible_resource = ledger.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -288,7 +286,7 @@ fn create_empty_bucket() {
         .take_non_fungibles_from_worktop(non_fungible_resource, [], "bucket3")
         .return_to_worktop("bucket3")
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -304,9 +302,9 @@ fn create_empty_bucket() {
 #[test]
 fn test_drop_locked_fungible_bucket() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -319,7 +317,7 @@ fn test_drop_locked_fungible_bucket() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -339,9 +337,9 @@ fn test_drop_locked_fungible_bucket() {
 #[test]
 fn create_proof_of_invalid_amount_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -354,7 +352,7 @@ fn create_proof_of_invalid_amount_should_fail() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -373,9 +371,9 @@ fn create_proof_of_invalid_amount_should_fail() {
 #[test]
 fn create_proof_of_zero_amount_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -388,7 +386,7 @@ fn create_proof_of_zero_amount_should_fail() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -407,9 +405,9 @@ fn create_proof_of_zero_amount_should_fail() {
 #[test]
 fn create_vault_proof_of_invalid_amount_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -422,7 +420,7 @@ fn create_vault_proof_of_invalid_amount_should_fail() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -441,9 +439,9 @@ fn create_vault_proof_of_invalid_amount_should_fail() {
 #[test]
 fn create_vault_proof_of_zero_amount_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -456,7 +454,7 @@ fn create_vault_proof_of_zero_amount_should_fail() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -475,9 +473,9 @@ fn create_vault_proof_of_zero_amount_should_fail() {
 #[test]
 fn test_drop_locked_non_fungible_bucket() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -490,7 +488,7 @@ fn test_drop_locked_non_fungible_bucket() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -510,9 +508,9 @@ fn test_drop_locked_non_fungible_bucket() {
 #[test]
 fn test_bucket_combine_fungible_invalid() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -524,7 +522,7 @@ fn test_bucket_combine_fungible_invalid() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -541,9 +539,9 @@ fn test_bucket_combine_fungible_invalid() {
 #[test]
 fn test_bucket_combine_non_fungible_invalid() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -555,7 +553,7 @@ fn test_bucket_combine_non_fungible_invalid() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -572,9 +570,9 @@ fn test_bucket_combine_non_fungible_invalid() {
 #[test]
 fn test_vault_combine_fungible_invalid() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -586,7 +584,7 @@ fn test_vault_combine_fungible_invalid() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -603,9 +601,9 @@ fn test_vault_combine_fungible_invalid() {
 #[test]
 fn test_vault_combine_non_fungible_invalid() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -617,7 +615,7 @@ fn test_vault_combine_non_fungible_invalid() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -634,9 +632,9 @@ fn test_vault_combine_non_fungible_invalid() {
 #[test]
 fn burn_invalid_fungible_bucket_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -648,7 +646,7 @@ fn burn_invalid_fungible_bucket_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -665,9 +663,9 @@ fn burn_invalid_fungible_bucket_should_fail() {
 #[test]
 fn burn_invalid_non_fungible_bucket_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -679,7 +677,7 @@ fn burn_invalid_non_fungible_bucket_should_fail() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -699,14 +697,14 @@ fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt) -> 
     on_receipt: F,
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("bucket"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("bucket"));
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_function(package_address, "InvalidCombine", "new", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -726,7 +724,7 @@ fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt) -> 
             manifest_args!(amount),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

@@ -1,12 +1,12 @@
 use crate::blueprints::component::*;
 use crate::blueprints::macros::*;
 use crate::blueprints::resource::*;
-use radix_engine_common::data::manifest::model::*;
-use radix_engine_common::math::*;
-use radix_engine_common::prelude::*;
-use radix_engine_common::*;
+use radix_common::data::manifest::model::*;
+use radix_common::math::*;
+use radix_common::prelude::*;
+use radix_common::*;
 
-define_type_info_marker!(Some(POOL_PACKAGE), MultiResourcePool);
+define_type_marker!(Some(POOL_PACKAGE), MultiResourcePool);
 
 define_invocation! {
     blueprint_name: MultiResourcePool,
@@ -17,7 +17,7 @@ define_invocation! {
         resource_addresses: IndexSet<ResourceAddress>,
         address_reservation: Option<GlobalAddressReservation>
     },
-    output: type Global<MultiResourcePoolObjectTypeInfo>,
+    output: type Global<MultiResourcePoolMarker>,
     manifest_input: struct {
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,

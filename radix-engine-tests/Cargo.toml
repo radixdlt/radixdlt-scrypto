@@ -1,50 +1,50 @@
 [package]
 name = "radix-engine-tests"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 edition = "2021"
 build = "build.rs"
 
 [dependencies]
-native-sdk = { path = "../native-sdk", default-features = false }
-sbor = { path = "../sbor", default-features = false }
-radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests"] }
-radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
-radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
-radix-engine-queries = { path = "../radix-engine-queries", default-features = false }
-transaction = { path = "../transaction", default-features = false }
-transaction-scenarios = { path = "../transaction-scenarios", default-features = false }
-utils = { path = "../utils", default-features = false }
-radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"]}
-resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
-scrypto-test = { path = "../scrypto-test", default-features = false }
-scrypto-unit = { path = "../scrypto-unit", default-features = false }
-lazy_static = { version = "1.4.0" }
+radix-native-sdk = { workspace = true }
+sbor = { workspace = true }
+radix-engine = { workspace = true, features = ["radix_engine_tests"] }
+radix-engine-interface = { workspace = true }
+radix-common = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-substate-store-impls = { workspace = true }
+radix-substate-store-queries = { workspace = true }
+radix-transactions = { workspace = true }
+radix-transaction-scenarios = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
+radix-rust = { workspace = true }
+radix-engine-profiling = { workspace = true, optional = true, features = ["resource_tracker"]}
+radix-engine-profiling-derive = { workspace = true }
+scrypto-test = { workspace = true }
+lazy_static = { workspace = true }
 
 [dev-dependencies]
-transaction = { path = "../transaction", default-features = false }
-wabt = { version = "0.10.0" }
-criterion = { version = "0.3", features = ["html_reports"] }
-scrypto = { path = "../scrypto", default-features = false }
-sbor-derive = { path = "../sbor-derive", default-features = false }
-rand = { version = "0.8.5" }
-rand_chacha = { version = "0.3.1" }
-rayon = "1.5.3"
-serde = { version = "1.0.144", default-features = false }
-serde_json = { version = "1.0.81", default-features = false }
-crossbeam = { version = "0.8.2" }
-walkdir = { version = "2.3.3" }
-paste = { version = "1.0.13" }
-hex = { version = "0.4.3", default-features = false }
-trybuild = { version = "1.0.85" }
-automod = "1.0.13"
+radix-transactions = { workspace = true }
+wabt = { workspace = true }
+criterion = { workspace = true, features = ["html_reports"] }
+scrypto = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+rayon = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+crossbeam = { workspace = true }
+walkdir = { workspace = true }
+paste = { workspace = true }
+hex = { workspace = true }
+trybuild = { workspace = true }
+automod = { workspace = true }
+extend = { workspace = true }
 
 [build-dependencies]
-walkdir = { version = "2.3.3", optional = true }
-cargo_toml = { version = "0.15.3", optional = true }
-scrypto = { path = "../scrypto", default-features = false }
-scrypto-unit = { path = "../scrypto-unit", default-features = false }
+walkdir = { workspace = true, optional = true }
+cargo_toml = { workspace = true, optional = true }
+scrypto = { workspace = true }
+scrypto-test = { workspace = true }
 
 [[bench]]
 name = "costing"
@@ -78,15 +78,15 @@ test = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "transaction/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine-store-interface/std", "radix-engine-queries/std", "utils/std", "scrypto/std", "scrypto-unit/std", "scrypto-test/std", "scrypto-test/moka"]
-alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-unit/alloc", "scrypto-test/alloc", "scrypto-test/lru"]
+std = ["sbor/std", "radix-transactions/std", "radix-blueprint-schema-init/std", "radix-common/std", "radix-transaction-scenarios/std", "radix-engine/std", "radix-engine/moka", "radix-engine-interface/std", "radix-substate-store-impls/std", "radix-substate-store-interface/std", "radix-substate-store-queries/std", "radix-rust/std", "scrypto/std", "scrypto-test/std", "scrypto-test/std", "scrypto-test/moka"]
+alloc = ["sbor/alloc", "radix-transactions/alloc", "radix-blueprint-schema-init/alloc", "radix-common/alloc", "radix-transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-engine-interface/alloc", "radix-substate-store-impls/alloc", "radix-substate-store-interface/alloc", "radix-substate-store-queries/alloc", "radix-rust/alloc", "scrypto/alloc", "scrypto-test/alloc", "scrypto-test/alloc", "scrypto-test/lru"]
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
-resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker", "radix-engine-common/resource_tracker", "scrypto-unit/resource_tracker"]
-dump_manifest_to_file = ["transaction/dump_manifest_to_file"]
-rocksdb = ["scrypto-unit/rocksdb"]
-post_run_db_check = ["scrypto-unit/post_run_db_check"]
+resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling-derive/resource_tracker", "radix-engine/resource_tracker", "radix-common/resource_tracker", "scrypto-test/resource_tracker"]
+dump_manifest_to_file = ["radix-transactions/dump_manifest_to_file"]
+rocksdb = ["scrypto-test/rocksdb"]
+post_run_db_check = ["scrypto-test/post_run_db_check"]
 
 # If this feature is enabled, this crate will compile all of the blueprints ahead of time and make
 # them available for use.

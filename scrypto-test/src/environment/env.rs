@@ -13,22 +13,22 @@ use crate::prelude::*;
 /// ## Introduction
 ///
 /// This testing framework is designed to allow you to write Scrypto-like code and use that to test
-/// your packages and blueprints and follows a different approach from the `TestRunner` class. The
+/// your packages and blueprints and follows a different approach from the `LedgerSimulator` class. The
 /// test-runner is an in-memory ledger simulator which you can interact with as a user that submits
 /// transactions to the network. The approach followed by this testing framework is different,
 /// instead of submitting transactions, you're making invocations to the Radix Engine, getting
 /// results back, and then writing assertions against what you got back.
 ///
-/// Both the TestRunner and this testing framework will prove to be useful throughout your blueprint
+/// Both the LedgerSimulator and this testing framework will prove to be useful throughout your blueprint
 /// development journey. As an example, this testing framework allows you to disable some of kernel
 /// modules that may get in your way when writing tests so it may be an optimal framework to use to
 /// ensure that the "math checks out" in your blueprint code without needing to think about costing
 /// or auth. However, when you're reaching the final stages of developing a blueprint you may want
 /// tests that check that interactions with your blueprint will succeed in a simulated setting that
-/// is close to the real setting, which is when the `TestRunner` comes in. Overall, we may put these
+/// is close to the real setting, which is when the `LedgerSimulator` comes in. Overall, we may put these
 /// two frameworks into two categories: This framework (named scrypto-test) is a framework for unit
 /// testing your blueprints and is a good framework to use to check that your DeFi logic is correct.
-/// The `TestRunner` is an integration testing or an end-to-end testing framework to test that your
+/// The `LedgerSimulator` is an integration testing or an end-to-end testing framework to test that your
 /// blueprints work in a simulated ledger with all of the costing limits, substate limits, and other
 /// limits applied.
 ///
@@ -159,10 +159,6 @@ use crate::prelude::*;
 /// You may have a function like `two_resource_environment` seen above which sets up the environment
 /// and then some callback and potentially then executes some teardown code. Another way to do this
 /// would be through simple factory and destructor methods.
-///
-/// ## Full Examples
-/// ```norun
-#[doc = include_str!("../../../assets/blueprints/radiswap/tests/lib.rs")]
 /// ```
 pub struct TestEnvironment<D>(pub(super) EncapsulatedRadixEngine<D>)
 where

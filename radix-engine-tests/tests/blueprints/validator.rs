@@ -1,15 +1,14 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::ValidatorError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::blueprints::transaction_processor::InstructionOutput;
-use radix_engine::types::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ValidatorAcceptsDelegatedStakeInput, VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
     VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
 };
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::types::FromPublicKey;
+use scrypto_test::prelude::*;
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)
 where
@@ -27,12 +26,12 @@ where
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&pub_key);
     let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
     if as_owner {
         builder = builder.create_proof_from_account_of_non_fungibles(
@@ -45,7 +44,7 @@ where
         .signal_protocol_update_readiness(validator_address, "a".repeat(name_len).as_str())
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -88,12 +87,12 @@ fn check_if_validator_accepts_delegated_stake() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let (pub_key, _, account) = test_runner.new_account(false);
+    let (pub_key, _, account) = ledger.new_account(false);
 
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -103,7 +102,7 @@ fn check_if_validator_accepts_delegated_stake() {
         )
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -118,7 +117,7 @@ fn check_if_validator_accepts_delegated_stake() {
             ValidatorAcceptsDelegatedStakeInput {},
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let ret = receipt.expect_commit(true).outcome.expect_success();
@@ -131,12 +130,12 @@ fn check_if_validator_accepts_delegated_stake() {
 #[test]
 fn calling_get_redemption_value_on_staked_validator_with_max_amount_should_not_crash() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account) = test_runner.new_allocated_account();
-    let validator_address = test_runner.new_staked_validator_with_pub_key(pub_key, account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account) = ledger.new_allocated_account();
+    let validator_address = ledger.new_staked_validator_with_pub_key(pub_key, account);
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(
@@ -162,12 +161,12 @@ fn calling_get_redemption_value_on_staked_validator_with_max_amount_should_not_c
 #[test]
 fn calling_get_redemption_value_on_staked_validator_with_smallest_amount_should_not_crash() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account) = test_runner.new_allocated_account();
-    let validator_address = test_runner.new_staked_validator_with_pub_key(pub_key, account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account) = ledger.new_allocated_account();
+    let validator_address = ledger.new_staked_validator_with_pub_key(pub_key, account);
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(
@@ -186,12 +185,12 @@ fn calling_get_redemption_value_on_staked_validator_with_smallest_amount_should_
 #[test]
 fn calling_get_redemption_value_on_staked_validator_with_min_amount_should_not_crash() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account) = test_runner.new_allocated_account();
-    let validator_address = test_runner.new_staked_validator_with_pub_key(pub_key, account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account) = ledger.new_allocated_account();
+    let validator_address = ledger.new_staked_validator_with_pub_key(pub_key, account);
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(
@@ -217,12 +216,12 @@ fn calling_get_redemption_value_on_staked_validator_with_min_amount_should_not_c
 #[test]
 fn calling_get_redemption_value_on_staked_validator_with_zero_amount_should_not_crash() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account) = test_runner.new_allocated_account();
-    let validator_address = test_runner.new_staked_validator_with_pub_key(pub_key, account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account) = ledger.new_allocated_account();
+    let validator_address = ledger.new_staked_validator_with_pub_key(pub_key, account);
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(

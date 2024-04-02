@@ -7,15 +7,14 @@ use crate::errors::SystemUpstreamError;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
-use crate::types::*;
+use radix_blueprint_schema_init::*;
 use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::hooks::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition, RoleSpecification, StaticRoleDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::hooks::*;
-use radix_engine_interface::schema::*;
 
 pub(crate) const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str =
     "create_FungibleResourceManager";

@@ -1,22 +1,21 @@
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_common::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
+use scrypto_test::prelude::*;
 
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let (_, _, other_account) = test_runner.new_allocated_account();
-    let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let (_, _, other_account) = ledger.new_allocated_account();
+    let (_, token_resource_address) = ledger.create_restricted_transfer_token(account);
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500, token_resource_address, 1)
         .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -28,11 +27,11 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 #[test]
 fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let (_, _, other_account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let (_, _, other_account) = ledger.new_allocated_account();
     let (auth_resource_address, token_resource_address) =
-        test_runner.create_restricted_transfer_token(account);
+        ledger.create_restricted_transfer_token(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -55,7 +54,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .return_to_worktop("bucket")
         .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

@@ -1,4 +1,5 @@
-use radix_engine_tests::common::*;
+use radix_common::constants::AuthAddresses;
+use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -6,13 +7,10 @@ use radix_engine::blueprints::consensus_manager::{
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::{account, resource::*};
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
-use radix_engine::system::attached_modules::metadata::SetMetadataEvent;
+use radix_engine::object_modules::metadata::SetMetadataEvent;
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine::types::blueprints::account::ResourcePreference;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ModuleId;
+use radix_engine_interface::blueprints::account::ResourcePreference;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -20,18 +18,20 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
+use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
+use radix_engine_tests::common::*;
+use radix_transactions::model::InstructionV1;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
-use scrypto_unit::*;
-use transaction::model::InstructionV1;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_events_of_commit_failure() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -40,12 +40,12 @@ fn test_events_of_commit_failure() {
         .assert_worktop_contains(XRD, dec!(500))
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     let events = &receipt.expect_commit_failure().application_events;
     for event in events {
-        let name = test_runner.event_name(&event.0);
+        let name = ledger.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
     }
     assert_eq!(events.len(), 4);
@@ -53,7 +53,7 @@ fn test_events_of_commit_failure() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
                 &fungible_vault::LockFeeEvent { amount: 100.into() },
                 event_data
@@ -65,7 +65,7 @@ fn test_events_of_commit_failure() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
             && is_decoded_equal(
                 &fungible_vault::PayFeeEvent {
                     amount: receipt.fee_summary.total_cost()
@@ -79,7 +79,7 @@ fn test_events_of_commit_failure() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
             && is_decoded_equal(
                 &fungible_vault::DepositEvent {
                     amount: receipt
@@ -103,7 +103,7 @@ fn test_events_of_commit_failure() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
             && is_decoded_equal(
                 &BurnFungibleResourceEvent {
                     amount: receipt.expect_commit_failure().fee_destination.to_burn
@@ -118,8 +118,8 @@ fn test_events_of_commit_failure() {
 #[test]
 fn create_proof_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -127,12 +127,12 @@ fn create_proof_emits_correct_events() {
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
     let events = &receipt.expect_commit_success().application_events;
     for event in events {
-        let name = test_runner.event_name(&event.0);
+        let name = ledger.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
     }
     assert_eq!(events.len(), 4);
@@ -140,7 +140,7 @@ fn create_proof_emits_correct_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
                 &fungible_vault::LockFeeEvent { amount: 500.into() },
                 event_data
@@ -152,7 +152,7 @@ fn create_proof_emits_correct_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<fungible_vault::PayFeeEvent>(event_identifier)
             && is_decoded_equal(
                 &fungible_vault::PayFeeEvent {
                     amount: receipt.fee_summary.total_cost()
@@ -166,7 +166,7 @@ fn create_proof_emits_correct_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
             && is_decoded_equal(
                 &fungible_vault::DepositEvent {
                     amount: receipt
@@ -190,7 +190,7 @@ fn create_proof_emits_correct_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
             && is_decoded_equal(
                 &BurnFungibleResourceEvent {
                     amount: receipt.expect_commit_success().fee_destination.to_burn
@@ -209,10 +209,11 @@ fn create_proof_emits_correct_events() {
 #[test]
 fn scrypto_cant_emit_unregistered_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ScryptoEvents",
@@ -222,7 +223,7 @@ fn scrypto_cant_emit_unregistered_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
@@ -239,8 +240,8 @@ fn scrypto_cant_emit_unregistered_event() {
 #[test]
 fn scrypto_can_emit_registered_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("events"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("events"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
@@ -253,19 +254,19 @@ fn scrypto_can_emit_registered_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let events = receipt.expect_commit(true).application_events.clone();
     for event in &events {
-        let name = test_runner.event_name(&event.0);
+        let name = ledger.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
     }
     assert!(match events.get(0) {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
             && is_decoded_equal(
                 &fungible_vault::LockFeeEvent { amount: 500.into() },
                 event_data
@@ -277,7 +278,7 @@ fn scrypto_can_emit_registered_events() {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Function(blueprint_id), ..),
             ref event_data,
-        )) if test_runner.is_event_name_equal::<RegisteredEvent>(event_identifier)
+        )) if ledger.is_event_name_equal::<RegisteredEvent>(event_identifier)
             && is_decoded_equal(&RegisteredEvent { number: 12 }, event_data)
             && blueprint_id.package_address == package_address
             && blueprint_id.blueprint_name.eq("ScryptoEvents") =>
@@ -289,7 +290,7 @@ fn scrypto_can_emit_registered_events() {
 #[test]
 fn cant_publish_a_package_with_non_struct_or_enum_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
 
     let (code, definition) = PackageLoader::get("events_invalid");
     let manifest = ManifestBuilder::new()
@@ -298,7 +299,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|runtime_error| {
@@ -314,7 +315,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
 #[test]
 fn local_type_id_with_misleading_name_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
 
     let (code, mut definition) = PackageLoader::get("events");
     let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
@@ -335,7 +336,7 @@ fn local_type_id_with_misleading_name_fails() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|runtime_error| {
@@ -355,26 +356,25 @@ fn local_type_id_with_misleading_name_fails() {
 #[test]
 fn locking_fee_against_a_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
 
     let manifest = ManifestBuilder::new().lock_fee(FAUCET, 500).build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -388,10 +388,10 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 #[test]
 fn vault_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (_, _, account) = test_runner.new_account(false);
-    let recallable_resource_address = test_runner.create_recallable_token(account);
-    let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_account(false);
+    let recallable_resource_address = ledger.create_recallable_token(account);
+    let vault_id = ledger.get_component_vaults(account, recallable_resource_address)[0];
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
@@ -400,21 +400,20 @@ fn vault_fungible_recall_emits_correct_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -426,8 +425,7 @@ fn vault_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::RecallEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::RecallEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::RecallEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
@@ -436,8 +434,7 @@ fn vault_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::DepositEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
@@ -448,8 +445,8 @@ fn vault_fungible_recall_emits_correct_events() {
 #[test]
 fn vault_non_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (_, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_account(false);
     let (recallable_resource_address, non_fungible_local_id) = {
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
 
@@ -471,10 +468,10 @@ fn vault_non_fungible_recall_emits_correct_events() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
-        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        let receipt = ledger.execute_manifest(manifest, vec![]);
         (receipt.expect_commit(true).new_resource_addresses()[0], id)
     };
-    let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
+    let vault_id = ledger.get_component_vaults(account, recallable_resource_address)[0];
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
@@ -483,21 +480,20 @@ fn vault_non_fungible_recall_emits_correct_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -509,7 +505,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
+            )) if ledger
                 .is_event_name_equal::<non_fungible_vault::RecallEvent>(event_identifier)
                 && is_decoded_equal(
                     &non_fungible_vault::RecallEvent::new(indexset!(NonFungibleLocalId::integer(
@@ -524,7 +520,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
+            )) if ledger
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
                     &non_fungible_vault::DepositEvent::new(indexset!(non_fungible_local_id)),
@@ -543,8 +539,8 @@ fn vault_non_fungible_recall_emits_correct_events() {
 #[test]
 fn resource_manager_new_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (_, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_account(false);
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
@@ -560,21 +556,20 @@ fn resource_manager_new_vault_emits_correct_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -589,9 +584,7 @@ fn resource_manager_new_vault_emits_correct_events() {
                     ..,
                 ),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(2) {
@@ -601,15 +594,14 @@ fn resource_manager_new_vault_emits_correct_events() {
                     ..,
                 ),
                 ..,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            )) if ledger.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::DepositEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
@@ -620,8 +612,8 @@ fn resource_manager_new_vault_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (_, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 500)
@@ -645,7 +637,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
-        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        let receipt = ledger.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
@@ -656,21 +648,20 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -682,8 +673,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<MintFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &MintFungibleResourceEvent { amount: 10.into() },
                     event_data
@@ -695,8 +685,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &BurnFungibleResourceEvent { amount: 10.into() },
                     event_data
@@ -710,8 +699,8 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (_, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (_, _, account) = ledger.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 500)
@@ -735,7 +724,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
-        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        let receipt = ledger.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
@@ -747,21 +736,20 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -773,8 +761,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &MintNonFungibleResourceEvent {
                         ids: indexset!(id.clone())
@@ -788,8 +775,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &BurnNonFungibleResourceEvent { ids: indexset!(id) },
                     event_data
@@ -803,11 +789,11 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 #[test]
 fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (public_key, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (public_key, _, account) = ledger.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), dec!("100"))
+            .lock_fee(ledger.faucet_component(), dec!("100"))
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -831,14 +817,14 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
                 ),
             )
             .build();
-        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        let receipt = ledger.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
     let id2 = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(2));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), dec!("10"))
+        .lock_fee(ledger.faucet_component(), dec!("10"))
         .mint_non_fungible(
             resource_address,
             [(id.clone(), EmptyStruct {}), (id2.clone(), EmptyStruct {})],
@@ -849,7 +835,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -858,15 +844,14 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 10.into() },
                     event_data
@@ -878,8 +863,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &MintNonFungibleResourceEvent {
                         ids: indexset!(id.clone(), id2.clone())
@@ -893,14 +877,14 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 _,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            )) if ledger.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
+            )) if ledger
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
                     &non_fungible_vault::DepositEvent::new(indexset!(id.clone(), id2.clone())),
@@ -913,7 +897,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<account::DepositEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<account::DepositEvent>(event_identifier)
                 && is_decoded_equal(
                     &account::DepositEvent::NonFungible(
                         resource_address,
@@ -928,7 +912,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
+            )) if ledger
                 .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
                     &non_fungible_vault::WithdrawEvent::new(indexset!(id.clone(), id2.clone())),
@@ -941,7 +925,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
+            )) if ledger
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(
                     &non_fungible_vault::DepositEvent::new(indexset!(id, id2)),
@@ -969,33 +953,37 @@ fn consensus_manager_round_update_emits_correct_event() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(1),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = ledger.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(1),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<RoundChangeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<RoundChangeEvent>(event_identifier)
                 && is_decoded_equal(
                     &RoundChangeEvent {
                         round: Round::of(1)
@@ -1023,30 +1011,34 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Prepare: skip a few rounds, right to the one just before epoch change
-    test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
+    ledger.advance_to_round(Round::of(rounds_per_epoch - 1));
 
     // Act: perform the most usual successful next round
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(rounds_per_epoch),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = ledger.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(rounds_per_epoch),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         let epoch_change_events = events
             .into_iter()
-            .filter(|(id, _data)| test_runner.is_event_name_equal::<EpochChangeEvent>(id))
+            .filter(|(id, _data)| ledger.is_event_name_equal::<EpochChangeEvent>(id))
             .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
             .collect::<Vec<_>>();
         assert_eq!(epoch_change_events.len(), 1);
@@ -1074,25 +1066,29 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
             })
             .with_total_emission_xrd_per_epoch(emission_xrd),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
-        address: CONSENSUS_MANAGER.into(),
-        method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-            Round::of(1),
-            0,
-            180000i64,
-        )),
-    }]);
+    let receipt = ledger.execute_system_transaction(
+        vec![InstructionV1::CallMethod {
+            address: CONSENSUS_MANAGER.into(),
+            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
+                Round::of(1),
+                0,
+                180000i64,
+            )),
+        }],
+        btreeset![AuthAddresses::validator_role()],
+        vec![],
+    );
 
     // Assert
     let result = receipt.expect_commit_success();
     assert_eq!(
-        test_runner.extract_events_of_type::<MintFungibleResourceEvent>(result),
+        ledger.extract_events_of_type::<MintFungibleResourceEvent>(result),
         vec![
             MintFungibleResourceEvent {
                 amount: emission_xrd
@@ -1117,13 +1113,13 @@ fn validator_registration_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let (account_pk, _, account) = test_runner.new_account(false);
+    let (account_pk, _, account) = ledger.new_account(false);
 
     // Act
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .create_proof_from_account_of_non_fungibles(
@@ -1133,7 +1129,7 @@ fn validator_registration_emits_correct_event() {
         )
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pk)],
     );
@@ -1142,15 +1138,14 @@ fn validator_registration_emits_correct_event() {
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1162,8 +1157,7 @@ fn validator_registration_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<RegisterValidatorEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<RegisterValidatorEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -1178,12 +1172,12 @@ fn validator_unregistration_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let (account_pk, _, account) = test_runner.new_account(false);
+    let (account_pk, _, account) = ledger.new_account(false);
 
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .create_proof_from_account_of_non_fungibles(
@@ -1193,7 +1187,7 @@ fn validator_unregistration_emits_correct_event() {
         )
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pk)],
     );
@@ -1209,7 +1203,7 @@ fn validator_unregistration_emits_correct_event() {
         )
         .unregister_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pk)],
     );
@@ -1218,15 +1212,14 @@ fn validator_unregistration_emits_correct_event() {
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1238,8 +1231,7 @@ fn validator_unregistration_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<UnregisterValidatorEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<UnregisterValidatorEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -1254,12 +1246,12 @@ fn validator_staking_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let (account_pk, _, account) = test_runner.new_account(false);
+    let (account_pk, _, account) = ledger.new_account(false);
 
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .create_proof_from_account_of_non_fungibles(
@@ -1269,7 +1261,7 @@ fn validator_staking_emits_correct_event() {
         )
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pk)],
     );
@@ -1288,7 +1280,7 @@ fn validator_staking_emits_correct_event() {
         .stake_validator_as_owner(validator_address, "stake")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pk)],
     );
@@ -1297,15 +1289,14 @@ fn validator_staking_emits_correct_event() {
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1317,8 +1308,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::WithdrawEvent::new(100.into()),
                     event_data
@@ -1330,7 +1320,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
                     &account::WithdrawEvent::Fungible(XRD, 100.into()),
                     event_data
@@ -1342,17 +1332,14 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(4) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::DepositEvent::new(100.into()), event_data) =>
                 true,
             _ => false,
@@ -1361,7 +1348,7 @@ fn validator_staking_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<StakeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<StakeEvent>(event_identifier)
                 && is_decoded_equal(
                     &StakeEvent {
                         xrd_staked: 100.into()
@@ -1378,15 +1365,14 @@ fn validator_staking_emits_correct_event() {
                     ..,
                 ),
                 ..,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            )) if ledger.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(7) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1410,11 +1396,11 @@ fn validator_unstake_emits_correct_events() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1424,26 +1410,25 @@ fn validator_unstake_emits_correct_events() {
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
+    ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1455,8 +1440,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(&fungible_vault::WithdrawEvent::new(1.into()), event_data) =>
                 true,
             _ => false,
@@ -1465,7 +1449,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<account::WithdrawEvent>(event_identifier)
                 && is_decoded_equal(
                     &account::WithdrawEvent::Fungible(
                         validator_substate.stake_unit_resource,
@@ -1480,8 +1464,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
                 && is_decoded_equal(
                     &BurnFungibleResourceEvent { amount: 1.into() },
                     event_data
@@ -1493,8 +1476,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1502,8 +1484,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1512,8 +1493,7 @@ fn validator_unstake_emits_correct_events() {
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(node_id, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
                 && node_id == validator_substate.claim_nft.as_node_id() =>
                 true,
             _ => false,
@@ -1522,7 +1502,7 @@ fn validator_unstake_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<UnstakeEvent>(event_identifier) => true,
+            )) if ledger.is_event_name_equal::<UnstakeEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(8) {
@@ -1532,14 +1512,14 @@ fn validator_unstake_emits_correct_events() {
                     ..,
                 ),
                 ..,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            )) if ledger.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(9) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
+            )) if ledger
                 .is_event_name_equal::<non_fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
@@ -1564,11 +1544,11 @@ fn validator_claim_xrd_emits_correct_events() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
@@ -1576,12 +1556,12 @@ fn validator_claim_xrd_emits_correct_events() {
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
+    ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1591,7 +1571,7 @@ fn validator_claim_xrd_emits_correct_events() {
         .claim_xrd(validator_address, "unstake_nft")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
@@ -1600,15 +1580,14 @@ fn validator_claim_xrd_emits_correct_events() {
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1620,7 +1599,7 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
+            )) if ledger
                 .is_event_name_equal::<non_fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
@@ -1629,16 +1608,14 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<account::WithdrawEvent>(event_identifier) =>
-                true,
+            )) if ledger.is_event_name_equal::<account::WithdrawEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(3) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<BurnNonFungibleResourceEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1646,8 +1623,7 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::WithdrawEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1655,15 +1631,14 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<ClaimXrdEvent>(event_identifier) => true,
+            )) if ledger.is_event_name_equal::<ClaimXrdEvent>(event_identifier) => true,
             _ => false,
         });
         assert!(match events.get(6) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ..,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
+            )) if ledger.is_event_name_equal::<fungible_vault::DepositEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -1678,12 +1653,12 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let (pub_key, _, account) = test_runner.new_account(false);
+    let (pub_key, _, account) = ledger.new_account(false);
 
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
         .create_proof_from_account_of_non_fungibles(
@@ -1693,7 +1668,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         )
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -1715,7 +1690,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -1724,15 +1699,14 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1744,7 +1718,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner.is_event_name_equal::<UpdateAcceptingStakeDelegationStateEvent>(
+            )) if ledger.is_event_name_equal::<UpdateAcceptingStakeDelegationStateEvent>(
                 event_identifier
             ) && is_decoded_equal(
                 &UpdateAcceptingStakeDelegationStateEvent {
@@ -1765,8 +1739,8 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 #[test]
 fn setting_metadata_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let resource_address = create_all_allowed_resource(&mut test_runner);
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let resource_address = create_all_allowed_resource(&mut ledger);
 
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
@@ -1774,21 +1748,20 @@ fn setting_metadata_emits_correct_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for event in &events {
-            let name = test_runner.event_name(&event.0);
+            let name = ledger.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
         assert!(match events.get(0) {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Main), ..),
                 ref event_data,
-            )) if test_runner
-                .is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
+            )) if ledger.is_event_name_equal::<fungible_vault::LockFeeEvent>(event_identifier)
                 && is_decoded_equal(
                     &fungible_vault::LockFeeEvent { amount: 500.into() },
                     event_data
@@ -1800,7 +1773,7 @@ fn setting_metadata_emits_correct_events() {
             Some((
                 event_identifier @ EventTypeIdentifier(Emitter::Method(_, ModuleId::Metadata), ..),
                 ..,
-            )) if test_runner.is_event_name_equal::<SetMetadataEvent>(event_identifier) => true,
+            )) if ledger.is_event_name_equal::<SetMetadataEvent>(event_identifier) => true,
             _ => false,
         });
     }
@@ -1813,19 +1786,20 @@ fn setting_metadata_emits_correct_events() {
 #[test]
 fn create_account_events_can_be_looked_up() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
 
     // Act
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll), None)
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
         for (event_id, _) in events {
-            let _name = test_runner.event_name(&event_id);
+            let _name = ledger.event_name(&event_id);
         }
     }
 }
@@ -1846,8 +1820,9 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
     scrypto_decode::<T>(&actual).unwrap() == *expected
 }
 
-fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceAddress {
+fn create_all_allowed_resource(ledger: &mut DefaultLedgerSimulator) -> ResourceAddress {
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .create_fungible_resource(
             OwnerRole::Fixed(AccessRule::AllowAll),
             false,
@@ -1871,17 +1846,17 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
             None,
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit(true).new_resource_addresses()[0]
 }
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (pk, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (pk, _, account) = ledger.new_allocated_account();
 
     // Create
-    let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+    let resource_address = ledger.create_freely_mintable_and_burnable_fungible_resource(
         OwnerRole::None,
         Some(dec!(100)),
         18,
@@ -1894,7 +1869,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
         .mint_fungible(resource_address, dec!(30))
         .deposit_batch(account)
         .build();
-    test_runner
+    ledger
         .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
         .expect_commit_success();
 
@@ -1904,7 +1879,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
         .withdraw_from_account(account, resource_address, dec!(10))
         .burn_all_from_worktop(resource_address)
         .build();
-    test_runner
+    ledger
         .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
         .expect_commit_success();
 
@@ -1912,12 +1887,12 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     let mut total_supply = Decimal::ZERO;
     let mut total_mint_amount = Decimal::ZERO;
     let mut total_burn_amount = Decimal::ZERO;
-    for component in test_runner.find_all_components() {
-        let balance = test_runner.get_component_balance(component, resource_address);
+    for component in ledger.find_all_components() {
+        let balance = ledger.get_component_balance(component, resource_address);
         total_supply = total_supply.checked_add(balance).unwrap();
         println!("{:?}, {}", component, balance);
     }
-    for tx_events in test_runner.collected_events() {
+    for tx_events in ledger.collected_events() {
         for event in tx_events {
             match &event.0 .0 {
                 Emitter::Method(x, _) if x.eq(resource_address.as_node_id()) => {}
@@ -1925,7 +1900,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
                     continue;
                 }
             }
-            let actual_type_name = test_runner.event_name(&event.0);
+            let actual_type_name = ledger.event_name(&event.0);
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
                     total_mint_amount = total_mint_amount
@@ -1958,7 +1933,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     );
 
     // Query total supply from the resource manager
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(resource_address, "get_total_supply", manifest_args!())
@@ -1973,11 +1948,11 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (pk, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (pk, _, account) = ledger.new_allocated_account();
 
     // Create
-    let resource_address = test_runner.create_freely_mintable_and_burnable_non_fungible_resource(
+    let resource_address = ledger.create_freely_mintable_and_burnable_non_fungible_resource(
         OwnerRole::None,
         NonFungibleIdType::Integer,
         Some(vec![
@@ -2000,7 +1975,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
         )
         .deposit_batch(account)
         .build();
-    test_runner
+    ledger
         .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
         .expect_commit_success();
 
@@ -2014,7 +1989,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
         )
         .burn_all_from_worktop(resource_address)
         .build();
-    test_runner
+    ledger
         .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
         .expect_commit_success();
 
@@ -2022,12 +1997,12 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
     let mut total_supply = Decimal::ZERO;
     let mut total_mint_non_fungibles = BTreeSet::new();
     let mut total_burn_non_fungibles = BTreeSet::new();
-    for component in test_runner.find_all_components() {
-        let balance = test_runner.get_component_balance(component, resource_address);
+    for component in ledger.find_all_components() {
+        let balance = ledger.get_component_balance(component, resource_address);
         total_supply = total_supply.checked_add(balance).unwrap();
         println!("{:?}, {}", component, balance);
     }
-    for tx_events in test_runner.collected_events() {
+    for tx_events in ledger.collected_events() {
         for event in tx_events {
             match &event.0 .0 {
                 Emitter::Method(x, _) if x.eq(resource_address.as_node_id()) => {}
@@ -2035,7 +2010,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
                     continue;
                 }
             }
-            let actual_type_name = test_runner.event_name(&event.0);
+            let actual_type_name = ledger.event_name(&event.0);
             match actual_type_name.as_str() {
                 "MintNonFungibleResourceEvent" => {
                     total_mint_non_fungibles.extend(
@@ -2062,7 +2037,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
     assert_eq!(total_supply, total_mint_non_fungibles.len().into());
 
     // Query total supply from the resource manager
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(resource_address, "get_total_supply", manifest_args!())
@@ -2078,15 +2053,15 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
 #[test]
 fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(false);
 
     // Act
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, XRD, 1)
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         vec![],
         0,
@@ -2094,6 +2069,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -2117,7 +2093,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
 
     {
         assert_eq!(
-            test_runner.event_name(&vault_withdraw_event.0),
+            ledger.event_name(&vault_withdraw_event.0),
             fungible_vault::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2127,7 +2103,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     }
     {
         assert_eq!(
-            test_runner.event_name(&account_withdraw_event.0),
+            ledger.event_name(&account_withdraw_event.0),
             account::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2137,7 +2113,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     }
     {
         assert_eq!(
-            test_runner.event_name(&vault_deposit_event.0),
+            ledger.event_name(&vault_deposit_event.0),
             fungible_vault::DepositEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2147,7 +2123,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
     }
     {
         assert_eq!(
-            test_runner.event_name(&account_deposit_event.0),
+            ledger.event_name(&account_deposit_event.0),
             account::DepositEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2160,16 +2136,16 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
 #[test]
 fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(false);
-    let resource_address = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(false);
+    let resource_address = ledger.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(account, resource_address, 2)
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         vec![],
         0,
@@ -2177,6 +2153,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -2204,7 +2181,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     );
     {
         assert_eq!(
-            test_runner.event_name(&vault_withdraw_event.0),
+            ledger.event_name(&vault_withdraw_event.0),
             non_fungible_vault::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2214,7 +2191,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     }
     {
         assert_eq!(
-            test_runner.event_name(&account_withdraw_event.0),
+            ledger.event_name(&account_withdraw_event.0),
             account::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2224,7 +2201,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     }
     {
         assert_eq!(
-            test_runner.event_name(&vault_deposit_event.0),
+            ledger.event_name(&vault_deposit_event.0),
             non_fungible_vault::DepositEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2234,7 +2211,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
     }
     {
         assert_eq!(
-            test_runner.event_name(&account_deposit_event.0),
+            ledger.event_name(&account_deposit_event.0),
             account::DepositEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2247,9 +2224,9 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
 #[test]
 fn account_configuration_emits_expected_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(false);
-    let resource_address = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(false);
+    let resource_address = ledger.create_non_fungible_resource(account);
     let authorized_depositor_badge = ResourceOrNonFungible::Resource(resource_address);
 
     // Act
@@ -2311,7 +2288,7 @@ fn account_configuration_emits_expected_events() {
             },
         )
         .build();
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         vec![],
         0,
@@ -2319,6 +2296,7 @@ fn account_configuration_emits_expected_events() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -2329,7 +2307,7 @@ fn account_configuration_emits_expected_events() {
         .as_slice();
 
     for event in events {
-        let name = test_runner.event_name(&event.0);
+        let name = ledger.event_name(&event.0);
         println!("{:?} - {}", event.0, name);
     }
 
@@ -2359,7 +2337,7 @@ fn account_configuration_emits_expected_events() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&set_resource_preference_allowed_event.0),
+            ledger.event_name(&set_resource_preference_allowed_event.0),
             account::SetResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2379,7 +2357,7 @@ fn account_configuration_emits_expected_events() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&set_resource_preference_disallowed_event.0),
+            ledger.event_name(&set_resource_preference_disallowed_event.0),
             account::SetResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2399,7 +2377,7 @@ fn account_configuration_emits_expected_events() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&remove_resource_preference_event.0),
+            ledger.event_name(&remove_resource_preference_event.0),
             account::RemoveResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2416,7 +2394,7 @@ fn account_configuration_emits_expected_events() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&set_default_deposit_rule_accept_event.0),
+            ledger.event_name(&set_default_deposit_rule_accept_event.0),
             account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2435,7 +2413,7 @@ fn account_configuration_emits_expected_events() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&set_default_deposit_rule_reject_event.0),
+            ledger.event_name(&set_default_deposit_rule_reject_event.0),
             account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2454,7 +2432,7 @@ fn account_configuration_emits_expected_events() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&set_default_deposit_rule_allow_existing_event.0),
+            ledger.event_name(&set_default_deposit_rule_allow_existing_event.0),
             account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2473,7 +2451,7 @@ fn account_configuration_emits_expected_events() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&add_authorized_depositor_event.0),
+            ledger.event_name(&add_authorized_depositor_event.0),
             account::AddAuthorizedDepositorEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2492,7 +2470,7 @@ fn account_configuration_emits_expected_events() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&remove_authorized_depositor_event.0),
+            ledger.event_name(&remove_authorized_depositor_event.0),
             account::RemoveAuthorizedDepositorEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2510,9 +2488,9 @@ fn account_configuration_emits_expected_events() {
 #[test]
 fn account_deposit_batch_emits_expected_events() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(false);
-    let resource_address = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(false);
+    let resource_address = ledger.create_non_fungible_resource(account);
 
     // Act
     for method_name in [
@@ -2533,7 +2511,7 @@ fn account_deposit_batch_emits_expected_events() {
             .withdraw_from_account(account, resource_address, 3)
             .call_method(account, method_name, manifest_args)
             .build();
-        let receipt = test_runner.preview_manifest(
+        let receipt = ledger.preview_manifest(
             manifest,
             vec![],
             0,
@@ -2541,6 +2519,7 @@ fn account_deposit_batch_emits_expected_events() {
                 use_free_credit: true,
                 assume_all_signature_proofs: true,
                 skip_epoch_check: true,
+                disable_auth: false,
             },
         );
 
@@ -2569,7 +2548,7 @@ fn account_deposit_batch_emits_expected_events() {
                 Emitter::Method(account.into_node_id(), ModuleId::Main)
             );
             assert_eq!(
-                test_runner.event_name(&xrd_deposit_event.0),
+                ledger.event_name(&xrd_deposit_event.0),
                 account::DepositEvent::EVENT_NAME
             );
             assert_eq!(
@@ -2583,7 +2562,7 @@ fn account_deposit_batch_emits_expected_events() {
                 Emitter::Method(account.into_node_id(), ModuleId::Main)
             );
             assert_eq!(
-                test_runner.event_name(&nfts_deposit_event.0),
+                ledger.event_name(&nfts_deposit_event.0),
                 account::DepositEvent::EVENT_NAME
             );
             assert_eq!(
@@ -2604,9 +2583,9 @@ fn account_deposit_batch_emits_expected_events() {
 #[test]
 fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_account(false);
-    let resource_address = test_runner.create_non_fungible_resource(account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_account(false);
+    let resource_address = ledger.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -2622,7 +2601,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         .try_deposit_entire_worktop_or_refund(account, None)
         .deposit_batch(account)
         .build();
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         vec![],
         0,
@@ -2630,6 +2609,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
             use_free_credit: true,
             assume_all_signature_proofs: true,
             skip_epoch_check: true,
+            disable_auth: false,
         },
     );
 
@@ -2657,7 +2637,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&xrd_rejected_deposit_event.0),
+            ledger.event_name(&xrd_rejected_deposit_event.0),
             account::RejectedDepositEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2671,7 +2651,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
             Emitter::Method(account.into_node_id(), ModuleId::Main)
         );
         assert_eq!(
-            test_runner.event_name(&nfts_rejected_deposit_event.0),
+            ledger.event_name(&nfts_rejected_deposit_event.0),
             account::RejectedDepositEvent::EVENT_NAME
         );
         assert_eq!(
@@ -2697,9 +2677,8 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
 #[test]
 fn event_replacements_occur_as_expected() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("event-replacement"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("event-replacement"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -2711,7 +2690,7 @@ fn event_replacements_occur_as_expected() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let component_address = *receipt

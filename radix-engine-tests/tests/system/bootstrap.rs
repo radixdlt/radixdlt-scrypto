@@ -1,4 +1,6 @@
+use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
+use radix_engine::object_modules::metadata::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::checkers::SystemDatabaseChecker;
 use radix_engine::system::checkers::{
@@ -7,16 +9,18 @@ use radix_engine::system::checkers::{
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
-use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
-use radix_engine_queries::typed_substate_layout::*;
-use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_interface::prelude::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_interface::db_key_mapper::{
+    MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
+use radix_substate_store_queries::typed_substate_layout::*;
+use radix_transactions::prelude::*;
 use scrypto_test::prelude::KeyValueEntrySubstate;
-use scrypto_unit::{CustomGenesis, SubtreeVaults, TestRunnerBuilder};
-use transaction::prelude::*;
+use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder, SubtreeVaults};
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
@@ -545,7 +549,7 @@ fn test_genesis_time() {
 #[test]
 fn should_not_be_able_to_create_genesis_helper() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -557,7 +561,7 @@ fn should_not_be_able_to_create_genesis_helper() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -573,14 +577,14 @@ fn should_not_be_able_to_create_genesis_helper() {
 #[test]
 fn should_not_be_able_to_call_genesis_helper() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(GENESIS_HELPER, "wrap_up", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -635,7 +639,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     ];
 
     // Bootstrap
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(CustomGenesis {
             genesis_data_chunks: genesis_data_chunks,
             genesis_epoch: Epoch::of(1),
@@ -651,22 +655,22 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
         .lock_fee_from_faucet()
         .drop_auth_zone_proofs()
         .build();
-    test_runner.execute_manifest(manifest, vec![]);
+    ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     println!("Staker 0: {:?}", staker_0);
     println!("Staker 1: {:?}", staker_1);
-    let components = test_runner.find_all_components();
+    let components = ledger.find_all_components();
     let mut total_xrd_supply = Decimal::ZERO;
     for component in components {
-        let xrd_balance = test_runner.get_component_balance(component, XRD);
+        let xrd_balance = ledger.get_component_balance(component, XRD);
         total_xrd_supply = total_xrd_supply.checked_add(xrd_balance).unwrap();
         println!("{:?}, {}", component, xrd_balance);
     }
 
     let mut total_mint_amount = Decimal::ZERO;
     let mut total_burn_amount = Decimal::ZERO;
-    for tx_events in test_runner.collected_events() {
+    for tx_events in ledger.collected_events() {
         for event in tx_events {
             match &event.0 .0 {
                 Emitter::Method(x, _) if x.eq(XRD.as_node_id()) => {}
@@ -674,7 +678,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
                     continue;
                 }
             }
-            let actual_type_name = test_runner.event_name(&event.0);
+            let actual_type_name = ledger.event_name(&event.0);
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
                     total_mint_amount = total_mint_amount
@@ -746,11 +750,12 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
 
     let reader = SystemDatabaseReader::new(&substate_db);
 
-    let validator_sort_key = reader.collection_iter(
-        CONSENSUS_MANAGER.as_node_id(),
-        ModuleId::Main,
-        0
-    ).expect("collection not found").map(|(key, _value)| key).next().expect("collection empty");
+    let validator_sort_key = reader
+        .collection_iter(CONSENSUS_MANAGER.as_node_id(), ModuleId::Main, 0)
+        .expect("collection not found")
+        .map(|(key, _value)| key)
+        .next()
+        .expect("collection empty");
 
     let SubstateKey::Sorted((sort_prefix, address)) = validator_sort_key else {
         panic!("collection not a sorted index");
@@ -758,16 +763,19 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
     let address: ComponentAddress = scrypto_decode(address.as_slice()).expect("not an address");
     let validator = reader
         .read_object_collection_entry::<_, VersionedConsensusManagerRegisteredValidatorByStake>(
-        CONSENSUS_MANAGER.as_node_id(),
-        ModuleId::Main,
-        ObjectCollectionKey::SortedIndex(0, u16::from_be_bytes(sort_prefix), &address)
+            CONSENSUS_MANAGER.as_node_id(),
+            ModuleId::Main,
+            ObjectCollectionKey::SortedIndex(0, u16::from_be_bytes(sort_prefix), &address),
         )
         .expect("validator cannot be read")
         .map(|versioned| versioned.into_latest())
         .expect("validator not found");
 
-    assert_eq!(validator, Validator {
-        key: validator_key,
-        stake: stake_xrd,
-    });
+    assert_eq!(
+        validator,
+        Validator {
+            key: validator_key,
+            stake: stake_xrd,
+        }
+    );
 }

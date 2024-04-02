@@ -1,0 +1,19 @@
+[package]
+name = "oracle_generic_proxy_with_global"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../../../../sbor" }
+scrypto = { path = "../../../../../scrypto" }
+
+[dev-dependencies]
+radix-engine = { path = "../../../../../radix-engine" }
+
+[features]
+default = []
+test = []
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]

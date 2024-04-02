@@ -1,6 +1,7 @@
-use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
+use super::costing::{CostingError, ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
@@ -23,13 +24,12 @@ use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
 use crate::transaction::ExecutionConfig;
-use crate::types::*;
 use bitflags::bitflags;
 use paste::paste;
+use radix_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::crypto::Hash;
-use resources_tracker_macro::trace_resources;
-use transaction::model::AuthZoneParams;
+use radix_engine_profiling_derive::trace_resources;
+use radix_transactions::model::AuthZoneParams;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -70,6 +70,10 @@ impl EnabledModules {
 
     pub fn for_preview() -> Self {
         Self::for_notarized_transaction() | Self::EXECUTION_TRACE
+    }
+
+    pub fn for_preview_no_auth() -> Self {
+        Self::for_preview() - Self::AUTH
     }
 }
 
@@ -192,7 +196,7 @@ impl SystemModuleMixer {
 
 impl InitSystemModule for SystemModuleMixer {
     #[trace_resources]
-    fn on_init(&mut self) -> Result<(), RuntimeError> {
+    fn on_init(&mut self) -> Result<(), BootloadingError> {
         let modules: EnabledModules = self.enabled_modules;
 
         // Enable execution trace
@@ -651,7 +655,9 @@ impl SystemModuleMixer {
         costing_entry: ExecutionCostingEntry,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing.apply_execution_cost(costing_entry)
+            self.costing
+                .apply_execution_cost(costing_entry)
+                .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))
         } else {
             Ok(())
         }
@@ -660,7 +666,7 @@ impl SystemModuleMixer {
     pub fn apply_finalization_cost(
         &mut self,
         costing_entry: FinalizationCostingEntry,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), CostingError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_finalization_cost(costing_entry)
         } else {
@@ -672,7 +678,7 @@ impl SystemModuleMixer {
         &mut self,
         storage_type: StorageType,
         size_increase: usize,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), CostingError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_storage_cost(storage_type, size_increase)
         } else {

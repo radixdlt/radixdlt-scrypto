@@ -1,41 +1,45 @@
 [package]
 name = "scrypto-test"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 edition = "2021"
+description = "A library for testing Scrypto blueprints."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 # The Radix Engine Stack
-sbor = { path = "../sbor", default-features = false }
-native-sdk = { path = "../native-sdk", default-features = false }
-transaction = { path = "../transaction", default-features = false }
-radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests"] }
-radix-engine-stores = { path = "../radix-engine-stores", default-features = false }
-radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
-
-# A library used to allow for self-referencing structs in Rust. This is used in the TestRuntime's 
-# internal implementation to have do self-referencing.
-ouroboros = { version = "0.17.2" }
-
-# A library used for more powerful declarative macros.
-paste = { version = "1.0.14" }
-
-# Used for the JSON serialization and deserialization involved in the package compilation
-serde_json = { version = "1.0.105" }
+sbor = { workspace = true }
+radix-native-sdk = { workspace = true }
+radix-transactions = { workspace = true }
+radix-engine = { workspace = true, features = ["radix_engine_tests", "db_checker"] }
+radix-substate-store-impls = { workspace = true }
+radix-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-substate-store-queries = { workspace = true }
+wabt = { workspace = true }
+ouroboros = { workspace = true }
+paste = { workspace = true }
+serde_json = { workspace = true }
+scrypto-compiler = { workspace = true }
 
 [dev-dependencies]
-scrypto = { path = "../scrypto", default-features = false }
 tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], default-features = false }
 
 [features]
-default = ["std", "moka"]
+default = ["std"]
 
-std = ["sbor/std", "native-sdk/std", "transaction/std", "radix-engine/std", "radix-engine-stores/std", "radix-engine-common/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "tuple-return/std"]
-alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine/alloc", "radix-engine-stores/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "tuple-return/alloc"]
+std = ["moka", "sbor/std", "radix-native-sdk/std", "scrypto-compiler/std", "radix-transactions/std", "radix-engine/std", "radix-substate-store-queries/std", "radix-substate-store-impls/std", "radix-common/std", "radix-engine-interface/std", "radix-substate-store-interface/std"]
+alloc = ["lru", "sbor/alloc", "radix-native-sdk/alloc", "scrypto-compiler/alloc", "radix-transactions/alloc", "radix-engine/alloc", "radix-substate-store-queries/alloc", "radix-substate-store-impls/alloc", "radix-common/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]
+
+resource_tracker = ["radix-engine/resource_tracker", "radix-common/resource_tracker"]
+
+rocksdb = ["radix-substate-store-impls/rocksdb"]
+post_run_db_check = []
 
 [lib]
 doctest = false

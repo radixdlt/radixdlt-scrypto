@@ -5,15 +5,14 @@ use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
+use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::actor::Actor;
-use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::node_init::type_info_partition;
 use crate::system::system::SystemService;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::types::*;
 use radix_engine_interface::api::{AttachedModuleId, ClientBlueprintApi, LockFlags, ModuleId};
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
@@ -21,7 +20,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
-use transaction::model::AuthZoneParams;
+use radix_transactions::model::AuthZoneParams;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {

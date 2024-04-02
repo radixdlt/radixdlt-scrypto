@@ -4,15 +4,15 @@ use crate::blueprints::pool::v1::events::one_resource_pool::*;
 use crate::blueprints::pool::v1::substates::one_resource_pool::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::*;
-use native_sdk::modules::metadata::*;
-use native_sdk::modules::role_assignment::*;
-use native_sdk::modules::royalty::*;
-use native_sdk::resource::*;
-use native_sdk::runtime::*;
 use radix_engine_interface::blueprints::component::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::*;
+use radix_native_sdk::modules::metadata::*;
+use radix_native_sdk::modules::role_assignment::*;
+use radix_native_sdk::modules::royalty::*;
+use radix_native_sdk::resource::*;
+use radix_native_sdk::runtime::*;
 
 pub struct OneResourcePoolBlueprint;
 impl OneResourcePoolBlueprint {

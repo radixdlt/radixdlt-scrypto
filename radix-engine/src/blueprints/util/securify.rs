@@ -1,11 +1,11 @@
 use crate::errors::RuntimeError;
-use crate::types::*;
-use native_sdk::modules::role_assignment::{
-    AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
-};
-use native_sdk::resource::ResourceManager;
+use crate::internal_prelude::*;
 use radix_engine_interface::api::{ClientApi, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
+use radix_native_sdk::modules::role_assignment::{
+    AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
+};
+use radix_native_sdk::resource::ResourceManager;
 
 pub trait SecurifiedRoleAssignment {
     const OWNER_BADGE: ResourceAddress;

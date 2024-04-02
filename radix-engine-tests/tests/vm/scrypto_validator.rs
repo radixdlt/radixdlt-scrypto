@@ -1,18 +1,17 @@
+use radix_common::prelude::*;
 use radix_engine_tests::common::*;
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn can_call_accepts_delegated_stake_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("validator"));
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("validator"));
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -34,11 +33,11 @@ fn can_call_accepts_delegated_stake_in_scrypto() {
 #[test]
 fn can_call_total_stake_xrd_amount_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("validator"));
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
-    let receipt = test_runner.execute_manifest(
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("validator"));
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_proof_from_account_of_non_fungibles(
@@ -56,7 +55,7 @@ fn can_call_total_stake_xrd_amount_in_scrypto() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -78,11 +77,11 @@ fn can_call_total_stake_xrd_amount_in_scrypto() {
 #[test]
 fn can_call_total_stake_unit_supply_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("validator"));
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
-    let receipt = test_runner.execute_manifest(
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("validator"));
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_proof_from_account_of_non_fungibles(
@@ -100,7 +99,7 @@ fn can_call_total_stake_unit_supply_in_scrypto() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -122,11 +121,11 @@ fn can_call_total_stake_unit_supply_in_scrypto() {
 #[test]
 fn can_call_validator_get_redemption_value_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pub_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("validator"));
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
-    let receipt = test_runner.execute_manifest(
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pub_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("validator"));
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account);
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_proof_from_account_of_non_fungibles(
@@ -145,7 +144,7 @@ fn can_call_validator_get_redemption_value_in_scrypto() {
 
     // Act
     let amount: Decimal = 5.into();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(

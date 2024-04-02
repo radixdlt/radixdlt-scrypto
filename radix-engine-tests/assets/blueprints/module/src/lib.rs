@@ -1,4 +1,4 @@
-use scrypto::api::node_modules::royalty::*;
+use scrypto::object_modules::royalty::*;
 use scrypto::prelude::*;
 
 #[blueprint]

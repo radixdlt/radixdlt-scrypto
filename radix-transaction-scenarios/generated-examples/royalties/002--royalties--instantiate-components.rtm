@@ -1,0 +1,20 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_FUNCTION
+    Address("package_sim1pksum3jam0vl9mpsjfffqd6hvyxauq0ema52aw0jpu752dcezdyzxk")
+    "RoyaltiesBp"
+    "new"
+;
+CALL_FUNCTION
+    Address("package_sim1pksum3jam0vl9mpsjfffqd6hvyxauq0ema52aw0jpu752dcezdyzxk")
+    "RoyaltiesBp"
+    "new"
+;
+CALL_FUNCTION
+    Address("package_sim1pksum3jam0vl9mpsjfffqd6hvyxauq0ema52aw0jpu752dcezdyzxk")
+    "RoyaltiesBp"
+    "new"
+;

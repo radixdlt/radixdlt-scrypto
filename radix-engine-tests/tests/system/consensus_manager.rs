@@ -1,4 +1,5 @@
-use radix_engine_tests::common::*;
+use radix_common::constants::AuthAddresses;
+use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::UnstakeData;
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
@@ -7,11 +8,10 @@ use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::CostingParameters;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_queries::typed_substate_layout::{
+use radix_engine_interface::types::FromPublicKey;
+use radix_engine_tests::common::*;
+use radix_substate_store_queries::typed_substate_layout::{
     ConsensusManagerError, ValidatorRewardAppliedEvent,
 };
 use rand::prelude::SliceRandom;
@@ -19,10 +19,9 @@ use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use scrypto::api::node_modules::*;
+use scrypto::object_modules::*;
 use scrypto_test::prelude::AuthError;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -90,7 +89,7 @@ fn genesis_epoch_has_correct_initial_validators() {
     };
 
     // Act
-    let (_, validator_set) = TestRunnerBuilder::new()
+    let (_, validator_set) = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build_and_get_epoch();
 
@@ -130,9 +129,8 @@ fn genesis_epoch_has_correct_initial_validators() {
 #[test]
 fn get_epoch_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("consensus_manager"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("consensus_manager"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -144,7 +142,7 @@ fn get_epoch_should_succeed() {
             manifest_args![],
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let epoch: Epoch = receipt.expect_commit_success().output(1);
@@ -154,9 +152,8 @@ fn get_epoch_should_succeed() {
 #[test]
 fn next_round_without_supervisor_auth_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("consensus_manager"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("consensus_manager"));
 
     // Act
     let round = Round::of(9876);
@@ -175,7 +172,7 @@ fn next_round_without_supervisor_auth_fails() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -201,12 +198,12 @@ fn next_round_with_validator_auth_succeeds() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch - 1));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -230,12 +227,12 @@ fn next_round_causes_epoch_change_on_reaching_max_rounds() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let receipt = test_runner
+    let receipt = ledger
         .advance_to_round_at_timestamp(Round::of(rounds_per_epoch), epoch_duration_millis - 1);
 
     // Assert
@@ -261,14 +258,14 @@ fn next_round_fails_if_time_moves_backward() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act 1 - a small jump in timestamp should be fine
     let next_round = Round::of(1);
     let next_timestamp = genesis_start_time_millis + 5;
-    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+    let receipt = ledger.advance_to_round_at_timestamp(next_round, next_timestamp);
 
     // Assert 1
     let result = receipt.expect_commit_success();
@@ -277,7 +274,7 @@ fn next_round_fails_if_time_moves_backward() {
     // Act 2 - a jump backwards in timestamp fails
     let next_round = Round::of(2);
     let next_timestamp = next_timestamp - 1;
-    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+    let receipt = ledger.advance_to_round_at_timestamp(next_round, next_timestamp);
 
     // Assert 2
     let error = receipt.expect_failure();
@@ -311,7 +308,7 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
@@ -323,7 +320,7 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
     // Act 1 - not quite there
     let next_round = Round::of(1);
     let next_timestamp = expected_next_epoch_change_time - 1;
-    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+    let receipt = ledger.advance_to_round_at_timestamp(next_round, next_timestamp);
 
     // Assert 1
     let result = receipt.expect_commit_success();
@@ -332,13 +329,13 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
     // Act 2 - slightly over the time change - should trigger
     let next_round = Round::of(2);
     let next_timestamp = expected_next_epoch_change_time + 1;
-    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+    let receipt = ledger.advance_to_round_at_timestamp(next_round, next_timestamp);
 
     // Assert 2
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, current_epoch.next().unwrap());
-    let state = test_runner.get_consensus_manager_state();
+    let state = ledger.get_consensus_manager_state();
     assert_eq!(state.actual_epoch_start_milli, next_timestamp);
     assert_eq!(
         state.effective_epoch_start_milli,
@@ -353,7 +350,7 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
     // Act 3 - In next epoch, not quite enough for another change
     let next_round = Round::of(1);
     let next_timestamp = expected_next_epoch_change_time - 1;
-    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+    let receipt = ledger.advance_to_round_at_timestamp(next_round, next_timestamp);
 
     // Assert 3
     let result = receipt.expect_commit_success();
@@ -364,13 +361,13 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
     // but we catch back up with where we're expecting to be
     let next_round = Round::of(2);
     let next_timestamp = expected_next_epoch_change_time;
-    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+    let receipt = ledger.advance_to_round_at_timestamp(next_round, next_timestamp);
 
     // Assert 4
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, current_epoch.next().unwrap());
-    let state = test_runner.get_consensus_manager_state();
+    let state = ledger.get_consensus_manager_state();
     assert_eq!(
         state.actual_epoch_start_milli,
         expected_next_epoch_change_time
@@ -389,14 +386,14 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
     let next_round = Round::of(1);
     // This round lasts much longer than planned
     let next_timestamp = expected_next_epoch_change_time + (target_epoch_duration_millis as i64);
-    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+    let receipt = ledger.advance_to_round_at_timestamp(next_round, next_timestamp);
 
     // Assert 5
     // Therefore the effective start isn't normalized, and is equal to actual start
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, current_epoch.next().unwrap());
-    let state = test_runner.get_consensus_manager_state();
+    let state = ledger.get_consensus_manager_state();
     assert_eq!(state.actual_epoch_start_milli, next_timestamp);
     assert_eq!(state.effective_epoch_start_milli, next_timestamp);
 }
@@ -417,13 +414,12 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let receipt =
-        test_runner.advance_to_round_at_timestamp(Round::of(1), epoch_duration_millis as i64);
+    let receipt = ledger.advance_to_round_at_timestamp(Round::of(1), epoch_duration_millis as i64);
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -433,11 +429,11 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
 #[test]
 fn create_validator_twice() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(
@@ -456,7 +452,7 @@ fn create_validator_twice() {
     println!("{:?}", receipt);
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(
@@ -477,11 +473,11 @@ fn create_validator_twice() {
 
 fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_success: bool) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, amount)
@@ -526,13 +522,13 @@ fn create_validator_with_too_much_payment_should_succeed() {
 #[test]
 fn create_validator_with_wrong_resource_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
     let resource_address =
-        test_runner.create_fungible_resource(*DEFAULT_VALIDATOR_XRD_COST, 18u8, account);
+        ledger.create_fungible_resource(*DEFAULT_VALIDATOR_XRD_COST, 18u8, account);
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, resource_address, *DEFAULT_VALIDATOR_XRD_COST)
@@ -567,12 +563,12 @@ fn register_validator_with_auth_succeeds() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -582,7 +578,7 @@ fn register_validator_with_auth_succeeds() {
         )
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -605,17 +601,17 @@ fn register_validator_without_auth_fails() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -640,12 +636,12 @@ fn unregister_validator_with_auth_succeeds() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -655,7 +651,7 @@ fn unregister_validator_with_auth_succeeds() {
         )
         .unregister_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -678,17 +674,17 @@ fn unregister_validator_without_auth_fails() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Act
-    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .unregister_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -712,10 +708,10 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -729,7 +725,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
             manifest_args!(false),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -759,7 +755,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         })
         .try_deposit_entire_worktop_or_abort(validator_account_address, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -805,11 +801,11 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let (pub_key, _, account_address) = test_runner.new_account(false);
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
+    let (pub_key, _, account_address) = ledger.new_account(false);
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -819,14 +815,14 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
         )
         .register_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -894,14 +890,14 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     };
 
     // Act
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let receipt = test_runner.advance_to_round(Round::of(1));
+    let receipt = ledger.advance_to_round(Round::of(1));
 
     // Assert
-    let a_substate = test_runner.get_active_validator_info_by_key(&a_key);
-    let a_new_stake = test_runner
+    let a_substate = ledger.get_active_validator_info_by_key(&a_key);
+    let a_new_stake = ledger
         .inspect_vault_balance(a_substate.stake_xrd_vault_id.0)
         .unwrap();
     let a_stake_added = epoch_emissions_xrd
@@ -914,8 +910,8 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         a_initial_stake.checked_add(a_stake_added).unwrap()
     );
 
-    let b_substate = test_runner.get_active_validator_info_by_key(&b_key);
-    let b_new_stake = test_runner
+    let b_substate = ledger.get_active_validator_info_by_key(&b_key);
+    let b_new_stake = ledger
         .inspect_vault_balance(b_substate.stake_xrd_vault_id.0)
         .unwrap();
     let b_stake_added = epoch_emissions_xrd
@@ -956,7 +952,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     let emission_applied_events = result
         .application_events
         .iter()
-        .filter(|(id, _data)| test_runner.is_event_name_equal::<ValidatorEmissionAppliedEvent>(id))
+        .filter(|(id, _data)| ledger.is_event_name_equal::<ValidatorEmissionAppliedEvent>(id))
         .map(|(id, data)| {
             (
                 extract_emitter_node_id(id),
@@ -969,9 +965,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         // Note - emissions are output in the order of the active validator set, so b is first as it has higher stake
         vec![
             (
-                test_runner
-                    .get_active_validator_with_key(&b_key)
-                    .into_node_id(),
+                ledger.get_active_validator_with_key(&b_key).into_node_id(),
                 ValidatorEmissionAppliedEvent {
                     epoch: initial_epoch,
                     starting_stake_pool_xrd: b_initial_stake,
@@ -983,9 +977,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
                 }
             ),
             (
-                test_runner
-                    .get_active_validator_with_key(&a_key)
-                    .into_node_id(),
+                ledger.get_active_validator_with_key(&a_key).into_node_id(),
                 ValidatorEmissionAppliedEvent {
                     epoch: initial_epoch,
                     starting_stake_pool_xrd: a_initial_stake,
@@ -1027,14 +1019,14 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     );
 
     // Act
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert: stake vault balance increased by the given emission * reliability factor
-    let validator_substate = test_runner.get_active_validator_info_by_key(&validator_pub_key);
-    let validator_new_stake = test_runner
+    let validator_substate = ledger.get_active_validator_info_by_key(&validator_pub_key);
+    let validator_new_stake = ledger
         .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
         .unwrap();
     let actual_reliability = Decimal::one().checked_div(rounds_per_epoch).unwrap();
@@ -1057,7 +1049,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     // Assert: owner stake vault balance increased by that same number (because of default `fee_factor = 1.0`)
     // Note: we know this number because an exchange rate of stake units is 1:1 (during the first epoch!)
     assert_eq!(
-        test_runner.inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0),
+        ledger.inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0),
         Some(validator_stake_added)
     );
 
@@ -1080,7 +1072,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
 
     // Assert: emitted event gives the details/breakdown
     assert_eq!(
-        test_runner.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result),
+        ledger.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result),
         vec![ValidatorEmissionAppliedEvent {
             epoch: initial_epoch,
             starting_stake_pool_xrd: validator_initial_stake,
@@ -1120,14 +1112,14 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     );
 
     // Act
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
-    let validator_substate = test_runner.get_active_validator_info_by_key(&validator_pub_key);
-    let validator_new_stake = test_runner
+    let validator_substate = ledger.get_active_validator_info_by_key(&validator_pub_key);
+    let validator_new_stake = ledger
         .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
         .unwrap();
     assert_eq!(validator_new_stake, validator_stake);
@@ -1149,7 +1141,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     );
 
     assert_eq!(
-        test_runner.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result),
+        ledger.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result),
         vec![ValidatorEmissionAppliedEvent {
             epoch: initial_epoch,
             starting_stake_pool_xrd: validator_stake,
@@ -1198,10 +1190,10 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
 
     // Act: request the fee decrease
     let manifest = ManifestBuilder::new()
@@ -1217,19 +1209,19 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             manifest_args!(next_epoch_fee_factor),
         )
         .build();
-    let receipt1 = test_runner.execute_manifest(
+    let receipt1 = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
     receipt1.expect_commit_success();
 
     // Act: change epoch
-    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let receipt2 = ledger.advance_to_round(Round::of(1));
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during that epoch)
     let result2 = receipt2.expect_commit_success();
     assert_eq!(
-        test_runner.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result2),
+        ledger.extract_events_of_type::<ValidatorEmissionAppliedEvent>(result2),
         vec![ValidatorEmissionAppliedEvent {
             epoch: initial_epoch,
             starting_stake_pool_xrd: initial_stake_amount,
@@ -1243,9 +1235,9 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     let emission_and_tx1_rewards = emission_xrd_per_epoch
         .checked_add(receipt1.fee_summary.expected_reward_if_single_validator())
         .unwrap();
-    let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
+    let validator_substate = ledger.get_active_validator_info_by_key(&validator_key);
     assert_close_to!(
-        test_runner
+        ledger
             .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
             .unwrap(),
         initial_stake_amount
@@ -1253,14 +1245,14 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             .unwrap()
     );
     assert_close_to!(
-        test_runner
+        ledger
             .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
             .unwrap(),
         emission_and_tx1_rewards
     );
 
     // Act: change epoch
-    let receipt3 = test_runner.advance_to_round(Round::of(1));
+    let receipt3 = ledger.advance_to_round(Round::of(1));
 
     // Assert: during that next epoch, the `next_epoch_fee_factor` was already effective
     let result3 = receipt3.expect_commit_success();
@@ -1273,7 +1265,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     let next_epoch_net_emission_xrd = emission_xrd_per_epoch
         .checked_sub(next_epoch_fee_xrd)
         .unwrap();
-    let event = test_runner
+    let event = ledger
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result3)
         .pop()
         .unwrap();
@@ -1285,9 +1277,9 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     assert_eq!(event.proposals_made, 1);
     assert_eq!(event.proposals_missed, 0,);
 
-    let validator_substate = test_runner.get_active_validator_info_by_key(&validator_key);
+    let validator_substate = ledger.get_active_validator_info_by_key(&validator_key);
     assert_close_to!(
-        test_runner
+        ledger
             .inspect_vault_balance(validator_substate.stake_xrd_vault_id.0)
             .unwrap(),
         initial_stake_amount
@@ -1310,7 +1302,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         .unwrap();
 
     assert_close_to!(
-        test_runner
+        ledger
             .inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0)
             .unwrap(),
         emission_and_tx1_rewards
@@ -1355,11 +1347,11 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let stake_xrd_vault_id = test_runner
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let stake_xrd_vault_id = ledger
         .get_validator_info(validator_address)
         .stake_xrd_vault_id
         .0;
@@ -1368,7 +1360,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let mut total_rewards = Decimal::ZERO;
     let mut last_reward;
 
-    last_reward = test_runner
+    last_reward = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -1390,7 +1382,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     total_rewards = total_rewards.checked_add(last_reward).unwrap();
 
     // ... and wait 1 epoch to make it effective
-    last_reward = test_runner
+    last_reward = ledger
         .advance_to_round(Round::of(1))
         .fee_summary
         .expected_reward_if_single_validator();
@@ -1398,7 +1390,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let current_epoch = initial_epoch.next().unwrap();
 
     // Act: request the fee increase
-    last_reward = test_runner
+    last_reward = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -1423,7 +1415,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     // advance a few epochs (just 1 short of the increase being effective)
     // Note: we deliberately do not use `set_current_epoch()`, since we want the "next epoch" engine logic to execute
     for _ in current_epoch.number()..increase_effective_at_epoch.number() {
-        last_reward = test_runner
+        last_reward = ledger
             .advance_to_round(Round::of(1))
             .fee_summary
             .expected_reward_if_single_validator();
@@ -1432,9 +1424,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
 
     // Assert: no change yet (the default `fee_factor = 1.0` was effective during all these epochs)
     let num_epochs_with_default_fee = increase_effective_at_epoch.number() - initial_epoch.number();
-    let starting_stake_pool = test_runner
-        .inspect_vault_balance(stake_xrd_vault_id)
-        .unwrap();
+    let starting_stake_pool = ledger.inspect_vault_balance(stake_xrd_vault_id).unwrap();
     assert_close_to!(
         starting_stake_pool,
         initial_stake_amount
@@ -1451,11 +1441,11 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     );
 
     // Act: advance one more epoch
-    let receipt = test_runner.advance_to_round(Round::of(1));
+    let receipt = ledger.advance_to_round(Round::of(1));
 
     // Assert: during that next epoch, the `increased_fee_factor` was already effective
     let result = receipt.expect_commit_success();
-    let event = test_runner
+    let event = ledger
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result)
         .remove(0);
     assert_eq!(event.epoch, increase_effective_at_epoch);
@@ -1672,19 +1662,19 @@ fn register_and_stake_new_validator(
     pub_key: Secp256k1PublicKey,
     account_address: ComponentAddress,
     stake_amount: Decimal,
-    test_runner: &mut DefaultTestRunner,
+    ledger: &mut DefaultLedgerSimulator,
 ) -> ComponentAddress {
-    let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
+    let validator_address = ledger.new_validator_with_pub_key(pub_key, account_address);
 
     let manifests = register_and_stake_txn_type.manifests(
         stake_amount,
         account_address,
         validator_address,
-        test_runner.faucet_component(),
+        ledger.faucet_component(),
     );
 
     for manifest in manifests {
-        let receipt = test_runner.execute_manifest(
+        let receipt = ledger.execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&pub_key)],
         );
@@ -1717,7 +1707,7 @@ fn registered_validator_test(
         1,
     );
     let (pub_key, account_address) = accounts[0];
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
     let validator_address = register_and_stake_new_validator(
@@ -1725,11 +1715,11 @@ fn registered_validator_test(
         pub_key,
         account_address,
         validator_to_stake_amount,
-        &mut test_runner,
+        &mut ledger,
     );
 
     // Act
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -1832,12 +1822,12 @@ fn test_registering_and_staking_many_validators() {
     );
     let mut rng = ChaCha8Rng::seed_from_u64(1234);
 
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
     let mut all_manifests = Vec::new();
     for (pub_key, account_address) in accounts {
-        let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
+        let validator_address = ledger.new_validator_with_pub_key(pub_key, account_address);
 
         let rand = rng.gen_range(0..RegisterAndStakeTransactionType::ALL_TYPES.len());
         let register_and_stake_type = RegisterAndStakeTransactionType::ALL_TYPES[rand];
@@ -1846,7 +1836,7 @@ fn test_registering_and_staking_many_validators() {
             1.into(),
             account_address,
             validator_address,
-            test_runner.faucet_component(),
+            ledger.faucet_component(),
         );
         all_manifests.push((pub_key, manifests));
     }
@@ -1855,7 +1845,7 @@ fn test_registering_and_staking_many_validators() {
 
     for (pub_key, manifests) in all_manifests {
         for manifest in manifests {
-            let receipt = test_runner.execute_manifest(
+            let receipt = ledger.execute_manifest(
                 manifest,
                 vec![NonFungibleGlobalId::from_public_key(&pub_key)],
             );
@@ -1864,7 +1854,7 @@ fn test_registering_and_staking_many_validators() {
     }
 
     // Act
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -1896,10 +1886,10 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -1909,14 +1899,14 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         )
         .unregister_validator(validator_address)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_pub_key)],
     );
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -1951,10 +1941,10 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let next_validator_pub_key = Secp256k1PrivateKey::from_u64(3u64).unwrap().public_key();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -1969,14 +1959,14 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
             manifest_args!(next_validator_pub_key),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_pub_key)],
     );
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -2008,11 +1998,11 @@ fn cannot_claim_unstake_immediately() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -2024,7 +2014,7 @@ fn cannot_claim_unstake_immediately() {
         .claim_xrd(validator_address, "unstake_nft")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
@@ -2057,11 +2047,11 @@ fn can_claim_unstake_after_epochs() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
@@ -2069,12 +2059,12 @@ fn can_claim_unstake_after_epochs() {
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
+    ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -2084,7 +2074,7 @@ fn can_claim_unstake_after_epochs() {
         .claim_xrd(validator_address, "unstake_receipt")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
@@ -2108,11 +2098,11 @@ fn owner_can_lock_stake_units() {
         Epoch::of(5),
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -2136,7 +2126,7 @@ fn owner_can_lock_stake_units() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
@@ -2144,12 +2134,11 @@ fn owner_can_lock_stake_units() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        test_runner.inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0),
+        ledger.inspect_vault_balance(validator_substate.locked_owner_stake_unit_vault_id.0),
         Some(stake_units_to_lock_amount)
     );
     assert_eq!(
-        test_runner
-            .get_component_balance(validator_account, validator_substate.stake_unit_resource),
+        ledger.get_component_balance(validator_account, validator_substate.stake_unit_resource),
         total_stake_amount
             .checked_sub(stake_units_to_lock_amount)
             .unwrap()
@@ -2176,11 +2165,11 @@ fn owner_can_start_unlocking_stake_units() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let stake_unit_resource = test_runner
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let stake_unit_resource = ledger
         .get_validator_info(validator_address)
         .stake_unit_resource;
 
@@ -2206,7 +2195,7 @@ fn owner_can_start_unlocking_stake_units() {
             )
         })
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2227,16 +2216,16 @@ fn owner_can_start_unlocking_stake_units() {
             manifest_args!(stake_units_to_unlock_amount),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
 
     // Assert
     receipt.expect_commit_success();
-    let substate = test_runner.get_validator_info(validator_address);
+    let substate = ledger.get_validator_info(validator_address);
     assert_eq!(
-        test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
+        ledger.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
         Some(
             stake_units_to_lock_amount
                 .checked_sub(stake_units_to_unlock_amount)
@@ -2244,7 +2233,7 @@ fn owner_can_start_unlocking_stake_units() {
         )
     );
     assert_eq!(
-        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        ledger.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
         Some(stake_units_to_unlock_amount) // moved to the pending vault
     );
     assert_eq!(
@@ -2252,7 +2241,7 @@ fn owner_can_start_unlocking_stake_units() {
         btreemap!(initial_epoch.after(unlock_epochs_delay).unwrap() => stake_units_to_unlock_amount)
     );
     assert_eq!(
-        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        ledger.get_component_balance(validator_account, stake_unit_resource),
         total_stake_amount
             .checked_sub(stake_units_to_lock_amount)
             .unwrap() // NOT in the external vault yet
@@ -2278,11 +2267,11 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let stake_unit_resource = test_runner
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let stake_unit_resource = ledger
         .get_validator_info(validator_address)
         .stake_unit_resource;
 
@@ -2308,7 +2297,7 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
             )
         })
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2334,7 +2323,7 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
             manifest_args!(Decimal::MAX),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
@@ -2363,11 +2352,11 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let stake_unit_resource = test_runner
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let stake_unit_resource = ledger
         .get_validator_info(validator_address)
         .stake_unit_resource;
 
@@ -2393,7 +2382,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
             )
         })
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2422,7 +2411,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
                 manifest_args!(stake_units_to_unlock_amount),
             )
             .build();
-        test_runner
+        ledger
             .execute_manifest(
                 manifest,
                 vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2431,9 +2420,9 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     }
 
     // Assert
-    let substate = test_runner.get_validator_info(validator_address);
+    let substate = ledger.get_validator_info(validator_address);
     assert_eq!(
-        test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
+        ledger.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
         Some(
             stake_units_to_lock_amount
                 .checked_sub(stake_units_to_unlock_total_amount)
@@ -2441,7 +2430,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         )
     );
     assert_eq!(
-        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        ledger.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
         Some(stake_units_to_unlock_total_amount) // moved to the pending vault
     );
     assert_eq!(
@@ -2449,7 +2438,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         btreemap!(initial_epoch.after(unlock_epochs_delay).unwrap() => stake_units_to_unlock_total_amount)
     );
     assert_eq!(
-        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        ledger.get_component_balance(validator_account, stake_unit_resource),
         total_stake_amount
             .checked_sub(stake_units_to_lock_amount)
             .unwrap() // NOT in the external vault yet
@@ -2480,11 +2469,11 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let stake_unit_resource = test_runner
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let stake_unit_resource = ledger
         .get_validator_info(validator_address)
         .stake_unit_resource;
 
@@ -2510,7 +2499,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
             )
         })
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2531,7 +2520,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
             manifest_args!(stake_units_to_unlock_amount),
         )
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2539,7 +2528,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .expect_commit_success();
 
     // Act (start unlock again after sufficient delay)
-    test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay).unwrap());
+    ledger.set_current_epoch(initial_epoch.after(unlock_epochs_delay).unwrap());
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -2553,16 +2542,16 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
             manifest_args!(stake_units_to_unlock_next_amount),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
 
     // Assert
     receipt.expect_commit_success();
-    let substate = test_runner.get_validator_info(validator_address);
+    let substate = ledger.get_validator_info(validator_address);
     assert_eq!(
-        test_runner.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
+        ledger.inspect_vault_balance(substate.locked_owner_stake_unit_vault_id.0),
         Some(
             stake_units_to_lock_amount
                 .checked_sub(total_to_unlock_amount)
@@ -2570,7 +2559,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         )
     );
     assert_eq!(
-        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        ledger.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
         Some(total_to_unlock_amount) // both amounts are still locked (although one is ready to finish unlocking)
     );
     assert_eq!(
@@ -2603,11 +2592,11 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let stake_unit_resource = test_runner
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let stake_unit_resource = ledger
         .get_validator_info(validator_address)
         .stake_unit_resource;
 
@@ -2633,7 +2622,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
             )
         })
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2654,7 +2643,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
             manifest_args!(stake_units_to_unlock_amount),
         )
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2662,7 +2651,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         .expect_commit_success();
 
     // Act (finish unlock after sufficient delay)
-    test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay).unwrap());
+    ledger.set_current_epoch(initial_epoch.after(unlock_epochs_delay).unwrap());
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -2681,16 +2670,16 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
 
     // Assert
     receipt.expect_commit_success();
-    let substate = test_runner.get_validator_info(validator_address);
+    let substate = ledger.get_validator_info(validator_address);
     assert_eq!(
-        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        ledger.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
         Some(Decimal::zero()) // subtracted from the pending vault
     );
     assert_eq!(
@@ -2698,7 +2687,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         btreemap!() // removed from the pending tracker
     );
     assert_eq!(
-        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        ledger.get_component_balance(validator_account, stake_unit_resource),
         total_stake_amount
             .checked_sub(stake_units_to_lock_amount)
             .unwrap()
@@ -2727,11 +2716,11 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let stake_unit_resource = test_runner
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let stake_unit_resource = ledger
         .get_validator_info(validator_address)
         .stake_unit_resource;
 
@@ -2757,7 +2746,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
             )
         })
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2778,7 +2767,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
             manifest_args!(stake_units_to_unlock_amount),
         )
         .build();
-    test_runner
+    ledger
         .execute_manifest(
             manifest,
             vec![NonFungibleGlobalId::from_public_key(&validator_key)],
@@ -2786,7 +2775,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         .expect_commit_success();
 
     // Act (finish unlock after insufficient delay)
-    test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay / 2).unwrap());
+    ledger.set_current_epoch(initial_epoch.after(unlock_epochs_delay / 2).unwrap());
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
@@ -2800,16 +2789,16 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
 
     // Assert
     receipt.expect_commit_success(); // it is a success - simply unlocks nothing
-    let substate = test_runner.get_validator_info(validator_address);
+    let substate = ledger.get_validator_info(validator_address);
     assert_eq!(
-        test_runner.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
+        ledger.inspect_vault_balance(substate.pending_owner_stake_unit_unlock_vault_id.0),
         Some(stake_units_to_unlock_amount) // still in the pending vault
     );
     assert_eq!(
@@ -2817,7 +2806,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         btreemap!(initial_epoch.after(unlock_epochs_delay).unwrap() => stake_units_to_unlock_amount)
     );
     assert_eq!(
-        test_runner.get_component_balance(validator_account, stake_unit_resource),
+        ledger.get_component_balance(validator_account, stake_unit_resource),
         total_stake_amount
             .checked_sub(stake_units_to_lock_amount)
             .unwrap() // still NOT in the external vault
@@ -2848,11 +2837,11 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
@@ -2860,14 +2849,14 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt1 = test_runner.execute_manifest(
+    let receipt1 = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt1.expect_commit_success();
 
     // Act
-    let receipt2 = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt2 = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result2 = receipt2.expect_commit_success();
@@ -2892,7 +2881,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
 #[test]
 fn consensus_manager_create_should_fail_with_supervisor_privilege() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let mut pre_allocated_addresses = vec![];
@@ -2910,7 +2899,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
         )
             .into(),
     );
-    let receipt = test_runner.execute_system_transaction_with_preallocation(
+    let receipt = ledger.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
@@ -2941,7 +2930,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
 #[test]
 fn consensus_manager_create_should_succeed_with_system_privilege() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let mut pre_allocated_addresses = vec![];
@@ -2963,7 +2952,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
         )
             .into(),
     );
-    let receipt = test_runner.execute_system_transaction_with_preallocation(
+    let receipt = ledger.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: CONSENSUS_MANAGER_PACKAGE.into(),
             blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
@@ -3015,23 +3004,26 @@ fn test_tips_and_fee_distribution_single_validator() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Do some transaction
-    let receipt1 = test_runner.execute_manifest_ignoring_fee(
-        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+    let receipt1 = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .drop_auth_zone_proofs()
+            .build(),
         vec![],
     );
     receipt1.expect_commit_success();
 
     // Advance epoch
-    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let receipt2 = ledger.advance_to_round(Round::of(1));
     let result2 = receipt2.expect_commit_success();
 
     // Assert: no emission
-    let event = test_runner
+    let event = ledger
         .extract_events_of_type::<ValidatorEmissionAppliedEvent>(result2)
         .remove(0);
     assert_eq!(event.epoch, initial_epoch);
@@ -3042,7 +3034,7 @@ fn test_tips_and_fee_distribution_single_validator() {
     assert_eq!(event.proposals_missed, 0);
 
     // Assert: rewards
-    let event = test_runner
+    let event = ledger
         .extract_events_of_type::<ValidatorRewardAppliedEvent>(result2)
         .remove(0);
     assert_eq!(event.epoch, initial_epoch);
@@ -3079,23 +3071,26 @@ fn test_tips_and_fee_distribution_two_validators() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Do some transaction
-    let receipt1 = test_runner.execute_manifest_ignoring_fee(
-        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+    let receipt1 = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .drop_auth_zone_proofs()
+            .build(),
         vec![],
     );
     let result1 = receipt1.expect_commit_success();
 
     // Advance epoch
-    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let receipt2 = ledger.advance_to_round(Round::of(1));
     let result2 = receipt2.expect_commit_success();
 
     // Assert
-    let events = test_runner.extract_events_of_type::<ValidatorRewardAppliedEvent>(result2);
+    let events = ledger.extract_events_of_type::<ValidatorRewardAppliedEvent>(result2);
     assert_eq!(events[0].epoch, initial_epoch);
     assert_close_to!(
         events[0].amount,
@@ -3174,14 +3169,14 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
                 target_duration_millis: 1000,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
-        .without_trace()
+        .without_kernel_trace()
         .build();
 
     let validators_addresses: Vec<ComponentAddress> = validators_keys
         .iter()
-        .map(|key| test_runner.get_active_validator_with_key(key))
+        .map(|key| ledger.get_active_validator_with_key(key))
         .collect();
 
     let manifest = ManifestBuilder::new()
@@ -3221,7 +3216,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
     costing_params.state_storage_price = Decimal::zero();
     costing_params.archive_storage_price = Decimal::zero();
 
-    let receipt = test_runner.execute_manifest_with_costing_params(
+    let receipt = ledger.execute_manifest_with_costing_params(
         manifest,
         validators_keys
             .iter()
@@ -3231,7 +3226,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
     receipt.expect_commit_success();
 
     // Act
-    let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
+    let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -3268,10 +3263,10 @@ fn cannot_unstake_with_wrong_resource() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
@@ -3279,7 +3274,7 @@ fn cannot_unstake_with_wrong_resource() {
         .unstake_validator(validator_address, "fake_stake_units")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
@@ -3309,11 +3304,11 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
@@ -3321,12 +3316,12 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
+    ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Fake unstake receipt
     let manifest = ManifestBuilder::new()
@@ -3344,7 +3339,7 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
         )
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let fake = receipt.expect_commit(true).new_resource_addresses()[0];
 
     // Act
@@ -3355,7 +3350,7 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
         .claim_xrd(validator_address, "unstake_receipt")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
@@ -3374,14 +3369,14 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
 #[test]
 fn test_metadata_of_consensus_manager() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_metadata(CONSENSUS_MANAGER, "hi", "hello")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -3415,10 +3410,10 @@ fn can_stake_with_zero_bucket() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -3427,7 +3422,7 @@ fn can_stake_with_zero_bucket() {
         .stake_validator(validator_address, "zero_xrd")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
@@ -3453,11 +3448,11 @@ fn can_unstake_with_zero_bucket() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -3466,7 +3461,7 @@ fn can_unstake_with_zero_bucket() {
         .unstake_validator(validator_address, "zero_su")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
@@ -3493,11 +3488,11 @@ fn can_claim_unstake_after_epochs_with_zero_bucket() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
@@ -3505,12 +3500,12 @@ fn can_claim_unstake_after_epochs_with_zero_bucket() {
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
-    test_runner.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
+    ledger.set_current_epoch(initial_epoch.after(1 + num_unstake_epochs).unwrap());
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -3519,7 +3514,7 @@ fn can_claim_unstake_after_epochs_with_zero_bucket() {
         .claim_xrd(validator_address, "zero_unstake_receipt")
         .try_deposit_entire_worktop_or_abort(account_with_su, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pub_key)],
     );
@@ -3542,11 +3537,11 @@ fn can_lock_owner_stake_with_zero_bucket() {
         Epoch::of(5),
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
-    let validator_address = test_runner.get_active_validator_with_key(&validator_key);
-    let validator_substate = test_runner.get_validator_info(validator_address);
+    let validator_address = ledger.get_active_validator_with_key(&validator_key);
+    let validator_substate = ledger.get_validator_info(validator_address);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -3570,7 +3565,7 @@ fn can_lock_owner_stake_with_zero_bucket() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&validator_key)],
     );
@@ -3606,23 +3601,26 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(genesis)
         .build();
 
     // Do some transaction
-    let receipt1 = test_runner.execute_manifest_ignoring_fee(
-        ManifestBuilder::new().drop_auth_zone_proofs().build(),
+    let receipt1 = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .drop_auth_zone_proofs()
+            .build(),
         vec![],
     );
     let result1 = receipt1.expect_commit_success();
 
     // Advance epoch
-    let receipt2 = test_runner.advance_to_round(Round::of(1));
+    let receipt2 = ledger.advance_to_round(Round::of(1));
     let result2 = receipt2.expect_commit_success();
 
     // Assert
-    let events = test_runner.extract_events_of_type::<ValidatorRewardAppliedEvent>(result2);
+    let events = ledger.extract_events_of_type::<ValidatorRewardAppliedEvent>(result2);
     assert_eq!(events.len(), 1); // only validator 1 receives rewards
     assert_eq!(events[0].epoch, initial_epoch);
     assert_close_to!(
@@ -3633,9 +3631,6 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
             .checked_add(result1.fee_destination.to_validator_set)
             .unwrap()
     );
-    let vault_id = test_runner.get_component_vaults(CONSENSUS_MANAGER, XRD)[0];
-    assert_close_to!(
-        test_runner.inspect_vault_balance(vault_id).unwrap(),
-        dec!(0)
-    );
+    let vault_id = ledger.get_component_vaults(CONSENSUS_MANAGER, XRD)[0];
+    assert_close_to!(ledger.inspect_vault_balance(vault_id).unwrap(), dec!(0));
 }

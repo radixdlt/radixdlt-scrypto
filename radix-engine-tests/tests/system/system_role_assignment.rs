@@ -1,20 +1,20 @@
-use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
+use radix_common::constants::AuthAddresses;
+use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine::system::attached_modules::role_assignment::RoleAssignmentError;
+use radix_engine::object_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     PackageDefinition, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_NATIVE_IDENT,
 };
-use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::model::{DynamicPackageAddress, InstructionV1};
+use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
+use radix_transactions::builder::ManifestBuilder;
+use radix_transactions::model::{DynamicPackageAddress, InstructionV1};
+use scrypto_test::prelude::*;
 
 #[test]
 fn cannot_define_more_than_50_roles() {
@@ -39,7 +39,7 @@ fn cannot_define_more_than_50_roles() {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
     let mut roles = index_map_new();
@@ -48,7 +48,7 @@ fn cannot_define_more_than_50_roles() {
     }
 
     // Act
-    let receipt = test_runner.execute_system_transaction(
+    let receipt = ledger.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -64,6 +64,7 @@ fn cannot_define_more_than_50_roles() {
             }),
         }],
         btreeset!(AuthAddresses::system_role()),
+        vec![],
     );
 
     // Assert
@@ -100,7 +101,7 @@ fn cannot_define_role_name_larger_than_max() {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
     let mut roles = index_map_new();
@@ -110,7 +111,7 @@ fn cannot_define_role_name_larger_than_max() {
     );
 
     // Act
-    let receipt = test_runner.execute_system_transaction(
+    let receipt = ledger.execute_system_transaction(
         vec![InstructionV1::CallFunction {
             package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -126,6 +127,7 @@ fn cannot_define_role_name_larger_than_max() {
             }),
         }],
         btreeset!(AuthAddresses::system_role()),
+        vec![],
     );
 
     // Assert
@@ -179,10 +181,10 @@ fn cannot_setup_more_than_50_roles() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -191,9 +193,9 @@ fn cannot_setup_more_than_50_roles() {
     );
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
             .build(),
         vec![],
@@ -241,10 +243,10 @@ fn cannot_set_role_before_attachment() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
         .build();
-    let package_address = test_runner.publish_native_package(
+    let package_address = ledger.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
@@ -253,9 +255,9 @@ fn cannot_set_role_before_attachment() {
     );
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
             .build(),
         vec![],

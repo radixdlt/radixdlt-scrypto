@@ -1,6 +1,5 @@
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_common::prelude::*;
+use scrypto_test::prelude::*;
 
 /// Long running test which verifies that the Wasm cache is properly evicting entries
 /// Ignored for day-to-day unit testing as it takes a long while to execute
@@ -8,7 +7,7 @@ use transaction::prelude::*;
 #[ignore]
 fn publishing_many_packages_should_not_cause_system_failure() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let code = wat2wasm(&format!(
         r#"
                 (module
@@ -48,7 +47,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
                 OwnerRole::None,
             )
             .build();
-        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        let receipt = ledger.execute_manifest(manifest, vec![]);
         let result = receipt.expect_commit_success();
         let package_address = result.new_package_addresses()[0];
 
@@ -56,7 +55,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
             .lock_fee_from_faucet()
             .call_function(package_address, "Test", "f", manifest_args!())
             .build();
-        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        let receipt = ledger.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
     }
 }

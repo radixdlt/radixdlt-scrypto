@@ -1,4 +1,4 @@
-use crate::types::*;
+use crate::internal_prelude::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]
 pub enum LocalRef {

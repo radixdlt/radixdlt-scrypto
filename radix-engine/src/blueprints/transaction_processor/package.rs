@@ -1,18 +1,18 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
-use crate::types::*;
+use radix_blueprint_schema_init::{
+    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
+    BlueprintStateSchemaInit, FunctionSchemaInit, TypeRef,
+};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
-use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FunctionSchemaInit, TypeRef,
-};
 
 use super::TransactionProcessorBlueprint;
 use super::TransactionProcessorRunInput;

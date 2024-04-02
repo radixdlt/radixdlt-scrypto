@@ -2,19 +2,18 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::types::*;
 use core::ops::Neg;
-use native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
-use native_sdk::runtime::Runtime;
+use radix_common::math::Decimal;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{
     ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_REF_GLOBAL, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::math::Decimal;
+use radix_engine_interface::object_modules::metadata::MetadataInit;
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
+use radix_native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
+use radix_native_sdk::runtime::Runtime;
 
 declare_native_blueprint_state! {
     blueprint_ident: NonFungibleResourceManager,

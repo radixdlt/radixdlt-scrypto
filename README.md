@@ -19,18 +19,30 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
      git config --system core.longpaths true
      ```
    - macOS:
-     - Make sure you have the xcode command line tools: `xcode-select --install`.
+     - Make sure you have the `xcode` command line tools: `xcode-select --install`.
      - Install cmake: `brew install cmake llvm`<br>
-       Add LLVM to the system path by adding below line to the `~/.profile`
+       Add LLVM to the system path by adding below line to the:
+       - `~/.profile` if `bash` is the default shell
+       - `~/.zshrc` if `zsh` is the default shell
+       - respective config file in case of other shell
        ```
-       PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+       PATH="$(brew --prefix llvm)/bin:$PATH"
        ```
+
+       You can check, which shell is the default one by inspecting `$SHELL` variable:
+       ```bash
+       echo $SHELL
+       ```
+
      - Install the Rust compiler:
      ```bash
      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
      ```
    - Linux:
-     - Make sure a C++ compiler, LLVM and cmake is installed (`sudo apt install build-essential llvm cmake`).
+     - Make sure a C++ compiler, LLVM and cmake is installed:
+     ```bash
+     sudo apt install build-essential llvm cmake
+     ```
      - Install the Rust compiler:
      ```bash
      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -46,11 +58,11 @@ Documentation: https://docs-babylon.radixdlt.com/main/scrypto/introduction.html
    ```bash
    rustup target add wasm32-unknown-unknown
    ```
-4. Install simulator
+4. Install `radix-clis`
    ```bash
    git clone https://github.com/radixdlt/radixdlt-scrypto.git
    cd radixdlt-scrypto
-   cargo install --path ./simulator
+   cargo install --path ./radix-clis
    ```
 5. (Optional) Open Scrypto documentation for later use
    ```bash
@@ -102,15 +114,15 @@ scrypto test
 | Publish a package                  | `resim publish <path_to_package_dir>`                                      |
 | Call a function                    | `resim call-function <package_address> <blueprint_name> <function> <args>` |
 | Call a method                      | `resim call-method <component_address> <method> <args>`                    |
-| Export the definition of a package | ` resim export-package-definition <package_address> <output>`              |
+| Export the definition of a package | `resim export-package-definition <package_address> <output>`               |
 | Show info about an entity          | `resim show <id>`                                                          |
-| Show info about default account    | ` resim show`                                                              |
-| List all entities in simulator     | `resim show-ledger `                                                       |
-| Reset simulator state              | `resim reset`                                                              |
+| Show info about default account    | `resim show`                                                               |
+| List all entities                  | `resim show-ledger `                                                       |
+| Reset ledger state                 | `resim reset`                                                              |
 
 **Note:** The commands use the default account as transaction sender.
 
-## Compile blueprints with dockerized simulator
+## Compile blueprints with dockerized `radix-clis`
 
 Follow this guide to build reproducible WASM and RDP files for your Scrypto blueprints.
 
@@ -121,13 +133,13 @@ The Dockerfile in the root of the repo should be work to build a docker image wh
 Build the docker image like. From the repo root
 
 ```bash
-docker build -t radixdlt/simulator .
+docker build -t radixdlt/radix-clis .
 ```
 
 Then build your package by just running
 
 ```bash
-docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
+docker run -v <path-to-your-scrypto-crate>:/src radixdlt/radix-clis
 ```
 
 ### Using published docker image
@@ -137,19 +149,28 @@ If you would like to avoid building the docker image, you can skip the build ste
 Build your blueprints directly with
 
 ```bash
-docker run -v <path-to-your-scrypto-crate>:/src radixdlt/simulator
+docker run -v <path-to-your-scrypto-crate>:/src radixdlt/radix-clis
 ```
 
 ## Project Layout
 
-- `sbor`: The binary data format used by Scrypto.
-- `sbor-derive`: Derives for encoding and decoding Rust `struct` and `enum`.
-- `scrypto`: Scrypto standard library.
-- `scrypto-schema`: Scrypto package schema.
-- `scrypto-derive`: Derives for defining and importing Scrypto blueprints.
-- `radix-engine`: The Scrypto execution engine.
-- `simulator`: A simulator that run Scrypto code on a filesystem based ledger.
-- `transaction`: Radix transaction manifest compiler, transaction models, signing and validationg logic.
+- `radix-blueprint-schema-init`: Blueprint schema initialization structures, used by Radix Package Definition (RPD).
+- `radix-clis`: Various CLI tools, like `resim`, `scrypto`, `rtmc` and `rtmd`.
+- `radix-common-derive`: Macros for defining `Decimal` and `PreciseDecimal`.
+- `radix-common`: Common libraries used by Radix Engine and Scrypto.
+- `radix-engine`: The Radix Engine implementation.
+- `radix-native-sdk`: Library to assist native blueprint development.
+- `radix-sbor-derives`: Macros for encoding and decoding Scrypto SBOR and Manifest SBOR data.
+- `radix-substate-store-impls`: Various substate store implementations.
+- `radix-substate-store-interface`: The interface of any substate store.
+- `radix-substate-store-queries`: Interprets data in substate data by injecting high-level knowledge.
+- `radix-transaction-scenarios`: Defines various transaction scenarios, for testing.
+- `radix-transactions`: Radix transaction manifest compiler, transaction models, signing and validating logic.
+- `sbor-derive`: Macros for encoding and decoding SBOR data.
+- `sbor`: A generic binary data format, upon which Scrypto SBOR and Manifest SBOR are built.
+- `scrypto-derive`: Macros for defining blueprints.
+- `scrypto-test`: Library for testing Scrypto blueprints.
+- `scrypto`: Scrypto language abstraction.
 
 ## LFS
 

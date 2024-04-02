@@ -1,16 +1,16 @@
+use radix_common::prelude::*;
+use radix_engine::{
+    errors::{ApplicationError, RuntimeError, SystemError},
+    object_modules::metadata::{MetadataError, MetadataValidationError},
+};
 use radix_engine_tests::common::*;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
-use radix_engine::types::*;
-use radix_engine_queries::typed_substate_layout::{MetadataError, MetadataValidationError};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn cannot_create_metadata_with_invalid_value() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -22,7 +22,7 @@ fn cannot_create_metadata_with_invalid_value() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -38,9 +38,8 @@ fn cannot_create_metadata_with_invalid_value() {
 #[test]
 fn cannot_set_metadata_with_invalid_value() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -50,7 +49,7 @@ fn cannot_set_metadata_with_invalid_value() {
             manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -63,7 +62,7 @@ fn cannot_set_metadata_with_invalid_value() {
             manifest_args!(component_address, "key".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -85,7 +84,7 @@ fn cannot_set_metadata_with_invalid_value() {
             manifest_args!(component_address, "key".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert 2
     receipt.expect_specific_failure(|e| {
@@ -101,9 +100,8 @@ fn cannot_set_metadata_with_invalid_value() {
 #[test]
 fn can_globalize_with_component_metadata() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -115,11 +113,11 @@ fn can_globalize_with_component_metadata() {
             manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Assert
-    let value = test_runner
+    let value = ledger
         .get_metadata(component_address.into(), "key")
         .expect("Should exist");
     assert_eq!(value, MetadataValue::String("value".to_string()));
@@ -128,9 +126,8 @@ fn can_globalize_with_component_metadata() {
 #[test]
 fn can_set_metadata_after_globalized() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -142,12 +139,12 @@ fn can_set_metadata_after_globalized() {
             manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Assert
     receipt.expect_commit_success();
-    let value = test_runner
+    let value = ledger
         .get_metadata(component_address.into(), "key")
         .expect("Should exist");
     assert_eq!(value, MetadataValue::String("value".to_string()));
@@ -156,9 +153,8 @@ fn can_set_metadata_after_globalized() {
 #[test]
 fn can_remove_metadata() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -168,7 +164,7 @@ fn can_remove_metadata() {
             manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -181,19 +177,18 @@ fn can_remove_metadata() {
             manifest_args!(component_address, "key".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
-    let value = test_runner.get_metadata(component_address.into(), "key");
+    let value = ledger.get_metadata(component_address.into(), "key");
     assert_eq!(value, None);
 }
 
 fn can_set_metadata_through_manifest(entry: MetadataValue) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -203,7 +198,7 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
             manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -211,11 +206,11 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
         .lock_fee_from_faucet()
         .set_metadata(component_address, "key".to_string(), entry.clone())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
-    let stored_entry = test_runner
+    let stored_entry = ledger
         .get_metadata(component_address.into(), "key")
         .expect("Should exist");
     assert_eq!(stored_entry, entry);
@@ -264,11 +259,10 @@ fn can_set_decimal_metadata_through_manifest() {
 #[test]
 fn can_set_address_metadata_through_manifest() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let address = test_runner
+    let address = ledger
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -279,7 +273,7 @@ fn can_set_address_metadata_through_manifest() {
             manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -288,11 +282,11 @@ fn can_set_address_metadata_through_manifest() {
         .lock_fee_from_faucet()
         .set_metadata(component_address, "key".to_string(), entry.clone())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
-    let stored_entry = test_runner
+    let stored_entry = ledger
         .get_metadata(component_address.into(), "key")
         .expect("Should exist");
     assert_eq!(stored_entry, entry);
@@ -303,11 +297,10 @@ fn can_set_address_metadata_through_manifest() {
 #[test]
 fn cannot_set_address_metadata_after_freezing() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address =
-        test_runner.publish_package_simple(PackageLoader::get("metadata_component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let address = test_runner
+    let address = ledger
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -318,13 +311,13 @@ fn cannot_set_address_metadata_after_freezing() {
             manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .lock_metadata(component_address, "other_key")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act
@@ -333,7 +326,7 @@ fn cannot_set_address_metadata_after_freezing() {
         .lock_fee_from_faucet()
         .set_metadata(component_address, "other_key", entry)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

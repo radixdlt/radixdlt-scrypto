@@ -1,11 +1,11 @@
 use crate::blueprints::account::AccountBlueprint;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
-use crate::types::*;
+use crate::internal_prelude::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::hooks::OnVirtualizeInput;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::hooks::OnVirtualizeInput;
 
 pub const ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 

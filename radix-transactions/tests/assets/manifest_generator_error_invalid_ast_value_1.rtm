@@ -1,0 +1,9 @@
+CALL_METHOD
+    Address(100u32)
+    "lock_fee"
+;
+CALL_FUNCTION
+    Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")
+    "Hello"
+    "instantiate_hello"
+;

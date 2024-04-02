@@ -1,25 +1,25 @@
-use crate::api::node_modules::auth::ROLE_ASSIGNMENT_BLUEPRINT;
-use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
 use crate::api::CollectionIndex;
-use crate::constants::{
+use crate::internal_prelude::*;
+use crate::object_modules::metadata::METADATA_BLUEPRINT;
+use crate::object_modules::role_assignment::ROLE_ASSIGNMENT_BLUEPRINT;
+use crate::types::*;
+#[cfg(feature = "fuzzing")]
+use arbitrary::Arbitrary;
+use radix_common::constants::{
     METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
-use crate::internal_prelude::*;
-use crate::types::*;
-#[cfg(feature = "radix_engine_fuzzing")]
-use arbitrary::Arbitrary;
-use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode, VersionedScryptoSchema};
-use radix_engine_common::types::*;
-use radix_engine_derive::{ManifestSbor, ScryptoSbor};
-use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
+use radix_common::prelude::{scrypto_encode, ScryptoEncode, VersionedScryptoSchema};
+use radix_common::types::*;
+use radix_common::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::FieldIndex;
+use radix_engine_interface::object_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
 use sbor::rust::collections::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
 #[repr(u8)]
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -110,7 +110,7 @@ impl ModuleId {
 
 #[repr(u8)]
 #[cfg_attr(
-    feature = "radix_engine_fuzzing",
+    feature = "fuzzing",
     derive(Arbitrary, serde::Serialize, serde::Deserialize)
 )]
 #[derive(
@@ -171,7 +171,7 @@ impl Into<ModuleId> for AttachedModuleId {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub struct FieldValue {
     pub value: Vec<u8>,

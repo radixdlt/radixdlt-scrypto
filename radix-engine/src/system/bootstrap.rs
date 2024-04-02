@@ -14,9 +14,9 @@ use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
 use crate::internal_prelude::*;
-use crate::system::attached_modules::metadata::MetadataNativePackage;
-use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::attached_modules::royalty::RoyaltyNativePackage;
+use crate::object_modules::metadata::MetadataNativePackage;
+use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
+use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
@@ -31,34 +31,34 @@ use crate::transaction::{
 };
 use crate::vm::VmVersion;
 use lazy_static::lazy_static;
-use radix_engine_common::crypto::Secp256k1PublicKey;
-use radix_engine_common::types::ComponentAddress;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, UncheckedUrl};
-use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_common::constants::AuthAddresses;
+use radix_common::crypto::Secp256k1PublicKey;
+use radix_common::math::traits::*;
+use radix_common::types::ComponentAddress;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
     CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::math::traits::*;
+use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
+use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{
     burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
-use radix_engine_store_interface::interface::{
+use radix_substate_store_interface::interface::{
     DatabaseUpdate, DatabaseUpdates, DbPartitionKey, DbSortKey, DbSubstateValue,
     PartitionDatabaseUpdates, PartitionEntry,
 };
-use radix_engine_store_interface::{
+use radix_substate_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
 };
-use transaction::model::{
+use radix_transactions::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
-use transaction::prelude::{BlobV1, PreAllocatedAddress};
-use transaction::validation::ManifestIdAllocator;
+use radix_transactions::prelude::{BlobV1, PreAllocatedAddress};
+use radix_transactions::validation::ManifestIdAllocator;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
@@ -1170,8 +1170,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Faucet Package
     {
-        let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
-        let faucet_abi = include_bytes!("../../../assets/faucet.rpd").to_vec();
+        let faucet_code = include_bytes!("../../assets/faucet.wasm").to_vec();
+        let faucet_abi = include_bytes!("../../assets/faucet.rpd").to_vec();
         let faucet_code_hash = hash(&faucet_code);
         blobs.push(BlobV1(faucet_code));
         pre_allocated_addresses.push((
@@ -1197,8 +1197,8 @@ pub fn create_system_bootstrap_transaction(
 
     // Genesis helper package
     {
-        let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
-        let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.rpd").to_vec();
+        let genesis_helper_code = include_bytes!("../../assets/genesis_helper.wasm").to_vec();
+        let genesis_helper_abi = include_bytes!("../../assets/genesis_helper.rpd").to_vec();
         let genesis_helper_code_hash = hash(&genesis_helper_code);
         blobs.push(BlobV1(genesis_helper_code));
         pre_allocated_addresses.push((

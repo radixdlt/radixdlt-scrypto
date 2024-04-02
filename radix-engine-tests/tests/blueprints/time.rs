@@ -1,12 +1,12 @@
-use radix_engine_common::types::{Epoch, Round};
-use radix_engine_interface::blueprints::consensus_manager::{TimePrecision};
-use radix_engine_interface::time::UtcDateTime;
-use scrypto_unit::*;
+use radix_common::time::UtcDateTime;
+use radix_common::types::{Epoch, Round};
+use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
+use scrypto_test::prelude::*;
 
 #[test]
 fn advancing_round_changes_app_facing_minute_resolution_clock() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
@@ -22,13 +22,13 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
     let epoch_milli = (epoch_seconds_rounded_to_minutes + 13) * 1000 + 337;
 
     // Act
-    test_runner
+    ledger
         .advance_to_round_at_timestamp(Round::of(1), epoch_milli)
         .expect_commit_success();
 
     // Assert
     assert_eq!(
-        test_runner
+        ledger
             .get_current_time(TimePrecision::Minute)
             .seconds_since_unix_epoch,
         epoch_seconds_rounded_to_minutes
@@ -38,7 +38,7 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
 #[test]
 fn advancing_round_changes_internal_milli_timestamp() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
+    let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
@@ -47,8 +47,8 @@ fn advancing_round_changes_internal_milli_timestamp() {
     let epoch_milli = 123456789;
 
     // Act
-    test_runner.advance_to_round_at_timestamp(Round::of(1), epoch_milli);
+    ledger.advance_to_round_at_timestamp(Round::of(1), epoch_milli);
 
     // Assert
-    assert_eq!(test_runner.get_current_proposer_timestamp_ms(), epoch_milli);
+    assert_eq!(ledger.get_current_proposer_timestamp_ms(), epoch_milli);
 }

@@ -1,9 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use paste::paste;
+use radix_common::crypto::{recover_secp256k1, verify_secp256k1};
+use radix_common::prelude::*;
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
     transaction::CostingParameters,
-    types::*,
     utils::ExtractSchemaError,
     vm::{
         wasm::{
@@ -11,14 +12,15 @@ use radix_engine::{
             WasmRuntime,
         },
         wasm_runtime::NoOpWasmRuntime,
+        ScryptoVmVersion,
     },
 };
-use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
-use radix_engine_queries::typed_substate_layout::{CodeHash, PackageDefinition};
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
+use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::rust::iter;
-use scrypto_unit::TestRunnerBuilder;
-use transaction::prelude::TransactionCostingParameters;
+use scrypto_test::prelude::LedgerSimulatorBuilder;
 use wabt::wat2wasm;
 
 fn bench_decode_sbor(c: &mut Criterion) {
@@ -96,7 +98,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
 
     // Instrument
-    let validator = ScryptoV1WasmValidator::new(0u64);
+    let validator = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest());
     let instrumented_code = validator
         .validate(&code, iter::empty())
         .map_err(|e| ExtractSchemaError::InvalidWasm(e))
@@ -144,7 +146,7 @@ macro_rules! bench_instantiate {
             let code = include_workspace_asset_bytes!(concat!($what, ".wasm"));
 
             // Instrument
-            let validator = ScryptoV1WasmValidator::new(0u64);
+            let validator = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest());
             let instrumented_code = validator
                 .validate(code, iter::empty())
                 .map_err(|e| ExtractSchemaError::InvalidWasm(e))
@@ -174,7 +176,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
 
     c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
-            ScryptoV1WasmValidator::new(0u64)
+            ScryptoV1WasmValidator::new(ScryptoVmVersion::latest())
                 .validate(code, definition.blueprints.values())
                 .unwrap()
         })
@@ -192,15 +194,15 @@ fn bench_deserialize_wasm(c: &mut Criterion) {
 }
 
 fn bench_prepare_wasm(c: &mut Criterion) {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
     let code = include_workspace_asset_bytes!("radiswap.wasm").to_vec();
     let package_definition: PackageDefinition =
         manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
 
     c.bench_function("costing::bench_prepare_wasm", |b| {
         b.iter(|| {
-            let (pk1, _, _) = test_runner.new_allocated_account();
-            test_runner.publish_package(
+            let (pk1, _, _) = ledger.new_allocated_account();
+            ledger.publish_package(
                 (code.clone(), package_definition.clone()),
                 btreemap!(),
                 OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),

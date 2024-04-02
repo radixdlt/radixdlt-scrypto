@@ -1,15 +1,14 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
 
 #[test]
 #[ignore = "TODO: investigate how the compiled wasm is producing unreachable"]
 fn deep_auth_rules_on_component_create_creation_fails() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("deep_sbor"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("deep_sbor"));
 
     // Act 1 - Small Depth
     let depth = 10usize;
@@ -22,7 +21,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
             manifest_args!(XRD, depth),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act 2 - Very Large Depth - we get a panic at encoding time in the Scrypto WASM
@@ -36,7 +35,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
             manifest_args!(XRD, depth),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|f| f.to_string().contains("MaxDepthExceeded"));
 
     // Act 3 - I'd hoped for a third style of error - where scrypto can encode it but
@@ -49,14 +48,14 @@ fn deep_auth_rules_on_component_create_creation_fails() {
 #[ignore = "TODO: investigate how the compiled wasm is producing unreachable"]
 fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("deep_sbor"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("deep_sbor"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "DeepStruct", "new", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act 1 - Small Depth - Succeeds
@@ -65,7 +64,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
         .lock_fee_from_faucet()
         .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
     // Act 2 - Very Large Depth - we get a panic at encoding time in the Scrypto WASM
@@ -74,7 +73,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
         .lock_fee_from_faucet()
         .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|f| f.to_string().contains("MaxDepthExceeded"));
 
     // Act 3 - I'd hoped for a third style of error - where scrypto can encode it but
@@ -100,12 +99,12 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
 
 fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> TransactionReceipt {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let code = wat2wasm(
         &include_local_wasm_str!("deep_sbor_response.wat").replace("${depth}", &depth.to_string()),
     );
-    let package_address = test_runner.publish_package(
+    let package_address = ledger.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
         OwnerRole::None,
@@ -116,5 +115,5 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
-    test_runner.execute_manifest(manifest, vec![])
+    ledger.execute_manifest(manifest, vec![])
 }

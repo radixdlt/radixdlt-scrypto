@@ -1,0 +1,33 @@
+[package]
+name = "radix-transaction-scenarios"
+version = "1.2.0-dev"
+edition = "2021"
+description = "A set of common transaction scenarios for testing and demonstration purpose."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+sbor = { workspace = true }
+radix-engine = { workspace = true }
+radix-substate-store-impls = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
+radix-transactions = { workspace = true }
+radix-rust = { workspace = true }
+itertools = { workspace = true }
+hex = { workspace = true }
+walkdir = { workspace = true }
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["hex/std", "sbor/std", "radix-blueprint-schema-init/std", "radix-transactions/std", "radix-engine/std", "radix-engine/moka", "radix-substate-store-impls/std", "radix-engine-interface/std", "radix-common/std", "radix-substate-store-interface/std", "radix-rust/std"]
+alloc = ["hex/alloc", "sbor/alloc", "radix-blueprint-schema-init/alloc", "radix-transactions/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-substate-store-impls/alloc", "radix-engine-interface/alloc", "radix-common/alloc", "radix-substate-store-interface/alloc", "radix-rust/alloc"]
+
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+[lib]
+doctest = false
+bench = false

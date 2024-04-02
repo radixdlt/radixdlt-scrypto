@@ -1,31 +1,34 @@
 [package]
 name = "scrypto"
-version = "1.1.0-dev"
+version = "1.2.0-dev"
 edition = "2021"
+description = "The Scrypto standard library."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-hex = { version = "0.4.3", default-features = false }
-num-traits = { version = "0.2.15", default-features = false }
-num-bigint = { version = "0.4.3", default-features = false }
-bech32 = { version = "0.9.0", default-features = false }
-radix-engine-common = { path = "../radix-engine-common", default-features = false }
-radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
-sbor = { path = "../sbor", default-features = false }
-scrypto-schema = { path = "../scrypto-schema", default-features = false }
-scrypto-derive = { path = "../scrypto-derive", default-features = false }
-utils = { path = "../utils", default-features = false }
-paste = { version = "1.0.13" }
-serde = { version = "1.0.144", default-features = false, optional = true }
-strum = { version = "0.24", default-features = false, features = ["derive"] }
-const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
-minicov = { version = "0.3", optional = true }
+radix-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+sbor = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
+scrypto-derive = { workspace = true }
+radix-rust = { workspace = true }
+hex = { workspace = true }
+num-traits = { workspace = true }
+num-bigint = { workspace = true }
+bech32 = { workspace = true }
+paste = { workspace = true }
+serde = { workspace = true, optional = true }
+strum = { workspace = true, features = ["derive"] }
+const-sha1 = { workspace = true, default-features = false } # Chosen because of its small size and 0 transitive dependencies
+minicov = { workspace = true, optional = true }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "scrypto-schema/std", "scrypto-derive/std", "strum/std", "radix-engine-interface/std", "radix-engine-derive/std", "utils/std"]
-alloc = ["hex/alloc", "sbor/alloc", "scrypto-schema/alloc", "scrypto-derive/alloc", "radix-engine-interface/alloc", "radix-engine-derive/alloc", "utils/alloc"]
+std = ["hex/std", "sbor/std", "radix-blueprint-schema-init/std", "scrypto-derive/std", "strum/std", "radix-common/std", "radix-engine-interface/std", "radix-rust/std"]
+alloc = ["hex/alloc", "sbor/alloc", "radix-blueprint-schema-init/alloc", "scrypto-derive/alloc", "radix-common/alloc", "radix-engine-interface/alloc", "radix-rust/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]

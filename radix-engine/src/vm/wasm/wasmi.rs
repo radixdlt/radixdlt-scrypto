@@ -1,22 +1,23 @@
-use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::blueprints::package::CodeHash;
-use sbor::rust::mem::transmute;
-use sbor::rust::mem::MaybeUninit;
-#[cfg(not(feature = "radix_engine_fuzzing"))]
-use sbor::rust::sync::Arc;
-use wasmi::core::Value;
-use wasmi::core::{HostError, Trap};
-use wasmi::errors::InstantiationError;
-use wasmi::*;
+extern crate radix_wasmi as wasmi;
 
 use crate::errors::InvokeError;
-use crate::types::*;
+use crate::internal_prelude::*;
 #[cfg(feature = "coverage")]
 use crate::utils::save_coverage_data;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
 use crate::vm::wasm::WasmEngine;
+use radix_engine_interface::api::actor_api::EventFlags;
+use radix_engine_interface::blueprints::package::CodeHash;
+use sbor::rust::mem::transmute;
+use sbor::rust::mem::MaybeUninit;
+#[cfg(not(feature = "fuzzing"))]
+use sbor::rust::sync::Arc;
+use wasmi::core::Value;
+use wasmi::core::{HostError, Trap};
+use wasmi::errors::InstantiationError;
+use wasmi::*;
 
 type FakeHostState = FakeWasmiInstanceEnv;
 type HostState = WasmiInstanceEnv;
@@ -1812,11 +1813,11 @@ pub struct WasmiEngineOptions {
 
 pub struct WasmiEngine {
     // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
-    #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
+    #[cfg(all(not(feature = "fuzzing"), not(feature = "moka")))]
     modules_cache: RefCell<lru::LruCache<CodeHash, Arc<WasmiModule>>>,
-    #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
+    #[cfg(all(not(feature = "fuzzing"), feature = "moka"))]
     modules_cache: moka::sync::Cache<CodeHash, Arc<WasmiModule>>,
-    #[cfg(feature = "radix_engine_fuzzing")]
+    #[cfg(feature = "fuzzing")]
     #[allow(dead_code)]
     modules_cache: usize,
 }
@@ -1831,11 +1832,11 @@ impl Default for WasmiEngine {
 
 impl WasmiEngine {
     pub fn new(options: WasmiEngineOptions) -> Self {
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
+        #[cfg(all(not(feature = "fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
-            NonZeroUsize::new(options.max_cache_size).unwrap(),
+            sbor::rust::num::NonZeroUsize::new(options.max_cache_size).unwrap(),
         ));
-        #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
+        #[cfg(all(not(feature = "fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
             .weigher(|_key: &CodeHash, _value: &Arc<WasmiModule>| -> u32 {
                 // No sophisticated weighing mechanism, just keep a fixed size cache
@@ -1843,7 +1844,7 @@ impl WasmiEngine {
             })
             .max_capacity(options.max_cache_size as u64)
             .build();
-        #[cfg(feature = "radix_engine_fuzzing")]
+        #[cfg(feature = "fuzzing")]
         let modules_cache = options.max_cache_size;
 
         Self { modules_cache }
@@ -1855,7 +1856,7 @@ impl WasmEngine for WasmiEngine {
 
     #[allow(unused_variables)]
     fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> WasmiInstance {
-        #[cfg(not(feature = "radix_engine_fuzzing"))]
+        #[cfg(not(feature = "fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
             {
@@ -1872,7 +1873,7 @@ impl WasmEngine for WasmiEngine {
         let module = WasmiModule::new(instrumented_code).expect("Failed to instantiate module");
         let instance = module.instantiate();
 
-        #[cfg(not(feature = "radix_engine_fuzzing"))]
+        #[cfg(not(feature = "fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
             self.modules_cache
@@ -1901,6 +1902,7 @@ impl WasmEngine for WasmiEngine {
 mod tests {
     use super::*;
     use wabt::{wat2wasm, wat2wasm_with_features, ErrorKind, Features};
+    use wasmi::Global;
 
     static MODULE_MUTABLE_GLOBALS: &str = r#"
             (module

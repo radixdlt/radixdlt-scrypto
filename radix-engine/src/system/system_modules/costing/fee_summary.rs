@@ -1,5 +1,5 @@
 use super::RoyaltyRecipient;
-use crate::types::*;
+use crate::internal_prelude::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::*;
 

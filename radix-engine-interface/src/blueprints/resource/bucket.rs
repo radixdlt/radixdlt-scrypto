@@ -1,12 +1,12 @@
 use super::Proof;
 use super::WithdrawStrategy;
-use crate::data::scrypto::model::Own;
-use crate::data::scrypto::ScryptoCustomTypeKind;
-use crate::data::scrypto::ScryptoCustomValueKind;
-use crate::math::*;
-use crate::*;
-use radix_engine_common::data::scrypto::*;
-use radix_engine_common::types::*;
+use crate::internal_prelude::*;
+use radix_common::data::scrypto::model::Own;
+use radix_common::data::scrypto::ScryptoCustomTypeKind;
+use radix_common::data::scrypto::ScryptoCustomValueKind;
+use radix_common::data::scrypto::*;
+use radix_common::math::*;
+use radix_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 

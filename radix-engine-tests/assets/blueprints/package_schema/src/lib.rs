@@ -1,5 +1,6 @@
 use sbor::*;
 use scrypto::prelude::*;
+use scrypto::radix_blueprint_schema_init::*;
 
 #[blueprint]
 mod schema_component {

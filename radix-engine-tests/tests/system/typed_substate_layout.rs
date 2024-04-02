@@ -1,18 +1,18 @@
+use radix_common::prelude::*;
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
 use radix_engine::transaction::TransactionResult;
-use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
-use radix_engine_queries::typed_native_events::TypedNativeEvent;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
+use radix_transaction_scenarios::scenario::{NextAction, ScenarioCore};
+use radix_transaction_scenarios::scenarios::get_builder_for_every_scenario;
 use sbor::rust::ops::Deref;
-use scrypto_unit::*;
-use transaction_scenarios::scenario::{NextAction, ScenarioCore};
-use transaction_scenarios::scenarios::get_builder_for_every_scenario;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
@@ -158,11 +158,11 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
 #[test]
 fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_typed() {
     let network = NetworkDefinition::simulator();
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let mut next_nonce: u32 = 0;
     for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = test_runner.get_current_epoch();
+        let epoch = ledger.get_current_epoch();
         let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
         let mut previous = None;
         loop {
@@ -172,8 +172,7 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt =
-                        test_runner.execute_raw_transaction(&network, &next.raw_transaction);
+                    let receipt = ledger.execute_notarized_transaction(&next.raw_transaction);
                     match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_substate_changes_can_be_typed(commit_result);
@@ -195,11 +194,11 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
 #[test]
 fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
     let network = NetworkDefinition::simulator();
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let mut next_nonce: u32 = 0;
     for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = test_runner.get_current_epoch();
+        let epoch = ledger.get_current_epoch();
         let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
         let mut previous = None;
         loop {
@@ -209,8 +208,7 @@ fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
-                    let receipt =
-                        test_runner.execute_raw_transaction(&network, &next.raw_transaction);
+                    let receipt = ledger.execute_notarized_transaction(&next.raw_transaction);
                     match &receipt.result {
                         TransactionResult::Commit(commit_result) => {
                             assert_receipt_events_can_be_typed(commit_result);
@@ -245,6 +243,7 @@ fn typed_native_event_type_contains_all_native_events() {
         "Resource" => RESOURCE_PACKAGE_DEFINITION.deref(),
         "Package" => PACKAGE_PACKAGE_DEFINITION.deref(),
         "TransactionProcessor" => TRANSACTION_PROCESSOR_PACKAGE_DEFINITION.deref(),
+        "Locker" => LOCKER_PACKAGE_DEFINITION.deref(),
         "Metadata" => METADATA_PACKAGE_DEFINITION.deref(),
         "Royalty" => ROYALTY_PACKAGE_DEFINITION.deref(),
         "RoleAssignment" => ROLE_ASSIGNMENT_PACKAGE_DEFINITION.deref(),

@@ -1,9 +1,10 @@
 use crate::blueprints::access_controller::AccessControllerNativePackage;
-use crate::blueprints::account::AccountNativePackage;
+use crate::blueprints::account::{AccountBlueprintBottlenoseExtension, AccountNativePackage};
 use crate::blueprints::consensus_manager::{
     ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
 };
 use crate::blueprints::identity::IdentityNativePackage;
+use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::ResourceNativePackage;
@@ -13,16 +14,16 @@ use crate::blueprints::transaction_processor::{
 };
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::attached_modules::metadata::MetadataNativePackage;
-use crate::system::attached_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::attached_modules::royalty::RoyaltyNativePackage;
+use crate::object_modules::metadata::MetadataNativePackage;
+use crate::object_modules::role_assignment::*;
+use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback::SystemLockData;
-use crate::types::*;
 use crate::vm::{VmApi, VmInvoke};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
-use resources_tracker_macro::trace_resources;
+use radix_engine_profiling_derive::trace_resources;
 
 #[derive(Clone)]
 pub struct NativeVm<E: NativeVmExtension> {
@@ -136,6 +137,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         IdentityNativePackage::invoke_export(export_name, input, api)
                     }
                     ACCOUNT_CODE_ID => AccountNativePackage::invoke_export(export_name, input, api),
+                    ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID => {
+                        AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
+                    }
                     ACCESS_CONTROLLER_CODE_ID => {
                         AccessControllerNativePackage::invoke_export(export_name, input, api)
                     }
@@ -162,6 +166,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     ROLE_ASSIGNMENT_CODE_ID => {
                         RoleAssignmentNativePackage::invoke_export(export_name, input, api)
                     }
+                    ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID => {
+                        RoleAssignmentBottlenoseExtension::invoke_export(export_name, input, api)
+                    }
                     POOL_V1_0_CODE_ID => PoolNativePackage::invoke_export(
                         export_name,
                         input,
@@ -180,6 +187,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     TEST_UTILS_CODE_ID => {
                         TestUtilsNativePackage::invoke_export(export_name, input, api)
                     }
+                    LOCKER_CODE_ID => LockerNativePackage::invoke_export(export_name, input, api),
                     _ => {
                         return Err(RuntimeError::VmError(VmError::Native(
                             NativeRuntimeError::InvalidCodeId,

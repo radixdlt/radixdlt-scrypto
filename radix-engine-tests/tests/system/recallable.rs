@@ -1,19 +1,18 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::errors::{
     CallFrameError, KernelError, RejectionReason, RuntimeError, SystemModuleError,
 };
 use radix_engine::kernel::call_frame::{CreateFrameError, PassMessageError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::*;
+use radix_engine_tests::common::*;
 use scrypto::prelude::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn non_existing_vault_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
 
     let non_existing_address = local_address(EntityType::InternalFungibleVault, 5);
 
@@ -23,14 +22,12 @@ fn non_existing_vault_should_cause_error() {
         .recall(non_existing_address, Decimal::one())
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_rejection(|e| {
-        e.eq(&RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(
-            RuntimeError::KernelError(KernelError::InvalidReference(
-                non_existing_address.as_node_id().clone(),
-            )),
+        e.eq(&RejectionReason::BootloadingError(
+            BootloadingError::ReferencedNodeDoesNotExist(non_existing_address.as_node_id().clone()),
         ))
     });
 }
@@ -38,11 +35,11 @@ fn non_existing_vault_should_cause_error() {
 #[test]
 fn cannot_take_on_non_recallable_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
 
-    let resource_address = test_runner.create_fungible_resource(10u32.into(), 0u8, account);
-    let vaults = test_runner.get_component_vaults(account, resource_address);
+    let resource_address = ledger.create_fungible_resource(10u32.into(), 0u8, account);
+    let vaults = ledger.get_component_vaults(account, resource_address);
     let vault_id = vaults[0];
 
     // Act
@@ -54,7 +51,7 @@ fn cannot_take_on_non_recallable_vault() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -70,12 +67,12 @@ fn cannot_take_on_non_recallable_vault() {
 #[test]
 fn can_take_on_recallable_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let (_, _, other_account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let (_, _, other_account) = ledger.new_allocated_account();
 
-    let recallable_token = test_runner.create_recallable_token(account);
-    let vaults = test_runner.get_component_vaults(account, recallable_token);
+    let recallable_token = ledger.create_recallable_token(account);
+    let vaults = ledger.get_component_vaults(account, recallable_token);
     let vault_id = vaults[0];
 
     // Act
@@ -87,12 +84,12 @@ fn can_take_on_recallable_vault() {
         )
         .try_deposit_entire_worktop_or_abort(other_account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
 
-    let original_account_amount = test_runner
+    let original_account_amount = ledger
         .get_component_resources(account)
         .get(&recallable_token)
         .cloned()
@@ -101,7 +98,7 @@ fn can_take_on_recallable_vault() {
     expected_amount = expected_amount.checked_sub(Decimal::one()).unwrap();
     assert_eq!(expected_amount, original_account_amount);
 
-    let other_amount = test_runner
+    let other_amount = ledger
         .get_component_resources(other_account)
         .get(&recallable_token)
         .cloned()
@@ -112,14 +109,14 @@ fn can_take_on_recallable_vault() {
 #[test]
 fn test_recall_on_internal_vault() {
     // Basic setup
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("recall"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("recall"));
 
     // Instantiate component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(package_address, "RecallTest", "new", manifest_args!())
@@ -130,7 +127,7 @@ fn test_recall_on_internal_vault() {
         receipt.expect_commit(true).output(1);
 
     // Recall
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(account, 500u32)
             .call_method(
@@ -157,14 +154,14 @@ fn test_recall_on_internal_vault() {
 #[test]
 fn test_recall_on_received_direct_access_reference() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let recallable_token_address = test_runner.create_recallable_token(account);
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("recall"));
-    let vault_id = test_runner.get_component_vaults(account, recallable_token_address)[0];
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let recallable_token_address = ledger.create_recallable_token(account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("recall"));
+    let vault_id = ledger.get_component_vaults(account, recallable_token_address)[0];
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
@@ -185,25 +182,25 @@ fn test_recall_on_received_direct_access_reference() {
 #[test]
 fn test_recall_on_received_direct_access_reference_which_is_same_as_self() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
 
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("recall"));
-    let receipt = test_runner.execute_manifest(
+    let package_address = ledger.publish_package_simple(PackageLoader::get("recall"));
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_function(package_address, "RecallTest", "new", manifest_args!())
             .build(),
         vec![],
     );
     let (component_address, recallable): (ComponentAddress, ResourceAddress) =
         receipt.expect_commit(true).output(1);
-    let vault_id = test_runner.get_component_vaults(component_address, recallable)[0];
+    let vault_id = ledger.get_component_vaults(component_address, recallable)[0];
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32)
+            .lock_fee(ledger.faucet_component(), 500u32)
             .call_method(
                 component_address,
                 "recall_on_direct_access_ref_method",

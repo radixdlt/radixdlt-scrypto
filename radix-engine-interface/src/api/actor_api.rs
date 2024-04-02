@@ -1,7 +1,7 @@
 use crate::api::field_api::FieldHandle;
 use crate::api::{ActorRefHandle, FieldIndex};
+use crate::internal_prelude::*;
 use crate::types::*;
-use crate::Sbor;
 use bitflags::bitflags;
 use radix_engine_interface::api::{ActorStateHandle, LockFlags};
 use sbor::rust::fmt::Debug;

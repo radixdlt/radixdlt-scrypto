@@ -1,7 +1,8 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::attached_modules::role_assignment::{
+use crate::object_modules::role_assignment::{
     RoleAssignmentAccessRuleEntryPayload, RoleAssignmentOwnerFieldPayload,
 };
 use crate::system::system_modules::auth::{
@@ -9,11 +10,10 @@ use crate::system::system_modules::auth::{
 };
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
-use crate::types::*;
-use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use num_traits::Zero;
 use radix_engine_interface::api::{ClientObjectApi, LockFlags, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
+use radix_native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use sbor::rust::ops::Fn;
 
 pub struct Authorization;

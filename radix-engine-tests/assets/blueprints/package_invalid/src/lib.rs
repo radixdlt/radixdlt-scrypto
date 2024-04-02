@@ -1,5 +1,6 @@
 use sbor::*;
 use scrypto::prelude::*;
+use scrypto::radix_blueprint_schema_init::*;
 
 #[no_mangle]
 pub extern "C" fn BadFunctionSchema_f(_args: u64) -> Slice {

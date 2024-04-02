@@ -1,14 +1,13 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::DropNodeError;
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_component() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("component"));
 
     // Create component
     let manifest1 = ManifestBuilder::new()
@@ -20,15 +19,15 @@ fn test_component() {
             manifest_args!(),
         )
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
+    let receipt1 = ledger.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
 }
 
 #[test]
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_addr = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_addr = ledger.publish_package_simple(PackageLoader::get("component"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -40,7 +39,7 @@ fn invalid_blueprint_name_should_cause_error() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| matches!(e, RuntimeError::SystemError(..)));
@@ -49,11 +48,11 @@ fn invalid_blueprint_name_should_cause_error() {
 #[test]
 fn blueprint_name_can_be_obtained_from_a_function() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
 
     // Act
-    let blueprint_name = test_runner
+    let blueprint_name = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -76,10 +75,10 @@ fn blueprint_name_can_be_obtained_from_a_function() {
 #[test]
 fn blueprint_name_can_be_obtained_from_a_method() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
 
-    let component_address = *test_runner
+    let component_address = *ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -98,7 +97,7 @@ fn blueprint_name_can_be_obtained_from_a_method() {
         .unwrap();
 
     // Act
-    let blueprint_name = test_runner
+    let blueprint_name = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -115,11 +114,11 @@ fn blueprint_name_can_be_obtained_from_a_method() {
 
 #[test]
 fn pass_bucket_and_proof_to_other_component() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
 
     // create 1st component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -137,7 +136,7 @@ fn pass_bucket_and_proof_to_other_component() {
     let resource_address_1 = result.new_resource_addresses().first().cloned().unwrap();
 
     // create 2nd component passing resource address from 1st component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -154,7 +153,7 @@ fn pass_bucket_and_proof_to_other_component() {
 
     // take bucket and proof from the 1st component and pass
     // to the 2nd component for proof check and bucket burn
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(component_address_1, "generate_nft_proof", manifest_args!())
@@ -175,11 +174,11 @@ fn pass_bucket_and_proof_to_other_component() {
 
 #[test]
 fn pass_bucket_and_proof_to_other_component_fail() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
 
     // create 1st component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -197,7 +196,7 @@ fn pass_bucket_and_proof_to_other_component_fail() {
     let resource_address_1 = result.new_resource_addresses().first().cloned().unwrap();
 
     // create 2nd component passing resource address from 1st component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -214,7 +213,7 @@ fn pass_bucket_and_proof_to_other_component_fail() {
 
     // take bucket and proof from the 1st component and pass
     // to the 2nd component for proof check and bucket burn
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(component_address_1, "generate_nft_proof", manifest_args!())
@@ -242,11 +241,11 @@ fn pass_bucket_and_proof_to_other_component_fail() {
 
 #[test]
 fn pass_vault_and_proof_to_other_component() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("component"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("component"));
 
     // create 1st component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(
@@ -263,7 +262,7 @@ fn pass_vault_and_proof_to_other_component() {
     let component_address_1 = result.new_component_addresses().first().cloned().unwrap();
 
     // 1st component creates proof and vault and passes it to newly created 2nd component
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(

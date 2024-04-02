@@ -3,17 +3,17 @@ use crate::blueprints::resource::{
     MintFungibleResourceEvent, MintNonFungibleResourceEvent,
 };
 use crate::system::checkers::ApplicationEventChecker;
-use radix_engine_common::constants::RESOURCE_PACKAGE;
-use radix_engine_common::math::{CheckedAdd, CheckedSub, Decimal};
-use radix_engine_common::prelude::{scrypto_decode, ResourceAddress};
-use radix_engine_common::types::NodeId;
+use radix_common::constants::RESOURCE_PACKAGE;
+use radix_common::math::{CheckedAdd, CheckedSub, Decimal};
+use radix_common::prelude::{scrypto_decode, ResourceAddress};
+use radix_common::traits::ScryptoEvent;
+use radix_common::types::NodeId;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::prelude::{BlueprintInfo, Emitter};
-use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::EventTypeIdentifier;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;

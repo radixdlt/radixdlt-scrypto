@@ -1,12 +1,12 @@
 use crate::blueprints::access_controller::AccessControllerBlueprint;
 use crate::errors::{ApplicationError, RuntimeError};
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::types::*;
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::*;
+use radix_native_sdk::runtime::Runtime;
 use sbor::rust::prelude::*;
 
 pub struct AccessControllerNativePackage;

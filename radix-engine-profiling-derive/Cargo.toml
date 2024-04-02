@@ -1,0 +1,24 @@
+[package]
+name = "radix-engine-profiling-derive"
+version = "1.2.0-dev"
+edition = "2021"
+description = "Macros for profiling to any function inside engine implementation."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[lib]
+doctest = false
+proc-macro = true
+bench = false
+
+[dependencies]
+proc-macro2 = { workspace = true }
+syn = { workspace = true, features = ["full", "extra-traits"] }
+quote = { workspace = true }
+radix-engine-profiling = { workspace = true }
+
+[features]
+default = []
+resource_tracker = ["radix-engine-profiling/resource_tracker"]
+

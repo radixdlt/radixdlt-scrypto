@@ -1,10 +1,11 @@
 use crate::blueprints::pool::v1::constants::*;
-use radix_engine_common::types::EntityType;
-use radix_engine_common::{constants::*, ScryptoSbor};
+use radix_common::types::EntityType;
+use radix_common::{constants::*, ScryptoSbor};
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
+use radix_engine_interface::blueprints::locker::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::BlueprintId;
@@ -79,6 +80,7 @@ pub fn get_global_entity_type(blueprint_id: &BlueprintId) -> EntityType {
         (POOL_PACKAGE, ONE_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalOneResourcePool,
         (POOL_PACKAGE, TWO_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalTwoResourcePool,
         (POOL_PACKAGE, MULTI_RESOURCE_POOL_BLUEPRINT_IDENT) => EntityType::GlobalMultiResourcePool,
+        (LOCKER_PACKAGE, ACCOUNT_LOCKER_BLUEPRINT) => EntityType::GlobalAccountLocker,
         _ => EntityType::GlobalGenericComponent,
     }
 }

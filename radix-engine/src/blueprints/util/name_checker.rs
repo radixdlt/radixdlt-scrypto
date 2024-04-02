@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::*;
+use radix_common::prelude::*;
 
 pub fn check_name(name: &str) -> Result<(), InvalidNameError> {
     let mut iter = name.chars().enumerate();

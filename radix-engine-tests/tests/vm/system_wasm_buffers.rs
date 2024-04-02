@@ -1,28 +1,27 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
-use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use scrypto_test::prelude::*;
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;
 
-fn get_test_runner() -> (
-    TestRunner<NoExtension, InMemorySubstateDatabase>,
+fn get_ledger() -> (
+    LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     ComponentAddress,
 ) {
     let (code, definition) = Compile::compile(path_local_blueprint!("system_wasm_buffers"));
 
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let package_address =
-        test_runner.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
-    let component_address = test_runner
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+    let component_address = ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -33,11 +32,11 @@ fn get_test_runner() -> (
         .expect_commit_success()
         .new_component_addresses()[0];
 
-    (test_runner, component_address)
+    (ledger, component_address)
 }
 
 macro_rules! test_wasm_buffer_read_write {
-    ($test_runner:expr, $component_address: expr, read=($buffer_size:expr, $memory_offs:expr, $memory_len:expr), write=($write_buffer_size:expr, $write_memory_offs:expr)) => {{
+    ($ledger:expr, $component_address: expr, read=($buffer_size:expr, $memory_offs:expr, $memory_len:expr), write=($write_buffer_size:expr, $write_memory_offs:expr)) => {{
         let manifest_builder = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_method(
@@ -56,12 +55,12 @@ macro_rules! test_wasm_buffer_read_write {
             );
 
         let manifest = manifest_builder.build();
-        $test_runner.execute_manifest(manifest, vec![])
+        $ledger.execute_manifest(manifest, vec![])
     }};
 }
 
 macro_rules! test_wasm_buffer_read {
-    ($test_runner:expr, $component_address: expr, read=($buffer_size:expr, $memory_offs:expr, $memory_len:expr)) => {{
+    ($ledger:expr, $component_address: expr, read=($buffer_size:expr, $memory_offs:expr, $memory_len:expr)) => {{
         let manifest_builder = ManifestBuilder::new().lock_fee_from_faucet().call_method(
             $component_address,
             "read_memory",
@@ -72,28 +71,28 @@ macro_rules! test_wasm_buffer_read {
             ),
         );
         let manifest = manifest_builder.build();
-        $test_runner.execute_manifest(manifest, vec![])
+        $ledger.execute_manifest(manifest, vec![])
     }};
 }
 
 macro_rules! test_wasm_buffer_consume {
-    ($test_runner:expr, $component_address: expr, buffer_id=$buffer_id:expr) => {{
+    ($ledger:expr, $component_address: expr, buffer_id=$buffer_id:expr) => {{
         let manifest_builder = ManifestBuilder::new().lock_fee_from_faucet().call_method(
             $component_address,
             "write_memory_specific_buffer_id",
             manifest_args!($buffer_id as u32),
         );
         let manifest = manifest_builder.build();
-        $test_runner.execute_manifest(manifest, vec![])
+        $ledger.execute_manifest(manifest, vec![])
     }};
-    ($test_runner:expr, $component_address: expr, buffer_ptr=$buffer_ptr:expr) => {{
+    ($ledger:expr, $component_address: expr, buffer_ptr=$buffer_ptr:expr) => {{
         let manifest_builder = ManifestBuilder::new().lock_fee_from_faucet().call_method(
             $component_address,
             "write_memory_specific_buffer_ptr",
             manifest_args!($buffer_ptr as u32),
         );
         let manifest = manifest_builder.build();
-        $test_runner.execute_manifest(manifest, vec![])
+        $ledger.execute_manifest(manifest, vec![])
     }};
 }
 
@@ -112,7 +111,7 @@ fn get_sbor_len(buffer_size: u64) -> u64 {
 #[test]
 fn test_wasm_buffer_read_write_memory_size_success() {
     // Arrange
-    let (mut test_runner, component_address) = get_test_runner();
+    let (mut ledger, component_address) = get_ledger();
 
     for buffer_size in [
         0u64,
@@ -123,7 +122,7 @@ fn test_wasm_buffer_read_write_memory_size_success() {
     ] {
         // Act
         let receipt = test_wasm_buffer_read_write!(
-            test_runner,
+            ledger,
             component_address,
             read = (buffer_size, 0, get_sbor_len(buffer_size)),
             write = (buffer_size, 0)
@@ -137,7 +136,7 @@ fn test_wasm_buffer_read_write_memory_size_success() {
 #[test]
 fn test_wasm_buffer_read_memory_access_error() {
     // Arrange
-    let (mut test_runner, component_address) = get_test_runner();
+    let (mut ledger, component_address) = get_ledger();
 
     for (buffer_size, memory_offs, memory_len) in [
         // Add 128KB to memory offs or memory len to make sure we are accessing beyond WASM memory
@@ -151,7 +150,7 @@ fn test_wasm_buffer_read_memory_access_error() {
     ] {
         // Act
         let receipt = test_wasm_buffer_read!(
-            test_runner,
+            ledger,
             component_address,
             read = (buffer_size, memory_offs, memory_len)
         );
@@ -169,7 +168,7 @@ fn test_wasm_buffer_read_memory_access_error() {
 #[test]
 fn test_wasm_buffers_write_memory_access_error() {
     // Arrange
-    let (mut test_runner, component_address) = get_test_runner();
+    let (mut ledger, component_address) = get_ledger();
 
     for ((buffer_size, memory_offs, memory_len), (write_buffer_size, write_memory_offs)) in [
         // Add 128KB to write memory offs to make sure we are accessing beyond WASM memory
@@ -184,7 +183,7 @@ fn test_wasm_buffers_write_memory_access_error() {
     ] {
         // Act
         let receipt = test_wasm_buffer_read_write!(
-            test_runner,
+            ledger,
             component_address,
             read = (buffer_size, memory_offs, memory_len),
             write = (write_buffer_size, write_memory_offs)
@@ -203,11 +202,11 @@ fn test_wasm_buffers_write_memory_access_error() {
 #[test]
 fn test_wasm_buffer_read_memory_substate_size_exceeded() {
     // Arrange
-    let (mut test_runner, component_address) = get_test_runner();
+    let (mut ledger, component_address) = get_ledger();
 
     // Act
     let receipt = test_wasm_buffer_read!(
-        test_runner,
+        ledger,
         component_address,
         read = (
             MAX_SUBSTATE_VALUE_SIZE as u64,
@@ -233,11 +232,11 @@ fn test_wasm_buffer_read_memory_substate_size_exceeded() {
 //  misaligned pointer dereference: address must be a multiple of 0x10 but is ...
 fn test_wasm_buffer_read_memory_instruction_trap() {
     // Arrange
-    let (mut test_runner, component_address) = get_test_runner();
+    let (mut ledger, component_address) = get_ledger();
 
     // Act
     let receipt = test_wasm_buffer_read!(
-        test_runner,
+        ledger,
         component_address,
         read = (4 * MB, 0, get_sbor_len(4 * MB))
     );
@@ -254,7 +253,7 @@ fn test_wasm_buffer_read_memory_instruction_trap() {
 
     // Act
     let receipt = test_wasm_buffer_read!(
-        test_runner,
+        ledger,
         component_address,
         read = (
             256 * MB - 1, // SBOR max length
@@ -275,11 +274,11 @@ fn test_wasm_buffer_read_memory_instruction_trap() {
 #[test]
 fn test_wasm_buffer_read_memory_size_too_large() {
     // Arrange
-    let (mut test_runner, component_address) = get_test_runner();
+    let (mut ledger, component_address) = get_ledger();
 
     // Act
     let receipt = test_wasm_buffer_read!(
-        test_runner,
+        ledger,
         component_address,
         read = (
             256 * MB, // SBOR max length exceeded
@@ -298,7 +297,7 @@ fn test_wasm_buffer_read_memory_size_too_large() {
 
     // Act
     let receipt = test_wasm_buffer_read!(
-        test_runner,
+        ledger,
         component_address,
         read = (usize::MAX as u64, 0, usize::MAX as u64)
     );
@@ -315,12 +314,11 @@ fn test_wasm_buffer_read_memory_size_too_large() {
 #[test]
 fn test_wasm_buffer_invalid_buffer_id() {
     // Arrange
-    let (mut test_runner, component_address) = get_test_runner();
+    let (mut ledger, component_address) = get_ledger();
 
     for buffer_id in [0, 1, 3, u32::MAX] {
         // Act
-        let receipt =
-            test_wasm_buffer_consume!(test_runner, component_address, buffer_id = buffer_id);
+        let receipt = test_wasm_buffer_consume!(ledger, component_address, buffer_id = buffer_id);
         // Assert
         receipt.expect_specific_failure(|e| {
             matches!(
@@ -331,7 +329,7 @@ fn test_wasm_buffer_invalid_buffer_id() {
     }
     // Act
     let receipt = test_wasm_buffer_consume!(
-        test_runner,
+        ledger,
         component_address,
         buffer_id = 2 // buffer_id=2 id of the kv_entry buffer
     );
@@ -342,17 +340,17 @@ fn test_wasm_buffer_invalid_buffer_id() {
 #[test]
 fn test_wasm_buffer_invalid_buffer_pointer() {
     // Arrange
-    let (mut test_runner, component_address) = get_test_runner();
+    let (mut ledger, component_address) = get_ledger();
     // Write 1KB to KV store
     test_wasm_buffer_read!(
-        test_runner,
+        ledger,
         component_address,
         read = (1 * KB, 0, get_sbor_len(1 * KB))
     );
 
     // Act
     let receipt = test_wasm_buffer_consume!(
-        test_runner,
+        ledger,
         component_address,
         buffer_ptr = 0 // Invalid pointer
     );
@@ -360,7 +358,7 @@ fn test_wasm_buffer_invalid_buffer_pointer() {
     receipt.expect_commit_success(); // This is actually success because the WASM memory range is <0, pages_cnt * 64KB>
 
     // Act
-    let receipt = test_wasm_buffer_consume!(test_runner, component_address, buffer_ptr = u32::MAX);
+    let receipt = test_wasm_buffer_consume!(ledger, component_address, buffer_ptr = u32::MAX);
     // Assert
     receipt.expect_specific_failure(|e| {
         matches!(

@@ -1,0 +1,12 @@
+[workspace]
+resolver = "1"
+
+members = [
+    "blueprint",
+    "blueprint_2",
+    "dir/blueprint_3",
+    "blueprint_4"
+]
+
+[profile.custom]
+inherits = "dev"

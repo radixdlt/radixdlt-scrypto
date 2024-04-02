@@ -1,15 +1,14 @@
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::TransientSubstates;
 use crate::track::interface::{
     CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
 use crate::track::state_updates::*;
-use crate::track::utils::OverlayingResultIterator;
 use crate::track::BootStore;
-use crate::types::*;
 use radix_engine_interface::types::*;
-use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_engine_store_interface::interface::DbPartitionKey;
-use radix_engine_store_interface::{
+use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::interface::DbPartitionKey;
+use radix_substate_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
     interface::{DbSortKey, PartitionEntry, SubstateDatabase},
 };
@@ -37,6 +36,14 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
     transient_substates: TransientSubstates,
 
     phantom_data: PhantomData<M>,
+}
+
+/// Records all the substates that have been read or written into, and all the partitions to delete.
+///
+/// `NodeId` in this struct isn't always valid.
+pub struct TrackedSubstates {
+    pub tracked_nodes: IndexMap<NodeId, TrackedNode>,
+    pub deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 }
 
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
@@ -180,15 +187,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
-    pub fn finalize(
-        mut self,
-    ) -> Result<
-        (
-            IndexMap<NodeId, TrackedNode>,
-            IndexSet<(NodeId, PartitionNumber)>,
-        ),
-        TrackFinalizeError,
-    > {
+    pub fn finalize(mut self) -> Result<TrackedSubstates, TrackFinalizeError> {
         for (node_id, transient_substates) in self.transient_substates.transient_substates {
             for (partition, substate_key) in transient_substates {
                 if let Some(tracked_partition) = self
@@ -209,7 +208,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
             }
         }
 
-        Ok((self.tracked_nodes, self.deleted_partitions))
+        Ok(TrackedSubstates {
+            tracked_nodes: self.tracked_nodes,
+            deleted_partitions: self.deleted_partitions,
+        })
     }
 
     fn get_tracked_partition(

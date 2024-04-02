@@ -1,5 +1,6 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
@@ -8,9 +9,8 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
-use crate::types::*;
+use radix_common::math::Decimal;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 
@@ -158,14 +158,14 @@ impl ProofSnapshot {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ResourceSummary {
     pub buckets: IndexMap<NodeId, BucketSnapshot>,
     pub proofs: IndexMap<NodeId, ProofSnapshot>,
 }
 
 // TODO: Clean up
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum TraceActor {
     Method(NodeId),
     NonMethod,
@@ -180,7 +180,7 @@ impl TraceActor {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct ExecutionTrace {
     pub origin: TraceOrigin,
     pub kernel_call_depth: usize,
@@ -560,7 +560,7 @@ impl ExecutionTraceModule {
     ) {
         let child_traces = self
             .kernel_call_traces_stacks
-            .remove(&(self.current_kernel_call_depth + 1))
+            .swap_remove(&(self.current_kernel_call_depth + 1))
             .unwrap_or(vec![]);
 
         let (traced_input, origin, instruction_index) = self

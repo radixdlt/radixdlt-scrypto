@@ -49,7 +49,7 @@ Release workflow:
    ```
 4. Install Scrypto CLIs
    ```bash
-   cargo install --git https://github.com/radixdlt/radixdlt-scrypto --branch develop simulator
+   cargo install --git https://github.com/radixdlt/radixdlt-scrypto --branch develop radix-clis
    ```
 5. (Recommended) Install VSCode and the following plugins
    * [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker)

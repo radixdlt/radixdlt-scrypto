@@ -1,17 +1,16 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
     OpenSubstateError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn can_insert_in_child_nodes() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -23,7 +22,7 @@ fn can_insert_in_child_nodes() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -32,8 +31,8 @@ fn can_insert_in_child_nodes() {
 #[test]
 fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -45,7 +44,7 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -54,15 +53,15 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
 #[test]
 fn cyclic_map_fails_execution() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "CyclicMap", "new", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -78,8 +77,8 @@ fn cyclic_map_fails_execution() {
 #[test]
 fn self_cyclic_map_fails_execution() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -91,7 +90,7 @@ fn self_cyclic_map_fails_execution() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -109,8 +108,8 @@ fn self_cyclic_map_fails_execution() {
 #[test]
 fn cannot_remove_kv_stores() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -120,7 +119,7 @@ fn cannot_remove_kv_stores() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -128,7 +127,7 @@ fn cannot_remove_kv_stores() {
         .lock_fee_from_faucet()
         .call_method(component_address, "clear_vector", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -146,8 +145,8 @@ fn cannot_remove_kv_stores() {
 #[test]
 fn cannot_overwrite_kv_stores() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -157,7 +156,7 @@ fn cannot_overwrite_kv_stores() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
@@ -165,7 +164,7 @@ fn cannot_overwrite_kv_stores() {
         .lock_fee_from_faucet()
         .call_method(component_address, "overwrite_kv_store", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -183,8 +182,8 @@ fn cannot_overwrite_kv_stores() {
 #[test]
 fn create_kv_store_and_get() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -196,7 +195,7 @@ fn create_kv_store_and_get() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -205,8 +204,8 @@ fn create_kv_store_and_get() {
 #[test]
 fn create_kv_store_and_put() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -218,7 +217,7 @@ fn create_kv_store_and_put() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -227,8 +226,8 @@ fn create_kv_store_and_put() {
 #[test]
 fn can_reference_in_memory_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -240,7 +239,7 @@ fn can_reference_in_memory_vault() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -249,8 +248,8 @@ fn can_reference_in_memory_vault() {
 #[test]
 fn can_reference_deep_in_memory_value() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -262,7 +261,7 @@ fn can_reference_deep_in_memory_value() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -271,8 +270,8 @@ fn can_reference_deep_in_memory_value() {
 #[test]
 fn can_reference_deep_in_memory_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -284,7 +283,7 @@ fn can_reference_deep_in_memory_vault() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -293,8 +292,8 @@ fn can_reference_deep_in_memory_vault() {
 #[test]
 fn cannot_directly_reference_inserted_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -306,7 +305,7 @@ fn cannot_directly_reference_inserted_vault() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -322,8 +321,8 @@ fn cannot_directly_reference_inserted_vault() {
 #[test]
 fn cannot_directly_reference_vault_after_container_moved() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -335,7 +334,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -351,8 +350,8 @@ fn cannot_directly_reference_vault_after_container_moved() {
 #[test]
 fn cannot_directly_reference_vault_after_container_stored() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -364,7 +363,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -380,15 +379,15 @@ fn cannot_directly_reference_vault_after_container_stored() {
 #[test]
 fn multiple_reads_should_work() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Basic", "multiple_reads", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -397,8 +396,8 @@ fn multiple_reads_should_work() {
 #[test]
 fn remove_from_local_map_should_work() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -410,7 +409,7 @@ fn remove_from_local_map_should_work() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -419,13 +418,13 @@ fn remove_from_local_map_should_work() {
 #[test]
 fn remove_from_stored_map_when_empty_should_work() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Basic", "new", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
@@ -437,7 +436,7 @@ fn remove_from_stored_map_when_empty_should_work() {
             manifest_args!("non_existent_key".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -449,8 +448,8 @@ fn remove_from_stored_map_when_empty_should_work() {
 #[test]
 fn remove_from_stored_map_when_not_empty_should_work() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -460,7 +459,7 @@ fn remove_from_stored_map_when_not_empty_should_work() {
             manifest_args!("key".to_string(), "value".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
@@ -468,7 +467,7 @@ fn remove_from_stored_map_when_not_empty_should_work() {
         .lock_fee_from_faucet()
         .call_method(component, "remove", manifest_args!("key".to_string()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     let result = receipt.expect_commit_success();
@@ -480,13 +479,13 @@ fn remove_from_stored_map_when_not_empty_should_work() {
 #[test]
 fn remove_from_stored_map_when_contain_vault_should_not_work() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "KVVault", "new", manifest_args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let component = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
@@ -494,7 +493,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
         .lock_fee_from_faucet()
         .call_method(component, "remove", manifest_args!("key".to_string()))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -512,8 +511,8 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
 #[test]
 fn nested_kv_stores_works() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("kv_store"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("kv_store"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -525,7 +524,7 @@ fn nested_kv_stores_works() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();

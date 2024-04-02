@@ -3,24 +3,25 @@ use radix_engine::blueprints::pool::v1::errors::{
     multi_resource_pool::Error as MultiResourcePoolError,
     two_resource_pool::Error as TwoResourcePoolError,
 };
+use radix_engine::updates::state_updates::generate_pool_math_precision_fix_state_updates;
+use radix_engine::updates::ProtocolUpdates;
 use scrypto_test::prelude::*;
-use scrypto_unit::*;
 
 #[test]
 fn database_is_consistent_before_and_after_protocol_update() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
-        .without_pools_v1_1()
-        .without_trace()
+    let mut ledger = LedgerSimulatorBuilder::new()
+        .with_custom_protocol_updates(ProtocolUpdates::none())
+        .without_kernel_trace()
         .build();
 
-    let (pk, _, account) = test_runner.new_account(false);
+    let (pk, _, account) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&pk);
 
-    let fungible1 = test_runner.create_fungible_resource(dec!(200), 18, account);
-    let fungible2 = test_runner.create_fungible_resource(dec!(200), 18, account);
+    let fungible1 = ledger.create_fungible_resource(dec!(200), 18, account);
+    let fungible2 = ledger.create_fungible_resource(dec!(200), 18, account);
 
-    test_runner
+    ledger
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee_from_faucet()
@@ -62,35 +63,35 @@ fn database_is_consistent_before_and_after_protocol_update() {
             vec![],
         )
         .expect_commit_success();
-    test_runner.check_database();
+    ledger.check_database();
 
     // Act
     {
-        let substate_db = test_runner.substate_db_mut();
-        let state_updates = generate_pools_v1_1_state_updates(substate_db);
+        let substate_db = ledger.substate_db_mut();
+        let state_updates = generate_pool_math_precision_fix_state_updates(substate_db);
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         substate_db.commit(&db_updates);
     }
 
     // Assert
-    test_runner.check_database();
+    ledger.check_database();
 }
 
 #[test]
 fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protocol_update() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
-        .without_pools_v1_1()
-        .without_trace()
+    let mut ledger = LedgerSimulatorBuilder::new()
+        .with_custom_protocol_updates(ProtocolUpdates::none())
+        .without_kernel_trace()
         .build();
 
-    let (pk, _, account) = test_runner.new_account(false);
+    let (pk, _, account) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&pk);
 
-    let fungible1 = test_runner.create_fungible_resource(dec!(200), 18, account);
-    let fungible2 = test_runner.create_fungible_resource(dec!(200), 18, account);
+    let fungible1 = ledger.create_fungible_resource(dec!(200), 18, account);
+    let fungible2 = ledger.create_fungible_resource(dec!(200), 18, account);
 
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account, fungible1, dec!(100))
@@ -158,7 +159,7 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
         .unwrap();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account, fungible1, dec!(100))
@@ -194,12 +195,12 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
 
     // Act
     {
-        let substate_db = test_runner.substate_db_mut();
-        let state_updates = generate_pools_v1_1_state_updates(substate_db);
+        let substate_db = ledger.substate_db_mut();
+        let state_updates = generate_pool_math_precision_fix_state_updates(substate_db);
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         substate_db.commit(&db_updates);
     }
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account, fungible1, dec!(100))
@@ -225,35 +226,26 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.get_component_balance(account, fungible1),
-        dec!(200)
-    );
-    assert_eq!(
-        test_runner.get_component_balance(account, fungible2),
-        dec!(0)
-    );
-    assert_eq!(
-        test_runner.get_component_balance(account, pool_unit),
-        dec!(200)
-    );
+    assert_eq!(ledger.get_component_balance(account, fungible1), dec!(200));
+    assert_eq!(ledger.get_component_balance(account, fungible2), dec!(0));
+    assert_eq!(ledger.get_component_balance(account, pool_unit), dec!(200));
 }
 
 #[test]
 fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_protocol_update() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new()
-        .without_pools_v1_1()
-        .without_trace()
+    let mut ledger = LedgerSimulatorBuilder::new()
+        .with_custom_protocol_updates(ProtocolUpdates::none())
+        .without_kernel_trace()
         .build();
 
-    let (pk, _, account) = test_runner.new_account(false);
+    let (pk, _, account) = ledger.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&pk);
 
-    let fungible1 = test_runner.create_fungible_resource(dec!(200), 18, account);
-    let fungible2 = test_runner.create_fungible_resource(dec!(200), 18, account);
+    let fungible1 = ledger.create_fungible_resource(dec!(200), 18, account);
+    let fungible2 = ledger.create_fungible_resource(dec!(200), 18, account);
 
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account, fungible1, dec!(100))
@@ -321,7 +313,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
         .unwrap();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account, fungible1, dec!(100))
@@ -357,12 +349,12 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
 
     // Act
     {
-        let substate_db = test_runner.substate_db_mut();
-        let state_updates = generate_pools_v1_1_state_updates(substate_db);
+        let substate_db = ledger.substate_db_mut();
+        let state_updates = generate_pool_math_precision_fix_state_updates(substate_db);
         let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
         substate_db.commit(&db_updates);
     }
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account, fungible1, dec!(100))
@@ -388,16 +380,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
 
     // Assert
     receipt.expect_commit_success();
-    assert_eq!(
-        test_runner.get_component_balance(account, fungible1),
-        dec!(200)
-    );
-    assert_eq!(
-        test_runner.get_component_balance(account, fungible2),
-        dec!(0)
-    );
-    assert_eq!(
-        test_runner.get_component_balance(account, pool_unit),
-        dec!(200)
-    );
+    assert_eq!(ledger.get_component_balance(account, fungible1), dec!(200));
+    assert_eq!(ledger.get_component_balance(account, fungible2), dec!(0));
+    assert_eq!(ledger.get_component_balance(account, pool_unit), dec!(200));
 }

@@ -1,5 +1,6 @@
 #![cfg(feature = "std")]
 
+use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::*;
 use radix_engine::kernel::kernel::*;
@@ -16,17 +17,18 @@ use radix_engine::vm::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
-use radix_engine_store_interface::db_key_mapper::*;
-use radix_engine_stores::memory_db::*;
-use scrypto_unit::TestRunnerBuilder;
-use transaction::prelude::*;
+use radix_substate_store_impls::memory_db::*;
+use radix_substate_store_interface::db_key_mapper::*;
+use radix_transactions::prelude::*;
+use scrypto_test::prelude::LedgerSimulatorBuilder;
 
 #[test]
 fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
         .call_function(
             TEST_UTILS_PACKAGE,
             TEST_UTILS_BLUEPRINT,
@@ -36,7 +38,7 @@ fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|runtime_error| {

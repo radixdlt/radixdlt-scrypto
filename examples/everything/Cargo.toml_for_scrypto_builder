@@ -1,0 +1,26 @@
+[package]
+name = "everything"
+version = "1.2.0-dev"
+edition = "2021"
+
+[dependencies]
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
+scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
+
+[dev-dependencies]
+scrypto-test = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
+
+[profile.release]
+opt-level = 'z'        # Optimize for size.
+lto = true             # Enable Link Time Optimization.
+codegen-units = 1      # Reduce number of codegen units to increase optimizations.
+panic = 'abort'        # Abort on panic.
+strip = true           # Strip the symbols.
+overflow-checks = true # Panic in the case of an overflow.
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]
+
+[workspace]
+# Empty to hide it from the root workspace

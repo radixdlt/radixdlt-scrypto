@@ -1,22 +1,21 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::resource::{
     InvalidNonFungibleSchema, NonFungibleResourceManagerError,
 };
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine_interface::types::FromPublicKey;
+use radix_engine_tests::common::*;
 use scrypto::NonFungibleData;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn create_non_fungible_resource_with_supply_and_ruid_should_fail() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -30,7 +29,7 @@ fn create_non_fungible_resource_with_supply_and_ruid_should_fail() {
             Some(vec![(NonFungibleLocalId::ruid([0u8; 32]), ())]),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -48,7 +47,7 @@ fn test_non_fungible_resource_with_schema<F: FnOnce(TransactionReceipt)>(
     on_receipt: F,
 ) {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -69,7 +68,7 @@ fn test_non_fungible_resource_with_schema<F: FnOnce(TransactionReceipt)>(
         })
         .0
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     on_receipt(receipt);
@@ -177,9 +176,9 @@ fn create_non_fungible_resource_with_missing_mutable_field_should_fail() {
 #[test]
 fn can_mint_non_fungible_with_global() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -192,7 +191,7 @@ fn can_mint_non_fungible_with_global() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -204,9 +203,9 @@ fn can_mint_non_fungible_with_global() {
 #[test]
 fn create_non_fungible_mutable() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -219,7 +218,7 @@ fn create_non_fungible_mutable() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -231,9 +230,9 @@ fn create_non_fungible_mutable() {
 #[test]
 fn can_burn_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -244,10 +243,10 @@ fn can_burn_non_fungible() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
-    let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
-    let first_id = test_runner
+    let vault_id = ledger.get_component_vaults(account, resource_address)[0];
+    let first_id = ledger
         .inspect_non_fungible_vault(vault_id)
         .unwrap()
         .1
@@ -269,7 +268,7 @@ fn can_burn_non_fungible() {
         .try_deposit_entire_worktop_or_abort(account, None)
         .assert_worktop_contains(resource_address, 0)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -281,9 +280,9 @@ fn can_burn_non_fungible() {
 #[test]
 fn test_take_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -296,7 +295,7 @@ fn test_take_non_fungible() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -305,9 +304,9 @@ fn test_take_non_fungible() {
 #[test]
 fn test_take_non_fungibles() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -320,7 +319,7 @@ fn test_take_non_fungibles() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -328,9 +327,9 @@ fn test_take_non_fungibles() {
 
 #[test]
 fn can_update_non_fungible_when_mutable() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -341,7 +340,7 @@ fn can_update_non_fungible_when_mutable() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -350,9 +349,9 @@ fn can_update_non_fungible_when_mutable() {
 
 #[test]
 fn cannot_update_non_fungible_when_not_mutable() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -363,7 +362,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -379,9 +378,9 @@ fn cannot_update_non_fungible_when_not_mutable() {
 
 #[test]
 fn cannot_update_non_fungible_when_field_does_not_exist() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -392,7 +391,7 @@ fn cannot_update_non_fungible_when_field_does_not_exist() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -408,9 +407,9 @@ fn cannot_update_non_fungible_when_field_does_not_exist() {
 
 #[test]
 fn cannot_update_non_fungible_when_id_does_not_exist() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -421,7 +420,7 @@ fn cannot_update_non_fungible_when_id_does_not_exist() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -437,9 +436,9 @@ fn cannot_update_non_fungible_when_id_does_not_exist() {
 
 #[test]
 fn cannot_get_non_fungible_when_id_does_not_exist() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -450,7 +449,7 @@ fn cannot_get_non_fungible_when_id_does_not_exist() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -467,15 +466,15 @@ fn cannot_get_non_fungible_when_id_does_not_exist() {
 #[test]
 fn can_call_non_fungible_data_reference() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    test_runner.set_metadata(
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    ledger.set_metadata(
         account.into(),
         "test_key",
         "test_value",
         NonFungibleGlobalId::from_public_key(&public_key),
     );
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -486,7 +485,7 @@ fn can_call_non_fungible_data_reference() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -502,7 +501,7 @@ fn can_call_non_fungible_data_reference() {
             manifest_args!(resource_address),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let result = receipt.expect_commit_success().outcome.expect_success();
     assert_eq!(
         result[1],
@@ -512,9 +511,9 @@ fn can_call_non_fungible_data_reference() {
 
 #[test]
 fn cannot_have_non_fungible_data_ownership() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -525,7 +524,7 @@ fn cannot_have_non_fungible_data_ownership() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -541,9 +540,9 @@ fn cannot_have_non_fungible_data_ownership() {
 
 #[test]
 fn can_update_and_get_non_fungible() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -554,7 +553,7 @@ fn can_update_and_get_non_fungible() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -563,9 +562,9 @@ fn can_update_and_get_non_fungible() {
 
 #[test]
 fn can_update_and_get_non_fungible_reference() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -576,7 +575,7 @@ fn can_update_and_get_non_fungible_reference() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -586,9 +585,9 @@ fn can_update_and_get_non_fungible_reference() {
 #[test]
 fn can_check_if_contains_non_fungible_in_vault() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -601,7 +600,7 @@ fn can_check_if_contains_non_fungible_in_vault() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -613,9 +612,9 @@ fn can_check_if_contains_non_fungible_in_vault() {
 #[test]
 fn can_check_if_contains_non_fungible_in_bucket() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -628,7 +627,7 @@ fn can_check_if_contains_non_fungible_in_bucket() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -639,9 +638,9 @@ fn can_check_if_contains_non_fungible_in_bucket() {
 
 #[test]
 fn test_non_fungible_part_1() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -671,7 +670,7 @@ fn test_non_fungible_part_1() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -680,9 +679,9 @@ fn test_non_fungible_part_1() {
 
 #[test]
 fn test_non_fungible_part_2() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -706,7 +705,7 @@ fn test_non_fungible_part_2() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -715,9 +714,9 @@ fn test_non_fungible_part_2() {
 
 #[test]
 fn test_singleton_non_fungible() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -729,7 +728,7 @@ fn test_singleton_non_fungible() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -740,9 +739,9 @@ fn test_singleton_non_fungible() {
 // by a proof in a vault was accidentally committed/persisted, and locked in future transactions
 #[test]
 fn test_mint_update_and_withdraw() {
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // create non-fungible
     let manifest = ManifestBuilder::new()
@@ -755,7 +754,7 @@ fn test_mint_update_and_withdraw() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -781,7 +780,7 @@ fn test_mint_update_and_withdraw() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -800,7 +799,7 @@ fn test_mint_update_and_withdraw() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -810,9 +809,9 @@ fn test_mint_update_and_withdraw() {
 #[test]
 fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -825,7 +824,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -837,9 +836,9 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
 #[test]
 fn create_bytes_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -852,7 +851,7 @@ fn create_bytes_non_fungible() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -861,9 +860,9 @@ fn create_bytes_non_fungible() {
 #[test]
 fn create_string_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -876,7 +875,7 @@ fn create_string_non_fungible() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -885,9 +884,9 @@ fn create_string_non_fungible() {
 #[test]
 fn create_ruid_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -900,7 +899,7 @@ fn create_ruid_non_fungible() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -912,8 +911,8 @@ fn create_ruid_non_fungible() {
 #[test]
 fn can_get_total_supply() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -926,7 +925,7 @@ fn can_get_total_supply() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -935,8 +934,8 @@ fn can_get_total_supply() {
 #[test]
 fn cannot_get_total_supply_when_track_total_supply_disable() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -949,7 +948,7 @@ fn cannot_get_total_supply_when_track_total_supply_disable() {
         )
         .build();
 
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -958,9 +957,9 @@ fn cannot_get_total_supply_when_track_total_supply_disable() {
 #[test]
 fn can_mint_ruid_non_fungible_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -973,7 +972,7 @@ fn can_mint_ruid_non_fungible_in_scrypto() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -985,9 +984,9 @@ fn can_mint_ruid_non_fungible_in_scrypto() {
 #[test]
 fn cannot_create_ruid_non_fungible_and_mint_non_ruid() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1000,7 +999,7 @@ fn cannot_create_ruid_non_fungible_and_mint_non_ruid() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -1031,9 +1030,9 @@ pub struct Sandwich {
 #[test]
 fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -1043,7 +1042,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit_success().new_resource_addresses()[0];
 
     // Act
@@ -1062,7 +1061,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
         .assert_worktop_contains_any(resource_address)
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -1071,9 +1070,9 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
 #[test]
 fn can_mint_ruid_non_fungible_in_manifest() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -1083,7 +1082,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
 
     // Act
@@ -1102,7 +1101,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
         .assert_worktop_contains_any(resource_address)
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();
@@ -1111,9 +1110,9 @@ fn can_mint_ruid_non_fungible_in_manifest() {
 #[test]
 fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -1124,7 +1123,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
     let non_fungible_global_id =
         NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::ruid([0x11; 32]));
@@ -1135,7 +1134,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         .withdraw_from_account(account, resource_address, 1)
         .burn_non_fungible_from_worktop(non_fungible_global_id)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -1147,9 +1146,9 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
 #[test]
 fn cant_mint_non_fungible_with_different_id_type() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, _) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, _) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -1159,7 +1158,7 @@ fn cant_mint_non_fungible_with_different_id_type() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -1175,9 +1174,9 @@ fn cant_mint_non_fungible_with_different_id_type() {
 #[test]
 fn cant_mint_non_fungible_with_ruid_id_type() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, _) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, _) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -1187,7 +1186,7 @@ fn cant_mint_non_fungible_with_ruid_id_type() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -1203,9 +1202,9 @@ fn cant_mint_non_fungible_with_ruid_id_type() {
 #[test]
 fn cant_mint_ruid_non_fungible_for_non_ruid_non_fungible_resource() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, _) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, _) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -1215,7 +1214,7 @@ fn cant_mint_ruid_non_fungible_for_non_ruid_non_fungible_resource() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -1231,9 +1230,9 @@ fn cant_mint_ruid_non_fungible_for_non_ruid_non_fungible_resource() {
 #[test]
 fn cant_mint_non_fungible_that_already_exists() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (_, _, _) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (_, _, _) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -1243,7 +1242,7 @@ fn cant_mint_non_fungible_that_already_exists() {
             manifest_args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -1259,9 +1258,9 @@ fn cant_mint_non_fungible_that_already_exists() {
 #[test]
 fn create_non_fungible_with_integer_address_reservation() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1274,7 +1273,7 @@ fn create_non_fungible_with_integer_address_reservation() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -1286,9 +1285,9 @@ fn create_non_fungible_with_integer_address_reservation() {
 #[test]
 fn create_non_fungible_integer() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1301,7 +1300,7 @@ fn create_non_fungible_integer() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -1313,9 +1312,9 @@ fn create_non_fungible_integer() {
 #[test]
 fn create_non_fungible_ruid_with_address_reservation() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1328,7 +1327,7 @@ fn create_non_fungible_ruid_with_address_reservation() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -1340,9 +1339,9 @@ fn create_non_fungible_ruid_with_address_reservation() {
 #[test]
 fn create_non_fungible_ruid() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1355,7 +1354,7 @@ fn create_non_fungible_ruid() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -1367,9 +1366,9 @@ fn create_non_fungible_ruid() {
 #[test]
 fn cant_create_non_fungible_with_id_type_does_not_match() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package = test_runner.publish_package_simple(PackageLoader::get("non_fungible"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package = ledger.publish_package_simple(PackageLoader::get("non_fungible"));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1382,7 +1381,7 @@ fn cant_create_non_fungible_with_id_type_does_not_match() {
         )
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.execute_manifest(
+    let receipt = ledger.execute_manifest(
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

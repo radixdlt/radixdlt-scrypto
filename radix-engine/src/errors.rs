@@ -13,6 +13,7 @@ use crate::blueprints::resource::{
     VaultError, WorktopError,
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
@@ -20,16 +21,16 @@ use crate::kernel::call_frame::{
     MovePartitionError, OpenSubstateError, PassMessageError, PinNodeError, ReadSubstateError,
     WriteSubstateError,
 };
-use crate::system::attached_modules::metadata::MetadataError;
-use crate::system::attached_modules::role_assignment::RoleAssignmentError;
-use crate::system::attached_modules::royalty::ComponentRoyaltyError;
+use crate::object_modules::metadata::MetadataError;
+use crate::object_modules::role_assignment::RoleAssignmentError;
+use crate::object_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::TransactionLimitsError;
 use crate::system::system_type_checker::TypeCheckError;
 use crate::transaction::AbortReason;
-use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
+use crate::vm::ScryptoVmVersionError;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{ActorStateHandle, AttachedModuleId};
 use radix_engine_interface::blueprints::package::{BlueprintPartitionType, CanonicalBlueprintId};
@@ -46,8 +47,6 @@ pub trait CanBeAbortion {
 /// Represents an error which causes a transaction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RejectionReason {
-    SuccessButFeeLoanNotRepaid,
-    ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
     TransactionEpochNotYetValid {
         valid_from: Epoch,
         current_epoch: Epoch,
@@ -58,12 +57,34 @@ pub enum RejectionReason {
     },
     IntentHashPreviouslyCommitted,
     IntentHashPreviouslyCancelled,
+
+    BootloadingError(BootloadingError),
+
+    ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
 }
 
 impl fmt::Display for RejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum TransactionExecutionError {
+    /// An error ocurred when bootloading a kernel.
+    BootloadingError(BootloadingError),
+
+    /// A runtime error
+    RuntimeError(RuntimeError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum BootloadingError {
+    ReferencedNodeDoesNotExist(NodeId),
+    ReferencedNodeIsNotAnObject(NodeId),
+    ReferencedNodeDoesNotAllowDirectAccess(NodeId),
+
+    FailedToApplyDeferredCosts(CostingError),
 }
 
 /// Represents an error when executing a transaction.
@@ -88,6 +109,8 @@ pub enum RuntimeError {
 
     /// An error occurred within application logic, like the RE models.
     ApplicationError(ApplicationError),
+
+    FinalizationCostingError(CostingError),
 }
 
 impl From<KernelError> for RuntimeError {
@@ -123,6 +146,7 @@ impl CanBeAbortion for RuntimeError {
             RuntimeError::SystemUpstreamError(_) => None,
             RuntimeError::SystemModuleError(err) => err.abortion(),
             RuntimeError::ApplicationError(_) => None,
+            RuntimeError::FinalizationCostingError(_) => None,
         }
     }
 }
@@ -134,10 +158,6 @@ pub enum KernelError {
 
     // ID allocation
     IdAllocationError(IdAllocationError),
-
-    // Reference management
-    InvalidDirectAccess,
-    InvalidReference(NodeId),
 
     // Substate lock/read/write/unlock
     SubstateHandleDoesNotExist(SubstateHandle),
@@ -292,6 +312,7 @@ pub enum SystemUpstreamError {
 pub enum VmError {
     Native(NativeRuntimeError),
     Wasm(WasmRuntimeError),
+    ScryptoVmVersion(ScryptoVmVersionError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

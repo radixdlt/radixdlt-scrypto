@@ -1,16 +1,14 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto_unit::*;
-use transaction::prelude::*;
-
+use radix_engine_tests::common::*;
+use scrypto_test::prelude::*;
 
 #[test]
 fn cannot_create_more_than_1_substate_field_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
 
     // Act
@@ -21,7 +19,7 @@ fn cannot_create_more_than_1_substate_field_in_scrypto() {
             PackageDefinition::new_with_fields_test_definition("Test", 2, vec![]),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = ledger.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

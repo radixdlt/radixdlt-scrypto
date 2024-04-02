@@ -1,16 +1,10 @@
 use crate::resource::*;
 use crate::runtime::Runtime;
 use crate::*;
+use radix_common::prelude::*;
+use radix_common::traits::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::constants::RESOURCE_PACKAGE;
-use radix_engine_interface::data::scrypto::model::*;
-use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_interface::math::Decimal;
-use radix_engine_interface::types::NonFungibleData;
-use radix_engine_interface::types::*;
-use radix_engine_interface::*;
 use runtime::LocalAuthZone;
-use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 // Different from the native SDK, in Scrypto we use `CheckedProof`, `CheckedFungibleProof`

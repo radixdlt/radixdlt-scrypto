@@ -1,6 +1,6 @@
-use crate::data::scrypto::model::*;
-use crate::*;
-use radix_engine_common::math::Decimal;
+use crate::internal_prelude::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::Decimal;
 use sbor::*;
 
 use super::{check_fungible_amount, check_non_fungible_amount};

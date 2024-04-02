@@ -23,11 +23,9 @@ echo "Testing crates with no_std..."
 test_crates_features \
     "sbor \
     sbor-tests \
-    scrypto-schema \
-    scrypto-derive-tests \
+    scrypto \
     radix-engine \
-    radix-engine-tests \
-    scrypto" \
+    radix-engine-tests" \
     "--no-default-features --features alloc"
 
 echo "Congrats! All extra tests passed."

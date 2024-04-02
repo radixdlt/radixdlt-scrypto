@@ -1,18 +1,17 @@
-use radix_engine_tests::common::*;
+use radix_common::prelude::*;
 use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, ResourceSpecifier, TraceOrigin, WorktopChange,
 };
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::model::PreviewFlags;
-use transaction::prelude::*;
+use radix_engine_tests::common::*;
+use radix_transactions::model::PreviewFlags;
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_trace_resource_transfers() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("execution_trace"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("execution_trace"));
     let transfer_amount = 10u8;
 
     // Act
@@ -20,12 +19,12 @@ fn test_trace_resource_transfers() {
         .lock_fee(account, 500)
         .call_function(
             package_address,
-            "ExecutionTraceTest",
+            "ExecutionTraceBp",
             "transfer_resource_between_two_components",
             manifest_args!(transfer_amount),
         )
         .build();
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         vec![public_key.clone().into()],
         0,
@@ -129,8 +128,8 @@ fn test_trace_resource_transfers() {
 #[test]
 fn test_trace_fee_payments() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("execution_trace"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("execution_trace"));
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
@@ -138,14 +137,14 @@ fn test_trace_fee_payments() {
         .get_free_xrd_from_faucet()
         .call_function(
             package_address,
-            "ExecutionTraceTest",
+            "ExecutionTraceBp",
             "create_and_fund_a_component",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .drop_auth_zone_proofs()
         .build();
 
-    let funded_component = test_runner
+    let funded_component = ledger
         .execute_manifest(manifest_prepare, vec![])
         .expect_commit(true)
         .new_component_addresses()
@@ -165,7 +164,7 @@ fn test_trace_fee_payments() {
         .drop_auth_zone_proofs()
         .build();
 
-    let receipt = test_runner.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
+    let receipt = ledger.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
 
     // Assert
     let resource_changes = &receipt
@@ -188,8 +187,8 @@ fn test_trace_fee_payments() {
 #[test]
 fn test_instruction_traces() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let package_address = test_runner.publish_package_simple(PackageLoader::get("execution_trace"));
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("execution_trace"));
 
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -200,13 +199,13 @@ fn test_instruction_traces() {
         .return_to_worktop("bucket")
         .call_function(
             package_address,
-            "ExecutionTraceTest",
+            "ExecutionTraceBp",
             "create_and_fund_a_component",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
-    let receipt = test_runner.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
+    let receipt = ledger.preview_manifest(manifest, vec![], 0, PreviewFlags::default());
 
     let mut traces: Vec<ExecutionTrace> = receipt
         .expect_commit_success()
@@ -396,11 +395,11 @@ fn test_instruction_traces() {
 #[test]
 fn test_worktop_changes() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(false);
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (pk, _, account) = ledger.new_account(false);
 
-    let fungible_resource = test_runner.create_fungible_resource(100.into(), 18, account);
-    let non_fungible_resource = test_runner.create_non_fungible_resource(account);
+    let fungible_resource = ledger.create_fungible_resource(100.into(), 18, account);
+    let non_fungible_resource = ledger.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -434,7 +433,7 @@ fn test_worktop_changes() {
         .return_to_worktop("bucket5")
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
-    let receipt = test_runner.preview_manifest(
+    let receipt = ledger.preview_manifest(
         manifest,
         vec![pk.clone().into()],
         0,

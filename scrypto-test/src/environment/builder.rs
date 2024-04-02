@@ -1,3 +1,4 @@
+use radix_common::prelude::*;
 use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::heap::*;
 use radix_engine::kernel::id_allocator::*;
@@ -8,23 +9,24 @@ use radix_engine::system::actor::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
+use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::auth::*;
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
 use radix_engine::track::*;
 use radix_engine::transaction::*;
-use radix_engine::utils::*;
+use radix_engine::updates::ProtocolUpdates;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_store_interface::interface::*;
-use radix_engine_stores::memory_db::*;
-use transaction::model::*;
+use radix_substate_store_impls::memory_db::*;
+use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::*;
+use radix_transactions::model::*;
 
-use crate::sdk::Package;
+use crate::sdk::PackageFactory;
 
 use super::*;
 
@@ -49,7 +51,7 @@ where
     bootstrap: bool,
 
     /// The protocol updates the the user has opt in to get. This defaults to all true.
-    protocol_updates: ProtocolUpdateOptIns,
+    protocol_updates: ProtocolUpdates,
 }
 
 impl Default for TestEnvironmentBuilder<InMemorySubstateDatabase> {
@@ -65,7 +67,7 @@ impl TestEnvironmentBuilder<InMemorySubstateDatabase> {
             flash_database: FlashSubstateDatabase::standard(),
             added_global_references: Default::default(),
             bootstrap: true,
-            protocol_updates: ProtocolUpdateOptIns::default(),
+            protocol_updates: ProtocolUpdates::all(),
         }
     }
 }
@@ -177,43 +179,8 @@ where
         }
     }
 
-    pub fn with_consensus_manager_seconds_precision_protocol_update(mut self) -> Self {
-        self.protocol_updates.consensus_manager_seconds_precision = true;
-        self
-    }
-
-    pub fn with_crypto_utils_protocol_update(mut self) -> Self {
-        self.protocol_updates.crypto_utils = true;
-        self
-    }
-
-    pub fn with_pools_v1_1_protocol_update(mut self) -> Self {
-        self.protocol_updates.pools_v1_1 = true;
-        self
-    }
-
-    pub fn with_transaction_processor_v1_1_protocol_update(mut self) -> Self {
-        self.protocol_updates.transaction_processor_v1_1 = true;
-        self
-    }
-
-    pub fn without_consensus_manager_seconds_precision_protocol_update(mut self) -> Self {
-        self.protocol_updates.consensus_manager_seconds_precision = false;
-        self
-    }
-
-    pub fn without_crypto_utils_protocol_update(mut self) -> Self {
-        self.protocol_updates.crypto_utils = false;
-        self
-    }
-
-    pub fn without_pools_v1_1_protocol_update(mut self) -> Self {
-        self.protocol_updates.pools_v1_1 = false;
-        self
-    }
-
-    pub fn without_transaction_processor_v1_1_protocol_update(mut self) -> Self {
-        self.protocol_updates.transaction_processor_v1_1 = false;
+    pub fn protocol_updates(mut self, protocol_updates: ProtocolUpdates) -> Self {
+        self.protocol_updates = protocol_updates;
         self
     }
 
@@ -243,28 +210,10 @@ where
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
 
         // Determine if any protocol updates need to be run against the database.
-        if self.protocol_updates.consensus_manager_seconds_precision {
-            let state_updates = generate_seconds_precision_state_updates(&self.database);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.database.commit(&db_updates);
-        }
-        if self.protocol_updates.crypto_utils {
-            let state_updates = generate_vm_boot_scrypto_minor_version_state_updates();
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.database.commit(&db_updates);
-        }
-        if self.protocol_updates.validator_fee_update {
-            let state_updates = generate_validator_fee_fix_state_updates(&self.database);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.database.commit(&db_updates);
-        }
-        if self.protocol_updates.pools_v1_1 {
-            let state_updates = generate_pools_v1_1_state_updates(&self.database);
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.database.commit(&db_updates);
-        }
-        if self.protocol_updates.transaction_processor_v1_1 {
-            let state_updates = generate_transaction_processor_v1_1_state_updates(&self.database);
+        for state_updates in self
+            .protocol_updates
+            .generate_state_updates(&self.database, &NetworkDefinition::simulator())
+        {
             let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.database.commit(&db_updates);
         }
@@ -304,6 +253,8 @@ where
                 ),
             },
             |system_config, track, id_allocator| {
+                // Get version from the boot store
+                let vm_version = system_config.callback_obj.init(track).unwrap();
                 Kernel::kernel_create_kernel_for_testing(
                     SubstateIO {
                         heap: Heap::new(),
@@ -319,7 +270,7 @@ where
                     CallFrame::new_root(Actor::Root),
                     vec![],
                     system_config,
-                    VmVersion::latest(),
+                    vm_version,
                 )
             },
         ));
@@ -340,14 +291,14 @@ where
 
         // Publishing the test-environment package.
         let test_environment_package = {
-            let code = include_bytes!("../../../assets/test_environment.wasm");
+            let code = include_bytes!("../../assets/test_environment.wasm");
             let package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
-                "../../../assets/test_environment.rpd"
+                "../../assets/test_environment.rpd"
             ))
             .expect("Must succeed");
 
             env.with_auth_module_disabled(|env| {
-                Package::publish_advanced(
+                PackageFactory::publish_advanced(
                     OwnerRole::None,
                     package_definition,
                     code.to_vec(),
@@ -527,26 +478,6 @@ impl CommittableSubstateDatabase for FlashSubstateDatabase {
                     self.partitions.remove(&partition_key);
                 }
             }
-        }
-    }
-}
-
-struct ProtocolUpdateOptIns {
-    pub consensus_manager_seconds_precision: bool,
-    pub crypto_utils: bool,
-    pub validator_fee_update: bool,
-    pub pools_v1_1: bool,
-    pub transaction_processor_v1_1: bool,
-}
-
-impl Default for ProtocolUpdateOptIns {
-    fn default() -> Self {
-        Self {
-            consensus_manager_seconds_precision: true,
-            crypto_utils: true,
-            validator_fee_update: true,
-            pools_v1_1: true,
-            transaction_processor_v1_1: true,
         }
     }
 }

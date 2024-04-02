@@ -6,12 +6,17 @@ on:
       image-label:
         description: "Docker image label to be published"
 
-jobs:
+permissions:
+  packages: write
+  pull-requests: write
+  id-token: write
+  contents: read
 
+jobs:
   build-amd:
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: gh-runner-scrypto-ubuntu-jammy-16-cores
+      runs_on: ubuntu-16-cores-selfhosted
       environment: "release"
       image_registry: "docker.io"
       image_organization: "radixdlt"

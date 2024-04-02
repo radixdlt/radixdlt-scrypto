@@ -1,11 +1,11 @@
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelApi;
-use crate::types::*;
+use radix_common::constants::*;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
     NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
-use radix_engine_interface::constants::*;
 use sbor::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
 
@@ -17,7 +17,7 @@ use super::type_info::TypeInfoSubstate;
 //=======================================================================================================
 // NOTE:
 // The validation implemented here makes use of a type info lookup to provide tighter validation
-// There is also static validation defined in the `radix-engine-common` repository which is less
+// There is also static validation defined in the `radix-common` repository which is less
 // powerful, does not require this lookup.
 //=======================================================================================================
 

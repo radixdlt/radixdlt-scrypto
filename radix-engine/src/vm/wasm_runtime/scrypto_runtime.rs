@@ -1,6 +1,6 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
-use crate::types::*;
+use crate::internal_prelude::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -80,7 +80,7 @@ where
         buffer_id: BufferId,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         self.buffers
-            .remove(&buffer_id)
+            .swap_remove(&buffer_id)
             .ok_or(InvokeError::SelfError(WasmRuntimeError::BufferNotFound(
                 buffer_id,
             )))
