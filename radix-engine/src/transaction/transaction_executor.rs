@@ -101,10 +101,12 @@ impl CostingParameters {
 
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
-    pub network_definition: NetworkDefinition,
-    pub enabled_modules: EnabledModules,
     pub abort_when_loan_repaid: bool,
     pub enable_cost_breakdown: bool,
+
+    // TODO: Add the following to a substate
+    pub network_definition: NetworkDefinition,
+    pub enabled_modules: EnabledModules,
     pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
     pub max_heap_substate_total_bytes: usize,
