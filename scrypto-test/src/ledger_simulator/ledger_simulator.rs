@@ -1174,7 +1174,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
-            CostingParameters::default(),
+            None,
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
 
@@ -1282,10 +1282,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
-        self.execute_manifest_with_costing_params(
-            manifest,
-            initial_proofs,
-            CostingParameters::default(),
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            None,
+            ExecutionConfig::for_test_transaction(),
         )
     }
 
@@ -1304,7 +1308,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            costing_parameters,
+            Some(costing_parameters),
             ExecutionConfig::for_test_transaction(),
         )
     }
@@ -1324,7 +1328,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            CostingParameters::default(),
+            None,
             ExecutionConfig::for_test_transaction(),
             init,
         )
@@ -1341,7 +1345,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .expect("Expected raw transaction to be valid");
         self.execute_transaction(
             validated.get_executable(),
-            CostingParameters::default(),
+            None,
             ExecutionConfig::for_notarized_transaction(network.clone()),
         )
     }
@@ -1364,7 +1368,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            CostingParameters::default(),
+            None,
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
@@ -1372,7 +1376,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        costing_parameters: CostingParameters,
+        costing_parameters: Option<CostingParameters>,
         execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
@@ -1386,7 +1390,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction_with_system<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
         &'a mut self,
         executable: Executable,
-        costing_parameters: CostingParameters,
+        costing_parameters: Option<CostingParameters>,
         mut execution_config: ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
@@ -1409,7 +1413,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let transaction_receipt = execute_transaction_with_system::<_, _, T>(
             &mut self.database,
             vm,
-            &costing_parameters,
+            costing_parameters,
             &execution_config,
             &executable,
             init,

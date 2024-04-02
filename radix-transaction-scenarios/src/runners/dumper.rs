@@ -99,7 +99,6 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     F: FnMut(&TransactionIntentHash, &TransactionReceipt),
 {
-    let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
@@ -111,7 +110,7 @@ where
         &validator,
         substate_db,
         vm,
-        &costing_parameters,
+        None,
         &execution_config,
         scenario,
         receipt_handler,
@@ -123,7 +122,7 @@ pub fn run_scenario<S, V, F>(
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
     vm: V,
-    costing_parameters: &CostingParameters,
+    costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
     mut receipt_handler: F,

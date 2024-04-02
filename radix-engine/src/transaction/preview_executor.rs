@@ -38,7 +38,7 @@ pub fn execute_preview<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     Ok(execute_transaction(
         substate_db,
         vm,
-        &CostingParameters::default(),
+        None,
         &execution_config,
         &validated.get_executable(),
     ))

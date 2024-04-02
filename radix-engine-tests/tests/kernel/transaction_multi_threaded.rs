@@ -59,7 +59,7 @@ mod multi_threaded_test {
                 let account = execute_and_commit_transaction(
                     &mut substate_db,
                     vm.clone(),
-                    &CostingParameters::default(),
+                    None,
                     &ExecutionConfig::for_test_transaction(),
                     &TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
                         .prepare()
@@ -87,7 +87,7 @@ mod multi_threaded_test {
             execute_and_commit_transaction(
                 &mut substate_db,
                 vm.clone(),
-                &CostingParameters::default(),
+                None,
                 &ExecutionConfig::for_test_transaction(),
                 &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
@@ -113,7 +113,7 @@ mod multi_threaded_test {
                     let receipt = execute_transaction(
                         &substate_db,
                         vm.clone(),
-                        &CostingParameters::default(),
+                        None,
                         &ExecutionConfig::for_test_transaction(),
                         &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()

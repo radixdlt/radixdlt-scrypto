@@ -1,7 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, CostingParameters, ExecutionConfig,
+    execute_and_commit_transaction, ExecutionConfig,
 };
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, ScryptoVm, Vm};
@@ -57,14 +57,13 @@ impl TransactionFuzzer {
             .expect("transaction to be validatable");
 
         let execution_config = ExecutionConfig::for_test_transaction();
-        let costing_parameters = CostingParameters::default();
 
         let vm = Vm::new(&self.scrypto_vm, self.native_vm.clone());
 
         execute_and_commit_transaction(
             &mut self.substate_db,
             vm,
-            &costing_parameters,
+            None,
             &execution_config,
             &validated.get_executable(),
         );

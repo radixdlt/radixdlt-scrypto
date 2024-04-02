@@ -253,7 +253,7 @@ where
     pub fn execute<T: WrappedSystem<V>>(
         &mut self,
         executable: &Executable,
-        costing_parameters: &CostingParameters,
+        costing_parameters: Option<CostingParameters>,
         execution_config: &ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
@@ -274,7 +274,7 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Create a track
-        let mut track = Track::<_, SpreadPrefixKeyMapper>::with_override(self.substate_db, Some(costing_parameters.clone()));
+        let mut track = Track::<_, SpreadPrefixKeyMapper>::with_override(self.substate_db, costing_parameters);
 
         // Perform runtime validation.
         // TODO: the following assumptions can be removed with better interface.
@@ -1251,7 +1251,7 @@ pub fn execute_and_commit_transaction<
 >(
     substate_db: &mut S,
     vm: V,
-    costing_parameters: &CostingParameters,
+    costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
@@ -1275,7 +1275,7 @@ pub fn execute_and_commit_transaction<
 pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     substate_db: &S,
     vm: V,
-    costing_parameters: &CostingParameters,
+    costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
@@ -1296,7 +1296,7 @@ pub fn execute_transaction_with_system<
 >(
     substate_db: &S,
     vm: V,
-    costing_parameters: &CostingParameters,
+    costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
     init: T::Init,

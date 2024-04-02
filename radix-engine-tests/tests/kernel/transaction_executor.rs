@@ -36,7 +36,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Act
     let receipt = ledger.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
-        CostingParameters::default(),
+        None,
         ExecutionConfig::for_test_transaction(),
     );
 
@@ -76,7 +76,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Act
     let receipt = ledger.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
-        CostingParameters::default(),
+        None,
         ExecutionConfig::for_test_transaction(),
     );
 
@@ -111,7 +111,6 @@ fn test_normal_transaction_flow() {
     .bootstrap_test_default()
     .unwrap();
 
-    let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
     let raw_transaction = create_notarized_transaction(
         TransactionParams {
@@ -141,7 +140,7 @@ fn test_normal_transaction_flow() {
     let receipt = execute_and_commit_transaction(
         &mut substate_db,
         vm,
-        &costing_parameters,
+        None,
         &execution_config,
         &executable,
     );

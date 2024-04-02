@@ -51,7 +51,7 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
     execution_config.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
     let receipt = ledger.execute_transaction(
         prepared.get_executable(btreeset!()),
-        fee_config,
+        Some(fee_config),
         execution_config,
     );
 
@@ -109,7 +109,7 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
     execution_config.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
     let receipt = ledger.execute_transaction(
         prepared.get_executable(btreeset!()),
-        fee_config,
+        Some(fee_config),
         execution_config,
     );
 
@@ -151,7 +151,7 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
     execution_config.max_heap_substate_total_bytes = 1024 * 1024;
     let receipt = ledger.execute_transaction(
         prepared.get_executable(btreeset!()),
-        fee_config,
+        Some(fee_config),
         execution_config,
     );
 
