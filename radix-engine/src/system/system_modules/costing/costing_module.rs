@@ -21,6 +21,7 @@ use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
+use radix_transactions::model::TransactionCostingParameters;
 use crate::track::BootStore;
 use crate::transaction::CostingParameters;
 
@@ -74,6 +75,7 @@ impl OnApplyCost {
 #[derive(Debug, Clone)]
 pub struct CostingModule {
     pub fee_reserve: SystemLoanFeeReserve,
+
     pub fee_table: FeeTable,
     pub max_call_depth: usize,
     pub tx_payload_len: usize,
@@ -267,6 +269,15 @@ impl InitSystemModule for CostingModule {
 
         match system_boot {
             SystemBoot::V1 { costing_parameters } => {
+                // Sanity checks
+                assert!(!costing_parameters.execution_cost_unit_price.is_negative());
+                assert!(!costing_parameters
+                    .finalization_cost_unit_price
+                    .is_negative());
+                assert!(!costing_parameters.usd_price.is_negative());
+                assert!(!costing_parameters.state_storage_price.is_negative());
+                assert!(!costing_parameters.archive_storage_price.is_negative());
+
                 // Execution costing parameters
                 self.fee_reserve.execution_cost_unit_price = costing_parameters.execution_cost_unit_price;
                 self.fee_reserve.execution_cost_unit_limit = costing_parameters.execution_cost_unit_limit;
@@ -303,8 +314,6 @@ impl InitSystemModule for CostingModule {
                 self.fee_reserve.effective_finalization_cost_unit_price = effective_finalization_cost_unit_price;
             }
         }
-
-
 
         Ok(())
     }

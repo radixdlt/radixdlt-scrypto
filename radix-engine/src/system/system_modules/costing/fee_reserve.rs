@@ -250,6 +250,19 @@ impl SystemLoanFeeReserve {
         }
     }
 
+    pub fn costing_parameters(&self) -> CostingParameters {
+        CostingParameters {
+            execution_cost_unit_price: self.execution_cost_unit_price,
+            execution_cost_unit_limit: self.execution_cost_unit_limit,
+            execution_cost_unit_loan: self.execution_cost_unit_loan,
+            finalization_cost_unit_price: self.finalization_cost_unit_price,
+            finalization_cost_unit_limit: self.finalization_cost_unit_limit,
+            usd_price: self.usd_price,
+            state_storage_price: self.state_storage_price,
+            archive_storage_price: self.archive_storage_price,
+        }
+    }
+
     pub fn execution_cost_unit_limit(&self) -> u32 {
         self.execution_cost_unit_limit
     }

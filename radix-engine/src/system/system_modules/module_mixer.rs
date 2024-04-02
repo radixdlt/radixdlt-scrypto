@@ -29,7 +29,7 @@ use paste::paste;
 use radix_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_profiling_derive::trace_resources;
-use radix_transactions::model::AuthZoneParams;
+use radix_transactions::model::{AuthZoneParams, TransactionCostingParameters};
 use crate::track::BootStore;
 
 bitflags! {
@@ -130,7 +130,8 @@ impl SystemModuleMixer {
         network_definition: NetworkDefinition,
         tx_hash: Hash,
         auth_zone_params: AuthZoneParams,
-        fee_reserve: SystemLoanFeeReserve,
+        transaction_costing_parameters: TransactionCostingParameters,
+        abort_when_loan_repaid: bool,
         fee_table: FeeTable,
         payload_len: usize,
         num_of_signature_validations: usize,
@@ -140,7 +141,11 @@ impl SystemModuleMixer {
             enabled_modules,
             kernel_trace: KernelTraceModule {},
             costing: CostingModule {
-                fee_reserve,
+                fee_reserve: SystemLoanFeeReserve::new(
+                    &CostingParameters::default(),
+                    &transaction_costing_parameters,
+                    abort_when_loan_repaid,
+                ),
                 fee_table,
                 max_call_depth: execution_config.max_call_depth,
                 tx_payload_len: payload_len,

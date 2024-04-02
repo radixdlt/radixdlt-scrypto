@@ -257,11 +257,6 @@ where
         execution_config: &ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
-        let fee_reserve = SystemLoanFeeReserve::new(
-            costing_parameters,
-            executable.costing_parameters(),
-            execution_config.abort_when_loan_repaid,
-        );
         let fee_table = FeeTable::new();
 
         // Dump executable
@@ -306,8 +301,11 @@ where
             Ok(())
         };
 
+        let txn_costing_parameters = executable.costing_parameters().clone();
+        let abort_when_loan_repaid = execution_config.abort_when_loan_repaid;
+
         // Run manifest
-        let (fee_summary, fee_details, result) = match validation_result {
+        let (costing_parameters, fee_summary, fee_details, result) = match validation_result {
             Ok(()) => {
                 let (
                     interpretation_result,
@@ -316,10 +314,13 @@ where
                     &mut track,
                     executable,
                     execution_config,
-                    fee_reserve,
+                    txn_costing_parameters,
+                    abort_when_loan_repaid,
                     fee_table,
                     init,
                 );
+
+                let costing_parameters = costing_module.fee_reserve.costing_parameters();
 
                 #[cfg(not(feature = "alloc"))]
                 if execution_config
@@ -448,6 +449,7 @@ where
                         }
 
                         (
+                            costing_parameters,
                             fee_reserve_finalization.into(),
                             fee_details,
                             TransactionResult::Commit(CommitResult {
@@ -474,11 +476,13 @@ where
                         )
                     }
                     TransactionResultType::Reject(reason) => (
+                        costing_parameters,
                         costing_module.fee_reserve.finalize().into(),
                         fee_details,
                         TransactionResult::Reject(RejectResult { reason }),
                     ),
                     TransactionResultType::Abort(reason) => (
+                        costing_parameters,
                         costing_module.fee_reserve.finalize().into(),
                         fee_details,
                         TransactionResult::Abort(AbortResult { reason }),
@@ -487,6 +491,7 @@ where
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
+                CostingParameters::default(),
                 TransactionFeeSummary::default(),
                 if execution_config.enable_cost_breakdown {
                     Some(TransactionFeeDetails::default())
@@ -507,7 +512,7 @@ where
 
         // Produce final receipt
         let receipt = TransactionReceipt {
-            costing_parameters: costing_parameters.clone(),
+            costing_parameters,
             transaction_costing_parameters: executable.costing_parameters().clone(),
             fee_summary,
             fee_details,
@@ -619,7 +624,8 @@ where
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         executable: &Executable,
         execution_config: &ExecutionConfig,
-        fee_reserve: SystemLoanFeeReserve,
+        transaction_costing_parameters: TransactionCostingParameters,
+        abort_when_loan_repaid: bool,
         fee_table: FeeTable,
         init: T::Init,
     ) -> (
@@ -641,7 +647,8 @@ where
                 execution_config.network_definition.clone(),
                 executable.intent_hash().to_hash(),
                 executable.auth_zone_params().clone(),
-                fee_reserve,
+                transaction_costing_parameters,
+                abort_when_loan_repaid,
                 fee_table,
                 executable.payload_size(),
                 executable.num_of_signature_validations(),
