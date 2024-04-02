@@ -342,8 +342,14 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Global<O: HasStub>(pub O::Stub);
+
+impl<O: HasStub> std::hash::Hash for Global<O> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.handle().as_node_id().hash(state);
+    }
+}
 
 impl<O: HasStub> Copy for Global<O> {}
 
