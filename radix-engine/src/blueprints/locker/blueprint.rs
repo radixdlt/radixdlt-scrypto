@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use super::*;
 use crate::internal_prelude::*;
 use radix_engine_interface::blueprints::account::*;
@@ -133,35 +135,18 @@ impl AccountLockerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Main module
-        let object_id = api.new_simple_object(ACCOUNT_LOCKER_BLUEPRINT, indexmap! {})?;
-
-        // Role Assignment Module
-        let roles = indexmap! {
-            ModuleId::Main => roles2! {
-                STORER_ROLE => storer_role, updatable;
-                STORER_UPDATER_ROLE => storer_updater_role, updatable;
-                RECOVERER_ROLE => recoverer_role, updatable;
-                RECOVERER_UPDATER_ROLE => recoverer_updater_role, updatable;
-            }
-        };
-        let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
-
-        // Metadata Module
-        let metadata = Metadata::create(api)?;
-
-        // Globalize
-        let address = api.globalize(
-            object_id,
-            indexmap!(
-                AttachedModuleId::RoleAssignment => role_assignment.0,
-                AttachedModuleId::Metadata => metadata.0,
-            ),
+        Self::instantiate_internal(
+            owner_role,
+            storer_role,
+            storer_updater_role,
+            recoverer_role,
+            recoverer_updater_role,
+            metadata_init! {
+                "admin_badge" => EMPTY, locked;
+            },
             address_reservation,
-        )?;
-        let component_address = ComponentAddress::new_or_panic(address.as_node_id().0);
-
-        Ok(Global::new(component_address))
+            api,
+        )
     }
 
     fn instantiate_simple<Y>(
@@ -171,16 +156,19 @@ impl AccountLockerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Creating a new resource for the admin badge. We will first allocate a new address for it
-        // and then instantiate it to its own address. The admin badge that we create will be its
-        // own owner.
+        // Two address reservations are needed. One for the badge and another for the account locker
+        // that we're instantiating.
+        let (locker_reservation, locker_address) = api.allocate_global_address(BlueprintId {
+            package_address: LOCKER_PACKAGE,
+            blueprint_name: ACCOUNT_LOCKER_BLUEPRINT.into(),
+        })?;
         let (badge_reservation, badge_address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.into(),
         })?;
         let badge_address = ResourceAddress::new_or_panic(badge_address.as_node_id().0);
 
-        let (_, badge) = api
+        let (badge_address, badge) = api
             .call_function(
                 RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -193,6 +181,7 @@ impl AccountLockerBlueprint {
                     metadata: metadata! {
                         init {
                             "name" => "Account Locker Admin Badge".to_owned(), locked;
+                            "locker" => locker_address, locked;
                         }
                     },
                     address_reservation: Some(badge_reservation),
@@ -212,18 +201,63 @@ impl AccountLockerBlueprint {
             false => rule!(deny_all),
         };
 
-        Self::instantiate(
-            AccountLockerInstantiateInput {
-                owner_role: OwnerRole::Updatable(rule.clone()),
-                storer_role: rule.clone(),
-                storer_updater_role: rule.clone(),
-                recoverer_role: recoverer_rule.clone(),
-                recoverer_updater_role: recoverer_rule,
-                address_reservation: None,
+        Self::instantiate_internal(
+            OwnerRole::Updatable(rule.clone()),
+            rule.clone(),
+            rule.clone(),
+            recoverer_rule.clone(),
+            recoverer_rule,
+            metadata_init! {
+                "admin_badge" => badge_address, locked;
             },
+            Some(locker_reservation),
             api,
         )
         .map(|rtn| (rtn, badge))
+    }
+
+    fn instantiate_internal<Y>(
+        owner_role: OwnerRole,
+        storer_role: AccessRule,
+        storer_updater_role: AccessRule,
+        recoverer_role: AccessRule,
+        recoverer_updater_role: AccessRule,
+        metadata_init: MetadataInit,
+        address_reservation: Option<GlobalAddressReservation>,
+        api: &mut Y,
+    ) -> Result<Global<AccountLockerMarker>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Main module
+        let object_id = api.new_simple_object(ACCOUNT_LOCKER_BLUEPRINT, indexmap! {})?;
+
+        // Role Assignment Module
+        let roles = indexmap! {
+            ModuleId::Main => roles2! {
+                STORER_ROLE => storer_role, updatable;
+                STORER_UPDATER_ROLE => storer_updater_role, updatable;
+                RECOVERER_ROLE => recoverer_role, updatable;
+                RECOVERER_UPDATER_ROLE => recoverer_updater_role, updatable;
+            }
+        };
+        let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
+
+        // Metadata Module
+        let metadata = Metadata::create_with_data(metadata_init, api)?;
+
+        // Globalize
+        let address = api.globalize(
+            object_id,
+            indexmap!(
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
+            ),
+            address_reservation,
+        )?;
+        let component_address = ComponentAddress::new_or_panic(address.as_node_id().0);
+
+        Ok(Global::new(component_address))
     }
 
     fn store<Y>(
