@@ -4,18 +4,20 @@ Radix Engine is an execution engine designed to run DeFi-based Scrypto applicati
 
 ## Architecture
 * [Layered Architecture](architecture.md)
-* Execution
-    * [Transaction Bootup](bootup.md)
-    * System Calls
-    * Invocations
-    * Transaction Shutdown
-* Move/Borrow Checking
+* Substates / SBOR
 * System/Object Modules
 * WASM environment
+
+## Execution
+* [Transaction Bootup](bootup.md)
+* System Calls
+* Invocations
+* Transaction Shutdown
+* Move/Borrow Checking
  
 ## Built-in Systems
-* Native Type System
-* Native Resources
-* Native Auth
-* Native Royalties
-* Native Metadata
+* Type System
+* Resources
+* Auth
+* Royalties
+* Metadata
