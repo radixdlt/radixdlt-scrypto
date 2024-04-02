@@ -181,6 +181,7 @@ impl AccountLockerBlueprint {
                     metadata: metadata! {
                         init {
                             "name" => "Account Locker Admin Badge".to_owned(), locked;
+                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-account_locker_admin_badge.png"), locked;
                             "locker" => locker_address, locked;
                         }
                     },
