@@ -28,7 +28,6 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     );
     let receipt1 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -46,7 +45,6 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     );
     let receipt2 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -87,7 +85,6 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     );
     let receipt1 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -112,7 +109,6 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     );
     let receipt2 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -157,7 +153,6 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     );
     let receipt1 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -180,7 +175,6 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     );
     let receipt2 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -230,7 +224,6 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     );
     let receipt1 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -253,7 +246,6 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     );
     let receipt2 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -308,7 +300,6 @@ fn estimate_adding_signature() {
     );
     let receipt1 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -325,7 +316,6 @@ fn estimate_adding_signature() {
     );
     let receipt2 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -386,7 +376,6 @@ fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
     );
     let receipt2 = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );

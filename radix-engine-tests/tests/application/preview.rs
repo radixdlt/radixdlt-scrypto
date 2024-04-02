@@ -70,7 +70,6 @@ fn test_transaction_preview_cost_estimate() {
     preview_receipt.expect_commit_success();
     let actual_receipt = ledger.execute_transaction(
         validate(&network, &notarized_transaction).get_executable(),
-        None,
         ExecutionConfig::for_notarized_transaction(network.clone())
             .with_kernel_trace(true)
             .with_cost_breakdown(true),

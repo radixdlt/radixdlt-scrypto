@@ -12,7 +12,7 @@ use radix_engine::system::system_db_reader::{
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction_with_system, BalanceChange, CommitResult,
+    execute_preview, execute_transaction_with_configuration, BalanceChange, CommitResult,
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
     WrappedSystem,
 };
@@ -1174,7 +1174,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
-            None,
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
 
@@ -1288,7 +1287,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            None,
             ExecutionConfig::for_test_transaction(),
         )
     }
@@ -1303,13 +1301,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        self.execute_transaction(
+        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
             Some(costing_parameters),
             ExecutionConfig::for_test_transaction(),
+            (),
         )
     }
 
@@ -1345,7 +1344,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .expect("Expected raw transaction to be valid");
         self.execute_transaction(
             validated.get_executable(),
-            None,
             ExecutionConfig::for_notarized_transaction(network.clone()),
         )
     }
@@ -1368,7 +1366,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            None,
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
@@ -1376,13 +1373,26 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        costing_parameters: Option<CostingParameters>,
         execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
             executable,
-            costing_parameters,
+            None,
             execution_config,
+            (),
+        )
+    }
+
+    pub fn execute_transaction_with_costing_params(
+        &mut self,
+        executable: Executable,
+        costing_parameters: CostingParameters,
+        config: ExecutionConfig,
+    ) -> TransactionReceipt {
+        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
+            executable,
+            Some(costing_parameters),
+            config,
             (),
         )
     }
@@ -1410,7 +1420,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             native_vm: self.native_vm.clone(),
         };
 
-        let transaction_receipt = execute_transaction_with_system::<_, _, T>(
+        let transaction_receipt = execute_transaction_with_configuration::<_, _, T>(
             &mut self.database,
             vm,
             costing_parameters,

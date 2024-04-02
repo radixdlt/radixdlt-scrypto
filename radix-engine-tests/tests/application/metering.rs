@@ -916,7 +916,6 @@ fn system_loan_should_cover_intended_use_case() {
     );
     let receipt = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable(),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );

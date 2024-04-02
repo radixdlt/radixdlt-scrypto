@@ -410,7 +410,6 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            None,
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction
@@ -440,7 +439,6 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            None,
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction
@@ -465,7 +463,6 @@ where
         let receipt = execute_transaction(
             self.substate_db,
             self.vm.clone(),
-            None,
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction

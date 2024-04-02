@@ -113,7 +113,6 @@ mod multi_threaded_test {
                     let receipt = execute_transaction(
                         &substate_db,
                         vm.clone(),
-                        None,
                         &ExecutionConfig::for_test_transaction(),
                         &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()

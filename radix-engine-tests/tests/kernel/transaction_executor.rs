@@ -36,7 +36,6 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Act
     let receipt = ledger.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
-        None,
         ExecutionConfig::for_test_transaction(),
     );
 
@@ -76,7 +75,6 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Act
     let receipt = ledger.execute_transaction(
         get_validated(&transaction).unwrap().get_executable(),
-        None,
         ExecutionConfig::for_test_transaction(),
     );
 

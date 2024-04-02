@@ -34,7 +34,6 @@ fn test_transaction_replay_protection() {
     let validated = get_validated(&transaction).unwrap();
     let receipt = ledger.execute_transaction(
         validated.get_executable(),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();
@@ -50,7 +49,6 @@ fn test_transaction_replay_protection() {
     // 3. Run the transaction again
     let receipt = ledger.execute_transaction(
         validated.get_executable(),
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_specific_rejection(|e| match e {
@@ -88,7 +86,6 @@ fn test_transaction_replay_protection() {
     executable.skip_epoch_range_check();
     let receipt = ledger.execute_transaction(
         executable,
-        None,
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();

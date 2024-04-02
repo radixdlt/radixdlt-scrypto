@@ -1245,51 +1245,7 @@ where
     }
 }
 
-pub fn execute_and_commit_transaction<
-    S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject + Clone,
->(
-    substate_db: &mut S,
-    vm: V,
-    costing_parameters: Option<CostingParameters>,
-    execution_config: &ExecutionConfig,
-    transaction: &Executable,
-) -> TransactionReceipt {
-    let receipt = execute_transaction(
-        substate_db,
-        vm,
-        costing_parameters,
-        execution_config,
-        transaction,
-    );
-    if let TransactionResult::Commit(commit) = &receipt.result {
-        substate_db.commit(
-            &commit
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>(),
-        );
-    }
-    receipt
-}
-
-pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
-    substate_db: &S,
-    vm: V,
-    costing_parameters: Option<CostingParameters>,
-    execution_config: &ExecutionConfig,
-    transaction: &Executable,
-) -> TransactionReceipt {
-    execute_transaction_with_system::<S, V, SystemConfig<V>>(
-        substate_db,
-        vm,
-        costing_parameters,
-        execution_config,
-        transaction,
-        (),
-    )
-}
-
-pub fn execute_transaction_with_system<
+pub fn execute_transaction_with_configuration<
     S: SubstateDatabase,
     V: SystemCallbackObject + Clone,
     T: WrappedSystem<V>,
@@ -1307,6 +1263,50 @@ pub fn execute_transaction_with_system<
         execution_config,
         init,
     )
+}
+
+pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
+    substate_db: &S,
+    vm: V,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    execute_transaction_with_configuration::<S, V, SystemConfig<V>>(
+        substate_db,
+        vm,
+        None,
+        execution_config,
+        transaction,
+        (),
+    )
+}
+
+pub fn execute_and_commit_transaction<
+    S: SubstateDatabase + CommittableSubstateDatabase,
+    V: SystemCallbackObject + Clone,
+>(
+    substate_db: &mut S,
+    vm: V,
+    costing_parameters: Option<CostingParameters>,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    let receipt = execute_transaction_with_configuration::<S,V, SystemConfig<V>>(
+        substate_db,
+        vm,
+        costing_parameters,
+        execution_config,
+        transaction,
+        ()
+    );
+    if let TransactionResult::Commit(commit) = &receipt.result {
+        substate_db.commit(
+            &commit
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>(),
+        );
+    }
+    receipt
 }
 
 enum TransactionResultType {
