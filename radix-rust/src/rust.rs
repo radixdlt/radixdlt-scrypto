@@ -89,6 +89,8 @@ pub use core::result;
 pub use core::slice;
 
 #[cfg(not(feature = "alloc"))]
+pub use core::hash;
+#[cfg(not(feature = "alloc"))]
 pub use std::alloc;
 #[cfg(not(feature = "alloc"))]
 pub use std::borrow;
@@ -108,8 +110,6 @@ pub use std::default;
 pub use std::fmt;
 #[cfg(not(feature = "alloc"))]
 pub use std::format;
-#[cfg(not(feature = "alloc"))]
-pub use std::hash;
 #[cfg(not(feature = "alloc"))]
 pub use std::iter;
 #[cfg(not(feature = "alloc"))]
@@ -504,7 +504,7 @@ pub mod collections {
         #[cfg(feature = "alloc")]
         use core::hash::Hash;
         #[cfg(not(feature = "alloc"))]
-        use std::hash::Hash;
+        use core::hash::Hash;
 
         #[cfg(feature = "alloc")]
         use core::borrow::Borrow;

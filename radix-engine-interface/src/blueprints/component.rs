@@ -14,7 +14,7 @@ pub struct Global<T>(pub ComponentAddress, PhantomData<T>)
 where
     T: TypeInfoMarker;
 
-impl<T: TypeInfoMarker> std::hash::Hash for Global<T> {
+impl<T: TypeInfoMarker> core::hash::Hash for Global<T> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.0.as_node_id().hash(state)
     }
