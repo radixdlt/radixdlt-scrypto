@@ -3127,7 +3127,8 @@ fn airdrops_doable_in_one_transaction_if_all_accounts_accept_deposits() {
             })
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
-        if dbg!(ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]))
+        if ledger
+            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
             .is_commit_failure()
         {
             println!("Max airdrops = {airdrops}");
@@ -3229,11 +3230,26 @@ fn airdrops_doable_in_one_transaction_if_no_accounts_accept_deposits() {
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         if ledger
-            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+            .execute_manifest(
+                print_manifest(manifest),
+                vec![NonFungibleGlobalId::from_public_key(&pk)],
+            )
             .is_commit_failure()
         {
             println!("Max airdrops = {airdrops}");
             break;
         }
     }
+}
+
+fn print_manifest(manifest: TransactionManifestV1) -> TransactionManifestV1 {
+    println!(
+        "{}",
+        radix_transactions::manifest::decompile(
+            &manifest.instructions,
+            &NetworkDefinition::simulator()
+        )
+        .unwrap()
+    );
+    manifest
 }
