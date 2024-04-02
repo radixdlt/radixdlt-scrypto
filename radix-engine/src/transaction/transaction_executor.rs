@@ -279,7 +279,7 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         // Create a track
-        let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
+        let mut track = Track::<_, SpreadPrefixKeyMapper>::with_override(self.substate_db, Some(costing_parameters.clone()));
 
         // Perform runtime validation.
         // TODO: the following assumptions can be removed with better interface.

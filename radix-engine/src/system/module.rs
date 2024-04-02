@@ -9,13 +9,14 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::actor::Actor;
+use crate::track::BootStore;
 
 pub trait InitSystemModule {
     //======================
     // System module setup
     //======================
     #[inline(always)]
-    fn on_init(&mut self) -> Result<(), BootloadingError> {
+    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), BootloadingError> {
         Ok(())
     }
 }

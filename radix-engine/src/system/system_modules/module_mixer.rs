@@ -23,13 +23,14 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
-use crate::transaction::ExecutionConfig;
+use crate::transaction::{CostingParameters, ExecutionConfig};
 use bitflags::bitflags;
 use paste::paste;
 use radix_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_profiling_derive::trace_resources;
 use radix_transactions::model::AuthZoneParams;
+use crate::track::BootStore;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -196,37 +197,37 @@ impl SystemModuleMixer {
 
 impl InitSystemModule for SystemModuleMixer {
     #[trace_resources]
-    fn on_init(&mut self) -> Result<(), BootloadingError> {
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<(), BootloadingError> {
         let modules: EnabledModules = self.enabled_modules;
 
         // Enable execution trace
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            self.execution_trace.on_init()?;
+            self.execution_trace.init(store)?;
         }
 
         // Enable transaction runtime
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            self.transaction_runtime.on_init()?;
+            self.transaction_runtime.init(store)?;
         }
 
         // Enable auth
         if modules.contains(EnabledModules::AUTH) {
-            self.auth.on_init()?;
+            self.auth.init(store)?;
         }
 
         // Enable costing
         if modules.contains(EnabledModules::COSTING) {
-            self.costing.on_init()?;
+            self.costing.init(store)?;
         }
 
         // Enable transaction limits
         if modules.contains(EnabledModules::LIMITS) {
-            self.limits.on_init()?;
+            self.limits.init(store)?;
         }
 
         // Enable kernel trace
         if modules.contains(EnabledModules::KERNEL_TRACE) {
-            self.kernel_trace.on_init()?;
+            self.kernel_trace.init(store)?;
         }
 
         Ok(())

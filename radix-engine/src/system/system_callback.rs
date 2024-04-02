@@ -42,6 +42,16 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_transactions::model::PreAllocatedAddress;
+use crate::transaction::CostingParameters;
+
+pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SystemBoot {
+    V1 {
+        costing_parameters: CostingParameters,
+    },
+}
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -91,6 +101,7 @@ impl SystemLockData {
     }
 }
 
+
 pub struct SystemConfig<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
@@ -100,12 +111,12 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
-    type CallFrameData = Actor;
     type LockData = SystemLockData;
+    type CallFrameData = Actor;
     type CallbackState = C::CallbackState;
 
     fn init<S: BootStore>(&mut self, store: &S) -> Result<C::CallbackState, BootloadingError> {
-        self.modules.on_init()?;
+        self.modules.init(store)?;
 
         let callback_state = self.callback_obj.init(store)?;
 
@@ -164,18 +175,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_pin_node(self, node_id)
     }
 
-    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
-        SystemModuleMixer::on_drop_node(api, &event)
-    }
-
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_create_node(api, &event)
+    }
+
+    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>,
+    {
+        SystemModuleMixer::on_drop_node(api, &event)
     }
 
     fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
@@ -225,15 +236,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_scan_keys(self, &event)
     }
 
+    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_drain_substates(self, &event)
+    }
+
     fn on_scan_sorted_substates(
         &mut self,
         event: ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_scan_sorted_substates(self, &event)
-    }
-
-    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_drain_substates(self, &event)
     }
 
     fn before_invoke<Y>(
@@ -259,22 +270,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_invoke(api, invocation)
     }
 
-    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_execution_start(api)
-    }
-
-    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_execution_finish(api, message)?;
-
-        Ok(())
-    }
-
     fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
@@ -293,6 +288,22 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
 
         SystemModuleMixer::after_invoke(api, output)
+    }
+
+    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_execution_start(api)
+    }
+
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_execution_finish(api, message)?;
+
+        Ok(())
     }
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>

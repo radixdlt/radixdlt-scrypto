@@ -13,6 +13,7 @@ use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::types::SubstateKey;
 use sbor::rust::collections::BTreeMap;
+use crate::track::BootStore;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}
@@ -27,7 +28,7 @@ macro_rules! log {
 
 impl InitSystemModule for KernelTraceModule {
     #[cfg(feature = "resource_tracker")]
-    fn on_init(&mut self) -> Result<(), crate::errors::BootloadingError> {
+    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), crate::errors::BootloadingError> {
         panic!("KernelTraceModule should be disabled for feature resource_tracker!")
     }
 }

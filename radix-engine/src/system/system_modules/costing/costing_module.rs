@@ -11,7 +11,7 @@ use crate::kernel::kernel_callback_api::{
 use crate::object_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemBoot, SystemConfig};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
@@ -21,6 +21,8 @@ use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
+use crate::track::BootStore;
+use crate::transaction::CostingParameters;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -237,7 +239,7 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
 }
 
 impl InitSystemModule for CostingModule {
-    fn on_init(&mut self) -> Result<(), BootloadingError> {
+    fn init<S: BootStore>(&mut self, store: &S) -> Result<(), BootloadingError> {
         self.apply_deferred_execution_cost(ExecutionCostingEntry::ValidateTxPayload {
             size: self.tx_payload_len,
         })
@@ -250,6 +252,59 @@ impl InitSystemModule for CostingModule {
 
         self.apply_deferred_storage_cost(StorageType::Archive, self.tx_payload_len)
             .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+
+
+        let system_boot = store
+            .read_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
+                &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or(SystemBoot::V1 {
+                costing_parameters: CostingParameters::default(),
+            });
+
+        match system_boot {
+            SystemBoot::V1 { costing_parameters } => {
+                // Execution costing parameters
+                self.fee_reserve.execution_cost_unit_price = costing_parameters.execution_cost_unit_price;
+                self.fee_reserve.execution_cost_unit_limit = costing_parameters.execution_cost_unit_limit;
+                self.fee_reserve.execution_cost_unit_loan = costing_parameters.execution_cost_unit_loan;
+
+                // Finalization costing parameters
+                self.fee_reserve.finalization_cost_unit_price = costing_parameters.finalization_cost_unit_price;
+                self.fee_reserve.finalization_cost_unit_limit = costing_parameters.finalization_cost_unit_limit;
+
+                // USD and storage price
+                self.fee_reserve.usd_price = costing_parameters.usd_price;
+                self.fee_reserve.state_storage_price = costing_parameters.state_storage_price;
+                self.fee_reserve.archive_storage_price = costing_parameters.archive_storage_price;
+
+                let tip_percentage = Decimal::ONE
+                    .checked_add(
+                        Decimal::ONE_HUNDREDTH
+                            .checked_mul(self.fee_reserve.tip_percentage())
+                            .unwrap(),
+                    )
+                    .unwrap();
+
+                let effective_execution_cost_unit_price = costing_parameters
+                    .execution_cost_unit_price
+                    .checked_mul(tip_percentage)
+                    .unwrap();
+
+                let effective_finalization_cost_unit_price = costing_parameters
+                    .finalization_cost_unit_price
+                    .checked_mul(tip_percentage)
+                    .unwrap();
+
+                self.fee_reserve.effective_execution_cost_unit_price = effective_execution_cost_unit_price;
+                self.fee_reserve.effective_finalization_cost_unit_price = effective_finalization_cost_unit_price;
+            }
+        }
+
+
 
         Ok(())
     }

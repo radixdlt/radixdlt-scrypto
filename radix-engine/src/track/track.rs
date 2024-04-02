@@ -15,6 +15,8 @@ use radix_substate_store_interface::{
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
+use crate::system::system_callback::SystemBoot;
+use crate::transaction::CostingParameters;
 
 use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 
@@ -28,6 +30,8 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
     /// Substate database, use `get_substate_from_db` and `list_entries_from_db` for access
     substate_db: &'s S,
 
+    override_costing_params: Option<CostingParameters>,
+
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
     /// TODO: if time allows, consider merging into tracked nodes.
@@ -36,6 +40,32 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
     transient_substates: TransientSubstates,
 
     phantom_data: PhantomData<M>,
+}
+
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Track<'s, S, M> {
+    fn read_substate(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
+        // TODO: Cleanup
+        if partition_num == BOOT_LOADER_PARTITION && substate_key.eq(&SubstateKey::Field(1u8)) {
+            if let Some(costing_parameters) = self.override_costing_params {
+                let boot = SystemBoot::V1 {
+                    costing_parameters
+                };
+                return Some(IndexedScryptoValue::from_typed(&boot));
+            }
+        }
+
+        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
+        let db_sort_key = M::to_db_sort_key(&substate_key);
+
+        self.substate_db
+            .get_substate(&db_partition_key, &db_sort_key)
+            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
+    }
 }
 
 /// Records all the substates that have been read or written into, and all the partitions to delete.
@@ -50,6 +80,19 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     pub fn new(substate_db: &'s S) -> Self {
         Self {
             substate_db,
+            override_costing_params: None,
+            force_write_tracked_nodes: index_map_new(),
+            tracked_nodes: index_map_new(),
+            deleted_partitions: index_set_new(),
+            transient_substates: TransientSubstates::new(),
+            phantom_data: PhantomData::default(),
+        }
+    }
+
+    pub fn with_override(substate_db: &'s S, override_costing_params: Option<CostingParameters>) -> Self {
+        Self {
+            substate_db,
+            override_costing_params,
             force_write_tracked_nodes: index_map_new(),
             tracked_nodes: index_map_new(),
             deleted_partitions: index_set_new(),
@@ -319,21 +362,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     }
 }
 
-impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Track<'s, S, M> {
-    fn read_substate(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue> {
-        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let db_sort_key = M::to_db_sort_key(&substate_key);
-
-        self.substate_db
-            .get_substate(&db_partition_key, &db_sort_key)
-            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
-    }
-}
 
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstateStore
     for Track<'s, S, M>

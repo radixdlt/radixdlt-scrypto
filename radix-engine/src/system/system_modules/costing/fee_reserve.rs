@@ -96,27 +96,27 @@ impl RoyaltyRecipient {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct SystemLoanFeeReserve {
-    execution_cost_unit_price: Decimal,
-    execution_cost_unit_limit: u32,
-    execution_cost_unit_loan: u32,
+    pub(crate) execution_cost_unit_price: Decimal,
+    pub(crate) execution_cost_unit_limit: u32,
+    pub(crate) execution_cost_unit_loan: u32,
 
-    finalization_cost_unit_price: Decimal,
-    finalization_cost_unit_limit: u32,
+    pub(crate) finalization_cost_unit_price: Decimal,
+    pub(crate) finalization_cost_unit_limit: u32,
 
-    usd_price: Decimal,
-    state_storage_price: Decimal,
-    archive_storage_price: Decimal,
+    pub(crate) usd_price: Decimal,
+    pub(crate) state_storage_price: Decimal,
+    pub(crate) archive_storage_price: Decimal,
+
+    /// (Cache) The effective execution cost unit price, with tips considered
+    pub(crate) effective_execution_cost_unit_price: Decimal,
+    /// (Cache) The effective finalization cost unit price, with tips considered
+    pub(crate) effective_finalization_cost_unit_price: Decimal,
 
     tip_percentage: u16,
 
     /// Whether to abort the transaction run when the loan is repaid.
     /// This is used when test-executing pending transactions.
     abort_when_loan_repaid: bool,
-
-    /// (Cache) The effective execution cost unit price, with tips considered
-    effective_execution_cost_unit_price: Decimal,
-    /// (Cache) The effective finalization cost unit price, with tips considered
-    effective_finalization_cost_unit_price: Decimal,
 
     /// The XRD balance
     xrd_balance: Decimal,
@@ -218,15 +218,15 @@ impl SystemLoanFeeReserve {
             state_storage_price: costing_parameters.state_storage_price,
             archive_storage_price: costing_parameters.archive_storage_price,
 
+            // Cache
+            effective_execution_cost_unit_price,
+            effective_finalization_cost_unit_price,
+
             // Tipping percentage
             tip_percentage: transaction_costing_parameters.tip_percentage,
 
             // Aborting support
             abort_when_loan_repaid,
-
-            // Cache
-            effective_execution_cost_unit_price: effective_execution_cost_unit_price,
-            effective_finalization_cost_unit_price: effective_finalization_cost_unit_price,
 
             // Running balance
             xrd_balance: system_loan_in_xrd
