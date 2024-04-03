@@ -11,7 +11,7 @@ use crate::kernel::kernel_callback_api::{
 use crate::object_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::{BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemBoot, SystemConfig};
+use crate::system::system_callback::{BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemBoot, System};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
@@ -212,7 +212,7 @@ impl CostingModule {
     }
 }
 
-pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+pub fn apply_royalty_cost<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
     api: &mut Y,
     royalty_amount: RoyaltyAmount,
     recipient: RoyaltyRecipient,
@@ -255,8 +255,8 @@ impl InitSystemModule for CostingModule {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
-    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
+impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
+    fn before_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -337,7 +337,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     #[inline(always)]
-    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
+    fn after_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -357,7 +357,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -370,7 +370,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_pin_node(system: &mut SystemConfig<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn on_pin_node(system: &mut System<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
         system
             .modules
             .costing
@@ -380,7 +380,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -393,7 +393,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_move_module<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_move_module<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
@@ -406,7 +406,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_open_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -420,7 +420,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_mark_substate_as_transient(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -438,7 +438,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_read_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -451,7 +451,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_write_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -464,7 +464,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_close_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -478,7 +478,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_set_substate(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -491,7 +491,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_remove_substate(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -504,7 +504,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_scan_keys(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &ScanKeysEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -517,7 +517,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_drain_substates(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -530,7 +530,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_scan_sorted_substates(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -542,7 +542,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
+    fn on_allocate_node_id<Y: KernelApi<System<V>>>(
         api: &mut Y,
         _entity_type: EntityType,
     ) -> Result<(), RuntimeError> {

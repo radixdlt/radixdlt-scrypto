@@ -16,7 +16,7 @@ use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_callback::{BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemBoot, SystemConfig};
+use crate::system::system_callback::{BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemBoot, System};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
@@ -210,18 +210,18 @@ impl ExecutionConfig {
     }
 }
 
-impl<C: SystemCallbackObject> WrappedSystem<C> for SystemConfig<C> {
+impl<C: SystemCallbackObject> WrappedSystem<C> for System<C> {
     type Init = ();
 
-    fn create(config: SystemConfig<C>, _: ()) -> Self {
+    fn create(config: System<C>, _: ()) -> Self {
         config
     }
 
-    fn system_mut(&mut self) -> &mut SystemConfig<C> {
+    fn system_mut(&mut self) -> &mut System<C> {
         self
     }
 
-    fn to_system(self) -> SystemConfig<C> {
+    fn to_system(self) -> System<C> {
         self
     }
 }
@@ -292,7 +292,7 @@ where
             }
         };
         let fee_table = FeeTable::new();
-        let system = SystemConfig {
+        let system = System {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
@@ -647,7 +647,7 @@ where
     fn interpret_manifest<T: WrappedSystem<V>>(
         &self,
         track: &mut Track<S, SpreadPrefixKeyMapper>,
-        system: SystemConfig<V>,
+        system: System<V>,
         init: T::Init,
         executable: &Executable,
     ) -> (
@@ -1276,7 +1276,7 @@ pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    execute_transaction_with_configuration::<S, V, SystemConfig<V>>(
+    execute_transaction_with_configuration::<S, V, System<V>>(
         substate_db,
         vm,
         None,
@@ -1296,7 +1296,7 @@ pub fn execute_and_commit_transaction<
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    let receipt = execute_transaction_with_configuration::<S,V, SystemConfig<V>>(
+    let receipt = execute_transaction_with_configuration::<S,V, System<V>>(
         substate_db,
         vm,
         costing_parameters,
@@ -1323,7 +1323,7 @@ enum TransactionResultType {
 pub trait WrappedSystem<C: SystemCallbackObject>: KernelCallbackObject {
     type Init;
 
-    fn create(config: SystemConfig<C>, init: Self::Init) -> Self;
-    fn system_mut(&mut self) -> &mut SystemConfig<C>;
-    fn to_system(self) -> SystemConfig<C>;
+    fn create(config: System<C>, init: Self::Init) -> Self;
+    fn system_mut(&mut self) -> &mut System<C>;
+    fn to_system(self) -> System<C>;
 }

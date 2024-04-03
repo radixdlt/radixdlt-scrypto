@@ -5,7 +5,7 @@ use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::define_composite_checker;
 use radix_engine::object_modules::metadata::{MetadataCollection, MetadataEntryEntryPayload};
 use radix_engine::system::checkers::*;
-use radix_engine::system::system_callback::SystemConfig;
+use radix_engine::system::system_callback::System;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
@@ -1301,7 +1301,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
+        self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
@@ -1375,7 +1375,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         executable: Executable,
         execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
-        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
+        self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
             executable,
             None,
             execution_config,
@@ -1389,7 +1389,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         costing_parameters: CostingParameters,
         config: ExecutionConfig,
     ) -> TransactionReceipt {
-        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
+        self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
             executable,
             Some(costing_parameters),
             config,

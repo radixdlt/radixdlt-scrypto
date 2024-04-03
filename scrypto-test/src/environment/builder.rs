@@ -230,7 +230,7 @@ where
             native_vm.clone(),
             id_allocator,
             |substate_database| Track::new(substate_database),
-            |scrypto_vm| SystemConfig {
+            |scrypto_vm| System {
                 blueprint_cache: NonIterMap::new(),
                 auth_cache: NonIterMap::new(),
                 schema_cache: NonIterMap::new(),

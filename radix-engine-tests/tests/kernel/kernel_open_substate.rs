@@ -5,7 +5,7 @@ use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::BootLoader;
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system_callback::{SystemConfig, SystemLockData};
+use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
@@ -43,7 +43,7 @@ pub fn test_open_substate_of_invisible_package_address() {
 
     // Create kernel
     let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
-    let mut system = SystemConfig {
+    let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),

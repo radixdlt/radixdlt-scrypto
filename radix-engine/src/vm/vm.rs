@@ -2,7 +2,7 @@ use crate::blueprints::package::*;
 use crate::errors::{ApplicationError, RuntimeError, VmError};
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::{System, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::track::BootStore;
@@ -102,7 +102,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError>
-            + KernelInternalApi<SystemConfig<Self>>
+            + KernelInternalApi<System<Self>>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
         W: WasmEngine,

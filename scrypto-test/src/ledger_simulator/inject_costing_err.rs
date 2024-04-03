@@ -11,7 +11,7 @@ use radix_engine::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use radix_engine::system::system_callback::SystemConfig;
+use radix_engine::system::system_callback::System;
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -24,17 +24,17 @@ use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_transactions::prelude::PreAllocatedAddress;
 
 pub type InjectSystemCostingError<'a, E> =
-    InjectCostingError<SystemConfig<Vm<'a, DefaultWasmEngine, E>>>;
+    InjectCostingError<System<Vm<'a, DefaultWasmEngine, E>>>;
 
 pub struct InjectCostingError<K: KernelCallbackObject> {
     fail_after: Rc<RefCell<u64>>,
     callback_object: K,
 }
 
-impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<SystemConfig<C>> {
+impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<System<C>> {
     type Init = u64;
 
-    fn create(mut config: SystemConfig<C>, error_after_count: u64) -> Self {
+    fn create(mut config: System<C>, error_after_count: u64) -> Self {
         let fail_after = Rc::new(RefCell::new(error_after_count));
         config.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
             fail_after: fail_after.clone(),
@@ -46,11 +46,11 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<SystemConf
         }
     }
 
-    fn system_mut(&mut self) -> &mut SystemConfig<C> {
+    fn system_mut(&mut self) -> &mut System<C> {
         &mut self.callback_object
     }
 
-    fn to_system(self) -> SystemConfig<C> {
+    fn to_system(self) -> System<C> {
         self.callback_object
     }
 }

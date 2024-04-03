@@ -102,7 +102,7 @@ impl SystemLockData {
 }
 
 
-pub struct SystemConfig<C: SystemCallbackObject> {
+pub struct System<C: SystemCallbackObject> {
     pub callback_obj: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
@@ -110,7 +110,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub modules: SystemModuleMixer,
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
+impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
     type CallbackState = C::CallbackState;
@@ -322,7 +322,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelApi<SystemConfig<C>>,
+        Y: KernelApi<System<C>>,
     {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();

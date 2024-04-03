@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
 use crate::system::actor::{Actor, FunctionActor, MethodActor};
 use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::System;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
 use radix_common::math::Decimal;
@@ -290,8 +290,8 @@ impl ResourceSummary {
 
 impl InitSystemModule for ExecutionTraceModule {}
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceModule {
-    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+impl<V: SystemCallbackObject> SystemModule<System<V>> for ExecutionTraceModule {
+    fn on_create_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -323,7 +323,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -351,7 +351,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
+    fn before_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -373,7 +373,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
+    fn on_execution_finish<Y: KernelApi<System<V>>>(
         api: &mut Y,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {

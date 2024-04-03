@@ -5,7 +5,7 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::object_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::{System, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::system::system_substates::FieldSubstate;
@@ -155,7 +155,7 @@ impl RoleAssignmentNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn authorization<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+    pub fn authorization<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         global_address: &GlobalAddress,
         ident: &str,
         input: &IndexedScryptoValue,
@@ -286,7 +286,7 @@ impl RoleAssignmentNativePackage {
     }
 
     fn resolve_update_owner_role_method_permission<
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
         V: SystemCallbackObject,
     >(
         receiver: &NodeId,
@@ -320,7 +320,7 @@ impl RoleAssignmentNativePackage {
     }
 
     fn resolve_update_role_method_permission<
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
         V: SystemCallbackObject,
     >(
         receiver: &NodeId,
