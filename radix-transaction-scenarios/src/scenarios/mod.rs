@@ -1,6 +1,7 @@
 use crate::internal_prelude::*;
 
 pub mod account_authorized_depositors;
+pub mod account_locker;
 mod all_scenarios;
 pub mod fungible_resource;
 pub mod global_n_owned;

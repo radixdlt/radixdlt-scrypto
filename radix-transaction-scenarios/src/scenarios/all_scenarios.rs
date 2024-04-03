@@ -12,6 +12,7 @@ use radix_transactions::validation::*;
 use sbor::prelude::*;
 
 use account_authorized_depositors::AccountAuthorizedDepositorsScenarioCreator;
+use account_locker::AccountLockerScenarioCreator;
 use fungible_resource::FungibleResourceScenarioCreator;
 use global_n_owned::GlobalNOwnedScenarioCreator;
 use kv_store_with_remote_type::KVStoreScenarioCreator;
@@ -87,7 +88,9 @@ define_scenario_builders! {
     // The set of scenarios that should be run after the anemone protocol update.
     ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Anemone) => [],
     // The set of scenarios that should be run after the bottlenose protocol update.
-    ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Bottlenose) => [],
+    ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Bottlenose) => [
+        AccountLockerScenarioCreator::create
+    ],
 }
 
 pub struct TransactionScenarioExecutor<D, W, E, F1, F2>
