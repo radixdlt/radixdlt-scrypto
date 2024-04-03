@@ -32,8 +32,8 @@ impl<D> StateTreeUpdatingDatabase<D> {
         self.current_version
     }
 
-    pub fn list_substate_hashes(&mut self) -> IndexMap<DbPartitionKey, IndexMap<DbSortKey, Hash>> {
-        list_substate_hashes_at_version(&mut self.tree_store, self.current_version)
+    pub fn list_substate_hashes(&self) -> IndexMap<DbPartitionKey, IndexMap<DbSortKey, Hash>> {
+        list_substate_hashes_at_version(&self.tree_store, self.current_version)
     }
 
     fn update_with(&mut self, db_updates: &DatabaseUpdates) {

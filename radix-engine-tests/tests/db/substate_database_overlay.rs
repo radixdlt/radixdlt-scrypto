@@ -484,30 +484,59 @@ fn run_scenarios(
         .build();
 
     let mut next_nonce: u32 = 0;
-    for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = ledger1.get_current_epoch();
-        let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
-        let mut previous = None;
-        loop {
-            let next = scenario
-                .next(previous.as_ref())
-                .map_err(|err| err.into_full(&scenario))
-                .unwrap();
-            match next {
-                NextAction::Transaction(next) => {
-                    let receipt1 = ledger1.execute_notarized_transaction(&next.raw_transaction);
-                    let receipt2 = ledger2.execute_notarized_transaction(&next.raw_transaction);
+    let mut scenario_builders = scenario_builders();
+    for requirement in ScenarioRequirements::all() {
+        if let ScenarioRequirements::ProtocolUpdateUpTo(protocol_update) = requirement {
+            protocol_update
+                .generate_state_updates(ledger1.substate_db_mut(), &network)
+                .into_iter()
+                .for_each(|state_updates| {
+                    ledger1
+                        .substate_db_mut()
+                        .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
+                });
+            protocol_update
+                .generate_state_updates(ledger2.substate_db_mut(), &network)
+                .into_iter()
+                .for_each(|state_updates| {
+                    ledger2
+                        .substate_db_mut()
+                        .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
+                })
+        };
 
-                    check_callback(
-                        (ledger1.substate_db(), &receipt1),
-                        (ledger2.substate_db(), &receipt2),
-                    );
+        let scenario_builders = scenario_builders
+            .shift_remove(requirement)
+            .unwrap_or_default();
+        for scenario_builder in scenario_builders {
+            let epoch = {
+                assert_eq!(ledger1.get_current_epoch(), ledger2.get_current_epoch());
+                ledger1.get_current_epoch()
+            };
+            let mut scenario =
+                scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
+            let mut previous = None;
+            loop {
+                let next = scenario
+                    .next(previous.as_ref())
+                    .map_err(|err| err.into_full(&scenario))
+                    .unwrap();
+                match next {
+                    NextAction::Transaction(next) => {
+                        let receipt1 = ledger1.execute_notarized_transaction(&next.raw_transaction);
+                        let receipt2 = ledger2.execute_notarized_transaction(&next.raw_transaction);
 
-                    previous = Some(receipt1);
-                }
-                NextAction::Completed(end_state) => {
-                    next_nonce = end_state.next_unused_nonce;
-                    break;
+                        check_callback(
+                            (ledger1.substate_db(), &receipt1),
+                            (ledger2.substate_db(), &receipt2),
+                        );
+
+                        previous = Some(receipt1);
+                    }
+                    NextAction::Completed(end_state) => {
+                        next_nonce = end_state.next_unused_nonce;
+                        break;
+                    }
                 }
             }
         }

@@ -7,6 +7,7 @@ use crate::internal_prelude::*;
 
 use crate::accounts::ed25519_account_1;
 
+#[derive(Clone, Debug)]
 pub struct NextTransaction {
     pub logical_name: String,
     pub stage_counter: usize,
