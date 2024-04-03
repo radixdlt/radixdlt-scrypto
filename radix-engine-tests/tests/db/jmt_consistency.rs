@@ -1,37 +1,30 @@
 use radix_common::prelude::*;
-use radix_transaction_scenarios::scenario::{NextAction, ScenarioCore};
-use radix_transaction_scenarios::scenarios::get_builder_for_every_scenario;
+use radix_substate_store_impls::state_tree_support::*;
+use radix_transaction_scenarios::scenarios::*;
 use scrypto_test::prelude::*;
 
 #[test]
 fn substate_store_matches_state_tree_after_each_scenario() {
-    let network = NetworkDefinition::simulator();
-    let mut ledger = LedgerSimulatorBuilder::new().with_state_hashing().build();
-
-    let mut next_nonce: u32 = 0;
-    for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = ledger.get_current_epoch();
-        let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
-        let mut previous = None;
-        loop {
-            let next = scenario
-                .next(previous.as_ref())
-                .map_err(|err| err.into_full(&scenario))
-                .unwrap();
-            match next {
-                NextAction::Transaction(next) => {
-                    let receipt = ledger.execute_notarized_transaction(&next.raw_transaction);
-                    // TODO(when figured out): We could run this assert as part of the existing
-                    // `post_run_db_check` feature; however, it is tricky to implement (syntactically),
-                    // due to the assert only being available for certain `TestDatabase` impl.
-                    ledger.assert_state_tree_matches_substate_store();
-                    previous = Some(receipt);
-                }
-                NextAction::Completed(end_state) => {
-                    next_nonce = end_state.next_unused_nonce;
-                    break;
-                }
+    let db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
+    DefaultTransactionScenarioExecutor::new(db)
+        .on_transaction_execution(|_, _, _, db| {
+            let hashes_from_tree = db.list_substate_hashes();
+            assert_eq!(
+                hashes_from_tree.keys().cloned().collect::<HashSet<_>>(),
+                db.list_partition_keys().collect::<HashSet<_>>(),
+                "partitions captured in the state tree should match those in the substate store"
+            );
+            for (db_partition_key, by_db_sort_key) in hashes_from_tree {
+                assert_eq!(
+                    by_db_sort_key.into_iter().collect::<HashMap<_, _>>(),
+                    db.list_entries(&db_partition_key)
+                        .map(|(db_sort_key, substate_value)| (db_sort_key, hash(substate_value)))
+                        .collect::<HashMap<_, _>>(),
+                    "partition's {:?} substates in the state tree should match those in the substate store",
+                    db_partition_key,
+                )
             }
-        }
-    }
+        })
+        .execute()
+        .expect("Must succeed!");
 }
