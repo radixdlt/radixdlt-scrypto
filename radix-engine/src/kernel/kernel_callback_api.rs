@@ -7,7 +7,10 @@ use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
 use crate::track::BootStore;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
+use crate::transaction::{CostingParameters, ExecutionConfig};
 
 pub trait CallFrameReferences {
     fn root() -> Self;
@@ -131,9 +134,12 @@ pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
     type CallbackState;
+    type BootstrapInput;
 
     /// Initialize the system layer with data loaded from the substate store
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError>;
+    fn boot_load<S: SubstateDatabase>(store: &S, costing_parameters: Option<CostingParameters>, executable: &Executable, execution_config: &ExecutionConfig, bootstrap_input: Self::BootstrapInput) -> Self;
+
+    fn init(&mut self) -> Result<(), BootloadingError>;
 
     fn start<Y>(
         api: &mut Y,

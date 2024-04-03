@@ -75,6 +75,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
         callback_obj: vm.clone(),
+        callback_state: VmVersion::latest(),
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             NetworkDefinition::simulator(),
@@ -149,6 +150,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
         callback_obj: vm.clone(),
+        callback_state: VmVersion::latest(),
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             NetworkDefinition::simulator(),

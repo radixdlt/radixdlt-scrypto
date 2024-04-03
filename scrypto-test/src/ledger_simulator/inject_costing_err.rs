@@ -16,11 +16,13 @@ use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use radix_engine::track::{BootStore, NodeSubstates};
-use radix_engine::transaction::WrappedSystem;
+use radix_engine::transaction::{CostingParameters, ExecutionConfig, WrappedSystem};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
 
 pub type InjectSystemCostingError<'a, E> =
@@ -101,8 +103,14 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
     type CallFrameData = K::CallFrameData;
     type CallbackState = K::CallbackState;
 
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError> {
-        self.callback_object.init(store)
+    type BootstrapInput = K::BootstrapInput;
+
+    fn boot_load<S: SubstateDatabase>(store: &S, costing_parameters: Option<CostingParameters>, executable: &Executable, execution_config: &ExecutionConfig, bootstrap_input: Self::BootstrapInput) -> Self {
+        panic!();
+    }
+
+    fn init(&mut self) -> Result<(), BootloadingError> {
+        self.callback_object.init()
     }
 
     fn start<Y>(
@@ -520,7 +528,6 @@ impl<'a, M: KernelCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInt
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
-            system_2: &state.system_2,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
@@ -564,7 +571,6 @@ impl<'a, M: KernelCallbackObject, K: KernelInternalApi<InjectCostingError<M>>> K
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
-            system_2: &state.system_2,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }

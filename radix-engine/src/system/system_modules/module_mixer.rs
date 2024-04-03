@@ -197,37 +197,37 @@ impl SystemModuleMixer {
 
 impl InitSystemModule for SystemModuleMixer {
     #[trace_resources]
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<(), BootloadingError> {
+    fn init(&mut self) -> Result<(), BootloadingError> {
         let modules: EnabledModules = self.enabled_modules;
 
         // Enable execution trace
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            self.execution_trace.init(store)?;
+            self.execution_trace.init()?;
         }
 
         // Enable transaction runtime
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            self.transaction_runtime.init(store)?;
+            self.transaction_runtime.init()?;
         }
 
         // Enable auth
         if modules.contains(EnabledModules::AUTH) {
-            self.auth.init(store)?;
+            self.auth.init()?;
         }
 
         // Enable costing
         if modules.contains(EnabledModules::COSTING) {
-            self.costing.init(store)?;
+            self.costing.init()?;
         }
 
         // Enable transaction limits
         if modules.contains(EnabledModules::LIMITS) {
-            self.limits.init(store)?;
+            self.limits.init()?;
         }
 
         // Enable kernel trace
         if modules.contains(EnabledModules::KERNEL_TRACE) {
-            self.kernel_trace.init(store)?;
+            self.kernel_trace.init()?;
         }
 
         Ok(())
@@ -585,7 +585,7 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn costing(&mut self) -> Option<&CostingModule> {
+    pub fn costing(&self) -> Option<&CostingModule> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             Some(&self.costing)
         } else {

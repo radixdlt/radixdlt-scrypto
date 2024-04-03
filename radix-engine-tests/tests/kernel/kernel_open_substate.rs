@@ -11,7 +11,7 @@ use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm, VmVersion};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -51,6 +51,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             scrypto_vm: &scrypto_vm,
             native_vm: native_vm,
         },
+        callback_state: VmVersion::latest(),
         modules: SystemModuleMixer::new(
             execution_config.enabled_modules,
             NetworkDefinition::simulator(),

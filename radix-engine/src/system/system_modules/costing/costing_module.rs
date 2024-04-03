@@ -237,7 +237,7 @@ pub fn apply_royalty_cost<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
 }
 
 impl InitSystemModule for CostingModule {
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<(), BootloadingError> {
+    fn init(&mut self) -> Result<(), BootloadingError> {
         self.apply_deferred_execution_cost(ExecutionCostingEntry::ValidateTxPayload {
             size: self.tx_payload_len,
         })

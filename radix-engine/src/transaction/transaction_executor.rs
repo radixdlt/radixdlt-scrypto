@@ -268,47 +268,17 @@ where
         let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-        let costing_parameters = {
-            if let Some(costing_parameters) = costing_parameters {
-                costing_parameters
-            } else {
-                let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                    TRANSACTION_TRACKER.as_node_id(),
-                    BOOT_LOADER_PARTITION,
-                );
-                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY));
+        let system = System::boot_load(
+            self.substate_db,
+            costing_parameters,
+            executable,
+            execution_config,
+            self.vm.clone(),
+        );
 
-                let system_boot = self.substate_db.get_substate(&db_partition_key, &db_sort_key)
-                    .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                    .unwrap_or(SystemBoot::V1 {
-                        costing_parameters: CostingParameters::default(),
-                    });
-
-                match system_boot {
-                    SystemBoot::V1 { costing_parameters } => {
-                        costing_parameters
-                    }
-                }
-            }
-        };
-        let fee_table = FeeTable::new();
-        let system = System {
-            blueprint_cache: NonIterMap::new(),
-            auth_cache: NonIterMap::new(),
-            schema_cache: NonIterMap::new(),
-            callback_obj: self.vm.clone(),
-            modules: SystemModuleMixer::new(
-                execution_config.enabled_modules,
-                execution_config.network_definition.clone(),
-                executable.intent_hash().to_hash(),
-                executable.auth_zone_params().clone(),
-                SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
-                fee_table,
-                executable.payload_size(),
-                executable.num_of_signature_validations(),
-                execution_config,
-            ),
-        };
+        let costing_parameters = system.modules.costing()
+            .map(|costing| costing.fee_reserve.costing_parameters())
+            .unwrap_or_default();
 
         // Create a track
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);

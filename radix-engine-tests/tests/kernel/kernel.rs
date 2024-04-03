@@ -17,10 +17,12 @@ use radix_engine::kernel::kernel_callback_api::{
     WriteSubstateEvent,
 };
 use radix_engine::track::{BootStore, Track};
+use radix_engine::transaction::{CostingParameters, ExecutionConfig};
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_transactions::model::PreAllocatedAddress;
+use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::{Executable, PreAllocatedAddress};
 
 struct TestCallFrameData;
 
@@ -51,8 +53,13 @@ impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
     type CallbackState = ();
+    type BootstrapInput = ();
 
-    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), BootloadingError> {
+    fn boot_load<S: SubstateDatabase>(store: &S, costing_parameters: Option<CostingParameters>, executable: &Executable, execution_config: &ExecutionConfig, bootstrap_input: Self::BootstrapInput) -> Self {
+        Self
+    }
+
+    fn init(&mut self) -> Result<(), BootloadingError> {
         Ok(())
     }
 

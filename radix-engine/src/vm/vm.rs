@@ -129,7 +129,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 .unwrap_or_else(|| panic!("Vm type not found: {:?}", export))
         };
 
-        let vm_api = api.kernel_get_system_state().system_2.clone();
+        let vm_api = api.kernel_get_system_state().system.callback_state.clone();
 
         let output = match vm_type.into_latest().vm_type {
             VmType::Native => {

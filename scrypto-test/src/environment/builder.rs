@@ -235,6 +235,7 @@ where
                 auth_cache: NonIterMap::new(),
                 schema_cache: NonIterMap::new(),
                 callback_obj: Vm::new(scrypto_vm, native_vm.clone()),
+                callback_state: VmVersion::latest(),
                 modules: SystemModuleMixer::new(
                     EnabledModules::LIMITS
                         | EnabledModules::AUTH
@@ -253,8 +254,6 @@ where
                 ),
             },
             |system_config, track, id_allocator| {
-                // Get version from the boot store
-                let vm_version = system_config.callback_obj.init(track).unwrap();
                 Kernel::kernel_create_kernel_for_testing(
                     SubstateIO {
                         heap: Heap::new(),
@@ -270,7 +269,6 @@ where
                     CallFrame::new_root(Actor::Root),
                     vec![],
                     system_config,
-                    vm_version,
                 )
             },
         ));
