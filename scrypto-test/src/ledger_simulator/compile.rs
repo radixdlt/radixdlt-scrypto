@@ -6,6 +6,20 @@ pub struct Compile;
 
 impl Compile {
     pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, PackageDefinition) {
+        Self::compile_with_env_vars(
+            package_dir,
+            btreemap! {
+                "RUSTFLAGS".to_owned() => "".to_owned(),
+                "CARGO_ENCODED_RUSTFLAGS".to_owned() => "".to_owned(),
+            },
+        )
+    }
+
+    // required for compile-blueprints-at-build-time feature in radix-engine-tests
+    pub fn compile_with_env_vars<P: AsRef<Path>>(
+        package_dir: P,
+        env_vars: sbor::rust::collections::BTreeMap<String, String>,
+    ) -> (Vec<u8>, PackageDefinition) {
         // Initialize compiler
         let mut compiler_builder = ScryptoCompiler::builder();
         compiler_builder
@@ -17,6 +31,14 @@ impl Compile {
             )
             .optimize_with_wasm_opt(None)
             .log_level(Level::Trace); // all logs from error to trace
+
+        env_vars.iter().for_each(|(name, value)| {
+            if value.is_empty() {
+                compiler_builder.env(name, EnvironmentVariableAction::Unset);
+            } else {
+                compiler_builder.env(name, EnvironmentVariableAction::Set(value.clone()));
+            }
+        });
 
         #[cfg(feature = "coverage")]
         {
