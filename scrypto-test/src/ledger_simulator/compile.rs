@@ -24,20 +24,11 @@ impl Compile {
         let mut compiler_builder = ScryptoCompiler::builder();
         compiler_builder
             .manifest_path(package_dir.as_ref())
-            .env("RUSTFLAGS", EnvironmentVariableAction::Set("".into()))
-            .env(
-                "CARGO_ENCODED_RUSTFLAGS",
-                EnvironmentVariableAction::Set("".into()),
-            )
             .optimize_with_wasm_opt(None)
             .log_level(Level::Trace); // all logs from error to trace
 
         env_vars.iter().for_each(|(name, value)| {
-            if value.is_empty() {
-                compiler_builder.env(name, EnvironmentVariableAction::Unset);
-            } else {
-                compiler_builder.env(name, EnvironmentVariableAction::Set(value.clone()));
-            }
+            compiler_builder.env(name, EnvironmentVariableAction::Set(value.clone()));
         });
 
         #[cfg(feature = "coverage")]
