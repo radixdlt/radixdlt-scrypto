@@ -39,8 +39,6 @@ pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + 
 impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
     /// Creates a new kernel with data loaded from the substate store
     pub fn boot(&mut self) -> Result<Kernel<M, S>, BootloadingError> {
-        self.callback.init()?;
-
         let kernel = Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),

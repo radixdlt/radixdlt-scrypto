@@ -23,6 +23,7 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
+use crate::track::BootStore;
 use crate::transaction::{CostingParameters, ExecutionConfig};
 use bitflags::bitflags;
 use paste::paste;
@@ -30,7 +31,6 @@ use radix_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_profiling_derive::trace_resources;
 use radix_transactions::model::{AuthZoneParams, TransactionCostingParameters};
-use crate::track::BootStore;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -371,10 +371,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
     }
 
     #[trace_resources]
-    fn on_scan_keys(
-        system: &mut System<V>,
-        event: &ScanKeysEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_keys(system: &mut System<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_scan_keys(system, event))
     }
 

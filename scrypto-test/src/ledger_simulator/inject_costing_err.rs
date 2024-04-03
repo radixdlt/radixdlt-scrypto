@@ -21,12 +21,10 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
 
-pub type InjectSystemCostingError<'a, E> =
-    InjectCostingError<System<Vm<'a, DefaultWasmEngine, E>>>;
+pub type InjectSystemCostingError<'a, E> = InjectCostingError<System<Vm<'a, DefaultWasmEngine, E>>>;
 
 pub struct InjectCostingError<K: KernelCallbackObject> {
     fail_after: Rc<RefCell<u64>>,
@@ -101,16 +99,17 @@ macro_rules! wrapped_internal_api {
 impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingError<K> {
     type LockData = K::LockData;
     type CallFrameData = K::CallFrameData;
-    type CallbackState = K::CallbackState;
 
-    type BootstrapInput = K::BootstrapInput;
+    type InitInput = K::InitInput;
 
-    fn boot_load<S: SubstateDatabase>(store: &S, costing_parameters: Option<CostingParameters>, executable: &Executable, execution_config: &ExecutionConfig, bootstrap_input: Self::BootstrapInput) -> Self {
+    fn init<S: BootStore>(
+        store: &S,
+        costing_parameters: Option<CostingParameters>,
+        executable: &Executable,
+        execution_config: &ExecutionConfig,
+        bootstrap_input: Self::InitInput,
+    ) -> Result<Self, BootloadingError> {
         panic!();
-    }
-
-    fn init(&mut self) -> Result<(), BootloadingError> {
-        self.callback_object.init()
     }
 
     fn start<Y>(

@@ -21,10 +21,12 @@ use crate::system::actor::MethodActor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
+use crate::transaction::{CostingParameters, ExecutionConfig};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -41,11 +43,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
-use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::{Executable, PreAllocatedAddress};
-use crate::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
-use crate::transaction::{CostingParameters, ExecutionConfig};
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -104,22 +102,6 @@ impl SystemLockData {
     }
 }
 
-pub struct BootStorage<'a, S: SubstateDatabase> {
-    boot_store: &'a S
-}
-
-impl<'a, S: SubstateDatabase> BootStore for BootStorage<'a, S> {
-    fn read_substate(&self, node_id: &NodeId, partition_num: PartitionNumber, substate_key: &SubstateKey) -> Option<IndexedScryptoValue> {
-        let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-            node_id,
-            partition_num,
-        );
-        let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
-        self.boot_store.get_substate(&db_partition_key, &db_sort_key)
-            .map(|v| IndexedScryptoValue::from_vec(v.to_vec()).unwrap())
-    }
-}
-
 
 pub struct System<C: SystemCallbackObject> {
     pub callback_obj: C,
@@ -133,69 +115,58 @@ pub struct System<C: SystemCallbackObject> {
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
-    type CallbackState = C::CallbackState;
-    type BootstrapInput = C;
+    type InitInput = C;
 
-    fn boot_load<S: SubstateDatabase>(
+    fn init<S: BootStore>(
         store: &S,
         costing_parameters: Option<CostingParameters>,
         executable: &Executable,
         execution_config: &ExecutionConfig,
-        mut bootstrap_input: C,
-    ) -> Self {
+        mut init_input: C,
+    ) -> Result<Self, BootloadingError> {
         let costing_parameters = {
             if let Some(costing_parameters) = costing_parameters {
                 costing_parameters
             } else {
-                let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
-                    TRANSACTION_TRACKER.as_node_id(),
-                    BOOT_LOADER_PARTITION,
-                );
-                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY));
-
-                let system_boot = store.get_substate(&db_partition_key, &db_sort_key)
+                let system_boot = store
+                    .read_substate(
+                        TRANSACTION_TRACKER.as_node_id(),
+                        BOOT_LOADER_PARTITION,
+                        &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY))
                     .map(|v| scrypto_decode(v.as_slice()).unwrap())
                     .unwrap_or(SystemBoot::V1 {
                         costing_parameters: CostingParameters::default(),
                     });
 
                 match system_boot {
-                    SystemBoot::V1 { costing_parameters } => {
-                        costing_parameters
-                    }
+                    SystemBoot::V1 { costing_parameters } => costing_parameters,
                 }
             }
         };
-        let fee_table = FeeTable::new();
+        let callback_state = init_input.init(store).unwrap();
 
-        let store = BootStorage {
-            boot_store: store
-        };
+        let mut modules = SystemModuleMixer::new(
+            execution_config.enabled_modules,
+            execution_config.network_definition.clone(),
+            executable.intent_hash().to_hash(),
+            executable.auth_zone_params().clone(),
+            SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
+            FeeTable::new(),
+            executable.payload_size(),
+            executable.num_of_signature_validations(),
+            execution_config,
+        );
 
-        let callback_state = bootstrap_input.init(&store).unwrap();
+        modules.init()?;
 
-        System {
+        Ok(System {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
-            callback_obj: bootstrap_input,
+            callback_obj: init_input,
             callback_state,
-            modules: SystemModuleMixer::new(
-                execution_config.enabled_modules,
-                execution_config.network_definition.clone(),
-                executable.intent_hash().to_hash(),
-                executable.auth_zone_params().clone(),
-                SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
-                fee_table,
-                executable.payload_size(),
-                executable.num_of_signature_validations(),
-                execution_config,
-            ),
-        }
-    }
-
-    fn init(&mut self) -> Result<(), BootloadingError> {
-        self.modules.init()
+            modules,
+        })
     }
 
     fn start<Y>(

@@ -48,7 +48,10 @@ where
         native_vm: NativeVm<NoExtension>,
         id_allocator: IdAllocator,
         track_builder: impl FnOnce(&D) -> TestTrack<'_, D>,
-        system_builder: impl for<'a> FnOnce(&'a ScryptoVm<DefaultWasmEngine>, &'a D) -> TestSystemConfig<'a>,
+        system_builder: impl for<'a> FnOnce(
+            &'a ScryptoVm<DefaultWasmEngine>,
+            &'a D,
+        ) -> TestSystemConfig<'a>,
         kernel_builder: impl for<'a> FnOnce(
             &'a mut TestSystemConfig<'a>,
             &'a mut TestTrack<'a, D>,

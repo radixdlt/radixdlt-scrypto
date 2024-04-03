@@ -236,7 +236,9 @@ where
                     TRANSACTION_TRACKER.as_node_id(),
                     BOOT_LOADER_PARTITION,
                 );
-                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY));
+                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(
+                    BOOT_LOADER_VM_SUBSTATE_FIELD_KEY,
+                ));
 
                 let vm_boot = database
                     .get_substate(&db_partition_key, &db_sort_key)

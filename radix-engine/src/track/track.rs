@@ -1,10 +1,12 @@
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::TransientSubstates;
+use crate::system::system_callback::SystemBoot;
 use crate::track::interface::{
     CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
 use crate::track::state_updates::*;
 use crate::track::BootStore;
+use crate::transaction::CostingParameters;
 use radix_engine_interface::types::*;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::DbPartitionKey;
@@ -15,8 +17,6 @@ use radix_substate_store_interface::{
 use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
-use crate::system::system_callback::SystemBoot;
-use crate::transaction::CostingParameters;
 
 use super::interface::{CanonicalPartition, CanonicalSubstateKey, StoreCommit, StoreCommitInfo};
 
@@ -52,9 +52,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Trac
         // TODO: Cleanup
         if partition_num == BOOT_LOADER_PARTITION && substate_key.eq(&SubstateKey::Field(1u8)) {
             if let Some(costing_parameters) = self.override_costing_params {
-                let boot = SystemBoot::V1 {
-                    costing_parameters
-                };
+                let boot = SystemBoot::V1 { costing_parameters };
                 return Some(IndexedScryptoValue::from_typed(&boot));
             }
         }
@@ -349,7 +347,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         Ok(&mut partition.get_mut(&db_sort_key).unwrap().substate_value)
     }
 }
-
 
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstateStore
     for Track<'s, S, M>

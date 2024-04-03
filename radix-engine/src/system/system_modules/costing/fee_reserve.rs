@@ -612,10 +612,7 @@ mod tests {
         transaction_costing_parameters.tip_percentage = tip_percentage;
         transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 
-        SystemLoanFeeReserve::new(
-            &costing_parameters,
-            &transaction_costing_parameters,
-        )
+        SystemLoanFeeReserve::new(&costing_parameters, &transaction_costing_parameters)
     }
 
     #[test]

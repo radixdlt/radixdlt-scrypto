@@ -16,7 +16,7 @@ use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_callback::{BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemBoot, System};
+use crate::system::system_callback::{System, SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
@@ -26,15 +26,15 @@ use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_substates::{FieldSubstate, LockStatus};
 use crate::track::interface::CommitableSubstateStore;
-use crate::track::{to_state_updates, Track, TrackFinalizeError};
+use crate::track::{BootStore, to_state_updates, Track, TrackFinalizeError};
 use crate::transaction::*;
 use radix_common::constants::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::*;
-use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -226,6 +226,26 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for System<C> {
     }
 }
 
+
+pub struct SubstateBootStore<'a, S: SubstateDatabase> {
+    boot_store: &'a S,
+}
+
+impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
+    fn read_substate(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
+        let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_num);
+        let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
+        self.boot_store
+            .get_substate(&db_partition_key, &db_sort_key)
+            .map(|v| IndexedScryptoValue::from_vec(v.to_vec()).unwrap())
+    }
+}
+
 /// An executor that runs transactions.
 /// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
@@ -253,7 +273,6 @@ where
         execution_config: &ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
-
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if execution_config
@@ -268,58 +287,70 @@ where
         let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-        let system = System::boot_load(
-            self.substate_db,
+
+        let boot_store = SubstateBootStore { boot_store: self.substate_db };
+
+        let system = System::init(
+            &boot_store,
             costing_parameters,
             executable,
             execution_config,
             self.vm.clone(),
         );
 
-        let costing_parameters = system.modules.costing()
-            .map(|costing| costing.fee_reserve.costing_parameters())
-            .unwrap_or_default();
+        let mut costing_parameters = CostingParameters::default();
 
         // Create a track
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
-        // Perform runtime validation.
-        // TODO: the following assumptions can be removed with better interface.
-        // We are assuming that intent hash store is ready when epoch manager is ready.
-        let current_epoch = Self::read_epoch(&mut track);
-        let validation_result = if let Some(current_epoch) = current_epoch {
-            if let Some(range) = executable.epoch_range() {
-                Self::validate_epoch_range(
-                    current_epoch,
-                    range.start_epoch_inclusive,
-                    range.end_epoch_exclusive,
-                )
-                .and_then(|_| {
-                    Self::validate_intent_hash(
-                        &mut track,
-                        executable.intent_hash().to_hash(),
-                        range.end_epoch_exclusive,
-                    )
-                })
-            } else {
-                Ok(())
+        let validation_result = match system {
+            Ok(system) => {
+                costing_parameters = system
+                    .modules
+                    .costing()
+                    .map(|costing| costing.fee_reserve.costing_parameters())
+                    .unwrap_or_default();
+
+                // Perform runtime validation.
+                // TODO: the following assumptions can be removed with better interface.
+                // We are assuming that intent hash store is ready when epoch manager is ready.
+                let current_epoch = Self::read_epoch(&mut track);
+                if let Some(current_epoch) = current_epoch {
+                    if let Some(range) = executable.epoch_range() {
+                        Self::validate_epoch_range(
+                            current_epoch,
+                            range.start_epoch_inclusive,
+                            range.end_epoch_exclusive,
+                        )
+                            .and_then(|_| {
+                                Self::validate_intent_hash(
+                                    &mut track,
+                                    executable.intent_hash().to_hash(),
+                                    range.end_epoch_exclusive,
+                                )
+                            })
+                            .and_then(|_| {
+                                Ok(system)
+                            })
+                    } else {
+                        Ok(system)
+                    }
+                } else {
+                    Ok(system)
+                }
             }
-        } else {
-            Ok(())
+            Err(e) => {
+                Err(RejectionReason::BootloadingError(e))
+            }
         };
 
         // Run manifest
         let (fee_summary, fee_details, result) = match validation_result {
-            Ok(()) => {
+            Ok(system) => {
                 let (
                     interpretation_result,
                     (mut costing_module, runtime_module, execution_trace_module),
-                ) = self.interpret_manifest::<T>(
-                    &mut track,
-                    system,
-                    init,
-                    executable,
-                );
+                ) = self.interpret_manifest::<T>(&mut track, system, init, executable);
 
                 #[cfg(not(feature = "alloc"))]
                 if execution_config
@@ -629,7 +660,6 @@ where
         ),
     ) {
         let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
-
 
         let mut wrapped_system = T::create(system, init);
 
@@ -1266,13 +1296,13 @@ pub fn execute_and_commit_transaction<
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    let receipt = execute_transaction_with_configuration::<S,V, System<V>>(
+    let receipt = execute_transaction_with_configuration::<S, V, System<V>>(
         substate_db,
         vm,
         costing_parameters,
         execution_config,
         transaction,
-        ()
+        (),
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(

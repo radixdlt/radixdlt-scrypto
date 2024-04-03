@@ -11,8 +11,10 @@ use crate::kernel::kernel_callback_api::{
 use crate::object_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::{BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemBoot, System};
+use crate::system::system_callback::{System, SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY};
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::track::BootStore;
+use crate::transaction::CostingParameters;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
@@ -22,8 +24,6 @@ use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
 use radix_transactions::model::TransactionCostingParameters;
-use crate::track::BootStore;
-use crate::transaction::CostingParameters;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -503,10 +503,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_scan_keys(
-        system: &mut System<V>,
-        event: &ScanKeysEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_keys(system: &mut System<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
         system
             .modules
             .costing

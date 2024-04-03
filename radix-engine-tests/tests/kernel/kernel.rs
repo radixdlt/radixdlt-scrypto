@@ -52,15 +52,10 @@ struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
-    type CallbackState = ();
-    type BootstrapInput = ();
+    type InitInput = ();
 
-    fn boot_load<S: SubstateDatabase>(store: &S, costing_parameters: Option<CostingParameters>, executable: &Executable, execution_config: &ExecutionConfig, bootstrap_input: Self::BootstrapInput) -> Self {
-        Self
-    }
-
-    fn init(&mut self) -> Result<(), BootloadingError> {
-        Ok(())
+    fn init<S: BootStore>(store: &S, costing_parameters: Option<CostingParameters>, executable: &Executable, execution_config: &ExecutionConfig, bootstrap_input: Self::InitInput) -> Result<Self, BootloadingError> {
+        Ok(Self)
     }
 
     fn start<Y>(
