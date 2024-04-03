@@ -91,10 +91,6 @@ pub struct CostingModule {
 }
 
 impl CostingModule {
-    pub fn fee_reserve(self) -> SystemLoanFeeReserve {
-        self.fee_reserve
-    }
-
     pub fn apply_execution_cost(
         &mut self,
         costing_entry: ExecutionCostingEntry,

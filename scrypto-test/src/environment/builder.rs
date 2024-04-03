@@ -246,7 +246,6 @@ where
                         virtual_resources: Default::default(),
                     },
                     TransactionCostingParameters::default(),
-                    false,
                     FeeTable::new(),
                     0,
                     0,

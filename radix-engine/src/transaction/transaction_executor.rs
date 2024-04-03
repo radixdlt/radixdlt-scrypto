@@ -101,7 +101,6 @@ impl CostingParameters {
 
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
-    pub abort_when_loan_repaid: bool,
     pub enable_cost_breakdown: bool,
 
     // TODO: Add the following to a substate
@@ -129,7 +128,6 @@ impl ExecutionConfig {
         Self {
             network_definition,
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            abort_when_loan_repaid: false,
             enable_cost_breakdown: false,
             max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
             max_call_depth: MAX_CALL_DEPTH,
@@ -207,11 +205,6 @@ impl ExecutionConfig {
 
     pub fn with_cost_breakdown(mut self, enabled: bool) -> Self {
         self.enable_cost_breakdown = enabled;
-        self
-    }
-
-    pub fn up_to_loan_repayment(mut self, enabled: bool) -> Self {
-        self.abort_when_loan_repaid = enabled;
         self
     }
 }
@@ -304,7 +297,6 @@ where
         };
 
         let txn_costing_parameters = executable.costing_parameters().clone();
-        let abort_when_loan_repaid = execution_config.abort_when_loan_repaid;
 
         // Run manifest
         let (costing_parameters, fee_summary, fee_details, result) = match validation_result {
@@ -317,7 +309,6 @@ where
                     executable,
                     execution_config,
                     txn_costing_parameters,
-                    abort_when_loan_repaid,
                     fee_table,
                     init,
                 );
@@ -627,7 +618,6 @@ where
         executable: &Executable,
         execution_config: &ExecutionConfig,
         transaction_costing_parameters: TransactionCostingParameters,
-        abort_when_loan_repaid: bool,
         fee_table: FeeTable,
         init: T::Init,
     ) -> (
@@ -650,7 +640,6 @@ where
                 executable.intent_hash().to_hash(),
                 executable.auth_zone_params().clone(),
                 transaction_costing_parameters,
-                abort_when_loan_repaid,
                 fee_table,
                 executable.payload_size(),
                 executable.num_of_signature_validations(),

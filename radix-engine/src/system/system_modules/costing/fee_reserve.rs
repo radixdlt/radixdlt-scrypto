@@ -147,7 +147,6 @@ impl Default for SystemLoanFeeReserve {
         Self::new(
             &CostingParameters::default(),
             &TransactionCostingParameters::default(),
-            false,
         )
     }
 }
@@ -167,7 +166,6 @@ impl SystemLoanFeeReserve {
     pub fn new(
         costing_parameters: &CostingParameters,
         transaction_costing_parameters: &TransactionCostingParameters,
-        abort_when_loan_repaid: bool,
     ) -> Self {
         // Sanity checks
         assert!(!costing_parameters.execution_cost_unit_price.is_negative());
@@ -226,7 +224,7 @@ impl SystemLoanFeeReserve {
             tip_percentage: transaction_costing_parameters.tip_percentage,
 
             // Aborting support
-            abort_when_loan_repaid,
+            abort_when_loan_repaid: transaction_costing_parameters.abort_when_loan_repaid,
 
             // Running balance
             xrd_balance: system_loan_in_xrd
@@ -612,11 +610,11 @@ mod tests {
         costing_parameters.state_storage_price = state_storage_price;
         let mut transaction_costing_parameters = TransactionCostingParameters::default();
         transaction_costing_parameters.tip_percentage = tip_percentage;
+        transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 
         SystemLoanFeeReserve::new(
             &costing_parameters,
             &transaction_costing_parameters,
-            abort_when_loan_repaid,
         )
     }
 

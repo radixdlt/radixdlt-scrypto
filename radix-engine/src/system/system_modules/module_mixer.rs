@@ -131,7 +131,6 @@ impl SystemModuleMixer {
         tx_hash: Hash,
         auth_zone_params: AuthZoneParams,
         transaction_costing_parameters: TransactionCostingParameters,
-        abort_when_loan_repaid: bool,
         fee_table: FeeTable,
         payload_len: usize,
         num_of_signature_validations: usize,
@@ -144,7 +143,6 @@ impl SystemModuleMixer {
                 fee_reserve: SystemLoanFeeReserve::new(
                     &CostingParameters::default(),
                     &transaction_costing_parameters,
-                    abort_when_loan_repaid,
                 ),
                 fee_table,
                 max_call_depth: execution_config.max_call_depth,
