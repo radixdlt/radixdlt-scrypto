@@ -1,3 +1,4 @@
+use scrypto::api::node_modules::metadata::*;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs
