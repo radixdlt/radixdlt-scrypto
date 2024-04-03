@@ -48,6 +48,9 @@ impl Iterator for AllScenariosIterator {
             11 => Some(Box::new(|core| {
                 royalties::RoyaltiesScenarioCreator::create(core)
             })),
+            12 => Some(Box::new(|core| {
+                maya_router::MayaRouterScenarioCreator::create(core)
+            })),
             _ => None,
         }
     }
