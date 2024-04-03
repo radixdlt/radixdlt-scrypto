@@ -29,7 +29,7 @@ where
     #[covariant]
     pub(super) track: TestTrack<'this, D>,
 
-    #[borrows(scrypto_vm)]
+    #[borrows(scrypto_vm, substate_db)]
     #[covariant]
     pub(super) system_config: TestSystemConfig<'this>,
 
@@ -48,7 +48,7 @@ where
         native_vm: NativeVm<NoExtension>,
         id_allocator: IdAllocator,
         track_builder: impl FnOnce(&D) -> TestTrack<'_, D>,
-        system_config_builder: impl FnOnce(&ScryptoVm<DefaultWasmEngine>) -> TestSystemConfig<'_>,
+        system_builder: impl for<'a> FnOnce(&'a ScryptoVm<DefaultWasmEngine>, &'a D) -> TestSystemConfig<'a>,
         kernel_builder: impl for<'a> FnOnce(
             &'a mut TestSystemConfig<'a>,
             &'a mut TestTrack<'a, D>,
@@ -61,7 +61,7 @@ where
             native_vm,
             id_allocator,
             track_builder,
-            system_config_builder,
+            system_config_builder: system_builder,
             kernel_builder,
         }
         .build()

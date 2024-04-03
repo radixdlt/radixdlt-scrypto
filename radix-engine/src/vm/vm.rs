@@ -47,7 +47,7 @@ pub trait VmApi {
 /// Simple implementation of the VmAPI
 #[derive(Debug, Clone, Copy, Default)]
 pub struct VmVersion {
-    scrypto_version: u64,
+    pub scrypto_version: u64,
 }
 
 impl VmVersion {

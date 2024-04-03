@@ -3,6 +3,7 @@ use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::heap::*;
 use radix_engine::kernel::id_allocator::*;
 use radix_engine::kernel::kernel::*;
+use radix_engine::kernel::kernel_callback_api::KernelCallbackObject;
 use radix_engine::kernel::substate_io::*;
 use radix_engine::kernel::substate_locks::*;
 use radix_engine::system::actor::*;
@@ -230,28 +231,47 @@ where
             native_vm.clone(),
             id_allocator,
             |substate_database| Track::new(substate_database),
-            |scrypto_vm| System {
-                blueprint_cache: NonIterMap::new(),
-                auth_cache: NonIterMap::new(),
-                schema_cache: NonIterMap::new(),
-                callback_obj: Vm::new(scrypto_vm, native_vm.clone()),
-                callback_state: VmVersion::latest(),
-                modules: SystemModuleMixer::new(
-                    EnabledModules::LIMITS
-                        | EnabledModules::AUTH
-                        | EnabledModules::TRANSACTION_RUNTIME,
-                    NetworkDefinition::simulator(),
-                    Self::DEFAULT_INTENT_HASH,
-                    AuthZoneParams {
-                        initial_proofs: Default::default(),
-                        virtual_resources: Default::default(),
-                    },
-                    SystemLoanFeeReserve::default(),
-                    FeeTable::new(),
-                    0,
-                    0,
-                    &ExecutionConfig::for_test_transaction().with_kernel_trace(false),
-                ),
+            |scrypto_vm, database| {
+                let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                    TRANSACTION_TRACKER.as_node_id(),
+                    BOOT_LOADER_PARTITION,
+                );
+                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY));
+
+                let vm_boot = database
+                    .get_substate(&db_partition_key, &db_sort_key)
+                    .map(|v| scrypto_decode(v.as_slice()).unwrap())
+                    .unwrap_or(VmBoot::V1 {
+                        scrypto_version: 0u64,
+                    });
+
+                let vm_version = match vm_boot {
+                    VmBoot::V1 { scrypto_version } => VmVersion { scrypto_version },
+                };
+
+                System {
+                    blueprint_cache: NonIterMap::new(),
+                    auth_cache: NonIterMap::new(),
+                    schema_cache: NonIterMap::new(),
+                    callback_obj: Vm::new(scrypto_vm, native_vm.clone()),
+                    callback_state: vm_version,
+                    modules: SystemModuleMixer::new(
+                        EnabledModules::LIMITS
+                            | EnabledModules::AUTH
+                            | EnabledModules::TRANSACTION_RUNTIME,
+                        NetworkDefinition::simulator(),
+                        Self::DEFAULT_INTENT_HASH,
+                        AuthZoneParams {
+                            initial_proofs: Default::default(),
+                            virtual_resources: Default::default(),
+                        },
+                        SystemLoanFeeReserve::default(),
+                        FeeTable::new(),
+                        0,
+                        0,
+                        &ExecutionConfig::for_test_transaction().with_kernel_trace(false),
+                    ),
+                }
             },
             |system_config, track, id_allocator| {
                 Kernel::kernel_create_kernel_for_testing(
