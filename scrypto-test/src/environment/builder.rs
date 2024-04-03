@@ -245,7 +245,7 @@ where
                         initial_proofs: Default::default(),
                         virtual_resources: Default::default(),
                     },
-                    TransactionCostingParameters::default(),
+                    SystemLoanFeeReserve::default(),
                     FeeTable::new(),
                     0,
                     0,

@@ -89,18 +89,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         }
     }
 
-    pub fn with_override(substate_db: &'s S, override_costing_params: Option<CostingParameters>) -> Self {
-        Self {
-            substate_db,
-            override_costing_params,
-            force_write_tracked_nodes: index_map_new(),
-            tracked_nodes: index_map_new(),
-            deleted_partitions: index_set_new(),
-            transient_substates: TransientSubstates::new(),
-            phantom_data: PhantomData::default(),
-        }
-    }
-
     // TODO cleanup interface to avoid redundant information
     fn get_substate_from_db<E, F: FnMut(IOAccess) -> Result<(), E>>(
         substate_db: &'s S,

@@ -130,7 +130,7 @@ impl SystemModuleMixer {
         network_definition: NetworkDefinition,
         tx_hash: Hash,
         auth_zone_params: AuthZoneParams,
-        transaction_costing_parameters: TransactionCostingParameters,
+        fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
         payload_len: usize,
         num_of_signature_validations: usize,
@@ -140,10 +140,7 @@ impl SystemModuleMixer {
             enabled_modules,
             kernel_trace: KernelTraceModule {},
             costing: CostingModule {
-                fee_reserve: SystemLoanFeeReserve::new(
-                    &CostingParameters::default(),
-                    &transaction_costing_parameters,
-                ),
+                fee_reserve,
                 fee_table,
                 max_call_depth: execution_config.max_call_depth,
                 tx_payload_len: payload_len,

@@ -56,7 +56,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             NetworkDefinition::simulator(),
             executable.intent_hash().to_hash(),
             executable.auth_zone_params().clone(),
-            TransactionCostingParameters::default(),
+            SystemLoanFeeReserve::default(),
             FeeTable::new(),
             executable.payload_size(),
             executable.auth_zone_params().initial_proofs.len(),

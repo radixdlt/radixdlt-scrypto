@@ -16,7 +16,7 @@ use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemBoot, SystemConfig};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
@@ -34,6 +34,7 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::*;
+use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -252,7 +253,6 @@ where
         execution_config: &ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
-        let fee_table = FeeTable::new();
 
         // Dump executable
         #[cfg(not(feature = "alloc"))]
@@ -268,8 +268,50 @@ where
         let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
+        let costing_parameters = {
+            if let Some(costing_parameters) = costing_parameters {
+                costing_parameters
+            } else {
+                let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                    TRANSACTION_TRACKER.as_node_id(),
+                    BOOT_LOADER_PARTITION,
+                );
+                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY));
+
+                let system_boot = self.substate_db.get_substate(&db_partition_key, &db_sort_key)
+                    .map(|v| scrypto_decode(v.as_slice()).unwrap())
+                    .unwrap_or(SystemBoot::V1 {
+                        costing_parameters: CostingParameters::default(),
+                    });
+
+                match system_boot {
+                    SystemBoot::V1 { costing_parameters } => {
+                        costing_parameters
+                    }
+                }
+            }
+        };
+        let fee_table = FeeTable::new();
+        let system = SystemConfig {
+            blueprint_cache: NonIterMap::new(),
+            auth_cache: NonIterMap::new(),
+            schema_cache: NonIterMap::new(),
+            callback_obj: self.vm.clone(),
+            modules: SystemModuleMixer::new(
+                execution_config.enabled_modules,
+                execution_config.network_definition.clone(),
+                executable.intent_hash().to_hash(),
+                executable.auth_zone_params().clone(),
+                SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
+                fee_table,
+                executable.payload_size(),
+                executable.num_of_signature_validations(),
+                execution_config,
+            ),
+        };
+
         // Create a track
-        let mut track = Track::<_, SpreadPrefixKeyMapper>::with_override(self.substate_db, costing_parameters);
+        let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
         // Perform runtime validation.
         // TODO: the following assumptions can be removed with better interface.
@@ -296,24 +338,18 @@ where
             Ok(())
         };
 
-        let txn_costing_parameters = executable.costing_parameters().clone();
-
         // Run manifest
-        let (costing_parameters, fee_summary, fee_details, result) = match validation_result {
+        let (fee_summary, fee_details, result) = match validation_result {
             Ok(()) => {
                 let (
                     interpretation_result,
                     (mut costing_module, runtime_module, execution_trace_module),
                 ) = self.interpret_manifest::<T>(
                     &mut track,
-                    executable,
-                    execution_config,
-                    txn_costing_parameters,
-                    fee_table,
+                    system,
                     init,
+                    executable,
                 );
-
-                let costing_parameters = costing_module.fee_reserve.costing_parameters();
 
                 #[cfg(not(feature = "alloc"))]
                 if execution_config
@@ -442,7 +478,6 @@ where
                         }
 
                         (
-                            costing_parameters,
                             fee_reserve_finalization.into(),
                             fee_details,
                             TransactionResult::Commit(CommitResult {
@@ -469,13 +504,11 @@ where
                         )
                     }
                     TransactionResultType::Reject(reason) => (
-                        costing_parameters,
                         costing_module.fee_reserve.finalize().into(),
                         fee_details,
                         TransactionResult::Reject(RejectResult { reason }),
                     ),
                     TransactionResultType::Abort(reason) => (
-                        costing_parameters,
                         costing_module.fee_reserve.finalize().into(),
                         fee_details,
                         TransactionResult::Abort(AbortResult { reason }),
@@ -484,7 +517,6 @@ where
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
-                CostingParameters::default(),
                 TransactionFeeSummary::default(),
                 if execution_config.enable_cost_breakdown {
                     Some(TransactionFeeDetails::default())
@@ -615,11 +647,9 @@ where
     fn interpret_manifest<T: WrappedSystem<V>>(
         &self,
         track: &mut Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
-        execution_config: &ExecutionConfig,
-        transaction_costing_parameters: TransactionCostingParameters,
-        fee_table: FeeTable,
+        system: SystemConfig<V>,
         init: T::Init,
+        executable: &Executable,
     ) -> (
         Result<Vec<InstructionOutput>, TransactionExecutionError>,
         (
@@ -629,23 +659,7 @@ where
         ),
     ) {
         let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
-        let system = SystemConfig {
-            blueprint_cache: NonIterMap::new(),
-            auth_cache: NonIterMap::new(),
-            schema_cache: NonIterMap::new(),
-            callback_obj: self.vm.clone(),
-            modules: SystemModuleMixer::new(
-                execution_config.enabled_modules,
-                execution_config.network_definition.clone(),
-                executable.intent_hash().to_hash(),
-                executable.auth_zone_params().clone(),
-                transaction_costing_parameters,
-                fee_table,
-                executable.payload_size(),
-                executable.num_of_signature_validations(),
-                execution_config,
-            ),
-        };
+
 
         let mut wrapped_system = T::create(system, init);
 

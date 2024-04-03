@@ -251,66 +251,6 @@ impl InitSystemModule for CostingModule {
         self.apply_deferred_storage_cost(StorageType::Archive, self.tx_payload_len)
             .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
 
-
-        let system_boot = store
-            .read_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(SystemBoot::V1 {
-                costing_parameters: CostingParameters::default(),
-            });
-
-        match system_boot {
-            SystemBoot::V1 { costing_parameters } => {
-                // Sanity checks
-                assert!(!costing_parameters.execution_cost_unit_price.is_negative());
-                assert!(!costing_parameters
-                    .finalization_cost_unit_price
-                    .is_negative());
-                assert!(!costing_parameters.usd_price.is_negative());
-                assert!(!costing_parameters.state_storage_price.is_negative());
-                assert!(!costing_parameters.archive_storage_price.is_negative());
-
-                // Execution costing parameters
-                self.fee_reserve.execution_cost_unit_price = costing_parameters.execution_cost_unit_price;
-                self.fee_reserve.execution_cost_unit_limit = costing_parameters.execution_cost_unit_limit;
-                self.fee_reserve.execution_cost_unit_loan = costing_parameters.execution_cost_unit_loan;
-
-                // Finalization costing parameters
-                self.fee_reserve.finalization_cost_unit_price = costing_parameters.finalization_cost_unit_price;
-                self.fee_reserve.finalization_cost_unit_limit = costing_parameters.finalization_cost_unit_limit;
-
-                // USD and storage price
-                self.fee_reserve.usd_price = costing_parameters.usd_price;
-                self.fee_reserve.state_storage_price = costing_parameters.state_storage_price;
-                self.fee_reserve.archive_storage_price = costing_parameters.archive_storage_price;
-
-                let tip_percentage = Decimal::ONE
-                    .checked_add(
-                        Decimal::ONE_HUNDREDTH
-                            .checked_mul(self.fee_reserve.tip_percentage())
-                            .unwrap(),
-                    )
-                    .unwrap();
-
-                let effective_execution_cost_unit_price = costing_parameters
-                    .execution_cost_unit_price
-                    .checked_mul(tip_percentage)
-                    .unwrap();
-
-                let effective_finalization_cost_unit_price = costing_parameters
-                    .finalization_cost_unit_price
-                    .checked_mul(tip_percentage)
-                    .unwrap();
-
-                self.fee_reserve.effective_execution_cost_unit_price = effective_execution_cost_unit_price;
-                self.fee_reserve.effective_finalization_cost_unit_price = effective_finalization_cost_unit_price;
-            }
-        }
-
         Ok(())
     }
 }
