@@ -437,8 +437,12 @@ fn run_radiswap(mode: Mode, pool_math_precision_fix: bool) {
     // Publish package
     let package_address = ledger.publish_package(
         (
-            include_workspace_asset_bytes!("radiswap.wasm").to_vec(),
-            manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap(),
+            include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
+            manifest_decode(include_workspace_asset_bytes!(
+                "radix-transaction-scenarios",
+                "radiswap.rpd"
+            ))
+            .unwrap(),
         ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
@@ -539,8 +543,13 @@ fn run_flash_loan(mode: Mode) {
     // Publish package
     let package_address = ledger.publish_package(
         (
-            include_workspace_asset_bytes!("flash_loan.wasm").to_vec(),
-            manifest_decode(include_workspace_asset_bytes!("flash_loan.rpd")).unwrap(),
+            include_workspace_asset_bytes!("radix-transaction-scenarios", "flash_loan.wasm")
+                .to_vec(),
+            manifest_decode(include_workspace_asset_bytes!(
+                "radix-transaction-scenarios",
+                "flash_loan.rpd"
+            ))
+            .unwrap(),
         ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
@@ -867,8 +876,12 @@ impl NonFungibleData for TestNonFungibleData {
 #[test]
 fn publish_package_1mib() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let code = include_workspace_asset_bytes!("large_package.wasm").to_vec();
-    let definition = manifest_decode(include_workspace_asset_bytes!("large_package.rpd")).unwrap();
+    let code = include_workspace_asset_bytes!("radix-engine-tests", "large_package.wasm").to_vec();
+    let definition = manifest_decode(include_workspace_asset_bytes!(
+        "radix-engine-tests",
+        "large_package.rpd"
+    ))
+    .unwrap();
     println!("Code size: {}", code.len());
     assert!(code.len() <= 1000 * 1024);
     assert!(code.len() >= 900 * 1024);

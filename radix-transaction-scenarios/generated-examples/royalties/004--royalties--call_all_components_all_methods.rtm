@@ -4,38 +4,38 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_METHOD
-    Address("component_sim1cqcqv52fztjff2n96matm2kyrqla7jy5lxuhz0lyqyh7y4mx6zkqeu")
+    Address("component_sim1cr699ehyd6qf8cfdflaq8zw0rxkk0fjkd9gyj0x6snqe8hw3vq0p24")
     "method_with_no_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cqcqv52fztjff2n96matm2kyrqla7jy5lxuhz0lyqyh7y4mx6zkqeu")
+    Address("component_sim1cr699ehyd6qf8cfdflaq8zw0rxkk0fjkd9gyj0x6snqe8hw3vq0p24")
     "method_with_xrd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cqcqv52fztjff2n96matm2kyrqla7jy5lxuhz0lyqyh7y4mx6zkqeu")
+    Address("component_sim1cr699ehyd6qf8cfdflaq8zw0rxkk0fjkd9gyj0x6snqe8hw3vq0p24")
     "method_with_usd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cptq5gm2279jt4hgqfnfswwhtcx4r5wet3qn45dk42hh96tcv6zxvz")
+    Address("component_sim1cqr2cj3aptrtc5fq9svpn72vv2ffvxtr0wvcyy0hx5xsduzyd5345c")
     "method_with_no_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cptq5gm2279jt4hgqfnfswwhtcx4r5wet3qn45dk42hh96tcv6zxvz")
+    Address("component_sim1cqr2cj3aptrtc5fq9svpn72vv2ffvxtr0wvcyy0hx5xsduzyd5345c")
     "method_with_xrd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cptq5gm2279jt4hgqfnfswwhtcx4r5wet3qn45dk42hh96tcv6zxvz")
+    Address("component_sim1cqr2cj3aptrtc5fq9svpn72vv2ffvxtr0wvcyy0hx5xsduzyd5345c")
     "method_with_usd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cru76h56nfv4hf5nh8s3p47e7r37aglam34xdsn50lejemr2zq55de")
+    Address("component_sim1cp69dvyt35c9svlq7x9h5zg9lq82t4r7qtshcx9638ang6lxvfad04")
     "method_with_no_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cru76h56nfv4hf5nh8s3p47e7r37aglam34xdsn50lejemr2zq55de")
+    Address("component_sim1cp69dvyt35c9svlq7x9h5zg9lq82t4r7qtshcx9638ang6lxvfad04")
     "method_with_xrd_package_royalty"
 ;
 CALL_METHOD
-    Address("component_sim1cru76h56nfv4hf5nh8s3p47e7r37aglam34xdsn50lejemr2zq55de")
+    Address("component_sim1cp69dvyt35c9svlq7x9h5zg9lq82t4r7qtshcx9638ang6lxvfad04")
     "method_with_usd_package_royalty"
 ;

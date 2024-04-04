@@ -51,8 +51,14 @@ pub mod path_macros {
 
     #[macro_export]
     macro_rules! include_workspace_asset_bytes {
-        ($name: expr) => {
-            include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../assets/", $name))
+        ($package: expr, $name: expr) => {
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../",
+                $package,
+                "/assets/",
+                $name
+            ))
         };
     }
 
