@@ -95,9 +95,9 @@ pub mod path_macros {
     }
 
     #[macro_export]
-    macro_rules! include_local_meterng_csv_str {
+    macro_rules! include_local_metering_csv_str {
         ($name: expr) => {
-            include_str!(path_local_meterng_csv!($name))
+            include_str!(path_local_metering_csv!($name))
         };
     }
 
@@ -109,18 +109,18 @@ pub mod path_macros {
     }
 
     #[macro_export]
-    macro_rules! path_local_meterng_csv {
+    macro_rules! path_local_metering_csv {
         ($name: expr) => {
             concat!(env!("CARGO_MANIFEST_DIR"), "/assets/metering/", $name)
         };
     }
 
-    pub use crate::include_local_meterng_csv_str;
+    pub use crate::include_local_metering_csv_str;
     pub use crate::include_local_wasm_str;
     pub use crate::include_workspace_asset_bytes;
     pub use crate::include_workspace_transaction_examples_str;
     pub use crate::path_local_blueprint;
-    pub use crate::path_local_meterng_csv;
+    pub use crate::path_local_metering_csv;
     pub use crate::path_workspace_blueprint;
     pub use crate::path_workspace_transaction_examples;
 }
