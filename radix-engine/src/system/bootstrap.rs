@@ -30,7 +30,7 @@ use crate::transaction::{
     TransactionResult,
 };
 use crate::vm::wasm::DefaultWasmEngine;
-use crate::vm::{NativeVmExtension, NoExtension, Vm, VmVersion, Vms};
+use crate::vm::{NativeVmExtension, NoExtension, Vm, VmInit, VmVersion};
 use lazy_static::lazy_static;
 use radix_common::constants::AuthAddresses;
 use radix_common::crypto::Secp256k1PublicKey;
@@ -290,7 +290,7 @@ where
 {
     network_definition: NetworkDefinition,
     substate_db: &'s mut S,
-    vms: Vms<'s, DefaultWasmEngine, E>,
+    vms: VmInit<'s, DefaultWasmEngine, E>,
     trace: bool,
 }
 
@@ -302,7 +302,7 @@ where
     pub fn new(
         network_definition: NetworkDefinition,
         substate_db: &'s mut S,
-        vms: Vms<'s, DefaultWasmEngine, E>,
+        vms: VmInit<'s, DefaultWasmEngine, E>,
         trace: bool,
     ) -> Bootstrapper<'s, S, E> {
         Bootstrapper {

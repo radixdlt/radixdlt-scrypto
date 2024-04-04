@@ -96,14 +96,13 @@ fn test_normal_transaction_flow() {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };
-    let native_vm = DefaultNativeVm::new();
-    let vms = Vms::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
     let mut substate_db = InMemorySubstateDatabase::standard();
     Bootstrapper::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
-        vms.clone(),
+        vm_init.clone(),
         true,
     )
     .bootstrap_test_default()
@@ -137,7 +136,7 @@ fn test_normal_transaction_flow() {
     // Act
     let receipt = execute_and_commit_transaction(
         &mut substate_db,
-        vms,
+        vm_init,
         &execution_config,
         &executable,
     );

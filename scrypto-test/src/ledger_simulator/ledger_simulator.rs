@@ -295,7 +295,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
     ) -> LedgerSimulator<E, InMemorySubstateDatabase> {
         LedgerSimulator {
             scrypto_vm: ScryptoVm::default(),
-            native_vm: NativeVm::new_with_extension(self.custom_extension),
+            native_vm_extension: self.custom_extension,
             database: snapshot.database,
             next_private_key: snapshot.next_private_key,
             next_transaction_nonce: snapshot.next_transaction_nonce,
@@ -320,13 +320,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let native_vm = NativeVm::new_with_extension(self.custom_extension);
-        let vms = Vms::new(&scrypto_vm, native_vm.clone());
+        let vm_init = VmInit::new(&scrypto_vm, self.custom_extension.clone());
         let mut substate_db = self.custom_database;
         let mut bootstrapper = Bootstrapper::new(
             NetworkDefinition::simulator(),
             &mut substate_db,
-            vms,
+            vm_init,
             bootstrap_trace,
         );
         let GenesisReceipts {
@@ -382,7 +381,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
         let runner = LedgerSimulator {
             scrypto_vm,
-            native_vm,
+            native_vm_extension: self.custom_extension.clone(),
             database: substate_db,
             next_private_key,
             next_transaction_nonce,
@@ -406,7 +405,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
 pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    native_vm: NativeVm<E>,
+    native_vm_extension: E,
     database: D,
 
     next_private_key: u64,
@@ -1415,9 +1414,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             self.xrd_free_credits_used = true;
         }
 
-        let vms = Vms {
+        let vms = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_vm: self.native_vm.clone(),
+            native_extension: self.native_vm_extension.clone(),
         };
 
         let transaction_receipt = execute_transaction_with_configuration::<_, _, T>(
@@ -1448,9 +1447,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        let vms = Vms {
+        let vms = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_vm: self.native_vm.clone(),
+            native_extension: self.native_vm_extension.clone(),
         };
 
         execute_preview(
@@ -1470,9 +1469,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
-        let vms = Vms {
+        let vms = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_vm: self.native_vm.clone(),
+            native_extension: self.native_vm_extension.clone(),
         };
         execute_preview(
             &mut self.database,

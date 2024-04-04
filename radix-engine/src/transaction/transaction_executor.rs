@@ -29,7 +29,7 @@ use crate::track::interface::CommitableSubstateStore;
 use crate::track::{to_state_updates, BootStore, Track, TrackFinalizeError};
 use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
-use crate::vm::{NativeVmExtension, Vm, Vms};
+use crate::vm::{NativeVmExtension, Vm, VmInit};
 use radix_common::constants::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -1283,7 +1283,7 @@ pub fn execute_transaction_with_configuration<
 
 pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
     substate_db: &S,
-    vms: Vms<'s, W, E>,
+    vms: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
@@ -1304,7 +1304,7 @@ pub fn execute_and_commit_transaction<
     E: NativeVmExtension,
 >(
     substate_db: &mut S,
-    vms: Vms<'s, W, E>,
+    vms: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {

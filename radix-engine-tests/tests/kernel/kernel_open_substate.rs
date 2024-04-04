@@ -11,7 +11,7 @@ use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm, Vms, VmVersion};
+use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmInit, VmVersion};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -35,11 +35,11 @@ pub fn test_open_substate_of_invisible_package_address() {
     let mut database = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
-    let vms = Vms {
+    let vm_init = VmInit {
         scrypto_vm: &scrypto_vm,
-        native_vm: native_vm.clone(),
+        native_extension: NoExtension,
     };
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut database, vms, false);
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut database, vm_init, false);
 
     // Create kernel
     let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
@@ -48,10 +48,8 @@ pub fn test_open_substate_of_invisible_package_address() {
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
         callback: Vm {
-            vms: Vms {
-                scrypto_vm: &scrypto_vm,
-                native_vm,
-            },
+            scrypto_vm: &scrypto_vm,
+            native_vm,
             vm_version: VmVersion::latest(),
         },
         modules: SystemModuleMixer::new(

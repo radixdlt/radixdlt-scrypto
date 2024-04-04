@@ -57,7 +57,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let _ = Bootstrapper::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
-        Vms::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),
+        VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
         false,
     )
     .bootstrap_test_default()
@@ -74,7 +74,8 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
         callback: Vm {
-            vms: Vms::new(&scrypto_vm, native_vm),
+            scrypto_vm: &scrypto_vm,
+            native_vm,
             vm_version: VmVersion::latest(),
         },
         modules: SystemModuleMixer::new(
@@ -133,7 +134,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let _ = Bootstrapper::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
-        Vms::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),
+        VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
         false,
     )
     .bootstrap_test_default()
@@ -150,7 +151,8 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
         callback: Vm {
-            vms: Vms::new(&scrypto_vm, native_vm),
+            scrypto_vm: &scrypto_vm,
+            native_vm,
             vm_version: VmVersion::latest(),
         },
         modules: SystemModuleMixer::new(

@@ -15,31 +15,32 @@ use crate::vm::ScryptoVmVersion;
 
 pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
-pub struct Vms<'g, W: WasmEngine, E: NativeVmExtension> {
+pub struct VmInit<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
-    pub native_vm: NativeVm<E>,
+    pub native_extension: E,
 }
 
-impl<'g, W: WasmEngine, E: NativeVmExtension> Vms<'g, W, E> {
-    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_vm: NativeVm<E>) -> Self {
+impl<'g, W: WasmEngine, E: NativeVmExtension> VmInit<'g, W, E> {
+    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_extension: E) -> Self {
         Self {
             scrypto_vm,
-            native_vm,
+            native_extension,
         }
     }
 }
 
-impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vms<'g, W, E> {
+impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for VmInit<'g, W, E> {
     fn clone(&self) -> Self {
         Self {
             scrypto_vm: self.scrypto_vm,
-            native_vm: self.native_vm.clone(),
+            native_extension: self.native_extension.clone(),
         }
     }
 }
 
 pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
-    pub vms: Vms<'g, W, E>,
+    pub scrypto_vm: &'g ScryptoVm<W>,
+    pub native_vm: NativeVm<E>,
     pub vm_version: VmVersion,
 }
 
@@ -78,9 +79,9 @@ pub enum VmBoot {
 }
 
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
-    type InitInput = Vms<'g, W, E>;
+    type InitInput = VmInit<'g, W, E>;
 
-    fn init<S: BootStore>(store: &S, vms: Vms<'g, W, E>) -> Result<Self, BootloadingError> {
+    fn init<S: BootStore>(store: &S, vm_init: VmInit<'g, W, E>) -> Result<Self, BootloadingError> {
         let vm_boot = store
             .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -96,7 +97,11 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             VmBoot::V1 { scrypto_version } => VmVersion { scrypto_version },
         };
 
-        Ok(Self { vms, vm_version })
+        Ok(Self {
+            scrypto_vm: vm_init.scrypto_vm,
+            native_vm: NativeVm::new_with_extension(vm_init.native_extension),
+            vm_version,
+        })
     }
 
     fn invoke<Y>(
@@ -169,7 +174,6 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 let mut vm_instance = api
                     .kernel_get_system()
                     .callback
-                    .vms
                     .native_vm
                     .create_instance(address, &original_code.into_latest().code)?;
                 let output =
@@ -203,15 +207,11 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 };
 
                 let mut scrypto_vm_instance = {
-                    api.kernel_get_system()
-                        .callback
-                        .vms
-                        .scrypto_vm
-                        .create_instance(
-                            address,
-                            export.code_hash,
-                            &instrumented_code.instrumented_code,
-                        )
+                    api.kernel_get_system().callback.scrypto_vm.create_instance(
+                        address,
+                        export.code_hash,
+                        &instrumented_code.instrumented_code,
+                    )
                 };
 
                 api.consume_cost_units(ClientCostingEntry::PrepareWasmCode {

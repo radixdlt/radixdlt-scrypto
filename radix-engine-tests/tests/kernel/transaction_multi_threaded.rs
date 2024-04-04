@@ -15,7 +15,7 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
-    use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm, Vms};
+    use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmInit};
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
@@ -25,16 +25,15 @@ mod multi_threaded_test {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let native_vm = DefaultNativeVm::new();
-        let vms = Vms {
+        let vm_init = VmInit {
             scrypto_vm: &scrypto_vm,
-            native_vm,
+            native_extension: NoExtension,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
         Bootstrapper::new(
             NetworkDefinition::simulator(),
             &mut substate_db,
-            vms.clone(),
+            vm_init.clone(),
             false,
         )
         .bootstrap_test_default()
@@ -58,7 +57,7 @@ mod multi_threaded_test {
                     .build();
                 let account = execute_and_commit_transaction(
                     &mut substate_db,
-                    vms.clone(),
+                    vm_init.clone(),
                     &ExecutionConfig::for_test_transaction(),
                     &TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
                         .prepare()
@@ -85,7 +84,7 @@ mod multi_threaded_test {
         for nonce in 0..10 {
             execute_and_commit_transaction(
                 &mut substate_db,
-                vms.clone(),
+                vm_init.clone(),
                 &ExecutionConfig::for_test_transaction(),
                 &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
@@ -110,7 +109,7 @@ mod multi_threaded_test {
                 s.spawn(|_| {
                     let receipt = execute_transaction(
                         &substate_db,
-                        vms.clone(),
+                        vm_init.clone(),
                         &ExecutionConfig::for_test_transaction(),
                         &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()

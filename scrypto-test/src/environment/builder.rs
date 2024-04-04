@@ -194,14 +194,14 @@ where
         // Create the various VMs we will use
         let native_vm = NativeVm::new();
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let vm = Vms::new(&scrypto_vm, native_vm.clone());
+        let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
         if self.bootstrap {
             // Run genesis against the substate store.
             let mut bootstrapper = Bootstrapper::new(
                 NetworkDefinition::simulator(),
                 &mut self.database,
-                vm,
+                vm_init,
                 false,
             );
             bootstrapper.bootstrap_test_default().unwrap();
@@ -256,7 +256,8 @@ where
                     auth_cache: NonIterMap::new(),
                     schema_cache: NonIterMap::new(),
                     callback: Vm {
-                        vms: Vms::new(scrypto_vm, native_vm.clone()),
+                        scrypto_vm,
+                        native_vm: native_vm.clone(),
                         vm_version,
                     },
                     modules: SystemModuleMixer::new(
