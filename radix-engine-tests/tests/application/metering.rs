@@ -1,6 +1,5 @@
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
-use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionFeeDetails;
 use radix_engine::transaction::TransactionFeeSummary;

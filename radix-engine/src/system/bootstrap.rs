@@ -17,7 +17,6 @@ use crate::internal_prelude::*;
 use crate::object_modules::metadata::MetadataNativePackage;
 use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::object_modules::royalty::RoyaltyNativePackage;
-use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
@@ -25,12 +24,11 @@ use crate::track::{
     StateUpdates,
 };
 use crate::transaction::{
-    execute_transaction, CommitResult, CostingParameters, ExecutionConfig, StateUpdateSummary,
-    SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
-    TransactionResult,
+    execute_transaction, CommitResult, ExecutionConfig, StateUpdateSummary, SubstateSchemaMapper,
+    SubstateSystemStructures, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::vm::wasm::DefaultWasmEngine;
-use crate::vm::{NativeVmExtension, NoExtension, Vm, VmInit, VmVersion};
+use crate::vm::{NativeVmExtension, VmInit, VmVersion};
 use lazy_static::lazy_static;
 use radix_common::constants::AuthAddresses;
 use radix_common::crypto::Secp256k1PublicKey;
@@ -290,7 +288,7 @@ where
 {
     network_definition: NetworkDefinition,
     substate_db: &'s mut S,
-    vms: VmInit<'s, DefaultWasmEngine, E>,
+    vm_init: VmInit<'s, DefaultWasmEngine, E>,
     trace: bool,
 }
 
@@ -302,13 +300,13 @@ where
     pub fn new(
         network_definition: NetworkDefinition,
         substate_db: &'s mut S,
-        vms: VmInit<'s, DefaultWasmEngine, E>,
+        vm_init: VmInit<'s, DefaultWasmEngine, E>,
         trace: bool,
     ) -> Bootstrapper<'s, S, E> {
         Bootstrapper {
             network_definition,
             substate_db,
-            vms,
+            vm_init,
             trace,
         }
     }
@@ -410,7 +408,7 @@ where
 
         let receipt = execute_transaction(
             self.substate_db,
-            self.vms.clone(),
+            self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction
@@ -439,7 +437,7 @@ where
             create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
         let receipt = execute_transaction(
             self.substate_db,
-            self.vms.clone(),
+            self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction
@@ -463,7 +461,7 @@ where
 
         let receipt = execute_transaction(
             self.substate_db,
-            self.vms.clone(),
+            self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction

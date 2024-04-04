@@ -18,7 +18,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::updates::ProtocolUpdates;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
+use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -1414,14 +1414,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             self.xrd_free_credits_used = true;
         }
 
-        let vms = VmInit {
+        let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
             native_extension: self.native_vm_extension.clone(),
         };
 
         let transaction_receipt = execute_transaction_with_configuration::<_, _, T>(
             &mut self.database,
-            vms,
+            vm_init,
             costing_parameters,
             &execution_config,
             &executable,
@@ -1447,14 +1447,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        let vms = VmInit {
+        let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
             native_extension: self.native_vm_extension.clone(),
         };
 
         execute_preview(
             &self.database,
-            vms,
+            vm_init,
             network,
             preview_intent,
             self.with_kernel_trace,
@@ -1469,13 +1469,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
-        let vms = VmInit {
+        let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
             native_extension: self.native_vm_extension.clone(),
         };
         execute_preview(
             &mut self.database,
-            vms,
+            vm_init,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {

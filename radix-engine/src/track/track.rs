@@ -1,12 +1,10 @@
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::TransientSubstates;
-use crate::system::system_callback::SystemBoot;
 use crate::track::interface::{
     CommitableSubstateStore, IOAccess, NodeSubstates, TrackedSubstateInfo,
 };
 use crate::track::state_updates::*;
 use crate::track::BootStore;
-use crate::transaction::CostingParameters;
 use radix_engine_interface::types::*;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_substate_store_interface::interface::DbPartitionKey;
@@ -30,8 +28,6 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
     /// Substate database, use `get_substate_from_db` and `list_entries_from_db` for access
     substate_db: &'s S,
 
-    override_costing_params: Option<CostingParameters>,
-
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
     /// TODO: if time allows, consider merging into tracked nodes.
@@ -49,14 +45,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Trac
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
-        // TODO: Cleanup
-        if partition_num == BOOT_LOADER_PARTITION && substate_key.eq(&SubstateKey::Field(1u8)) {
-            if let Some(costing_parameters) = self.override_costing_params {
-                let boot = SystemBoot::V1 { costing_parameters };
-                return Some(IndexedScryptoValue::from_typed(&boot));
-            }
-        }
-
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let db_sort_key = M::to_db_sort_key(&substate_key);
 
@@ -78,7 +66,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     pub fn new(substate_db: &'s S) -> Self {
         Self {
             substate_db,
-            override_costing_params: None,
             force_write_tracked_nodes: index_map_new(),
             tracked_nodes: index_map_new(),
             deleted_partitions: index_set_new(),

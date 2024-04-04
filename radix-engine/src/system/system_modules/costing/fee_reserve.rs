@@ -96,21 +96,21 @@ impl RoyaltyRecipient {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct SystemLoanFeeReserve {
-    pub(crate) execution_cost_unit_price: Decimal,
-    pub(crate) execution_cost_unit_limit: u32,
-    pub(crate) execution_cost_unit_loan: u32,
+    execution_cost_unit_price: Decimal,
+    execution_cost_unit_limit: u32,
+    execution_cost_unit_loan: u32,
 
-    pub(crate) finalization_cost_unit_price: Decimal,
-    pub(crate) finalization_cost_unit_limit: u32,
+    finalization_cost_unit_price: Decimal,
+    finalization_cost_unit_limit: u32,
 
-    pub(crate) usd_price: Decimal,
-    pub(crate) state_storage_price: Decimal,
-    pub(crate) archive_storage_price: Decimal,
+    usd_price: Decimal,
+    state_storage_price: Decimal,
+    archive_storage_price: Decimal,
 
     /// (Cache) The effective execution cost unit price, with tips considered
-    pub(crate) effective_execution_cost_unit_price: Decimal,
+    effective_execution_cost_unit_price: Decimal,
     /// (Cache) The effective finalization cost unit price, with tips considered
-    pub(crate) effective_finalization_cost_unit_price: Decimal,
+    effective_finalization_cost_unit_price: Decimal,
 
     tip_percentage: u16,
 

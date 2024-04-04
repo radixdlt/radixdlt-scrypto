@@ -1,4 +1,3 @@
-use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
@@ -17,7 +16,7 @@ pub enum PreviewError {
 
 pub fn execute_preview<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
     substate_db: &S,
-    vms: VmInit<'s, W, E>,
+    vm_init: VmInit<'s, W, E>,
     network: &NetworkDefinition,
     preview_intent: PreviewIntentV1,
     with_kernel_trace: bool,
@@ -39,7 +38,7 @@ pub fn execute_preview<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtens
 
     Ok(execute_transaction(
         substate_db,
-        vms,
+        vm_init,
         &execution_config,
         &validated.get_executable(),
     ))

@@ -22,7 +22,7 @@ use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
+use crate::system::system_modules::EnabledModules;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_substates::{FieldSubstate, LockStatus};
 use crate::track::interface::CommitableSubstateStore;

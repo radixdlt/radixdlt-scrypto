@@ -4,7 +4,7 @@ mod multi_threaded_test {
     use radix_common::prelude::*;
     use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
-    use radix_engine::transaction::{CostingParameters, ExecutionConfig};
+    use radix_engine::transaction::ExecutionConfig;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::prelude::*;
     use radix_engine_interface::rule;
@@ -15,7 +15,7 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
-    use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmInit};
+    use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]

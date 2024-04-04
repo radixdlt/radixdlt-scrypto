@@ -9,7 +9,6 @@ use crate::kernel::kernel_callback_api::{
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::actor::Actor;
-use crate::track::BootStore;
 
 pub trait InitSystemModule {
     //======================
