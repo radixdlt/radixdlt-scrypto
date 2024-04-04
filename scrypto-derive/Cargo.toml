@@ -2,7 +2,7 @@
 name = "scrypto-derive"
 version = "1.2.0-dev"
 edition = "2021"
-description = "A collection of macros for writing Scrypto blueprints."
+description = "A collection of macros for writing Scrypto blueprints, from the Radix DLT project."
 readme = "README.md"
 license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
