@@ -138,7 +138,6 @@ pub trait KernelCallbackObject: Sized {
     /// Initialize the system layer with data loaded from the substate store
     fn init<S: BootStore>(
         store: &S,
-        costing_parameters: Option<CostingParameters>,
         executable: &Executable,
         execution_config: &ExecutionConfig,
         init_input: Self::InitInput,

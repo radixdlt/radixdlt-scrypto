@@ -104,10 +104,10 @@ impl CostingParameters {
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
     pub enable_cost_breakdown: bool,
+    pub enabled_modules: EnabledModules,
 
     // TODO: Add the following to a substate
     pub network_definition: NetworkDefinition,
-    pub enabled_modules: EnabledModules,
     pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
     pub max_heap_substate_total_bytes: usize,
@@ -229,6 +229,7 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for System<C> {
 
 
 pub struct SubstateBootStore<'a, S: SubstateDatabase> {
+    costing_parameters: Option<CostingParameters>,
     boot_store: &'a S,
 }
 
@@ -239,6 +240,15 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
+        if node_id.eq(TRANSACTION_TRACKER.as_node_id()) && partition_num == BOOT_LOADER_PARTITION && substate_key.eq(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY)) {
+            if let Some(costing_override) = &self.costing_parameters {
+                let value = IndexedScryptoValue::from_typed(&SystemBoot::V1 {
+                    costing_parameters: costing_override.clone()
+                });
+                return Some(value);
+            }
+        }
+
         let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_num);
         let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
         self.boot_store
@@ -290,11 +300,13 @@ where
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
 
-        let boot_store = SubstateBootStore { boot_store: self.substate_db };
-
-        let system = System::init(
-            &boot_store,
+        let boot_store = SubstateBootStore {
+            boot_store: self.substate_db,
             costing_parameters,
+        };
+
+        let system_boot_result = System::init(
+            &boot_store,
             executable,
             execution_config,
             self.vm.clone(),
@@ -305,7 +317,7 @@ where
         // Create a track
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
-        let validation_result = match system {
+        let validation_result = match system_boot_result {
             Ok(system) => {
                 costing_parameters = system
                     .modules

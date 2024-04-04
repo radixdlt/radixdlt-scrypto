@@ -118,28 +118,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
     fn init<S: BootStore>(
         store: &S,
-        costing_parameters: Option<CostingParameters>,
         executable: &Executable,
         execution_config: &ExecutionConfig,
         init_input: C::InitInput,
     ) -> Result<Self, BootloadingError> {
         let costing_parameters = {
-            if let Some(costing_parameters) = costing_parameters {
-                costing_parameters
-            } else {
-                let system_boot = store
-                    .read_substate(
-                        TRANSACTION_TRACKER.as_node_id(),
-                        BOOT_LOADER_PARTITION,
-                        &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY))
-                    .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                    .unwrap_or(SystemBoot::V1 {
-                        costing_parameters: CostingParameters::default(),
-                    });
+            let system_boot = store
+                .read_substate(
+                    TRANSACTION_TRACKER.as_node_id(),
+                    BOOT_LOADER_PARTITION,
+                    &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY))
+                .map(|v| scrypto_decode(v.as_slice()).unwrap())
+                .unwrap_or(SystemBoot::V1 {
+                    costing_parameters: CostingParameters::default(),
+                });
 
-                match system_boot {
-                    SystemBoot::V1 { costing_parameters } => costing_parameters,
-                }
+            match system_boot {
+                SystemBoot::V1 { costing_parameters } => costing_parameters,
             }
         };
         let callback = C::init(store, init_input)?;
@@ -162,7 +157,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
-            callback: callback,
+            callback,
             modules,
         })
     }

@@ -54,7 +54,7 @@ impl KernelCallbackObject for TestCallbackObject {
     type CallFrameData = TestCallFrameData;
     type InitInput = ();
 
-    fn init<S: BootStore>(store: &S, costing_parameters: Option<CostingParameters>, executable: &Executable, execution_config: &ExecutionConfig, bootstrap_input: Self::InitInput) -> Result<Self, BootloadingError> {
+    fn init<S: BootStore>(store: &S, executable: &Executable, execution_config: &ExecutionConfig, bootstrap_input: Self::InitInput) -> Result<Self, BootloadingError> {
         Ok(Self)
     }
 

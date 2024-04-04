@@ -104,7 +104,6 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
 
     fn init<S: BootStore>(
         store: &S,
-        costing_parameters: Option<CostingParameters>,
         executable: &Executable,
         execution_config: &ExecutionConfig,
         bootstrap_input: Self::InitInput,
