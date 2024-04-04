@@ -1283,13 +1283,13 @@ pub fn execute_transaction_with_configuration<
 
 pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
     substate_db: &S,
-    vms: VmInit<'s, W, E>,
+    vm_init: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
         substate_db,
-        vms,
+        vm_init,
         None,
         execution_config,
         transaction,

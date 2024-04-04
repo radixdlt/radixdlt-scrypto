@@ -27,7 +27,7 @@ macro_rules! log {
 
 impl InitSystemModule for KernelTraceModule {
     #[cfg(feature = "resource_tracker")]
-    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), crate::errors::BootloadingError> {
+    fn init(&mut self) -> Result<(), BootloadingError> {
         panic!("KernelTraceModule should be disabled for feature resource_tracker!")
     }
 }
