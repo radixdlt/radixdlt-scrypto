@@ -26,5 +26,5 @@ done
 sha256sum *.{wasm,rpd}
 
 # SHA256
-# 71ce03689d59bea7c4f1aa31f549f3bf8b382f31505d7b02474c098af4f0ac25  test_environment.wasm
+# db170d2f731cf1bb391576281e7f43629d156dbd97126d9e07e990b234f42f50  test_environment.wasm
 # 481b8d309110613576be6298d3126200f470a1153dbf867193bba02a49814b66  test_environment.rpd
