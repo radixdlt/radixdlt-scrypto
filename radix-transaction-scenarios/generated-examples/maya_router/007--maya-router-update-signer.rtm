@@ -1,0 +1,19 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+SET_ROLE
+    Address("component_sim1crc62tq0zddadz6gcpxzgdfmvf5zz03f2w98a4vu7h0smqydvmldls")
+    Enum<0u8>()
+    "signer"
+    Enum<2u8>(
+        Enum<0u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7]")
+                )
+            )
+        )
+    )
+;
