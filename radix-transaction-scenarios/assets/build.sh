@@ -25,7 +25,8 @@ done
 
 sha256sum *.{wasm,rpd}
 
-# SHA256
+# The script should generate the following hashes:
+#
 # a3754ceceb76ae4493da626a0919f7bdec270e01217ee6df8386650afaa2c881  flash_loan.wasm
 # d5de8e5357c22075cda4042b76d63bc607a677024cde3000800e841843701978  global_n_owned.wasm
 # ab52f7b88f0bc092f8d68e34ab5ccbb3fe2ce60ae592e16838d69f94d5016156  kv_store.wasm
@@ -40,3 +41,5 @@ sha256sum *.{wasm,rpd}
 # 4056a12642343c7b021300a87665d6da7f0a96e0a4ff2e9c68d959eb70de688d  metadata.rpd
 # c140bb5a831fc5dba1de5ec59787e085e06bf9f45719bf57f9ac51263a2d54cf  radiswap.rpd
 # 8a2d7055830e0c38bfe76ab1313503d987701bca62637f07b42110d521d7a263  royalties.rpd
+#
+# But, to support stokenet, we've manually reverted the assets to what's included in `anemone-e212f2ea`.

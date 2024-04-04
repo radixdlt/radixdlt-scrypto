@@ -71,8 +71,14 @@ pub mod path_macros {
 
     #[macro_export]
     macro_rules! path_workspace_blueprint {
-        ($name: expr) => {
-            concat!(env!("CARGO_MANIFEST_DIR"), "/../assets/blueprints/", $name)
+        ($package: expr, $name: expr) => {
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../",
+                $package,
+                "/assets/blueprints/",
+                $name
+            )
         };
     }
 
