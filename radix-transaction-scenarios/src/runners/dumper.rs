@@ -1,6 +1,6 @@
 use crate::{internal_prelude::*, scenarios::get_builder_for_every_scenario};
 use radix_engine::system::system_callback_api::SystemCallbackObject;
-use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, Vm, Vms};
+use radix_engine::vm::{DefaultNativeVm, NativeVm, NativeVmExtension, NoExtension, Vm, Vms};
 use radix_engine::{
     system::bootstrap::Bootstrapper,
     vm::{
@@ -8,7 +8,6 @@ use radix_engine::{
         ScryptoVm,
     },
 };
-use radix_engine::system::system_callback::System;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
 use radix_substate_store_interface::interface::*;
@@ -34,7 +33,7 @@ pub fn run_all_in_memory_and_dump_examples(
         native_vm,
     };
 
-    let receipts = Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, false)
+    let receipts = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, false)
         .bootstrap_test_default()
         .unwrap();
     let epoch = receipts
@@ -106,7 +105,7 @@ where
     let vms = Vms::new(&scrypto_vm, native_vm);
     let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
-    run_scenario::<_, Vm<'_, _, _>, _>(
+    run_scenario(
         context,
         &validator,
         substate_db,
@@ -117,18 +116,17 @@ where
     )
 }
 
-pub fn run_scenario<S, V, F>(
+pub fn run_scenario<'s, S, F>(
     context: &RunnerContext,
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
-    vm: V::InitInput,
+    vms: Vms<'s, DefaultWasmEngine, NoExtension>,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
     mut receipt_handler: F,
 ) -> Result<EndState, FullScenarioError>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject,
     F: FnMut(&TransactionIntentHash, &TransactionReceipt),
 {
     let mut previous = None;
@@ -143,9 +141,9 @@ where
                     .map_err(|err| err.into_full(&scenario))?;
                 #[cfg(feature = "std")]
                 next.dump_manifest(&context.dump_manifest_root, &context.network);
-                let receipt = execute_and_commit_transaction::<_, V>(
+                let receipt = execute_and_commit_transaction(
                     substate_db,
-                    vm.clone(),
+                    vms.clone(),
                     execution_config,
                     &transaction.get_executable(),
                 );

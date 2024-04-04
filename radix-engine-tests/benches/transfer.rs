@@ -4,7 +4,7 @@ use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm, Vms};
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::rule;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -18,7 +18,7 @@ fn bench_transfer(c: &mut Criterion) {
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };
     let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm = Vms::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     Bootstrapper::new(
         NetworkDefinition::simulator(),

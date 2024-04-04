@@ -7,15 +7,17 @@ use radix_transactions::errors::TransactionValidationError;
 use radix_transactions::model::PreviewIntentV1;
 use radix_transactions::validation::NotarizedTransactionValidator;
 use radix_transactions::validation::ValidationConfig;
+use crate::vm::{NativeVmExtension, Vms};
+use crate::vm::wasm::WasmEngine;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreviewError {
     TransactionValidationError(TransactionValidationError),
 }
 
-pub fn execute_preview<S: SubstateDatabase, V: SystemCallbackObject>(
+pub fn execute_preview<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
     substate_db: &S,
-    vm: V::InitInput,
+    vms: Vms<'s, W, E>,
     network: &NetworkDefinition,
     preview_intent: PreviewIntentV1,
     with_kernel_trace: bool,
@@ -35,9 +37,9 @@ pub fn execute_preview<S: SubstateDatabase, V: SystemCallbackObject>(
         .validate_preview_intent_v1(preview_intent)
         .map_err(PreviewError::TransactionValidationError)?;
 
-    Ok(execute_transaction::<_, V>(
+    Ok(execute_transaction(
         substate_db,
-        vm,
+        vms,
         &execution_config,
         &validated.get_executable(),
     ))

@@ -20,7 +20,7 @@ fn system_database_checker_should_report_missing_owner_error_on_broken_db() {
     let vms = Vms::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let mut bootstrapper =
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
     bootstrapper.bootstrap_test_default().unwrap();
     let (node_key, partition_num, sort_key, update) = (
         SpreadPrefixKeyMapper::to_db_node_key(PACKAGE_PACKAGE.as_node_id()),

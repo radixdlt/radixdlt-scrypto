@@ -46,7 +46,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     ];
 
     let mut bootstrapper =
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -152,7 +152,7 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
         },
     ];
     let mut bootstrapper =
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -253,7 +253,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         },
     ];
     let mut bootstrapper =
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, false);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, false);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -365,7 +365,7 @@ fn test_bootstrap_with_exceeded_validator_count() {
     // exceeding max validator count - expecting a panic now
     initial_config.max_validators = ValidatorIndex::MAX as u32 + 1;
     let mut bootstrapper =
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
 
     let _ = bootstrapper.bootstrap_with_genesis_data(
         vec![],
@@ -434,7 +434,7 @@ fn test_genesis_stake_allocation() {
     ];
 
     let mut bootstrapper =
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -517,7 +517,7 @@ fn test_genesis_time() {
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     let mut bootstrapper =
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
 
     let _ = bootstrapper
         .bootstrap_with_genesis_data(
@@ -732,7 +732,7 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
     ];
 
     let mut bootstrapper =
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, false);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, false);
 
     bootstrapper
         .bootstrap_with_genesis_data(

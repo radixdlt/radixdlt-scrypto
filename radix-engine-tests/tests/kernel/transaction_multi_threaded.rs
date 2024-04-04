@@ -26,15 +26,15 @@ mod multi_threaded_test {
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let native_vm = DefaultNativeVm::new();
-        let vm = Vms {
+        let vms = Vms {
             scrypto_vm: &scrypto_vm,
             native_vm,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
+        Bootstrapper::new(
             NetworkDefinition::simulator(),
             &mut substate_db,
-            vm.clone(),
+            vms.clone(),
             false,
         )
         .bootstrap_test_default()
@@ -56,9 +56,9 @@ mod multi_threaded_test {
                         None,
                     )
                     .build();
-                let account = execute_and_commit_transaction::<_, Vm<'_, _, _>>(
+                let account = execute_and_commit_transaction(
                     &mut substate_db,
-                    vm.clone(),
+                    vms.clone(),
                     &ExecutionConfig::for_test_transaction(),
                     &TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
                         .prepare()
@@ -83,9 +83,9 @@ mod multi_threaded_test {
             .try_deposit_entire_worktop_or_abort(account1, None)
             .build();
         for nonce in 0..10 {
-            execute_and_commit_transaction::<_, Vm<'_, _, _>>(
+            execute_and_commit_transaction(
                 &mut substate_db,
-                vm.clone(),
+                vms.clone(),
                 &ExecutionConfig::for_test_transaction(),
                 &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
@@ -108,9 +108,9 @@ mod multi_threaded_test {
             for _i in 0..20 {
                 // Note - we run the same transaction on all threads, but don't commit anything
                 s.spawn(|_| {
-                    let receipt = execute_transaction::<_, Vm<'_, _, _>>(
+                    let receipt = execute_transaction(
                         &substate_db,
-                        vm.clone(),
+                        vms.clone(),
                         &ExecutionConfig::for_test_transaction(),
                         &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()

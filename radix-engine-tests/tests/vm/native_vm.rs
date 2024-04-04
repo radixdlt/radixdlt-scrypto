@@ -54,7 +54,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let _ = Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
+    let _ = Bootstrapper::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
         Vms::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),
@@ -130,7 +130,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let _ = Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
+    let _ = Bootstrapper::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
         Vms::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),

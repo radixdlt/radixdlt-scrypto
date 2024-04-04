@@ -198,7 +198,7 @@ where
 
         if self.bootstrap {
             // Run genesis against the substate store.
-            let mut bootstrapper = Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
+            let mut bootstrapper = Bootstrapper::new(
                 NetworkDefinition::simulator(),
                 &mut self.database,
                 vm,

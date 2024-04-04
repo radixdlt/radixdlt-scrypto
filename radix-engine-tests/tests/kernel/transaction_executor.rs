@@ -97,13 +97,13 @@ fn test_normal_transaction_flow() {
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };
     let native_vm = DefaultNativeVm::new();
-    let vm = Vms::new(&scrypto_vm, native_vm);
+    let vms = Vms::new(&scrypto_vm, native_vm);
 
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
+    Bootstrapper::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
-        vm.clone(),
+        vms.clone(),
         true,
     )
     .bootstrap_test_default()
@@ -135,9 +135,9 @@ fn test_normal_transaction_flow() {
     assert_eq!(executable.payload_size(), 1023 * 1024 + 380);
 
     // Act
-    let receipt = execute_and_commit_transaction::<_, Vm<'_, _, _>>(
+    let receipt = execute_and_commit_transaction(
         &mut substate_db,
-        vm,
+        vms,
         &execution_config,
         &executable,
     );

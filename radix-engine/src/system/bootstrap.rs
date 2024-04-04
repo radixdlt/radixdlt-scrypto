@@ -29,7 +29,7 @@ use crate::transaction::{
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
-use crate::vm::{Vm, VmVersion};
+use crate::vm::{NativeVmExtension, NoExtension, Vm, Vms, VmVersion};
 use lazy_static::lazy_static;
 use radix_common::constants::AuthAddresses;
 use radix_common::crypto::Secp256k1PublicKey;
@@ -59,6 +59,7 @@ use radix_transactions::model::{
 };
 use radix_transactions::prelude::{BlobV1, PreAllocatedAddress};
 use radix_transactions::validation::ManifestIdAllocator;
+use crate::vm::wasm::DefaultWasmEngine;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
@@ -282,32 +283,32 @@ fn is_noop_partition_state_updates(opt_updates: &Option<PartitionStateUpdates>) 
     }
 }
 
-pub struct Bootstrapper<'s, S, V>
+pub struct Bootstrapper<'s, S, E>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject,
+    E: NativeVmExtension,
 {
     network_definition: NetworkDefinition,
     substate_db: &'s mut S,
-    vm: V::InitInput,
+    vms: Vms<'s, DefaultWasmEngine, E>,
     trace: bool,
 }
 
-impl<'s, S, V> Bootstrapper<'s, S, V>
+impl<'s, S, E> Bootstrapper<'s, S, E>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject,
+    E: NativeVmExtension,
 {
     pub fn new(
         network_definition: NetworkDefinition,
         substate_db: &'s mut S,
-        vm: V::InitInput,
+        vms: Vms<'s, DefaultWasmEngine, E>,
         trace: bool,
-    ) -> Bootstrapper<'s, S, V> {
+    ) -> Bootstrapper<'s, S, E> {
         Bootstrapper {
             network_definition,
             substate_db,
-            vm,
+            vms,
             trace,
         }
     }
@@ -407,9 +408,9 @@ where
             faucet_supply,
         );
 
-        let receipt = execute_transaction::<_, V>(
+        let receipt = execute_transaction(
             self.substate_db,
-            self.vm.clone(),
+            self.vms.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction
@@ -436,9 +437,9 @@ where
     ) -> TransactionReceipt {
         let transaction =
             create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
-        let receipt = execute_transaction::<_, V>(
+        let receipt = execute_transaction(
             self.substate_db,
-            self.vm.clone(),
+            self.vms.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction
@@ -460,9 +461,9 @@ where
     fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
         let transaction = create_genesis_wrap_up_transaction();
 
-        let receipt = execute_transaction::<_, V>(
+        let receipt = execute_transaction(
             self.substate_db,
-            self.vm.clone(),
+            self.vms.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
             &transaction

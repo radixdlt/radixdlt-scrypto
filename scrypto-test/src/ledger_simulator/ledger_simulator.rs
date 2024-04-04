@@ -321,12 +321,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let native_vm = NativeVm::new_with_extension(self.custom_extension);
-        let vm = Vms::new(&scrypto_vm, native_vm.clone());
+        let vms = Vms::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
+        let mut bootstrapper = Bootstrapper::new(
             NetworkDefinition::simulator(),
             &mut substate_db,
-            vm,
+            vms,
             bootstrap_trace,
         );
         let GenesisReceipts {
@@ -1453,7 +1453,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             native_vm: self.native_vm.clone(),
         };
 
-        execute_preview::<_, Vm<'_, _, _>>(
+        execute_preview(
             &self.database,
             vms,
             network,
@@ -1474,7 +1474,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             scrypto_vm: &self.scrypto_vm,
             native_vm: self.native_vm.clone(),
         };
-        execute_preview::<_, Vm<'_, _, _>>(
+        execute_preview(
             &mut self.database,
             vms,
             &NetworkDefinition::simulator(),
