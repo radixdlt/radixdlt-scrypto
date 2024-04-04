@@ -14,10 +14,10 @@ pub struct MayaRouterScenarioConfig {
 impl Default for MayaRouterScenarioConfig {
     fn default() -> Self {
         Self {
-            owner_account: ed25519_account_for_private_key(891231),
-            signer_1_account: secp256k1_account_2(),
-            signer_2_account: secp256k1_account_2(),
-            swapper_account: secp256k1_account_3(),
+            owner_account: secp256k1_account_2(),
+            signer_1_account: secp256k1_account_1(),
+            signer_2_account: ed25519_account_1(),
+            swapper_account: ed25519_account_2(),
         }
     }
 }
@@ -216,7 +216,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 })
                                 .done()
                         },
-                        vec![&config.swapper_account.key]
+                        vec![&config.swapper_account.key],
                     )
                 }
             )
@@ -241,14 +241,14 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 )
                                 .done()
                         },
-                        vec![&config.signer_1_account.key]
+                        vec![&config.signer_1_account.key],
                     )
                 }
             )
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-failed",
+                        "maya-router-transfer-out-failed-asset-not-available",
                         |builder| {
                             // resource_3 is not available in the deposited resources in MayaRouter
                             let resource_3 = state.maya_router_data.resource_3.get()?;
@@ -261,7 +261,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 )
                                 .done()
                         },
-                        vec![&config.signer_1_account.key]
+                        vec![&config.signer_1_account.key],
                     )
                 },
                 |_, _, _, _| Ok(()),
@@ -283,31 +283,31 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 )
                                 .done()
                         },
-                        vec![&config.signer_1_account.key]
+                        vec![&config.signer_1_account.key],
                     )
                 }
             )
-            // .failed_transaction_with_error_handler(
-            //     |core, config, state| {
-            //         core.next_transaction_with_faucet_lock_fee_fallible(
-            //             "maya-router-transfer-out-failed",
-            //             |builder| {
-            //                 let resource_2 = state.maya_router_data.resource_1.get()?;
-            //                 let router_address = state.maya_router_data.maya_router_address.get()?;
-            //                 builder
-            //                     .call_method(
-            //                         router_address,
-            //                         "transfer_out",
-            //                         manifest_args!(config.signer_1_account.address, config.swapper_account.address, resource_2, dec!(20), "OUT:".to_string()),
-            //                     )
-            //                     .done()
-            //             },
-            //             // Transaction should fail, because signer_1 key is used
-            //             vec![&config.signer_1_account.key]
-            //         )
-            //     },
-            //     |_, _, _, _| Ok(()),
-            // )
+            .failed_transaction_with_error_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee_fallible(
+                        "maya-router-transfer-out-failed-auth-error",
+                        |builder| {
+                            let resource_2 = state.maya_router_data.resource_1.get()?;
+                            let router_address = state.maya_router_data.maya_router_address.get()?;
+                            builder
+                                .call_method(
+                                    router_address,
+                                    "transfer_out",
+                                    manifest_args!(config.signer_1_account.address, config.swapper_account.address, resource_2, dec!(20), "OUT:".to_string()),
+                                )
+                                .done()
+                        },
+                        // Transaction should fail, because signer_1 badge is used
+                        vec![&config.signer_1_account.key],
+                    )
+                },
+                |_, _, _, _| Ok(()),
+            )
             .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
@@ -324,7 +324,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 .done()
                         },
                         //
-                        vec![&config.signer_2_account.key]
+                        vec![&config.signer_2_account.key],
                     )
                 },
             )

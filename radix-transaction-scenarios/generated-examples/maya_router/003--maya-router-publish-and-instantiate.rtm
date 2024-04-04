@@ -15,7 +15,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[799eeb70a3a5058459a50bddd1ad728b1c0d5336403bf6bdcd691d37ee]")
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7]")
                     )
                 )
             )
@@ -402,12 +402,12 @@ CALL_FUNCTION
     NamedAddress("maya_router_package")
     "MayaRouter"
     "instantiate"
-    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[799eeb70a3a5058459a50bddd1ad728b1c0d5336403bf6bdcd691d37ee]")
+    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7]")
     Enum<2u8>(
         Enum<0u8>(
             Enum<0u8>(
                 Enum<0u8>(
-                    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7]")
+                    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]")
                 )
             )
         )

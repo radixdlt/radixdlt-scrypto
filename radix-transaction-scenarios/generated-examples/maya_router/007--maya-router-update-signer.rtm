@@ -4,14 +4,14 @@ CALL_METHOD
     Decimal("5000")
 ;
 SET_ROLE
-    Address("component_sim1crc62tq0zddadz6gcpxzgdfmvf5zz03f2w98a4vu7h0smqydvmldls")
+    Address("component_sim1cqch728lv4p0k05f8f35p9y92hjy64ju8ee0tnae530smvk9042la9")
     Enum<0u8>()
     "signer"
     Enum<2u8>(
         Enum<0u8>(
             Enum<0u8>(
                 Enum<0u8>(
-                    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7]")
+                    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[000625de94e080757a91856c8bf2c7eede2c7f424a638c0aed61739a2c]")
                 )
             )
         )

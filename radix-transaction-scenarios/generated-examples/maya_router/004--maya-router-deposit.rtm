@@ -4,15 +4,15 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_METHOD
-    Address("account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz")
+    Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
     "withdraw"
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
     Decimal("100")
 ;
 CALL_METHOD
-    Address("account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz")
+    Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
     "withdraw"
-    Address("resource_sim1th6u9k9apsdjx8qsh0der5fpnfvj495ts5qm9u0hce5gdc335s0lr4")
+    Address("resource_sim1t40cy00lq4mzz9jw0px9hg6gwey3658mz4y3g8ehl6tfks2vmd798j")
     Decimal("200")
 ;
 TAKE_ALL_FROM_WORKTOP
@@ -20,20 +20,20 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("resource_1")
 ;
 CALL_METHOD
-    Address("component_sim1crc62tq0zddadz6gcpxzgdfmvf5zz03f2w98a4vu7h0smqydvmldls")
+    Address("component_sim1cqch728lv4p0k05f8f35p9y92hjy64ju8ee0tnae530smvk9042la9")
     "deposit"
-    Address("account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz")
+    Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
     Bucket("resource_1")
     "SWAP:MAYA.CACAO"
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1th6u9k9apsdjx8qsh0der5fpnfvj495ts5qm9u0hce5gdc335s0lr4")
+    Address("resource_sim1t40cy00lq4mzz9jw0px9hg6gwey3658mz4y3g8ehl6tfks2vmd798j")
     Bucket("resource_2")
 ;
 CALL_METHOD
-    Address("component_sim1crc62tq0zddadz6gcpxzgdfmvf5zz03f2w98a4vu7h0smqydvmldls")
+    Address("component_sim1cqch728lv4p0k05f8f35p9y92hjy64ju8ee0tnae530smvk9042la9")
     "deposit"
-    Address("account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz")
+    Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
     Bucket("resource_2")
     "SWAP:MAYA.CACAO"
 ;

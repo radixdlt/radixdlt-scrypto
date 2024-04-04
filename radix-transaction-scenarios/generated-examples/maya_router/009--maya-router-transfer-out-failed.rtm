@@ -9,15 +9,6 @@ CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Decimal("10")
-    "OUT:"
-;
-CALL_METHOD
-    Address("component_sim1cqch728lv4p0k05f8f35p9y92hjy64ju8ee0tnae530smvk9042la9")
-    "transfer_out"
-    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
-    Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
-    Address("resource_sim1t40cy00lq4mzz9jw0px9hg6gwey3658mz4y3g8ehl6tfks2vmd798j")
     Decimal("20")
     "OUT:"
 ;
