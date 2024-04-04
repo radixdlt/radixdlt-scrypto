@@ -18,7 +18,7 @@ use scrypto_test::prelude::*;
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vms = Vms::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
@@ -37,7 +37,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
     ];
 
     let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -122,10 +122,10 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(
+    let mut bootstrapper = Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
-        Vm {
+        Vms {
             scrypto_vm: &scrypto_vm,
             native_vm,
         },

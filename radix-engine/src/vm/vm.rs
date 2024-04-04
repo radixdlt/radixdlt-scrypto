@@ -15,12 +15,12 @@ use crate::vm::ScryptoVmVersion;
 
 pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
-pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
+pub struct Vms<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
     pub native_vm: NativeVm<E>,
 }
 
-impl<'g, W: WasmEngine, E: NativeVmExtension> Vm<'g, W, E> {
+impl<'g, W: WasmEngine, E: NativeVmExtension> Vms<'g, W, E> {
     pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_vm: NativeVm<E>) -> Self {
         Self {
             scrypto_vm,
@@ -29,7 +29,7 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Vm<'g, W, E> {
     }
 }
 
-impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
+impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vms<'g, W, E> {
     fn clone(&self) -> Self {
         Self {
             scrypto_vm: self.scrypto_vm,
@@ -37,6 +37,12 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
         }
     }
 }
+
+pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
+    pub vms: Vms<'g, W, E>,
+    pub vm_version: VmVersion,
+}
+
 
 /// Api provided to clients of the VM layer
 pub trait VmApi {
@@ -73,9 +79,9 @@ pub enum VmBoot {
 }
 
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
-    type CallbackState = VmVersion;
+    type InitInput = Vms<'g, W, E>;
 
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError> {
+    fn init<S: BootStore>(store: &S, vms: Vms<'g, W, E>) -> Result<Self, BootloadingError> {
         let vm_boot = store
             .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -91,7 +97,10 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             VmBoot::V1 { scrypto_version } => VmVersion { scrypto_version },
         };
 
-        Ok(vm_version)
+        Ok(Self {
+            vms,
+            vm_version,
+        })
     }
 
     fn invoke<Y>(
@@ -129,7 +138,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 .unwrap_or_else(|| panic!("Vm type not found: {:?}", export))
         };
 
-        let vm_api = api.kernel_get_system_state().system.callback_state.clone();
+        let vm_api = api.kernel_get_system_state().system.callback.vm_version.clone();
 
         let output = match vm_type.into_latest().vm_type {
             VmType::Native => {
@@ -158,7 +167,8 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
                 let mut vm_instance = api
                     .kernel_get_system()
-                    .callback_obj
+                    .callback
+                    .vms
                     .native_vm
                     .create_instance(address, &original_code.into_latest().code)?;
                 let output =
@@ -193,7 +203,8 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
                 let mut scrypto_vm_instance = {
                     api.kernel_get_system()
-                        .callback_obj
+                        .callback
+                        .vms
                         .scrypto_vm
                         .create_instance(
                             address,

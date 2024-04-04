@@ -29,7 +29,7 @@ use crate::transaction::{
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
-use crate::vm::VmVersion;
+use crate::vm::{Vm, VmVersion};
 use lazy_static::lazy_static;
 use radix_common::constants::AuthAddresses;
 use radix_common::crypto::Secp256k1PublicKey;
@@ -285,23 +285,23 @@ fn is_noop_partition_state_updates(opt_updates: &Option<PartitionStateUpdates>) 
 pub struct Bootstrapper<'s, S, V>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject + Clone,
+    V: SystemCallbackObject,
 {
     network_definition: NetworkDefinition,
     substate_db: &'s mut S,
-    vm: V,
+    vm: V::InitInput,
     trace: bool,
 }
 
 impl<'s, S, V> Bootstrapper<'s, S, V>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject + Clone,
+    V: SystemCallbackObject,
 {
     pub fn new(
         network_definition: NetworkDefinition,
         substate_db: &'s mut S,
-        vm: V,
+        vm: V::InitInput,
         trace: bool,
     ) -> Bootstrapper<'s, S, V> {
         Bootstrapper {
@@ -407,7 +407,7 @@ where
             faucet_supply,
         );
 
-        let receipt = execute_transaction(
+        let receipt = execute_transaction::<_, V>(
             self.substate_db,
             self.vm.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
@@ -436,7 +436,7 @@ where
     ) -> TransactionReceipt {
         let transaction =
             create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
-        let receipt = execute_transaction(
+        let receipt = execute_transaction::<_, V>(
             self.substate_db,
             self.vm.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
@@ -460,7 +460,7 @@ where
     fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
         let transaction = create_genesis_wrap_up_transaction();
 
-        let receipt = execute_transaction(
+        let receipt = execute_transaction::<_, V>(
             self.substate_db,
             self.vm.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())

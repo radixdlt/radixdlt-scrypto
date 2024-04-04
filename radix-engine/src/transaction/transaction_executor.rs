@@ -35,6 +35,7 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::*;
+use crate::vm::Vms;
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -249,21 +250,22 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
 /// An executor that runs transactions.
 /// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
-struct TransactionExecutor<'s, S, V: SystemCallbackObject + Clone>
+struct TransactionExecutor<'s, S, V: SystemCallbackObject>
 where
     S: SubstateDatabase,
 {
     substate_db: &'s S,
-    vm: V,
+    vm: V::InitInput,
+    phantom: PhantomData<V>,
 }
 
 impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    V: SystemCallbackObject + Clone,
+    V: SystemCallbackObject,
 {
-    pub fn new(substate_db: &'s S, vm: V) -> Self {
-        Self { substate_db, vm }
+    pub fn new(substate_db: &'s S, vm: V::InitInput) -> Self {
+        Self { substate_db, vm: vm, phantom: PhantomData::default() }
     }
 
     pub fn execute<T: WrappedSystem<V>>(
@@ -1252,17 +1254,17 @@ where
 
 pub fn execute_transaction_with_configuration<
     S: SubstateDatabase,
-    V: SystemCallbackObject + Clone,
+    V: SystemCallbackObject,
     T: WrappedSystem<V>,
 >(
     substate_db: &S,
-    vm: V,
+    vms: V::InitInput,
     costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
     init: T::Init,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_db, vm).execute::<T>(
+    TransactionExecutor::new(substate_db, vms).execute::<T>(
         transaction,
         costing_parameters,
         execution_config,
@@ -1270,9 +1272,9 @@ pub fn execute_transaction_with_configuration<
     )
 }
 
-pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
+pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject>(
     substate_db: &S,
-    vm: V,
+    vm: V::InitInput,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
@@ -1288,10 +1290,10 @@ pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>
 
 pub fn execute_and_commit_transaction<
     S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject + Clone,
+    V: SystemCallbackObject,
 >(
     substate_db: &mut S,
-    vm: V,
+    vm: V::InitInput,
     costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,

@@ -1,6 +1,6 @@
 use crate::{internal_prelude::*, scenarios::get_builder_for_every_scenario};
 use radix_engine::system::system_callback_api::SystemCallbackObject;
-use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, Vm};
+use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, Vm, Vms};
 use radix_engine::{
     system::bootstrap::Bootstrapper,
     vm::{
@@ -8,6 +8,7 @@ use radix_engine::{
         ScryptoVm,
     },
 };
+use radix_engine::system::system_callback::System;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
 use radix_substate_store_interface::interface::*;
@@ -28,12 +29,12 @@ pub fn run_all_in_memory_and_dump_examples(
     let mut substate_db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
-    let vm = Vm {
+    let vms = Vms {
         scrypto_vm: &scrypto_vm,
         native_vm,
     };
 
-    let receipts = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
+    let receipts = Bootstrapper::<'_, _, Vm<'_, _, _>>::new(NetworkDefinition::simulator(), &mut substate_db, vms, false)
         .bootstrap_test_default()
         .unwrap();
     let epoch = receipts
@@ -102,14 +103,14 @@ where
     let execution_config = ExecutionConfig::for_test_transaction();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vms = Vms::new(&scrypto_vm, native_vm);
     let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
-    run_scenario(
+    run_scenario::<_, Vm<'_, _, _>, _>(
         context,
         &validator,
         substate_db,
-        vm,
+        vms,
         None,
         &execution_config,
         scenario,
@@ -121,7 +122,7 @@ pub fn run_scenario<S, V, F>(
     context: &RunnerContext,
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
-    vm: V,
+    vm: V::InitInput,
     costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
@@ -129,7 +130,7 @@ pub fn run_scenario<S, V, F>(
 ) -> Result<EndState, FullScenarioError>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject + Clone,
+    V: SystemCallbackObject,
     F: FnMut(&TransactionIntentHash, &TransactionReceipt),
 {
     let mut previous = None;
@@ -144,7 +145,7 @@ where
                     .map_err(|err| err.into_full(&scenario))?;
                 #[cfg(feature = "std")]
                 next.dump_manifest(&context.dump_manifest_root, &context.network);
-                let receipt = execute_and_commit_transaction(
+                let receipt = execute_and_commit_transaction::<_, V>(
                     substate_db,
                     vm.clone(),
                     costing_parameters,

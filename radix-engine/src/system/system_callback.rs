@@ -104,8 +104,7 @@ impl SystemLockData {
 
 
 pub struct System<C: SystemCallbackObject> {
-    pub callback_obj: C,
-    pub callback_state: C::CallbackState,
+    pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
@@ -115,14 +114,14 @@ pub struct System<C: SystemCallbackObject> {
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
-    type InitInput = C;
+    type InitInput = C::InitInput;
 
     fn init<S: BootStore>(
         store: &S,
         costing_parameters: Option<CostingParameters>,
         executable: &Executable,
         execution_config: &ExecutionConfig,
-        mut init_input: C,
+        init_input: C::InitInput,
     ) -> Result<Self, BootloadingError> {
         let costing_parameters = {
             if let Some(costing_parameters) = costing_parameters {
@@ -143,7 +142,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 }
             }
         };
-        let callback_state = init_input.init(store).unwrap();
+        let callback = C::init(store, init_input)?;
 
         let mut modules = SystemModuleMixer::new(
             execution_config.enabled_modules,
@@ -163,8 +162,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
-            callback_obj: init_input,
-            callback_state,
+            callback: callback,
             modules,
         })
     }

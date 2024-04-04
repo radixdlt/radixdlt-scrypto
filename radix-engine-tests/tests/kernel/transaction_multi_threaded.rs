@@ -15,7 +15,7 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
-    use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
+    use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm, Vms};
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
@@ -26,12 +26,12 @@ mod multi_threaded_test {
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let native_vm = DefaultNativeVm::new();
-        let vm = Vm {
+        let vm = Vms {
             scrypto_vm: &scrypto_vm,
             native_vm,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(
+        Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
             NetworkDefinition::simulator(),
             &mut substate_db,
             vm.clone(),
@@ -56,7 +56,7 @@ mod multi_threaded_test {
                         None,
                     )
                     .build();
-                let account = execute_and_commit_transaction(
+                let account = execute_and_commit_transaction::<_, Vm<'_, _, _>>(
                     &mut substate_db,
                     vm.clone(),
                     None,
@@ -84,7 +84,7 @@ mod multi_threaded_test {
             .try_deposit_entire_worktop_or_abort(account1, None)
             .build();
         for nonce in 0..10 {
-            execute_and_commit_transaction(
+            execute_and_commit_transaction::<_, Vm<'_, _, _>>(
                 &mut substate_db,
                 vm.clone(),
                 None,
@@ -110,7 +110,7 @@ mod multi_threaded_test {
             for _i in 0..20 {
                 // Note - we run the same transaction on all threads, but don't commit anything
                 s.spawn(|_| {
-                    let receipt = execute_transaction(
+                    let receipt = execute_transaction::<_, Vm<'_, _, _>>(
                         &substate_db,
                         vm.clone(),
                         &ExecutionConfig::for_test_transaction(),

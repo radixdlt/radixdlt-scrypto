@@ -8,10 +8,10 @@ use radix_engine_interface::blueprints::package::PackageExport;
 
 /// Invocation callback invoked by the system layer
 pub trait SystemCallbackObject: Sized {
-    type CallbackState;
+    type InitInput: Clone;
 
     /// Initialize the layer above the system with data from the substate store
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError>;
+    fn init<S: BootStore>(store: &S, init_input: Self::InitInput) -> Result<Self, BootloadingError>;
 
     fn invoke<Y>(
         package_address: &PackageAddress,

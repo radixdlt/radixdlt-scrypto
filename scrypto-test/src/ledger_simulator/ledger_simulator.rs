@@ -321,9 +321,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let native_vm = NativeVm::new_with_extension(self.custom_extension);
-        let vm = Vm::new(&scrypto_vm, native_vm.clone());
+        let vm = Vms::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(
+        let mut bootstrapper = Bootstrapper::<'_, _, Vm<'_, _, _>>::new(
             NetworkDefinition::simulator(),
             &mut substate_db,
             vm,
@@ -1415,14 +1415,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             self.xrd_free_credits_used = true;
         }
 
-        let vm = Vm {
+        let vms = Vms {
             scrypto_vm: &self.scrypto_vm,
             native_vm: self.native_vm.clone(),
         };
 
         let transaction_receipt = execute_transaction_with_configuration::<_, _, T>(
             &mut self.database,
-            vm,
+            vms,
             costing_parameters,
             &execution_config,
             &executable,
@@ -1448,14 +1448,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        let vm = Vm {
+        let vms = Vms {
             scrypto_vm: &self.scrypto_vm,
             native_vm: self.native_vm.clone(),
         };
 
-        execute_preview(
+        execute_preview::<_, Vm<'_, _, _>>(
             &self.database,
-            vm,
+            vms,
             network,
             preview_intent,
             self.with_kernel_trace,
@@ -1470,13 +1470,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
-        let vm = Vm {
+        let vms = Vms {
             scrypto_vm: &self.scrypto_vm,
             native_vm: self.native_vm.clone(),
         };
-        execute_preview(
+        execute_preview::<_, Vm<'_, _, _>>(
             &mut self.database,
-            vm,
+            vms,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {
