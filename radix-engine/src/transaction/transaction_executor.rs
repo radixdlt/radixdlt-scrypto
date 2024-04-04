@@ -26,8 +26,10 @@ use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_substates::{FieldSubstate, LockStatus};
 use crate::track::interface::CommitableSubstateStore;
-use crate::track::{BootStore, to_state_updates, Track, TrackFinalizeError};
+use crate::track::{to_state_updates, BootStore, Track, TrackFinalizeError};
 use crate::transaction::*;
+use crate::vm::wasm::WasmEngine;
+use crate::vm::{NativeVmExtension, Vm, Vms};
 use radix_common::constants::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -35,8 +37,6 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::*;
-use crate::vm::{NativeVmExtension, Vm, Vms};
-use crate::vm::wasm::WasmEngine;
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -228,7 +228,6 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for System<C> {
     }
 }
 
-
 pub struct SubstateBootStore<'a, S: SubstateDatabase> {
     costing_parameters: Option<CostingParameters>,
     boot_store: &'a S,
@@ -241,10 +240,13 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
-        if node_id.eq(TRANSACTION_TRACKER.as_node_id()) && partition_num == BOOT_LOADER_PARTITION && substate_key.eq(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY)) {
+        if node_id.eq(TRANSACTION_TRACKER.as_node_id())
+            && partition_num == BOOT_LOADER_PARTITION
+            && substate_key.eq(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY))
+        {
             if let Some(costing_override) = &self.costing_parameters {
                 let value = IndexedScryptoValue::from_typed(&SystemBoot::V1 {
-                    costing_parameters: costing_override.clone()
+                    costing_parameters: costing_override.clone(),
                 });
                 return Some(value);
             }
@@ -273,7 +275,11 @@ where
     V: SystemCallbackObject,
 {
     pub fn new(substate_db: &'s S, vm: V::InitInput) -> Self {
-        Self { substate_db, input: vm, phantom: PhantomData::default() }
+        Self {
+            substate_db,
+            input: vm,
+            phantom: PhantomData::default(),
+        }
     }
 
     pub fn execute<T: WrappedSystem<V>>(
@@ -297,7 +303,6 @@ where
         let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-
         let boot_store = SubstateBootStore {
             boot_store: self.substate_db,
             costing_parameters,
@@ -310,19 +315,11 @@ where
             self.input.clone(),
         );
 
-        let mut costing_parameters = CostingParameters::default();
-
         // Create a track
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
         let validation_result = match system_boot_result {
             Ok(system) => {
-                costing_parameters = system
-                    .modules
-                    .costing()
-                    .map(|costing| costing.fee_reserve.costing_parameters())
-                    .unwrap_or_default();
-
                 // Perform runtime validation.
                 // TODO: the following assumptions can be removed with better interface.
                 // We are assuming that intent hash store is ready when epoch manager is ready.
@@ -334,16 +331,14 @@ where
                             range.start_epoch_inclusive,
                             range.end_epoch_exclusive,
                         )
-                            .and_then(|_| {
-                                Self::validate_intent_hash(
-                                    &mut track,
-                                    executable.intent_hash().to_hash(),
-                                    range.end_epoch_exclusive,
-                                )
-                            })
-                            .and_then(|_| {
-                                Ok(system)
-                            })
+                        .and_then(|_| {
+                            Self::validate_intent_hash(
+                                &mut track,
+                                executable.intent_hash().to_hash(),
+                                range.end_epoch_exclusive,
+                            )
+                        })
+                        .and_then(|_| Ok(system))
                     } else {
                         Ok(system)
                     }
@@ -351,13 +346,11 @@ where
                     Ok(system)
                 }
             }
-            Err(e) => {
-                Err(RejectionReason::BootloadingError(e))
-            }
+            Err(e) => Err(RejectionReason::BootloadingError(e)),
         };
 
         // Run manifest
-        let (fee_summary, fee_details, result) = match validation_result {
+        let (costing_parameters, fee_summary, fee_details, result) = match validation_result {
             Ok(system) => {
                 let (
                     interpretation_result,
@@ -372,6 +365,8 @@ where
                     println!("{:-^120}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
                 }
+
+                let costing_parameters = costing_module.fee_reserve.costing_parameters();
 
                 let fee_details = if execution_config.enable_cost_breakdown {
                     let execution_cost_breakdown = costing_module
@@ -491,6 +486,7 @@ where
                         }
 
                         (
+                            costing_parameters,
                             fee_reserve_finalization.into(),
                             fee_details,
                             TransactionResult::Commit(CommitResult {
@@ -517,11 +513,13 @@ where
                         )
                     }
                     TransactionResultType::Reject(reason) => (
+                        costing_parameters,
                         costing_module.fee_reserve.finalize().into(),
                         fee_details,
                         TransactionResult::Reject(RejectResult { reason }),
                     ),
                     TransactionResultType::Abort(reason) => (
+                        costing_parameters,
                         costing_module.fee_reserve.finalize().into(),
                         fee_details,
                         TransactionResult::Abort(AbortResult { reason }),
@@ -530,6 +528,7 @@ where
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
+                CostingParameters::default(),
                 TransactionFeeSummary::default(),
                 if execution_config.enable_cost_breakdown {
                     Some(TransactionFeeDetails::default())

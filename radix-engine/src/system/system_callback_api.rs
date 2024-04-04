@@ -11,7 +11,8 @@ pub trait SystemCallbackObject: Sized {
     type InitInput: Clone;
 
     /// Initialize the layer above the system with data from the substate store
-    fn init<S: BootStore>(store: &S, init_input: Self::InitInput) -> Result<Self, BootloadingError>;
+    fn init<S: BootStore>(store: &S, init_input: Self::InitInput)
+        -> Result<Self, BootloadingError>;
 
     fn invoke<Y>(
         package_address: &PackageAddress,

@@ -43,7 +43,6 @@ pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub vm_version: VmVersion,
 }
 
-
 /// Api provided to clients of the VM layer
 pub trait VmApi {
     /// Retrieve the current minor version of the Scrypto VM
@@ -97,10 +96,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             VmBoot::V1 { scrypto_version } => VmVersion { scrypto_version },
         };
 
-        Ok(Self {
-            vms,
-            vm_version,
-        })
+        Ok(Self { vms, vm_version })
     }
 
     fn invoke<Y>(
@@ -138,7 +134,12 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 .unwrap_or_else(|| panic!("Vm type not found: {:?}", export))
         };
 
-        let vm_api = api.kernel_get_system_state().system.callback.vm_version.clone();
+        let vm_api = api
+            .kernel_get_system_state()
+            .system
+            .callback
+            .vm_version
+            .clone();
 
         let output = match vm_type.into_latest().vm_type {
             VmType::Native => {

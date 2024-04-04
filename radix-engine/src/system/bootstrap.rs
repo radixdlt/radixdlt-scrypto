@@ -29,7 +29,8 @@ use crate::transaction::{
     SubstateSchemaMapper, SubstateSystemStructures, TransactionOutcome, TransactionReceipt,
     TransactionResult,
 };
-use crate::vm::{NativeVmExtension, NoExtension, Vm, Vms, VmVersion};
+use crate::vm::wasm::DefaultWasmEngine;
+use crate::vm::{NativeVmExtension, NoExtension, Vm, VmVersion, Vms};
 use lazy_static::lazy_static;
 use radix_common::constants::AuthAddresses;
 use radix_common::crypto::Secp256k1PublicKey;
@@ -59,7 +60,6 @@ use radix_transactions::model::{
 };
 use radix_transactions::prelude::{BlobV1, PreAllocatedAddress};
 use radix_transactions::validation::ManifestIdAllocator;
-use crate::vm::wasm::DefaultWasmEngine;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");

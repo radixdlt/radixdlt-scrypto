@@ -102,7 +102,6 @@ impl SystemLockData {
     }
 }
 
-
 pub struct System<C: SystemCallbackObject> {
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
@@ -127,7 +126,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .read_substate(
                     TRANSACTION_TRACKER.as_node_id(),
                     BOOT_LOADER_PARTITION,
-                    &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY))
+                    &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
+                )
                 .map(|v| scrypto_decode(v.as_slice()).unwrap())
                 .unwrap_or(SystemBoot::V1 {
                     costing_parameters: CostingParameters::default(),
