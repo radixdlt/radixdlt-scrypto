@@ -4,17 +4,17 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_FUNCTION
-    Address("package_sim1pksum3jam0vl9mpsjfffqd6hvyxauq0ema52aw0jpu752dcezdyzxk")
+    Address("package_sim1phnzwk52sarcef04l588qaqchmmewzmgh3egz0zgwvlmqcxzdxrppm")
     "RoyaltiesBp"
     "new"
 ;
 CALL_FUNCTION
-    Address("package_sim1pksum3jam0vl9mpsjfffqd6hvyxauq0ema52aw0jpu752dcezdyzxk")
+    Address("package_sim1phnzwk52sarcef04l588qaqchmmewzmgh3egz0zgwvlmqcxzdxrppm")
     "RoyaltiesBp"
     "new"
 ;
 CALL_FUNCTION
-    Address("package_sim1pksum3jam0vl9mpsjfffqd6hvyxauq0ema52aw0jpu752dcezdyzxk")
+    Address("package_sim1phnzwk52sarcef04l588qaqchmmewzmgh3egz0zgwvlmqcxzdxrppm")
     "RoyaltiesBp"
     "new"
 ;

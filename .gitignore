@@ -20,13 +20,16 @@ Cargo.lock
 !radix-clis/Cargo.lock
 
 # TYPE 3:
+# - Examples should have their own Cargo.lock files to show good practice
+!examples/**/Cargo.lock
+
+
+# TYPE 4:
 # - The asset scrypto packages. These need to be built deterministically, so include a Cargo.lock (at a shared workspace layer)
 #   But also keep blanket ignoring all the old Cargo.locks before they moved to blueprints, to avoid developer git issues
 !radix-engine/assets/**/Cargo.lock
-
-# TYPE 4:
-# - Examples should have their own Cargo.lock files to show good practice
-!examples/**/Cargo.lock
+!radix-transaction-scenarios/assets/**/Cargo.lock
+!scrypto-test/assets/**/Cargo.lock
 
 # TYPE 5:
 # - Various test scrypto packages. We don't care too much about either way - but we do want CI to run without a lock, so let's git ignore these.

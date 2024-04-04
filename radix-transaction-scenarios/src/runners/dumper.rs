@@ -78,11 +78,11 @@ pub fn run_all_in_memory_and_dump_examples(
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "43be4cce2d4f2ed2eb519d77dfa770697244e843b2a0f7fd86bdf773d9b6f278"
+        "05cef86e30d3cff31aa1bc0ac1ed552cd2a0c3f5e4e323bb94fd5982dce7afd8"
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
-        "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc"
+        "a33df1d6e8fccaf3a2ec3d1e5553629eb203b81b4d531ccabf3af78edd30a3e6"
     );
 
     Ok(())

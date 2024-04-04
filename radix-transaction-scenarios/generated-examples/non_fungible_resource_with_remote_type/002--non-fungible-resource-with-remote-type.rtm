@@ -9,7 +9,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     true
     Enum<1u8>(
         Tuple(
-            Address("package_sim1p483rgql4mqs055st5x6rzd4zck5scmqspxng7mz8qls6ssxl78e2t"),
+            Address("package_sim1pky2ddg64gn3ek9ycsgtngsrk3w3kstak2rygvhvd80hpa7ytx6xfw"),
             "Radiswap",
             "RemoveLiquidityEvent"
         ),
