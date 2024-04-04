@@ -138,7 +138,6 @@ fn test_normal_transaction_flow() {
     let receipt = execute_and_commit_transaction::<_, Vm<'_, _, _>>(
         &mut substate_db,
         vm,
-        None,
         &execution_config,
         &executable,
     );

@@ -111,7 +111,6 @@ where
         &validator,
         substate_db,
         vms,
-        None,
         &execution_config,
         scenario,
         receipt_handler,
@@ -123,7 +122,6 @@ pub fn run_scenario<S, V, F>(
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
     vm: V::InitInput,
-    costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
     mut receipt_handler: F,
@@ -148,7 +146,6 @@ where
                 let receipt = execute_and_commit_transaction::<_, V>(
                     substate_db,
                     vm.clone(),
-                    costing_parameters,
                     execution_config,
                     &transaction.get_executable(),
                 );

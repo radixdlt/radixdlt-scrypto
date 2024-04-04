@@ -63,7 +63,6 @@ impl TransactionFuzzer {
         execute_and_commit_transaction::<_, Vm<'_, _, _>>(
             &mut self.substate_db,
             vms,
-            None,
             &execution_config,
             &validated.get_executable(),
         );

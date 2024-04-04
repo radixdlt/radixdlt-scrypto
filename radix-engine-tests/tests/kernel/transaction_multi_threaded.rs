@@ -59,7 +59,6 @@ mod multi_threaded_test {
                 let account = execute_and_commit_transaction::<_, Vm<'_, _, _>>(
                     &mut substate_db,
                     vm.clone(),
-                    None,
                     &ExecutionConfig::for_test_transaction(),
                     &TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
                         .prepare()
@@ -87,7 +86,6 @@ mod multi_threaded_test {
             execute_and_commit_transaction::<_, Vm<'_, _, _>>(
                 &mut substate_db,
                 vm.clone(),
-                None,
                 &ExecutionConfig::for_test_transaction(),
                 &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()

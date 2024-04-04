@@ -1306,14 +1306,13 @@ pub fn execute_and_commit_transaction<
 >(
     substate_db: &mut S,
     vm: V::InitInput,
-    costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction_with_configuration::<S, V, System<V>>(
         substate_db,
         vm,
-        costing_parameters,
+        None,
         execution_config,
         transaction,
         (),
