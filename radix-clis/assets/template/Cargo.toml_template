@@ -1,0 +1,29 @@
+[package]
+name = "${package_name}"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+sbor = ${sbor}
+scrypto = ${scrypto}
+
+[dev-dependencies]
+scrypto-test = ${scrypto-test}
+
+[profile.release]
+opt-level = 'z'        # Optimize for size.
+lto = true             # Enable Link Time Optimization.
+codegen-units = 1      # Reduce number of codegen units to increase optimizations.
+panic = 'abort'        # Abort on panic.
+strip = true           # Strip the symbols.
+overflow-checks = true # Panic in the case of an overflow.
+
+[features]
+default = []
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[workspace]
+# Set the package crate as its own empty workspace, to hide it from any potential ancestor workspace
+# Remove this [workspace] section if you intend the package to be part of a Cargo workspace
