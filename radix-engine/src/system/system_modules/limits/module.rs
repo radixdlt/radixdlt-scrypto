@@ -28,6 +28,7 @@ pub enum TransactionLimitsError {
 }
 
 pub struct TransactionLimitsConfig {
+    pub max_call_depth: usize,
     pub max_heap_substate_total_bytes: usize,
     pub max_track_substate_total_bytes: usize,
     pub max_substate_key_size: usize,
@@ -162,9 +163,11 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
+
         // Check depth
         let current_depth = api.kernel_get_current_depth();
-        if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
+        let limits = &mut api.kernel_get_system().modules.limits.config;
+        if current_depth == limits.max_call_depth {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxCallDepthLimitReached,
@@ -173,8 +176,8 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
         }
 
         // Check input size
-        let limits = &mut api.kernel_get_system().modules.limits.config;
         let input_size = invocation.len();
+        let limits = &mut api.kernel_get_system().modules.limits.config;
         if input_size > limits.max_invoke_payload_size {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(

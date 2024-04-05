@@ -104,6 +104,7 @@ impl CostingParameters {
 
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct LimitParameters {
+    pub max_call_depth: usize,
     pub max_heap_substate_total_bytes: usize,
     pub max_track_substate_total_bytes: usize,
     pub max_substate_key_size: usize,
@@ -119,6 +120,7 @@ pub struct LimitParameters {
 impl Default for LimitParameters {
     fn default() -> Self {
         Self {
+            max_call_depth: MAX_CALL_DEPTH,
             max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
             max_track_substate_total_bytes: MAX_TRACK_SUBSTATE_TOTAL_BYTES,
             max_substate_key_size: MAX_SUBSTATE_KEY_SIZE,
@@ -147,13 +149,12 @@ impl LimitParameters {
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
     pub enable_cost_breakdown: bool,
+    pub max_execution_trace_depth: usize,
+
     pub enabled_modules: EnabledModules,
 
     // TODO: Add the following to a substate
     pub network_definition: NetworkDefinition,
-
-    pub max_execution_trace_depth: usize,
-    pub max_call_depth: usize,
     pub max_per_function_royalty_in_xrd: Decimal,
 }
 
@@ -166,7 +167,6 @@ impl ExecutionConfig {
             enabled_modules: EnabledModules::for_notarized_transaction(),
             enable_cost_breakdown: false,
             max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
-            max_call_depth: MAX_CALL_DEPTH,
             max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
                 .unwrap(),
         }
@@ -404,13 +404,13 @@ where
 
                 let costing_parameters = costing_module.fee_reserve.costing_parameters();
 
-                let fee_details = if execution_config.enable_cost_breakdown {
-                    let execution_cost_breakdown = costing_module
+                let fee_details = if let Some(cost_breakdown) = costing_module.cost_breakdown {
+                    let execution_cost_breakdown = cost_breakdown
                         .execution_cost_breakdown
                         .into_iter()
                         .map(|(k, v)| (k.to_string(), v))
                         .collect();
-                    let finalization_cost_breakdown = costing_module
+                    let finalization_cost_breakdown = cost_breakdown
                         .finalization_cost_breakdown
                         .into_iter()
                         .map(|(k, v)| (k.to_string(), v))

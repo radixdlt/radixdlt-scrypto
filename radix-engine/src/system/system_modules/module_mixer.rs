@@ -142,20 +142,21 @@ impl SystemModuleMixer {
             costing: CostingModule {
                 fee_reserve,
                 fee_table,
-                max_call_depth: execution_config.max_call_depth,
                 tx_payload_len: payload_len,
                 tx_num_of_signature_validations: num_of_signature_validations,
                 max_per_function_royalty_in_xrd: execution_config.max_per_function_royalty_in_xrd,
-                enable_cost_breakdown: execution_config.enable_cost_breakdown,
-                execution_cost_breakdown: index_map_new(),
-                finalization_cost_breakdown: index_map_new(),
-                storage_cost_breakdown: index_map_new(),
+                cost_breakdown: if execution_config.enable_cost_breakdown {
+                    Some(Default::default())
+                } else {
+                    None
+                },
                 on_apply_cost: Default::default(),
             },
             auth: AuthModule {
                 params: auth_zone_params.clone(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
+                max_call_depth: limit_parameters.max_call_depth,
                 max_heap_substate_total_bytes: limit_parameters.max_heap_substate_total_bytes,
                 max_track_substate_total_bytes: limit_parameters.max_track_substate_total_bytes,
                 max_substate_key_size: limit_parameters.max_substate_key_size,
