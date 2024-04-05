@@ -16,6 +16,7 @@ use sbor::rust::prelude::*;
 
 pub trait HasRoleAssignment {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A);
+    fn get_owner_role(&self) -> OwnerRoleEntry;
     fn lock_owner_role(&self);
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
     fn get_role(&self, name: &str) -> Option<AccessRule>;
