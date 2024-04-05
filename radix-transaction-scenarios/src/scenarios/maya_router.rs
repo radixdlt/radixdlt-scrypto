@@ -6,8 +6,8 @@ use crate::internal_prelude::*;
 
 pub struct MayaRouterScenarioConfig {
     pub owner_account: VirtualAccount,
-    pub signer_1_account: VirtualAccount,
-    pub signer_2_account: VirtualAccount,
+    pub admin_1_account: VirtualAccount,
+    pub admin_2_account: VirtualAccount,
     pub swapper_account: VirtualAccount,
 }
 
@@ -15,8 +15,8 @@ impl Default for MayaRouterScenarioConfig {
     fn default() -> Self {
         Self {
             owner_account: secp256k1_account_2(),
-            signer_1_account: secp256k1_account_1(),
-            signer_2_account: ed25519_account_1(),
+            admin_1_account: secp256k1_account_1(),
+            admin_2_account: ed25519_account_1(),
             swapper_account: ed25519_account_2(),
         }
     }
@@ -25,8 +25,8 @@ impl Default for MayaRouterScenarioConfig {
 #[derive(Default)]
 pub struct MayaRouterScenarioState {
     owner_badge: State<NonFungibleGlobalId>,
-    signer_1_badge: State<NonFungibleGlobalId>,
-    signer_2_badge: State<NonFungibleGlobalId>,
+    admin_1_badge: State<NonFungibleGlobalId>,
+    admin_2_badge: State<NonFungibleGlobalId>,
     swapper_badge: State<NonFungibleGlobalId>,
 
     maya_router_package: State<PackageAddress>,
@@ -124,8 +124,8 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     state.maya_router_data.resource_3.set(result.new_resource_addresses()[1]);
 
                     state.owner_badge.set(NonFungibleGlobalId::from_public_key(&config.owner_account.public_key));
-                    state.signer_1_badge.set(NonFungibleGlobalId::from_public_key(&config.signer_1_account.public_key));
-                    state.signer_2_badge.set(NonFungibleGlobalId::from_public_key(&config.signer_2_account.public_key));
+                    state.admin_1_badge.set(NonFungibleGlobalId::from_public_key(&config.admin_1_account.public_key));
+                    state.admin_2_badge.set(NonFungibleGlobalId::from_public_key(&config.admin_2_account.public_key));
                     state.swapper_badge.set(NonFungibleGlobalId::from_public_key(&config.swapper_account.public_key));
                     Ok(())
                 },
@@ -140,9 +140,9 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     let owner_badge = state.owner_badge.get()?;
                     let owner_role = OwnerRole::Fixed(rule!(require(owner_badge.clone())));
 
-                    let signer_badge = state.signer_1_badge.get()?;
+                    let admin_badge = state.admin_1_badge.get()?;
 
-                    let signer_rule = rule!(require(signer_badge));
+                    let admin_rule = rule!(require(admin_badge));
 
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "maya-router-publish-and-instantiate",
@@ -171,8 +171,9 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 "instantiate",
                                 manifest_args!(
                                     owner_badge,
-                                    signer_rule
-                                )
+                                    admin_rule,
+                                    config.admin_1_account.address,
+                                ),
                             )
                             .done()
                         },
@@ -203,7 +204,11 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     builder.call_method(
                                         router_address,
                                         "deposit",
-                                        manifest_args!(config.swapper_account.address, bucket, "SWAP:MAYA.CACAO".to_string()),
+                                        manifest_args!(
+                                            config.swapper_account.address,
+                                            bucket,
+                                            "SWAP:MAYA.CACAO".to_string(),
+                                        ),
                                     )
                                 })
                                 .take_all_from_worktop(resource_2, "resource_2")
@@ -211,7 +216,11 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     builder.call_method(
                                         router_address,
                                         "deposit",
-                                        manifest_args!(config.swapper_account.address, bucket, "SWAP:MAYA.CACAO".to_string()),
+                                        manifest_args!(
+                                            config.swapper_account.address,
+                                            bucket,
+                                            "SWAP:MAYA.CACAO".to_string(),
+                                        ),
                                     )
                                 })
                                 .done()
@@ -232,16 +241,28 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 .call_method(
                                     router_address,
                                     "transfer_out",
-                                    manifest_args!(config.signer_1_account.address, config.swapper_account.address, resource_1, dec!(10), "OUT:".to_string()),
+                                    manifest_args!(
+                                        config.admin_1_account.address,
+                                        config.swapper_account.address,
+                                        resource_1,
+                                        dec!(10),
+                                        "OUT:".to_string(),
+                                    ),
                                 )
                                 .call_method(
                                     router_address,
                                     "transfer_out",
-                                    manifest_args!(config.signer_1_account.address, config.swapper_account.address, resource_2, dec!(20), "OUT:".to_string()),
+                                    manifest_args!(
+                                        config.admin_1_account.address,
+                                        config.swapper_account.address,
+                                        resource_2,
+                                        dec!(20),
+                                        "OUT:".to_string(),
+                                    ),
                                 )
                                 .done()
                         },
-                        vec![&config.signer_1_account.key],
+                        vec![&config.admin_1_account.key],
                     )
                 }
             )
@@ -257,11 +278,17 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 .call_method(
                                     router_address,
                                     "transfer_out",
-                                    manifest_args!(config.signer_1_account.address, config.swapper_account.address, resource_3, dec!(30), "OUT:".to_string()),
+                                    manifest_args!(
+                                        config.admin_1_account.address,
+                                        config.swapper_account.address,
+                                        resource_3,
+                                        dec!(30),
+                                        "OUT:".to_string()
+                                    ),
                                 )
                                 .done()
                         },
-                        vec![&config.signer_1_account.key],
+                        vec![&config.admin_1_account.key],
                     )
                 },
                 |_, _, _, _| Ok(()),
@@ -269,21 +296,24 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
             .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-update-signer",
+                        "maya-router-update-admin",
                         |builder| {
+
                             let router_address = state.maya_router_data.maya_router_address.get()?;
-                            let signer_2_rule = rule!(require(state.signer_2_badge.get()?));
+                            let admin_2_rule = rule!(require(state.admin_2_badge.get()?));
 
                             builder
-                                .set_role(
+                                .call_method(
                                     router_address,
-                                    ModuleId::Main,
-                                    RoleKey::new("signer"),
-                                    signer_2_rule,
+                                    "update_admin",
+                                    manifest_args!(
+                                        admin_2_rule,
+                                        config.admin_2_account.address,
+                                    ),
                                 )
                                 .done()
                         },
-                        vec![&config.signer_1_account.key],
+                        vec![&config.admin_1_account.key],
                     )
                 }
             )
@@ -298,12 +328,18 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 .call_method(
                                     router_address,
                                     "transfer_out",
-                                    manifest_args!(config.signer_1_account.address, config.swapper_account.address, resource_2, dec!(20), "OUT:".to_string()),
+                                    manifest_args!(
+                                        config.admin_1_account.address,
+                                        config.swapper_account.address,
+                                        resource_2,
+                                        dec!(20),
+                                        "OUT:".to_string(),
+                                    ),
                                 )
                                 .done()
                         },
-                        // Transaction should fail, because signer_1 badge is used
-                        vec![&config.signer_1_account.key],
+                        // Transaction should fail, because admin_1 badge is used
+                        vec![&config.admin_1_account.key],
                     )
                 },
                 |_, _, _, _| Ok(()),
@@ -319,12 +355,18 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 .call_method(
                                     router_address,
                                     "transfer_out",
-                                    manifest_args!(config.signer_1_account.address, config.swapper_account.address, resource_2, dec!(20), "OUT:".to_string()),
+                                    manifest_args!(
+                                        config.admin_1_account.address,
+                                        config.swapper_account.address,
+                                        resource_2,
+                                        dec!(20),
+                                        "OUT:".to_string(),
+                                    ),
                                 )
                                 .done()
                         },
                         //
-                        vec![&config.signer_2_account.key],
+                        vec![&config.admin_2_account.key],
                     )
                 },
             )
@@ -333,8 +375,8 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     interesting_addresses: DescribedAddresses::new()
                         .add("owner_account", &config.owner_account)
                         .add("owner_badge", state.owner_badge.get()?)
-                        .add("signer_account", &config.signer_1_account)
-                        .add("signer_badge", state.signer_1_badge.get()?)
+                        .add("admin_account", &config.admin_1_account)
+                        .add("admin_badge", state.admin_1_badge.get()?)
                         .add("swapper_account", &config.swapper_account)
                         .add("swapper_badge", state.swapper_badge.get()?)
                         .add("maya_router_package", state.maya_router_package.get()?)
