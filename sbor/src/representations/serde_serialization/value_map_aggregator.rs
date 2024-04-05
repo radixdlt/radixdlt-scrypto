@@ -13,6 +13,7 @@ pub enum SerializableType<'a, 't, 'de, 's1, 's2, E: SerializableCustomExtension>
     I16(i16),
     I32(i32),
     U8(u8),
+    U8AsInteger(u8),
     U16(u16),
     U32(u32),
     SerializableFields(SerializableFields<'t, 'de, 's1, 's2, E>),
@@ -38,6 +39,7 @@ impl<'a, 'a2, 't, 'de, 's1, 's2, E: SerializableCustomExtension>
                 Self::I16(i) => serializer.serialize_str(&i.to_string()),
                 Self::I32(i) => serializer.serialize_str(&i.to_string()),
                 Self::U8(u) => serializer.serialize_str(&u.to_string()),
+                Self::U8AsInteger(u) => serializer.serialize_u8(*u),
                 Self::U16(u) => serializer.serialize_str(&u.to_string()),
                 Self::U32(u) => serializer.serialize_str(&u.to_string()),
                 Self::SerializableFields(s) => s.contextual_serialize(serializer, context),
@@ -52,6 +54,7 @@ impl<'a, 'a2, 't, 'de, 's1, 's2, E: SerializableCustomExtension>
                 Self::I16(i) => serializer.serialize_i16(*i),
                 Self::I32(i) => serializer.serialize_i32(*i),
                 Self::U8(u) => serializer.serialize_u8(*u),
+                Self::U8AsInteger(u) => serializer.serialize_u8(*u),
                 Self::U16(u) => serializer.serialize_u16(*u),
                 Self::U32(u) => serializer.serialize_u32(*u),
                 Self::SerializableFields(s) => s.contextual_serialize(serializer, context),
@@ -210,7 +213,7 @@ impl<'a, 'a2, 't, 'de, 's, 's1, 's2, E: SerializableCustomExtension>
 
     pub fn add_enum_variant_details(&mut self, variant_id: u8, variant_name: Option<&'a str>) {
         self.fields
-            .push(("variant_id", SerializableType::U8(variant_id)));
+            .push(("variant_id", SerializableType::U8AsInteger(variant_id)));
         variant_name.map(|variant_name| {
             self.fields
                 .push(("variant_name", SerializableType::Str(variant_name)))

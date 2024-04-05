@@ -925,7 +925,7 @@ mod tests {
                             "key": {
                                 "kind": "Enum",
                                 "type_name": "TestEnum",
-                                "variant_id": "0",
+                                "variant_id": 0,
                                 "variant_name": "UnitVariant",
                                 "fields": []
                             },
@@ -956,7 +956,7 @@ mod tests {
                             "key": {
                                 "kind": "Enum",
                                 "type_name": "TestEnum",
-                                "variant_id": "1",
+                                "variant_id": 1,
                                 "variant_name": "SingleFieldVariant",
                                 "fields": [
                                     {
@@ -993,7 +993,7 @@ mod tests {
                             "key": {
                                 "kind": "Enum",
                                 "type_name": "TestEnum",
-                                "variant_id": "2",
+                                "variant_id": 2,
                                 "variant_name": "DoubleStructVariant",
                                 "fields": [
                                     {
@@ -1066,14 +1066,14 @@ mod tests {
                 {
                     "kind": "Enum",
                     "type_name": "TestEnum",
-                    "variant_id": "0",
+                    "variant_id": 0,
                     "variant_name": "UnitVariant",
                     "fields": []
                 },
                 {
                     "kind": "Enum",
                     "type_name": "TestEnum",
-                    "variant_id": "1",
+                    "variant_id": 1,
                     "variant_name": "SingleFieldVariant",
                     "fields": [
                         {
@@ -1086,7 +1086,7 @@ mod tests {
                 {
                     "kind": "Enum",
                     "type_name": "TestEnum",
-                    "variant_id": "2",
+                    "variant_id": 2,
                     "variant_name": "DoubleStructVariant",
                     "fields": [
                         {
@@ -1149,12 +1149,12 @@ mod tests {
                     "fields": [
                         {
                             "kind": "Enum",
-                            "variant_id": "32",
+                            "variant_id": 32,
                             "fields": []
                         },
                         {
                             "kind": "Enum",
-                            "variant_id": "21",
+                            "variant_id": 21,
                             "fields": [
                                 {
                                     "kind": "I32",
