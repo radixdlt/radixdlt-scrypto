@@ -269,6 +269,7 @@ where
                             virtual_resources: Default::default(),
                         },
                         LimitParameters::default(),
+                        true,
                         SystemLoanFeeReserve::default(),
                         Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
                         FeeTable::new(),

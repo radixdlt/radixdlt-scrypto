@@ -154,11 +154,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             executable.intent_hash().to_hash(),
             executable.auth_zone_params().clone(),
             limit_parameters,
+
+            execution_config.enable_cost_breakdown,
             SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
             max_per_function_royalty_in_xrd,
             FeeTable::new(),
             executable.payload_size(),
             executable.num_of_signature_validations(),
+
             execution_config,
         );
 

@@ -128,13 +128,21 @@ impl SystemModuleMixer {
         enabled_modules: EnabledModules,
         network_definition: NetworkDefinition,
         tx_hash: Hash,
+
+        // Auth Module
         auth_zone_params: AuthZoneParams,
+
+        // Limits Module
         limit_parameters: LimitParameters,
+
+        // Costing Module
+        enable_cost_breakdown: bool,
         fee_reserve: SystemLoanFeeReserve,
         max_per_function_royalty_in_xrd: Decimal,
         fee_table: FeeTable,
         payload_len: usize,
         num_of_signature_validations: usize,
+
         execution_config: &ExecutionConfig,
     ) -> Self {
         Self {
@@ -146,7 +154,7 @@ impl SystemModuleMixer {
                 tx_payload_len: payload_len,
                 tx_num_of_signature_validations: num_of_signature_validations,
                 max_per_function_royalty_in_xrd,
-                cost_breakdown: if execution_config.enable_cost_breakdown {
+                cost_breakdown: if enable_cost_breakdown {
                     Some(Default::default())
                 } else {
                     None
