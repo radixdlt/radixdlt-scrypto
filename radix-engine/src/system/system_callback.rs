@@ -44,6 +44,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_transactions::model::{Executable, PreAllocatedAddress};
+use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -162,7 +163,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             executable.payload_size(),
             executable.num_of_signature_validations(),
 
-            execution_config,
+            ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
         );
 
         modules.init()?;

@@ -12,6 +12,7 @@ use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::auth::*;
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
+use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
 use radix_engine::track::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::ProtocolUpdates;
@@ -275,7 +276,7 @@ where
                         FeeTable::new(),
                         0,
                         0,
-                        &ExecutionConfig::for_test_transaction().with_kernel_trace(false),
+                        ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
                 }
             },

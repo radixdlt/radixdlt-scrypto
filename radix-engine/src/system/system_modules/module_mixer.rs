@@ -126,6 +126,8 @@ macro_rules! internal_call_dispatch {
 impl SystemModuleMixer {
     pub fn new(
         enabled_modules: EnabledModules,
+
+        // Runtime Module
         network_definition: NetworkDefinition,
         tx_hash: Hash,
 
@@ -143,7 +145,8 @@ impl SystemModuleMixer {
         payload_len: usize,
         num_of_signature_validations: usize,
 
-        execution_config: &ExecutionConfig,
+        // Execution Trace Module
+        execution_trace: ExecutionTraceModule,
     ) -> Self {
         Self {
             enabled_modules,
@@ -177,7 +180,7 @@ impl SystemModuleMixer {
                 max_log_size: limit_parameters.max_log_size,
                 max_panic_message_size: limit_parameters.max_panic_message_size,
             }),
-            execution_trace: ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
+            execution_trace,
             transaction_runtime: TransactionRuntimeModule {
                 network_definition,
                 tx_hash,

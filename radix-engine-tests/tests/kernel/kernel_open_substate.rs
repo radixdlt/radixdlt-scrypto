@@ -7,6 +7,7 @@ use radix_engine::kernel::kernel_api::KernelSubstateApi;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
+use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
 use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
 use radix_engine::transaction::{ExecutionConfig, LimitParameters};
@@ -64,7 +65,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             FeeTable::new(),
             executable.payload_size(),
             executable.auth_zone_params().initial_proofs.len(),
-            &execution_config,
+            ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);

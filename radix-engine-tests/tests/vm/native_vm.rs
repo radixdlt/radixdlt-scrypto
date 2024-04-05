@@ -10,6 +10,7 @@ use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
+use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
 use radix_engine::track::*;
 use radix_engine::transaction::*;
 use radix_engine::vm::wasm::*;
@@ -93,7 +94,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             FeeTable::new(),
             0,
             1,
-            &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
+            ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
     };
 
@@ -173,7 +174,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             FeeTable::new(),
             0,
             1,
-            &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
+            ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
     };
 
