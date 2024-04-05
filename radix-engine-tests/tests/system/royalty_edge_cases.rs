@@ -618,12 +618,7 @@ fn update_package_royalties(
 }
 
 fn max_per_function_royalty_in_xrd() -> Decimal {
-    let network_definition = NetworkDefinition::simulator();
-    let ExecutionConfig {
-        max_per_function_royalty_in_xrd,
-        ..
-    } = ExecutionConfig::for_notarized_transaction(network_definition);
-    max_per_function_royalty_in_xrd
+    Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap()
 }
 
 fn max_per_function_royalty_in_usd() -> Decimal {

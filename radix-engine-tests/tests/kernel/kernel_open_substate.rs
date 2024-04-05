@@ -59,6 +59,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             executable.auth_zone_params().clone(),
             LimitParameters::default(),
             SystemLoanFeeReserve::default(),
+            Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
             FeeTable::new(),
             executable.payload_size(),
             executable.auth_zone_params().initial_proofs.len(),

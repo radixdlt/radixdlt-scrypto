@@ -131,6 +131,7 @@ impl SystemModuleMixer {
         auth_zone_params: AuthZoneParams,
         limit_parameters: LimitParameters,
         fee_reserve: SystemLoanFeeReserve,
+        max_per_function_royalty_in_xrd: Decimal,
         fee_table: FeeTable,
         payload_len: usize,
         num_of_signature_validations: usize,
@@ -144,7 +145,7 @@ impl SystemModuleMixer {
                 fee_table,
                 tx_payload_len: payload_len,
                 tx_num_of_signature_validations: num_of_signature_validations,
-                max_per_function_royalty_in_xrd: execution_config.max_per_function_royalty_in_xrd,
+                max_per_function_royalty_in_xrd,
                 cost_breakdown: if execution_config.enable_cost_breakdown {
                     Some(Default::default())
                 } else {

@@ -52,6 +52,10 @@ pub enum SystemBoot {
     V1 {
         costing_parameters: CostingParameters,
         limit_parameters: LimitParameters,
+        max_per_function_royalty_in_xrd: Decimal,
+
+
+
     },
 }
 
@@ -122,7 +126,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         execution_config: &ExecutionConfig,
         init_input: C::InitInput,
     ) -> Result<Self, BootloadingError> {
-        let (costing_parameters, limit_parameters) = {
+        let (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd) = {
             let system_boot = store
                 .read_substate(
                     TRANSACTION_TRACKER.as_node_id(),
@@ -133,10 +137,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .unwrap_or(SystemBoot::V1 {
                     costing_parameters: CostingParameters::default(),
                     limit_parameters: LimitParameters::default(),
+                    max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                        .unwrap(),
                 });
 
             match system_boot {
-                SystemBoot::V1 { costing_parameters, limit_parameters } => (costing_parameters, limit_parameters),
+                SystemBoot::V1 { costing_parameters, limit_parameters, max_per_function_royalty_in_xrd } =>
+                    (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd),
             }
         };
         let callback = C::init(store, init_input)?;
@@ -148,6 +155,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             executable.auth_zone_params().clone(),
             limit_parameters,
             SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
+            max_per_function_royalty_in_xrd,
             FeeTable::new(),
             executable.payload_size(),
             executable.num_of_signature_validations(),

@@ -270,6 +270,7 @@ where
                         },
                         LimitParameters::default(),
                         SystemLoanFeeReserve::default(),
+                        Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
                         FeeTable::new(),
                         0,
                         0,

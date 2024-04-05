@@ -700,6 +700,7 @@ pub fn generate_protocol_params_to_state_state_updates() -> StateUpdates {
                                 scrypto_encode(&SystemBoot::V1 {
                                     costing_parameters: CostingParameters::default(),
                                     limit_parameters: LimitParameters::default(),
+                                    max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
                                 }).unwrap()
                             )
                         }

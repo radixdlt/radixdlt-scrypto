@@ -53,6 +53,7 @@ pub struct CostingParameters {
     /// The max number finalization cost units to consume.
     pub finalization_cost_unit_limit: u32,
 
+
     /// The price of USD in xrd
     pub usd_price: Decimal,
     /// The price of state storage in xrd
@@ -70,6 +71,7 @@ impl Default for CostingParameters {
             execution_cost_unit_loan: EXECUTION_COST_UNIT_LOAN,
             finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
+
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
             state_storage_price: STATE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
             archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
@@ -89,6 +91,7 @@ impl Default for CostingParameters {
         }
     }
 }
+
 
 impl CostingParameters {
     pub fn with_execution_cost_unit_limit(mut self, limit: u32) -> Self {
@@ -155,7 +158,6 @@ pub struct ExecutionConfig {
 
     // TODO: Add the following to a substate
     pub network_definition: NetworkDefinition,
-    pub max_per_function_royalty_in_xrd: Decimal,
 }
 
 impl ExecutionConfig {
@@ -167,8 +169,7 @@ impl ExecutionConfig {
             enabled_modules: EnabledModules::for_notarized_transaction(),
             enable_cost_breakdown: false,
             max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
-            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
-                .unwrap(),
+
         }
     }
 
@@ -272,7 +273,7 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
                 .map(|v| {
                     let mut system_boot: SystemBoot = scrypto_decode(v.as_slice()).unwrap();
                     match &mut system_boot {
-                        SystemBoot::V1 { costing_parameters, limit_parameters } => {
+                        SystemBoot::V1 { costing_parameters, limit_parameters, .. } => {
                             if let Some(costing_override) = &self.costing_parameters {
                                 *costing_parameters = costing_override.clone();
                             }
