@@ -3,10 +3,9 @@ CALL_METHOD
     "lock_fee"
     Decimal("5000")
 ;
-SET_ROLE
-    Address("component_sim1cqch728lv4p0k05f8f35p9y92hjy64ju8ee0tnae530smvk9042la9")
-    Enum<0u8>()
-    "signer"
+CALL_METHOD
+    Address("component_sim1cryernxedwn6jxmuqa3tfklfqfp4zjw05mxvgznaycsggzp85g2xtj")
+    "update_admin"
     Enum<2u8>(
         Enum<0u8>(
             Enum<0u8>(
@@ -16,4 +15,5 @@ SET_ROLE
             )
         )
     )
+    Address("account_sim12yqqvfw7jnsgqat6jxzkezljclhdutrlgf9x8rq2a4sh8x3vn55tsa")
 ;

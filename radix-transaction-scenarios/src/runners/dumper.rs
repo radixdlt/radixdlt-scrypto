@@ -33,7 +33,6 @@ pub fn run_all_in_memory_and_dump_examples(
     let CompletedExecutionReceipt {
         database: mut substate_db,
     } = DefaultTransactionScenarioExecutor::new(substate_db)
-        .scenarios_to_execute([ScenarioRequirements::Genesis])
         .on_scenario_start(|scenario_metadata| {
             let sub_folder = root_path.join(scenario_metadata.logical_name);
             if sub_folder.exists() {
@@ -65,11 +64,11 @@ pub fn run_all_in_memory_and_dump_examples(
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "43be4cce2d4f2ed2eb519d77dfa770697244e843b2a0f7fd86bdf773d9b6f278"
+        "862779a8e074086c1f211c88d4db08776071584be2317f7a0311bd005ca26dd1"
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
-        "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc"
+        "f7a6726ab89f5afa5e832671366c146f3ca11356987ba08c12f0024d83880bb1"
     );
 
     Ok(())

@@ -347,7 +347,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
             .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-failed",
+                        "maya-router-transfer-out-admin-2",
                         |builder| {
                             let resource_2 = state.maya_router_data.resource_1.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
@@ -356,7 +356,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     router_address,
                                     "transfer_out",
                                     manifest_args!(
-                                        config.admin_1_account.address,
+                                        config.admin_2_account.address,
                                         config.swapper_account.address,
                                         resource_2,
                                         dec!(20),
