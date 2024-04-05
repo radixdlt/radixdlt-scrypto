@@ -37,7 +37,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     let native_vm = DefaultNativeVm::new();
     let vm_init = VmInit {
         scrypto_vm: &scrypto_vm,
-        native_extension: NoExtension,
+        native_vm_extension: NoExtension,
     };
     Bootstrapper::new(NetworkDefinition::simulator(), &mut database, vm_init, false);
 

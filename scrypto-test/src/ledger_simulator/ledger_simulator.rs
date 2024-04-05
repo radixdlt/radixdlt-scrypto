@@ -1416,7 +1416,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
         let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_extension: self.native_vm_extension.clone(),
+            native_vm_extension: self.native_vm_extension.clone(),
         };
 
         let transaction_receipt = execute_transaction_with_configuration::<_, _, T>(
@@ -1449,7 +1449,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> Result<TransactionReceipt, PreviewError> {
         let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_extension: self.native_vm_extension.clone(),
+            native_vm_extension: self.native_vm_extension.clone(),
         };
 
         execute_preview(
@@ -1471,7 +1471,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let epoch = self.get_current_epoch();
         let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_extension: self.native_vm_extension.clone(),
+            native_vm_extension: self.native_vm_extension.clone(),
         };
         execute_preview(
             &mut self.database,

@@ -17,14 +17,14 @@ pub const BOOT_LOADER_VM_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
 pub struct VmInit<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
-    pub native_extension: E,
+    pub native_vm_extension: E,
 }
 
 impl<'g, W: WasmEngine, E: NativeVmExtension> VmInit<'g, W, E> {
-    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_extension: E) -> Self {
+    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_vm_extension: E) -> Self {
         Self {
             scrypto_vm,
-            native_extension,
+            native_vm_extension,
         }
     }
 }
@@ -33,7 +33,7 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for VmInit<'g, W, E> {
     fn clone(&self) -> Self {
         Self {
             scrypto_vm: self.scrypto_vm,
-            native_extension: self.native_extension.clone(),
+            native_vm_extension: self.native_vm_extension.clone(),
         }
     }
 }
@@ -99,7 +99,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
         Ok(Self {
             scrypto_vm: vm_init.scrypto_vm,
-            native_vm: NativeVm::new_with_extension(vm_init.native_extension),
+            native_vm: NativeVm::new_with_extension(vm_init.native_vm_extension),
             vm_version,
         })
     }

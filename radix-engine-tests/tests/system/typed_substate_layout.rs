@@ -125,7 +125,7 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
         &mut substate_db,
         VmInit {
             scrypto_vm: &scrypto_vm,
-            native_extension: NoExtension,
+            native_vm_extension: NoExtension,
         },
         true,
     );

@@ -29,7 +29,7 @@ pub fn run_all_in_memory_and_dump_examples(
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let vm_init = VmInit {
         scrypto_vm: &scrypto_vm,
-        native_extension: NoExtension,
+        native_vm_extension: NoExtension,
     };
 
     let receipts = Bootstrapper::new(

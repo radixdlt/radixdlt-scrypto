@@ -27,7 +27,7 @@ mod multi_threaded_test {
         };
         let vm_init = VmInit {
             scrypto_vm: &scrypto_vm,
-            native_extension: NoExtension,
+            native_vm_extension: NoExtension,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
         Bootstrapper::new(
