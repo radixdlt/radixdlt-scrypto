@@ -102,15 +102,8 @@ impl CostingParameters {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ExecutionConfig {
-    pub enable_cost_breakdown: bool,
-    pub enabled_modules: EnabledModules,
-
-    // TODO: Add the following to a substate
-    pub network_definition: NetworkDefinition,
-    pub max_execution_trace_depth: usize,
-    pub max_call_depth: usize,
+#[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct LimitParameters {
     pub max_heap_substate_total_bytes: usize,
     pub max_track_substate_total_bytes: usize,
     pub max_substate_key_size: usize,
@@ -121,19 +114,12 @@ pub struct ExecutionConfig {
     pub max_panic_message_size: usize,
     pub max_number_of_logs: usize,
     pub max_number_of_events: usize,
-    pub max_per_function_royalty_in_xrd: Decimal,
 }
 
-impl ExecutionConfig {
-    /// Creates an `ExecutionConfig` using default configurations.
-    /// This is internal. Clients should use `for_xxx` constructors instead.
-    fn default(network_definition: NetworkDefinition) -> Self {
+impl Default for LimitParameters {
+    fn default() -> Self {
         Self {
-            network_definition,
-            enabled_modules: EnabledModules::for_notarized_transaction(),
-            enable_cost_breakdown: false,
-            max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
-            max_call_depth: MAX_CALL_DEPTH,
+
             max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
             max_track_substate_total_bytes: MAX_TRACK_SUBSTATE_TOTAL_BYTES,
             max_substate_key_size: MAX_SUBSTATE_KEY_SIZE,
@@ -144,6 +130,46 @@ impl ExecutionConfig {
             max_panic_message_size: MAX_PANIC_MESSAGE_SIZE,
             max_number_of_logs: MAX_NUMBER_OF_LOGS,
             max_number_of_events: MAX_NUMBER_OF_EVENTS,
+        }
+    }
+}
+
+impl LimitParameters {
+    pub fn for_genesis_transaction() -> Self {
+        Self {
+            max_heap_substate_total_bytes: 512 * 1024 * 1024,
+            max_track_substate_total_bytes: 512 * 1024 * 1024,
+            max_number_of_events: 1024 * 1024,
+            ..Self::default()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ExecutionConfig {
+    pub enable_cost_breakdown: bool,
+    pub enabled_modules: EnabledModules,
+
+    // TODO: Add the following to a substate
+    pub network_definition: NetworkDefinition,
+    pub limit_parameters: LimitParameters,
+
+    pub max_execution_trace_depth: usize,
+    pub max_call_depth: usize,
+    pub max_per_function_royalty_in_xrd: Decimal,
+}
+
+impl ExecutionConfig {
+    /// Creates an `ExecutionConfig` using default configurations.
+    /// This is internal. Clients should use `for_xxx` constructors instead.
+    fn default(network_definition: NetworkDefinition) -> Self {
+        Self {
+            network_definition,
+            enabled_modules: EnabledModules::for_notarized_transaction(),
+            limit_parameters: LimitParameters::default(),
+            enable_cost_breakdown: false,
+            max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
+            max_call_depth: MAX_CALL_DEPTH,
             max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
                 .unwrap(),
         }
@@ -152,9 +178,7 @@ impl ExecutionConfig {
     pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
-            max_heap_substate_total_bytes: 512 * 1024 * 1024,
-            max_track_substate_total_bytes: 512 * 1024 * 1024,
-            max_number_of_events: 1024 * 1024,
+            limit_parameters: LimitParameters::for_genesis_transaction(),
             ..Self::default(network_definition)
         }
     }
