@@ -119,7 +119,6 @@ pub struct LimitParameters {
 impl Default for LimitParameters {
     fn default() -> Self {
         Self {
-
             max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
             max_track_substate_total_bytes: MAX_TRACK_SUBSTATE_TOTAL_BYTES,
             max_substate_key_size: MAX_SUBSTATE_KEY_SIZE,
@@ -152,7 +151,6 @@ pub struct ExecutionConfig {
 
     // TODO: Add the following to a substate
     pub network_definition: NetworkDefinition,
-    pub limit_parameters: LimitParameters,
 
     pub max_execution_trace_depth: usize,
     pub max_call_depth: usize,
@@ -166,7 +164,6 @@ impl ExecutionConfig {
         Self {
             network_definition,
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            limit_parameters: LimitParameters::default(),
             enable_cost_breakdown: false,
             max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
             max_call_depth: MAX_CALL_DEPTH,
@@ -178,7 +175,6 @@ impl ExecutionConfig {
     pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
-            limit_parameters: LimitParameters::for_genesis_transaction(),
             ..Self::default(network_definition)
         }
     }
@@ -254,6 +250,7 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for System<C> {
 
 pub struct SubstateBootStore<'a, S: SubstateDatabase> {
     costing_parameters: Option<CostingParameters>,
+    limit_parameters: Option<LimitParameters>,
     boot_store: &'a S,
 }
 
@@ -268,12 +265,25 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
             && partition_num == BOOT_LOADER_PARTITION
             && substate_key.eq(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY))
         {
-            if let Some(costing_override) = &self.costing_parameters {
-                let value = IndexedScryptoValue::from_typed(&SystemBoot::V1 {
-                    costing_parameters: costing_override.clone(),
+            let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_num);
+            let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
+            return self.boot_store
+                .get_substate(&db_partition_key, &db_sort_key)
+                .map(|v| {
+                    let mut system_boot: SystemBoot = scrypto_decode(v.as_slice()).unwrap();
+                    match &mut system_boot {
+                        SystemBoot::V1 { costing_parameters, limit_parameters } => {
+                            if let Some(costing_override) = &self.costing_parameters {
+                                *costing_parameters = costing_override.clone();
+                            }
+
+                            if let Some(limit_override) = &self.limit_parameters {
+                                *limit_parameters = limit_override.clone();
+                            }
+                        }
+                    }
+                    IndexedScryptoValue::from_typed(&system_boot)
                 });
-                return Some(value);
-            }
         }
 
         let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_num);
@@ -310,6 +320,7 @@ where
         &mut self,
         executable: &Executable,
         costing_parameters: Option<CostingParameters>,
+        limit_parameters: Option<LimitParameters>,
         execution_config: &ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
@@ -330,6 +341,7 @@ where
         let boot_store = SubstateBootStore {
             boot_store: self.substate_db,
             costing_parameters,
+            limit_parameters,
         };
 
         let system_boot_result = System::init(
@@ -1293,6 +1305,7 @@ pub fn execute_transaction_with_configuration<
     substate_db: &S,
     vms: V::InitInput,
     costing_parameters: Option<CostingParameters>,
+    limit_parameters: Option<LimitParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
     init: T::Init,
@@ -1300,6 +1313,7 @@ pub fn execute_transaction_with_configuration<
     TransactionExecutor::new(substate_db, vms).execute::<T>(
         transaction,
         costing_parameters,
+        limit_parameters,
         execution_config,
         init,
     )
@@ -1314,6 +1328,7 @@ pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmEx
     execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
         substate_db,
         vm_init,
+        None,
         None,
         execution_config,
         transaction,
@@ -1335,6 +1350,7 @@ pub fn execute_and_commit_transaction<
     let receipt = execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
         substate_db,
         vms,
+        None,
         None,
         execution_config,
         transaction,

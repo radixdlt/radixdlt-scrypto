@@ -1306,6 +1306,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
             Some(costing_parameters),
+            None,
             ExecutionConfig::for_test_transaction(),
             (),
         )
@@ -1326,6 +1327,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
+            None,
             None,
             ExecutionConfig::for_test_transaction(),
             init,
@@ -1377,6 +1379,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
             executable,
             None,
+            None,
             execution_config,
             (),
         )
@@ -1386,11 +1389,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
         executable: Executable,
         costing_parameters: CostingParameters,
+        limit_parameters: LimitParameters,
         config: ExecutionConfig,
     ) -> TransactionReceipt {
         self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
             executable,
             Some(costing_parameters),
+            Some(limit_parameters),
             config,
             (),
         )
@@ -1400,6 +1405,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &'a mut self,
         executable: Executable,
         costing_parameters: Option<CostingParameters>,
+        limit_parameters: Option<LimitParameters>,
         mut execution_config: ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
@@ -1423,6 +1429,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             &mut self.database,
             vm_init,
             costing_parameters,
+            limit_parameters,
             &execution_config,
             &executable,
             init,

@@ -8,7 +8,7 @@ use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::{SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY};
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
-use crate::transaction::CostingParameters;
+use crate::transaction::{CostingParameters, LimitParameters};
 use crate::vm::*;
 use radix_common::constants::*;
 use radix_common::crypto::hash;
@@ -698,7 +698,8 @@ pub fn generate_protocol_params_to_state_state_updates() -> StateUpdates {
                         by_substate: indexmap! {
                             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
                                 scrypto_encode(&SystemBoot::V1 {
-                                    costing_parameters: CostingParameters::default()
+                                    costing_parameters: CostingParameters::default(),
+                                    limit_parameters: LimitParameters::default(),
                                 }).unwrap()
                             )
                         }

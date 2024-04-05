@@ -268,6 +268,7 @@ where
                             initial_proofs: Default::default(),
                             virtual_resources: Default::default(),
                         },
+                        LimitParameters::default(),
                         SystemLoanFeeReserve::default(),
                         FeeTable::new(),
                         0,

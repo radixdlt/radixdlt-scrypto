@@ -26,7 +26,7 @@ use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
-use crate::transaction::{CostingParameters, ExecutionConfig};
+use crate::transaction::{CostingParameters, ExecutionConfig, LimitParameters};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -51,6 +51,7 @@ pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 pub enum SystemBoot {
     V1 {
         costing_parameters: CostingParameters,
+        limit_parameters: LimitParameters,
     },
 }
 
@@ -121,7 +122,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         execution_config: &ExecutionConfig,
         init_input: C::InitInput,
     ) -> Result<Self, BootloadingError> {
-        let costing_parameters = {
+        let (costing_parameters, limit_parameters) = {
             let system_boot = store
                 .read_substate(
                     TRANSACTION_TRACKER.as_node_id(),
@@ -131,10 +132,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .map(|v| scrypto_decode(v.as_slice()).unwrap())
                 .unwrap_or(SystemBoot::V1 {
                     costing_parameters: CostingParameters::default(),
+                    limit_parameters: LimitParameters::default(),
                 });
 
             match system_boot {
-                SystemBoot::V1 { costing_parameters } => costing_parameters,
+                SystemBoot::V1 { costing_parameters, limit_parameters } => (costing_parameters, limit_parameters),
             }
         };
         let callback = C::init(store, init_input)?;
@@ -144,6 +146,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             execution_config.network_definition.clone(),
             executable.intent_hash().to_hash(),
             executable.auth_zone_params().clone(),
+            limit_parameters,
             SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
             FeeTable::new(),
             executable.payload_size(),

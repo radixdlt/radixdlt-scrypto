@@ -23,7 +23,7 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
-use crate::transaction::ExecutionConfig;
+use crate::transaction::{ExecutionConfig, LimitParameters};
 use bitflags::bitflags;
 use paste::paste;
 use radix_common::crypto::Hash;
@@ -129,6 +129,7 @@ impl SystemModuleMixer {
         network_definition: NetworkDefinition,
         tx_hash: Hash,
         auth_zone_params: AuthZoneParams,
+        limit_parameters: LimitParameters,
         fee_reserve: SystemLoanFeeReserve,
         fee_table: FeeTable,
         payload_len: usize,
@@ -155,16 +156,16 @@ impl SystemModuleMixer {
                 params: auth_zone_params.clone(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
-                max_heap_substate_total_bytes: execution_config.limit_parameters.max_heap_substate_total_bytes,
-                max_track_substate_total_bytes: execution_config.limit_parameters.max_track_substate_total_bytes,
-                max_substate_key_size: execution_config.limit_parameters.max_substate_key_size,
-                max_substate_value_size: execution_config.limit_parameters.max_substate_value_size,
-                max_invoke_payload_size: execution_config.limit_parameters.max_invoke_input_size,
-                max_number_of_logs: execution_config.limit_parameters.max_number_of_logs,
-                max_number_of_events: execution_config.limit_parameters.max_number_of_events,
-                max_event_size: execution_config.limit_parameters.max_event_size,
-                max_log_size: execution_config.limit_parameters.max_log_size,
-                max_panic_message_size: execution_config.limit_parameters.max_panic_message_size,
+                max_heap_substate_total_bytes: limit_parameters.max_heap_substate_total_bytes,
+                max_track_substate_total_bytes: limit_parameters.max_track_substate_total_bytes,
+                max_substate_key_size: limit_parameters.max_substate_key_size,
+                max_substate_value_size: limit_parameters.max_substate_value_size,
+                max_invoke_payload_size: limit_parameters.max_invoke_input_size,
+                max_number_of_logs: limit_parameters.max_number_of_logs,
+                max_number_of_events: limit_parameters.max_number_of_events,
+                max_event_size: limit_parameters.max_event_size,
+                max_log_size: limit_parameters.max_log_size,
+                max_panic_message_size: limit_parameters.max_panic_message_size,
             }),
             execution_trace: ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
             transaction_runtime: TransactionRuntimeModule {

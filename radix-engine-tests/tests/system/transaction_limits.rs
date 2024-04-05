@@ -47,11 +47,13 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
-    let mut execution_config = ExecutionConfig::for_test_transaction();
-    execution_config.limit_parameters.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
+    let execution_config = ExecutionConfig::for_test_transaction();
+    let mut limit_parameters = LimitParameters::default();
+    limit_parameters.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
     let receipt = ledger.execute_transaction_with_costing_params(
         prepared.get_executable(btreeset!()),
         fee_config,
+        limit_parameters,
         execution_config,
     );
 
@@ -105,11 +107,13 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
-    let mut execution_config = ExecutionConfig::for_test_transaction();
-    execution_config.limit_parameters.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
+    let execution_config = ExecutionConfig::for_test_transaction();
+    let mut limit_parameters = LimitParameters::default();
+    limit_parameters.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
     let receipt = ledger.execute_transaction_with_costing_params(
         prepared.get_executable(btreeset!()),
         fee_config,
+        limit_parameters,
         execution_config,
     );
 
@@ -147,11 +151,13 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
     let transactions = TestTransaction::new_from_nonce(manifest, 10);
     let prepared = transactions.prepare().unwrap();
     let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
-    let mut execution_config = ExecutionConfig::for_test_transaction();
-    execution_config.limit_parameters.max_heap_substate_total_bytes = 1024 * 1024;
+    let execution_config = ExecutionConfig::for_test_transaction();
+    let mut limit_parameters = LimitParameters::default();
+    limit_parameters.max_heap_substate_total_bytes = 1024 * 1024;
     let receipt = ledger.execute_transaction_with_costing_params(
         prepared.get_executable(btreeset!()),
         fee_config,
+        limit_parameters,
         execution_config,
     );
 

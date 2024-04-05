@@ -9,7 +9,7 @@ use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
-use radix_engine::transaction::ExecutionConfig;
+use radix_engine::transaction::{ExecutionConfig, LimitParameters};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmInit, VmVersion};
 use radix_engine_interface::api::LockFlags;
@@ -57,6 +57,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             NetworkDefinition::simulator(),
             executable.intent_hash().to_hash(),
             executable.auth_zone_params().clone(),
+            LimitParameters::default(),
             SystemLoanFeeReserve::default(),
             FeeTable::new(),
             executable.payload_size(),
