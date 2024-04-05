@@ -16,6 +16,7 @@ use fungible_resource::FungibleResourceScenarioCreator;
 use global_n_owned::GlobalNOwnedScenarioCreator;
 use kv_store_with_remote_type::KVStoreScenarioCreator;
 use max_transaction::MaxTransactionScenarioCreator;
+use maya_router::MayaRouterScenarioCreator;
 use metadata::MetadataScenario;
 use non_fungible_resource::NonFungibleResourceScenarioCreator;
 use non_fungible_resource_with_remote_type::NonFungibleResourceWithRemoteTypeScenarioCreator;
@@ -87,7 +88,9 @@ define_scenario_builders! {
     // The set of scenarios that should be run after the anemone protocol update.
     ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Anemone) => [],
     // The set of scenarios that should be run after the bottlenose protocol update.
-    ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Bottlenose) => [],
+    ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Bottlenose) => [
+        MayaRouterScenarioCreator::create,
+    ],
 }
 
 pub struct TransactionScenarioExecutor<D, W, E, F1, F2>
