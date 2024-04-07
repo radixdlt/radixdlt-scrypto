@@ -26,3 +26,11 @@ tracing-subscriber = { version = "0.3.18", default-features = false, features = 
     "fmt",
     "tracing-log",
 ] }
+
+[dev-dependencies]
+criterion = { workspace = true, features = ["html_reports"] }
+paste = { workspace = true }
+
+[[bench]]
+name = "autocomplete"
+harness = false

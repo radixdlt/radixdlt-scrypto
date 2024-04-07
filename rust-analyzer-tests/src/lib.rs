@@ -104,7 +104,7 @@ use tempfile::tempdir;
 ///         }),
 ///         LoggingHandling::LogToStdOut,
 ///     )?;
-///     println!("Autocomplete took: {}", duration.as_millis());
+///     println!("Autocomplete took: {}ms", duration.as_millis());
 ///     Ok(())
 /// }
 /// ```
@@ -320,7 +320,7 @@ where
     match (completion_result?, &autocomplete_pattern.pattern) {
         (None, AutocompleteExpectationPattern::AnyOf(any_of)) if any_of.is_empty() => {}
         (None, AutocompleteExpectationPattern::AnyOf(_)) => {
-            return Err(TimingError::AutocompleteExpectationNotMet)
+            return Err(TimingError::AutocompleteExpectationNotMet);
         }
         (
             Some(
