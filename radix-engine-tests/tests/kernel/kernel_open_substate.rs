@@ -8,6 +8,7 @@ use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
+use radix_engine::system::system_modules::kernel_trace::KernelTraceModule;
 use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
 use radix_engine::transaction::{ExecutionConfig, LimitParameters};
@@ -55,6 +56,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         },
         modules: SystemModuleMixer::new(
             execution_config.enabled_modules,
+            KernelTraceModule,
             NetworkDefinition::simulator(),
             executable.intent_hash().to_hash(),
             executable.auth_zone_params().clone(),

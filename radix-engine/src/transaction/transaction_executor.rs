@@ -151,13 +151,15 @@ impl LimitParameters {
 
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
+    // These parameters do not affect state execution but only affect side effects
+    pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
-    pub max_execution_trace_depth: usize,
+    pub execution_trace: Option<usize>,
 
     pub enabled_modules: EnabledModules,
-
-    // TODO: Add the following to a substate
     pub network_definition: NetworkDefinition,
+    pub costing_parameters: Option<CostingParameters>,
+    pub limit_parameters: Option<LimitParameters>,
 }
 
 impl ExecutionConfig {
@@ -167,9 +169,11 @@ impl ExecutionConfig {
         Self {
             network_definition,
             enabled_modules: EnabledModules::for_notarized_transaction(),
+            enable_kernel_trace: false,
             enable_cost_breakdown: false,
-            max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
-
+            execution_trace: None,
+            costing_parameters: None,
+            limit_parameters: None,
         }
     }
 
@@ -197,6 +201,7 @@ impl ExecutionConfig {
     pub fn for_test_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_test_transaction(),
+            enable_kernel_trace: true,
             enable_cost_breakdown: true,
             ..Self::default(NetworkDefinition::simulator())
         }
@@ -206,6 +211,7 @@ impl ExecutionConfig {
         Self {
             enabled_modules: EnabledModules::for_preview(),
             enable_cost_breakdown: true,
+            execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
             ..Self::default(network_definition)
         }
     }
@@ -214,16 +220,13 @@ impl ExecutionConfig {
         Self {
             enabled_modules: EnabledModules::for_preview_no_auth(),
             enable_cost_breakdown: true,
+            execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
             ..Self::default(network_definition)
         }
     }
 
     pub fn with_kernel_trace(mut self, enabled: bool) -> Self {
-        if enabled {
-            self.enabled_modules.insert(EnabledModules::KERNEL_TRACE);
-        } else {
-            self.enabled_modules.remove(EnabledModules::KERNEL_TRACE);
-        }
+        self.enable_kernel_trace = enabled;
         self
     }
 
@@ -320,16 +323,12 @@ where
     pub fn execute<T: WrappedSystem<V>>(
         &mut self,
         executable: &Executable,
-        costing_parameters: Option<CostingParameters>,
-        limit_parameters: Option<LimitParameters>,
         execution_config: &ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
-        if execution_config
-            .enabled_modules
-            .contains(EnabledModules::KERNEL_TRACE)
+        if execution_config.enable_kernel_trace
         {
             Self::print_executable(&executable);
         }
@@ -341,8 +340,8 @@ where
 
         let boot_store = SubstateBootStore {
             boot_store: self.substate_db,
-            costing_parameters,
-            limit_parameters,
+            costing_parameters: execution_config.costing_parameters.clone(),
+            limit_parameters: execution_config.limit_parameters.clone(),
         };
 
         let system_boot_result = System::init(
@@ -395,9 +394,7 @@ where
                 ) = self.interpret_manifest::<T>(&mut track, system, init, executable);
 
                 #[cfg(not(feature = "alloc"))]
-                if execution_config
-                    .enabled_modules
-                    .contains(EnabledModules::KERNEL_TRACE)
+                if execution_config.enable_kernel_trace
                 {
                     println!("{:-^120}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
@@ -596,9 +593,7 @@ where
 
         // Dump summary
         #[cfg(not(feature = "alloc"))]
-        if execution_config
-            .enabled_modules
-            .contains(EnabledModules::KERNEL_TRACE)
+        if execution_config.enable_kernel_trace
         {
             Self::print_execution_summary(&receipt);
         }
@@ -1305,16 +1300,12 @@ pub fn execute_transaction_with_configuration<
 >(
     substate_db: &S,
     vms: V::InitInput,
-    costing_parameters: Option<CostingParameters>,
-    limit_parameters: Option<LimitParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
     init: T::Init,
 ) -> TransactionReceipt {
     TransactionExecutor::new(substate_db, vms).execute::<T>(
         transaction,
-        costing_parameters,
-        limit_parameters,
         execution_config,
         init,
     )
@@ -1329,8 +1320,6 @@ pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmEx
     execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
         substate_db,
         vm_init,
-        None,
-        None,
         execution_config,
         transaction,
         (),
@@ -1351,8 +1340,6 @@ pub fn execute_and_commit_transaction<
     let receipt = execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
         substate_db,
         vms,
-        None,
-        None,
         execution_config,
         transaction,
         (),

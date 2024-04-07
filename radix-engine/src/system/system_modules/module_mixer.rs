@@ -40,12 +40,10 @@ bitflags! {
         const LIMITS = 0x01 << 1;
         const COSTING = 0x01 << 2;
         const AUTH = 0x01 << 3;
-
-        // Transaction runtime data
-        const TRANSACTION_RUNTIME = 0x01 << 5;
+        const TRANSACTION_RUNTIME = 0x01 << 4;
 
         // Execution trace, for preview only
-        const EXECUTION_TRACE = 0x01 << 6;
+        const EXECUTION_TRACE = 0x01 << 5;
     }
 }
 
@@ -127,6 +125,9 @@ impl SystemModuleMixer {
     pub fn new(
         enabled_modules: EnabledModules,
 
+        // Kernel Trace Module
+        kernel_trace: KernelTraceModule,
+
         // Runtime Module
         network_definition: NetworkDefinition,
         tx_hash: Hash,
@@ -150,7 +151,7 @@ impl SystemModuleMixer {
     ) -> Self {
         Self {
             enabled_modules,
-            kernel_trace: KernelTraceModule {},
+            kernel_trace,
             costing: CostingModule {
                 fee_reserve,
                 fee_table,

@@ -22,7 +22,7 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
-use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
@@ -45,6 +45,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 };
 use radix_transactions::model::{Executable, PreAllocatedAddress};
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
+use crate::system::system_modules::kernel_trace::KernelTraceModule;
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -149,8 +150,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         };
         let callback = C::init(store, init_input)?;
 
+        let mut enabled_modules = execution_config.enabled_modules;
+        if execution_config.enable_kernel_trace {
+            enabled_modules |= EnabledModules::KERNEL_TRACE;
+        }
+        if execution_config.execution_trace.is_some() {
+            enabled_modules |= EnabledModules::EXECUTION_TRACE;
+        }
+
         let mut modules = SystemModuleMixer::new(
-            execution_config.enabled_modules,
+
+
+            enabled_modules,
+
+            KernelTraceModule,
+
             execution_config.network_definition.clone(),
             executable.intent_hash().to_hash(),
             executable.auth_zone_params().clone(),
@@ -163,7 +177,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             executable.payload_size(),
             executable.num_of_signature_validations(),
 
-            ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
+            ExecutionTraceModule::new(execution_config.execution_trace.unwrap_or(MAX_EXECUTION_TRACE_DEPTH)),
         );
 
         modules.init()?;

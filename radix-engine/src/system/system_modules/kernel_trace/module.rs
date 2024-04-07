@@ -15,7 +15,7 @@ use radix_engine_interface::types::SubstateKey;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
-pub struct KernelTraceModule {}
+pub struct KernelTraceModule;
 
 #[macro_export]
 macro_rules! log {

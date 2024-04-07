@@ -13,6 +13,7 @@ use radix_engine::system::system_modules::auth::*;
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
 use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
+use radix_engine::system::system_modules::kernel_trace::KernelTraceModule;
 use radix_engine::track::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::ProtocolUpdates;
@@ -263,6 +264,7 @@ where
                         EnabledModules::LIMITS
                             | EnabledModules::AUTH
                             | EnabledModules::TRANSACTION_RUNTIME,
+                        KernelTraceModule,
                         NetworkDefinition::simulator(),
                         Self::DEFAULT_INTENT_HASH,
                         AuthZoneParams {

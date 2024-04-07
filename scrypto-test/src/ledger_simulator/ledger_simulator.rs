@@ -1300,14 +1300,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
+        let mut config = ExecutionConfig::for_test_transaction();
+        config.costing_parameters = Some(costing_parameters);
         self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            Some(costing_parameters),
-            None,
-            ExecutionConfig::for_test_transaction(),
+            config,
             (),
         )
     }
@@ -1327,8 +1327,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            None,
-            None,
             ExecutionConfig::for_test_transaction(),
             init,
         )
@@ -1378,25 +1376,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> TransactionReceipt {
         self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
             executable,
-            None,
-            None,
             execution_config,
-            (),
-        )
-    }
-
-    pub fn execute_transaction_with_costing_params(
-        &mut self,
-        executable: Executable,
-        costing_parameters: CostingParameters,
-        limit_parameters: LimitParameters,
-        config: ExecutionConfig,
-    ) -> TransactionReceipt {
-        self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
-            executable,
-            Some(costing_parameters),
-            Some(limit_parameters),
-            config,
             (),
         )
     }
@@ -1404,8 +1384,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction_with_system<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
         &'a mut self,
         executable: Executable,
-        costing_parameters: Option<CostingParameters>,
-        limit_parameters: Option<LimitParameters>,
         mut execution_config: ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
@@ -1428,8 +1406,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let transaction_receipt = execute_transaction_with_configuration::<_, _, T>(
             &mut self.database,
             vm_init,
-            costing_parameters,
-            limit_parameters,
             &execution_config,
             &executable,
             init,
