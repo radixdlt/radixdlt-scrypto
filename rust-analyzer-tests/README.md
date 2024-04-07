@@ -1,3 +1,3 @@
 # `rust-analyzer-tests`
 
-A crate with integration tests between Scrypto and Rust Analyzer.
+A crate with integration tests and benchmarks for Scrypto and Rust Analyzer.

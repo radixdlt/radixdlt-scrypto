@@ -68,6 +68,7 @@ scrypto = { version = "1.2.0-dev", path = "./scrypto", default-features = false 
 scrypto-compiler = { version = "1.2.0-dev", path = "./scrypto-compiler", default-features = false }
 scrypto-derive = { version = "1.2.0-dev", path = "./scrypto-derive", default-features = false }
 scrypto-test = { version = "1.2.0-dev", path = "./scrypto-test", default-features = false }
+radix-clis-common = { version = "1.2.0-dev", path = "./radix-clis-common", default-features = false }
 
 arbitrary = { version = "1.3.0", features = ["derive"] }
 automod = { version = "1.0.13" }

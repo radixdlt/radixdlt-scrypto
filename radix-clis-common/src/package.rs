@@ -1,12 +1,12 @@
 use std::path::*;
 
 pub fn new_package(
-    package_name: String,
+    package_name: &str,
     path: Option<PathBuf>,
     local: bool,
 ) -> Result<(), PackageError> {
-    let wasm_name = package_name.replace("-", "_");
-    let path = path.clone().unwrap_or(PathBuf::from(&package_name));
+    let wasm_name = package_name.replace('-', "_");
+    let path = path.clone().unwrap_or(PathBuf::from(package_name));
     let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let (
         sbor,
@@ -54,7 +54,7 @@ pub fn new_package(
         std::fs::write(
             child_of(&path, "Cargo.toml"),
             include_str!("../assets/template/Cargo.toml_template")
-                .replace("${package_name}", &package_name)
+                .replace("${package_name}", package_name)
                 .replace("${sbor}", &sbor)
                 .replace("${scrypto}", &scrypto)
                 .replace("${transaction}", &transaction)
