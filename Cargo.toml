@@ -42,6 +42,7 @@ members = [
     "scrypto-test",
     "scrypto",
     "rust-analyzer-tests",
+    "radix-clis-common",
 ]
 
 [workspace.dependencies]

@@ -23,6 +23,7 @@ radix-substate-store-queries = { version = "1.2.0-dev", path = "../radix-substat
 radix-transactions = { version = "1.2.0-dev", path = "../radix-transactions" }
 sbor = { version = "1.2.0-dev", path = "../sbor" }
 scrypto-compiler = { version = "1.2.0-dev", path = "../scrypto-compiler" }
+radix-clis-common = { version = "1.2.0-dev", path = "../radix-clis-common" }
 
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }
