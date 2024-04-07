@@ -1,0 +1,20 @@
+[package]
+name = "rust-analyzer-tests"
+version = "1.2.0-dev"
+edition = "2021"
+description = "A crate with integration tests between Scrypto and Rust Analyzer."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+serde_json = { workspace = true }
+regex = { workspace = true }
+
+# The following must all match the versions used by Rust Analyzer itself. Otherwise you might run
+# into type errors. 
+rust-analyzer = { git = "https://github.com/rust-lang/rust-analyzer", tag = "2024-04-01" }
+paths = { git = "https://github.com/rust-lang/rust-analyzer", tag = "2024-04-01" }
+lsp-server = { version = "0.7.6" }
+lsp-types = { version = "=0.95.0", features = ["proposed"] }
+crossbeam-channel = { version = "0.5.5" }
