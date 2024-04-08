@@ -31,7 +31,7 @@ pub fn new_package(
 
         std::fs::write(
             child_of(&path, "Cargo.toml"),
-            new_cargo_manifest(local_dependencies_path),
+            new_cargo_manifest(local_dependencies_path, package_name),
         )
         .map_err(PackageError::IOError)?;
 
@@ -69,17 +69,21 @@ pub enum PackageError {
     IOError(std::io::Error),
 }
 
-pub fn new_cargo_manifest(use_local_dependencies_at: Option<PathBuf>) -> String {
+pub fn new_cargo_manifest(
+    use_local_dependencies_at: Option<PathBuf>,
+    package_name: &str,
+) -> String {
     let pattern = Regex::new(r"\$\{dep:([a-zA-Z0-9\-_]*)\}").unwrap();
-    let template_file = include_str!("../assets/template/Cargo.toml_template");
+    let template_file = include_str!("../assets/template/Cargo.toml_template")
+        .replace("${package_name}", package_name);
     let manifest_file = if let Some(local_dependencies_path) = use_local_dependencies_at {
         pattern.replace_all(
-            template_file,
+            &template_file,
             format!("{{ path = \"{}/$1\" }}", local_dependencies_path.display()),
         )
     } else {
         pattern.replace_all(
-            template_file,
+            &template_file,
             format!(
                 "{{ git = \"https://github.com/radixdlt/$1\", tag = \"v{}\" }}",
                 env!("CARGO_PKG_VERSION")
