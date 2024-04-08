@@ -3,6 +3,15 @@ use radix_transactions::prelude::*;
 
 use crate::internal_prelude::ScenarioCore;
 
+/// A virtual account as well as it's controlling private key.
+///
+/// # Deprecated
+///
+/// Any scenario that is run after genesis can not use virtual accounts as users could find private
+/// key we're using (these are public private key anyway and we're not trying to hide them) and
+/// change the account's settings or perhaps even the access rule of the account leading scenarios
+/// to fail. An allocated account **MUST** be used for any scenario that runs after genesis.
+#[deprecated = "Use an allocated account instead"]
 pub struct VirtualAccount {
     pub key: PrivateKey,
     pub public_key: PublicKey,
@@ -26,9 +35,15 @@ impl VirtualAccount {
     }
 }
 
-impl Into<GlobalAddress> for &VirtualAccount {
-    fn into(self) -> GlobalAddress {
-        self.address.into()
+pub enum AccountIdentifier {
+    One,
+    Two,
+    Three,
+}
+
+impl From<&VirtualAccount> for GlobalAddress {
+    fn from(val: &VirtualAccount) -> Self {
+        val.address.into()
     }
 }
 
