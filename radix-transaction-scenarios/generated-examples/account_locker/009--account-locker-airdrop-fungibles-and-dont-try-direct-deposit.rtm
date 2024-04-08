@@ -1,0 +1,36 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("account_sim1cy6du2vz7znrxkfvmkwek4watu9a3ufu68duqj25krvr0fjcnpulnx")
+    "create_proof_of_amount"
+    Address("resource_sim1thwm4zzvzxlvltvwq3feyt6cdem9jt53sdzq6jkmd6s2a3dvn687l3")
+    Decimal("1")
+;
+MINT_FUNGIBLE
+    Address("resource_sim1thr650qmy79eujy0uvtwepy2uayv29fdneapfgftys6h70pkjrp9fs")
+    Decimal("300")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1thr650qmy79eujy0uvtwepy2uayv29fdneapfgftys6h70pkjrp9fs")
+    Bucket("bucket")
+;
+CALL_METHOD
+    Address("locker_sim1drmmecw7xucv9csfcf3q277n02q8z66df3aynwf0he8apn7xpwgpll")
+    "airdrop"
+    Map<Address, Enum>(
+        Address("account_sim1cx87vk6n7ew693plhgl5eqddvhtl67fleu62yxnfu2xve8a2v7l5lu") => Enum<0u8>(
+            Decimal("100")
+        ),
+        Address("account_sim1cyrfakt4th6h69vwxxjh7w5ahxfrssyhj397645d82un4g5dthgza7") => Enum<0u8>(
+            Decimal("100")
+        ),
+        Address("account_sim1cxh6dnk324293p3yas2r597ycpckth57gftjyrm23sfgmvmldn3ghk") => Enum<0u8>(
+            Decimal("100")
+        )
+    )
+    Bucket("bucket")
+    false
+;

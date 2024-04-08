@@ -1,0 +1,30 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("account_sim1cy6du2vz7znrxkfvmkwek4watu9a3ufu68duqj25krvr0fjcnpulnx")
+    "create_proof_of_amount"
+    Address("resource_sim1thwm4zzvzxlvltvwq3feyt6cdem9jt53sdzq6jkmd6s2a3dvn687l3")
+    Decimal("1")
+;
+MINT_NON_FUNGIBLE
+    Address("resource_sim1ntkuflhwlnmk6pyw6pqx43w6rmd04dpzkhc6yek5jz3hc7gvtwpdse")
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("#3#") => Tuple(
+            Tuple()
+        )
+    )
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1ntkuflhwlnmk6pyw6pqx43w6rmd04dpzkhc6yek5jz3hc7gvtwpdse")
+    Bucket("bucket")
+;
+CALL_METHOD
+    Address("locker_sim1drmmecw7xucv9csfcf3q277n02q8z66df3aynwf0he8apn7xpwgpll")
+    "store"
+    Address("account_sim1cyrfakt4th6h69vwxxjh7w5ahxfrssyhj397645d82un4g5dthgza7")
+    Bucket("bucket")
+    false
+;

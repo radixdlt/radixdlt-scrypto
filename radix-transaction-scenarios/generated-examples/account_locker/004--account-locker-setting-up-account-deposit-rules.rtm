@@ -1,0 +1,17 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("account_sim1cx87vk6n7ew693plhgl5eqddvhtl67fleu62yxnfu2xve8a2v7l5lu")
+    "set_resource_preference"
+    Address("resource_sim1thr650qmy79eujy0uvtwepy2uayv29fdneapfgftys6h70pkjrp9fs")
+    Enum<1u8>()
+;
+CALL_METHOD
+    Address("account_sim1cxh6dnk324293p3yas2r597ycpckth57gftjyrm23sfgmvmldn3ghk")
+    "set_resource_preference"
+    Address("resource_sim1ntkuflhwlnmk6pyw6pqx43w6rmd04dpzkhc6yek5jz3hc7gvtwpdse")
+    Enum<1u8>()
+;

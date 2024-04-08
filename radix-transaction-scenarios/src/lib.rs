@@ -26,6 +26,7 @@ pub mod accounts;
 pub mod runners;
 pub mod scenario;
 pub mod scenarios;
+pub mod utils;
 
 pub mod prelude {}
 
