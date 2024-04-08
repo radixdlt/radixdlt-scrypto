@@ -7,7 +7,7 @@ use scrypto_test::prelude::*;
 fn substate_store_matches_state_tree_after_each_scenario() {
     let db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
     DefaultTransactionScenarioExecutor::new(db)
-        .on_transaction_execution(|_, _, _, db| {
+        .on_transaction_executed(|_, _, _, db| {
             let hashes_from_tree = db.list_substate_hashes();
             assert_eq!(
                 hashes_from_tree.keys().cloned().collect::<HashSet<_>>(),

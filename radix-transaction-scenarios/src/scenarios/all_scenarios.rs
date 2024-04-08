@@ -125,7 +125,7 @@ where
 
     /* Callbacks */
     /// A callback that is called when a scenario transaction is executed.
-    on_transaction_execution: F1,
+    on_transaction_executed: F1,
     /// A callback that is called when a new scenario is started.
     on_scenario_start: F2,
 }
@@ -159,7 +159,7 @@ where
             nonce_handling: NonceHandling::Increment(1),
             network_definition: NetworkDefinition::simulator(),
             /* Callbacks */
-            on_transaction_execution: |_, _, _, _| {},
+            on_transaction_executed: |_, _, _, _| {},
             on_scenario_start: |_| {},
         }
     }
@@ -181,7 +181,7 @@ where
             nonce_handling: self.nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
-            on_transaction_execution: self.on_transaction_execution,
+            on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
         }
     }
@@ -203,7 +203,7 @@ where
             nonce_handling: self.nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
-            on_transaction_execution: self.on_transaction_execution,
+            on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
         }
     }
@@ -244,7 +244,7 @@ where
     }
 
     /// Sets the callback to call after executing a scenario transaction.
-    pub fn on_transaction_execution<
+    pub fn on_transaction_executed<
         NF1: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
     >(
         self,
@@ -262,7 +262,7 @@ where
             nonce_handling: self.nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
-            on_transaction_execution: callback,
+            on_transaction_executed: callback,
             on_scenario_start: self.on_scenario_start,
         }
     }
@@ -284,7 +284,7 @@ where
             nonce_handling: self.nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
-            on_transaction_execution: self.on_transaction_execution,
+            on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: callback,
         }
     }
@@ -348,7 +348,7 @@ where
                     match next {
                         NextAction::Transaction(next) => {
                             let receipt = self.execute_transaction(&next.raw_transaction)?;
-                            (self.on_transaction_execution)(
+                            (self.on_transaction_executed)(
                                 &metadata,
                                 &next,
                                 &receipt,

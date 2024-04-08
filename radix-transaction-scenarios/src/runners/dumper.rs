@@ -39,7 +39,7 @@ pub fn run_all_in_memory_and_dump_examples(
                 std::fs::remove_dir_all(&sub_folder).unwrap();
             }
         })
-        .on_transaction_execution(|scenario_metadata, transaction, receipt, _| {
+        .on_transaction_executed(|scenario_metadata, transaction, receipt, _| {
             transaction.dump_manifest(
                 &Some(root_path.join(scenario_metadata.logical_name)),
                 &NetworkDefinition::simulator(),
