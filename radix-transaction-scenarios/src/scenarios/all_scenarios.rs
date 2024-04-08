@@ -289,7 +289,7 @@ where
         }
     }
 
-    pub fn execute(mut self) -> Result<CompletedExecutionReceipt<D>, ScenarioExecutorError> {
+    pub fn execute(mut self) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
         // Bootstrapping if needed
         if self.bootstrap {
             Bootstrapper::new(
@@ -370,7 +370,7 @@ where
             }
         }
 
-        Ok(CompletedExecutionReceipt {
+        Ok(ScenarioExecutionReceipt {
             database: self.database,
         })
     }
@@ -379,8 +379,9 @@ where
         &mut self,
         transaction: &RawNotarizedTransaction,
     ) -> Result<TransactionReceiptV1, ScenarioExecutorError> {
-        let network = NetworkDefinition::simulator();
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(
+            self.network_definition.id,
+        ));
         let validated = validator
             .validate_from_raw(transaction)
             .map_err(ScenarioExecutorError::TransactionValidationError)?;
@@ -417,6 +418,6 @@ pub enum NonceHandling {
     StartAtNextAvailable,
 }
 
-pub struct CompletedExecutionReceipt<D: SubstateDatabase + CommittableSubstateDatabase> {
+pub struct ScenarioExecutionReceipt<D: SubstateDatabase + CommittableSubstateDatabase> {
     pub database: D,
 }

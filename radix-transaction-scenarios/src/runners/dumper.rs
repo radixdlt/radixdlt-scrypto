@@ -30,7 +30,7 @@ pub fn run_all_in_memory_and_dump_examples(
     let mut event_hasher = HashAccumulator::new();
     let mut substate_db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
 
-    let CompletedExecutionReceipt {
+    let ScenarioExecutionReceipt {
         database: mut substate_db,
     } = DefaultTransactionScenarioExecutor::new(substate_db)
         .on_scenario_start(|scenario_metadata| {
