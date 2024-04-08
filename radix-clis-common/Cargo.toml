@@ -9,7 +9,6 @@ repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 regex = { workspace = true }
-include_dir = { workspace = true }
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]
