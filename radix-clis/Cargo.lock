@@ -1129,6 +1129,9 @@ dependencies = [
 [[package]]
 name = "radix-clis-common"
 version = "1.2.0-dev"
+dependencies = [
+ "regex",
+]
 
 [[package]]
 name = "radix-common"

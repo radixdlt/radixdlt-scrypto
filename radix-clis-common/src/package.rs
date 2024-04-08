@@ -70,18 +70,18 @@ pub enum PackageError {
 }
 
 pub fn new_cargo_manifest(use_local_dependencies_at: Option<PathBuf>) -> String {
-    let pattern = Regex::new(r"\$\{dep:([\w\d\-_]*)\}").unwrap();
+    let pattern = Regex::new(r"\$\{dep:([a-zA-Z0-9\-_]*)\}").unwrap();
     let template_file = include_str!("../assets/template/Cargo.toml_template");
     let manifest_file = if let Some(local_dependencies_path) = use_local_dependencies_at {
-        pattern.replace(
+        pattern.replace_all(
             template_file,
             format!("{{ path = \"{}/$1\" }}", local_dependencies_path.display()),
         )
     } else {
-        pattern.replace(
+        pattern.replace_all(
             template_file,
             format!(
-                "{{ git = \"https://github.com/radixdlt/$1\", tag = \"{}\" }}",
+                "{{ git = \"https://github.com/radixdlt/$1\", tag = \"v{}\" }}",
                 env!("CARGO_PKG_VERSION")
             ),
         )
