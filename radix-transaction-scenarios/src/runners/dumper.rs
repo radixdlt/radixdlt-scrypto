@@ -58,7 +58,9 @@ pub fn run_all_in_memory_and_dump_examples(
                 TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
             }
         })
-        .nonce_handling(NonceHandling::Increment(1000))
+        .nonce_handling(ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
+            1000,
+        ))
         .execute()
         .expect("Must succeed");
 

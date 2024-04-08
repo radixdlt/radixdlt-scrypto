@@ -119,7 +119,7 @@ where
     /// The first nonce to use in the execution of the scenarios.
     starting_nonce: u32,
     /// How the executor should handle nonces and how it should get the next nonce.
-    nonce_handling: NonceHandling,
+    nonce_handling: ScenarioStartNonceHandling,
     /// The network definition to use in the execution of the scenarios.
     network_definition: NetworkDefinition,
 
@@ -156,7 +156,7 @@ where
             scenarios_to_execute: ScenarioRequirements::all().iter().copied().collect(),
             bootstrap: true,
             starting_nonce: 0,
-            nonce_handling: NonceHandling::Increment(1),
+            nonce_handling: ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(1),
             network_definition: NetworkDefinition::simulator(),
             /* Callbacks */
             on_transaction_executed: |_, _, _, _| {},
@@ -232,7 +232,7 @@ where
     }
 
     /// Defines how the executor should handle nonces.
-    pub fn nonce_handling(mut self, nonce_handling: NonceHandling) -> Self {
+    pub fn nonce_handling(mut self, nonce_handling: ScenarioStartNonceHandling) -> Self {
         self.nonce_handling = nonce_handling;
         self
     }
@@ -358,8 +358,10 @@ where
                         }
                         NextAction::Completed(end_state) => {
                             match self.nonce_handling {
-                                NonceHandling::Increment(increment) => next_nonce += increment,
-                                NonceHandling::StartAtNextAvailable => {
+                                ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
+                                    increment,
+                                ) => next_nonce += increment,
+                                ScenarioStartNonceHandling::PreviousScenarioEndNoncePlusOne => {
                                     next_nonce = end_state.next_unused_nonce
                                 }
                             }
@@ -412,9 +414,9 @@ pub enum ScenarioExecutorError {
 }
 
 #[derive(Clone, Debug)]
-pub enum NonceHandling {
-    Increment(u32),
-    StartAtNextAvailable,
+pub enum ScenarioStartNonceHandling {
+    PreviousScenarioStartNoncePlus(u32),
+    PreviousScenarioEndNoncePlusOne,
 }
 
 pub struct ScenarioExecutionReceipt<D: SubstateDatabase + CommittableSubstateDatabase> {
