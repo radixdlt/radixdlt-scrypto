@@ -1,5 +1,5 @@
-use sbor::*;
 use sbor::basic_well_known_types::*;
+use sbor::*;
 use scrypto::prelude::*;
 use scrypto::radix_blueprint_schema_init::*;
 

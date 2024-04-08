@@ -1,18 +1,18 @@
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 
-use radix_common::*;
 use radix_common::crypto::*;
 use radix_common::data::manifest::*;
 use radix_common::data::scrypto::model::*;
 use radix_common::math::*;
 use radix_common::prelude::*;
+use radix_common::*;
 use radix_engine::vm::NoExtension;
-use radix_engine_interface::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
+use radix_engine_interface::*;
 use radix_engine_tests::common::*;
 #[cfg(not(feature = "rocksdb"))]
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;

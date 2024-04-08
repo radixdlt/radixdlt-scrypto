@@ -1,12 +1,12 @@
 use radiswap::radiswap_test::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::substates::two_resource_pool::*;
 use radix_engine::errors::*;
+use radix_engine_interface::prelude::*;
+use radix_native_sdk::resource::*;
 use scrypto_test::environment::*;
 use scrypto_test::sdk::*;
-use radix_common::prelude::*;
-use radix_engine_interface::prelude::*;
 use scrypto_test::*;
-use radix_native_sdk::resource::*;
 
 #[test]
 fn simple_radiswap_test() -> Result<(), RuntimeError> {
