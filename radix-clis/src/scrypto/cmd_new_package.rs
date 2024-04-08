@@ -22,9 +22,3 @@ impl NewPackage {
             .map_err(|error| format!("{error:#?}"))
     }
 }
-
-fn child_of(path: &PathBuf, name: &str) -> PathBuf {
-    let mut p = path.clone();
-    p.push(name);
-    p
-}

@@ -7,4 +7,7 @@ readme = "README.md"
 license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
-[dependencies]
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+[lib]
+doctest = false
+bench = false
