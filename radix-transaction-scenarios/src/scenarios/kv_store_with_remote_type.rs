@@ -1,4 +1,5 @@
 use crate::internal_prelude::*;
+use radix_engine::updates::ProtocolUpdate;
 use radix_engine_interface::blueprints::package::{PackageDefinition, PACKAGE_BLUEPRINT};
 use radix_engine_interface::*;
 
@@ -10,6 +11,7 @@ pub struct KVStoreScenarioCreator;
 impl ScenarioCreator for KVStoreScenarioCreator {
     type Config = ();
     type State = KVStoreScenarioState;
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,

@@ -1,4 +1,5 @@
 use crate::internal_prelude::*;
+use radix_engine::updates::ProtocolUpdate;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
@@ -28,8 +29,8 @@ pub struct FungibleResourceScenarioCreator;
 
 impl ScenarioCreator for FungibleResourceScenarioCreator {
     type Config = FungibleResourceScenarioConfig;
-
     type State = FungibleResourceScenarioState;
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,

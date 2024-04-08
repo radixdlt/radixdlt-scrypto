@@ -1,3 +1,5 @@
+use radix_engine::updates::ProtocolUpdate;
+
 use crate::internal_prelude::*;
 
 pub struct TransferXrdConfig {
@@ -21,6 +23,7 @@ pub enum TransferXrdScenarioCreator {}
 impl ScenarioCreator for TransferXrdScenarioCreator {
     type Config = TransferXrdConfig;
     type State = ();
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,

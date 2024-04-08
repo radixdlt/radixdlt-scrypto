@@ -119,7 +119,7 @@ where
     /// The first nonce to use in the execution of the scenarios.
     starting_nonce: u32,
     /// How the executor should handle nonces and how it should get the next nonce.
-    nonce_handling: ScenarioStartNonceHandling,
+    next_scenario_nonce_handling: ScenarioStartNonceHandling,
     /// The network definition to use in the execution of the scenarios.
     network_definition: NetworkDefinition,
 
@@ -159,7 +159,8 @@ where
             scenarios_to_execute: ScenarioRequirements::all().iter().copied().collect(),
             bootstrap: true,
             starting_nonce: 0,
-            nonce_handling: ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(1),
+            next_scenario_nonce_handling:
+                ScenarioStartNonceHandling::PreviousScenarioEndNoncePlusOne,
             network_definition,
             /* Callbacks */
             on_transaction_executed: |_, _, _, _| {},
@@ -181,7 +182,7 @@ where
             scenarios_to_execute: self.scenarios_to_execute,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
-            nonce_handling: self.nonce_handling,
+            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
             on_transaction_executed: self.on_transaction_executed,
@@ -203,7 +204,7 @@ where
             scenarios_to_execute: self.scenarios_to_execute,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
-            nonce_handling: self.nonce_handling,
+            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
             on_transaction_executed: self.on_transaction_executed,
@@ -236,7 +237,7 @@ where
 
     /// Defines how the executor should handle nonces.
     pub fn nonce_handling(mut self, nonce_handling: ScenarioStartNonceHandling) -> Self {
-        self.nonce_handling = nonce_handling;
+        self.next_scenario_nonce_handling = nonce_handling;
         self
     }
 
@@ -256,7 +257,7 @@ where
             scenarios_to_execute: self.scenarios_to_execute,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
-            nonce_handling: self.nonce_handling,
+            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
             on_transaction_executed: callback,
@@ -278,7 +279,7 @@ where
             scenarios_to_execute: self.scenarios_to_execute,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
-            nonce_handling: self.nonce_handling,
+            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
             on_transaction_executed: self.on_transaction_executed,
@@ -354,7 +355,7 @@ where
                             previous = Some(receipt);
                         }
                         NextAction::Completed(end_state) => {
-                            match self.nonce_handling {
+                            match self.next_scenario_nonce_handling {
                                 ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
                                     increment,
                                 ) => next_nonce += increment,

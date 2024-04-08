@@ -1,4 +1,5 @@
 use crate::internal_prelude::*;
+use radix_engine::updates::ProtocolUpdate;
 use radix_engine_interface::blueprints::package::{PackageDefinition, PACKAGE_BLUEPRINT};
 
 #[derive(Default)]
@@ -14,6 +15,7 @@ pub enum RoyaltiesScenarioCreator {}
 impl ScenarioCreator for RoyaltiesScenarioCreator {
     type Config = ();
     type State = RoyaltiesState;
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,

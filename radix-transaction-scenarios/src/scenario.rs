@@ -1,11 +1,12 @@
-use radix_engine::errors::RuntimeError;
-use radix_transactions::errors::TransactionValidationError;
-use radix_transactions::manifest::decompiler::ManifestObjectNames;
-use radix_transactions::validation::{NotarizedTransactionValidator, TransactionValidator};
+use radix_engine::errors::*;
+use radix_engine::updates::*;
+use radix_transactions::errors::*;
+use radix_transactions::manifest::decompiler::*;
+use radix_transactions::validation::*;
 
 use crate::internal_prelude::*;
 
-use crate::accounts::ed25519_account_1;
+use crate::accounts::*;
 
 #[derive(Clone, Debug)]
 pub struct NextTransaction {
@@ -375,6 +376,15 @@ pub struct ScenarioMetadata {
 pub trait ScenarioCreator: Sized {
     type Config: Default;
     type State: Default;
+
+    /// The protocol requirement of the scenario. If set to [`None`] then the scenario does not have
+    /// any requirements and can be run against all protocol versions including genesis and all that
+    /// comes after. If [`Some`] protocol update then this is the protocol update required for this
+    /// scenario to be executed, meaning that the scenario could be executed on this protocol update
+    /// and everything that comes after. This is a property of the [`ScenarioCreator`] rather than
+    /// the individual instance since the creator can be thought of the as "class" and the instance
+    /// is the object.
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate>;
 
     fn create(core: ScenarioCore) -> Box<dyn ScenarioInstance> {
         Self::create_with_config_and_state(core, Default::default(), Default::default())

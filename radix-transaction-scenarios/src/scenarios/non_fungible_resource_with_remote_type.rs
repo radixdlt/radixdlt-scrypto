@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
+use radix_engine::updates::ProtocolUpdate;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
@@ -29,8 +30,8 @@ pub struct NonFungibleResourceWithRemoteTypeScenarioCreator;
 
 impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
     type Config = NonFungibleResourceWithRemoteTypeScenarioConfig;
-
     type State = NonFungibleResourceWithRemoteTypeScenarioState;
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,

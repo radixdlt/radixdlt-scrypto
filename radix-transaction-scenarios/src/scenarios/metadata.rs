@@ -1,3 +1,4 @@
+use radix_engine::updates::ProtocolUpdate;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::metadata::{
     MetadataValue, SingleMetadataVal, UncheckedOrigin, UncheckedUrl,
@@ -41,6 +42,7 @@ pub struct MetadataScenarioState {
 impl ScenarioCreator for MetadataScenario {
     type Config = MetadataScenarioConfig;
     type State = MetadataScenarioState;
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,

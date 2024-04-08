@@ -1,3 +1,4 @@
+use radix_engine::updates::ProtocolUpdate;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
@@ -46,6 +47,7 @@ pub struct RadiswapScenarioCreator;
 impl ScenarioCreator for RadiswapScenarioCreator {
     type Config = RadiswapScenarioConfig;
     type State = RadiswapScenarioState;
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,

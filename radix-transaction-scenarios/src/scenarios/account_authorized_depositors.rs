@@ -1,4 +1,5 @@
 use crate::internal_prelude::*;
+use radix_engine::updates::ProtocolUpdate;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::*;
 
@@ -25,8 +26,8 @@ pub struct AccountAuthorizedDepositorsScenarioCreator;
 
 impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
     type Config = AccountAuthorizedDepositorsScenarioConfig;
-
     type State = AccountAuthorizedDepositorsScenarioState;
+    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
