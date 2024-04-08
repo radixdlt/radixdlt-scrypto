@@ -10,17 +10,7 @@ ALLOCATE_GLOBAL_ADDRESS
     NamedAddress("maya_router_package")
 ;
 PUBLISH_PACKAGE_ADVANCED
-    Enum<1u8>(
-        Enum<2u8>(
-            Enum<0u8>(
-                Enum<0u8>(
-                    Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7]")
-                    )
-                )
-            )
-        )
-    )
+    Enum<0u8>()
     Tuple(
         Map<String, Tuple>(
             "MayaRouter" => Tuple(
@@ -38,24 +28,13 @@ PUBLISH_PACKAGE_ADVANCED
                                         Enum<0u8>(
                                             132u8
                                         ),
-                                        Enum<1u8>(
-                                            1u64
+                                        Enum<0u8>(
+                                            170u8
                                         )
-                                    )
-                                ),
-                                Enum<16u8>(
-                                    Enum<0u8>(
-                                        133u8
-                                    ),
-                                    Enum<0u8>(
-                                        167u8
                                     )
                                 ),
                                 Enum<14u8>(
                                     Array<Enum>(
-                                        Enum<0u8>(
-                                            195u8
-                                        ),
                                         Enum<0u8>(
                                             224u8
                                         ),
@@ -173,17 +152,12 @@ PUBLISH_PACKAGE_ADVANCED
                                     )
                                 ),
                                 Tuple(
-                                    Enum<0u8>(),
-                                    Enum<0u8>()
-                                ),
-                                Tuple(
                                     Enum<1u8>(
                                         "MayaRouter_instantiate_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
                                             Array<String>(
-                                                "owner_badge",
                                                 "admin_rule",
                                                 "admin"
                                             )
@@ -288,7 +262,6 @@ PUBLISH_PACKAGE_ADVANCED
                             Array<Enum>(
                                 Enum<0u8>(),
                                 Enum<0u8>(),
-                                Enum<0u8>(),
                                 Enum<14u8>(
                                     Enum<0u8>(
                                         Enum<4u8>(
@@ -323,17 +296,17 @@ PUBLISH_PACKAGE_ADVANCED
                     Map<String, Enum>(
                         "MayaRouterDepositEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                7u64
+                                6u64
                             )
                         ),
                         "MayaRouterTransferOutEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                8u64
+                                7u64
                             )
                         ),
                         "MayaRouterUpdateAdminEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                9u64
+                                8u64
                             )
                         )
                     ),
@@ -344,12 +317,12 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<0u8>(),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        2u64
+                                        1u64
                                     )
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        3u64
+                                        2u64
                                     )
                                 ),
                                 "MayaRouter_instantiate"
@@ -365,7 +338,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        4u64
+                                        3u64
                                     )
                                 ),
                                 Enum<0u8>(
@@ -386,7 +359,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        5u64
+                                        4u64
                                     )
                                 ),
                                 Enum<0u8>(
@@ -407,7 +380,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        6u64
+                                        5u64
                                     )
                                 ),
                                 Enum<0u8>(
@@ -454,7 +427,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("ce38b4f1c41b259b1f7965b4c97fa6c0956c4a8e5b739aa9a0ac2c11bf4885d9")
+    Blob("adc91fa11c854e4fba04f47d0ebf80f5734a274d22a2df552419350c028425f7")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(
@@ -492,7 +465,6 @@ CALL_FUNCTION
     NamedAddress("maya_router_package")
     "MayaRouter"
     "instantiate"
-    NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[c086d9090183383b913b89a4928c781fcdd1426bf9be67e4a2ca61a4e7]")
     Enum<2u8>(
         Enum<0u8>(
             Enum<0u8>(

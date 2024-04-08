@@ -137,11 +137,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                         "../../assets/maya_router.rpd"
                     ))
                     .unwrap();
-                    let owner_badge = state.owner_badge.get()?;
-                    let owner_role = OwnerRole::Fixed(rule!(require(owner_badge.clone())));
-
                     let admin_badge = state.admin_1_badge.get()?;
-
                     let admin_rule = rule!(require(admin_badge));
 
                     core.next_transaction_with_faucet_lock_fee_fallible(
@@ -163,14 +159,13 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     "description" => "MayaRouter package stores assets swappable with assets from other networks".to_owned(), locked;
                                     "tags" => ["bridge", "cross-chain"], locked;
                                 },
-                                owner_role,
+                                OwnerRole::None,
                             )
                             .call_function(
                                 lookup.named_address("maya_router_package"),
                                 "MayaRouter",
                                 "instantiate",
                                 manifest_args!(
-                                    owner_badge,
                                     admin_rule,
                                     config.admin_1_account.address,
                                 ),

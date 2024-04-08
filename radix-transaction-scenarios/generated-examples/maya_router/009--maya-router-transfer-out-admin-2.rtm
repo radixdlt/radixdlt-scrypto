@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_METHOD
-    Address("component_sim1cryernxedwn6jxmuqa3tfklfqfp4zjw05mxvgznaycsggzp85g2xtj")
+    Address("component_sim1czmmmyckwfd3xudzhnv5ht266phjn6rwlgx2z75m9c7r8mmpuzavs7")
     "transfer_out"
     Address("account_sim12yqqvfw7jnsgqat6jxzkezljclhdutrlgf9x8rq2a4sh8x3vn55tsa")
     Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
