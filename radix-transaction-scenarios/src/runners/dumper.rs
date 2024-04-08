@@ -1,6 +1,6 @@
 use crate::{internal_prelude::*, scenarios::get_builder_for_every_scenario};
 use radix_engine::system::system_callback_api::SystemCallbackObject;
-use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, Vm};
+use radix_engine::vm::{DefaultNativeVm, NativeVm, NativeVmExtension, NoExtension, Vm, VmInit};
 use radix_engine::{
     system::bootstrap::Bootstrapper,
     vm::{
@@ -27,15 +27,19 @@ pub fn run_all_in_memory_and_dump_examples(
     let mut event_hasher = HashAccumulator::new();
     let mut substate_db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm {
+    let vm_init = VmInit {
         scrypto_vm: &scrypto_vm,
-        native_vm,
+        native_vm_extension: NoExtension,
     };
 
-    let receipts = Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false)
-        .bootstrap_test_default()
-        .unwrap();
+    let receipts = Bootstrapper::new(
+        NetworkDefinition::simulator(),
+        &mut substate_db,
+        vm_init,
+        false,
+    )
+    .bootstrap_test_default()
+    .unwrap();
     let epoch = receipts
         .wrap_up_receipt
         .expect_commit_success()
@@ -99,38 +103,33 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     F: FnMut(&TransactionIntentHash, &TransactionReceipt),
 {
-    let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
     run_scenario(
         context,
         &validator,
         substate_db,
-        vm,
-        &costing_parameters,
+        vm_init,
         &execution_config,
         scenario,
         receipt_handler,
     )
 }
 
-pub fn run_scenario<S, V, F>(
+pub fn run_scenario<'s, S, F>(
     context: &RunnerContext,
     validator: &NotarizedTransactionValidator,
     substate_db: &mut S,
-    vm: V,
-    costing_parameters: &CostingParameters,
+    vms: VmInit<'s, DefaultWasmEngine, NoExtension>,
     execution_config: &ExecutionConfig,
     scenario: &mut Box<dyn ScenarioInstance>,
     mut receipt_handler: F,
 ) -> Result<EndState, FullScenarioError>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    V: SystemCallbackObject + Clone,
     F: FnMut(&TransactionIntentHash, &TransactionReceipt),
 {
     let mut previous = None;
@@ -147,8 +146,7 @@ where
                 next.dump_manifest(&context.dump_manifest_root, &context.network);
                 let receipt = execute_and_commit_transaction(
                     substate_db,
-                    vm.clone(),
-                    costing_parameters,
+                    vms.clone(),
                     execution_config,
                     &transaction.get_executable(),
                 );

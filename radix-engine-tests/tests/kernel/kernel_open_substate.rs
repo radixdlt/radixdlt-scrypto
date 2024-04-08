@@ -5,13 +5,13 @@ use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::BootLoader;
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system_callback::{SystemConfig, SystemLockData};
+use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmInit, VmVersion};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -35,21 +35,22 @@ pub fn test_open_substate_of_invisible_package_address() {
     let mut database = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
-    let vm = Vm {
+    let vm_init = VmInit {
         scrypto_vm: &scrypto_vm,
-        native_vm: native_vm.clone(),
+        native_vm_extension: NoExtension,
     };
-    Bootstrapper::new(NetworkDefinition::simulator(), &mut database, vm, false);
+    Bootstrapper::new(NetworkDefinition::simulator(), &mut database, vm_init, false);
 
     // Create kernel
     let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
-    let mut system = SystemConfig {
+    let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
-        callback_obj: Vm {
+        callback: Vm {
             scrypto_vm: &scrypto_vm,
-            native_vm: native_vm,
+            native_vm,
+            vm_version: VmVersion::latest(),
         },
         modules: SystemModuleMixer::new(
             execution_config.enabled_modules,

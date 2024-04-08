@@ -59,7 +59,9 @@ impl ProtocolUpdateEntry {
             }
             // TODO implement the following
             ProtocolUpdateEntry::SystemPatches => StateUpdates::default(),
-            ProtocolUpdateEntry::ProtocolParamsToState => StateUpdates::default(),
+            ProtocolUpdateEntry::ProtocolParamsToState => {
+                generate_protocol_params_to_state_state_updates()
+            }
         }
     }
 }

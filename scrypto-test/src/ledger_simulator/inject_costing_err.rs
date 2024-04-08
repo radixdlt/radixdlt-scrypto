@@ -11,30 +11,30 @@ use radix_engine::kernel::kernel_callback_api::{
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
-use radix_engine::system::system_callback::SystemConfig;
+use radix_engine::system::system_callback::System;
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use radix_engine::track::{BootStore, NodeSubstates};
-use radix_engine::transaction::WrappedSystem;
+use radix_engine::transaction::{ExecutionConfig, WrappedSystem};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
 
-pub type InjectSystemCostingError<'a, E> =
-    InjectCostingError<SystemConfig<Vm<'a, DefaultWasmEngine, E>>>;
+pub type InjectSystemCostingError<'a, E> = InjectCostingError<System<Vm<'a, DefaultWasmEngine, E>>>;
 
 pub struct InjectCostingError<K: KernelCallbackObject> {
     fail_after: Rc<RefCell<u64>>,
     callback_object: K,
 }
 
-impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<SystemConfig<C>> {
+impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<System<C>> {
     type Init = u64;
 
-    fn create(mut config: SystemConfig<C>, error_after_count: u64) -> Self {
+    fn create(mut config: System<C>, error_after_count: u64) -> Self {
         let fail_after = Rc::new(RefCell::new(error_after_count));
         config.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
             fail_after: fail_after.clone(),
@@ -46,11 +46,11 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for InjectCostingError<SystemConf
         }
     }
 
-    fn system_mut(&mut self) -> &mut SystemConfig<C> {
+    fn system_mut(&mut self) -> &mut System<C> {
         &mut self.callback_object
     }
 
-    fn to_system(self) -> SystemConfig<C> {
+    fn to_system(self) -> System<C> {
         self.callback_object
     }
 }
@@ -99,10 +99,16 @@ macro_rules! wrapped_internal_api {
 impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingError<K> {
     type LockData = K::LockData;
     type CallFrameData = K::CallFrameData;
-    type CallbackState = K::CallbackState;
 
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError> {
-        self.callback_object.init(store)
+    type InitInput = K::InitInput;
+
+    fn init<S: BootStore>(
+        _store: &S,
+        _executable: &Executable,
+        _execution_config: &ExecutionConfig,
+        _bootstrap_input: Self::InitInput,
+    ) -> Result<Self, BootloadingError> {
+        panic!();
     }
 
     fn start<Y>(
@@ -520,7 +526,6 @@ impl<'a, M: KernelCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInt
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
-            system_2: &state.system_2,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
@@ -564,7 +569,6 @@ impl<'a, M: KernelCallbackObject, K: KernelInternalApi<InjectCostingError<M>>> K
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.callback_object,
-            system_2: &state.system_2,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }

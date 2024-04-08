@@ -6,7 +6,9 @@ use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
 use crate::track::BootStore;
+use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
 
 pub trait CallFrameReferences {
@@ -130,10 +132,15 @@ pub enum ScanSortedSubstatesEvent<'a> {
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
-    type CallbackState;
+    type InitInput;
 
     /// Initialize the system layer with data loaded from the substate store
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError>;
+    fn init<S: BootStore>(
+        store: &S,
+        executable: &Executable,
+        execution_config: &ExecutionConfig,
+        init_input: Self::InitInput,
+    ) -> Result<Self, BootloadingError>;
 
     fn start<Y>(
         api: &mut Y,
