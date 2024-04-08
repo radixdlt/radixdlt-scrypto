@@ -77,7 +77,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                         database,
                         VmInit {
                             scrypto_vm,
-                            native_extension: NoExtension,
+                            native_vm_extension: NoExtension,
                         },
                         &ExecutionConfig::for_genesis_transaction(network.clone())
                             .with_kernel_trace(trace)
@@ -93,7 +93,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 database,
                 VmInit {
                     scrypto_vm,
-                    native_extension: NoExtension,
+                    native_vm_extension: NoExtension,
                 },
                 &ExecutionConfig::for_notarized_transaction(network.clone())
                     .with_kernel_trace(trace)
@@ -110,7 +110,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 database,
                 VmInit {
                     scrypto_vm,
-                    native_extension: NoExtension,
+                    native_vm_extension: NoExtension,
                 },
                 &ExecutionConfig::for_system_transaction(network.clone())
                     .with_kernel_trace(trace)
