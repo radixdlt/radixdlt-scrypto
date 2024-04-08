@@ -1,6 +1,5 @@
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
-use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionFeeDetails;
 use radix_engine::transaction::TransactionFeeSummary;
@@ -929,7 +928,6 @@ fn system_loan_should_cover_intended_use_case() {
     );
     let receipt = ledger.execute_transaction(
         validate_notarized_transaction(&network, &tx1).get_executable(),
-        CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );

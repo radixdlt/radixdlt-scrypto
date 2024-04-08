@@ -15,11 +15,12 @@ use radix_engine::kernel::kernel_callback_api::{
 };
 use radix_engine::system::checkers::KernelDatabaseChecker;
 use radix_engine::track::{to_state_updates, BootStore, CommitableSubstateStore, Track};
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
-use radix_transactions::model::PreAllocatedAddress;
+use radix_transactions::model::{Executable, PreAllocatedAddress};
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -54,7 +55,16 @@ struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
-    type CallbackState = ();
+    type InitInput = ();
+
+    fn init<S: BootStore>(
+        _store: &S,
+        _executable: &Executable,
+        _execution_config: &ExecutionConfig,
+        _init_input: Self::InitInput,
+    ) -> Result<Self, BootloadingError> {
+        Ok(Self)
+    }
 
     fn start<Y>(
         _: &mut Y,
@@ -67,10 +77,6 @@ impl KernelCallbackObject for TestCallbackObject {
         Y: KernelApi<Self>,
     {
         unreachable!()
-    }
-
-    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), BootloadingError> {
-        Ok(())
     }
 
     fn on_teardown<Y>(_api: &mut Y) -> Result<(), RuntimeError>

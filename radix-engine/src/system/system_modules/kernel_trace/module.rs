@@ -7,7 +7,7 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::system::actor::Actor;
 use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::System;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
@@ -27,14 +27,14 @@ macro_rules! log {
 
 impl InitSystemModule for KernelTraceModule {
     #[cfg(feature = "resource_tracker")]
-    fn on_init(&mut self) -> Result<(), crate::errors::BootloadingError> {
+    fn init(&mut self) -> Result<(), BootloadingError> {
         panic!("KernelTraceModule should be disabled for feature resource_tracker!")
     }
 }
 
 #[allow(unused_variables)] // for no_std
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
-    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
+impl<V: SystemCallbackObject> SystemModule<System<V>> for KernelTraceModule {
+    fn before_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -51,7 +51,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
+    fn on_execution_finish<Y: KernelApi<System<V>>>(
         api: &mut Y,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
@@ -60,7 +60,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
+    fn after_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -68,7 +68,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
+    fn on_allocate_node_id<Y: KernelApi<System<V>>>(
         api: &mut Y,
         entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
@@ -76,7 +76,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -108,7 +108,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -121,7 +121,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_open_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -159,7 +159,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_read_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -183,7 +183,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_write_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -202,7 +202,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_close_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
