@@ -9,7 +9,7 @@ declare_native_blueprint_state! {
     features: {},
     fields: {},
     collections: {
-        claim_vaults: KeyValue {
+        account_claims: KeyValue {
             entry_ident: AccountClaims,
             key_type: {
                 kind: Static,

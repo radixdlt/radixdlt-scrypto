@@ -554,7 +554,7 @@ pub fn generate_locker_package_state_updates() -> StateUpdates {
         package_structure,
         metadata_init! {
             "name" => "Locker Package", locked;
-            "description" => "A native package that defines a set of blueprints for locking resources to be claimed later by users.", locked;
+            "description" => "A native package that defines the logic for dApp-owned lockers to send resources to specified account addresses.", locked;
         },
         None,
     );
