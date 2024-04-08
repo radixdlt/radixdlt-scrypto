@@ -34,8 +34,12 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
+    let mut bootstrapper = Bootstrapper::new(
+        NetworkDefinition::simulator(),
+        &mut substate_db,
+        vm_init,
+        true,
+    );
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -154,26 +158,32 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
 
 #[test]
 fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_typed() {
-    DefaultTransactionScenarioExecutor::new(InMemorySubstateDatabase::standard())
-        .on_transaction_executed(|_, _, receipt, _| {
-            if let TransactionResult::Commit(ref commit_result) = receipt.result {
-                assert_receipt_substate_changes_can_be_typed(commit_result);
-            };
-        })
-        .execute()
-        .expect("Must succeed!");
+    DefaultTransactionScenarioExecutor::new(
+        InMemorySubstateDatabase::standard(),
+        NetworkDefinition::simulator(),
+    )
+    .on_transaction_executed(|_, _, receipt, _| {
+        if let TransactionResult::Commit(ref commit_result) = receipt.result {
+            assert_receipt_substate_changes_can_be_typed(commit_result);
+        };
+    })
+    .execute()
+    .expect("Must succeed!");
 }
 
 #[test]
 fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
-    DefaultTransactionScenarioExecutor::new(InMemorySubstateDatabase::standard())
-        .on_transaction_executed(|_, _, receipt, _| {
-            if let TransactionResult::Commit(ref commit_result) = receipt.result {
-                assert_receipt_events_can_be_typed(commit_result);
-            };
-        })
-        .execute()
-        .expect("Must succeed!");
+    DefaultTransactionScenarioExecutor::new(
+        InMemorySubstateDatabase::standard(),
+        NetworkDefinition::simulator(),
+    )
+    .on_transaction_executed(|_, _, receipt, _| {
+        if let TransactionResult::Commit(ref commit_result) = receipt.result {
+            assert_receipt_events_can_be_typed(commit_result);
+        };
+    })
+    .execute()
+    .expect("Must succeed!");
 }
 
 /// We need to ensure that all of the events registered to native events are included in the typed

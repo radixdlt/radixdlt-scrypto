@@ -32,7 +32,7 @@ pub fn run_all_in_memory_and_dump_examples(
 
     let ScenarioExecutionReceipt {
         database: mut substate_db,
-    } = DefaultTransactionScenarioExecutor::new(substate_db)
+    } = DefaultTransactionScenarioExecutor::new(substate_db, NetworkDefinition::simulator())
         .on_scenario_start(|scenario_metadata| {
             let sub_folder = root_path.join(scenario_metadata.logical_name);
             if sub_folder.exists() {

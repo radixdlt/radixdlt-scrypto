@@ -146,7 +146,10 @@ where
     F1: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
     F2: FnMut(&ScenarioMetadata),
 {
-    pub fn new(database: D) -> DefaultTransactionScenarioExecutor<D> {
+    pub fn new(
+        database: D,
+        network_definition: NetworkDefinition,
+    ) -> DefaultTransactionScenarioExecutor<D> {
         TransactionScenarioExecutor {
             /* Environment */
             database,
@@ -157,7 +160,7 @@ where
             bootstrap: true,
             starting_nonce: 0,
             nonce_handling: ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(1),
-            network_definition: NetworkDefinition::simulator(),
+            network_definition,
             /* Callbacks */
             on_transaction_executed: |_, _, _, _| {},
             on_scenario_start: |_| {},
@@ -234,12 +237,6 @@ where
     /// Defines how the executor should handle nonces.
     pub fn nonce_handling(mut self, nonce_handling: ScenarioStartNonceHandling) -> Self {
         self.nonce_handling = nonce_handling;
-        self
-    }
-
-    /// Sets the network definition to use for the scenario execution.
-    pub fn network_definition(mut self, network_definition: NetworkDefinition) -> Self {
-        self.network_definition = network_definition;
         self
     }
 
