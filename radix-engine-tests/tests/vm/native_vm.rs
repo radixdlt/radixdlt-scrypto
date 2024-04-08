@@ -57,7 +57,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let _ = Bootstrapper::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
-        Vm::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),
+        VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
         false,
     )
     .bootstrap_test_default()
@@ -66,15 +66,18 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = NativeVm::new_with_extension(Extension);
-    let vm = Vm::new(&scrypto_vm, native_vm);
 
     let intent_hash = Hash([0; 32]);
     let mut id_allocator = IdAllocator::new(intent_hash);
-    let mut system = SystemConfig {
+    let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
-        callback_obj: vm.clone(),
+        callback: Vm {
+            scrypto_vm: &scrypto_vm,
+            native_vm,
+            vm_version: VmVersion::latest(),
+        },
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             NetworkDefinition::simulator(),
@@ -131,7 +134,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let _ = Bootstrapper::new(
         NetworkDefinition::simulator(),
         &mut substate_db,
-        Vm::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),
+        VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
         false,
     )
     .bootstrap_test_default()
@@ -140,15 +143,18 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = NativeVm::new_with_extension(NonStringPanicExtension);
-    let vm = Vm::new(&scrypto_vm, native_vm);
 
     let intent_hash = Hash([0; 32]);
     let mut id_allocator = IdAllocator::new(intent_hash);
-    let mut system = SystemConfig {
+    let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
-        callback_obj: vm.clone(),
+        callback: Vm {
+            scrypto_vm: &scrypto_vm,
+            native_vm,
+            vm_version: VmVersion::latest(),
+        },
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             NetworkDefinition::simulator(),

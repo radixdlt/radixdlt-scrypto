@@ -25,8 +25,7 @@ use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder, SubtreeVaults
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
@@ -46,7 +45,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     ];
 
     let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -132,8 +131,7 @@ fn test_bootstrap_receipt_should_match_constants() {
 #[test]
 fn test_bootstrap_receipts_should_have_complete_system_structure() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
@@ -151,9 +149,8 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
             allocations: vec![(validator_key, vec![stake])],
         },
     ];
-
     let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -213,8 +210,7 @@ fn assert_complete_system_structure(result: &CommitResult) {
 
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
@@ -253,9 +249,8 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
             allocations: vec![(resource_address.clone(), vec![resource_allocation])],
         },
     ];
-
     let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, false);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -358,17 +353,15 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
 #[should_panic(expected = "Failure(ApplicationError(ConsensusManagerError(ExceededValidatorCount")]
 fn test_bootstrap_with_exceeded_validator_count() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     let mut initial_config = CustomGenesis::default_consensus_manager_config();
 
     // exceeding max validator count - expecting a panic now
     initial_config.max_validators = ValidatorIndex::MAX as u32 + 1;
-
     let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
 
     let _ = bootstrapper.bootstrap_with_genesis_data(
         vec![],
@@ -393,8 +386,7 @@ fn test_genesis_resource_with_initial_unowned_allocation() {
 #[test]
 fn test_genesis_stake_allocation() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     // There are two genesis validators
@@ -437,7 +429,7 @@ fn test_genesis_stake_allocation() {
     ];
 
     let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, true);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -515,12 +507,11 @@ fn test_genesis_stake_allocation() {
 #[test]
 fn test_genesis_time() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
 
     let _ = bootstrapper
         .bootstrap_with_genesis_data(
@@ -714,8 +705,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
 #[test]
 fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = DefaultNativeVm::new();
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let staker_address = ComponentAddress::virtual_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
@@ -735,7 +725,7 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
     ];
 
     let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm, false);
+        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, false);
 
     bootstrapper
         .bootstrap_with_genesis_data(

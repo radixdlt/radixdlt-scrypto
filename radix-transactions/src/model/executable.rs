@@ -66,6 +66,7 @@ pub struct TransactionCostingParameters {
     pub tip_percentage: u16,
     /// Free credit for execution, for preview only!
     pub free_credit_in_xrd: Decimal,
+    pub abort_when_loan_repaid: bool,
 }
 
 impl Default for TransactionCostingParameters {
@@ -73,6 +74,7 @@ impl Default for TransactionCostingParameters {
         Self {
             tip_percentage: DEFAULT_TIP_PERCENTAGE,
             free_credit_in_xrd: Default::default(),
+            abort_when_loan_repaid: false,
         }
     }
 }

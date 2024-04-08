@@ -107,7 +107,7 @@ where
     /// The Scrypto VM to use in executing the scenarios.
     scrypto_vm: ScryptoVm<W>,
     /// The Native VM to use in executing the scenarios.
-    native_vm: NativeVm<E>,
+    native_vm_extension: E,
 
     /* Execution */
     /// The scenarios that the executor should execute. They are not specified per scenario but per
@@ -151,7 +151,7 @@ where
             /* Environment */
             database,
             scrypto_vm: ScryptoVm::default(),
-            native_vm: NativeVm::new(),
+            native_vm_extension: NoExtension,
             /* Execution */
             scenarios_to_execute: ScenarioRequirements::all().iter().copied().collect(),
             bootstrap: true,
@@ -173,7 +173,7 @@ where
             /* Environment */
             database: self.database,
             scrypto_vm,
-            native_vm: self.native_vm,
+            native_vm_extension: self.native_vm_extension,
             /* Execution */
             scenarios_to_execute: self.scenarios_to_execute,
             bootstrap: self.bootstrap,
@@ -187,15 +187,15 @@ where
     }
 
     /// Sets the Native VM to use for the scenarios execution.
-    pub fn native_vm<NE: NativeVmExtension>(
+    pub fn native_vm_extension<NE: NativeVmExtension>(
         self,
-        native_vm: NativeVm<NE>,
+        native_vm_extension: NE,
     ) -> TransactionScenarioExecutor<D, W, NE, F1, F2> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
             scrypto_vm: self.scrypto_vm,
-            native_vm,
+            native_vm_extension,
             /* Execution */
             scenarios_to_execute: self.scenarios_to_execute,
             bootstrap: self.bootstrap,
@@ -254,7 +254,7 @@ where
             /* Environment */
             database: self.database,
             scrypto_vm: self.scrypto_vm,
-            native_vm: self.native_vm,
+            native_vm_extension: self.native_vm_extension,
             /* Execution */
             scenarios_to_execute: self.scenarios_to_execute,
             bootstrap: self.bootstrap,
@@ -276,7 +276,7 @@ where
             /* Environment */
             database: self.database,
             scrypto_vm: self.scrypto_vm,
-            native_vm: self.native_vm,
+            native_vm_extension: self.native_vm_extension,
             /* Execution */
             scenarios_to_execute: self.scenarios_to_execute,
             bootstrap: self.bootstrap,
@@ -295,7 +295,7 @@ where
             Bootstrapper::new(
                 self.network_definition.clone(),
                 &mut self.database,
-                Vm::new(&self.scrypto_vm, self.native_vm.clone()),
+                VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
                 false,
             )
             .bootstrap_test_default()
@@ -388,8 +388,7 @@ where
 
         let receipt = execute_transaction(
             &self.database,
-            Vm::new(&self.scrypto_vm, self.native_vm.clone()),
-            &CostingParameters::default(),
+            VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
             &ExecutionConfig::for_notarized_transaction(self.network_definition.clone()),
             &validated.get_executable(),
         );
