@@ -4,57 +4,57 @@ CALL_METHOD
     Decimal("5000")
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cr699ehyd6qf8cfdflaq8zw0rxkk0fjkd9gyj0x6snqe8hw3vq0p24")
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
     "method_with_no_package_royalty"
     Enum<0u8>()
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cr699ehyd6qf8cfdflaq8zw0rxkk0fjkd9gyj0x6snqe8hw3vq0p24")
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
     "method_with_xrd_package_royalty"
     Enum<0u8>()
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cr699ehyd6qf8cfdflaq8zw0rxkk0fjkd9gyj0x6snqe8hw3vq0p24")
+    Address("component_sim1cpyavrltfeu9ppx24pcpvh93xf44sfjygtv6dgf6uq3cdwafl7f9rq")
     "method_with_usd_package_royalty"
     Enum<0u8>()
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cqr2cj3aptrtc5fq9svpn72vv2ffvxtr0wvcyy0hx5xsduzyd5345c")
+    Address("component_sim1cp82800wk54kypxhkmgsxxzjwxe4wn47zkwcp9myrrj7lkxf07qjm0")
     "method_with_no_package_royalty"
     Enum<1u8>(
         Decimal("17")
     )
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cqr2cj3aptrtc5fq9svpn72vv2ffvxtr0wvcyy0hx5xsduzyd5345c")
+    Address("component_sim1cp82800wk54kypxhkmgsxxzjwxe4wn47zkwcp9myrrj7lkxf07qjm0")
     "method_with_xrd_package_royalty"
     Enum<1u8>(
         Decimal("18")
     )
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cqr2cj3aptrtc5fq9svpn72vv2ffvxtr0wvcyy0hx5xsduzyd5345c")
+    Address("component_sim1cp82800wk54kypxhkmgsxxzjwxe4wn47zkwcp9myrrj7lkxf07qjm0")
     "method_with_usd_package_royalty"
     Enum<1u8>(
         Decimal("19")
     )
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cp69dvyt35c9svlq7x9h5zg9lq82t4r7qtshcx9638ang6lxvfad04")
+    Address("component_sim1cr9nzgqn8v5gcmut8ayf4hvxzr58anlxnalr6vdw2gt44h7y8jnx64")
     "method_with_no_package_royalty"
     Enum<2u8>(
         Decimal("2")
     )
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cp69dvyt35c9svlq7x9h5zg9lq82t4r7qtshcx9638ang6lxvfad04")
+    Address("component_sim1cr9nzgqn8v5gcmut8ayf4hvxzr58anlxnalr6vdw2gt44h7y8jnx64")
     "method_with_xrd_package_royalty"
     Enum<2u8>(
         Decimal("3")
     )
 ;
 SET_COMPONENT_ROYALTY
-    Address("component_sim1cp69dvyt35c9svlq7x9h5zg9lq82t4r7qtshcx9638ang6lxvfad04")
+    Address("component_sim1cr9nzgqn8v5gcmut8ayf4hvxzr58anlxnalr6vdw2gt44h7y8jnx64")
     "method_with_usd_package_royalty"
     Enum<2u8>(
         Decimal("4")
