@@ -21,51 +21,51 @@ use scrypto_test::prelude::*;
 #[ignore = "Run this test to update expected costs"]
 fn update_expected_costs() {
     run_basic_transfer(Mode::OutputCosting(
-        path_local_meterng_csv!("cost_transfer.csv").to_string(),
+        path_local_metering_csv!("cost_transfer.csv").to_string(),
     ));
     run_basic_transfer_to_virtual_account(Mode::OutputCosting(
-        path_local_meterng_csv!("cost_transfer_to_virtual_account.csv").to_string(),
+        path_local_metering_csv!("cost_transfer_to_virtual_account.csv").to_string(),
     ));
     run_radiswap(
-        Mode::OutputCosting(path_local_meterng_csv!("cost_radiswap.csv").to_string()),
+        Mode::OutputCosting(path_local_metering_csv!("cost_radiswap.csv").to_string()),
         false,
     );
     run_radiswap(
-        Mode::OutputCosting(path_local_meterng_csv!("cost_radiswap_pools_v1_1.csv").to_string()),
+        Mode::OutputCosting(path_local_metering_csv!("cost_radiswap_pools_v1_1.csv").to_string()),
         true,
     );
     run_flash_loan(Mode::OutputCosting(
-        path_local_meterng_csv!("cost_flash_loan.csv").to_string(),
+        path_local_metering_csv!("cost_flash_loan.csv").to_string(),
     ));
     run_publish_large_package(Mode::OutputCosting(
-        path_local_meterng_csv!("cost_publish_large_package.csv").to_string(),
+        path_local_metering_csv!("cost_publish_large_package.csv").to_string(),
     ));
     run_mint_large_size_nfts_from_manifest(Mode::OutputCosting(
-        path_local_meterng_csv!("cost_mint_large_size_nfts_from_manifest.csv").to_string(),
+        path_local_metering_csv!("cost_mint_large_size_nfts_from_manifest.csv").to_string(),
     ));
     run_mint_small_size_nfts_from_manifest(Mode::OutputCosting(
-        path_local_meterng_csv!("cost_mint_small_size_nfts_from_manifest.csv").to_string(),
+        path_local_metering_csv!("cost_mint_small_size_nfts_from_manifest.csv").to_string(),
     ));
 }
 
 #[test]
 fn test_basic_transfer() {
     run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(
-        include_local_meterng_csv_str!("cost_transfer.csv"),
+        include_local_metering_csv_str!("cost_transfer.csv"),
     )));
 }
 
 #[test]
 fn test_transfer_to_virtual_account() {
     run_basic_transfer_to_virtual_account(Mode::AssertCosting(load_cost_breakdown(
-        include_local_meterng_csv_str!("cost_transfer_to_virtual_account.csv"),
+        include_local_metering_csv_str!("cost_transfer_to_virtual_account.csv"),
     )));
 }
 
 #[test]
 fn test_radiswap() {
     run_radiswap(
-        Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!(
+        Mode::AssertCosting(load_cost_breakdown(include_local_metering_csv_str!(
             "cost_radiswap.csv"
         ))),
         false,
@@ -75,7 +75,7 @@ fn test_radiswap() {
 #[test]
 fn test_radiswap_with_pools_v1_1() {
     run_radiswap(
-        Mode::AssertCosting(load_cost_breakdown(include_local_meterng_csv_str!(
+        Mode::AssertCosting(load_cost_breakdown(include_local_metering_csv_str!(
             "cost_radiswap_pools_v1_1.csv"
         ))),
         true,
@@ -85,28 +85,28 @@ fn test_radiswap_with_pools_v1_1() {
 #[test]
 fn test_flash_loan() {
     run_flash_loan(Mode::AssertCosting(load_cost_breakdown(
-        include_local_meterng_csv_str!("cost_flash_loan.csv"),
+        include_local_metering_csv_str!("cost_flash_loan.csv"),
     )));
 }
 
 #[test]
 fn test_publish_large_package() {
     run_publish_large_package(Mode::AssertCosting(load_cost_breakdown(
-        include_local_meterng_csv_str!("cost_publish_large_package.csv"),
+        include_local_metering_csv_str!("cost_publish_large_package.csv"),
     )));
 }
 
 #[test]
 fn test_mint_large_size_nfts_from_manifest() {
     run_mint_large_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(
-        include_local_meterng_csv_str!("cost_mint_large_size_nfts_from_manifest.csv"),
+        include_local_metering_csv_str!("cost_mint_large_size_nfts_from_manifest.csv"),
     )));
 }
 
 #[test]
 fn test_mint_small_size_nfts_from_manifest() {
     run_mint_small_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(
-        include_local_meterng_csv_str!("cost_mint_small_size_nfts_from_manifest.csv"),
+        include_local_metering_csv_str!("cost_mint_small_size_nfts_from_manifest.csv"),
     )));
 }
 
@@ -436,8 +436,12 @@ fn run_radiswap(mode: Mode, pool_math_precision_fix: bool) {
     // Publish package
     let package_address = ledger.publish_package(
         (
-            include_workspace_asset_bytes!("radiswap.wasm").to_vec(),
-            manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap(),
+            include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
+            manifest_decode(include_workspace_asset_bytes!(
+                "radix-transaction-scenarios",
+                "radiswap.rpd"
+            ))
+            .unwrap(),
         ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
@@ -538,8 +542,13 @@ fn run_flash_loan(mode: Mode) {
     // Publish package
     let package_address = ledger.publish_package(
         (
-            include_workspace_asset_bytes!("flash_loan.wasm").to_vec(),
-            manifest_decode(include_workspace_asset_bytes!("flash_loan.rpd")).unwrap(),
+            include_workspace_asset_bytes!("radix-transaction-scenarios", "flash_loan.wasm")
+                .to_vec(),
+            manifest_decode(include_workspace_asset_bytes!(
+                "radix-transaction-scenarios",
+                "flash_loan.rpd"
+            ))
+            .unwrap(),
         ),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
@@ -866,8 +875,12 @@ impl NonFungibleData for TestNonFungibleData {
 #[test]
 fn publish_package_1mib() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let code = include_workspace_asset_bytes!("large_package.wasm").to_vec();
-    let definition = manifest_decode(include_workspace_asset_bytes!("large_package.rpd")).unwrap();
+    let code = include_workspace_asset_bytes!("radix-engine-tests", "large_package.wasm").to_vec();
+    let definition = manifest_decode(include_workspace_asset_bytes!(
+        "radix-engine-tests",
+        "large_package.rpd"
+    ))
+    .unwrap();
     println!("Code size: {}", code.len());
     assert!(code.len() <= 1000 * 1024);
     assert!(code.len() >= 900 * 1024);
