@@ -77,3 +77,38 @@ impl<D: CommittableSubstateDatabase> CommittableSubstateDatabase for StateTreeUp
         self.update_with(database_updates);
     }
 }
+
+impl<D> StateTreeUpdatingDatabase<D>
+where
+    D: SubstateDatabase + ListableSubstateDatabase,
+{
+    pub fn validate_state_tree_matches_substate_store(
+        &self,
+    ) -> Result<(), StateTreeValidationError> {
+        let hashes_from_tree = self.list_substate_hashes();
+        if hashes_from_tree.keys().cloned().collect::<HashSet<_>>()
+            != self.list_partition_keys().collect::<HashSet<_>>()
+        {
+            return Err(StateTreeValidationError::NotAllPartitionsAreFoundInBothHashesAndDatabase);
+        }
+        for (db_partition_key, by_db_sort_key) in hashes_from_tree {
+            if by_db_sort_key.into_iter().collect::<HashMap<_, _>>()
+                != self
+                    .list_entries(&db_partition_key)
+                    .map(|(db_sort_key, substate_value)| (db_sort_key, hash(substate_value)))
+                    .collect::<HashMap<_, _>>()
+            {
+                return Err(StateTreeValidationError::MismatchInPartitionSubstates(
+                    db_partition_key.clone(),
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum StateTreeValidationError {
+    NotAllPartitionsAreFoundInBothHashesAndDatabase,
+    MismatchInPartitionSubstates(DbPartitionKey),
+}
