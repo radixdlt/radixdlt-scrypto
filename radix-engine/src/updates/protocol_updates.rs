@@ -1,6 +1,7 @@
 use super::state_updates::*;
 use crate::{internal_prelude::*, track::StateUpdates};
 use radix_substate_store_interface::interface::SubstateDatabase;
+use strum::VariantArray;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProtocolUpdateEntry {
@@ -66,10 +67,51 @@ impl ProtocolUpdateEntry {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum ProtocolUpdate {
-    Anemone,
-    Bottlenose,
+macro_rules! count {
+    (
+        $ident: ident, $($other_idents: ident),* $(,)?
+    ) => {
+        1 + count!( $($other_idents),* )
+    };
+    (
+        $ident: ident $(,)?
+    ) => {
+        1
+    }
+}
+
+macro_rules! enum_const_array {
+    (
+        $(#[$meta:meta])*
+        $vis: vis enum $ident: ident {
+            $(
+                $variant_ident: ident
+            ),* $(,)?
+        }
+    ) => {
+        $(#[$meta])*
+        $vis enum $ident {
+            $(
+                $variant_ident
+            ),*
+        }
+
+        impl $ident {
+            pub const VARIANTS: [Self; count!( $($variant_ident),* )] = [
+                $(
+                    Self::$variant_ident
+                ),*
+            ];
+        }
+    };
+}
+
+enum_const_array! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub enum ProtocolUpdate {
+        Anemone,
+        Bottlenose,
+    }
 }
 
 impl ProtocolUpdate {

@@ -38,16 +38,17 @@ impl Default for AccountLockerScenarioConfig {
 
 pub struct AccountLockerScenarioCreator;
 
-impl ScenarioCreator for AccountLockerScenarioCreator {
+impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
     type Config = AccountLockerScenarioConfig;
     type State = AccountLockerScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = Some(ProtocolUpdate::Bottlenose);
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "account_locker",
         };

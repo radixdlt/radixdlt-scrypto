@@ -1144,7 +1144,7 @@ dependencies = [
  "sbor",
  "secp256k1",
  "sha3",
- "strum",
+ "strum 0.26.2",
 ]
 
 [[package]]
@@ -1183,7 +1183,7 @@ dependencies = [
  "radix-wasmi",
  "sbor",
  "serde_json",
- "strum",
+ "strum 0.26.2",
  "syn 1.0.109",
  "wasmparser 0.107.0",
 ]
@@ -1205,7 +1205,7 @@ dependencies = [
  "sbor",
  "serde",
  "serde_json",
- "strum",
+ "strum 0.26.2",
 ]
 
 [[package]]
@@ -1304,7 +1304,7 @@ dependencies = [
  "radix-engine-interface",
  "radix-rust",
  "sbor",
- "strum",
+ "strum 0.26.2",
 ]
 
 [[package]]
@@ -1726,8 +1726,14 @@ name = "strum"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+
+[[package]]
+name = "strum"
+version = "0.26.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d8cec3501a5194c432b2b7976db6b7d10ec95c253208b45f83f7136aa985e29"
 dependencies = [
- "strum_macros",
+ "strum_macros 0.26.2",
 ]
 
 [[package]]
@@ -1741,6 +1747,19 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.26.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6cf59daf282c0a494ba14fd21610a0325f9f90ec9d1231dea26bcb1d696c946"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -2034,8 +2053,8 @@ checksum = "effbef3bd1dde18acb401f73e740a6f3d4a1bc651e9773bddc512fe4d8d68f67"
 dependencies = [
  "anyhow",
  "libc",
- "strum",
- "strum_macros",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
  "tempfile",
  "thiserror",
  "wasm-opt-cxx-sys",

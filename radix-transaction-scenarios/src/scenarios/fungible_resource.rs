@@ -27,16 +27,17 @@ impl Default for FungibleResourceScenarioConfig {
 
 pub struct FungibleResourceScenarioCreator;
 
-impl ScenarioCreator for FungibleResourceScenarioCreator {
+impl ScenarioCreator<'static> for FungibleResourceScenarioCreator {
     type Config = FungibleResourceScenarioConfig;
     type State = FungibleResourceScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "fungible_resource",
         };

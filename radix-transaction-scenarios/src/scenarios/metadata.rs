@@ -39,25 +39,26 @@ pub struct MetadataScenarioState {
     pub resource_with_metadata2: Option<ResourceAddress>,
 }
 
-impl ScenarioCreator for MetadataScenario {
+impl ScenarioCreator<'static> for MetadataScenario {
     type Config = MetadataScenarioConfig;
     type State = MetadataScenarioState;
+    type Instance = Self;
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "metadata",
         };
-        Box::new(Self {
+        Self {
             core,
             metadata,
             config,
             state: start_state,
-        })
+        }
     }
 }
 

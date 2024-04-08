@@ -24,16 +24,17 @@ impl Default for AccountAuthorizedDepositorsScenarioConfig {
 
 pub struct AccountAuthorizedDepositorsScenarioCreator;
 
-impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
+impl ScenarioCreator<'static> for AccountAuthorizedDepositorsScenarioCreator {
     type Config = AccountAuthorizedDepositorsScenarioConfig;
     type State = AccountAuthorizedDepositorsScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "account_authorized_depositors",
         };

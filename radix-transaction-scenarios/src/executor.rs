@@ -1,3 +1,6 @@
+#![allow(clippy::type_complexity)]
+
+use self::internal_prelude::*;
 use super::*;
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::system::bootstrap::*;
@@ -11,95 +14,29 @@ use radix_transactions::errors::*;
 use radix_transactions::validation::*;
 use sbor::prelude::*;
 
-use account_authorized_depositors::AccountAuthorizedDepositorsScenarioCreator;
-use account_locker::AccountLockerScenarioCreator;
-use fungible_resource::FungibleResourceScenarioCreator;
-use global_n_owned::GlobalNOwnedScenarioCreator;
-use kv_store_with_remote_type::KVStoreScenarioCreator;
-use max_transaction::MaxTransactionScenarioCreator;
-use metadata::MetadataScenario;
-use non_fungible_resource::NonFungibleResourceScenarioCreator;
-use non_fungible_resource_with_remote_type::NonFungibleResourceWithRemoteTypeScenarioCreator;
-use radiswap::RadiswapScenarioCreator;
-use royalties::RoyaltiesScenarioCreator;
-use transfer_xrd::TransferXrdScenarioCreator;
+use scenarios::account_authorized_depositors::AccountAuthorizedDepositorsScenarioCreator;
+use scenarios::account_locker::AccountLockerScenarioCreator;
+use scenarios::fungible_resource::FungibleResourceScenarioCreator;
+use scenarios::global_n_owned::GlobalNOwnedScenarioCreator;
+use scenarios::kv_store_with_remote_type::KVStoreScenarioCreator;
+use scenarios::max_transaction::MaxTransactionScenarioCreator;
+use scenarios::metadata::MetadataScenario;
+use scenarios::non_fungible_resource::NonFungibleResourceScenarioCreator;
+use scenarios::non_fungible_resource_with_remote_type::NonFungibleResourceWithRemoteTypeScenarioCreator;
+use scenarios::radiswap::RadiswapScenarioCreator;
+use scenarios::royalties::RoyaltiesScenarioCreator;
+use scenarios::transfer_xrd::TransferXrdScenarioCreator;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum ScenarioRequirements {
-    /// These scenarios do not require any protocol updates and are expected to be run at genesis
-    /// and be compatible with it.
-    Genesis,
-    /// These scenarios require one or more protocol updates and this enum specifies the protocol
-    /// update that they require.
-    ProtocolUpdateUpTo(ProtocolUpdate),
-}
+type ScenarioCreatorDynFunc = dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>;
 
-impl ScenarioRequirements {
-    pub fn all() -> &'static [ScenarioRequirements] {
-        &[
-            ScenarioRequirements::Genesis,
-            ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Anemone),
-            ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Bottlenose),
-        ]
-    }
-}
-
-macro_rules! define_scenario_builders {
-    (
-        $(
-            $requirement: expr => [
-                $($func: expr),* $(,)?
-            ]
-        ),* $(,)?
-    ) => {
-        pub fn scenario_builders() -> IndexMap<
-            ScenarioRequirements,
-            Vec<Box<dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>>>
-        > {
-            ::sbor::prelude::indexmap! {
-                $(
-                    $requirement => vec![
-                        $(
-                            Box::new($func)
-                                as Box<dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>>
-                        ),*
-                    ]
-                ),*
-            }
-        }
-    };
-}
-
-define_scenario_builders! {
-    // The set of scenarios that should be run after genesis.
-    ScenarioRequirements::Genesis => [
-        TransferXrdScenarioCreator::create,
-        RadiswapScenarioCreator::create,
-        MetadataScenario::create,
-        FungibleResourceScenarioCreator::create,
-        NonFungibleResourceScenarioCreator::create,
-        AccountAuthorizedDepositorsScenarioCreator::create,
-        GlobalNOwnedScenarioCreator::create,
-        NonFungibleResourceWithRemoteTypeScenarioCreator::create,
-        KVStoreScenarioCreator::create,
-        MaxTransactionScenarioCreator::create,
-        RoyaltiesScenarioCreator::create,
-    ],
-    // The set of scenarios that should be run after the anemone protocol update.
-    ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Anemone) => [],
-    // The set of scenarios that should be run after the bottlenose protocol update.
-    ScenarioRequirements::ProtocolUpdateUpTo(ProtocolUpdate::Bottlenose) => [
-        AccountLockerScenarioCreator::create
-    ],
-}
-
-pub struct TransactionScenarioExecutor<D, W, E, F1, F2>
+pub struct TransactionScenarioExecutor<D, W, E, F1, F2, F3>
 where
     D: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
     E: NativeVmExtension,
-    F1: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
-    F2: FnMut(&ScenarioMetadata),
+    F1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
+    F2: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
+    F3: FnMut(&ScenarioMetadata),
 {
     /* Environment */
     /// The substate database that the scenario will be run against.
@@ -110,10 +47,10 @@ where
     native_vm_extension: E,
 
     /* Execution */
-    /// The scenarios that the executor should execute. They are not specified per scenario but per
-    /// requirement. Meaning that through this field a client may opt-in or opt-out of the scenarios
-    /// of an entire protocol update but not individual ones.
-    scenarios_to_execute: BTreeSet<ScenarioRequirements>,
+    /// A map of the scenarios registered on the executor. Not all registered scenarios will be
+    /// executed, it merely informs the executor of the existence of these scenarios. Execution of a
+    /// scenario requires that is passes the filter specified by the client.
+    registered_scenarios: BTreeMap<Option<ProtocolUpdate>, Vec<Box<ScenarioCreatorDynFunc>>>,
     /// Controls whether the bootstrap process should be performed or not.
     bootstrap: bool,
     /// The first nonce to use in the execution of the scenarios.
@@ -124,67 +61,96 @@ where
     network_definition: NetworkDefinition,
 
     /* Callbacks */
+    /// A callback that is called when a new protocol requirement is encountered. This can be useful
+    /// for clients who wish to apply protocol updates they wish.
+    on_new_protocol_requirement_encountered: F1,
     /// A callback that is called when a scenario transaction is executed.
-    on_transaction_executed: F1,
+    on_transaction_executed: F2,
     /// A callback that is called when a new scenario is started.
-    on_scenario_start: F2,
+    on_scenario_start: F3,
 }
 
 pub type DefaultTransactionScenarioExecutor<D> = TransactionScenarioExecutor<
     D,
     DefaultWasmEngine,
     NoExtension,
+    fn(&NetworkDefinition, ProtocolUpdate, &mut D),
     fn(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
     fn(&ScenarioMetadata),
 >;
 
-impl<D, W, E, F1, F2> TransactionScenarioExecutor<D, W, E, F1, F2>
+impl<D, W, E, F1, F2, F3> TransactionScenarioExecutor<D, W, E, F1, F2, F3>
 where
     D: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
     E: NativeVmExtension,
-    F1: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
-    F2: FnMut(&ScenarioMetadata),
+    F1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
+    F2: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
+    F3: FnMut(&ScenarioMetadata),
 {
     pub fn new(
         database: D,
         network_definition: NetworkDefinition,
     ) -> DefaultTransactionScenarioExecutor<D> {
-        TransactionScenarioExecutor {
+        DefaultTransactionScenarioExecutor::<D> {
             /* Environment */
             database,
             scrypto_vm: ScryptoVm::default(),
             native_vm_extension: NoExtension,
             /* Execution */
-            scenarios_to_execute: ScenarioRequirements::all().iter().copied().collect(),
+            registered_scenarios: Default::default(),
             bootstrap: true,
             starting_nonce: 0,
             next_scenario_nonce_handling:
                 ScenarioStartNonceHandling::PreviousScenarioEndNoncePlusOne,
             network_definition,
             /* Callbacks */
+            on_new_protocol_requirement_encountered: |network_definition, protocol_update, db| {
+                protocol_update
+                    .generate_state_updates(db, network_definition)
+                    .into_iter()
+                    .for_each(|state_updates| {
+                        db.commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
+                    })
+            },
             on_transaction_executed: |_, _, _, _| {},
             on_scenario_start: |_| {},
         }
+        // Genesis Scenarios.
+        .register_scenario_with_create_fn::<TransferXrdScenarioCreator>()
+        .register_scenario_with_create_fn::<RadiswapScenarioCreator>()
+        .register_scenario_with_create_fn::<MetadataScenario>()
+        .register_scenario_with_create_fn::<FungibleResourceScenarioCreator>()
+        .register_scenario_with_create_fn::<NonFungibleResourceScenarioCreator>()
+        .register_scenario_with_create_fn::<AccountAuthorizedDepositorsScenarioCreator>()
+        .register_scenario_with_create_fn::<GlobalNOwnedScenarioCreator>()
+        .register_scenario_with_create_fn::<NonFungibleResourceWithRemoteTypeScenarioCreator>()
+        .register_scenario_with_create_fn::<KVStoreScenarioCreator>()
+        .register_scenario_with_create_fn::<MaxTransactionScenarioCreator>()
+        .register_scenario_with_create_fn::<RoyaltiesScenarioCreator>()
+        // Anemone Scenarios - None.
+        // Bottlenose Scenarios.
+        .register_scenario_with_create_fn::<AccountLockerScenarioCreator>()
     }
 
     /// Sets the Scrypto VM to use for the scenarios execution.
     pub fn scrypto_vm<NW: WasmEngine>(
         self,
         scrypto_vm: ScryptoVm<NW>,
-    ) -> TransactionScenarioExecutor<D, NW, E, F1, F2> {
+    ) -> TransactionScenarioExecutor<D, NW, E, F1, F2, F3> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
             scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
-            scenarios_to_execute: self.scenarios_to_execute,
+            registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
             next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
+            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
         }
@@ -194,33 +160,23 @@ where
     pub fn native_vm_extension<NE: NativeVmExtension>(
         self,
         native_vm_extension: NE,
-    ) -> TransactionScenarioExecutor<D, W, NE, F1, F2> {
+    ) -> TransactionScenarioExecutor<D, W, NE, F1, F2, F3> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
             scrypto_vm: self.scrypto_vm,
             native_vm_extension,
             /* Execution */
-            scenarios_to_execute: self.scenarios_to_execute,
+            registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
             next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
+            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
         }
-    }
-
-    /// The scenarios that the executor should execute. They are not specified per scenario but per
-    /// requirement. Meaning that through this field a client may opt-in or opt-out of the scenarios
-    /// of an entire protocol update but not individual ones.
-    pub fn scenarios_to_execute(
-        mut self,
-        scenario_requirements: impl IntoIterator<Item = ScenarioRequirements>,
-    ) -> Self {
-        self.scenarios_to_execute = scenario_requirements.into_iter().collect();
-        self
     }
 
     /// Controls whether the bootstrap process should be performed or not.
@@ -241,49 +197,98 @@ where
         self
     }
 
-    /// Sets the callback to call after executing a scenario transaction.
-    pub fn on_transaction_executed<
-        NF1: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
+    /// Sets the callback to call when a new protocol requirement is encountered.
+    pub fn on_new_protocol_requirement_encountered<
+        NF1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
     >(
         self,
         callback: NF1,
-    ) -> TransactionScenarioExecutor<D, W, E, NF1, F2> {
+    ) -> TransactionScenarioExecutor<D, W, E, NF1, F2, F3> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
             scrypto_vm: self.scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
-            scenarios_to_execute: self.scenarios_to_execute,
+            registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
             next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
+            on_new_protocol_requirement_encountered: callback,
+            on_transaction_executed: self.on_transaction_executed,
+            on_scenario_start: self.on_scenario_start,
+        }
+    }
+
+    /// Sets the callback to call after executing a scenario transaction.
+    pub fn on_transaction_executed<
+        NF2: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
+    >(
+        self,
+        callback: NF2,
+    ) -> TransactionScenarioExecutor<D, W, E, F1, NF2, F3> {
+        TransactionScenarioExecutor {
+            /* Environment */
+            database: self.database,
+            scrypto_vm: self.scrypto_vm,
+            native_vm_extension: self.native_vm_extension,
+            /* Execution */
+            registered_scenarios: self.registered_scenarios,
+            bootstrap: self.bootstrap,
+            starting_nonce: self.starting_nonce,
+            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
+            network_definition: self.network_definition,
+            /* Callbacks */
+            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: callback,
             on_scenario_start: self.on_scenario_start,
         }
     }
 
     /// A callback that is called when a new scenario is started.
-    pub fn on_scenario_start<NF2: FnMut(&ScenarioMetadata)>(
+    pub fn on_scenario_start<NF3: FnMut(&ScenarioMetadata)>(
         self,
-        callback: NF2,
-    ) -> TransactionScenarioExecutor<D, W, E, F1, NF2> {
+        callback: NF3,
+    ) -> TransactionScenarioExecutor<D, W, E, F1, F2, NF3> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
             scrypto_vm: self.scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
-            scenarios_to_execute: self.scenarios_to_execute,
+            registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
             next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
+            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: callback,
+        }
+    }
+
+    pub fn without_protocol_updates(
+        self,
+    ) -> TransactionScenarioExecutor<D, W, E, fn(&NetworkDefinition, ProtocolUpdate, &mut D), F2, F3>
+    {
+        TransactionScenarioExecutor {
+            /* Environment */
+            database: self.database,
+            scrypto_vm: self.scrypto_vm,
+            native_vm_extension: self.native_vm_extension,
+            /* Execution */
+            registered_scenarios: self.registered_scenarios,
+            bootstrap: self.bootstrap,
+            starting_nonce: self.starting_nonce,
+            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
+            network_definition: self.network_definition,
+            /* Callbacks */
+            on_new_protocol_requirement_encountered: |_, _, _| {},
+            on_transaction_executed: self.on_transaction_executed,
+            on_scenario_start: self.on_scenario_start,
         }
     }
 
@@ -300,25 +305,31 @@ where
             .ok_or(ScenarioExecutorError::BootstrapFailed)?;
         };
 
-        // Running the scenarios.
-        let mut next_nonce = self.starting_nonce;
-        let mut scenario_builders = scenario_builders();
-        for requirement in self.scenarios_to_execute.clone() {
-            if let ScenarioRequirements::ProtocolUpdateUpTo(protocol_update) = requirement {
-                protocol_update
-                    .generate_state_updates(&self.database, &self.network_definition)
-                    .into_iter()
-                    .for_each(|state_updates| {
-                        self.database.commit(
-                            &state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
-                        )
-                    })
-            };
+        // Getting the scenario builder functions of the scenarios that we will execute. There is a
+        // canonical order to these function batches which is that the genesis functions come first,
+        // then anemone, bottlenose, and so on. This order is enforced by this function and by the
+        // ordering of the `ProtocolUpdate` enum variants. Within a protocol update (or requirement)
+        // the canonical order is as seen in the [`new`] function.
+        for protocol_requirement in std::iter::once(None).chain(ProtocolUpdate::VARIANTS.map(Some))
+        {
+            // When a new protocol requirement is encountered the appropriate callback is called to
+            // inform the client of this event.
+            if let Some(protocol_update) = protocol_requirement {
+                (self.on_new_protocol_requirement_encountered)(
+                    &self.network_definition,
+                    protocol_update,
+                    &mut self.database,
+                );
+            }
 
-            let scenario_builders = scenario_builders
-                .shift_remove(&requirement)
-                .unwrap_or_default();
-            for scenario_builder in scenario_builders {
+            // Build each scenario and execute it.
+            let mut next_nonce = self.starting_nonce;
+            for scenario_builder in self
+                .registered_scenarios
+                .remove(&protocol_requirement)
+                .unwrap_or_default()
+                .into_iter()
+            {
                 let epoch = SystemDatabaseReader::new(&self.database)
                     .read_object_field(
                         CONSENSUS_MANAGER.as_node_id(),
@@ -401,6 +412,28 @@ where
         };
 
         Ok(receipt)
+    }
+
+    fn register_scenario<
+        S: ScenarioCreator<'static>,
+        F: FnOnce(ScenarioCore) -> S::Instance + 'static,
+    >(
+        mut self,
+        create: F,
+    ) -> Self {
+        let requirement = S::SCENARIO_PROTOCOL_REQUIREMENT;
+        self.registered_scenarios
+            .entry(requirement)
+            .or_default()
+            .push(
+                Box::new(move |core| Box::new(create(core)) as Box<dyn ScenarioInstance>)
+                    as Box<ScenarioCreatorDynFunc>,
+            );
+        self
+    }
+
+    fn register_scenario_with_create_fn<S: ScenarioCreator<'static> + 'static>(self) -> Self {
+        self.register_scenario::<S, _>(S::create)
     }
 }
 

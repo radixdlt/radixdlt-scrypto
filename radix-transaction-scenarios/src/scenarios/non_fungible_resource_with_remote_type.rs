@@ -28,16 +28,17 @@ impl Default for NonFungibleResourceWithRemoteTypeScenarioConfig {
 
 pub struct NonFungibleResourceWithRemoteTypeScenarioCreator;
 
-impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
+impl ScenarioCreator<'static> for NonFungibleResourceWithRemoteTypeScenarioCreator {
     type Config = NonFungibleResourceWithRemoteTypeScenarioConfig;
     type State = NonFungibleResourceWithRemoteTypeScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "non_fungible_resource_with_remote_type",
         };

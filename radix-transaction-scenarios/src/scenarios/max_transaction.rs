@@ -8,16 +8,17 @@ pub struct MaxTransactionScenarioState(Option<PackageAddress>, Option<ComponentA
 
 pub struct MaxTransactionScenarioCreator;
 
-impl ScenarioCreator for MaxTransactionScenarioCreator {
+impl ScenarioCreator<'static> for MaxTransactionScenarioCreator {
     type Config = MaxTransactionScenarioState;
     type State = MaxTransactionScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "max_transaction",
         };

@@ -8,16 +8,17 @@ pub struct GlobalNOwnedScenarioState(Option<(PackageAddress, ComponentAddress)>)
 
 pub struct GlobalNOwnedScenarioCreator;
 
-impl ScenarioCreator for GlobalNOwnedScenarioCreator {
+impl ScenarioCreator<'static> for GlobalNOwnedScenarioCreator {
     type Config = ();
     type State = GlobalNOwnedScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "global_n_owned",
         };

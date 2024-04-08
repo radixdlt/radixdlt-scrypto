@@ -373,9 +373,10 @@ pub struct ScenarioMetadata {
     pub logical_name: &'static str,
 }
 
-pub trait ScenarioCreator: Sized {
+pub trait ScenarioCreator<'a>: Sized {
     type Config: Default;
     type State: Default;
+    type Instance: ScenarioInstance + 'a;
 
     /// The protocol requirement of the scenario. If set to [`None`] then the scenario does not have
     /// any requirements and can be run against all protocol versions including genesis and all that
@@ -386,7 +387,7 @@ pub trait ScenarioCreator: Sized {
     /// is the object.
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate>;
 
-    fn create(core: ScenarioCore) -> Box<dyn ScenarioInstance> {
+    fn create(core: ScenarioCore) -> Self::Instance {
         Self::create_with_config_and_state(core, Default::default(), Default::default())
     }
 
@@ -394,7 +395,7 @@ pub trait ScenarioCreator: Sized {
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance>;
+    ) -> Self::Instance;
 }
 
 pub trait ScenarioInstance {
@@ -505,15 +506,15 @@ impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
         self,
         finalizer: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<ScenarioOutput, ScenarioError>
             + 'static,
-    ) -> Box<dyn ScenarioInstance> {
-        Box::new(Scenario::<Config, State> {
+    ) -> Scenario<Config, State> {
+        Scenario::<Config, State> {
             core: self.core,
             metadata: self.metadata,
             config: self.config,
             state: self.state,
             transactions: self.transactions,
             finalizer: Box::new(finalizer),
-        })
+        }
     }
 }
 

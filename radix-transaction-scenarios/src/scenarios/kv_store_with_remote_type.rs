@@ -8,16 +8,17 @@ pub struct KVStoreScenarioState(Option<(PackageAddress, ComponentAddress)>);
 
 pub struct KVStoreScenarioCreator;
 
-impl ScenarioCreator for KVStoreScenarioCreator {
+impl ScenarioCreator<'static> for KVStoreScenarioCreator {
     type Config = ();
     type State = KVStoreScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
     const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "kv_store_with_remote_type",
         };
