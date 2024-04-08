@@ -18,17 +18,7 @@ pub struct NewPackage {
 
 impl NewPackage {
     pub fn run(&self) -> Result<(), String> {
-        radix_clis_common::package::new_package(
-            self.package_name.clone(),
-            self.path.clone(),
-            self.local,
-        )
-        .map_err(|error| format!("{error:#?}"))
+        radix_clis_common::package::new_package(&self.package_name, self.path.clone(), self.local)
+            .map_err(|error| format!("{error:#?}"))
     }
-}
-
-fn child_of(path: &PathBuf, name: &str) -> PathBuf {
-    let mut p = path.clone();
-    p.push(name);
-    p
 }
