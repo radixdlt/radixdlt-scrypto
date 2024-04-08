@@ -4,5 +4,6 @@ use scrypto::prelude::*;
 #[events(String, u32)]
 mod blueprint {
     struct Club {}
+
     impl Club {}
 }

@@ -1,12 +1,23 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::resource::{NonFungibleResourceManagerError, VaultError};
 use radix_engine::errors::{ApplicationError, RejectionReason, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn can_securify_virtual_account() {
@@ -75,8 +86,8 @@ fn can_withdraw_from_my_virtual_account() {
 }
 
 fn can_withdraw_from_my_account_internal<F>(new_account: F)
-where
-    F: FnOnce(&mut DefaultLedgerSimulator) -> (Secp256k1PublicKey, ComponentAddress),
+    where
+        F: FnOnce(&mut DefaultLedgerSimulator) -> (Secp256k1PublicKey, ComponentAddress),
 {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
@@ -284,7 +295,7 @@ fn securified_account_is_owned_by_correct_owner_badge() {
         balance_change,
         BalanceChange::NonFungible {
             added: btreeset![NonFungibleLocalId::bytes(account.as_node_id().0).unwrap()],
-            removed: btreeset![]
+            removed: btreeset![],
         }
     )
 }
@@ -303,7 +314,7 @@ fn account_created_with_create_advanced_has_an_empty_owner_badge() {
 }
 
 fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
-    if let None = metadata_value {
+    if metadata_value.is_none() {
         true
     } else {
         false

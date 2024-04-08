@@ -1,8 +1,13 @@
+use radix_common::*;
+use radix_common::data::manifest::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn can_call_self_with_package_token() {

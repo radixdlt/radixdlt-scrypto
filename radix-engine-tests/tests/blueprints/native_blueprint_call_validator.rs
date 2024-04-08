@@ -1,14 +1,15 @@
+use walkdir::WalkDir;
+
 use radix_common::prelude::NetworkDefinition;
 use radix_engine::utils::{
-    validate_call_arguments_to_native_components, InstructionSchemaValidationError,
-    LocatedInstructionSchemaValidationError,
+    InstructionSchemaValidationError, LocatedInstructionSchemaValidationError,
+    validate_call_arguments_to_native_components,
 };
 use radix_engine_tests::common::*;
-use radix_transactions::manifest::e2e::apply_address_replacements;
 use radix_transactions::manifest::{compile, MockBlobProvider};
+use radix_transactions::manifest::e2e::apply_address_replacements;
 use radix_transactions::prelude::*;
 use scrypto::prelude::*;
-use walkdir::WalkDir;
 
 #[test]
 fn validator_sees_valid_transfer_manifest_as_valid() {
@@ -68,14 +69,14 @@ fn common_manifests_are_all_valid() {
         }
 
         let manifest_string = std::fs::read_to_string(&path)
-            .map(|str| apply_address_replacements(str))
+            .map(apply_address_replacements)
             .unwrap();
         let manifest = compile(
             &manifest_string,
             &NetworkDefinition::simulator(),
             MockBlobProvider::new(),
         )
-        .unwrap();
+            .unwrap();
 
         // Act
         let validation_result =

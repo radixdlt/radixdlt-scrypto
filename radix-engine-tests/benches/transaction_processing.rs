@@ -1,22 +1,23 @@
 use std::collections::BTreeMap;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, Criterion, criterion_group, criterion_main};
+
+use radix_common::ManifestSbor;
 use radix_common::prelude::*;
 use radix_common::prelude::{NetworkDefinition, NonFungibleIdType, NonFungibleLocalId};
 use radix_common::types::Epoch;
-use radix_common::ManifestSbor;
-use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
-use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
-use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
-use radix_transactions::manifest::{compile, decompile, BlobProvider};
+use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
+use radix_engine_interface::blueprints::resource::RoleAssignmentInit;
+use radix_engine_interface::object_modules::ModuleConfig;
+use radix_transactions::manifest::{BlobProvider, compile, decompile};
 use radix_transactions::model::{
     PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
     TransactionPayloadPreparable,
 };
 use radix_transactions::prelude::*;
-use scrypto::prelude::ComponentAddress;
 use scrypto::NonFungibleData;
+use scrypto::prelude::ComponentAddress;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     let compiled_transaction = compiled_notarized_transaction();
@@ -82,7 +83,6 @@ fn compiled_notarized_transaction() -> Vec<u8> {
                 metadata! {},
                 Some(
                     (0u64..10_000u64)
-                        .into_iter()
                         .map(|id| (NonFungibleLocalId::integer(id), EmptyStruct {}))
                         .collect::<BTreeMap<NonFungibleLocalId, EmptyStruct>>(),
                 ),

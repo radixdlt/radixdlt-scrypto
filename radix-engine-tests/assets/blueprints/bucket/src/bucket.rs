@@ -5,7 +5,6 @@ pub struct MyData {}
 
 #[blueprint]
 mod bucket_test {
-
     struct BucketTest {
         vault: Vault,
     }

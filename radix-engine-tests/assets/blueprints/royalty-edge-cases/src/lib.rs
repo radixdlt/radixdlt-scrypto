@@ -48,7 +48,8 @@ mod royalty_edge_cases {
             let royalty_config: Option<ModuleConfig<ComponentRoyaltyConfig>> = {
                 Some(ModuleConfig {
                     init: ComponentRoyaltyConfig {
-                        royalty_amounts: indexmap! {}, /* Intentionally no royalty for `method`. */
+                        royalty_amounts: indexmap! {},
+                        /* Intentionally no royalty for `method`. */
                     },
                     roles: RoleAssignmentInit::new(),
                 })

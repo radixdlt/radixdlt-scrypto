@@ -7,12 +7,20 @@
 //! [`MultiResourcePool::contribute`]:
 //! radix_engine::blueprints::pool::v1::v1_1::MultiResourcePoolBlueprint::contribute
 
+use radix_common::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::errors::{
     multi_resource_pool::Error as MultiResourcePoolError,
     two_resource_pool::Error as TwoResourcePoolError,
 };
+use radix_engine::errors::*;
+use radix_engine::vm::wasm::*;
+use radix_engine_interface::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::pool_stubs::*;
-use scrypto_test::prelude::*;
+use radix_native_sdk::resource::*;
+use scrypto_test::environment::*;
+use scrypto_test::sdk::*;
 
 type TestResult = Result<(), RuntimeError>;
 

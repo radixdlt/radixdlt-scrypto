@@ -1,5 +1,5 @@
-use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
+use scrypto::prelude::wasm_api::*;
 
 #[blueprint]
 mod globalize_test {

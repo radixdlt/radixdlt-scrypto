@@ -31,12 +31,12 @@ mod proxy {
             Self {
                 oracle_global_address: None,
             }
-            .instantiate()
-            .prepare_to_globalize(owner_role)
-            .roles(roles! {
+                .instantiate()
+                .prepare_to_globalize(owner_role)
+                .roles(roles! {
                 proxy_manager_auth => manager_rule;
             })
-            .globalize()
+                .globalize()
         }
 
         // Specify Oracle global component address

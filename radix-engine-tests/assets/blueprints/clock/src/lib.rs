@@ -11,19 +11,19 @@ mod clock_test {
 
             assert!(!Clock::current_time_is_strictly_before(
                 current_time,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(Clock::current_time_is_at_or_before(
                 current_time,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(!Clock::current_time_is_strictly_after(
                 current_time,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(Clock::current_time_is_at_or_after(
                 current_time,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
 
             // Check against a future time (also after rounding)
@@ -33,20 +33,20 @@ mod clock_test {
 
             assert!(Clock::current_time_is_strictly_before(
                 time_in_the_future,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
 
             assert!(Clock::current_time_is_at_or_before(
                 time_in_the_future,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(!Clock::current_time_is_strictly_after(
                 time_in_the_future,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(!Clock::current_time_is_at_or_after(
                 time_in_the_future,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
 
             // Check against a future time, but the same after rounding to minutes
@@ -56,19 +56,19 @@ mod clock_test {
 
             assert!(!Clock::current_time_is_strictly_before(
                 time_in_the_future,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(Clock::current_time_is_at_or_before(
                 time_in_the_future,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(!Clock::current_time_is_strictly_after(
                 time_in_the_future,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(Clock::current_time_is_at_or_after(
                 time_in_the_future,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
 
             // Check against a past time
@@ -78,19 +78,19 @@ mod clock_test {
 
             assert!(!Clock::current_time_is_strictly_before(
                 time_in_the_past,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(!Clock::current_time_is_at_or_before(
                 time_in_the_past,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(Clock::current_time_is_strictly_after(
                 time_in_the_past,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
             assert!(Clock::current_time_is_at_or_after(
                 time_in_the_past,
-                TimePrecision::Minute
+                TimePrecision::Minute,
             ));
         }
 

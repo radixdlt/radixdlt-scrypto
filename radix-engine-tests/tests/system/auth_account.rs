@@ -1,10 +1,19 @@
+use radix_common::*;
+use radix_common::constants::*;
 use radix_common::constants::AuthAddresses;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::api::AttachedModuleId;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::rule;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 fn test_auth_rule(
     ledger: &mut DefaultLedgerSimulator,
@@ -127,7 +136,7 @@ fn can_withdraw_from_my_complex_account() {
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
-            test_auth_rule(&mut ledger, &auth, &signer_public_keys, true);
+            test_auth_rule(&mut ledger, &auth, signer_public_keys, true);
         }
     }
 }
@@ -149,7 +158,7 @@ fn cannot_withdraw_from_my_complex_account() {
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
-            test_auth_rule(&mut ledger, &auth, &signer_public_keys, false);
+            test_auth_rule(&mut ledger, &auth, signer_public_keys, false);
         }
     }
 }
@@ -172,7 +181,7 @@ fn can_withdraw_from_my_complex_account_2() {
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
-            test_auth_rule(&mut ledger, &auth, &signer_public_keys, true);
+            test_auth_rule(&mut ledger, &auth, signer_public_keys, true);
         }
     }
 }
@@ -201,7 +210,7 @@ fn cannot_withdraw_from_my_complex_account_2() {
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
-            test_auth_rule(&mut ledger, &auth, &signer_public_keys, false);
+            test_auth_rule(&mut ledger, &auth, signer_public_keys, false);
         }
     }
 }
@@ -259,6 +268,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Assert
     receipt.expect_commit_success();
 }
+
 #[test]
 fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof() {
     // Arrange

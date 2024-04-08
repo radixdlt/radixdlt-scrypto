@@ -1,16 +1,23 @@
+use std::iter;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
 use radix_common::prelude::*;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_transactions::prelude::*;
-use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder};
-use std::iter;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
@@ -65,8 +72,10 @@ pub fn should_be_able_to_create_proof_from_maximum_vault_access_controller() {
 
 const BLUEPRINT_NAME: &str = "MyBlueprint";
 const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
+
 #[derive(Clone)]
 struct TestInvoke;
+
 impl VmInvoke for TestInvoke {
     fn invoke<Y, V>(
         &mut self,
@@ -75,14 +84,14 @@ impl VmInvoke for TestInvoke {
         api: &mut Y,
         _vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
     {
         match export_name {
             "new" => {
-                let size: (usize,) = input.as_typed().unwrap();
-                let entries = iter::repeat((ScryptoValue::Tuple { fields: vec![] },))
+                let size: (usize, ) = input.as_typed().unwrap();
+                let entries = iter::repeat((ScryptoValue::Tuple { fields: vec![] }, ))
                     .take(size.0)
                     .collect();
                 let result = api.call_function(
@@ -100,7 +109,7 @@ impl VmInvoke for TestInvoke {
                             address_reservation: Default::default(),
                         },
                     )
-                    .unwrap(),
+                        .unwrap(),
                 )?;
                 let result: NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput =
                     scrypto_decode(&result).unwrap();
@@ -120,7 +129,7 @@ impl VmInvoke for TestInvoke {
                         timed_recovery_delay_in_minutes: None,
                         address_reservation: None,
                     })
-                    .unwrap(),
+                        .unwrap(),
                 )?;
             }
             _ => {}

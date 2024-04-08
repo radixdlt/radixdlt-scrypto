@@ -1,6 +1,6 @@
 use radix_engine::errors::*;
-use radix_engine::system::system_modules::auth::*;
 use radix_engine::system::system_modules::*;
+use radix_engine::system::system_modules::auth::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
 use radix_substate_store_queries::typed_substate_layout::*;
@@ -40,8 +40,8 @@ fn account_locker_cant_be_instantiated_before_protocol_update() {
     receipt.expect_specific_rejection(|error| {
         error
             == &RejectionReason::BootloadingError(BootloadingError::ReferencedNodeDoesNotExist(
-                LOCKER_PACKAGE.into_node_id(),
-            ))
+            LOCKER_PACKAGE.into_node_id(),
+        ))
     });
 }
 
@@ -603,8 +603,7 @@ fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
 }
 
 #[test]
-fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the_locker_is_not_and_authorized_depositor(
-) {
+fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the_locker_is_not_and_authorized_depositor() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
     let (badge_holder_public_key, _, badge_holder_account) = ledger.new_account(false);
@@ -1572,19 +1571,19 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     (user_account3, fungible_resource3),
                     (user_account3, non_fungible_resource1),
                 ]
-                .map(|(account, resource)| InstructionV1::CallMethod {
-                    address: account.into(),
-                    method_name: ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_owned(),
-                    args: manifest_decode(
-                        &manifest_encode(&AccountSetResourcePreferenceInput {
-                            resource_address: resource,
-                            resource_preference: ResourcePreference::Disallowed,
-                        })
-                        .unwrap(),
-                    )
-                    .unwrap(),
-                })
-                .to_vec(),
+                    .map(|(account, resource)| InstructionV1::CallMethod {
+                        address: account.into(),
+                        method_name: ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_owned(),
+                        args: manifest_decode(
+                            &manifest_encode(&AccountSetResourcePreferenceInput {
+                                resource_address: resource,
+                                resource_preference: ResourcePreference::Disallowed,
+                            })
+                                .unwrap(),
+                        )
+                            .unwrap(),
+                    })
+                    .to_vec(),
                 blobs: Default::default(),
             },
             EnabledModules::for_notarized_transaction()
@@ -2993,7 +2992,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     &user_account2_public_key,
                     &user_account3_public_key,
                 ]
-                .map(NonFungibleGlobalId::from_public_key),
+                    .map(NonFungibleGlobalId::from_public_key),
             ),
             LockerAction::Claim {
                 claimant,
@@ -3018,7 +3017,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     &user_account2_public_key,
                     &user_account3_public_key,
                 ]
-                .map(NonFungibleGlobalId::from_public_key),
+                    .map(NonFungibleGlobalId::from_public_key),
             ),
         };
         receipt.expect_commit_success();
@@ -3036,10 +3035,10 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         for event in events {
             match event {
                 AccountLockerEvent::StoreEvent(StoreEvent {
-                    claimant,
-                    resource_address,
-                    resources,
-                }) => {
+                                                   claimant,
+                                                   resource_address,
+                                                   resources,
+                                               }) => {
                     let entry = state_reconciled_from_events
                         .entry(claimant.0)
                         .or_default()
@@ -3048,9 +3047,9 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     *entry = entry.checked_add(&resources).expect("Can't fail!");
                 }
                 AccountLockerEvent::BatchStoreEvent(BatchStoreEvent {
-                    claimants,
-                    resource_address,
-                }) => {
+                                                        claimants,
+                                                        resource_address,
+                                                    }) => {
                     for (claimant, resources) in claimants {
                         let entry = state_reconciled_from_events
                             .entry(claimant.0)
@@ -3061,15 +3060,15 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     }
                 }
                 AccountLockerEvent::RecoveryEvent(RecoverEvent {
-                    claimant,
-                    resource_address,
-                    resources,
-                })
+                                                      claimant,
+                                                      resource_address,
+                                                      resources,
+                                                  })
                 | AccountLockerEvent::ClaimEvent(ClaimEvent {
-                    claimant,
-                    resource_address,
-                    resources,
-                }) => {
+                                                     claimant,
+                                                     resource_address,
+                                                     resources,
+                                                 }) => {
                     let entry = state_reconciled_from_events
                         .entry(claimant.0)
                         .or_default()

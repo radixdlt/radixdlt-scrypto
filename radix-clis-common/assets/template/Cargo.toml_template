@@ -4,11 +4,16 @@ version = "1.0.0"
 edition = "2021"
 
 [dependencies]
-sbor = ${sbor}
-scrypto = ${scrypto}
+sbor = ${dep:sbor}
+scrypto = ${dep:scrypto}
 
 [dev-dependencies]
-scrypto-test = ${scrypto-test}
+scrypto-test = ${dep:scrypto-test}
+radix-engine = ${dep:radix-engine}
+radix-common = ${dep:radix-common}
+radix-native-sdk = ${dep:radix-native-sdk}
+radix-transactions = ${dep:radix-transactions}
+radix-engine-interface = ${dep:radix-engine-interface}
 
 [profile.release]
 opt-level = 'z'        # Optimize for size.

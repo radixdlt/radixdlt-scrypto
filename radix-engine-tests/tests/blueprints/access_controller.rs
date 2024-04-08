@@ -1,3 +1,7 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
@@ -6,10 +10,13 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemModuleError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::prelude::*;
-use radix_transactions::prelude::*;
-use scrypto_test::prelude::{CustomGenesis, DefaultLedgerSimulator, LedgerSimulatorBuilder};
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 pub fn creating_an_access_controller_succeeds() {

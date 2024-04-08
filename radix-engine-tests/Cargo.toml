@@ -17,7 +17,7 @@ radix-transactions = { workspace = true }
 radix-transaction-scenarios = { workspace = true }
 radix-blueprint-schema-init = { workspace = true }
 radix-rust = { workspace = true }
-radix-engine-profiling = { workspace = true, optional = true, features = ["resource_tracker"]}
+radix-engine-profiling = { workspace = true, optional = true, features = ["resource_tracker"] }
 radix-engine-profiling-derive = { workspace = true }
 scrypto-test = { workspace = true }
 lazy_static = { workspace = true }

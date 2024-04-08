@@ -1,16 +1,25 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
+use radix_engine_interface::*;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF,
+    ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF, ClientApi, FieldValue, LockFlags,
 };
+use radix_engine_interface::api::*;
+use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
+use radix_engine_interface::prelude::*;
 use radix_transactions::builder::ManifestBuilder;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn cannot_store_reference_in_non_transient_blueprint() {
@@ -27,9 +36,9 @@ fn cannot_store_reference_in_non_transient_blueprint() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "new" => {
@@ -69,8 +78,8 @@ fn cannot_store_reference_in_non_transient_blueprint() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::TypeCheckError(
-            TypeCheckError::BlueprintPayloadValidationError(.., error),
-        )) => error.contains("Non Global Reference"),
+                                      TypeCheckError::BlueprintPayloadValidationError(.., error),
+                                  )) => error.contains("Non Global Reference"),
         _ => false,
     });
 }
@@ -90,9 +99,9 @@ fn cannot_write_reference_in_non_transient_blueprint() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "new" => {
@@ -135,8 +144,8 @@ fn cannot_write_reference_in_non_transient_blueprint() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::TypeCheckError(
-            TypeCheckError::BlueprintPayloadValidationError(.., error),
-        )) => error.contains("Non Global Reference"),
+                                      TypeCheckError::BlueprintPayloadValidationError(.., error),
+                                  )) => error.contains("Non Global Reference"),
         _ => false,
     });
 }
@@ -156,9 +165,9 @@ fn cannot_write_reference_in_kv_store() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "kv_store" => {
@@ -210,8 +219,8 @@ fn cannot_write_reference_in_kv_store() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::TypeCheckError(
-            TypeCheckError::KeyValueStorePayloadValidationError(KeyOrValue::Value, error),
-        )) => error.contains("Non Global Reference"),
+                                      TypeCheckError::KeyValueStorePayloadValidationError(KeyOrValue::Value, error),
+                                  )) => error.contains("Non Global Reference"),
         _ => false,
     });
 }

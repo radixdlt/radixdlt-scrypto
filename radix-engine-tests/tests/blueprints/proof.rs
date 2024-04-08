@@ -1,10 +1,19 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
+use radix_transactions::builder::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
@@ -282,10 +291,10 @@ fn cant_move_restricted_proof_to_auth_zone() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
-            if e.eq("Moving restricted proof downstream") =>
-        {
-            true
-        }
+        if e.eq("Moving restricted proof downstream") =>
+            {
+                true
+            }
         _ => false,
     });
 }
@@ -321,10 +330,10 @@ fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
-            if e.eq("Moving restricted proof downstream") =>
-        {
-            true
-        }
+        if e.eq("Moving restricted proof downstream") =>
+            {
+                true
+            }
         _ => false,
     });
 }
@@ -633,8 +642,8 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
+                                                                         _,
+                                                                     ))) => true,
         _ => false,
     })
 }
@@ -667,8 +676,8 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
+                                                                         _,
+                                                                     ))) => true,
         _ => false,
     })
 }
@@ -701,8 +710,8 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
+                                                                         _,
+                                                                     ))) => true,
         _ => false,
     })
 }
@@ -735,8 +744,8 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
+                                                                         _,
+                                                                     ))) => true,
         _ => false,
     })
 }
@@ -762,8 +771,8 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
+                                                                         _,
+                                                                     ))) => true,
         _ => false,
     })
 }
@@ -789,8 +798,8 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
+                                                                         _,
+                                                                     ))) => true,
         _ => false,
     })
 }
@@ -816,8 +825,8 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
+                                                                         _,
+                                                                     ))) => true,
         _ => false,
     })
 }
@@ -843,8 +852,8 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-            _,
-        ))) => true,
+                                                                         _,
+                                                                     ))) => true,
         _ => false,
     })
 }
@@ -913,10 +922,10 @@ fn test_proof_check_with_message() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::ApplicationError(ApplicationError::PanicMessage(e))
-            if e.eq("Not XRD proof") =>
-        {
-            true
-        }
+        if e.eq("Not XRD proof") =>
+            {
+                true
+            }
         _ => false,
     });
 }

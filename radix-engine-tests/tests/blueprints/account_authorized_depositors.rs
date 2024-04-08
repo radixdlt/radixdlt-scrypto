@@ -1,12 +1,20 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::manifest::model::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::account::AccountError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::*;
-use radix_transactions::prelude::*;
-use scrypto_test::prelude::LedgerSimulatorBuilder;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn account_add_authorized_depositor_without_owner_auth_fails() {
@@ -78,7 +86,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                    AccountAddAuthorizedDepositorInput { badge: badge },
+                    AccountAddAuthorizedDepositorInput { badge },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk1)],
@@ -113,8 +121,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
 }
 
 #[test]
-fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone(
-) {
+fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk1, _, account1) = ledger.new_account(true);
@@ -168,8 +175,7 @@ fn try_authorized_deposit_or_refund_panics_when_badge_is_in_depositors_list_but_
 }
 
 #[test]
-fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone(
-) {
+fn try_authorized_deposit_or_refund_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk1, _, account1) = ledger.new_account(true);
@@ -337,7 +343,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                    AccountAddAuthorizedDepositorInput { badge: badge },
+                    AccountAddAuthorizedDepositorInput { badge },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk1)],
@@ -372,8 +378,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
 }
 
 #[test]
-fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone(
-) {
+fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk1, _, account1) = ledger.new_account(true);
@@ -427,8 +432,7 @@ fn try_authorized_deposit_batch_or_refund_panics_when_badge_is_in_depositors_lis
 }
 
 #[test]
-fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone(
-) {
+fn try_authorized_deposit_batch_or_refund_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk1, _, account1) = ledger.new_account(true);
@@ -504,7 +508,7 @@ fn try_authorized_deposit_or_abort_performs_an_abort_when_badge_is_not_in_deposi
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                    AccountAddAuthorizedDepositorInput { badge: badge },
+                    AccountAddAuthorizedDepositorInput { badge },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk1)],
@@ -592,8 +596,7 @@ fn try_authorized_deposit_or_abort_panics_when_badge_is_in_depositors_list_but_i
 }
 
 #[test]
-fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone(
-) {
+fn try_authorized_deposit_or_abort_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk1, _, account1) = ledger.new_account(true);
@@ -669,7 +672,7 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
                 .call_method(
                     account1,
                     ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                    AccountAddAuthorizedDepositorInput { badge: badge },
+                    AccountAddAuthorizedDepositorInput { badge },
                 )
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk1)],
@@ -702,8 +705,7 @@ fn try_authorized_deposit_batch_or_abort_performs_an_abort_when_badge_is_not_in_
 }
 
 #[test]
-fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone(
-) {
+fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list_but_is_not_in_auth_zone() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk1, _, account1) = ledger.new_account(true);
@@ -757,8 +759,7 @@ fn try_authorized_deposit_batch_or_abort_panics_when_badge_is_in_depositors_list
 }
 
 #[test]
-fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone(
-) {
+fn try_authorized_deposit_batch_or_abort_accepts_deposit_when_depositor_is_authorized_and_badge_is_in_auth_zone() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk1, _, account1) = ledger.new_account(true);

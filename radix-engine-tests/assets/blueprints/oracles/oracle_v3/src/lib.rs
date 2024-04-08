@@ -30,7 +30,7 @@ mod oracle {
                 symbol_map: indexmap!(),
                 prices: KeyValueStore::new(),
             }
-            .instantiate()
+                .instantiate()
         }
 
         pub fn instantiate_and_globalize(

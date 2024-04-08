@@ -1,9 +1,16 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::prelude::*;
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError},
     system::system_modules::limits::TransactionLimitsError,
 };
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
     wat2wasm(
@@ -57,10 +64,10 @@ fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
    (export "Test_f" (func $test))
 )
     "##
-        .replace("TEXT_CONTENT", " ".repeat(message_size).as_str())
-        .replace("TEXT_SIZE", message_size.to_string().as_str())
-        .replace("ITERATIONS", iterations.to_string().as_str())
-        .as_str(),
+            .replace("TEXT_CONTENT", " ".repeat(message_size).as_str())
+            .replace("TEXT_SIZE", message_size.to_string().as_str())
+            .replace("ITERATIONS", iterations.to_string().as_str())
+            .as_str(),
     )
 }
 
@@ -107,6 +114,7 @@ fn test_emit_large_logs() {
         )),
     );
 }
+
 #[test]
 fn test_emit_lots_of_logs() {
     test_emit_log(

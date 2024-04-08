@@ -1,20 +1,29 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::identity::{
-    IdentityCreateAdvancedInput, IdentitySecurifyToSingleBadgeInput, IDENTITY_BLUEPRINT,
-    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
+    IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
+    IdentityCreateAdvancedInput, IdentitySecurifyToSingleBadgeInput,
 };
 use radix_engine_interface::object_modules::metadata::MetadataValue;
-use scrypto_test::prelude::*;
+use radix_engine_interface::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::signing::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn cannot_securify_in_advanced_mode() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
-    let component_address = ledger.new_identity(pk.clone(), false);
+    let component_address = ledger.new_identity(pk, false);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -45,7 +54,7 @@ fn can_securify_from_virtual_identity() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
-    let component_address = ledger.new_identity(pk.clone(), true);
+    let component_address = ledger.new_identity(pk, true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -69,7 +78,7 @@ fn can_securify_from_virtual_identity_ed25519() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_ed25519_virtual_account();
-    let component_address = ledger.new_identity(pk.clone(), true);
+    let component_address = ledger.new_identity(pk, true);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -93,7 +102,7 @@ fn cannot_securify_twice() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
-    let component_address = ledger.new_identity(pk.clone(), true);
+    let component_address = ledger.new_identity(pk, true);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -136,7 +145,7 @@ fn can_set_metadata_after_securify() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
-    let identity_address = ledger.new_identity(pk.clone(), true);
+    let identity_address = ledger.new_identity(pk, true);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -244,7 +253,7 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
         balance_change,
         BalanceChange::NonFungible {
             added: btreeset![NonFungibleLocalId::bytes(identity.as_node_id().0).unwrap()],
-            removed: btreeset![]
+            removed: btreeset![],
         }
     )
 }
@@ -279,7 +288,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
 }
 
 fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
-    if let None = metadata_value {
+    if metadata_value.is_none() {
         true
     } else {
         false

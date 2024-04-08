@@ -1,4 +1,5 @@
-use scrypto_test::prelude::*;
+use scrypto_test::environment::*;
+use scrypto_test::sdk::*;
 use tuple_return::tuple_return_test::*;
 
 #[test]

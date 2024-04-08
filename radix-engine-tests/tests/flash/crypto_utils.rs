@@ -1,15 +1,19 @@
+use radix_common::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
-use radix_engine::updates::state_updates::generate_bls128_and_keccak256_state_updates;
 use radix_engine::updates::ProtocolUpdateEntry;
 use radix_engine::updates::ProtocolUpdates;
-use radix_engine_tests::common::PackageLoader;
+use radix_engine::updates::state_updates::generate_bls128_and_keccak256_state_updates;
+use radix_engine_interface::*;
 use radix_engine_tests::common::*;
+use radix_engine_tests::common::PackageLoader;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use scrypto_test::prelude::*;
-use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
+use radix_substate_store_interface::interface::*;
+use scrypto_test::environment::*;
+use scrypto_test::ledger_simulator::*;
+use scrypto_test::sdk::*;
 
 #[test]
 fn publishing_crypto_utils_without_state_flash_should_fail() {
@@ -75,7 +79,7 @@ fn run_flash_test_test_environment(enable_bls: bool, expect_success: bool) {
     } else {
         test_env_builder.protocol_updates(ProtocolUpdates::none())
     }
-    .build();
+        .build();
 
     // Act
     let result =

@@ -1,9 +1,8 @@
-use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
+use scrypto::prelude::wasm_api::*;
 
 #[blueprint]
 mod system_wasm_buffers {
-
     struct WasmBuffersTest {
         kv_store: KeyValueStore<u32, Vec<u8>>,
         key: Vec<u8>,

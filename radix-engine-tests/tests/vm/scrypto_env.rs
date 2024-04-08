@@ -1,11 +1,21 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::resource::ProofError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
 use radix_engine::kernel::call_frame::OpenSubstateError;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 fn create_payload_of_depth(n: usize) -> Vec<u8> {
     assert!(n >= 1);
@@ -184,8 +194,8 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..)),
-        )) => true,
+                                      CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..)),
+                                  )) => true,
         _ => false,
     });
 }

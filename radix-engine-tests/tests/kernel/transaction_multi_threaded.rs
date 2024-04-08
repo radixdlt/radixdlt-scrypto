@@ -1,21 +1,23 @@
 #[cfg(not(feature = "alloc"))]
 #[cfg(not(feature = "resource_tracker"))]
 mod multi_threaded_test {
+    use crossbeam::thread;
+
     use radix_common::prelude::*;
     use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{CostingParameters, ExecutionConfig};
+    use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::prelude::*;
     use radix_engine_interface::rule;
     use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
     use radix_transactions::model::TestTransaction;
     use radix_transactions::prelude::*;
+
     // using crossbeam for its scoped thread feature, which allows non-static lifetimes for data being
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
-    use crossbeam::thread;
-    use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
@@ -37,8 +39,8 @@ mod multi_threaded_test {
             vm.clone(),
             false,
         )
-        .bootstrap_test_default()
-        .unwrap();
+            .bootstrap_test_default()
+            .unwrap();
 
         // Create a key pair
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
@@ -68,8 +70,8 @@ mod multi_threaded_test {
                             &public_key
                         )]),
                 )
-                .expect_commit(true)
-                .new_component_addresses()[0];
+                    .expect_commit(true)
+                    .new_component_addresses()[0];
                 account
             })
             .collect::<Vec<ComponentAddress>>();
@@ -94,7 +96,7 @@ mod multi_threaded_test {
                     .expect("Expected transaction to be preparable")
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
-            .expect_commit(true);
+                .expect_commit(true);
         }
 
         // Create a transfer manifest
@@ -115,7 +117,7 @@ mod multi_threaded_test {
                         vm.clone(),
                         &CostingParameters::default(),
                         &ExecutionConfig::for_test_transaction(),
-                        &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
+                        &TestTransaction::new(manifest.clone(), hash("Transfer".to_string()))
                             .prepare()
                             .expect("Expected transaction to be preparable")
                             .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
@@ -127,6 +129,6 @@ mod multi_threaded_test {
                 });
             }
         })
-        .unwrap();
+            .unwrap();
     }
 }

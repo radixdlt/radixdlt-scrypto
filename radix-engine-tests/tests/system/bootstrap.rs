@@ -1,16 +1,29 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::math::*;
+use radix_common::network::*;
 use radix_common::prelude::*;
+use radix_engine::blueprints::models::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::object_modules::metadata::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::checkers::SystemDatabaseChecker;
 use radix_engine::system::checkers::{
     ResourceDatabaseChecker, ResourceEventChecker, ResourceReconciler, SystemEventChecker,
 };
+use radix_engine::system::checkers::SystemDatabaseChecker;
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine::system::system_substates::*;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
-use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
+use radix_engine::vm::wasm::DefaultWasmEngine;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -18,9 +31,10 @@ use radix_substate_store_interface::db_key_mapper::{
     MappedSubstateDatabase, SpreadPrefixKeyMapper,
 };
 use radix_substate_store_queries::typed_substate_layout::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
 use radix_transactions::prelude::*;
-use scrypto_test::prelude::KeyValueEntrySubstate;
-use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder, SubtreeVaults};
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
@@ -38,7 +52,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         xrd_amount: Decimal::one(),
     };
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Validators(vec![validator_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake])],
@@ -145,7 +159,7 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
         xrd_amount: Decimal::one(),
     };
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Validators(vec![validator_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake])],
@@ -224,7 +238,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
             EntityType::GlobalFungibleResourceManager as u8,
             &hash(vec![1, 2, 3]).lower_bytes(),
         )
-        .0,
+            .0,
     );
     let resource_owner = ComponentAddress::virtual_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(2).unwrap().public_key(),
@@ -249,8 +263,8 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let genesis_data_chunks = vec![
         GenesisDataChunk::Resources(vec![genesis_resource]),
         GenesisDataChunk::ResourceBalances {
-            accounts: vec![token_holder.clone()],
-            allocations: vec![(resource_address.clone(), vec![resource_allocation])],
+            accounts: vec![token_holder],
+            allocations: vec![(resource_address, vec![resource_allocation])],
         },
     ];
 
@@ -273,7 +287,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
 
     let total_supply = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
-            &resource_address.as_node_id(),
+            resource_address.as_node_id(),
             MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
@@ -424,8 +438,8 @@ fn test_genesis_stake_allocation() {
     }];
     let genesis_data_chunks = vec![
         GenesisDataChunk::Validators(vec![
-            validator_0_key.clone().into(),
-            validator_1_key.clone().into(),
+            validator_0_key.into(),
+            validator_1_key.into(),
         ]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_0, staker_1],
@@ -491,7 +505,7 @@ fn test_genesis_stake_allocation() {
         {
             let validator_url_entry = reader
                 .read_object_collection_entry::<_, MetadataEntryEntryPayload>(
-                    &new_validators[index].as_node_id(),
+                    new_validators[index].as_node_id(),
                     ModuleId::Metadata,
                     ObjectCollectionKey::KeyValue(
                         MetadataCollection::EntryKeyValue.collection_index(),
@@ -625,8 +639,8 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     }];
     let genesis_data_chunks = vec![
         GenesisDataChunk::Validators(vec![
-            validator_0_key.clone().into(),
-            validator_1_key.clone().into(),
+            validator_0_key.into(),
+            validator_1_key.into(),
         ]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_0, staker_1],
@@ -641,7 +655,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     // Bootstrap
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_genesis(CustomGenesis {
-            genesis_data_chunks: genesis_data_chunks,
+            genesis_data_chunks,
             genesis_epoch: Epoch::of(1),
             initial_config: CustomGenesis::default_consensus_manager_config(),
             initial_time_ms: 0,
@@ -672,7 +686,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     let mut total_burn_amount = Decimal::ZERO;
     for tx_events in ledger.collected_events() {
         for event in tx_events {
-            match &event.0 .0 {
+            match &event.0.0 {
                 Emitter::Method(x, _) if x.eq(XRD.as_node_id()) => {}
                 _ => {
                     continue;
@@ -727,7 +741,7 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
         xrd_amount: stake_xrd,
     };
     let validator_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Validators(vec![validator_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake_allocation])],

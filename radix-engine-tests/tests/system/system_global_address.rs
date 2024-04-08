@@ -1,15 +1,23 @@
+use core::ops::*;
+
 use radix_blueprint_schema_init::*;
+use radix_common::*;
+use radix_common::data::manifest::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::resource::ResourceNativePackage;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
+use radix_engine::vm::wasm::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::{ACTOR_REF_GLOBAL, ClientApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use radix_transactions::builder::ManifestBuilder;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn global_address_access_from_frame_owned_object_should_not_succeed() {
@@ -27,9 +35,9 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "test" => {
@@ -105,9 +113,9 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             if self.0.contains(export_name) {
                 api.actor_get_node_id(ACTOR_REF_GLOBAL)

@@ -1,10 +1,20 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::object_modules::royalty::ComponentRoyaltyError;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_component_royalty() {
@@ -286,7 +296,7 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: Roy
     match &mut blueprint_def.royalty_config {
         PackageRoyaltyConfig::Enabled(royalties) => {
             for royalty in royalties.values_mut() {
-                *royalty = royalty_amount.clone();
+                *royalty = royalty_amount;
             }
         }
         PackageRoyaltyConfig::Disabled => {}

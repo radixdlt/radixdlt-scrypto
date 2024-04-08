@@ -1,12 +1,21 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::types::FromPublicKey;
 use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine_interface::prelude::*;
+use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_take_from_vault_after_mint() {
@@ -171,8 +180,8 @@ fn mint_with_bad_granularity_should_fail() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
-            FungibleResourceManagerError::InvalidAmount(amount, granularity),
-        )) = e
+                                                  FungibleResourceManagerError::InvalidAmount(amount, granularity),
+                                              )) = e
         {
             amount.eq(&dec!("0.1")) && *granularity == 0
         } else {
@@ -208,8 +217,8 @@ fn create_fungible_too_high_granularity_should_fail() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
-            FungibleResourceManagerError::InvalidDivisibility(granularity),
-        )) = e
+                                                  FungibleResourceManagerError::InvalidDivisibility(granularity),
+                                              )) = e
         {
             *granularity == 23u8
         } else {

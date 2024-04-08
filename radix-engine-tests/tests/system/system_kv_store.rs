@@ -1,19 +1,28 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError, SystemModuleError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
+use radix_engine_interface::*;
 use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::api::*;
+use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::prelude::*;
 use radix_transactions::builder::ManifestBuilder;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 const BLUEPRINT_NAME: &str = "MyBlueprint";
 const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
+
 #[derive(Clone)]
 struct TestInvoke;
+
 impl VmInvoke for TestInvoke {
     fn invoke<Y, V>(
         &mut self,
@@ -22,9 +31,9 @@ impl VmInvoke for TestInvoke {
         api: &mut Y,
         _vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
     {
         match export_name {
             "test" => {

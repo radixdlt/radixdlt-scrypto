@@ -951,7 +951,7 @@ impl Default for TestEnvironment<InMemorySubstateDatabase> {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use super::*;
 
     #[test]
     pub fn test_env_can_be_created() {

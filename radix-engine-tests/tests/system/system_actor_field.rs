@@ -1,16 +1,22 @@
+use radix_common::*;
+use radix_common::data::manifest::*;
 use radix_common::prelude::*;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
+use radix_engine::transaction::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
+use radix_engine_interface::*;
 use radix_engine_interface::api::{
-    AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_OUTER_OBJECT,
+    ACTOR_STATE_OUTER_OBJECT, AttachedModuleId, ClientApi, LockFlags,
 };
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::prelude::*;
 use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_transactions::builder::ManifestBuilder;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn opening_non_existent_outer_object_fields_should_not_panic() {
@@ -27,9 +33,9 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "test" => {

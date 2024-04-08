@@ -1,12 +1,21 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::CreateFrameError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ACTOR_REF_AUTH_ZONE};
+use radix_engine_interface::*;
+use radix_engine_interface::api::{ACTOR_REF_AUTH_ZONE, ClientApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto_test::prelude::*;
+use radix_engine_interface::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn should_not_be_able_to_move_auth_zone() {
@@ -23,9 +32,9 @@ fn should_not_be_able_to_move_auth_zone() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "test" => {

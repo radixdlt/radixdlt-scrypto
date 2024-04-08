@@ -1,16 +1,15 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine::transaction::TransactionReceipt;
-use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine::errors::*;
+use radix_engine::transaction::*;
+use radix_engine_interface::*;
+use radix_engine_interface::object_modules::*;
 use radix_engine_interface::prelude::*;
-use radix_engine_interface::{metadata, metadata_init, mint_roles};
 use radix_engine_tests::common::*;
-use radix_rust::ContextualDisplay;
-use radix_transactions::manifest::{compile, BlobProvider};
+use radix_transactions::manifest::*;
 use radix_transactions::prelude::*;
-use scrypto::prelude::Pow;
-use scrypto::NonFungibleData;
-use scrypto_test::prelude::LedgerSimulatorBuilder;
+use scrypto::*;
+use scrypto::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 macro_rules! replace_variables {
     ($content:expr $(, $a:ident = $b:expr)* ) => {
@@ -31,10 +30,10 @@ fn test_allocate_address_and_call_it() {
         );
         (manifest, vec![code_blob])
     })
-    .expect_specific_failure(|e| match e {
-        RuntimeError::SystemError(SystemError::AuthTemplateDoesNotExist(..)) => true,
-        _ => false,
-    });
+        .expect_specific_failure(|e| match e {
+            RuntimeError::SystemError(SystemError::AuthTemplateDoesNotExist(..)) => true,
+            _ => false,
+        });
 }
 
 /// An example manifest for transfer of funds between accounts
@@ -53,7 +52,7 @@ fn transfer_of_funds_to_another_account_succeeds() {
         );
         (manifest, Vec::new())
     })
-    .expect_commit_success();
+        .expect_commit_success();
 }
 
 #[test]
@@ -90,7 +89,7 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
         );
         (manifest, Vec::new())
     })
-    .expect_commit_success();
+        .expect_commit_success();
 }
 
 /// An example manifest for creating a new fungible resource with an initial supply
@@ -108,7 +107,7 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
         );
         (manifest, Vec::new())
     })
-    .expect_commit_success();
+        .expect_commit_success();
 }
 
 /// An example manifest for creating a new fungible resource with an maximum initial supply
@@ -126,7 +125,7 @@ fn creating_a_fungible_resource_with_max_initial_supply_succeeds() {
         );
         (manifest, Vec::new())
     })
-    .expect_commit_success();
+        .expect_commit_success();
 }
 
 /// An example manifest for creating a new fungible resource with an exceeded maximum initial supply
@@ -144,7 +143,7 @@ fn creating_a_fungible_resource_with_exceeded_initial_supply_fails() {
         );
         (manifest, Vec::new())
     })
-    .expect_commit_failure();
+        .expect_commit_failure();
 }
 
 /// An example manifest for creating a new non-fungible resource with no supply
@@ -159,7 +158,7 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
         );
         (manifest, Vec::new())
     })
-    .expect_commit_success();
+        .expect_commit_success();
 }
 
 /// An example manifest for creating a new non-fungible resource with an initial supply
@@ -175,7 +174,7 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
         );
         (manifest, Vec::new())
     })
-    .expect_commit_success();
+        .expect_commit_success();
 }
 
 /// A sample manifest that publishes a package.
@@ -193,7 +192,7 @@ fn publish_package_succeeds() {
         );
         (manifest, vec![code_blob])
     })
-    .expect_commit_success();
+        .expect_commit_success();
 }
 
 /// A sample manifest for minting of a fungible resource
@@ -322,8 +321,8 @@ fn changing_default_deposit_rule_succeeds() {
 }
 
 fn run_manifest<F>(string_manifest_builder: F) -> TransactionReceipt
-where
-    F: Fn(&ComponentAddress, &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
+    where
+        F: Fn(&ComponentAddress, &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
     let mut ledger = LedgerSimulatorBuilder::new().build();
@@ -344,7 +343,7 @@ where
         &network,
         BlobProvider::new_with_blobs(blobs),
     )
-    .expect("Failed to compile manifest from manifest string");
+        .expect("Failed to compile manifest from manifest string");
 
     ledger.execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
 }
@@ -414,7 +413,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     };
     let result = ledger.execute_manifest(manifest, vec![]);
     let mintable_non_fungible_resource_address =
-        result.expect_commit(true).new_resource_addresses()[0].clone();
+        result.expect_commit(true).new_resource_addresses()[0];
 
     // Run the function and get the manifest string
     let (manifest_string, blobs) = string_manifest_builder(
@@ -428,7 +427,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         &network,
         BlobProvider::new_with_blobs(blobs),
     )
-    .expect("Failed to compile manifest from manifest string");
+        .expect("Failed to compile manifest from manifest string");
 
     ledger
         .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])
@@ -436,8 +435,8 @@ fn test_manifest_with_restricted_minting_resource<F>(
 }
 
 fn test_manifest_with_additional_accounts<F>(accounts_required: u16, string_manifest_builder: F)
-where
-    F: Fn(&ComponentAddress, &[ComponentAddress], &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
+    where
+        F: Fn(&ComponentAddress, &[ComponentAddress], &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
@@ -463,7 +462,7 @@ where
         &network,
         BlobProvider::new_with_blobs(blobs),
     )
-    .expect("Failed to compile manifest from manifest string");
+        .expect("Failed to compile manifest from manifest string");
 
     ledger
         .execute_manifest(manifest, vec![virtual_badge_non_fungible_global_id])

@@ -1,10 +1,20 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::prelude::*;
 use radix_engine::{
     errors::{RuntimeError, VmError},
     vm::wasm::WasmRuntimeError,
 };
+use radix_engine::transaction::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_loop() {
@@ -178,10 +188,10 @@ fn test_grow_memory_beyond_limit() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(e)))
-            if e.contains("Unreachable") =>
-        {
-            true
-        }
+        if e.contains("Unreachable") =>
+            {
+                true
+            }
         _ => false,
     })
 }
@@ -211,10 +221,10 @@ fn test_grow_memory_by_more_than_65536() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(e)))
-            if e.contains("Unreachable") =>
-        {
-            true
-        }
+        if e.contains("Unreachable") =>
+            {
+                true
+            }
         _ => false,
     })
 }

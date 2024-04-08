@@ -3,7 +3,6 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod data_validation {
-
     struct DataValidation {
         vault: Vault,
         reference: ResourceAddress,

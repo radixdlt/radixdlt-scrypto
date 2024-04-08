@@ -1,12 +1,21 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::prelude::*;
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError, VmError},
     system::system_modules::limits::TransactionLimitsError,
     transaction::{CostingParameters, ExecutionConfig},
     vm::wasm::WasmRuntimeError,
 };
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
@@ -40,7 +49,7 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
         .call_method(
             component_address,
             "read_non_existent_entries_from_kv_store",
-            manifest_args!(64 * 1024 as u32),
+            manifest_args!(64 * 1024_u32),
         )
         .build();
 
@@ -98,7 +107,7 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
         .call_method(
             component_address,
             "write_entries_to_kv_store",
-            manifest_args!(64 * 1024 as u32),
+            manifest_args!(64 * 1024_u32),
         )
         .build();
 
@@ -140,7 +149,7 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
             package_address,
             "TransactionLimitTest",
             "write_entries_to_heap_kv_store",
-            manifest_args!(64 * 1024 as u32),
+            manifest_args!(64 * 1024_u32),
         )
         .build();
 
@@ -201,8 +210,8 @@ fn test_default_substate_size_limit() {
     // Assert #2
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxSubstateSizeExceeded(_),
-        )) => true,
+                                            TransactionLimitsError::MaxSubstateSizeExceeded(_),
+                                        )) => true,
         _ => false,
     })
 }
@@ -257,8 +266,8 @@ fn test_default_invoke_payload_size_limit() {
     // Assert #2
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxInvokePayloadSizeExceeded(_),
-        )) => true,
+                                            TransactionLimitsError::MaxInvokePayloadSizeExceeded(_),
+                                        )) => true,
         _ => false,
     })
 }
@@ -366,7 +375,7 @@ fn test_allocating_buffers_exceeding_limit() {
         .call_method(
             component_address,
             "allocate_buffers",
-            manifest_args!(100 as u32),
+            manifest_args!(100_u32),
         )
         .build();
 

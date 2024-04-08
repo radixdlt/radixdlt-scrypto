@@ -24,7 +24,7 @@ mod oracle {
                 info: "Oracle v1".to_string(),
                 prices: KeyValueStore::new(),
             }
-            .instantiate()
+                .instantiate()
         }
 
         pub fn instantiate_and_globalize(

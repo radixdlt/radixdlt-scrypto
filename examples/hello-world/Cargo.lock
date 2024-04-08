@@ -465,6 +465,11 @@ checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 name = "hello-world"
 version = "1.2.0-dev"
 dependencies = [
+ "radix-common",
+ "radix-engine",
+ "radix-engine-interface",
+ "radix-native-sdk",
+ "radix-transactions",
  "sbor",
  "scrypto",
  "scrypto-test",

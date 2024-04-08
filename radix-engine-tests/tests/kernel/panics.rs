@@ -8,8 +8,8 @@ use radix_engine::system::system::SystemService;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::execution_trace::*;
 use radix_engine::track::*;
-use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
+use radix_engine::vm::wasm::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::*;
 

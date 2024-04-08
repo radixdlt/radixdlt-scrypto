@@ -1,17 +1,28 @@
+use radix_common::*;
+use radix_common::constants::*;
 use radix_common::constants::AuthAddresses;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
 use radix_common::prelude::*;
+use radix_engine::blueprints::util::InvalidNameError;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::object_modules::role_assignment::FallToOwner;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::*;
-use scrypto_test::prelude::InvalidNameError;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use radix_transactions::signing::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn can_call_public_function() {
@@ -285,7 +296,7 @@ fn update_rule() {
             scrypto_encode(&Some(AccessRule::Protected(AccessRuleNode::ProofRule(
                 ProofRule::Require(ResourceOrNonFungible::Resource(XRD))
             ))))
-            .unwrap()
+                .unwrap()
         )
     );
 

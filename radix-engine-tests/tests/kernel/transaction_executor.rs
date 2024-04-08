@@ -1,15 +1,19 @@
+use radix_common::*;
+use radix_common::network::*;
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{CostingParameters, ExecutionConfig};
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
+use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
+use radix_engine_interface::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+use radix_transactions::builder::*;
 use radix_transactions::errors::TransactionValidationError;
-use scrypto_test::prelude::*;
-
+use radix_transactions::model::*;
 use radix_transactions::validation::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
@@ -46,7 +50,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
         rejection_error,
         &RejectionReason::TransactionEpochNotYetValid {
             valid_from: valid_from_epoch,
-            current_epoch
+            current_epoch,
         }
     );
 }
@@ -86,7 +90,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
         rejection_error,
         &RejectionReason::TransactionEpochNoLongerValid {
             valid_until: Some(valid_until_epoch),
-            current_epoch
+            current_epoch,
         }
     );
 }
@@ -108,8 +112,8 @@ fn test_normal_transaction_flow() {
         vm.clone(),
         true,
     )
-    .bootstrap_test_default()
-    .unwrap();
+        .bootstrap_test_default()
+        .unwrap();
 
     let costing_parameters = CostingParameters::default();
     let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
@@ -127,8 +131,8 @@ fn test_normal_transaction_flow() {
                 .build()
         },
     )
-    .to_raw()
-    .unwrap();
+        .to_raw()
+        .unwrap();
 
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
     let validated = validator

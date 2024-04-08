@@ -588,25 +588,24 @@ mod non_fungible_test {
                     let entries = entries
                         .into_iter()
                         .map(|(_, v)| v)
-                        .collect::<Vec<(ScryptoValue,)>>();
+                        .collect::<Vec<(ScryptoValue, )>>();
 
                     ScryptoVmV1Api::blueprint_call(
-                    RESOURCE_PACKAGE,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
-                    scrypto_encode(&NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
-                        owner_role: OwnerRole::None,
-                        track_total_supply: false,
-                        resource_roles: NonFungibleResourceRoles::default(),
-                        metadata: metadata! {},
-                        non_fungible_schema:
-                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
-                            ),
-                        entries,
-                        address_reservation,
-                    })
-                    .unwrap()
-                )
+                        RESOURCE_PACKAGE,
+                        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
+                        scrypto_encode(&NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+                            owner_role: OwnerRole::None,
+                            track_total_supply: false,
+                            resource_roles: NonFungibleResourceRoles::default(),
+                            metadata: metadata! {},
+                            non_fungible_schema:
+                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                            entries,
+                            address_reservation,
+                        })
+                            .unwrap(),
+                    )
                 }
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT => ScryptoVmV1Api::blueprint_call(
                     RESOURCE_PACKAGE,
@@ -619,12 +618,11 @@ mod non_fungible_test {
                         resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata! {},
                         non_fungible_schema:
-                            NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(
-                            ),
+                        NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
                         entries,
                         address_reservation,
                     })
-                    .unwrap(),
+                        .unwrap(),
                 ),
                 _ => panic!("Not supported function name {:?} provided", func_name),
             };

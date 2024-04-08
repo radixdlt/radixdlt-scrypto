@@ -1,12 +1,19 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::network::*;
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::track::{BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates};
 use radix_engine::transaction::{CostingParameters, ExecutionConfig};
+use radix_engine_interface::*;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
+use radix_transactions::builder::*;
 use radix_transactions::errors::TransactionValidationError;
-use scrypto_test::prelude::*;
-
+use radix_transactions::model::*;
+use radix_transactions::signing::*;
 use radix_transactions::validation::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_transaction_replay_protection() {
@@ -73,8 +80,8 @@ fn test_transaction_replay_protection() {
         .filter_map(|partition_updates| match partition_updates {
             PartitionStateUpdates::Delta { .. } => None,
             PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
-                new_substate_values,
-            }) => Some(new_substate_values),
+                                             new_substate_values,
+                                         }) => Some(new_substate_values),
         })
         .collect::<Vec<_>>();
     // ... which means, there was 1x `BatchPartitionUpdate::Reset`...

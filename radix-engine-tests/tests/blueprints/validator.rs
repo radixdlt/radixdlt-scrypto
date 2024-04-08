@@ -1,18 +1,31 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::ValidatorError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ValidatorAcceptsDelegatedStakeInput, VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
-    VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
+    VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT, VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
+    ValidatorAcceptsDelegatedStakeInput,
 };
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::types::FromPublicKey;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::signing::*;
+use scrypto_test::ledger_simulator::*;
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)
-where
-    F: Fn(TransactionReceipt) -> (),
+    where
+        F: Fn(TransactionReceipt),
 {
     // Arrange
     let initial_epoch = Epoch::of(5);

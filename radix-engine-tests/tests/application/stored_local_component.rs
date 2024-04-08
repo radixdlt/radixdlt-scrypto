@@ -1,6 +1,11 @@
+use radix_common::*;
+use radix_common::data::manifest::*;
 use radix_common::prelude::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component() {

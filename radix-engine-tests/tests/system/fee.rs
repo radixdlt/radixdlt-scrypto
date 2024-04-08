@@ -1,17 +1,27 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::resource::WorktopError;
-use radix_engine::errors::RuntimeError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
+use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
-use radix_transactions::prelude::PreviewFlags;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use scrypto_test::ledger_simulator::*;
 
 fn run_manifest<F>(f: F) -> TransactionReceipt
-where
-    F: FnOnce(ComponentAddress) -> TransactionManifestV1,
+    where
+        F: FnOnce(ComponentAddress) -> TransactionManifestV1,
 {
     let (mut ledger, component_address) = setup_ledger();
 
@@ -146,8 +156,8 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
 
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(OpenSubstateError::LockUnmodifiedBaseOnHeapNode),
-        )) => true,
+                                      CallFrameError::OpenSubstateError(OpenSubstateError::LockUnmodifiedBaseOnHeapNode),
+                                  )) => true,
         _ => false,
     });
 }
@@ -183,10 +193,10 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
 
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(
-                OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..),
-            ),
-        )) => true,
+                                      CallFrameError::OpenSubstateError(
+                                          OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..),
+                                      ),
+                                  )) => true,
         _ => false,
     });
 }
@@ -503,7 +513,7 @@ fn locked_fees_are_correct_in_execution_trace() {
         commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("104.676"),
-            contingent_lock: Decimal::ZERO
+            contingent_lock: Decimal::ZERO,
         }
     )
 }
@@ -533,7 +543,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
         commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("206.856"),
-            contingent_lock: Decimal::ZERO
+            contingent_lock: Decimal::ZERO,
         }
     )
 }
@@ -563,7 +573,7 @@ fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
         commit.execution_trace.as_ref().unwrap().fee_locks,
         FeeLocks {
             lock: dec!("104.676"),
-            contingent_lock: dec!("102.180")
+            contingent_lock: dec!("102.180"),
         }
     )
 }

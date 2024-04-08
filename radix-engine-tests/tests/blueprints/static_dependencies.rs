@@ -1,10 +1,21 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::manifest::model::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
+use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_transactions::builder::*;
 use radix_transactions::model::InstructionV1;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack
@@ -157,9 +168,9 @@ fn static_resource_should_be_callable() {
                             address_reservation: Some(ManifestAddressReservation(0)),
                         },
                     )
-                    .unwrap(),
+                        .unwrap(),
                 )
-                .unwrap(),
+                    .unwrap(),
             },
             InstructionV1::CallMethod {
                 address: account.into(),

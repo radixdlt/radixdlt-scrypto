@@ -1,5 +1,11 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
-use scrypto_test::prelude::*;
+use radix_engine_interface::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn lock_fee_on_empty_faucet_should_give_nice_error() {

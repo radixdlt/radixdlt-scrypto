@@ -1,12 +1,25 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::data::manifest::model::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::network::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::transaction_processor::*;
 use radix_engine::errors::*;
+use radix_engine::system::system_modules::execution_trace::*;
 use radix_engine::transaction::*;
-use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use radix_transactions::model::PreviewFlags;
 use radix_transactions::validation::*;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {
@@ -318,8 +331,7 @@ fn test_create_proof_from_bucket_of_amount() {
 
     assert_eq!(
         execution_trace
-            .execution_traces
-            .get(0)
+            .execution_traces.first()
             .unwrap()
             .children
             .get(3)
@@ -332,7 +344,7 @@ fn test_create_proof_from_bucket_of_amount() {
             .clone(),
         ProofSnapshot::Fungible {
             resource_address: XRD,
-            total_locked: 73.into()
+            total_locked: 73.into(),
         }
     );
 }
@@ -382,8 +394,7 @@ fn test_create_proof_from_bucket_of_non_fungibles() {
 
     assert_eq!(
         execution_trace
-            .execution_traces
-            .get(0)
+            .execution_traces.first()
             .unwrap()
             .children
             .get(3)
@@ -400,7 +411,7 @@ fn test_create_proof_from_bucket_of_non_fungibles() {
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
-            ]
+            ],
         }
     );
 }

@@ -1,15 +1,28 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::scrypto::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::blueprints::pool::v1::errors::two_resource_pool::Error as TwoResourcePoolError;
 use radix_engine::blueprints::pool::v1::events::two_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_engine_interface::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::FungibleResourceManagerError;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use radix_transactions::signing::*;
 use scrypto::prelude::Pow;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 pub fn two_resource_pool_can_be_instantiated() {
@@ -338,7 +351,7 @@ pub fn contribution_provides_expected_pool_unit_resources4() {
         if expected_change2 == Decimal::ZERO {
             None
         } else {
-            Some(BalanceChange::Fungible(expected_change2.into()))
+            Some(BalanceChange::Fungible(expected_change2))
         }
     );
 }
@@ -1052,9 +1065,9 @@ impl TestEnvironment {
         (resource_address2, amount2): (ResourceAddress, B),
         sign: bool,
     ) -> TransactionReceipt
-    where
-        A: Into<Decimal>,
-        B: Into<Decimal>,
+        where
+            A: Into<Decimal>,
+            B: Into<Decimal>,
     {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()

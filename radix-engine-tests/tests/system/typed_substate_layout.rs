@@ -1,18 +1,36 @@
+
+
+use radix_common::*;
+use radix_common::crypto::*;
+use radix_common::math::*;
+use radix_common::network::*;
 use radix_common::prelude::*;
+
+
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
+
+
 use radix_engine::transaction::TransactionResult;
-use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
+
+
+use radix_engine::vm::wasm::DefaultWasmEngine;
+use radix_engine_interface::*;
+use radix_engine_interface::prelude::*;
+
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+
 use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
 use radix_transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use radix_transaction_scenarios::scenarios::get_builder_for_every_scenario;
+use radix_transactions::signing::*;
+
 use sbor::rust::ops::Deref;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
@@ -29,7 +47,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         xrd_amount: Decimal::one(),
     };
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Validators(vec![validator_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake])],
@@ -79,7 +97,7 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
             EntityType::GlobalFungibleResourceManager as u8,
             &hash(vec![1, 2, 3]).lower_bytes(),
         )
-        .0,
+            .0,
     );
     let stake = GenesisStakeAllocation {
         account_index: 0,
@@ -109,7 +127,7 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
         amount: dec!("10"),
     };
     let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Validators(vec![validator_key.into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake])],
@@ -117,8 +135,8 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
         GenesisDataChunk::XrdBalances(xrd_balances),
         GenesisDataChunk::Resources(vec![genesis_resource]),
         GenesisDataChunk::ResourceBalances {
-            accounts: vec![token_holder.clone()],
-            allocations: vec![(resource_address.clone(), vec![resource_allocation])],
+            accounts: vec![token_holder],
+            allocations: vec![(resource_address, vec![resource_allocation])],
         },
     ];
 

@@ -1,11 +1,22 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::object_modules::metadata::MetadataError;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::object_modules::metadata::{
     MetadataConversionError::UnexpectedType, MetadataValue,
 };
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn can_get_from_scrypto() {
@@ -261,7 +272,7 @@ fn verify_metadata_get_fail() {
         result,
         Err(UnexpectedType {
             expected_type_id: 2,
-            actual_type_id: 0
+            actual_type_id: 0,
         })
     );
 }
@@ -286,7 +297,7 @@ fn verify_metadata_vec_get_fail() {
         result,
         Err(UnexpectedType {
             expected_type_id: 130,
-            actual_type_id: 0
+            actual_type_id: 0,
         })
     );
 }
@@ -340,7 +351,7 @@ fn verify_metadata_array_get_fail() {
         result,
         Err(UnexpectedType {
             expected_type_id: 2,
-            actual_type_id: 130
+            actual_type_id: 130,
         })
     );
 }
@@ -371,7 +382,7 @@ fn verify_metadata_array_get_other_type_fail() {
         result,
         Err(UnexpectedType {
             expected_type_id: 131,
-            actual_type_id: 130
+            actual_type_id: 130,
         })
     );
 }
@@ -402,7 +413,7 @@ fn verify_metadata_array_get_vec_fail() {
         result,
         Err(UnexpectedType {
             expected_type_id: 131,
-            actual_type_id: 130
+            actual_type_id: 130,
         })
     );
 }
@@ -526,8 +537,8 @@ fn encoding_metadata_through_metadata_val_is_the_same_as_metadata_value() {
 }
 
 fn assert_metadata_val_encoding<T>(item: T)
-where
-    T: MetadataVal + Debug + Clone,
+    where
+        T: MetadataVal + Debug + Clone,
 {
     assert_eq!(
         metadata_val_encode(&item),
@@ -537,8 +548,8 @@ where
 }
 
 fn metadata_val_encode<T>(value: &T) -> Vec<u8>
-where
-    T: MetadataVal,
+    where
+        T: MetadataVal,
 {
     let mut buffer = Vec::new();
     let mut encoder =

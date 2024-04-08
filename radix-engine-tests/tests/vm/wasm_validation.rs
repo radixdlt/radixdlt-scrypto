@@ -1,7 +1,12 @@
+use radix_common::*;
+use radix_engine::vm::*;
 use radix_engine::vm::wasm::{InvalidMemory, PrepareError, ScryptoV1WasmValidator};
+use radix_engine_interface::*;
 use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::PackageDefinition;
-use scrypto_test::prelude::*;
+use radix_transactions::validation::*;
+use sbor::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_large_data() {
@@ -63,7 +68,7 @@ fn invalid_export_name_should_fail() {
                         (export "MEMORY_NAME" (memory $0))
                     )
                     "##
-            .replace(token, name);
+                .replace(token, name);
             let code = wat2wasm(code_str.as_str());
 
             // Act

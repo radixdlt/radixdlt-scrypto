@@ -1,12 +1,21 @@
+use radix_common::*;
+use radix_common::data::manifest::*;
+use radix_common::data::manifest::model::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{
     CallFrameError, KernelError, RejectionReason, RuntimeError, SystemModuleError,
 };
+use radix_engine::errors::*;
 use radix_engine::kernel::call_frame::{CreateFrameError, PassMessageError};
 use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_transactions::builder::*;
 use scrypto::prelude::FromPublicKey;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn non_existing_vault_should_cause_error() {
@@ -27,7 +36,7 @@ fn non_existing_vault_should_cause_error() {
     // Assert
     receipt.expect_specific_rejection(|e| {
         e.eq(&RejectionReason::BootloadingError(
-            BootloadingError::ReferencedNodeDoesNotExist(non_existing_address.as_node_id().clone()),
+            BootloadingError::ReferencedNodeDoesNotExist(*non_existing_address.as_node_id()),
         ))
     });
 }

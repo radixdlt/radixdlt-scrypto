@@ -1,10 +1,18 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{KernelError, RuntimeError, SystemError};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn get_global_address_in_local_in_function_should_fail() {
@@ -325,7 +333,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
 
 /// Package actor badge will be different depending on whether the callee is global or internal
 mod package_actor_badge {
-    use super::{test_assert, AssertAgainst};
+    use super::{AssertAgainst, test_assert};
 
     #[test]
     fn assert_self_package_in_global_callee_should_fail() {
@@ -350,7 +358,7 @@ mod package_actor_badge {
 
 /// Global caller results should be the same whether the callee is global or internal
 mod global_caller_actor_badge {
-    use super::{test_assert, AssertAgainst};
+    use super::{AssertAgainst, test_assert};
 
     #[test]
     fn assert_self_blueprint_global_caller_in_global_callee_should_fail() {

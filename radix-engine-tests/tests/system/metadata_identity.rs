@@ -1,15 +1,20 @@
+use radix_common::*;
+use radix_common::crypto::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
+use radix_engine_interface::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::signing::*;
+use scrypto_test::ledger_simulator::*;
 
 fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-    let component_address = ledger.new_identity(pk.clone(), is_virtual);
+    let component_address = ledger.new_identity(pk, is_virtual);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -47,7 +52,7 @@ fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let component_address = ledger.new_identity(pk.clone(), is_virtual);
+    let component_address = ledger.new_identity(pk, is_virtual);
 
     // Act
     let manifest = ManifestBuilder::new()

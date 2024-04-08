@@ -1,11 +1,17 @@
-use radix_common::math::*;
-use radix_common::prelude::*;
-use radix_engine_interface::prelude::*;
-use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
 use std::env;
 
 use trybuild;
+
+use radix_common::*;
+use radix_common::data::manifest::*;
+use radix_common::math::*;
+use radix_common::prelude::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
+use radix_engine_tests::common::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_dec_macro_try_compile() {
@@ -148,6 +154,7 @@ fn test_pdec_macro_valid() {
         pdec!("-57896044618658097711785492504343953926634.992332820282019728792003956564819968");
     assert_eq!(X13, PreciseDecimal::MIN);
 }
+
 #[test]
 fn test_dec_macro_in_scrypto() {
     // Arrange

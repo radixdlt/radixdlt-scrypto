@@ -1,7 +1,10 @@
+use radix_common::*;
+use radix_common::network::*;
 use radix_common::prelude::*;
+use radix_engine_interface::*;
 use radix_transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use radix_transaction_scenarios::scenarios::get_builder_for_every_scenario;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn substate_store_matches_state_tree_after_each_scenario() {

@@ -1,27 +1,36 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use paste::paste;
+use wabt::wat2wasm;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
 use radix_common::crypto::{recover_secp256k1, verify_secp256k1};
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
     transaction::CostingParameters,
     utils::ExtractSchemaError,
     vm::{
+        ScryptoVmVersion,
         wasm::{
             DefaultWasmEngine, ScryptoV1WasmValidator, WasmEngine, WasmInstance, WasmModule,
             WasmRuntime,
         },
         wasm_runtime::NoOpWasmRuntime,
-        ScryptoVmVersion,
     },
 };
+use radix_engine_interface::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use radix_transactions::prelude::TransactionCostingParameters;
+use radix_transactions::validation::*;
 use sbor::rust::iter;
-use scrypto_test::prelude::LedgerSimulatorBuilder;
-use wabt::wat2wasm;
+use scrypto_test::ledger_simulator::*;
 
 fn bench_decode_sbor(c: &mut Criterion) {
     let payload = include_workspace_asset_bytes!("radiswap.rpd");
@@ -95,13 +104,13 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 
 fn bench_spin_loop(c: &mut Criterion) {
     // Prepare code
-    let code = wat2wasm(&include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
+    let code = wat2wasm(include_local_wasm_str!("loop.wat").replace("${n}", "100000")).unwrap();
 
     // Instrument
     let validator = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest());
     let instrumented_code = validator
         .validate(&code, iter::empty())
-        .map_err(|e| ExtractSchemaError::InvalidWasm(e))
+        .map_err(ExtractSchemaError::InvalidWasm)
         .unwrap()
         .0;
 

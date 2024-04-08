@@ -1,9 +1,12 @@
+use radix_common::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
+use radix_engine_interface::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn cannot_create_more_than_1_substate_field_in_scrypto() {

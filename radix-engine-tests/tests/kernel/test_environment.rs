@@ -1,9 +1,23 @@
 #![allow(clippy::type_complexity)]
 
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::prelude::*;
+use radix_engine::errors::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use radix_native_sdk::resource::*;
+use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_queries::typed_substate_layout::two_resource_pool::*;
-use scrypto_test::prelude::*;
+use scrypto_test::environment::*;
+use scrypto_test::sdk::*;
 
 #[test]
 fn kernel_modules_are_reset_after_calling_a_with_method() {
@@ -128,7 +142,7 @@ fn references_read_from_state_are_visible_in_tests() {
         None,
         &mut env,
     )
-    .unwrap();
+        .unwrap();
     let resource2 = ResourceManager::new_fungible(
         OwnerRole::None,
         false,
@@ -138,7 +152,7 @@ fn references_read_from_state_are_visible_in_tests() {
         None,
         &mut env,
     )
-    .unwrap();
+        .unwrap();
 
     let code = include_workspace_asset_bytes!("radiswap.wasm");
     let definition = manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
@@ -157,7 +171,7 @@ fn references_read_from_state_are_visible_in_tests() {
 
     // Act
     let radiswap_pool_component = env
-        .with_component_state::<(ComponentAddress,), _, _, _>(radiswap_component, |address, _| {
+        .with_component_state::<(ComponentAddress, ), _, _, _>(radiswap_component, |address, _| {
             address.0
         })
         .unwrap();
@@ -167,7 +181,7 @@ fn references_read_from_state_are_visible_in_tests() {
         .call_method_typed::<_, _, TwoResourcePoolGetVaultAmountsOutput>(
             radiswap_pool_component,
             TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
-            &TwoResourcePoolGetVaultAmountsInput {}
+            &TwoResourcePoolGetVaultAmountsInput {},
         )
         .is_ok())
 }
@@ -186,7 +200,7 @@ fn references_read_from_state_are_visible_in_tests1() {
         None,
         &mut env,
     )
-    .unwrap();
+        .unwrap();
     let resource2 = ResourceManager::new_fungible(
         OwnerRole::None,
         false,
@@ -196,7 +210,7 @@ fn references_read_from_state_are_visible_in_tests1() {
         None,
         &mut env,
     )
-    .unwrap();
+        .unwrap();
 
     let code = include_workspace_asset_bytes!("radiswap.wasm");
     let definition = manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
@@ -214,7 +228,7 @@ fn references_read_from_state_are_visible_in_tests1() {
         .unwrap();
 
     let radiswap_pool_component = env
-        .with_component_state::<(ComponentAddress,), _, _, _>(radiswap_component, |address, _| {
+        .with_component_state::<(ComponentAddress, ), _, _, _>(radiswap_component, |address, _| {
             address.0
         })
         .unwrap();
@@ -262,7 +276,7 @@ fn can_read_kv_entries_from_a_store_read_from_state() {
         // Assert
         assert!(epoch.is_some())
     })
-    .unwrap();
+        .unwrap();
 }
 
 #[test]

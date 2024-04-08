@@ -52,8 +52,8 @@ mod local_auth_zone {
 
 #[blueprint]
 mod max_sbor_depth {
-    use sbor::basic_well_known_types::ANY_TYPE;
     use sbor::*;
+    use sbor::basic_well_known_types::ANY_TYPE;
 
     struct MaxSborDepthTest {
         kv_store: Own,

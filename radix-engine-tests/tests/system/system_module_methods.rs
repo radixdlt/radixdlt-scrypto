@@ -1,19 +1,27 @@
+use radix_common::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
+use radix_engine::transaction::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
+use radix_engine_interface::*;
 use radix_engine_interface::api::{
-    AttachedModuleId, ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF,
+    ACTOR_STATE_SELF, AttachedModuleId, ClientApi, FieldValue, LockFlags,
 };
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::object_modules::royalty::{
-    ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT, ComponentRoyaltySetInput,
 };
+use radix_engine_interface::prelude::*;
 use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_transactions::builder::ManifestBuilder;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     // Arrange
@@ -31,9 +39,9 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             let node_id = input.references()[0];
             let _ = api.call_module_method(
@@ -44,7 +52,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
                     method: "some_method".to_string(),
                     amount: RoyaltyAmount::Free,
                 })
-                .unwrap(),
+                    .unwrap(),
             )?;
 
             Ok(IndexedScryptoValue::from_typed(&()))
@@ -115,9 +123,9 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "test" => {
@@ -130,7 +138,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
                             key: "key".to_string(),
                             value: MetadataValue::String("value".to_string()),
                         })
-                        .unwrap(),
+                            .unwrap(),
                     )?;
                     api.drop_object(&node_id)?;
                     Ok(IndexedScryptoValue::from_typed(&()))
@@ -187,22 +195,22 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "test" => {
                     let child = api.new_simple_object(
                         BLUEPRINT_NAME,
                         indexmap! {
-                            0u8 => FieldValue::new(&Option::<Own>::None),
+                            0u8 => FieldValue::new(Option::<Own>::None),
                         },
                     )?;
                     let parent = api.new_simple_object(
                         BLUEPRINT_NAME,
                         indexmap! {
-                            0u8 => FieldValue::new(&Option::<Own>::Some(Own(child))),
+                            0u8 => FieldValue::new(Option::<Own>::Some(Own(child))),
                         },
                     )?;
 
@@ -241,7 +249,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                             key: "key".to_string(),
                             value: MetadataValue::String("value".to_string()),
                         })
-                        .unwrap(),
+                            .unwrap(),
                     )?;
 
                     Ok(IndexedScryptoValue::from_typed(&()))

@@ -1,6 +1,11 @@
+use radix_common::*;
+use radix_common::data::manifest::*;
 use radix_common::prelude::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 const TARGET_PACKAGE_ADDRESS: [u8; NodeId::LENGTH] = [
     13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,

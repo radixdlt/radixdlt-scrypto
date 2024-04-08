@@ -1,27 +1,34 @@
-use radix_common::constants::AuthAddresses;
-use radix_common::prelude::*;
-use radix_engine::blueprints::consensus_manager::UnstakeData;
-use radix_engine::blueprints::consensus_manager::{
-    Validator, ValidatorEmissionAppliedEvent, ValidatorError,
-};
-use radix_engine::blueprints::resource::BucketError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
-use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::CostingParameters;
-use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::types::FromPublicKey;
-use radix_engine_tests::common::*;
-use radix_substate_store_queries::typed_substate_layout::{
-    ConsensusManagerError, ValidatorRewardAppliedEvent,
-};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand_chacha;
-use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use scrypto::object_modules::*;
-use scrypto_test::prelude::AuthError;
-use scrypto_test::prelude::*;
+use rand_chacha::rand_core::SeedableRng;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::constants::AuthAddresses;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::data::manifest::model::*;
+use radix_common::data::scrypto::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
+use radix_common::prelude::*;
+use radix_engine::blueprints::consensus_manager::*;
+use radix_engine::blueprints::resource::*;
+use radix_engine::errors::*;
+use radix_engine::system::bootstrap::*;
+use radix_engine::system::system_modules::auth::*;
+use radix_engine::transaction::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_engine_interface::prelude::*;
+use radix_engine_tests::common::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use radix_transactions::signing::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -37,7 +44,7 @@ fn genesis_epoch_has_correct_initial_validators() {
         let pub_key = Secp256k1PrivateKey::from_u64(k.try_into().unwrap())
             .unwrap()
             .public_key();
-        keys.insert(pub_key.clone(), k);
+        keys.insert(pub_key, k);
         let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
         accounts.push(validator_account_address);
         validators.push(GenesisValidator {
@@ -290,8 +297,7 @@ fn next_round_fails_if_time_moves_backward() {
 }
 
 #[test]
-fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoch_length_normalization(
-) {
+fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoch_length_normalization() {
     // Arrange
     let genesis_epoch = Epoch::of(5);
     let initial_epoch = genesis_epoch.next().unwrap();
@@ -828,10 +834,9 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
     assert_eq!(next_epoch.epoch, initial_epoch.next().unwrap());
-    assert!(!next_epoch
+    assert!(next_epoch
         .validator_set
-        .get_by_address(&validator_address)
-        .is_some());
+        .get_by_address(&validator_address).is_none());
 }
 
 #[test]
@@ -1067,7 +1072,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         vec![Validator {
             key: validator_pub_key,
             stake: validator_new_stake,
-        },]
+        }, ]
     );
 
     // Assert: emitted event gives the details/breakdown
@@ -1081,7 +1086,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
             validator_fee_xrd: validator_stake_added, // default `fee_factor = 1.0` takes the entire emission as fee
             proposals_made: 1,
             proposals_missed: 3,
-        },]
+        }, ]
     );
 }
 
@@ -1136,8 +1141,8 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         next_epoch_validators,
         vec![Validator {
             key: validator_pub_key,
-            stake: validator_stake
-        },]
+            stake: validator_stake,
+        }, ]
     );
 
     assert_eq!(
@@ -1150,7 +1155,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
             validator_fee_xrd: Decimal::zero(), // ... or to the owner...
             proposals_made: 1,
             proposals_missed: 3, // ... we still want this event, e.g. to surface this information
-        },]
+        }, ]
     );
 }
 
@@ -1230,7 +1235,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             validator_fee_xrd: emission_xrd_per_epoch, // default `fee_factor = 1.0` takes the entire emission as fee
             proposals_made: 1,
             proposals_missed: 0,
-        },]
+        }, ]
     );
     let emission_and_tx1_rewards = emission_xrd_per_epoch
         .checked_add(receipt1.fee_summary.expected_reward_if_single_validator())
@@ -1272,7 +1277,8 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     assert_eq!(event.epoch, initial_epoch.next().unwrap());
     assert_close_to!(event.starting_stake_pool_xrd, next_epoch_start_stake_xrd);
     assert_close_to!(event.stake_pool_added_xrd, next_epoch_net_emission_xrd);
-    assert_close_to!(event.total_stake_unit_supply, next_epoch_start_stake_xrd); // we auto-staked 100%, so the rate is still 1 ,1
+    assert_close_to!(event.total_stake_unit_supply, next_epoch_start_stake_xrd);
+    // we auto-staked 100%, so the rate is still 1 ,1
     assert_close_to!(event.validator_fee_xrd, next_epoch_fee_xrd);
     assert_eq!(event.proposals_made, 1);
     assert_eq!(event.proposals_missed, 0,);
@@ -1739,8 +1745,7 @@ fn registered_validator_test(
 }
 
 #[test]
-fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_change_if_stake_not_enough(
-) {
+fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_change_if_stake_not_enough() {
     for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
         registered_validator_test(
             register_and_stake_type,
@@ -1755,8 +1760,7 @@ fn registered_validator_with_stake_does_not_become_part_of_validator_on_epoch_ch
 }
 
 #[test]
-fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change_if_there_are_empty_spots(
-) {
+fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change_if_there_are_empty_spots() {
     for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
         registered_validator_test(
             register_and_stake_type,
@@ -1873,7 +1877,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
-        validator_pub_key.clone(),
+        validator_pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
@@ -1928,7 +1932,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
-        validator_pub_key.clone(),
+        validator_pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
@@ -2911,7 +2915,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
                 CustomGenesis::default_consensus_manager_config(),
                 120000i64
             )
-            .into(),
+                .into(),
         }],
         // No validator proofs
         btreeset![],
@@ -2975,11 +2979,10 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
 }
 
 fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {
-    match &event_type_id.0 {
+    *match &event_type_id.0 {
         Emitter::Function(blueprint_id) => blueprint_id.package_address.as_node_id(),
         Emitter::Method(node_id, _) => node_id,
     }
-    .clone()
 }
 
 #[test]
@@ -3220,7 +3223,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
         manifest,
         validators_keys
             .iter()
-            .map(|key| NonFungibleGlobalId::from_public_key(key)),
+            .map(NonFungibleGlobalId::from_public_key),
         costing_params,
     );
     receipt.expect_commit_success();

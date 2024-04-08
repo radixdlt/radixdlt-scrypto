@@ -1,16 +1,26 @@
-use radix_engine::blueprints::resource::{
-    FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError, VaultError,
-};
-use radix_engine::errors::SystemError;
-use radix_engine::transaction::TransactionReceipt;
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::math::*;
+use radix_common::prelude::*;
 use radix_engine::{
     blueprints::resource::BucketError,
     errors::{ApplicationError, CallFrameError, KernelError, RuntimeError},
     kernel::call_frame::DropNodeError,
 };
+use radix_engine::blueprints::resource::{
+    FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError, VaultError,
+};
+use radix_engine::errors::SystemError;
+use radix_engine::transaction::TransactionReceipt;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: bool) {
     // Arrange
@@ -691,7 +701,7 @@ fn burn_invalid_non_fungible_bucket_should_fail() {
     });
 }
 
-fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt) -> ()>(
+fn should_not_be_able_to_lock_fee_with_non_xrd<F: FnOnce(TransactionReceipt)>(
     contingent: bool,
     amount: Decimal,
     on_receipt: F,

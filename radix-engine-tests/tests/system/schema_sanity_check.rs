@@ -1,17 +1,27 @@
+use core::ops::*;
+
 use radix_blueprint_schema_init::*;
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
+use radix_common::prelude::*;
 use radix_engine::{
     errors::{RuntimeError, SystemError},
     system::system_modules::costing::{
         NATIVE_FUNCTION_BASE_COSTS, NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT,
     },
 };
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::{
     AccountNativePackage, BlueprintPayloadDef,
 };
+use radix_transactions::builder::*;
 use sbor::basic_well_known_types::*;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn check_native_function_base_costs() {
@@ -162,7 +172,7 @@ fn check_payload_defs(
             return result;
         }
     }
-    return CheckResult::Safe;
+    CheckResult::Safe
 }
 
 fn check_payload_def(
@@ -207,15 +217,15 @@ fn check_type_internal(
     }
     visited_indices.insert(type_id);
     match type_id {
-        LocalTypeId::WellKnown(x) => return is_safe_well_known_type(schema, x),
+        LocalTypeId::WellKnown(x) => is_safe_well_known_type(schema, x),
         LocalTypeId::SchemaLocalIndex(i) => {
             let type_kind = &schema.v1().type_kinds[i];
             match type_kind {
                 ScryptoTypeKind::Array { element_type } => {
-                    return check_type_internal(schema, *element_type, visited_indices);
+                    check_type_internal(schema, *element_type, visited_indices)
                 }
                 ScryptoTypeKind::Tuple { field_types } => {
-                    return check_types_internal(schema, field_types, visited_indices);
+                    check_types_internal(schema, field_types, visited_indices)
                 }
                 ScryptoTypeKind::Enum { variants } => {
                     let mut indices = Vec::<LocalTypeId>::new();
@@ -224,23 +234,23 @@ fn check_type_internal(
                             indices.push(*ty);
                         }
                     }
-                    return check_types_internal(schema, &indices, visited_indices);
+                    check_types_internal(schema, &indices, visited_indices)
                 }
                 ScryptoTypeKind::Map {
                     key_type,
                     value_type,
                 } => {
-                    return check_types_internal(
+                    check_types_internal(
                         schema,
                         &[*key_type, *value_type],
                         visited_indices,
-                    );
+                    )
                 }
                 ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Own) => {
                     match &schema.v1().type_validations[i] {
                         TypeValidation::Custom(ScryptoCustomTypeValidation::Own(x)) => match x {
                             OwnValidation::IsTypedObject(_, _) => {
-                                return CheckResult::Safe;
+                                CheckResult::Safe
                             }
                             OwnValidation::IsKeyValueStore => {
                                 return CheckResult::PossiblyUnsafe {
@@ -249,7 +259,7 @@ fn check_type_internal(
                                 };
                             }
                             OwnValidation::IsGlobalAddressReservation => {
-                                return CheckResult::Safe;
+                                CheckResult::Safe
                             }
                             _ => {
                                 return CheckResult::PossiblyUnsafe {
@@ -270,7 +280,7 @@ fn check_type_internal(
                                 | ReferenceValidation::IsGlobalPackage
                                 | ReferenceValidation::IsGlobalResourceManager
                                 | ReferenceValidation::IsGlobalComponent => {
-                                    return CheckResult::Safe;
+                                    CheckResult::Safe
                                 }
                                 _ => {
                                     return CheckResult::PossiblyUnsafe {
@@ -284,11 +294,11 @@ fn check_type_internal(
                     }
                 }
                 _ => {
-                    return CheckResult::Safe;
+                    CheckResult::Safe
                 }
             }
         }
-    };
+    }
 }
 
 fn is_safe_well_known_type(
@@ -434,10 +444,10 @@ pub fn test_fake_bucket() {
     );
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::TypeCheckError(e))
-            if format!("{:?}", e).contains("Expected = Own<IsBucket>") =>
-        {
-            true
-        }
+        if format!("{:?}", e).contains("Expected = Own<IsBucket>") =>
+            {
+                true
+            }
         _ => false,
     });
 }
@@ -455,9 +465,9 @@ fn native_blueprints_with_typed_addresses_have_expected_schema() {
         .swap_remove("create_advanced")
         .unwrap()
         .output
-    else {
-        panic!("Generic output!")
-    };
+        else {
+            panic!("Generic output!")
+        };
 
     let schema = blueprint_definition.schema.schema.into_latest();
     let type_kind = schema.resolve_type_kind(local_type_index).unwrap();

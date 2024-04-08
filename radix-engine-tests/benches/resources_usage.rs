@@ -1,10 +1,11 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
+
 use radix_common::constants::EXECUTION_COST_UNIT_LIMIT;
 use radix_common::prelude::*;
 use radix_engine::kernel::vm::ScryptoInterpreter;
 use radix_engine::ledger::*;
-use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{CostingParameters, ExecutionConfig, ResourcesUsage};
+use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::wasm::{DefaultWasmEngine, WasmValidatorConfig};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
@@ -14,6 +15,7 @@ use radix_transactions::model::TestTransaction;
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct Bytes(usize);
+
 impl std::fmt::Display for Bytes {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         if self.0 < 1_000 {
@@ -42,11 +44,13 @@ impl std::fmt::Display for Bytes {
         }
     }
 }
+
 impl std::fmt::Debug for Bytes {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         write!(fmt, "{}", self)
     }
 }
+
 impl AddAssign for Bytes {
     fn add_assign(&mut self, other: Self) {
         self.0 += other.0
@@ -59,6 +63,7 @@ struct ResourceInfoFramework {
     peak_allocations: Vec<Bytes>,
     cpu_cycles: Vec<u64>,
 }
+
 impl ResourceInfoFramework {
     pub fn new() -> Self {
         Self {

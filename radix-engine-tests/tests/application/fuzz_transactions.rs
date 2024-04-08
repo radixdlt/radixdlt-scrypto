@@ -1,22 +1,23 @@
+use rand::*;
+use rand_chacha::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::network::*;
 use radix_common::prelude::*;
-use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::transaction::{
-    execute_and_commit_transaction, CostingParameters, ExecutionConfig,
-};
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, ScryptoVm, Vm};
-use radix_engine_interface::blueprints::resource::AccessRule;
+use radix_engine::system::bootstrap::*;
+use radix_engine::transaction::*;
+use radix_engine::vm::*;
+use radix_engine::vm::wasm::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
-use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_transactions::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload};
-use radix_transactions::prelude::*;
-use radix_transactions::validation::{
-    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
-};
-use rand::Rng;
-use rand_chacha;
-use rand_chacha::rand_core::SeedableRng;
-use rand_chacha::ChaCha8Rng;
+use radix_substate_store_impls::memory_db::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use radix_transactions::signing::*;
+use radix_transactions::validation::*;
 
 struct TransactionFuzzer {
     rng: ChaCha8Rng,
@@ -109,7 +110,6 @@ impl TransactionFuzzer {
 fn simple_transaction_fuzz_test() {
     let mut fuzzer = TransactionFuzzer::new();
     let transactions: Vec<NotarizedTransactionV1> = (0..50)
-        .into_iter()
         .map(|_| fuzzer.next_transaction())
         .collect();
     transactions.into_iter().for_each(|transaction| {

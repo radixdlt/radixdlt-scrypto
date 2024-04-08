@@ -9,6 +9,11 @@ scrypto = { path = "../../scrypto" }
 
 [dev-dependencies]
 scrypto-test = { path = "../../scrypto-test" }
+radix-engine = { path = "../../radix-engine" }
+radix-common = { path = "../../radix-common" }
+radix-native-sdk = { path = "../../radix-native-sdk" }
+radix-transactions = { path = "../../radix-transactions" }
+radix-engine-interface = { path = "../../radix-engine-interface" }
 
 [profile.release]
 opt-level = 'z'        # Optimize for size.

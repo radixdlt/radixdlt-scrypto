@@ -1,10 +1,20 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::manifest::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::{
     errors::{ApplicationError, RuntimeError, SystemError},
     object_modules::metadata::{MetadataError, MetadataValidationError},
 };
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::signing::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn cannot_create_metadata_with_invalid_value() {

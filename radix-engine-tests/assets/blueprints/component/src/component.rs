@@ -69,7 +69,6 @@ pub struct ComponentTest2NonFungible {
 
 #[blueprint]
 mod component_test2 {
-
     use component_test3::ComponentTest3;
 
     struct ComponentTest2 {
@@ -137,7 +136,6 @@ mod component_test2 {
 
 #[blueprint]
 mod component_test3 {
-
     struct ComponentTest3 {
         vault: Vault,
     }

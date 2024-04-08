@@ -1,10 +1,15 @@
 extern crate core;
 
+use radix_common::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
+use radix_engine_interface::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::require;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 pub enum TestResourceAction {
     Mint,

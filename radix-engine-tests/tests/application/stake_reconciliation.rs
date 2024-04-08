@@ -1,7 +1,17 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::updates::ProtocolUpdates;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
-use scrypto_test::prelude::*;
+use radix_substate_store_interface::interface::*;
+use radix_transactions::builder::*;
+use radix_transactions::signing::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_stake_reconciliation() {
@@ -62,8 +72,7 @@ fn test_stake_reconciliation() {
     println!("{:-^120}", "Application Events");
 
     // ordered list of expected events
-    let expected_events = vec![
-        "LockFeeEvent",
+    let expected_events = ["LockFeeEvent",
         "WithdrawEvent",
         "WithdrawEvent",
         "MintFungibleResourceEvent",
@@ -74,8 +83,7 @@ fn test_stake_reconciliation() {
         "DepositEvent",
         "PayFeeEvent",
         "DepositEvent",
-        "BurnFungibleResourceEvent",
-    ];
+        "BurnFungibleResourceEvent"];
 
     let commit_result = receipt.expect_commit(true).clone();
     let events = commit_result.application_events;
@@ -216,7 +224,7 @@ fn test_stake_reconciliation() {
             .encode(
                 &SpreadPrefixKeyMapper::from_db_partition_key(&full_key.0)
                     .0
-                     .0,
+                    .0,
             )
             .unwrap();
         assert_eq!(
@@ -255,7 +263,7 @@ fn test_stake_reconciliation() {
                 .encode(
                     &SpreadPrefixKeyMapper::from_db_partition_key(&full_key.0)
                         .0
-                         .0,
+                        .0,
                 )
                 .unwrap();
 

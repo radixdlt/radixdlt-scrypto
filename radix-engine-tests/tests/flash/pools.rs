@@ -1,11 +1,22 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::blueprints::pool::v1::errors::{
     multi_resource_pool::Error as MultiResourcePoolError,
     two_resource_pool::Error as TwoResourcePoolError,
 };
-use radix_engine::updates::state_updates::generate_pool_math_precision_fix_state_updates;
+use radix_engine::errors::*;
 use radix_engine::updates::ProtocolUpdates;
-use scrypto_test::prelude::*;
+use radix_engine::updates::state_updates::generate_pool_math_precision_fix_state_updates;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::prelude::*;
+use radix_substate_store_interface::db_key_mapper::*;
+use radix_substate_store_interface::interface::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn database_is_consistent_before_and_after_protocol_update() {

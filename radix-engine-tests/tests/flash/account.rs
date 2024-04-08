@@ -1,6 +1,15 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::account::*;
+use radix_engine::errors::*;
 use radix_engine::updates::*;
-use scrypto_test::prelude::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn before_protocol_update_try_deposit_or_refund_fails_if_claimed_authorized_depositor_is_not_one() {
@@ -49,8 +58,7 @@ fn before_protocol_update_try_deposit_or_refund_fails_if_claimed_authorized_depo
 }
 
 #[test]
-fn after_protocol_update_try_deposit_or_refund_refunds_resources_if_claimed_authorized_depositor_is_not_one(
-) {
+fn after_protocol_update_try_deposit_or_refund_refunds_resources_if_claimed_authorized_depositor_is_not_one() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_kernel_trace()

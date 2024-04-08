@@ -1,15 +1,24 @@
+use core::ops::*;
+
 use radix_blueprint_schema_init::*;
+use radix_common::*;
+use radix_common::constants::*;
 use radix_common::constants::MAX_NUMBER_OF_BLUEPRINT_FIELDS;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::package::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
-use radix_engine::vm::wasm::PrepareError;
 use radix_engine::vm::wasm::*;
+use radix_engine::vm::wasm::PrepareError;
 use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_transactions::builder::*;
 use sbor::basic_well_known_types::*;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn missing_memory_should_cause_error() {
@@ -783,8 +792,7 @@ fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_when_its_bluep
 }
 
 #[test]
-fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_that_does_not_contain_this_feature(
-) {
+fn test_error_path_field_requires_a_feature_on_an_outer_blueprint_that_does_not_contain_this_feature() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
@@ -980,8 +988,7 @@ fn test_error_path_can_not_have_a_type_schema_with_a_non_existent_local_type_id(
 }
 
 #[test]
-fn test_error_path_royalties_must_be_specified_for_all_functions_not_just_the_right_number_of_functions(
-) {
+fn test_error_path_royalties_must_be_specified_for_all_functions_not_just_the_right_number_of_functions() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
@@ -1113,7 +1120,8 @@ fn test_error_path_a_method_can_not_be_protected_by_a_role_not_in_the_role_speci
     definition.blueprints.values_mut().for_each(|bp_def| {
         bp_def.auth_config.method_auth =
             MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
-                roles: RoleSpecification::Normal(Default::default()), /* Empty - no roles */
+                roles: RoleSpecification::Normal(Default::default()),
+                /* Empty - no roles */
                 methods: bp_def
                     .schema
                     .functions

@@ -1,8 +1,17 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::math::*;
+use radix_common::prelude::*;
 use radix_engine::transaction::BalanceChange;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_balance_changes_when_success() {
@@ -141,7 +150,7 @@ fn test_balance_changes_when_failure() {
     let result = receipt.expect_commit_failure();
 
     assert_eq!(
-        ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id(),),
+        ledger.sum_descendant_balance_changes(result, ledger.faucet_component().as_node_id()),
         indexmap!(
             XRD => BalanceChange::Fungible(receipt.fee_summary.total_cost().checked_neg().unwrap() )
         )
@@ -234,9 +243,9 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         .get(&resource_address)
         .unwrap()
         .clone()
-    else {
-        panic!("must be non-fungible")
-    };
+        else {
+            panic!("must be non-fungible")
+        };
     assert_eq!(account_added, BTreeSet::new());
     assert_eq!(account_removed.len(), 1);
     let transferred_non_fungible = account_removed.first().unwrap().clone();
@@ -249,9 +258,9 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         .get(&resource_address)
         .unwrap()
         .clone()
-    else {
-        panic!("must be non-fungible")
-    };
+        else {
+            panic!("must be non-fungible")
+        };
     assert_eq!(other_account_added, btreeset!(transferred_non_fungible));
     assert_eq!(other_account_removed, BTreeSet::new());
 

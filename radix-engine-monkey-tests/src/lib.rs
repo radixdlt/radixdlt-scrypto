@@ -5,40 +5,32 @@ pub mod resource;
 pub mod two_pool;
 pub mod validator;
 
-use crate::consensus_manager::ConsensusManagerFuzzAction;
-use crate::multi_pool::MultiPoolFuzzAction;
-use crate::one_pool::OnePoolFuzzAction;
-use crate::resource::{
-    FungibleResourceFuzzGetBucketAction, NonFungibleResourceFuzzGetBucketAction,
-    ResourceFuzzRandomAction, ResourceFuzzTransformBucketAction, ResourceFuzzUseBucketAction,
-    ResourceTestInvoke, BLUEPRINT_NAME, CUSTOM_PACKAGE_CODE_ID,
-};
-use crate::two_pool::TwoPoolFuzzAction;
-use crate::validator::ValidatorFuzzAction;
-use core::ops::AddAssign;
+use crate::consensus_manager::*;
+use crate::multi_pool::*;
+use crate::one_pool::*;
+use crate::resource::*;
+use crate::two_pool::*;
+use crate::validator::*;
+use core::ops::*;
 use radix_common::prelude::*;
-use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
+use radix_common::*;
+use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::pool::v1::constants::*;
-use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
-use radix_engine::transaction::{TransactionOutcome, TransactionResult};
-use radix_engine::vm::OverridePackageCode;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::blueprints::pool::{
-    MultiResourcePoolInstantiateManifestInput, TwoResourcePoolInstantiateManifestInput,
-    MULTI_RESOURCE_POOL_INSTANTIATE_IDENT, TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-};
-use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine::errors::*;
+use radix_engine::transaction::*;
+use radix_engine::vm::*;
+use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::blueprints::pool::*;
+use radix_engine_interface::object_modules::*;
 use radix_engine_interface::prelude::*;
-use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_transactions::builder::ManifestBuilder;
-use rand::distributions::uniform::{SampleRange, SampleUniform};
-use rand::Rng;
-use rand_chacha::rand_core::{RngCore, SeedableRng};
-use rand_chacha::ChaCha8Rng;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
-use scrypto_test::prelude::InjectSystemCostingError;
-use scrypto_test::prelude::{CustomGenesis, LedgerSimulator, LedgerSimulatorBuilder};
+use radix_engine_interface::*;
+use radix_substate_store_impls::memory_db::*;
+use radix_transactions::builder::*;
+use rand::distributions::uniform::*;
+use rand::*;
+use rand_chacha::*;
+use rayon::iter::*;
+use scrypto_test::ledger_simulator::*;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,

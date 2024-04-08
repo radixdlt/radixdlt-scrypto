@@ -24,14 +24,14 @@ mod tx_runtime {
             assert_eq!(
                 x.instance_of(&BlueprintId {
                     package_address: Runtime::package_address(),
-                    blueprint_name: "TransactionRuntimeTest".to_owned()
+                    blueprint_name: "TransactionRuntimeTest".to_owned(),
                 }),
                 true
             );
             assert_eq!(
                 x.instance_of(&BlueprintId {
                     package_address: Runtime::package_address(),
-                    blueprint_name: "TransactionRuntimeTest2".to_owned()
+                    blueprint_name: "TransactionRuntimeTest2".to_owned(),
                 }),
                 false
             );
@@ -39,7 +39,7 @@ mod tx_runtime {
                 x.blueprint_id(),
                 BlueprintId {
                     package_address: Runtime::package_address(),
-                    blueprint_name: "TransactionRuntimeTest".to_owned()
+                    blueprint_name: "TransactionRuntimeTest".to_owned(),
                 }
             );
         }

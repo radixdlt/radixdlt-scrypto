@@ -1,5 +1,10 @@
 #![cfg(feature = "std")]
 
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::scrypto::*;
+use radix_common::network::*;
 use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::*;
@@ -8,19 +13,22 @@ use radix_engine::kernel::kernel_api::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
-use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
+use radix_engine::system::system_modules::costing::*;
 use radix_engine::track::*;
 use radix_engine::transaction::*;
-use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
+use radix_engine::vm::wasm::*;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_interface::db_key_mapper::*;
-use radix_transactions::prelude::*;
-use scrypto_test::prelude::LedgerSimulatorBuilder;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
@@ -60,8 +68,8 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         Vm::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),
         false,
     )
-    .bootstrap_test_default()
-    .unwrap();
+        .bootstrap_test_default()
+        .unwrap();
 
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -111,7 +119,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             address_reservation: None,
             owner_role: OwnerRole::None,
         })
-        .unwrap(),
+            .unwrap(),
     );
 
     // Assert
@@ -134,8 +142,8 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         Vm::new(&ScryptoVm::<DefaultWasmEngine>::default(), NativeVm::new()),
         false,
     )
-    .bootstrap_test_default()
-    .unwrap();
+        .bootstrap_test_default()
+        .unwrap();
 
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -185,7 +193,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             address_reservation: None,
             owner_role: OwnerRole::None,
         })
-        .unwrap(),
+            .unwrap(),
     );
 
     // Assert
@@ -230,9 +238,9 @@ impl VmInvoke for NonStringPanicExtensionInstance {
         _: &mut Y,
         _: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
     {
         // A panic with a non-string type. Making sure that our panic infrastructure can catch those
         // panics too even if it can't make any useful messages out of them.

@@ -1,3 +1,6 @@
+use radix_common::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
@@ -7,13 +10,17 @@ use radix_engine::kernel::call_frame::{
     CreateNodeError, ProcessSubstateError, SubstateDiffError, WriteSubstateError,
 };
 use radix_engine::system::system_type_checker::TypeCheckError;
+use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use scrypto::prelude::FromPublicKey;
+use radix_transactions::builder::*;
 use scrypto::NonFungibleData;
-use scrypto_test::prelude::*;
+use scrypto::prelude::FromPublicKey;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_deposit_event_when_creating_vault_with_bucket() {
@@ -42,9 +49,7 @@ fn test_deposit_event_when_creating_vault_with_bucket() {
         .expect_commit_ignore_outcome()
         .application_events
         .iter()
-        .map(|event| ledger.event_name(&event.0))
-        .filter(|name| name.eq("DepositEvent"))
-        .next()
+        .map(|event| ledger.event_name(&event.0)).find(|name| name.eq("DepositEvent"))
         .expect("Missing deposit event");
 }
 

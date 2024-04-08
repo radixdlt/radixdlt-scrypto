@@ -1,14 +1,27 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::crypto::*;
+use radix_common::data::scrypto::*;
+use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::blueprints::pool::v1::errors::one_resource_pool::Error as OneResourcePoolError;
 use radix_engine::blueprints::pool::v1::events::one_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_engine_interface::prelude::*;
+use radix_transactions::builder::*;
+use radix_transactions::model::*;
+use radix_transactions::signing::*;
 use scrypto::prelude::Pow;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn one_resource_pool_can_be_instantiated() {
@@ -347,8 +360,7 @@ fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming() {
 }
 
 #[test]
-fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming_after_protected_withdraws_and_deposits(
-) {
+fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming_after_protected_withdraws_and_deposits() {
     // Arrange
     let divisibility = 2;
     let amount_to_redeem = dec!("1.111111111111");

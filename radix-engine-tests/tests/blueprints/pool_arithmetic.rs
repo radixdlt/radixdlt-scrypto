@@ -1,10 +1,20 @@
+use radix_common::*;
+use radix_common::constants::*;
+use radix_common::math::*;
+use radix_common::prelude::*;
 use radix_engine::blueprints::pool::v1::errors::{
     multi_resource_pool::Error as MultiResourcePoolError,
     one_resource_pool::Error as OneResourcePoolError,
     two_resource_pool::Error as TwoResourcePoolError,
 };
+use radix_engine::errors::*;
+use radix_engine::vm::wasm::*;
+use radix_engine_interface::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::pool_stubs::*;
-use scrypto_test::prelude::*;
+use radix_native_sdk::resource::*;
+use scrypto_test::environment::*;
+use scrypto_test::sdk::*;
 
 macro_rules! atto {
     (
@@ -15,8 +25,7 @@ macro_rules! atto {
 }
 
 #[test]
-fn one_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_18(
-) -> Result<(), RuntimeError> {
+fn one_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_18() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
     let mut pool = OneResourcePool::instantiate(XRD, OwnerRole::None, rule!(allow_all), None, env)?;
@@ -34,8 +43,7 @@ fn one_resource_pool_redemption_value_calculation_does_not_lose_precision_at_div
 }
 
 #[test]
-fn one_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_2(
-) -> Result<(), RuntimeError> {
+fn one_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_2() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -121,8 +129,7 @@ fn one_resource_pool_contributions_must_return_pool_units() -> Result<(), Runtim
 /// of anything less than 100,000,000,000 XRD would mean minting less than 1 Atto of a pool unit
 /// which is not possible. Thus, this results in an error.
 #[test]
-fn one_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_error(
-) -> Result<(), RuntimeError> {
+fn one_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_error() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
     let mut pool = OneResourcePool::instantiate(XRD, OwnerRole::None, rule!(allow_all), None, env)?;
@@ -150,8 +157,7 @@ fn one_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_er
 }
 
 #[test]
-fn two_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_18(
-) -> Result<(), RuntimeError> {
+fn two_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_18() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -185,8 +191,7 @@ fn two_resource_pool_redemption_value_calculation_does_not_lose_precision_at_div
 }
 
 #[test]
-fn two_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_2(
-) -> Result<(), RuntimeError> {
+fn two_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_2() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -307,8 +312,7 @@ fn two_resource_pool_calculations_loading_to_zero_should_error() -> Result<(), R
 }
 
 #[test]
-fn two_resource_pool_very_small_contributions_should_return_pool_units_even_for_small_divisibilities(
-) -> Result<(), RuntimeError> {
+fn two_resource_pool_very_small_contributions_should_return_pool_units_even_for_small_divisibilities() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -348,8 +352,7 @@ fn two_resource_pool_very_small_contributions_should_return_pool_units_even_for_
 }
 
 #[test]
-fn two_resource_pool_one_sided_liquidity_can_be_provided_when_one_of_the_reserves_is_zero1(
-) -> Result<(), RuntimeError> {
+fn two_resource_pool_one_sided_liquidity_can_be_provided_when_one_of_the_reserves_is_zero1() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -397,8 +400,7 @@ fn two_resource_pool_one_sided_liquidity_can_be_provided_when_one_of_the_reserve
 }
 
 #[test]
-fn two_resource_pool_one_sided_liquidity_can_be_provided_when_one_of_the_reserves_is_zero2(
-) -> Result<(), RuntimeError> {
+fn two_resource_pool_one_sided_liquidity_can_be_provided_when_one_of_the_reserves_is_zero2() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -446,8 +448,7 @@ fn two_resource_pool_one_sided_liquidity_can_be_provided_when_one_of_the_reserve
 }
 
 #[test]
-fn two_resource_pool_initial_contribution_should_not_return_zero_pool_units(
-) -> Result<(), RuntimeError> {
+fn two_resource_pool_initial_contribution_should_not_return_zero_pool_units() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -481,8 +482,7 @@ fn two_resource_pool_initial_contribution_should_not_return_zero_pool_units(
 }
 
 #[test]
-fn two_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_error(
-) -> Result<(), RuntimeError> {
+fn two_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_error() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -587,8 +587,7 @@ fn two_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Resul
 }
 
 #[test]
-fn two_resource_pool_errors_out_when_one_of_the_resources_is_calculated_out_to_be_zero_in_normal_operations(
-) -> Result<(), RuntimeError> {
+fn two_resource_pool_errors_out_when_one_of_the_resources_is_calculated_out_to_be_zero_in_normal_operations() -> Result<(), RuntimeError> {
     // Arrange
     let env = &mut TestEnvironment::new();
 
@@ -813,8 +812,7 @@ fn multi_resource_pool_permits_some_zero_contributions3() -> Result<(), RuntimeE
 }
 
 #[test]
-fn multi_resource_pool_rejects_contributions_if_all_liquidity_has_been_removed(
-) -> Result<(), RuntimeError> {
+fn multi_resource_pool_rejects_contributions_if_all_liquidity_has_been_removed() -> Result<(), RuntimeError> {
     // Arrange
     with_multi_resource_pool(
         [18, 18, 18],
@@ -901,8 +899,7 @@ fn multi_resource_pool_mints_pool_units_for_very_small_contributions() -> Result
 }
 
 #[test]
-fn multi_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_error(
-) -> Result<(), RuntimeError> {
+fn multi_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_error() -> Result<(), RuntimeError> {
     // Arrange
     with_multi_resource_pool(
         [18, 18, 18],
@@ -947,8 +944,7 @@ fn multi_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_
 }
 
 #[test]
-fn multi_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_18(
-) -> Result<(), RuntimeError> {
+fn multi_resource_pool_redemption_value_calculation_does_not_lose_precision_at_divisibility_18() -> Result<(), RuntimeError> {
     // Arrange
     with_multi_resource_pool(
         [18, 18, 18],
@@ -1015,8 +1011,7 @@ fn multi_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Res
 }
 
 #[test]
-fn multi_resource_pool_errors_out_when_one_of_the_resources_is_calculated_out_to_be_zero_in_normal_operations(
-) -> Result<(), RuntimeError> {
+fn multi_resource_pool_errors_out_when_one_of_the_resources_is_calculated_out_to_be_zero_in_normal_operations() -> Result<(), RuntimeError> {
     // Arrange
     with_multi_resource_pool([18, 2], |env, [(bucket1, _), (bucket2, _)], mut pool| {
         {

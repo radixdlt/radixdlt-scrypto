@@ -1,10 +1,18 @@
+use core::ops::*;
+
+use radix_common::*;
+use radix_common::data::manifest::*;
+use radix_common::prelude::*;
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemError;
 use radix_engine::system::system_type_checker::TypeCheckError;
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
-use scrypto_test::prelude::*;
+use radix_transactions::builder::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn test_add_direct_access_ref_to_stored_substate_external_vault() {
@@ -374,8 +382,8 @@ fn test_create_global_node_with_local_ref() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::TypeCheckError(
-            TypeCheckError::BlueprintPayloadValidationError(.., error),
-        )) => error.contains("Non Global Reference"),
+                                      TypeCheckError::BlueprintPayloadValidationError(.., error),
+                                  )) => error.contains("Non Global Reference"),
         _ => false,
     });
 }
@@ -421,8 +429,8 @@ fn test_add_local_ref_to_stored_substate() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::TypeCheckError(
-            TypeCheckError::BlueprintPayloadValidationError(.., error),
-        )) => error.contains("Non Global Reference"),
+                                      TypeCheckError::BlueprintPayloadValidationError(.., error),
+                                  )) => error.contains("Non Global Reference"),
         _ => false,
     });
 }

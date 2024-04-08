@@ -1,20 +1,36 @@
+use radix_common::*;
+use radix_common::constants::*;
 use radix_common::constants::AuthAddresses;
+use radix_common::data::manifest::*;
+
 use radix_common::prelude::*;
+
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
+
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::object_modules::role_assignment::RoleAssignmentError;
+
 use radix_engine::system::system_callback::SystemLockData;
+use radix_engine::transaction::*;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
+
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    PackageDefinition, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
-    PACKAGE_PUBLISH_NATIVE_IDENT,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PackageDefinition,
+    PackagePublishNativeManifestInput,
 };
+use radix_engine_interface::prelude::*;
 use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
+
+
 use radix_transactions::builder::ManifestBuilder;
 use radix_transactions::model::{DynamicPackageAddress, InstructionV1};
-use scrypto_test::prelude::*;
+
+
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn cannot_define_more_than_50_roles() {
@@ -32,9 +48,9 @@ fn cannot_define_more_than_50_roles() {
             _api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
@@ -94,9 +110,9 @@ fn cannot_define_role_name_larger_than_max() {
             _api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
@@ -157,9 +173,9 @@ fn cannot_setup_more_than_50_roles() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "test" => {
@@ -228,9 +244,9 @@ fn cannot_set_role_before_attachment() {
             api: &mut Y,
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
+            where
+                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+                V: VmApi,
         {
             match export_name {
                 "test" => {

@@ -1,11 +1,18 @@
+use radix_common::*;
+use radix_common::data::manifest::*;
+use radix_common::data::scrypto::model::*;
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::object_modules::ModuleConfig;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_transactions::builder::*;
 use scrypto::NonFungibleData;
-use scrypto_test::prelude::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn package_burn_is_only_callable_within_resource_package() {

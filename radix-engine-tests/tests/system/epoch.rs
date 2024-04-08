@@ -1,5 +1,8 @@
+use radix_common::*;
+use radix_common::prelude::*;
 use radix_common::types::Epoch;
-use scrypto_test::prelude::*;
+use radix_engine_interface::*;
+use scrypto_test::ledger_simulator::*;
 
 #[test]
 fn setting_single_epoch_succeeds() {

@@ -843,6 +843,10 @@ dependencies = [
 name = "radiswap"
 version = "1.2.0-dev"
 dependencies = [
+ "radix-common",
+ "radix-engine",
+ "radix-engine-interface",
+ "radix-native-sdk",
  "sbor",
  "scrypto",
  "scrypto-test",
