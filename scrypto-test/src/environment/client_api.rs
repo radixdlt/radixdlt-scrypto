@@ -51,49 +51,14 @@ macro_rules! implement_client_api {
                 $(
                     #[inline]
                     fn $func_ident(&mut self, $($input_ident: $input_type),*) -> $outputs {
-                        let logs_before = self.0.with_kernel_mut(|kernel| {
-                            kernel
-                                .kernel_get_system_state()
-                                .system
-                                .modules
-                                .transaction_runtime()
-                                .map(|runtime| runtime.logs.len())
-                                .unwrap_or(0)
-                        });
-
-                        let rtn = self.0.with_kernel_mut(|kernel| {
-                            SystemService {
-                                api: kernel,
-                                phantom: PhantomData,
-                            }.$func_ident( $($input_ident),* )
-                        });
-
-                        self.0.with_kernel_mut(|kernel| {
-                            let logs_after = kernel
-                                .kernel_get_system_state()
-                                .system
-                                .modules
-                                .transaction_runtime()
-                                .map(|runtime| runtime.logs.len())
-                                .unwrap_or(0);
-
-                            if logs_before != logs_after {
-                                for (level, message) in kernel
-                                    .kernel_get_system_state()
-                                    .system
-                                    .modules
-                                    .transaction_runtime()
-                                    .map(|module| module.logs.iter())
-                                    .unwrap_or_default()
-                                    .into_iter()
-                                    .skip(logs_before)
-                                {
-                                    println!("[{}]: {}", level, message)
-                                }
-                            }
-                        });
-
-                        rtn
+                        self.with_log_printing(|this| {
+                            this.0.with_kernel_mut(|kernel| {
+                                SystemService {
+                                    api: kernel,
+                                    phantom: PhantomData,
+                                }.$func_ident( $($input_ident),* )
+                            })
+                        })
                     }
                 )*
             }

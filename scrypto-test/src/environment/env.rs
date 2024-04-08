@@ -875,6 +875,49 @@ where
 
         Ok(rtn)
     }
+
+    pub(crate) fn with_log_printing<F, O>(&mut self, callback: F) -> O
+    where
+        F: FnOnce(&mut Self) -> O,
+    {
+        // Before we invoke the callback determine how many logs exist.
+        let number_of_logs_before = self.0.with_kernel_mut(|kernel| {
+            kernel
+                .kernel_get_system_state()
+                .system
+                .modules
+                .transaction_runtime()
+                .map(|runtime| runtime.logs.len())
+                .unwrap_or(0)
+        });
+
+        // Execute the callback
+        let rtn = callback(self);
+
+        // Get the logs after executing the callback.
+        let Some(logs_after) = self.0.with_kernel_mut(|kernel| {
+            kernel
+                .kernel_get_system_state()
+                .system
+                .modules
+                .transaction_runtime()
+                .map(|runtime| &runtime.logs)
+        }) else {
+            return rtn;
+        };
+        let number_of_logs_after = logs_after.len();
+
+        // If there is a difference between the number of logs before and after then print out the
+        // difference.
+        if number_of_logs_before != number_of_logs_after {
+            for (level, message) in logs_after.iter().skip(number_of_logs_before) {
+                println!("[{}]: {}", level, message)
+            }
+        }
+
+        // Return the callback output
+        rtn
+    }
 }
 
 impl Default for TestEnvironment<InMemorySubstateDatabase> {
