@@ -2,7 +2,7 @@
 name = "radix-substate-store-impls"
 version = "1.2.0-dev"
 edition = "2021"
-description = "Includes various substate store implementations."
+description = "Includes various substate store implementations, from the Radix DLT project."
 readme = "README.md"
 license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"

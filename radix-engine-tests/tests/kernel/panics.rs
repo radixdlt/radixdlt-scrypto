@@ -41,7 +41,7 @@ macro_rules! panic1 {
 
 pub struct MockKernel;
 
-impl<'g> KernelApi<SystemConfig<Vm<'g, DefaultWasmEngine, NoExtension>>> for MockKernel {}
+impl<'g> KernelApi<System<Vm<'g, DefaultWasmEngine, NoExtension>>> for MockKernel {}
 
 impl KernelNodeApi for MockKernel {
     fn kernel_pin_node(&mut self, _: NodeId) -> Result<(), RuntimeError> {
@@ -170,10 +170,10 @@ impl KernelInvokeApi<Actor> for MockKernel {
     }
 }
 
-impl<'g> KernelInternalApi<SystemConfig<Vm<'g, DefaultWasmEngine, NoExtension>>> for MockKernel {
+impl<'g> KernelInternalApi<System<Vm<'g, DefaultWasmEngine, NoExtension>>> for MockKernel {
     fn kernel_get_system_state(
         &mut self,
-    ) -> SystemState<'_, SystemConfig<Vm<'g, DefaultWasmEngine, NoExtension>>> {
+    ) -> SystemState<'_, System<Vm<'g, DefaultWasmEngine, NoExtension>>> {
         panic1!()
     }
 

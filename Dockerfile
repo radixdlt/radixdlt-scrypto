@@ -15,7 +15,6 @@ RUN apt update && apt install -y \
 FROM base-image as builder
 
 # Copy library crates
-ADD assets /app/assets
 ADD Cargo.toml /app/Cargo.toml
 ADD radix-blueprint-schema-init /app/radix-blueprint-schema-init
 ADD radix-common /app/radix-common

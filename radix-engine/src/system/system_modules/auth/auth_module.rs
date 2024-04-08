@@ -10,7 +10,7 @@ use crate::system::actor::Actor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::node_init::type_info_partition;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::{System, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::{AttachedModuleId, ClientBlueprintApi, LockFlags, ModuleId};
@@ -77,7 +77,7 @@ impl AuthModule {
     ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         // Create AuthZone
         let auth_zone = {
@@ -131,7 +131,7 @@ impl AuthModule {
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         Self::teardown_auth_zone(api, auth_zone)
     }
@@ -146,7 +146,7 @@ impl AuthModule {
     ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         let auth_zone = AuthModule::create_auth_zone(
             api,
@@ -186,7 +186,7 @@ impl AuthModule {
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         Self::teardown_auth_zone(api, auth_zone)
     }
@@ -200,7 +200,7 @@ impl AuthModule {
     ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         Self::create_auth_zone(system, receiver, virtual_resources, virtual_non_fungibles)
     }
@@ -211,7 +211,7 @@ impl AuthModule {
     ) -> Result<(Option<(GlobalCaller, Reference)>, Option<SubstateHandle>), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         let handle = system.kernel_open_substate(
             node_id,
@@ -236,7 +236,7 @@ impl AuthModule {
     ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         let (auth_zone, parent_lock_handle) = {
             let next_is_barrier = if let Some((receiver, direct_access)) = receiver {
@@ -354,7 +354,7 @@ impl AuthModule {
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         // Detach proofs from the auth zone
         let handle = api.kernel_open_substate(
@@ -393,7 +393,7 @@ impl AuthModule {
         Ok(())
     }
 
-    fn check_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+    fn check_permission<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         auth_zone: &NodeId,
         resolved_permission: ResolvedPermission,
         fn_identifier: FnIdentifier,
@@ -447,7 +447,7 @@ impl AuthModule {
         }
     }
 
-    fn resolve_method_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+    fn resolve_method_permission<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         blueprint_id: &BlueprintId,
         receiver: &NodeId,
@@ -538,4 +538,4 @@ impl AuthModule {
 }
 
 impl InitSystemModule for AuthModule {}
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {}
+impl<V: SystemCallbackObject> SystemModule<System<V>> for AuthModule {}

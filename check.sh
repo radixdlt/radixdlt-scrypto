@@ -29,9 +29,8 @@ for package in $packages; do
 done
 
 packages="
-    assets/blueprints/radiswap/Cargo.toml \
-    assets/blueprints/faucet/Cargo.toml \
     examples/hello-world/Cargo.toml \
+    examples/everything/Cargo.toml \
     examples/no-std/Cargo.toml \
     "
 packages+=$(find radix-engine-tests/tests/blueprints -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))

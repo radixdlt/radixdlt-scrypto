@@ -5,7 +5,7 @@
 name = "radix-clis"
 version = "1.2.0-dev"
 edition = "2021"
-description = "A collection of CLIs for developing, building and testing Scrypto code."
+description = "A collection of CLIs for developing, building and testing Scrypto code, from the Radix DLT project."
 readme = "README.md"
 license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
