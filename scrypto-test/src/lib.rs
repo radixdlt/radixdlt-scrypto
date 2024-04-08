@@ -83,7 +83,6 @@
 
 pub mod environment;
 pub mod ledger_simulator;
-pub mod prelude;
 pub mod sdk;
 pub mod utils;
 

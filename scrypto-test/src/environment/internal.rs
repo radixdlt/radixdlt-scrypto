@@ -2,7 +2,13 @@
 //! contained Radix Engine implemented as a self-referencing struct.
 
 use super::*;
-use crate::prelude::*;
+use core::ops::*;
+use radix_common::*;
+use radix_engine::kernel::id_allocator::*;
+use radix_engine::vm::wasm::*;
+use radix_engine::vm::*;
+use radix_engine_interface::*;
+use radix_substate_store_interface::interface::*;
 
 // TODO: I would like to remove the reliance on `CommittableSubstateDatabase` and to instead commit
 //       everything to the track. As in, nothing ever gets committed to the database. Even the

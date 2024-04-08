@@ -1,7 +1,30 @@
 //! This module defines and implements the [`TestEnvironment`] struct.
 
 use super::*;
-use crate::prelude::*;
+use core::ops::*;
+use radix_common::constants::*;
+use radix_common::data::scrypto::*;
+use radix_common::time::*;
+use radix_common::types::*;
+use radix_common::*;
+use radix_engine::errors::*;
+use radix_engine::kernel::call_frame::*;
+use radix_engine::kernel::kernel_api::*;
+use radix_engine::system::actor::*;
+use radix_engine::system::system::*;
+use radix_engine::system::system_callback::*;
+use radix_engine::system::system_modules::auth::*;
+use radix_engine::system::system_modules::*;
+use radix_engine::system::system_substates::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_engine_interface::prelude::*;
+use radix_engine_interface::*;
+use radix_native_sdk::runtime::*;
+use radix_substate_store_impls::memory_db::*;
+use radix_substate_store_interface::interface::*;
+use radix_substate_store_queries::typed_substate_layout::*;
+use sbor::prelude::*;
 
 /// The environment that all tests of this testing framework are run against.
 ///

@@ -1,7 +1,15 @@
 //! This module defines various types that the test runtime depends on and specifies what the
 //! generic parameters are for them.
 
-use crate::prelude::*;
+use radix_common::*;
+use radix_engine::kernel::kernel::*;
+use radix_engine::system::system::*;
+use radix_engine::system::system_callback::*;
+use radix_engine::track::*;
+use radix_engine::vm::wasm::*;
+use radix_engine::vm::*;
+use radix_engine_interface::*;
+use radix_substate_store_interface::db_key_mapper::*;
 
 pub type TestVm<'g> = Vm<'g, DefaultWasmEngine, NoExtension>;
 pub type TestTrack<'g, D> = Track<'g, D, SpreadPrefixKeyMapper>;

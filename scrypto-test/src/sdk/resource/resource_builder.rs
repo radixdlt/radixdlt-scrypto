@@ -1,15 +1,17 @@
 // TODO: Need to deduplicate this code.
 
-use crate::prelude::*;
-use radix_common::math::Decimal;
-use radix_common::traits::NonFungibleData;
-use radix_engine_interface::object_modules::metadata::MetadataInit;
-use radix_engine_interface::object_modules::role_assignment::RoleDefinition;
-use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::prelude::ClientApi;
+use radix_common::constants::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::data::scrypto::*;
+use radix_common::math::*;
+use radix_common::traits::*;
+use radix_common::types::*;
+use radix_common::*;
+use radix_engine_interface::api::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_interface::*;
-use sbor::rust::marker::PhantomData;
-use std::fmt::Debug;
+use radix_native_sdk::resource::*;
+use sbor::prelude::*;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;

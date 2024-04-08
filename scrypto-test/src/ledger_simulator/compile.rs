@@ -1,6 +1,10 @@
-use crate::prelude::*;
+use radix_common::*;
+use radix_engine_interface::prelude::*;
+use radix_engine_interface::*;
+use radix_substate_store_queries::typed_substate_layout::*;
+use sbor::prelude::*;
 use scrypto_compiler::*;
-use std::path::Path;
+use std::path::*;
 
 pub struct Compile;
 

@@ -1,4 +1,10 @@
-use crate::prelude::*;
+use radix_common::data::scrypto::model::*;
+use radix_common::data::scrypto::*;
+use radix_common::math::*;
+use radix_common::types::*;
+use radix_common::*;
+use radix_engine_interface::*;
+use sbor::prelude::*;
 
 /// The creation strategy used in the [`BucketFactory`] and [`ProofFactory`] structs allowing them
 /// to either create them by disabling auth and minting or by mocking the bucket or proof.
