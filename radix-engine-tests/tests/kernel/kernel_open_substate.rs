@@ -9,7 +9,7 @@ use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
 use radix_engine::system::system_modules::kernel_trace::KernelTraceModule;
-use radix_engine::system::system_modules::SystemModuleMixer;
+use radix_engine::system::system_modules::{EnabledModules, SystemModuleMixer};
 use radix_engine::track::Track;
 use radix_engine::transaction::{ExecutionConfig, LimitParameters};
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -31,7 +31,6 @@ pub fn test_open_substate_of_invisible_package_address() {
             .prepare()
             .unwrap();
     let executable = transaction.get_executable(btreeset![]);
-    let execution_config = ExecutionConfig::for_test_transaction();
 
     // Create database and bootstrap
     let mut database = InMemorySubstateDatabase::standard();
@@ -55,7 +54,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             vm_version: VmVersion::latest(),
         },
         modules: SystemModuleMixer::new(
-            execution_config.enabled_modules,
+            EnabledModules::for_test_transaction(),
             KernelTraceModule,
             NetworkDefinition::simulator(),
             executable.intent_hash().to_hash(),

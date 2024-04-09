@@ -113,7 +113,9 @@ pub struct SystemInit<C> {
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
 
-    pub enabled_modules: EnabledModules,
+    pub disable_costing: bool,
+    pub disable_limits: bool,
+    pub disable_auth: bool,
     pub network_definition: NetworkDefinition,
     pub costing_parameters: Option<CostingParameters>,
     pub limit_parameters: Option<LimitParameters>,
@@ -164,7 +166,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         };
         let callback = C::init(store, init_input.callback_init)?;
 
-        let mut enabled_modules = init_input.enabled_modules;
+        let mut enabled_modules = EnabledModules::empty();
+        enabled_modules |= EnabledModules::TRANSACTION_RUNTIME;
+
+        if !init_input.disable_auth {
+            enabled_modules |= EnabledModules::AUTH;
+        }
+        if !init_input.disable_costing {
+            enabled_modules |= EnabledModules::COSTING;
+        }
+        if !init_input.disable_limits{
+            enabled_modules |= EnabledModules::LIMITS;
+        }
         if init_input.enable_kernel_trace {
             enabled_modules |= EnabledModules::KERNEL_TRACE;
         }

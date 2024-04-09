@@ -53,7 +53,6 @@ pub struct CostingParameters {
     /// The max number finalization cost units to consume.
     pub finalization_cost_unit_limit: u32,
 
-
     /// The price of USD in xrd
     pub usd_price: Decimal,
     /// The price of state storage in xrd
@@ -156,7 +155,9 @@ pub struct ExecutionConfig {
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
 
-    pub enabled_modules: EnabledModules,
+    pub disable_costing: bool,
+    pub disable_limits: bool,
+    pub disable_auth: bool,
     pub network_definition: NetworkDefinition,
     pub costing_parameters: Option<CostingParameters>,
     pub limit_parameters: Option<LimitParameters>,
@@ -168,9 +169,11 @@ impl ExecutionConfig {
     fn default(network_definition: NetworkDefinition) -> Self {
         Self {
             network_definition,
-            enabled_modules: EnabledModules::for_notarized_transaction(),
             enable_kernel_trace: false,
             enable_cost_breakdown: false,
+            disable_costing: false,
+            disable_limits: false,
+            disable_auth: false,
             execution_trace: None,
             costing_parameters: None,
             limit_parameters: None,
@@ -179,28 +182,29 @@ impl ExecutionConfig {
 
     pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_genesis_transaction(),
+            disable_costing: true,
+            disable_limits: true,
+            disable_auth: true,
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_system_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_system_transaction(),
+            disable_costing: true,
+            disable_limits: true,
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_notarized_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_notarized_transaction(),
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_test_transaction() -> Self {
         Self {
-            enabled_modules: EnabledModules::for_test_transaction(),
             enable_kernel_trace: true,
             enable_cost_breakdown: true,
             ..Self::default(NetworkDefinition::simulator())
@@ -209,7 +213,6 @@ impl ExecutionConfig {
 
     pub fn for_preview(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_preview(),
             enable_cost_breakdown: true,
             execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
             ..Self::default(network_definition)
@@ -218,7 +221,7 @@ impl ExecutionConfig {
 
     pub fn for_preview_no_auth(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_preview_no_auth(),
+            disable_auth: true,
             enable_cost_breakdown: true,
             execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
             ..Self::default(network_definition)
@@ -504,10 +507,7 @@ where
                                 application_events,
                                 application_logs,
                                 system_structure,
-                                execution_trace: if self.system_init
-                                    .enabled_modules
-                                    .contains(EnabledModules::EXECUTION_TRACE)
-                                {
+                                execution_trace: if self.system_init.execution_trace.is_some() {
                                     Some(execution_trace)
                                 } else {
                                     None
@@ -1280,8 +1280,10 @@ pub fn execute_transaction_with_configuration<
             enable_cost_breakdown: execution_config.enable_cost_breakdown,
             execution_trace: execution_config.execution_trace,
 
-            enabled_modules: execution_config.enabled_modules,
             network_definition: execution_config.network_definition.clone(),
+            disable_auth: execution_config.disable_auth,
+            disable_limits: execution_config.disable_limits,
+            disable_costing: execution_config.disable_costing,
             costing_parameters: execution_config.costing_parameters,
             limit_parameters: execution_config.limit_parameters,
             callback_init: vms,
