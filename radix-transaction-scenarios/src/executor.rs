@@ -379,7 +379,7 @@ where
         // then anemone, bottlenose, and so on. This order is enforced by this function and by the
         // ordering of the `ProtocolUpdate` enum variants. Within a protocol update (or requirement)
         // the canonical order is as seen in the [`new`] function.
-        for protocol_requirement in std::iter::once(None).chain(ProtocolUpdate::VARIANTS.map(Some))
+        for protocol_requirement in core::iter::once(None).chain(ProtocolUpdate::VARIANTS.map(Some))
         {
             // When a new protocol requirement is encountered the appropriate callback is called to
             // inform the client of this event.
