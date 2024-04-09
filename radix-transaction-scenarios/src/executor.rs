@@ -31,15 +31,11 @@ use scenarios::transfer_xrd::TransferXrdScenarioCreator;
 
 type ScenarioCreatorDynFunc = dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>;
 
-pub struct TransactionScenarioExecutor<D, W, E, F1, F2, F3, F4>
+pub struct TransactionScenarioExecutor<'a, D, W, E>
 where
     D: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
     E: NativeVmExtension,
-    F1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
-    F2: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
-    F3: FnMut(&ScenarioMetadata),
-    F4: FnMut(&NetworkDefinition, &mut D),
 {
     /* Environment */
     /// The substate database that the scenario will be run against.
@@ -69,40 +65,35 @@ where
     /* Callbacks */
     /// A callback that is called when a new protocol requirement is encountered. This can be useful
     /// for clients who wish to apply protocol updates they wish.
-    on_new_protocol_requirement_encountered: F1,
+    on_new_protocol_requirement_encountered:
+        Box<dyn FnMut(&NetworkDefinition, ProtocolUpdate, &mut D) + 'a>,
     /// A callback that is called when a scenario transaction is executed.
-    on_transaction_executed: F2,
+    on_transaction_executed:
+        Box<dyn FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D) + 'a>,
     /// A callback that is called when a new scenario is started.
-    on_scenario_start: F3,
+    on_scenario_start: Box<dyn FnMut(&ScenarioMetadata) + 'a>,
     /// A callback that is called after bootstrapping if bootstrapping is enabled.
-    after_bootstrap: F4,
+    after_bootstrap: Box<dyn FnMut(&NetworkDefinition, &mut D) + 'a>,
+
+    /* Phantom */
+    /// The lifetime of the callbacks used in the executor.
+    callback_lifetime: PhantomData<&'a ()>,
 }
 
-pub type DefaultTransactionScenarioExecutor<D> = TransactionScenarioExecutor<
-    D,
-    DefaultWasmEngine,
-    NoExtension,
-    fn(&NetworkDefinition, ProtocolUpdate, &mut D),
-    fn(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
-    fn(&ScenarioMetadata),
-    fn(&NetworkDefinition, &mut D),
->;
+pub type DefaultTransactionScenarioExecutor<'a, D> =
+    TransactionScenarioExecutor<'a, D, DefaultWasmEngine, NoExtension>;
 
-impl<D, W, E, F1, F2, F3, F4> TransactionScenarioExecutor<D, W, E, F1, F2, F3, F4>
+impl<'a, D, W, E> TransactionScenarioExecutor<'a, D, W, E>
 where
     D: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
     E: NativeVmExtension,
-    F1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
-    F2: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
-    F3: FnMut(&ScenarioMetadata),
-    F4: FnMut(&NetworkDefinition, &mut D),
 {
     pub fn new(
         database: D,
         network_definition: NetworkDefinition,
-    ) -> DefaultTransactionScenarioExecutor<D> {
-        DefaultTransactionScenarioExecutor::<D> {
+    ) -> DefaultTransactionScenarioExecutor<'a, D> {
+        DefaultTransactionScenarioExecutor::<'a, D> {
             /* Environment */
             database,
             scrypto_vm: ScryptoVm::default(),
@@ -116,17 +107,23 @@ where
                 ScenarioStartNonceHandling::PreviousScenarioEndNoncePlusOne,
             network_definition,
             /* Callbacks */
-            on_new_protocol_requirement_encountered: |network_definition, protocol_update, db| {
-                protocol_update
-                    .generate_state_updates(db, network_definition)
-                    .into_iter()
-                    .for_each(|state_updates| {
-                        db.commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
-                    })
-            },
-            on_transaction_executed: |_, _, _, _| {},
-            on_scenario_start: |_| {},
-            after_bootstrap: |_, _| {},
+            on_new_protocol_requirement_encountered: Box::new(
+                |network_definition, protocol_update, db| {
+                    protocol_update
+                        .generate_state_updates(db, network_definition)
+                        .into_iter()
+                        .for_each(|state_updates| {
+                            db.commit(
+                                &state_updates.create_database_updates::<SpreadPrefixKeyMapper>(),
+                            )
+                        })
+                },
+            ),
+            on_transaction_executed: Box::new(|_, _, _, _| {}),
+            on_scenario_start: Box::new(|_| {}),
+            after_bootstrap: Box::new(|_, _| {}),
+            /* Phantom */
+            callback_lifetime: Default::default(),
         }
         // Genesis Scenarios.
         .register_scenario_with_create_fn::<TransferXrdScenarioCreator>()
@@ -149,7 +146,7 @@ where
     pub fn scrypto_vm<NW: WasmEngine>(
         self,
         scrypto_vm: ScryptoVm<NW>,
-    ) -> TransactionScenarioExecutor<D, NW, E, F1, F2, F3, F4> {
+    ) -> TransactionScenarioExecutor<'a, D, NW, E> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
@@ -167,6 +164,8 @@ where
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
             after_bootstrap: self.after_bootstrap,
+            /* Phantom */
+            callback_lifetime: self.callback_lifetime,
         }
     }
 
@@ -174,7 +173,7 @@ where
     pub fn native_vm_extension<NE: NativeVmExtension>(
         self,
         native_vm_extension: NE,
-    ) -> TransactionScenarioExecutor<D, W, NE, F1, F2, F3, F4> {
+    ) -> TransactionScenarioExecutor<'a, D, W, NE> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
@@ -192,6 +191,8 @@ where
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
             after_bootstrap: self.after_bootstrap,
+            /* Phantom */
+            callback_lifetime: self.callback_lifetime,
         }
     }
 
@@ -227,137 +228,43 @@ where
 
     /// Sets the callback to call when a new protocol requirement is encountered.
     pub fn on_new_protocol_requirement_encountered<
-        NF1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
+        F: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D) + 'a,
     >(
-        self,
-        callback: NF1,
-    ) -> TransactionScenarioExecutor<D, W, E, NF1, F2, F3, F4> {
-        TransactionScenarioExecutor {
-            /* Environment */
-            database: self.database,
-            scrypto_vm: self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension,
-            /* Execution */
-            filter: self.filter,
-            registered_scenarios: self.registered_scenarios,
-            bootstrap: self.bootstrap,
-            starting_nonce: self.starting_nonce,
-            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
-            network_definition: self.network_definition,
-            /* Callbacks */
-            on_new_protocol_requirement_encountered: callback,
-            on_transaction_executed: self.on_transaction_executed,
-            on_scenario_start: self.on_scenario_start,
-            after_bootstrap: self.after_bootstrap,
-        }
+        mut self,
+        callback: F,
+    ) -> Self {
+        self.on_new_protocol_requirement_encountered = Box::new(callback);
+        self
     }
 
     /// Sets the callback to call after executing a scenario transaction.
     pub fn on_transaction_executed<
-        NF2: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
+        F: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D) + 'a,
     >(
-        self,
-        callback: NF2,
-    ) -> TransactionScenarioExecutor<D, W, E, F1, NF2, F3, F4> {
-        TransactionScenarioExecutor {
-            /* Environment */
-            database: self.database,
-            scrypto_vm: self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension,
-            /* Execution */
-            filter: self.filter,
-            registered_scenarios: self.registered_scenarios,
-            bootstrap: self.bootstrap,
-            starting_nonce: self.starting_nonce,
-            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
-            network_definition: self.network_definition,
-            /* Callbacks */
-            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
-            on_transaction_executed: callback,
-            on_scenario_start: self.on_scenario_start,
-            after_bootstrap: self.after_bootstrap,
-        }
+        mut self,
+        callback: F,
+    ) -> Self {
+        self.on_transaction_executed = Box::new(callback);
+        self
     }
 
     /// A callback that is called when a new scenario is started.
-    pub fn on_scenario_start<NF3: FnMut(&ScenarioMetadata)>(
-        self,
-        callback: NF3,
-    ) -> TransactionScenarioExecutor<D, W, E, F1, F2, NF3, F4> {
-        TransactionScenarioExecutor {
-            /* Environment */
-            database: self.database,
-            scrypto_vm: self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension,
-            /* Execution */
-            filter: self.filter,
-            registered_scenarios: self.registered_scenarios,
-            bootstrap: self.bootstrap,
-            starting_nonce: self.starting_nonce,
-            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
-            network_definition: self.network_definition,
-            /* Callbacks */
-            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
-            on_transaction_executed: self.on_transaction_executed,
-            on_scenario_start: callback,
-            after_bootstrap: self.after_bootstrap,
-        }
+    pub fn on_scenario_start<F: FnMut(&ScenarioMetadata) + 'a>(mut self, callback: F) -> Self {
+        self.on_scenario_start = Box::new(callback);
+        self
     }
 
-    pub fn without_protocol_updates(
-        self,
-    ) -> TransactionScenarioExecutor<
-        D,
-        W,
-        E,
-        fn(&NetworkDefinition, ProtocolUpdate, &mut D),
-        F2,
-        F3,
-        F4,
-    > {
-        TransactionScenarioExecutor {
-            /* Environment */
-            database: self.database,
-            scrypto_vm: self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension,
-            /* Execution */
-            filter: self.filter,
-            registered_scenarios: self.registered_scenarios,
-            bootstrap: self.bootstrap,
-            starting_nonce: self.starting_nonce,
-            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
-            network_definition: self.network_definition,
-            /* Callbacks */
-            on_new_protocol_requirement_encountered: |_, _, _| {},
-            on_transaction_executed: self.on_transaction_executed,
-            on_scenario_start: self.on_scenario_start,
-            after_bootstrap: self.after_bootstrap,
-        }
+    pub fn without_protocol_updates(self) -> Self {
+        self.on_new_protocol_requirement_encountered(|_, _, _| {})
     }
 
     /// A callback that is called after bootstrapping if bootstrap is enabled.
-    pub fn after_bootstrap<NF4: FnMut(&NetworkDefinition, &mut D)>(
-        self,
-        callback: NF4,
-    ) -> TransactionScenarioExecutor<D, W, E, F1, F2, F3, NF4> {
-        TransactionScenarioExecutor {
-            /* Environment */
-            database: self.database,
-            scrypto_vm: self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension,
-            /* Execution */
-            filter: self.filter,
-            registered_scenarios: self.registered_scenarios,
-            bootstrap: self.bootstrap,
-            starting_nonce: self.starting_nonce,
-            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
-            network_definition: self.network_definition,
-            /* Callbacks */
-            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
-            on_transaction_executed: self.on_transaction_executed,
-            on_scenario_start: self.on_scenario_start,
-            after_bootstrap: callback,
-        }
+    pub fn after_bootstrap<F: FnMut(&NetworkDefinition, &mut D) + 'a>(
+        mut self,
+        callback: F,
+    ) -> Self {
+        self.after_bootstrap = Box::new(callback);
+        self
     }
 
     pub fn execute(mut self) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
