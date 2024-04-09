@@ -6,9 +6,9 @@ use radix_engine_interface::*;
 
 pub struct AccountLockerScenarioConfig {
     pub account_locker_admin_account: PrivateKey,
-    pub user_account1: PrivateKey,
-    pub user_account2: PrivateKey,
-    pub user_account3: PrivateKey,
+    pub account_rejecting_fungible_resource: PrivateKey,
+    pub account_accepting_all_resources: PrivateKey,
+    pub account_rejecting_non_fungible_resource: PrivateKey,
 }
 
 #[derive(Default)]
@@ -20,18 +20,18 @@ pub struct AccountLockerScenarioState {
     pub(crate) non_fungible_resource: State<ResourceAddress>,
 
     pub(crate) account_locker_admin_account: State<ComponentAddress>,
-    pub(crate) user_account1: State<ComponentAddress>,
-    pub(crate) user_account2: State<ComponentAddress>,
-    pub(crate) user_account3: State<ComponentAddress>,
+    pub(crate) account_rejecting_fungible_resource: State<ComponentAddress>,
+    pub(crate) account_accepting_all_resources: State<ComponentAddress>,
+    pub(crate) account_rejecting_non_fungible_resource: State<ComponentAddress>,
 }
 
 impl Default for AccountLockerScenarioConfig {
     fn default() -> Self {
         Self {
             account_locker_admin_account: new_ed25519_private_key(1).into(),
-            user_account1: new_ed25519_private_key(2).into(),
-            user_account2: new_ed25519_private_key(3).into(),
-            user_account3: new_ed25519_private_key(4).into(),
+            account_rejecting_fungible_resource: new_ed25519_private_key(2).into(),
+            account_accepting_all_resources: new_ed25519_private_key(3).into(),
+            account_rejecting_non_fungible_resource: new_ed25519_private_key(4).into(),
         }
     }
 }
@@ -61,9 +61,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                         |builder| {
                             [
                                 &config.account_locker_admin_account,
-                                &config.user_account1,
-                                &config.user_account2,
-                                &config.user_account3,
+                                &config.account_rejecting_fungible_resource,
+                                &config.account_accepting_all_resources,
+                                &config.account_rejecting_non_fungible_resource,
                             ]
                             .iter()
                             .fold(builder, |builder, key| {
@@ -87,9 +87,15 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     state
                         .account_locker_admin_account
                         .set(result.new_component_addresses()[0]);
-                    state.user_account1.set(result.new_component_addresses()[1]);
-                    state.user_account2.set(result.new_component_addresses()[2]);
-                    state.user_account3.set(result.new_component_addresses()[3]);
+                    state
+                        .account_rejecting_fungible_resource
+                        .set(result.new_component_addresses()[1]);
+                    state
+                        .account_accepting_all_resources
+                        .set(result.new_component_addresses()[2]);
+                    state
+                        .account_rejecting_non_fungible_resource
+                        .set(result.new_component_addresses()[3]);
                     Ok(())
                 },
             )
@@ -190,7 +196,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .call_method(
-                                state.user_account1.get().expect("Can't fail!"),
+                                state
+                                    .account_rejecting_fungible_resource
+                                    .get()
+                                    .expect("Can't fail!"),
                                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                                 AccountSetResourcePreferenceInput {
                                     resource_address: state.fungible_resource.get().unwrap(),
@@ -198,7 +207,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 },
                             )
                             .call_method(
-                                state.user_account3.get().expect("Can't fail!"),
+                                state
+                                    .account_rejecting_non_fungible_resource
+                                    .get()
+                                    .expect("Can't fail!"),
                                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                                 AccountSetResourcePreferenceInput {
                                     resource_address: state.non_fungible_resource.get().unwrap(),
@@ -206,7 +218,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 },
                             )
                     },
-                    vec![&config.user_account1, &config.user_account3],
+                    vec![
+                        &config.account_rejecting_fungible_resource,
+                        &config.account_rejecting_non_fungible_resource,
+                    ],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -230,7 +245,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.user_account2.get().expect("Can't fail!"),
+                                        claimant: state
+                                            .account_accepting_all_resources
+                                            .get()
+                                            .expect("Can't fail!"),
                                         try_direct_send: true,
                                     },
                                 )
@@ -260,7 +278,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.user_account1.get().expect("Can't fail!"),
+                                        claimant: state
+                                            .account_rejecting_fungible_resource
+                                            .get()
+                                            .expect("Can't fail!"),
                                         try_direct_send: true,
                                     },
                                 )
@@ -290,7 +311,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.user_account2.get().expect("Can't fail!"),
+                                        claimant: state
+                                            .account_accepting_all_resources
+                                            .get()
+                                            .expect("Can't fail!"),
                                         try_direct_send: false,
                                     },
                                 )
@@ -322,9 +346,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         bucket,
                                         try_direct_send: true,
                                         claimants: [
-                                            &state.user_account1,
-                                            &state.user_account2,
-                                            &state.user_account3,
+                                            &state.account_rejecting_fungible_resource,
+                                            &state.account_accepting_all_resources,
+                                            &state.account_rejecting_non_fungible_resource,
                                         ]
                                         .into_iter()
                                         .map(|account| {
@@ -364,9 +388,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         bucket,
                                         try_direct_send: false,
                                         claimants: [
-                                            &state.user_account1,
-                                            &state.user_account2,
-                                            &state.user_account3,
+                                            &state.account_rejecting_fungible_resource,
+                                            &state.account_accepting_all_resources,
+                                            &state.account_rejecting_non_fungible_resource,
                                         ]
                                         .into_iter()
                                         .map(|account| {
@@ -410,7 +434,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.user_account2.get().expect("Can't fail!"),
+                                        claimant: state
+                                            .account_accepting_all_resources
+                                            .get()
+                                            .expect("Can't fail!"),
                                         try_direct_send: true,
                                     },
                                 )
@@ -446,7 +473,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.user_account1.get().expect("Can't fail!"),
+                                        claimant: state
+                                            .account_rejecting_fungible_resource
+                                            .get()
+                                            .expect("Can't fail!"),
                                         try_direct_send: true,
                                     },
                                 )
@@ -482,7 +512,10 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state.user_account2.get().expect("Can't fail!"),
+                                        claimant: state
+                                            .account_accepting_all_resources
+                                            .get()
+                                            .expect("Can't fail!"),
                                         try_direct_send: false,
                                     },
                                 )
@@ -524,9 +557,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         bucket,
                                         try_direct_send: true,
                                         claimants: [
-                                            &state.user_account1,
-                                            &state.user_account2,
-                                            &state.user_account3,
+                                            &state.account_rejecting_fungible_resource,
+                                            &state.account_accepting_all_resources,
+                                            &state.account_rejecting_non_fungible_resource,
                                         ]
                                         .into_iter()
                                         .map(|account| {
@@ -576,9 +609,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         bucket,
                                         try_direct_send: false,
                                         claimants: [
-                                            &state.user_account1,
-                                            &state.user_account2,
-                                            &state.user_account3,
+                                            &state.account_rejecting_fungible_resource,
+                                            &state.account_accepting_all_resources,
+                                            &state.account_rejecting_non_fungible_resource,
                                         ]
                                         .into_iter()
                                         .map(|account| {
@@ -628,9 +661,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         bucket,
                                         try_direct_send: true,
                                         claimants: [
-                                            (&state.user_account1, 10),
-                                            (&state.user_account2, 11),
-                                            (&state.user_account3, 12),
+                                            (&state.account_rejecting_fungible_resource, 10),
+                                            (&state.account_accepting_all_resources, 11),
+                                            (&state.account_rejecting_non_fungible_resource, 12),
                                         ]
                                         .into_iter()
                                         .map(|(account, id)| {
@@ -682,9 +715,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         bucket,
                                         try_direct_send: false,
                                         claimants: [
-                                            (&state.user_account1, 13),
-                                            (&state.user_account2, 14),
-                                            (&state.user_account3, 15),
+                                            (&state.account_rejecting_fungible_resource, 13),
+                                            (&state.account_accepting_all_resources, 14),
+                                            (&state.account_rejecting_non_fungible_resource, 15),
                                         ]
                                         .into_iter()
                                         .map(|(account, id)| {
@@ -712,14 +745,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 state.account_locker.get().unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_IDENT,
                                 AccountLockerClaimManifestInput {
-                                    claimant: state.user_account1.get().expect("Can't fail!"),
+                                    claimant: state
+                                        .account_rejecting_fungible_resource
+                                        .get()
+                                        .expect("Can't fail!"),
                                     amount: dec!(1),
                                     resource_address: state.fungible_resource.get().unwrap(),
                                 },
                             )
-                            .deposit_batch(state.user_account1.get().expect("Can't fail!"))
+                            .deposit_batch(
+                                state
+                                    .account_rejecting_fungible_resource
+                                    .get()
+                                    .expect("Can't fail!"),
+                            )
                     },
-                    vec![&config.user_account1],
+                    vec![&config.account_rejecting_fungible_resource],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -731,14 +772,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 state.account_locker.get().unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_IDENT,
                                 AccountLockerClaimManifestInput {
-                                    claimant: state.user_account1.get().expect("Can't fail!"),
+                                    claimant: state
+                                        .account_rejecting_fungible_resource
+                                        .get()
+                                        .expect("Can't fail!"),
                                     amount: dec!(1),
                                     resource_address: state.non_fungible_resource.get().unwrap(),
                                 },
                             )
-                            .deposit_batch(state.user_account1.get().expect("Can't fail!"))
+                            .deposit_batch(
+                                state
+                                    .account_rejecting_fungible_resource
+                                    .get()
+                                    .expect("Can't fail!"),
+                            )
                     },
-                    vec![&config.user_account1],
+                    vec![&config.account_rejecting_fungible_resource],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -750,14 +799,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 state.account_locker.get().unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_NON_FUNGIBLES_IDENT,
                                 AccountLockerClaimNonFungiblesManifestInput {
-                                    claimant: state.user_account2.get().expect("Can't fail!"),
+                                    claimant: state
+                                        .account_accepting_all_resources
+                                        .get()
+                                        .expect("Can't fail!"),
                                     resource_address: state.non_fungible_resource.get().unwrap(),
                                     ids: indexset![NonFungibleLocalId::integer(3)],
                                 },
                             )
-                            .deposit_batch(state.user_account2.get().expect("Can't fail!"))
+                            .deposit_batch(
+                                state
+                                    .account_accepting_all_resources
+                                    .get()
+                                    .expect("Can't fail!"),
+                            )
                     },
-                    vec![&config.user_account2],
+                    vec![&config.account_accepting_all_resources],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -777,14 +834,25 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 state.account_locker.get().unwrap(),
                                 ACCOUNT_LOCKER_RECOVER_IDENT,
                                 AccountLockerRecoverManifestInput {
-                                    claimant: state.user_account1.get().expect("Can't fail!"),
+                                    claimant: state
+                                        .account_rejecting_fungible_resource
+                                        .get()
+                                        .expect("Can't fail!"),
                                     amount: dec!(1),
                                     resource_address: state.fungible_resource.get().unwrap(),
                                 },
                             )
-                            .deposit_batch(state.user_account1.get().expect("Can't fail!"))
+                            .deposit_batch(
+                                state
+                                    .account_rejecting_fungible_resource
+                                    .get()
+                                    .expect("Can't fail!"),
+                            )
                     },
-                    vec![&config.account_locker_admin_account, &config.user_account1],
+                    vec![
+                        &config.account_locker_admin_account,
+                        &config.account_rejecting_fungible_resource,
+                    ],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -804,14 +872,25 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 state.account_locker.get().unwrap(),
                                 ACCOUNT_LOCKER_RECOVER_IDENT,
                                 AccountLockerRecoverManifestInput {
-                                    claimant: state.user_account1.get().expect("Can't fail!"),
+                                    claimant: state
+                                        .account_rejecting_fungible_resource
+                                        .get()
+                                        .expect("Can't fail!"),
                                     amount: dec!(1),
                                     resource_address: state.non_fungible_resource.get().unwrap(),
                                 },
                             )
-                            .deposit_batch(state.user_account1.get().expect("Can't fail!"))
+                            .deposit_batch(
+                                state
+                                    .account_rejecting_fungible_resource
+                                    .get()
+                                    .expect("Can't fail!"),
+                            )
                     },
-                    vec![&config.account_locker_admin_account, &config.user_account1],
+                    vec![
+                        &config.account_locker_admin_account,
+                        &config.account_rejecting_fungible_resource,
+                    ],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -831,14 +910,25 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 state.account_locker.get().unwrap(),
                                 ACCOUNT_LOCKER_RECOVER_NON_FUNGIBLES_IDENT,
                                 AccountLockerRecoverNonFungiblesManifestInput {
-                                    claimant: state.user_account3.get().expect("Can't fail!"),
+                                    claimant: state
+                                        .account_rejecting_non_fungible_resource
+                                        .get()
+                                        .expect("Can't fail!"),
                                     resource_address: state.non_fungible_resource.get().unwrap(),
                                     ids: indexset![NonFungibleLocalId::integer(15)],
                                 },
                             )
-                            .deposit_batch(state.user_account3.get().expect("Can't fail!"))
+                            .deposit_batch(
+                                state
+                                    .account_rejecting_non_fungible_resource
+                                    .get()
+                                    .expect("Can't fail!"),
+                            )
                     },
-                    vec![&config.account_locker_admin_account, &config.user_account3],
+                    vec![
+                        &config.account_locker_admin_account,
+                        &config.account_rejecting_non_fungible_resource,
+                    ],
                 )
             })
             .finalize(|_, _, state| {
@@ -852,16 +942,25 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 .expect("Can't fail!"),
                         )
                         .add(
-                            "user_account1",
-                            state.user_account1.get().expect("Can't fail!"),
+                            "account_rejecting_fungible_resource",
+                            state
+                                .account_rejecting_fungible_resource
+                                .get()
+                                .expect("Can't fail!"),
                         )
                         .add(
-                            "user_account2",
-                            state.user_account2.get().expect("Can't fail!"),
+                            "account_accepting_all_resources",
+                            state
+                                .account_accepting_all_resources
+                                .get()
+                                .expect("Can't fail!"),
                         )
                         .add(
-                            "user_account3",
-                            state.user_account3.get().expect("Can't fail!"),
+                            "account_rejecting_non_fungible_resource",
+                            state
+                                .account_rejecting_non_fungible_resource
+                                .get()
+                                .expect("Can't fail!"),
                         )
                         .add("account_locker", state.account_locker.get()?)
                         .add(
