@@ -9,7 +9,7 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
-use radix_transaction_scenarios::scenarios::*;
+use radix_transaction_scenarios::executor::*;
 use sbor::rust::ops::Deref;
 use scrypto_test::prelude::*;
 
