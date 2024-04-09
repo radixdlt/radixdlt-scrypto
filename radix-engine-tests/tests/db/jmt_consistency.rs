@@ -1,6 +1,6 @@
 use radix_common::prelude::*;
 use radix_substate_store_impls::state_tree_support::*;
-use radix_transaction_scenarios::scenarios::*;
+use radix_transaction_scenarios::executor::*;
 use scrypto_test::prelude::*;
 
 #[test]

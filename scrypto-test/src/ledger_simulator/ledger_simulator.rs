@@ -16,7 +16,7 @@ use radix_engine::transaction::{
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
     WrappedSystem,
 };
-use radix_engine::updates::ProtocolUpdates;
+use radix_engine::updates::{ProtocolUpdate, ProtocolUpdates};
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
@@ -2333,6 +2333,18 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             ResourceReconciler::reconcile(&db_results.1 .0, &event_results)
                 .expect("Resource reconciliation failed");
         }
+    }
+
+    pub fn apply_protocol_updates(&mut self, protocol_updates: &[ProtocolUpdate]) {
+        protocol_updates.iter().for_each(|protocol_update| {
+            protocol_update
+                .generate_state_updates(&self.database, &NetworkDefinition::simulator())
+                .into_iter()
+                .for_each(|update| {
+                    self.database
+                        .commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
+                })
+        })
     }
 }
 

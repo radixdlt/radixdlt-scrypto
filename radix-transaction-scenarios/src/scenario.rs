@@ -365,7 +365,7 @@ impl DescribedAddresses {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ScenarioMetadata {
     /// The logical name of the scenario:
     /// - This is used in Node genesis to specify which scenarios should be run
