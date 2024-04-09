@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
 use crate::utils::*;
+use radix_engine::blueprints::account::DepositEvent;
 use radix_engine::updates::ProtocolUpdate;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::*;
@@ -672,33 +673,60 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                     vec![&config.account_locker_admin_account_],
                 )
             })
-            .successful_transaction(|core, config, state| {
-                core.next_transaction_with_faucet_lock_fee(
-                    "account-locker-global-caller-badge-is-an-authorized-depositor",
-                    |builder| {
-                        builder
-                            .create_proof_from_account_of_amount(
-                                state.account_locker_admin_account.unwrap(),
-                                state.account_locker_admin_badge.unwrap(),
-                                dec!(1),
-                            )
-                            .mint_fungible(state.fungible_resource.unwrap(), dec!(100))
-                            .take_all_from_worktop(state.fungible_resource.unwrap(), "bucket")
-                            .with_bucket("bucket", |builder, bucket| {
-                                builder.call_method(
-                                    state.account_locker.unwrap(),
-                                    ACCOUNT_LOCKER_STORE_IDENT,
-                                    AccountLockerStoreManifestInput {
-                                        bucket,
-                                        claimant: state.account_rejecting_all_deposits.unwrap(),
-                                        try_direct_send: true,
-                                    },
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "account-locker-global-caller-badge-is-an-authorized-depositor",
+                        |builder| {
+                            builder
+                                .create_proof_from_account_of_amount(
+                                    state.account_locker_admin_account.unwrap(),
+                                    state.account_locker_admin_badge.unwrap(),
+                                    dec!(1),
                                 )
-                            })
-                    },
-                    vec![&config.account_locker_admin_account_],
-                )
-            })
+                                .mint_fungible(state.fungible_resource.unwrap(), dec!(100))
+                                .take_all_from_worktop(state.fungible_resource.unwrap(), "bucket")
+                                .with_bucket("bucket", |builder, bucket| {
+                                    builder.call_method(
+                                        state.account_locker.unwrap(),
+                                        ACCOUNT_LOCKER_STORE_IDENT,
+                                        AccountLockerStoreManifestInput {
+                                            bucket,
+                                            claimant: state.account_rejecting_all_deposits.unwrap(),
+                                            try_direct_send: true,
+                                        },
+                                    )
+                                })
+                        },
+                        vec![&config.account_locker_admin_account_],
+                    )
+                },
+                |_, _, state, result| {
+                    let event = result
+                        .application_events
+                        .iter()
+                        .find(|item| {
+                            item.0
+                                == EventTypeIdentifier(
+                                    Emitter::Method(
+                                        state
+                                            .account_rejecting_all_deposits
+                                            .unwrap()
+                                            .into_node_id(),
+                                        ModuleId::Main,
+                                    ),
+                                    DepositEvent::EVENT_NAME.to_owned(),
+                                )
+                        })
+                        .map(|(_, data)| scrypto_decode::<DepositEvent>(&data).expect("Can't fail"))
+                        .expect("The resources were not deposited into the account?");
+                    assert_eq!(
+                        event,
+                        DepositEvent::Fungible(state.fungible_resource.unwrap(), dec!(100))
+                    );
+                    Ok(())
+                },
+            )
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee(
                     "account-locker-claim-fungibles-by-amount",

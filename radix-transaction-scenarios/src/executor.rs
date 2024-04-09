@@ -494,3 +494,5 @@ pub enum Boundary<T> {
     Inclusive(T),
     Exclusive(T),
 }
+
+pub struct ScenarioIterator
