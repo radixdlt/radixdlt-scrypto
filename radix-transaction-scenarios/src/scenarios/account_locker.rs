@@ -5,11 +5,11 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::*;
 
 pub struct AccountLockerScenarioConfig {
-    pub account_locker_admin_account: PrivateKey,
-    pub account_rejecting_fungible_resource: PrivateKey,
-    pub account_accepting_all_resources: PrivateKey,
-    pub account_rejecting_non_fungible_resource: PrivateKey,
-    pub account_rejecting_all_deposits: PrivateKey,
+    pub account_locker_admin_account_: PrivateKey,
+    pub account_rejecting_fungible_resource_: PrivateKey,
+    pub account_accepting_all_resources_: PrivateKey,
+    pub account_rejecting_non_fungible_resource_: PrivateKey,
+    pub account_rejecting_all_deposits_: PrivateKey,
 }
 
 #[derive(Default)]
@@ -30,11 +30,11 @@ pub struct AccountLockerScenarioState {
 impl Default for AccountLockerScenarioConfig {
     fn default() -> Self {
         Self {
-            account_locker_admin_account: new_ed25519_private_key(1).into(),
-            account_rejecting_fungible_resource: new_ed25519_private_key(2).into(),
-            account_accepting_all_resources: new_ed25519_private_key(3).into(),
-            account_rejecting_non_fungible_resource: new_ed25519_private_key(4).into(),
-            account_rejecting_all_deposits: new_ed25519_private_key(5).into(),
+            account_locker_admin_account_: new_ed25519_private_key(1).into(),
+            account_rejecting_fungible_resource_: new_ed25519_private_key(2).into(),
+            account_accepting_all_resources_: new_ed25519_private_key(3).into(),
+            account_rejecting_non_fungible_resource_: new_ed25519_private_key(4).into(),
+            account_rejecting_all_deposits_: new_ed25519_private_key(5).into(),
         }
     }
 }
@@ -63,11 +63,11 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                         "account-locker-create-accounts",
                         |builder| {
                             [
-                                &config.account_locker_admin_account,
-                                &config.account_rejecting_fungible_resource,
-                                &config.account_accepting_all_resources,
-                                &config.account_rejecting_non_fungible_resource,
-                                &config.account_rejecting_all_deposits,
+                                &config.account_locker_admin_account_,
+                                &config.account_rejecting_fungible_resource_,
+                                &config.account_accepting_all_resources_,
+                                &config.account_rejecting_non_fungible_resource_,
+                                &config.account_rejecting_all_deposits_,
                             ]
                             .iter()
                             .fold(builder, |builder, key| {
@@ -231,9 +231,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                             )
                     },
                     vec![
-                        &config.account_rejecting_fungible_resource,
-                        &config.account_rejecting_non_fungible_resource,
-                        &config.account_rejecting_all_deposits,
+                        &config.account_rejecting_fungible_resource_,
+                        &config.account_rejecting_non_fungible_resource_,
+                        &config.account_rejecting_all_deposits_,
                     ],
                 )
             })
@@ -261,7 +261,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -290,7 +290,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -317,7 +317,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -356,7 +356,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -395,7 +395,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -425,7 +425,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -457,7 +457,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -487,7 +487,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -530,7 +530,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -573,7 +573,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -621,7 +621,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -669,7 +669,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -696,7 +696,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 )
                             })
                     },
-                    vec![&config.account_locker_admin_account],
+                    vec![&config.account_locker_admin_account_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -715,7 +715,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                             )
                             .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
                     },
-                    vec![&config.account_rejecting_fungible_resource],
+                    vec![&config.account_rejecting_fungible_resource_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -734,7 +734,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                             )
                             .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
                     },
-                    vec![&config.account_rejecting_fungible_resource],
+                    vec![&config.account_rejecting_fungible_resource_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -753,7 +753,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                             )
                             .deposit_batch(state.account_accepting_all_resources.unwrap())
                     },
-                    vec![&config.account_accepting_all_resources],
+                    vec![&config.account_accepting_all_resources_],
                 )
             })
             .successful_transaction(|core, config, state| {
@@ -778,8 +778,8 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                             .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
                     },
                     vec![
-                        &config.account_locker_admin_account,
-                        &config.account_rejecting_fungible_resource,
+                        &config.account_locker_admin_account_,
+                        &config.account_rejecting_fungible_resource_,
                     ],
                 )
             })
@@ -805,8 +805,8 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                             .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
                     },
                     vec![
-                        &config.account_locker_admin_account,
-                        &config.account_rejecting_fungible_resource,
+                        &config.account_locker_admin_account_,
+                        &config.account_rejecting_fungible_resource_,
                     ],
                 )
             })
@@ -834,8 +834,8 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                             .deposit_batch(state.account_rejecting_non_fungible_resource.unwrap())
                     },
                     vec![
-                        &config.account_locker_admin_account,
-                        &config.account_rejecting_non_fungible_resource,
+                        &config.account_locker_admin_account_,
+                        &config.account_rejecting_non_fungible_resource_,
                     ],
                 )
             })
