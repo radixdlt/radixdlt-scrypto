@@ -66,11 +66,11 @@ pub fn run_all_in_memory_and_dump_examples(
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "c98b6bd46c75e589489fb50a12d0fe3c3539feb934de5251c3afd7ff7b706a1e"
+        "95aa414f165c90293f8256f7e556c4bdebf5d991e6ff09bbae70bab337fdfb81"
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
-        "7768b4f003128045e223ecd22b396c37af991d29ae2dcc4e30511a76dd5cda44"
+        "d72641b99823b65e238b392420ac1712b089bf3469d3475f37bb16e4f62268be"
     );
 
     Ok(())

@@ -47,6 +47,9 @@ where
     native_vm_extension: E,
 
     /* Execution */
+    /// A filter that controls which scenarios are executed and which are not. When [`None`] then
+    /// all scenarios are executed and when [`Some`] then some scenarios may be filtered out.
+    filter: Option<ScenarioFilter>,
     /// A map of the scenarios registered on the executor. Not all registered scenarios will be
     /// executed, it merely informs the executor of the existence of these scenarios. Execution of a
     /// scenario requires that is passes the filter specified by the client.
@@ -98,6 +101,7 @@ where
             scrypto_vm: ScryptoVm::default(),
             native_vm_extension: NoExtension,
             /* Execution */
+            filter: None,
             registered_scenarios: Default::default(),
             bootstrap: true,
             starting_nonce: 0,
@@ -144,6 +148,7 @@ where
             scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
+            filter: self.filter,
             registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
@@ -167,6 +172,7 @@ where
             scrypto_vm: self.scrypto_vm,
             native_vm_extension,
             /* Execution */
+            filter: self.filter,
             registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
@@ -197,6 +203,18 @@ where
         self
     }
 
+    /// Defines the filter to use for the execution of scenarios.
+    pub fn filter(mut self, filter: ScenarioFilter) -> Self {
+        self.filter = Some(filter);
+        self
+    }
+
+    /// Removes the filter used for scenarios.
+    pub fn remove_filter(mut self) -> Self {
+        self.filter = None;
+        self
+    }
+
     /// Sets the callback to call when a new protocol requirement is encountered.
     pub fn on_new_protocol_requirement_encountered<
         NF1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
@@ -210,6 +228,7 @@ where
             scrypto_vm: self.scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
+            filter: self.filter,
             registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
@@ -235,6 +254,7 @@ where
             scrypto_vm: self.scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
+            filter: self.filter,
             registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
@@ -258,6 +278,7 @@ where
             scrypto_vm: self.scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
+            filter: self.filter,
             registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
@@ -280,6 +301,7 @@ where
             scrypto_vm: self.scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
+            filter: self.filter,
             registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
@@ -347,6 +369,31 @@ where
                     next_nonce,
                 ));
                 let metadata = scenario.metadata().clone();
+
+                // Before executing the scenario determine if it's valid for the current filter that
+                // the client specified.
+                match self.filter {
+                    // Ensure that the scenario name from the metadata is in the list of exact
+                    // scenarios. Otherwise continue to the next.
+                    Some(ScenarioFilter::ExactScenarios(ref exact_scenarios)) => {
+                        if !exact_scenarios.contains(metadata.logical_name) {
+                            continue;
+                        }
+                    }
+                    Some(ScenarioFilter::AllValidBeforeOrAtProtocolUpdate(protocol_update)) => {
+                        if protocol_requirement > Some(protocol_update) {
+                            continue;
+                        }
+                    }
+                    Some(ScenarioFilter::AllValidAtOrAfterProtocolUpdate(protocol_update)) => {
+                        if protocol_requirement < Some(protocol_update) {
+                            continue;
+                        }
+                    }
+                    // No filter is specified, the scenario is valid.
+                    None => {}
+                }
+
                 (self.on_scenario_start)(&metadata);
                 let mut previous = None;
                 loop {
@@ -452,4 +499,24 @@ pub enum ScenarioStartNonceHandling {
 
 pub struct ScenarioExecutionReceipt<D: SubstateDatabase + CommittableSubstateDatabase> {
     pub database: D,
+}
+
+#[derive(Clone, Debug)]
+pub enum ScenarioFilter {
+    /// An exact set of scenarios to execute, specified by their scenario name. Before a scenario is
+    /// executed its name is checked against this set. It is executed if it's name is a member of
+    /// this set and ignored otherwise. Note that there is no check to ensure that the names in this
+    /// filter are valid. If an incorrect scenario name is provided in the set then it will simply
+    /// be ignored and wont match against anything.
+    ExactScenarios(BTreeSet<String>),
+    /// Filters scenarios based on their protocol version requirements executing all scenarios up
+    /// until (and including) the ones that require the specified protocol update. As an example, to
+    /// execute all scenarios from Genesis to (and including) Anemone this variant could be used
+    /// specified a protocol update of [`ProtocolUpdate::Anemone`].
+    AllValidBeforeOrAtProtocolUpdate(ProtocolUpdate),
+    /// Filters scenarios based on their protocol version requirements executing all scenarios from
+    /// (and including) the specified protocol update and up until the end. As an example, to
+    /// execute all scenarios from Anemone to the end then this variant could be used specified a
+    /// protocol update of [`ProtocolUpdate::Anemone`].
+    AllValidAtOrAfterProtocolUpdate(ProtocolUpdate),
 }

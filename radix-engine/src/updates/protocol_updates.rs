@@ -1,7 +1,6 @@
 use super::state_updates::*;
 use crate::{internal_prelude::*, track::StateUpdates};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use strum::VariantArray;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProtocolUpdateEntry {
