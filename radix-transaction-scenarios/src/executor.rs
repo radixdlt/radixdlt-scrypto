@@ -1,5 +1,7 @@
 #![allow(clippy::type_complexity)]
 
+use core::ops::*;
+
 use self::internal_prelude::*;
 use super::*;
 use radix_engine::blueprints::consensus_manager::*;
@@ -29,7 +31,7 @@ use scenarios::transfer_xrd::TransferXrdScenarioCreator;
 
 type ScenarioCreatorDynFunc = dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>;
 
-pub struct TransactionScenarioExecutor<D, W, E, F1, F2, F3>
+pub struct TransactionScenarioExecutor<D, W, E, F1, F2, F3, F4>
 where
     D: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
@@ -37,6 +39,7 @@ where
     F1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
     F2: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
     F3: FnMut(&ScenarioMetadata),
+    F4: FnMut(&NetworkDefinition, &mut D),
 {
     /* Environment */
     /// The substate database that the scenario will be run against.
@@ -71,6 +74,8 @@ where
     on_transaction_executed: F2,
     /// A callback that is called when a new scenario is started.
     on_scenario_start: F3,
+    /// A callback that is called after bootstrapping if bootstrapping is enabled.
+    after_bootstrap: F4,
 }
 
 pub type DefaultTransactionScenarioExecutor<D> = TransactionScenarioExecutor<
@@ -80,9 +85,10 @@ pub type DefaultTransactionScenarioExecutor<D> = TransactionScenarioExecutor<
     fn(&NetworkDefinition, ProtocolUpdate, &mut D),
     fn(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
     fn(&ScenarioMetadata),
+    fn(&NetworkDefinition, &mut D),
 >;
 
-impl<D, W, E, F1, F2, F3> TransactionScenarioExecutor<D, W, E, F1, F2, F3>
+impl<D, W, E, F1, F2, F3, F4> TransactionScenarioExecutor<D, W, E, F1, F2, F3, F4>
 where
     D: SubstateDatabase + CommittableSubstateDatabase,
     W: WasmEngine,
@@ -90,6 +96,7 @@ where
     F1: FnMut(&NetworkDefinition, ProtocolUpdate, &mut D),
     F2: FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D),
     F3: FnMut(&ScenarioMetadata),
+    F4: FnMut(&NetworkDefinition, &mut D),
 {
     pub fn new(
         database: D,
@@ -119,6 +126,7 @@ where
             },
             on_transaction_executed: |_, _, _, _| {},
             on_scenario_start: |_| {},
+            after_bootstrap: |_, _| {},
         }
         // Genesis Scenarios.
         .register_scenario_with_create_fn::<TransferXrdScenarioCreator>()
@@ -141,7 +149,7 @@ where
     pub fn scrypto_vm<NW: WasmEngine>(
         self,
         scrypto_vm: ScryptoVm<NW>,
-    ) -> TransactionScenarioExecutor<D, NW, E, F1, F2, F3> {
+    ) -> TransactionScenarioExecutor<D, NW, E, F1, F2, F3, F4> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
@@ -158,6 +166,7 @@ where
             on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
+            after_bootstrap: self.after_bootstrap,
         }
     }
 
@@ -165,7 +174,7 @@ where
     pub fn native_vm_extension<NE: NativeVmExtension>(
         self,
         native_vm_extension: NE,
-    ) -> TransactionScenarioExecutor<D, W, NE, F1, F2, F3> {
+    ) -> TransactionScenarioExecutor<D, W, NE, F1, F2, F3, F4> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
@@ -182,6 +191,7 @@ where
             on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
+            after_bootstrap: self.after_bootstrap,
         }
     }
 
@@ -221,7 +231,7 @@ where
     >(
         self,
         callback: NF1,
-    ) -> TransactionScenarioExecutor<D, W, E, NF1, F2, F3> {
+    ) -> TransactionScenarioExecutor<D, W, E, NF1, F2, F3, F4> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
@@ -238,6 +248,7 @@ where
             on_new_protocol_requirement_encountered: callback,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
+            after_bootstrap: self.after_bootstrap,
         }
     }
 
@@ -247,7 +258,7 @@ where
     >(
         self,
         callback: NF2,
-    ) -> TransactionScenarioExecutor<D, W, E, F1, NF2, F3> {
+    ) -> TransactionScenarioExecutor<D, W, E, F1, NF2, F3, F4> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
@@ -264,6 +275,7 @@ where
             on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: callback,
             on_scenario_start: self.on_scenario_start,
+            after_bootstrap: self.after_bootstrap,
         }
     }
 
@@ -271,7 +283,7 @@ where
     pub fn on_scenario_start<NF3: FnMut(&ScenarioMetadata)>(
         self,
         callback: NF3,
-    ) -> TransactionScenarioExecutor<D, W, E, F1, F2, NF3> {
+    ) -> TransactionScenarioExecutor<D, W, E, F1, F2, NF3, F4> {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
@@ -288,13 +300,21 @@ where
             on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: callback,
+            after_bootstrap: self.after_bootstrap,
         }
     }
 
     pub fn without_protocol_updates(
         self,
-    ) -> TransactionScenarioExecutor<D, W, E, fn(&NetworkDefinition, ProtocolUpdate, &mut D), F2, F3>
-    {
+    ) -> TransactionScenarioExecutor<
+        D,
+        W,
+        E,
+        fn(&NetworkDefinition, ProtocolUpdate, &mut D),
+        F2,
+        F3,
+        F4,
+    > {
         TransactionScenarioExecutor {
             /* Environment */
             database: self.database,
@@ -311,6 +331,32 @@ where
             on_new_protocol_requirement_encountered: |_, _, _| {},
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
+            after_bootstrap: self.after_bootstrap,
+        }
+    }
+
+    /// A callback that is called after bootstrapping if bootstrap is enabled.
+    pub fn after_bootstrap<NF4: FnMut(&NetworkDefinition, &mut D)>(
+        self,
+        callback: NF4,
+    ) -> TransactionScenarioExecutor<D, W, E, F1, F2, F3, NF4> {
+        TransactionScenarioExecutor {
+            /* Environment */
+            database: self.database,
+            scrypto_vm: self.scrypto_vm,
+            native_vm_extension: self.native_vm_extension,
+            /* Execution */
+            filter: self.filter,
+            registered_scenarios: self.registered_scenarios,
+            bootstrap: self.bootstrap,
+            starting_nonce: self.starting_nonce,
+            next_scenario_nonce_handling: self.next_scenario_nonce_handling,
+            network_definition: self.network_definition,
+            /* Callbacks */
+            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
+            on_transaction_executed: self.on_transaction_executed,
+            on_scenario_start: self.on_scenario_start,
+            after_bootstrap: callback,
         }
     }
 
@@ -325,6 +371,7 @@ where
             )
             .bootstrap_test_default()
             .ok_or(ScenarioExecutorError::BootstrapFailed)?;
+            (self.after_bootstrap)(&self.network_definition, &mut self.database);
         };
 
         // Getting the scenario builder functions of the scenarios that we will execute. There is a
@@ -372,26 +419,41 @@ where
 
                 // Before executing the scenario determine if it's valid for the current filter that
                 // the client specified.
-                match self.filter {
+                let passes_filter = match self.filter {
                     // Ensure that the scenario name from the metadata is in the list of exact
                     // scenarios. Otherwise continue to the next.
                     Some(ScenarioFilter::ExactScenarios(ref exact_scenarios)) => {
-                        if !exact_scenarios.contains(metadata.logical_name) {
-                            continue;
+                        exact_scenarios.contains(metadata.logical_name)
+                    }
+                    // Execute only ones from a particular protocol update.
+                    Some(ScenarioFilter::SpecificProtocolUpdate(protocol_update)) => {
+                        protocol_requirement.is_some_and(|update| protocol_update == update)
+                    }
+                    // Execute only scenarios that are valid before a particular protocol update.
+                    Some(ScenarioFilter::AllValidBeforeProtocolUpdate(protocol_update)) => {
+                        match protocol_update {
+                            Boundary::Inclusive(protocol_update) => RangeToInclusive {
+                                end: Some(protocol_update),
+                            }
+                            .contains(&protocol_requirement),
+                            Boundary::Exclusive(protocol_update) => RangeTo {
+                                end: Some(protocol_update),
+                            }
+                            .contains(&protocol_requirement),
                         }
                     }
-                    Some(ScenarioFilter::AllValidBeforeOrAtProtocolUpdate(protocol_update)) => {
-                        if protocol_requirement > Some(protocol_update) {
-                            continue;
+                    // Execute only scenarios that are valid after a particular protocol update.
+                    Some(ScenarioFilter::AllValidAfterProtocolUpdate(protocol_update)) => {
+                        RangeFrom {
+                            start: Some(protocol_update),
                         }
-                    }
-                    Some(ScenarioFilter::AllValidAtOrAfterProtocolUpdate(protocol_update)) => {
-                        if protocol_requirement < Some(protocol_update) {
-                            continue;
-                        }
+                        .contains(&protocol_requirement)
                     }
                     // No filter is specified, the scenario is valid.
-                    None => {}
+                    None => true,
+                };
+                if !passes_filter {
+                    continue;
                 }
 
                 (self.on_scenario_start)(&metadata);
@@ -509,14 +571,22 @@ pub enum ScenarioFilter {
     /// filter are valid. If an incorrect scenario name is provided in the set then it will simply
     /// be ignored and wont match against anything.
     ExactScenarios(BTreeSet<String>),
+    /// Only executes the scenarios of a particular protocol update.
+    SpecificProtocolUpdate(ProtocolUpdate),
     /// Filters scenarios based on their protocol version requirements executing all scenarios up
-    /// until (and including) the ones that require the specified protocol update. As an example, to
-    /// execute all scenarios from Genesis to (and including) Anemone this variant could be used
-    /// specified a protocol update of [`ProtocolUpdate::Anemone`].
-    AllValidBeforeOrAtProtocolUpdate(ProtocolUpdate),
+    /// until the ones that require the specified protocol update. As an example, to execute all
+    /// scenarios from Genesis to Anemone this variant could be used and  specified a protocol
+    /// update of [`ProtocolUpdate::Anemone`].
+    AllValidBeforeProtocolUpdate(Boundary<ProtocolUpdate>),
     /// Filters scenarios based on their protocol version requirements executing all scenarios from
-    /// (and including) the specified protocol update and up until the end. As an example, to
-    /// execute all scenarios from Anemone to the end then this variant could be used specified a
-    /// protocol update of [`ProtocolUpdate::Anemone`].
-    AllValidAtOrAfterProtocolUpdate(ProtocolUpdate),
+    /// the specified protocol update and up until the end. As an example, to execute all scenarios
+    /// from Anemone to the end then this variant could be used specified a protocol update of
+    /// [`ProtocolUpdate::Anemone`]. The specified protocol update is included.
+    AllValidAfterProtocolUpdate(ProtocolUpdate),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Boundary<T> {
+    Inclusive(T),
+    Exclusive(T),
 }
