@@ -121,10 +121,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                     },
                                 )
                                 .try_deposit_entire_worktop_or_abort(
-                                    state
-                                        .account_locker_admin_account
-                                        .get()
-                                        .expect("Can't fail!"),
+                                    state.account_locker_admin_account.unwrap(),
                                     None,
                                 )
                         },
@@ -203,47 +200,33 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .call_method(
-                                state
-                                    .account_rejecting_fungible_resource
-                                    .get()
-                                    .expect("Can't fail!"),
+                                state.account_rejecting_fungible_resource.unwrap(),
                                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                                 AccountSetResourcePreferenceInput {
-                                    resource_address: state.fungible_resource.get().unwrap(),
+                                    resource_address: state.fungible_resource.unwrap(),
                                     resource_preference: ResourcePreference::Disallowed,
                                 },
                             )
                             .call_method(
-                                state
-                                    .account_rejecting_non_fungible_resource
-                                    .get()
-                                    .expect("Can't fail!"),
+                                state.account_rejecting_non_fungible_resource.unwrap(),
                                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                                 AccountSetResourcePreferenceInput {
-                                    resource_address: state.non_fungible_resource.get().unwrap(),
+                                    resource_address: state.non_fungible_resource.unwrap(),
                                     resource_preference: ResourcePreference::Disallowed,
                                 },
                             )
                             .call_method(
-                                state
-                                    .account_rejecting_all_deposits
-                                    .get()
-                                    .expect("Can't fail"),
+                                state.account_rejecting_all_deposits.unwrap(),
                                 ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
                                 AccountSetDefaultDepositRuleInput {
                                     default: DefaultDepositRule::Accept,
                                 },
                             )
                             .call_method(
-                                state
-                                    .account_rejecting_all_deposits
-                                    .get()
-                                    .expect("Can't fail"),
+                                state.account_rejecting_all_deposits.unwrap(),
                                 ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
                                 AccountAddAuthorizedDepositorInput {
-                                    badge: global_caller(
-                                        state.account_locker.get().expect("Can't fail"),
-                                    ),
+                                    badge: global_caller(state.account_locker.unwrap()),
                                 },
                             )
                     },
@@ -260,25 +243,19 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
-                            .mint_fungible(state.fungible_resource.get().unwrap(), dec!(100))
-                            .take_all_from_worktop(state.fungible_resource.get().unwrap(), "bucket")
+                            .mint_fungible(state.fungible_resource.unwrap(), dec!(100))
+                            .take_all_from_worktop(state.fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state
-                                            .account_accepting_all_resources
-                                            .get()
-                                            .expect("Can't fail!"),
+                                        claimant: state.account_accepting_all_resources.unwrap(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -293,25 +270,21 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
-                            .mint_fungible(state.fungible_resource.get().unwrap(), dec!(100))
-                            .take_all_from_worktop(state.fungible_resource.get().unwrap(), "bucket")
+                            .mint_fungible(state.fungible_resource.unwrap(), dec!(100))
+                            .take_all_from_worktop(state.fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
                                         claimant: state
                                             .account_rejecting_fungible_resource
-                                            .get()
-                                            .expect("Can't fail!"),
+                                            .unwrap(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -326,25 +299,19 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
-                            .mint_fungible(state.fungible_resource.get().unwrap(), dec!(100))
-                            .take_all_from_worktop(state.fungible_resource.get().unwrap(), "bucket")
+                            .mint_fungible(state.fungible_resource.unwrap(), dec!(100))
+                            .take_all_from_worktop(state.fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state
-                                            .account_accepting_all_resources
-                                            .get()
-                                            .expect("Can't fail!"),
+                                        claimant: state.account_accepting_all_resources.unwrap(),
                                         try_direct_send: false,
                                     },
                                 )
@@ -359,18 +326,15 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
-                            .mint_fungible(state.fungible_resource.get().unwrap(), dec!(300))
-                            .take_all_from_worktop(state.fungible_resource.get().unwrap(), "bucket")
+                            .mint_fungible(state.fungible_resource.unwrap(), dec!(300))
+                            .take_all_from_worktop(state.fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_AIRDROP_IDENT,
                                     AccountLockerAirdropManifestInput {
                                         bucket,
@@ -383,7 +347,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         .into_iter()
                                         .map(|account| {
                                             (
-                                                account.get().expect("Can't fail"),
+                                                account.unwrap(),
                                                 ResourceSpecifier::Fungible(dec!(100)),
                                             )
                                         })
@@ -401,18 +365,15 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
-                            .mint_fungible(state.fungible_resource.get().unwrap(), dec!(300))
-                            .take_all_from_worktop(state.fungible_resource.get().unwrap(), "bucket")
+                            .mint_fungible(state.fungible_resource.unwrap(), dec!(300))
+                            .take_all_from_worktop(state.fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_AIRDROP_IDENT,
                                     AccountLockerAirdropManifestInput {
                                         bucket,
@@ -425,7 +386,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         .into_iter()
                                         .map(|account| {
                                             (
-                                                account.get().expect("Can't fail"),
+                                                account.unwrap(),
                                                 ResourceSpecifier::Fungible(dec!(100)),
                                             )
                                         })
@@ -443,31 +404,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .mint_non_fungible(
-                                state.non_fungible_resource.get().unwrap(),
+                                state.non_fungible_resource.unwrap(),
                                 [(NonFungibleLocalId::integer(1), ())],
                             )
-                            .take_all_from_worktop(
-                                state.non_fungible_resource.get().unwrap(),
-                                "bucket",
-                            )
+                            .take_all_from_worktop(state.non_fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state
-                                            .account_accepting_all_resources
-                                            .get()
-                                            .expect("Can't fail!"),
+                                        claimant: state.account_accepting_all_resources.unwrap(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -482,31 +434,24 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .mint_non_fungible(
-                                state.non_fungible_resource.get().unwrap(),
+                                state.non_fungible_resource.unwrap(),
                                 [(NonFungibleLocalId::integer(2), ())],
                             )
-                            .take_all_from_worktop(
-                                state.non_fungible_resource.get().unwrap(),
-                                "bucket",
-                            )
+                            .take_all_from_worktop(state.non_fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
                                         claimant: state
                                             .account_rejecting_fungible_resource
-                                            .get()
-                                            .expect("Can't fail!"),
+                                            .unwrap(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -521,31 +466,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .mint_non_fungible(
-                                state.non_fungible_resource.get().unwrap(),
+                                state.non_fungible_resource.unwrap(),
                                 [(NonFungibleLocalId::integer(3), ())],
                             )
-                            .take_all_from_worktop(
-                                state.non_fungible_resource.get().unwrap(),
-                                "bucket",
-                            )
+                            .take_all_from_worktop(state.non_fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state
-                                            .account_accepting_all_resources
-                                            .get()
-                                            .expect("Can't fail!"),
+                                        claimant: state.account_accepting_all_resources.unwrap(),
                                         try_direct_send: false,
                                     },
                                 )
@@ -560,28 +496,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .mint_non_fungible(
-                                state.non_fungible_resource.get().unwrap(),
+                                state.non_fungible_resource.unwrap(),
                                 [
                                     (NonFungibleLocalId::integer(4), ()),
                                     (NonFungibleLocalId::integer(5), ()),
                                     (NonFungibleLocalId::integer(6), ()),
                                 ],
                             )
-                            .take_all_from_worktop(
-                                state.non_fungible_resource.get().unwrap(),
-                                "bucket",
-                            )
+                            .take_all_from_worktop(state.non_fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_AIRDROP_IDENT,
                                     AccountLockerAirdropManifestInput {
                                         bucket,
@@ -593,10 +523,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         ]
                                         .into_iter()
                                         .map(|account| {
-                                            (
-                                                account.get().expect("Can't fail"),
-                                                ResourceSpecifier::Fungible(dec!(1)),
-                                            )
+                                            (account.unwrap(), ResourceSpecifier::Fungible(dec!(1)))
                                         })
                                         .collect(),
                                     },
@@ -612,28 +539,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .mint_non_fungible(
-                                state.non_fungible_resource.get().unwrap(),
+                                state.non_fungible_resource.unwrap(),
                                 [
                                     (NonFungibleLocalId::integer(7), ()),
                                     (NonFungibleLocalId::integer(8), ()),
                                     (NonFungibleLocalId::integer(9), ()),
                                 ],
                             )
-                            .take_all_from_worktop(
-                                state.non_fungible_resource.get().unwrap(),
-                                "bucket",
-                            )
+                            .take_all_from_worktop(state.non_fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_AIRDROP_IDENT,
                                     AccountLockerAirdropManifestInput {
                                         bucket,
@@ -645,10 +566,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         ]
                                         .into_iter()
                                         .map(|account| {
-                                            (
-                                                account.get().expect("Can't fail"),
-                                                ResourceSpecifier::Fungible(dec!(1)),
-                                            )
+                                            (account.unwrap(), ResourceSpecifier::Fungible(dec!(1)))
                                         })
                                         .collect(),
                                     },
@@ -664,28 +582,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .mint_non_fungible(
-                                state.non_fungible_resource.get().unwrap(),
+                                state.non_fungible_resource.unwrap(),
                                 [
                                     (NonFungibleLocalId::integer(10), ()),
                                     (NonFungibleLocalId::integer(11), ()),
                                     (NonFungibleLocalId::integer(12), ()),
                                 ],
                             )
-                            .take_all_from_worktop(
-                                state.non_fungible_resource.get().unwrap(),
-                                "bucket",
-                            )
+                            .take_all_from_worktop(state.non_fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_AIRDROP_IDENT,
                                     AccountLockerAirdropManifestInput {
                                         bucket,
@@ -698,7 +610,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         .into_iter()
                                         .map(|(account, id)| {
                                             (
-                                                account.get().expect("Can't fail"),
+                                                account.unwrap(),
                                                 ResourceSpecifier::NonFungible(indexset![
                                                     NonFungibleLocalId::integer(id)
                                                 ]),
@@ -718,28 +630,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .mint_non_fungible(
-                                state.non_fungible_resource.get().unwrap(),
+                                state.non_fungible_resource.unwrap(),
                                 [
                                     (NonFungibleLocalId::integer(13), ()),
                                     (NonFungibleLocalId::integer(14), ()),
                                     (NonFungibleLocalId::integer(15), ()),
                                 ],
                             )
-                            .take_all_from_worktop(
-                                state.non_fungible_resource.get().unwrap(),
-                                "bucket",
-                            )
+                            .take_all_from_worktop(state.non_fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_AIRDROP_IDENT,
                                     AccountLockerAirdropManifestInput {
                                         bucket,
@@ -752,7 +658,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                         .into_iter()
                                         .map(|(account, id)| {
                                             (
-                                                account.get().expect("Can't fail"),
+                                                account.unwrap(),
                                                 ResourceSpecifier::NonFungible(indexset![
                                                     NonFungibleLocalId::integer(id)
                                                 ]),
@@ -772,25 +678,19 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
-                            .mint_fungible(state.fungible_resource.get().unwrap(), dec!(100))
-                            .take_all_from_worktop(state.fungible_resource.get().unwrap(), "bucket")
+                            .mint_fungible(state.fungible_resource.unwrap(), dec!(100))
+                            .take_all_from_worktop(state.fungible_resource.unwrap(), "bucket")
                             .with_bucket("bucket", |builder, bucket| {
                                 builder.call_method(
-                                    state.account_locker.get().unwrap(),
+                                    state.account_locker.unwrap(),
                                     ACCOUNT_LOCKER_STORE_IDENT,
                                     AccountLockerStoreManifestInput {
                                         bucket,
-                                        claimant: state
-                                            .account_rejecting_all_deposits
-                                            .get()
-                                            .expect("Can't fail!"),
+                                        claimant: state.account_rejecting_all_deposits.unwrap(),
                                         try_direct_send: true,
                                     },
                                 )
@@ -805,23 +705,15 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .call_method(
-                                state.account_locker.get().unwrap(),
+                                state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_IDENT,
                                 AccountLockerClaimManifestInput {
-                                    claimant: state
-                                        .account_rejecting_fungible_resource
-                                        .get()
-                                        .expect("Can't fail!"),
+                                    claimant: state.account_rejecting_fungible_resource.unwrap(),
                                     amount: dec!(1),
-                                    resource_address: state.fungible_resource.get().unwrap(),
+                                    resource_address: state.fungible_resource.unwrap(),
                                 },
                             )
-                            .deposit_batch(
-                                state
-                                    .account_rejecting_fungible_resource
-                                    .get()
-                                    .expect("Can't fail!"),
-                            )
+                            .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
                     },
                     vec![&config.account_rejecting_fungible_resource],
                 )
@@ -832,23 +724,15 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .call_method(
-                                state.account_locker.get().unwrap(),
+                                state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_IDENT,
                                 AccountLockerClaimManifestInput {
-                                    claimant: state
-                                        .account_rejecting_fungible_resource
-                                        .get()
-                                        .expect("Can't fail!"),
+                                    claimant: state.account_rejecting_fungible_resource.unwrap(),
                                     amount: dec!(1),
-                                    resource_address: state.non_fungible_resource.get().unwrap(),
+                                    resource_address: state.non_fungible_resource.unwrap(),
                                 },
                             )
-                            .deposit_batch(
-                                state
-                                    .account_rejecting_fungible_resource
-                                    .get()
-                                    .expect("Can't fail!"),
-                            )
+                            .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
                     },
                     vec![&config.account_rejecting_fungible_resource],
                 )
@@ -859,23 +743,15 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .call_method(
-                                state.account_locker.get().unwrap(),
+                                state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_CLAIM_NON_FUNGIBLES_IDENT,
                                 AccountLockerClaimNonFungiblesManifestInput {
-                                    claimant: state
-                                        .account_accepting_all_resources
-                                        .get()
-                                        .expect("Can't fail!"),
-                                    resource_address: state.non_fungible_resource.get().unwrap(),
+                                    claimant: state.account_accepting_all_resources.unwrap(),
+                                    resource_address: state.non_fungible_resource.unwrap(),
                                     ids: indexset![NonFungibleLocalId::integer(3)],
                                 },
                             )
-                            .deposit_batch(
-                                state
-                                    .account_accepting_all_resources
-                                    .get()
-                                    .expect("Can't fail!"),
-                            )
+                            .deposit_batch(state.account_accepting_all_resources.unwrap())
                     },
                     vec![&config.account_accepting_all_resources],
                 )
@@ -886,31 +762,20 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .call_method(
-                                state.account_locker.get().unwrap(),
+                                state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_RECOVER_IDENT,
                                 AccountLockerRecoverManifestInput {
-                                    claimant: state
-                                        .account_rejecting_fungible_resource
-                                        .get()
-                                        .expect("Can't fail!"),
+                                    claimant: state.account_rejecting_fungible_resource.unwrap(),
                                     amount: dec!(1),
-                                    resource_address: state.fungible_resource.get().unwrap(),
+                                    resource_address: state.fungible_resource.unwrap(),
                                 },
                             )
-                            .deposit_batch(
-                                state
-                                    .account_rejecting_fungible_resource
-                                    .get()
-                                    .expect("Can't fail!"),
-                            )
+                            .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
                     },
                     vec![
                         &config.account_locker_admin_account,
@@ -924,31 +789,20 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .call_method(
-                                state.account_locker.get().unwrap(),
+                                state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_RECOVER_IDENT,
                                 AccountLockerRecoverManifestInput {
-                                    claimant: state
-                                        .account_rejecting_fungible_resource
-                                        .get()
-                                        .expect("Can't fail!"),
+                                    claimant: state.account_rejecting_fungible_resource.unwrap(),
                                     amount: dec!(1),
-                                    resource_address: state.non_fungible_resource.get().unwrap(),
+                                    resource_address: state.non_fungible_resource.unwrap(),
                                 },
                             )
-                            .deposit_batch(
-                                state
-                                    .account_rejecting_fungible_resource
-                                    .get()
-                                    .expect("Can't fail!"),
-                            )
+                            .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
                     },
                     vec![
                         &config.account_locker_admin_account,
@@ -962,31 +816,22 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     |builder| {
                         builder
                             .create_proof_from_account_of_amount(
-                                state
-                                    .account_locker_admin_account
-                                    .get()
-                                    .expect("Can't fail!"),
-                                state.account_locker_admin_badge.get().unwrap(),
+                                state.account_locker_admin_account.unwrap(),
+                                state.account_locker_admin_badge.unwrap(),
                                 dec!(1),
                             )
                             .call_method(
-                                state.account_locker.get().unwrap(),
+                                state.account_locker.unwrap(),
                                 ACCOUNT_LOCKER_RECOVER_NON_FUNGIBLES_IDENT,
                                 AccountLockerRecoverNonFungiblesManifestInput {
                                     claimant: state
                                         .account_rejecting_non_fungible_resource
-                                        .get()
-                                        .expect("Can't fail!"),
-                                    resource_address: state.non_fungible_resource.get().unwrap(),
+                                        .unwrap(),
+                                    resource_address: state.non_fungible_resource.unwrap(),
                                     ids: indexset![NonFungibleLocalId::integer(15)],
                                 },
                             )
-                            .deposit_batch(
-                                state
-                                    .account_rejecting_non_fungible_resource
-                                    .get()
-                                    .expect("Can't fail!"),
-                            )
+                            .deposit_batch(state.account_rejecting_non_fungible_resource.unwrap())
                     },
                     vec![
                         &config.account_locker_admin_account,
@@ -999,31 +844,19 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     interesting_addresses: DescribedAddresses::new()
                         .add(
                             "badge_holder_account",
-                            state
-                                .account_locker_admin_account
-                                .get()
-                                .expect("Can't fail!"),
+                            state.account_locker_admin_account.get()?,
                         )
                         .add(
                             "account_rejecting_fungible_resource",
-                            state
-                                .account_rejecting_fungible_resource
-                                .get()
-                                .expect("Can't fail!"),
+                            state.account_rejecting_fungible_resource.get()?,
                         )
                         .add(
                             "account_accepting_all_resources",
-                            state
-                                .account_accepting_all_resources
-                                .get()
-                                .expect("Can't fail!"),
+                            state.account_accepting_all_resources.get()?,
                         )
                         .add(
                             "account_rejecting_non_fungible_resource",
-                            state
-                                .account_rejecting_non_fungible_resource
-                                .get()
-                                .expect("Can't fail!"),
+                            state.account_rejecting_non_fungible_resource.get()?,
                         )
                         .add("account_locker", state.account_locker.get()?)
                         .add(
