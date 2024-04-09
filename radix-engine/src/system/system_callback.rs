@@ -55,9 +55,6 @@ pub enum SystemBoot {
         costing_parameters: CostingParameters,
         limit_parameters: LimitParameters,
         max_per_function_royalty_in_xrd: Decimal,
-
-
-
     },
 }
 
@@ -109,6 +106,11 @@ impl SystemLockData {
     }
 }
 
+pub struct SystemInit<C> {
+    pub config: ExecutionConfig,
+    pub callback_init: C,
+}
+
 pub struct System<C: SystemCallbackObject> {
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
@@ -120,13 +122,12 @@ pub struct System<C: SystemCallbackObject> {
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
-    type InitInput = C::InitInput;
+    type InitInput = SystemInit<C::InitInput>;
 
     fn init<S: BootStore>(
         store: &S,
         executable: &Executable,
-        execution_config: &ExecutionConfig,
-        init_input: C::InitInput,
+        init_input: SystemInit<C::InitInput>,
     ) -> Result<Self, BootloadingError> {
         let (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd) = {
             let system_boot = store
@@ -148,7 +149,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd),
             }
         };
-        let callback = C::init(store, init_input)?;
+        let callback = C::init(store, init_input.callback_init)?;
+
+        let execution_config = init_input.config;
 
         let mut enabled_modules = execution_config.enabled_modules;
         if execution_config.enable_kernel_trace {

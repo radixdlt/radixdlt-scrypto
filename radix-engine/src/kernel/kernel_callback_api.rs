@@ -138,7 +138,6 @@ pub trait KernelCallbackObject: Sized {
     fn init<S: BootStore>(
         store: &S,
         executable: &Executable,
-        execution_config: &ExecutionConfig,
         init_input: Self::InitInput,
     ) -> Result<Self, BootloadingError>;
 

@@ -16,7 +16,7 @@ use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_callback::{System, SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY};
+use crate::system::system_callback::{System, SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemInit};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
@@ -347,8 +347,10 @@ where
         let system_boot_result = System::init(
             &boot_store,
             executable,
-            execution_config,
-            self.input.clone(),
+            SystemInit {
+                config: execution_config.clone(),
+                callback_init: self.input.clone(),
+            }
         );
 
         // Create a track

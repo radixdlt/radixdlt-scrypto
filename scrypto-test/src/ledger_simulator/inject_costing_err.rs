@@ -105,7 +105,6 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
     fn init<S: BootStore>(
         _store: &S,
         _executable: &Executable,
-        _execution_config: &ExecutionConfig,
         _bootstrap_input: Self::InitInput,
     ) -> Result<Self, BootloadingError> {
         panic!();
