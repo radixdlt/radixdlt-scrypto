@@ -9,6 +9,7 @@ pub struct AccountLockerScenarioConfig {
     pub account_rejecting_fungible_resource: PrivateKey,
     pub account_accepting_all_resources: PrivateKey,
     pub account_rejecting_non_fungible_resource: PrivateKey,
+    pub account_rejecting_all_deposits: PrivateKey,
 }
 
 #[derive(Default)]
@@ -23,6 +24,7 @@ pub struct AccountLockerScenarioState {
     pub(crate) account_rejecting_fungible_resource: State<ComponentAddress>,
     pub(crate) account_accepting_all_resources: State<ComponentAddress>,
     pub(crate) account_rejecting_non_fungible_resource: State<ComponentAddress>,
+    pub(crate) account_rejecting_all_deposits: State<ComponentAddress>,
 }
 
 impl Default for AccountLockerScenarioConfig {
@@ -32,6 +34,7 @@ impl Default for AccountLockerScenarioConfig {
             account_rejecting_fungible_resource: new_ed25519_private_key(2).into(),
             account_accepting_all_resources: new_ed25519_private_key(3).into(),
             account_rejecting_non_fungible_resource: new_ed25519_private_key(4).into(),
+            account_rejecting_all_deposits: new_ed25519_private_key(5).into(),
         }
     }
 }
@@ -64,6 +67,7 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                 &config.account_rejecting_fungible_resource,
                                 &config.account_accepting_all_resources,
                                 &config.account_rejecting_non_fungible_resource,
+                                &config.account_rejecting_all_deposits,
                             ]
                             .iter()
                             .fold(builder, |builder, key| {
@@ -96,6 +100,9 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                     state
                         .account_rejecting_non_fungible_resource
                         .set(result.new_component_addresses()[3]);
+                    state
+                        .account_rejecting_all_deposits
+                        .set(result.new_component_addresses()[4]);
                     Ok(())
                 },
             )
@@ -217,10 +224,33 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                     resource_preference: ResourcePreference::Disallowed,
                                 },
                             )
+                            .call_method(
+                                state
+                                    .account_rejecting_all_deposits
+                                    .get()
+                                    .expect("Can't fail"),
+                                ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                                AccountSetDefaultDepositRuleInput {
+                                    default: DefaultDepositRule::Accept,
+                                },
+                            )
+                            .call_method(
+                                state
+                                    .account_rejecting_all_deposits
+                                    .get()
+                                    .expect("Can't fail"),
+                                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                                AccountAddAuthorizedDepositorInput {
+                                    badge: global_caller(
+                                        state.account_locker.get().expect("Can't fail"),
+                                    ),
+                                },
+                            )
                     },
                     vec![
                         &config.account_rejecting_fungible_resource,
                         &config.account_rejecting_non_fungible_resource,
+                        &config.account_rejecting_all_deposits,
                     ],
                 )
             })
@@ -729,6 +759,39 @@ impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
                                             )
                                         })
                                         .collect(),
+                                    },
+                                )
+                            })
+                    },
+                    vec![&config.account_locker_admin_account],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "account-locker-global-caller-badge-is-an-authorized-depositor",
+                    |builder| {
+                        builder
+                            .create_proof_from_account_of_amount(
+                                state
+                                    .account_locker_admin_account
+                                    .get()
+                                    .expect("Can't fail!"),
+                                state.account_locker_admin_badge.get().unwrap(),
+                                dec!(1),
+                            )
+                            .mint_fungible(state.fungible_resource.get().unwrap(), dec!(100))
+                            .take_all_from_worktop(state.fungible_resource.get().unwrap(), "bucket")
+                            .with_bucket("bucket", |builder, bucket| {
+                                builder.call_method(
+                                    state.account_locker.get().unwrap(),
+                                    ACCOUNT_LOCKER_STORE_IDENT,
+                                    AccountLockerStoreManifestInput {
+                                        bucket,
+                                        claimant: state
+                                            .account_rejecting_all_deposits
+                                            .get()
+                                            .expect("Can't fail!"),
+                                        try_direct_send: true,
                                     },
                                 )
                             })

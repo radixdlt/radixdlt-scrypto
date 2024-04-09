@@ -10,7 +10,7 @@ CALL_FUNCTION
     true
 ;
 CALL_METHOD
-    Address("account_sim1cylk3gtqm93rqs5hje27e9yydr04q7n4xvqjnh60fvg0tume9chrlu")
+    Address("account_sim1cx4qy6q2aa9vgl3x87nny50nephemg6yntq95neulu85hndy5wwzkh")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
     Enum<0u8>()

@@ -4,16 +4,16 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_METHOD
-    Address("locker_sim1dzkeskyphql28ulytnwaqa9km5wl7exfnhsumk5vynrpz7gzdl2rsk")
+    Address("locker_sim1dp8g5xtahznlr27t3jagtplg24d5sfqr2r799h3qfl3jpmdxu7wlr3")
     "claim_non_fungibles"
-    Address("account_sim1c8skcu7kv9qxal6rp5uz7em656g6xmzz36rktj4crm36unu2xe0yau")
+    Address("account_sim1c8huhgnhg7rx6q5qjus0kt55qxy0uflvd7g2relms9g5pxw5algkja")
     Address("resource_sim1n2pnt93g8hmwdkyh4xjw0ldmad3p25hx93t2rw58ke974tpeqemklu")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#3#")
     )
 ;
 CALL_METHOD
-    Address("account_sim1c8skcu7kv9qxal6rp5uz7em656g6xmzz36rktj4crm36unu2xe0yau")
+    Address("account_sim1c8huhgnhg7rx6q5qjus0kt55qxy0uflvd7g2relms9g5pxw5algkja")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
 ;
