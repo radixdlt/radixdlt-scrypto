@@ -41,7 +41,7 @@ impl Default for AccountLockerScenarioConfig {
 
 pub struct AccountLockerScenarioCreator;
 
-impl ScenarioCreator<'static> for AccountLockerScenarioCreator {
+impl ScenarioCreator for AccountLockerScenarioCreator {
     type Config = AccountLockerScenarioConfig;
     type State = AccountLockerScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;

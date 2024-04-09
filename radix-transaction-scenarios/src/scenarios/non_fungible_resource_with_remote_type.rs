@@ -28,7 +28,7 @@ impl Default for NonFungibleResourceWithRemoteTypeScenarioConfig {
 
 pub struct NonFungibleResourceWithRemoteTypeScenarioCreator;
 
-impl ScenarioCreator<'static> for NonFungibleResourceWithRemoteTypeScenarioCreator {
+impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
     type Config = NonFungibleResourceWithRemoteTypeScenarioConfig;
     type State = NonFungibleResourceWithRemoteTypeScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;

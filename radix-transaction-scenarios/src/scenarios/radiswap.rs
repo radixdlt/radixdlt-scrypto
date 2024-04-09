@@ -44,7 +44,7 @@ pub struct PoolData {
 
 pub struct RadiswapScenarioCreator;
 
-impl ScenarioCreator<'static> for RadiswapScenarioCreator {
+impl ScenarioCreator for RadiswapScenarioCreator {
     type Config = RadiswapScenarioConfig;
     type State = RadiswapScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;

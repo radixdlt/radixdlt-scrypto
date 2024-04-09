@@ -430,10 +430,7 @@ where
         Ok(receipt)
     }
 
-    fn register_scenario<
-        S: ScenarioCreator<'static>,
-        F: FnOnce(ScenarioCore) -> S::Instance + 'static,
-    >(
+    fn register_scenario<S: ScenarioCreator, F: FnOnce(ScenarioCore) -> S::Instance + 'static>(
         mut self,
         create: F,
     ) -> Self {
@@ -448,7 +445,7 @@ where
         self
     }
 
-    fn register_scenario_with_create_fn<S: ScenarioCreator<'static> + 'static>(self) -> Self {
+    fn register_scenario_with_create_fn<S: ScenarioCreator + 'static>(self) -> Self {
         self.register_scenario::<S, _>(S::create)
     }
 }

@@ -27,7 +27,7 @@ impl Default for FungibleResourceScenarioConfig {
 
 pub struct FungibleResourceScenarioCreator;
 
-impl ScenarioCreator<'static> for FungibleResourceScenarioCreator {
+impl ScenarioCreator for FungibleResourceScenarioCreator {
     type Config = FungibleResourceScenarioConfig;
     type State = FungibleResourceScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;

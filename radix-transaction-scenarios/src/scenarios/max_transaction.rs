@@ -8,7 +8,7 @@ pub struct MaxTransactionScenarioState(Option<PackageAddress>, Option<ComponentA
 
 pub struct MaxTransactionScenarioCreator;
 
-impl ScenarioCreator<'static> for MaxTransactionScenarioCreator {
+impl ScenarioCreator for MaxTransactionScenarioCreator {
     type Config = MaxTransactionScenarioState;
     type State = MaxTransactionScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;

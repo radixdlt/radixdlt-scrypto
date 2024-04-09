@@ -12,7 +12,7 @@ pub struct RoyaltiesState {
 
 pub enum RoyaltiesScenarioCreator {}
 
-impl ScenarioCreator<'static> for RoyaltiesScenarioCreator {
+impl ScenarioCreator for RoyaltiesScenarioCreator {
     type Config = ();
     type State = RoyaltiesState;
     type Instance = Scenario<Self::Config, Self::State>;

@@ -8,7 +8,7 @@ pub struct KVStoreScenarioState(Option<(PackageAddress, ComponentAddress)>);
 
 pub struct KVStoreScenarioCreator;
 
-impl ScenarioCreator<'static> for KVStoreScenarioCreator {
+impl ScenarioCreator for KVStoreScenarioCreator {
     type Config = ();
     type State = KVStoreScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;

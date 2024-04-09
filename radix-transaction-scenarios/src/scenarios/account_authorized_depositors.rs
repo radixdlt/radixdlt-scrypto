@@ -24,7 +24,7 @@ impl Default for AccountAuthorizedDepositorsScenarioConfig {
 
 pub struct AccountAuthorizedDepositorsScenarioCreator;
 
-impl ScenarioCreator<'static> for AccountAuthorizedDepositorsScenarioCreator {
+impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
     type Config = AccountAuthorizedDepositorsScenarioConfig;
     type State = AccountAuthorizedDepositorsScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;

@@ -373,10 +373,10 @@ pub struct ScenarioMetadata {
     pub logical_name: &'static str,
 }
 
-pub trait ScenarioCreator<'a>: Sized {
+pub trait ScenarioCreator: Sized {
     type Config: Default;
     type State: Default;
-    type Instance: ScenarioInstance + 'a;
+    type Instance: ScenarioInstance + 'static;
 
     /// The protocol requirement of the scenario. If set to [`None`] then the scenario does not have
     /// any requirements and can be run against all protocol versions including genesis and all that

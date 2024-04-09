@@ -8,7 +8,7 @@ pub struct GlobalNOwnedScenarioState(Option<(PackageAddress, ComponentAddress)>)
 
 pub struct GlobalNOwnedScenarioCreator;
 
-impl ScenarioCreator<'static> for GlobalNOwnedScenarioCreator {
+impl ScenarioCreator for GlobalNOwnedScenarioCreator {
     type Config = ();
     type State = GlobalNOwnedScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;

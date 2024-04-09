@@ -39,7 +39,7 @@ pub struct MetadataScenarioState {
     pub resource_with_metadata2: Option<ResourceAddress>,
 }
 
-impl ScenarioCreator<'static> for MetadataScenario {
+impl ScenarioCreator for MetadataScenario {
     type Config = MetadataScenarioConfig;
     type State = MetadataScenarioState;
     type Instance = Self;

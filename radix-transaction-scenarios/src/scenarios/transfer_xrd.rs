@@ -20,7 +20,7 @@ impl Default for TransferXrdConfig {
 
 pub enum TransferXrdScenarioCreator {}
 
-impl ScenarioCreator<'static> for TransferXrdScenarioCreator {
+impl ScenarioCreator for TransferXrdScenarioCreator {
     type Config = TransferXrdConfig;
     type State = ();
     type Instance = Scenario<Self::Config, Self::State>;
