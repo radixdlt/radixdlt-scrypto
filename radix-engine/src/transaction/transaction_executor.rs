@@ -149,18 +149,35 @@ impl LimitParameters {
 }
 
 #[derive(Debug, Clone)]
+pub struct SystemOverrides {
+    pub disable_costing: bool,
+    pub disable_limits: bool,
+    pub disable_auth: bool,
+    pub costing_parameters: Option<CostingParameters>,
+    pub limit_parameters: Option<LimitParameters>,
+}
+
+impl Default for SystemOverrides {
+    fn default() -> Self {
+        Self {
+            disable_costing: false,
+            disable_limits: false,
+            disable_auth: false,
+            costing_parameters: None,
+            limit_parameters: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ExecutionConfig {
     // These parameters do not affect state execution but only affect side effects
     pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
 
-    pub disable_costing: bool,
-    pub disable_limits: bool,
-    pub disable_auth: bool,
     pub network_definition: NetworkDefinition,
-    pub costing_parameters: Option<CostingParameters>,
-    pub limit_parameters: Option<LimitParameters>,
+    pub overrides: SystemOverrides,
 }
 
 impl ExecutionConfig {
@@ -171,28 +188,30 @@ impl ExecutionConfig {
             network_definition,
             enable_kernel_trace: false,
             enable_cost_breakdown: false,
-            disable_costing: false,
-            disable_limits: false,
-            disable_auth: false,
             execution_trace: None,
-            costing_parameters: None,
-            limit_parameters: None,
+            overrides: SystemOverrides::default(),
         }
     }
 
     pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            disable_costing: true,
-            disable_limits: true,
-            disable_auth: true,
+            overrides: SystemOverrides {
+                disable_costing: true,
+                disable_limits: true,
+                disable_auth: true,
+                ..Default::default()
+            },
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_system_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            disable_costing: true,
-            disable_limits: true,
+            overrides: SystemOverrides {
+                disable_costing: true,
+                disable_limits: true,
+                ..Default::default()
+            },
             ..Self::default(network_definition)
         }
     }
@@ -221,7 +240,10 @@ impl ExecutionConfig {
 
     pub fn for_preview_no_auth(network_definition: NetworkDefinition) -> Self {
         Self {
-            disable_auth: true,
+            overrides: SystemOverrides {
+                disable_auth: true,
+                ..Default::default()
+            },
             enable_cost_breakdown: true,
             execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
             ..Self::default(network_definition)
@@ -1281,11 +1303,11 @@ pub fn execute_transaction_with_configuration<
             execution_trace: execution_config.execution_trace,
 
             network_definition: execution_config.network_definition.clone(),
-            disable_auth: execution_config.disable_auth,
-            disable_limits: execution_config.disable_limits,
-            disable_costing: execution_config.disable_costing,
-            costing_parameters: execution_config.costing_parameters,
-            limit_parameters: execution_config.limit_parameters,
+            disable_auth: execution_config.overrides.disable_auth,
+            disable_limits: execution_config.overrides.disable_limits,
+            disable_costing: execution_config.overrides.disable_costing,
+            costing_parameters: execution_config.overrides.costing_parameters,
+            limit_parameters: execution_config.overrides.limit_parameters,
             callback_init: vms,
         }
     );

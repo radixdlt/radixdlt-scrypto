@@ -3048,8 +3048,11 @@ pub impl DefaultLedgerSimulator {
     ) -> TransactionReceiptV1 {
         let mut execution_config =
             ExecutionConfig::for_notarized_transaction(NetworkDefinition::mainnet());
-        execution_config.disable_auth = disable_auth;
-        execution_config.disable_costing = disable_costing;
+        execution_config.overrides = SystemOverrides {
+            disable_auth,
+            disable_costing,
+            ..Default::default()
+        };
 
         let nonce = self.next_transaction_nonce();
         let test_transaction = TestTransaction::new_from_nonce(manifest, nonce);

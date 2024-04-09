@@ -52,8 +52,11 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
         let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
         let mut limit_parameters = LimitParameters::default();
         limit_parameters.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
-        execution_config.limit_parameters = Some(limit_parameters);
-        execution_config.costing_parameters = Some(fee_config);
+        execution_config.overrides = SystemOverrides {
+            limit_parameters: Some(limit_parameters),
+            costing_parameters: Some(fee_config),
+            ..Default::default()
+        };
         execution_config
     };
 
@@ -116,8 +119,12 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
         let mut limit_parameters = LimitParameters::default();
         limit_parameters.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
         let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
-        execution_config.limit_parameters = Some(limit_parameters);
-        execution_config.costing_parameters = Some(fee_config);
+        execution_config.overrides = SystemOverrides {
+            limit_parameters: Some(limit_parameters),
+            costing_parameters: Some(fee_config),
+            ..Default::default()
+        };
+
         execution_config
     };
 
@@ -164,8 +171,11 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
         let mut limit_parameters = LimitParameters::default();
         limit_parameters.max_heap_substate_total_bytes = 1024 * 1024;
         let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
-        execution_config.limit_parameters = Some(limit_parameters);
-        execution_config.costing_parameters = Some(fee_config);
+        execution_config.overrides = SystemOverrides {
+            limit_parameters: Some(limit_parameters),
+            costing_parameters: Some(fee_config),
+            ..Default::default()
+        };
         execution_config
     };
 

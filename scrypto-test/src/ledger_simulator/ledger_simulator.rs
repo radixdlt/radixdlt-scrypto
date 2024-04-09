@@ -1301,7 +1301,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     {
         let nonce = self.next_transaction_nonce();
         let mut config = ExecutionConfig::for_test_transaction();
-        config.costing_parameters = Some(costing_parameters);
+        config.overrides.costing_parameters = Some(costing_parameters);
         self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
