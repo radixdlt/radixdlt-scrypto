@@ -132,7 +132,7 @@ pub enum ScanSortedSubstatesEvent<'a> {
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
-    type InitInput;
+    type InitInput: Clone;
 
     /// Initialize the system layer with data loaded from the substate store
     fn init<S: BootStore>(

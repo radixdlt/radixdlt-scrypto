@@ -106,8 +106,18 @@ impl SystemLockData {
     }
 }
 
+#[derive(Clone)]
 pub struct SystemInit<C> {
-    pub config: ExecutionConfig,
+    // These parameters do not affect state execution but only affect side effects
+    pub enable_kernel_trace: bool,
+    pub enable_cost_breakdown: bool,
+    pub execution_trace: Option<usize>,
+
+    pub enabled_modules: EnabledModules,
+    pub network_definition: NetworkDefinition,
+    pub costing_parameters: Option<CostingParameters>,
+    pub limit_parameters: Option<LimitParameters>,
+
     pub callback_init: C,
 }
 
@@ -145,19 +155,20 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 });
 
             match system_boot {
-                SystemBoot::V1 { costing_parameters, limit_parameters, max_per_function_royalty_in_xrd } =>
-                    (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd),
+                SystemBoot::V1 { costing_parameters, limit_parameters, max_per_function_royalty_in_xrd } => {
+                    let costing_parameters = init_input.costing_parameters.unwrap_or(costing_parameters);
+                    let limit_parameters = init_input.limit_parameters.unwrap_or(limit_parameters);
+                    (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd)
+                }
             }
         };
         let callback = C::init(store, init_input.callback_init)?;
 
-        let execution_config = init_input.config;
-
-        let mut enabled_modules = execution_config.enabled_modules;
-        if execution_config.enable_kernel_trace {
+        let mut enabled_modules = init_input.enabled_modules;
+        if init_input.enable_kernel_trace {
             enabled_modules |= EnabledModules::KERNEL_TRACE;
         }
-        if execution_config.execution_trace.is_some() {
+        if init_input.execution_trace.is_some() {
             enabled_modules |= EnabledModules::EXECUTION_TRACE;
         }
 
@@ -168,19 +179,19 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
             KernelTraceModule,
 
-            execution_config.network_definition.clone(),
+            init_input.network_definition.clone(),
             executable.intent_hash().to_hash(),
             executable.auth_zone_params().clone(),
             limit_parameters,
 
-            execution_config.enable_cost_breakdown,
+            init_input.enable_cost_breakdown,
             SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
             max_per_function_royalty_in_xrd,
             FeeTable::new(),
             executable.payload_size(),
             executable.num_of_signature_validations(),
 
-            ExecutionTraceModule::new(execution_config.execution_trace.unwrap_or(MAX_EXECUTION_TRACE_DEPTH)),
+            ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(MAX_EXECUTION_TRACE_DEPTH)),
         );
 
         modules.init()?;

@@ -253,8 +253,6 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for System<C> {
 }
 
 pub struct SubstateBootStore<'a, S: SubstateDatabase> {
-    costing_parameters: Option<CostingParameters>,
-    limit_parameters: Option<LimitParameters>,
     boot_store: &'a S,
 }
 
@@ -265,31 +263,6 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
-        if node_id.eq(TRANSACTION_TRACKER.as_node_id())
-            && partition_num == BOOT_LOADER_PARTITION
-            && substate_key.eq(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY))
-        {
-            let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_num);
-            let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
-            return self.boot_store
-                .get_substate(&db_partition_key, &db_sort_key)
-                .map(|v| {
-                    let mut system_boot: SystemBoot = scrypto_decode(v.as_slice()).unwrap();
-                    match &mut system_boot {
-                        SystemBoot::V1 { costing_parameters, limit_parameters, .. } => {
-                            if let Some(costing_override) = &self.costing_parameters {
-                                *costing_parameters = costing_override.clone();
-                            }
-
-                            if let Some(limit_override) = &self.limit_parameters {
-                                *limit_parameters = limit_override.clone();
-                            }
-                        }
-                    }
-                    IndexedScryptoValue::from_typed(&system_boot)
-                });
-        }
-
         let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_num);
         let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
         self.boot_store
@@ -303,7 +276,7 @@ where
     S: SubstateDatabase,
 {
     substate_db: &'s S,
-    input: V::InitInput,
+    system_init: SystemInit<V::InitInput>,
     phantom: PhantomData<V>,
 }
 
@@ -312,10 +285,10 @@ where
     S: SubstateDatabase,
     V: SystemCallbackObject,
 {
-    pub fn new(substate_db: &'s S, vm: V::InitInput) -> Self {
+    pub fn new(substate_db: &'s S, system_init: SystemInit<V::InitInput>) -> Self {
         Self {
             substate_db,
-            input: vm,
+            system_init,
             phantom: PhantomData::default(),
         }
     }
@@ -323,12 +296,11 @@ where
     pub fn execute<T: WrappedSystem<V>>(
         &mut self,
         executable: &Executable,
-        execution_config: &ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
-        if execution_config.enable_kernel_trace
+        if self.system_init.enable_kernel_trace
         {
             Self::print_executable(&executable);
         }
@@ -340,17 +312,12 @@ where
 
         let boot_store = SubstateBootStore {
             boot_store: self.substate_db,
-            costing_parameters: execution_config.costing_parameters.clone(),
-            limit_parameters: execution_config.limit_parameters.clone(),
         };
 
         let system_boot_result = System::init(
             &boot_store,
             executable,
-            SystemInit {
-                config: execution_config.clone(),
-                callback_init: self.input.clone(),
-            }
+            self.system_init.clone(),
         );
 
         // Create a track
@@ -396,7 +363,7 @@ where
                 ) = self.interpret_manifest::<T>(&mut track, system, init, executable);
 
                 #[cfg(not(feature = "alloc"))]
-                if execution_config.enable_kernel_trace
+                if self.system_init.enable_kernel_trace
                 {
                     println!("{:-^120}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
@@ -537,7 +504,7 @@ where
                                 application_events,
                                 application_logs,
                                 system_structure,
-                                execution_trace: if execution_config
+                                execution_trace: if self.system_init
                                     .enabled_modules
                                     .contains(EnabledModules::EXECUTION_TRACE)
                                 {
@@ -566,7 +533,7 @@ where
                 // No execution is done, so add empty fee summary and details
                 CostingParameters::default(),
                 TransactionFeeSummary::default(),
-                if execution_config.enable_cost_breakdown {
+                if self.system_init.enable_cost_breakdown {
                     Some(TransactionFeeDetails::default())
                 } else {
                     None
@@ -595,7 +562,7 @@ where
 
         // Dump summary
         #[cfg(not(feature = "alloc"))]
-        if execution_config.enable_kernel_trace
+        if self.system_init.enable_kernel_trace
         {
             Self::print_execution_summary(&receipt);
         }
@@ -1306,9 +1273,23 @@ pub fn execute_transaction_with_configuration<
     transaction: &Executable,
     init: T::Init,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_db, vms).execute::<T>(
+    let mut executor = TransactionExecutor::new(
+        substate_db,
+        SystemInit {
+            enable_kernel_trace: execution_config.enable_kernel_trace,
+            enable_cost_breakdown: execution_config.enable_cost_breakdown,
+            execution_trace: execution_config.execution_trace,
+
+            enabled_modules: execution_config.enabled_modules,
+            network_definition: execution_config.network_definition.clone(),
+            costing_parameters: execution_config.costing_parameters,
+            limit_parameters: execution_config.limit_parameters,
+            callback_init: vms,
+        }
+    );
+
+    executor.execute::<T>(
         transaction,
-        execution_config,
         init,
     )
 }
