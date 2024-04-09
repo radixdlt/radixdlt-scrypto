@@ -24,7 +24,7 @@ use scrypto_test::prelude::LedgerSimulatorBuilder;
 use wabt::wat2wasm;
 
 fn bench_decode_sbor(c: &mut Criterion) {
-    let payload = include_workspace_asset_bytes!("radiswap.rpd");
+    let payload = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd");
     println!("Payload size: {}", payload.len());
     c.bench_function("costing::decode_sbor", |b| {
         b.iter(|| manifest_decode::<ManifestValue>(payload))
@@ -32,7 +32,11 @@ fn bench_decode_sbor(c: &mut Criterion) {
 }
 
 fn bench_decode_sbor_bytes(c: &mut Criterion) {
-    let payload = manifest_encode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
+    let payload = manifest_encode(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "radiswap.rpd"
+    ))
+    .unwrap();
     println!("Payload size: {}", payload.len());
     c.bench_function("costing::decode_sbor_bytes", |b| {
         b.iter(|| manifest_decode::<ManifestValue>(&payload))
@@ -40,9 +44,11 @@ fn bench_decode_sbor_bytes(c: &mut Criterion) {
 }
 
 fn bench_validate_sbor_payload(c: &mut Criterion) {
-    let package_definition =
-        manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!("radiswap.rpd"))
-            .unwrap();
+    let package_definition = manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "radiswap.rpd"
+    ))
+    .unwrap();
     let payload = scrypto_encode(&package_definition).unwrap();
     println!("Payload size: {}", payload.len());
     let (index, schema) =
@@ -62,7 +68,11 @@ fn bench_validate_sbor_payload(c: &mut Criterion) {
 }
 
 fn bench_validate_sbor_payload_bytes(c: &mut Criterion) {
-    let payload = scrypto_encode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
+    let payload = scrypto_encode(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "radiswap.rpd"
+    ))
+    .unwrap();
     println!("Payload size: {}", payload.len());
     let (index, schema) = generate_full_schema_from_single_type::<Vec<u8>, ScryptoCustomSchema>();
 
@@ -143,7 +153,7 @@ macro_rules! bench_instantiate {
         paste! {
         fn [< bench_instantiate_ $what >] (c: &mut Criterion) {
             // Prepare code
-            let code = include_workspace_asset_bytes!(concat!($what, ".wasm"));
+            let code = include_workspace_asset_bytes!("radix-transaction-scenarios", concat!($what, ".wasm"));
 
             // Instrument
             let validator = ScryptoV1WasmValidator::new(ScryptoVmVersion::latest());
@@ -170,9 +180,12 @@ bench_instantiate!("radiswap");
 bench_instantiate!("flash_loan");
 
 fn bench_validate_wasm(c: &mut Criterion) {
-    let code = include_workspace_asset_bytes!("radiswap.wasm");
-    let definition: PackageDefinition =
-        manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
+    let code = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm");
+    let definition: PackageDefinition = manifest_decode(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "radiswap.rpd"
+    ))
+    .unwrap();
 
     c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
@@ -186,7 +199,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
 }
 
 fn bench_deserialize_wasm(c: &mut Criterion) {
-    let code = include_workspace_asset_bytes!("radiswap.wasm");
+    let code = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm");
 
     c.bench_function("costing::deserialize_wasm", |b| {
         b.iter(|| WasmModule::init(code).unwrap())
@@ -195,9 +208,13 @@ fn bench_deserialize_wasm(c: &mut Criterion) {
 
 fn bench_prepare_wasm(c: &mut Criterion) {
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
-    let code = include_workspace_asset_bytes!("radiswap.wasm").to_vec();
-    let package_definition: PackageDefinition =
-        manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
+    let code =
+        include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec();
+    let package_definition: PackageDefinition = manifest_decode(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "radiswap.rpd"
+    ))
+    .unwrap();
 
     c.bench_function("costing::bench_prepare_wasm", |b| {
         b.iter(|| {

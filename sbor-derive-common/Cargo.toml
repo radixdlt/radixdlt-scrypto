@@ -2,7 +2,7 @@
 name = "sbor-derive-common"
 version = "1.2.0-dev"
 edition = "2021"
-description = "A library for implementing SBOR derives."
+description = "A library for implementing SBOR derives, from the Radix DLT project."
 readme = "README.md"
 license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
