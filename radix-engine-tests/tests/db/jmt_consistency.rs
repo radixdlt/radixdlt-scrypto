@@ -10,6 +10,6 @@ fn substate_store_matches_state_tree_after_each_scenario() {
         .on_transaction_executed(|_, _, _, db| {
             db.validate_state_tree_matches_substate_store().unwrap()
         })
-        .execute()
+        .execute_all()
         .expect("Must succeed!");
 }

@@ -44,9 +44,6 @@ where
     native_vm_extension: E,
 
     /* Execution */
-    /// A filter that controls which scenarios are executed and which are not. When [`None`] then
-    /// all scenarios are executed and when [`Some`] then some scenarios may be filtered out.
-    filter: Option<ScenarioFilter>,
     /// A map of the scenarios registered on the executor. Not all registered scenarios will be
     /// executed, it merely informs the executor of the existence of these scenarios. Execution of a
     /// scenario requires that is passes the filter specified by the client.
@@ -98,7 +95,6 @@ where
             scrypto_vm: ScryptoVm::default(),
             native_vm_extension: NoExtension,
             /* Execution */
-            filter: None,
             registered_scenarios: {
                 let vector = scenarios_vector();
                 let mut map = BTreeMap::<
@@ -153,7 +149,6 @@ where
             scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
-            filter: self.filter,
             registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
@@ -180,7 +175,6 @@ where
             scrypto_vm: self.scrypto_vm,
             native_vm_extension,
             /* Execution */
-            filter: self.filter,
             registered_scenarios: self.registered_scenarios,
             bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
@@ -211,18 +205,6 @@ where
     /// Defines how the executor should handle nonces.
     pub fn nonce_handling(mut self, nonce_handling: ScenarioStartNonceHandling) -> Self {
         self.next_scenario_nonce_handling = nonce_handling;
-        self
-    }
-
-    /// Defines the filter to use for the execution of scenarios.
-    pub fn filter(mut self, filter: ScenarioFilter) -> Self {
-        self.filter = Some(filter);
-        self
-    }
-
-    /// Removes the filter used for scenarios.
-    pub fn remove_filter(mut self) -> Self {
-        self.filter = None;
         self
     }
 
@@ -267,7 +249,21 @@ where
         self
     }
 
-    pub fn execute(mut self) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
+    pub fn execute_all_matching(
+        self,
+        filter: ScenarioFilter,
+    ) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
+        self.internal_execute(Some(filter))
+    }
+
+    pub fn execute_all(self) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
+        self.internal_execute(None)
+    }
+
+    fn internal_execute(
+        mut self,
+        filter: Option<ScenarioFilter>,
+    ) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
         // Bootstrapping if needed
         if self.bootstrap {
             Bootstrapper::new(
@@ -323,7 +319,7 @@ where
 
                 // Before executing the scenario determine if it's valid for the current filter that
                 // the client specified.
-                let passes_filter = match self.filter {
+                let passes_filter = match filter {
                     // Ensure that the scenario name from the metadata is in the list of exact
                     // scenarios. Otherwise continue to the next.
                     Some(ScenarioFilter::ExactScenarios(ref exact_scenarios)) => {

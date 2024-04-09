@@ -513,6 +513,6 @@ fn run_scenarios(
             ),
         );
     })
-    .execute()
+    .execute_all()
     .expect("Must succeed!");
 }

@@ -167,7 +167,7 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
             assert_receipt_substate_changes_can_be_typed(commit_result);
         };
     })
-    .execute()
+    .execute_all()
     .expect("Must succeed!");
 }
 
@@ -182,7 +182,7 @@ fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
             assert_receipt_events_can_be_typed(commit_result);
         };
     })
-    .execute()
+    .execute_all()
     .expect("Must succeed!");
 }
 

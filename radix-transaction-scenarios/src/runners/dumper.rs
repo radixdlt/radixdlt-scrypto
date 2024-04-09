@@ -61,7 +61,7 @@ pub fn run_all_in_memory_and_dump_examples(
         .nonce_handling(ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
             1000,
         ))
-        .execute()
+        .execute_all()
         .expect("Must succeed");
 
     assert_eq!(
@@ -290,11 +290,10 @@ mod test {
             })
             .on_new_protocol_requirement_encountered(protocol_update_handling)
             .after_bootstrap(after_bootstrap)
-            .filter(filter)
             .nonce_handling(ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
                 1000,
             ))
-            .execute()
+            .execute_all_matching(filter)
             .expect("Must succeed");
 
         // Assert
