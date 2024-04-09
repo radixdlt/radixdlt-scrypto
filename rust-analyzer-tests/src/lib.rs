@@ -3,6 +3,7 @@
 //! to support benchmarking other features of Rust Analyzer as well.
 #![allow(clippy::test_attr_in_doctest)]
 
+use std::collections::HashSet;
 use std::env::var;
 use std::fs::{read_to_string, write};
 use std::io::Error as IOError;
@@ -26,12 +27,14 @@ use tempfile::tempdir;
 /// pattern is as follows:
 ///
 /// ```rust,norun
-/// use std::collection::{{%EXPECT_ANY_OF:HashMap,BTreeMap%}};
+/// use std::collection::{{%EXPECT_ANY_OF:HashSet,BTreeMap%}};
+/// use std::collection::{{%EXPECT_ANY_OF:HashSet,BTreeMap%}};
 /// ```
 ///
 /// Given the above source code, this function will find the autocomplete expectation pattern, infer
 /// from the pattern that if autocomplete is done at that location the results should include either
-/// `HashMap` or `BTreeMap`, if not this function will return an error. The amount of time that it
+/// `HashSet` or `BTreeMap`, if not this function will return an error. The amount of time that it
+/// `HashSet` or `BTreeMap`, if not this function will return an error. The amount of time that it
 /// took for rust-analyzer to report these will be returned by this function.
 ///
 /// This autocomplete expectation pattern is found by this function using the following regex
@@ -213,19 +216,7 @@ where
                 None,
             );
             config
-                .update(serde_json::json!({
-                    "cargo": {
-                        "sysroot": "discover",
-                        "buildScripts": {
-                            "useRustcWrapper": false,
-                            "enable": true,
-                        },
-                    },
-                    // Rust analyzer should expand proc-macros.
-                    "procMacro": {
-                        "enable": true,
-                    }
-                }))
+                .update(serde_json::to_value(include_str!("../assets/config.json")).unwrap())
                 .map_err(TimingError::ConfigurationUpdateError)?;
             config.rediscover_workspaces();
             config
@@ -235,6 +226,76 @@ where
         std::thread::spawn(|| rust_analyzer::main_loop(config, server_connection));
         client_connection
     };
+
+    // At this point before we open the file Rust Analyzer will do a number of checks including on
+    // the fly code checks, crate indexing, and other checks. The checks that it does are known to
+    // us. Therefore, we will wait until Rust Analyzer finishes all of those checks and then we will
+    // continue forward.
+    {
+        let mut remaining_checks = [
+            "rustAnalyzer/Indexing",
+            "rustAnalyzer/Building CrateGraph",
+            "rustAnalyzer/Fetching",
+            "rustAnalyzer/Roots Scanned",
+            "rust-analyzer/flycheck/0",
+            "rustAnalyzer/Building build-artifacts",
+            "rustAnalyzer/Loading proc-macros",
+        ]
+        .into_iter()
+        .map(ToOwned::to_owned)
+        .map(lsp_types::NumberOrString::String)
+        .collect::<HashSet<_>>();
+
+        loop {
+            let Ok(message) = client_connection.receiver.recv() else {
+                continue;
+            };
+
+            match message {
+                lsp_server::Message::Request(request) => {
+                    if <lsp_types::request::WorkDoneProgressCreate as lsp_types::request::Request>::METHOD
+                        == request.method.as_str()
+                    {
+                        send_response::<lsp_types::request::WorkDoneProgressCreate>(
+                            &client_connection,
+                            request.id,
+                            Ok(&()),
+                        )?;
+                    }
+                }
+                // Await a progress notification informing us that it's finished
+                lsp_server::Message::Notification(notification) => {
+                    if <lsp_types::notification::Progress as lsp_types::notification::Notification>::METHOD
+                        == notification.method.as_str()
+                    {
+                        // Decode
+                        let params = serde_json::from_value::<lsp_types::ProgressParams>(notification.params)
+                            .expect("Can't happen, server error");
+
+                        // We only care about `End` tokens
+                        let lsp_types::ProgressParams {
+                            token,
+                            value:
+                                lsp_types::ProgressParamsValue::WorkDone(lsp_types::WorkDoneProgress::End(..)),
+                        } = params
+                        else {
+                            continue;
+                        };
+
+                        // Remove it from the set of items we're waiting on.
+                        remaining_checks.remove(&token);
+
+                        // If there are no remaining checks then we break!
+                        if remaining_checks.is_empty() {
+                            break;
+                        }
+                    }
+                }
+                // Nothing to do about responses.
+                lsp_server::Message::Response(_) => {}
+            }
+        }
+    }
 
     // Send a notification to the server informing them that we've opened the lib.rs file. Without
     // doing that the file would not be stored the language server's memory and we would not be able
@@ -250,25 +311,6 @@ where
             },
         },
     )?;
-
-    // Await a notification from the rust-analyzer language server informing us that it is done with
-    // its startup routine where it runs cargo check on the package and analyzes it.
-    loop {
-        let Ok(lsp_server::Message::Notification(lsp_server::Notification { method, params })) =
-            client_connection.receiver.recv()
-        else {
-            continue;
-        };
-
-        if method == "experimental/serverStatus"
-            && matches!(
-                params.get("quiescent"),
-                Some(&serde_json::Value::Bool(true))
-            )
-        {
-            break;
-        }
-    }
 
     // Send the server the autocomplete request
     send_request::<lsp_types::request::Completion>(
@@ -373,7 +415,7 @@ fn client_capabilities() -> lsp_types::ClientCapabilities {
             ..Default::default()
         }),
         window: Some(lsp_types::WindowClientCapabilities {
-            work_done_progress: Some(false),
+            work_done_progress: Some(true),
             ..Default::default()
         }),
         experimental: Some(serde_json::json!({
@@ -512,6 +554,34 @@ fn send_request<R: lsp_types::request::Request>(
         method: R::METHOD.to_owned(),
         params: serialized_params,
     });
+
+    // Write the message to the channel.
+    connection
+        .sender
+        .send(message)
+        .map_err(TimingError::ChannelSendingError)?;
+
+    Ok(())
+}
+
+fn send_response<R: lsp_types::request::Request>(
+    connection: &lsp_server::Connection,
+    request_id: lsp_server::RequestId,
+    response: Result<&R::Result, lsp_server::ResponseError>,
+) -> Result<(), TimingError> {
+    // Construct a message from the parameters.
+    let message = match response {
+        Ok(response) => lsp_server::Message::Response(lsp_server::Response {
+            id: request_id,
+            result: Some(serde_json::to_value(response).map_err(TimingError::SerializationError)?),
+            error: None,
+        }),
+        Err(error) => lsp_server::Message::Response(lsp_server::Response {
+            id: request_id,
+            result: None,
+            error: Some(error),
+        }),
+    };
 
     // Write the message to the channel.
     connection
