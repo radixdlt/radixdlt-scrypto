@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use crate::utils::*;
 use radix_engine::blueprints::account::DepositEvent;
-use radix_engine::updates::ProtocolUpdate;
+use radix_engine::updates::{ProtocolUpdate, ProtocolVersion};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::*;
 
@@ -46,7 +46,8 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
     type Config = AccountLockerScenarioConfig;
     type State = AccountLockerScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = Some(ProtocolUpdate::Bottlenose);
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion =
+        ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose);
 
     fn create_with_config_and_state(
         core: ScenarioCore,
@@ -718,7 +719,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     DepositEvent::EVENT_NAME.to_owned(),
                                 )
                         })
-                        .map(|(_, data)| scrypto_decode::<DepositEvent>(&data).expect("Can't fail"))
+                        .map(|(_, data)| scrypto_decode::<DepositEvent>(data).expect("Can't fail"))
                         .expect("The resources were not deposited into the account?");
                     assert_eq!(
                         event,

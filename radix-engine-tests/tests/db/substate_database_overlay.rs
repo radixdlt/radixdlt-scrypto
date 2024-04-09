@@ -483,18 +483,20 @@ fn run_scenarios(
     )
     .bootstrap(true)
     .on_new_protocol_requirement_encountered(|network, protocol_update, db| {
-        // Apply to the executor's DB.
-        protocol_update
-            .generate_state_updates(db, network)
-            .into_iter()
-            .for_each(|state_updates| {
-                db.commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
-            });
+        if let ProtocolVersion::ProtocolUpdate(protocol_update) = protocol_update {
+            // Apply to the executor's DB.
+            protocol_update
+                .generate_state_updates(db, network)
+                .into_iter()
+                .for_each(|state_updates| {
+                    db.commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
+                });
 
-        // Apply to the ledger's DB.
-        ledger_with_overlay
-            .borrow_mut()
-            .apply_protocol_updates(&[protocol_update]);
+            // Apply to the ledger's DB.
+            ledger_with_overlay
+                .borrow_mut()
+                .apply_protocol_updates(&[protocol_update]);
+        }
     })
     .on_transaction_executed(|_, transaction, receipt, db| {
         // Execute the same transaction on the ledger simulator.

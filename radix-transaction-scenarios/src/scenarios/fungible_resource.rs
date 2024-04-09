@@ -1,8 +1,9 @@
 use crate::internal_prelude::*;
-use radix_engine::updates::ProtocolUpdate;
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
+#[allow(deprecated)]
 pub struct FungibleResourceScenarioConfig {
     pub user_account_1: VirtualAccount,
     pub user_account_2: VirtualAccount,
@@ -31,8 +32,9 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
     type Config = FungibleResourceScenarioConfig;
     type State = FungibleResourceScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
+    #[allow(deprecated)]
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
@@ -380,8 +382,8 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("user_account_1", config.user_account_1.address.clone())
-                        .add("user_account_2", config.user_account_2.address.clone())
+                        .add("user_account_1", config.user_account_1.address)
+                        .add("user_account_2", config.user_account_2.address)
                         .add(
                             "max_divisibility_fungible_resource",
                             state.max_divisibility_fungible_resource.unwrap(),

@@ -1,4 +1,4 @@
-use radix_engine::updates::ProtocolUpdate;
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::metadata::{
     MetadataValue, SingleMetadataVal, UncheckedOrigin, UncheckedUrl,
@@ -15,6 +15,7 @@ pub struct MetadataScenario {
     state: MetadataScenarioState,
 }
 
+#[allow(deprecated)]
 pub struct MetadataScenarioConfig {
     pub user_account_1: VirtualAccount,
     pub user_account_sandbox: VirtualAccount,
@@ -43,7 +44,7 @@ impl ScenarioCreator for MetadataScenario {
     type Config = MetadataScenarioConfig;
     type State = MetadataScenarioState;
     type Instance = Self;
-    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
@@ -67,6 +68,7 @@ impl ScenarioInstance for MetadataScenario {
         &self.metadata
     }
 
+    #[allow(deprecated)]
     fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
         let MetadataScenarioConfig {
             user_account_1,
@@ -336,12 +338,9 @@ impl ScenarioInstance for MetadataScenario {
 
                 let output = ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("user_account_1", user_account_1.address.clone())
-                        .add("user_account_sandbox", user_account_sandbox.address.clone())
-                        .add(
-                            "user_account_dashboard",
-                            user_account_dashboard.address.clone(),
-                        )
+                        .add("user_account_1", user_account_1.address)
+                        .add("user_account_sandbox", user_account_sandbox.address)
+                        .add("user_account_dashboard", user_account_dashboard.address)
                         .add("package_with_metadata", package_with_metadata.unwrap())
                         .add("component_with_metadata", component_with_metadata.unwrap())
                         .add("resource_with_metadata1", resource_with_metadata1.unwrap())

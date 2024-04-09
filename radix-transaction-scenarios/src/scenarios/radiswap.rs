@@ -1,10 +1,11 @@
-use radix_engine::updates::ProtocolUpdate;
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
 use crate::internal_prelude::*;
 
+#[allow(deprecated)]
 pub struct RadiswapScenarioConfig {
     pub radiswap_dapp_definition_account: VirtualAccount,
     pub storing_account: VirtualAccount,
@@ -48,8 +49,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
     type Config = RadiswapScenarioConfig;
     type State = RadiswapScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
+    #[allow(deprecated)]
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,

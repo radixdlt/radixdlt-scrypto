@@ -1,10 +1,11 @@
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
-use radix_engine::updates::ProtocolUpdate;
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
+#[allow(deprecated)]
 pub struct NonFungibleResourceWithRemoteTypeScenarioConfig {
     pub main_account: VirtualAccount,
     pub occasional_recipient_account: VirtualAccount,
@@ -32,8 +33,9 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
     type Config = NonFungibleResourceWithRemoteTypeScenarioConfig;
     type State = NonFungibleResourceWithRemoteTypeScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
+    #[allow(deprecated)]
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
@@ -59,7 +61,7 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
 
                             // Register `RemoveLiquidityEvent` as TestType
                             let type_id = if let TypeRef::Static(type_id) = schema.blueprints.values_mut().next().unwrap().schema.events.event_schema.get("RemoveLiquidityEvent").unwrap() {
-                                type_id.clone()
+                                *type_id
                             } else {
                                 unreachable!()
                             };

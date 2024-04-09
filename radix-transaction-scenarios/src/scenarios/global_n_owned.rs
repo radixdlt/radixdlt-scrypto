@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use radix_engine::updates::ProtocolUpdate;
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::package::{PackageDefinition, PACKAGE_BLUEPRINT};
 use radix_engine_interface::*;
 
@@ -12,7 +12,7 @@ impl ScenarioCreator for GlobalNOwnedScenarioCreator {
     type Config = ();
     type State = GlobalNOwnedScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate> = None;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
     fn create_with_config_and_state(
         core: ScenarioCore,

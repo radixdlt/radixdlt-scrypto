@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use crate::internal_prelude::*;
 use radix_transactions::prelude::*;
 

@@ -385,7 +385,7 @@ pub trait ScenarioCreator: Sized {
     /// and everything that comes after. This is a property of the [`ScenarioCreator`] rather than
     /// the individual instance since the creator can be thought of the as "class" and the instance
     /// is the object.
-    const SCENARIO_PROTOCOL_REQUIREMENT: Option<ProtocolUpdate>;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion;
 
     fn create(core: ScenarioCore) -> Self::Instance {
         Self::create_with_config_and_state(core, Default::default(), Default::default())

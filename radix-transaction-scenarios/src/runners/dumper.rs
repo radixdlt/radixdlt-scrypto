@@ -114,8 +114,8 @@ mod test {
         assert_event_and_state_hashes(
             "43be4cce2d4f2ed2eb519d77dfa770697244e843b2a0f7fd86bdf773d9b6f278",
             "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc",
-            ScenarioFilter::AllValidBeforeProtocolUpdate(Boundary::Exclusive(
-                ProtocolUpdate::Anemone,
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
             )),
             |_, _, _| {},
             |_, _| {},
@@ -129,11 +129,13 @@ mod test {
         assert_event_and_state_hashes(
             "17567dbaf89a77a20e837e8d48187585b0547374fac9e19b9acc9d04d630a774",
             "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc",
-            ScenarioFilter::AllValidBeforeProtocolUpdate(Boundary::Inclusive(
-                ProtocolUpdate::Anemone,
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
             )),
             |network, protocol_update, db| {
-                if let ProtocolUpdate::Anemone = protocol_update {
+                if let ProtocolVersion::ProtocolUpdate(protocol_update @ ProtocolUpdate::Anemone) =
+                    protocol_update
+                {
                     protocol_update
                         .generate_state_updates(db, network)
                         .into_iter()
@@ -154,8 +156,8 @@ mod test {
         assert_event_and_state_hashes(
             "dbba9b7154eb40b3978a4d4b7921945178ee93f3bb04aad4ab08db98287a7785",
             "57e3e4d7a7232612540d949dcea540f7ead064a92d5da50fbe60b5659a2ddd0b",
-            ScenarioFilter::AllValidBeforeProtocolUpdate(Boundary::Inclusive(
-                ProtocolUpdate::Anemone,
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
             )),
             |_, _, _| {},
             // Update to anemone immediately after bootstrapping.
@@ -175,11 +177,14 @@ mod test {
         assert_event_and_state_hashes(
             "b15ab5e1f509966765143cb585f1b80cc7db61a87c4f483ff83563b363eab93f",
             "18e1b9cc48ee2a71c154b835c7dac587dae165e0e25d85a4e871879528e929ab",
-            ScenarioFilter::AllValidBeforeProtocolUpdate(Boundary::Inclusive(
-                ProtocolUpdate::Bottlenose,
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose),
             )),
             |network, protocol_update, db| {
-                if let ProtocolUpdate::Anemone | ProtocolUpdate::Bottlenose = protocol_update {
+                if let ProtocolVersion::ProtocolUpdate(
+                    protocol_update @ (ProtocolUpdate::Anemone | ProtocolUpdate::Bottlenose),
+                ) = protocol_update
+                {
                     protocol_update
                         .generate_state_updates(db, network)
                         .into_iter()
@@ -197,8 +202,8 @@ mod test {
         assert_event_and_state_hashes(
             "9d06891ba213a57e14031af89cd21b040a1e0c7b362f5e425d1dd281e258d47d",
             "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
-            ScenarioFilter::AllValidBeforeProtocolUpdate(Boundary::Inclusive(
-                ProtocolUpdate::Anemone,
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
             )),
             |_, _, _| {},
             // Update to bottlenose immediately after bootstrapping.
@@ -224,8 +229,8 @@ mod test {
         assert_event_and_state_hashes(
             "9d06891ba213a57e14031af89cd21b040a1e0c7b362f5e425d1dd281e258d47d",
             "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
-            ScenarioFilter::AllValidBeforeProtocolUpdate(Boundary::Exclusive(
-                ProtocolUpdate::Anemone,
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
             )),
             |_, _, _| {},
             // Update to bottlenose immediately after bootstrapping.
@@ -255,7 +260,7 @@ mod test {
     ) where
         P: FnMut(
             &NetworkDefinition,
-            ProtocolUpdate,
+            ProtocolVersion,
             &mut StateTreeUpdatingDatabase<InMemorySubstateDatabase>,
         ),
         B: FnMut(&NetworkDefinition, &mut StateTreeUpdatingDatabase<InMemorySubstateDatabase>),

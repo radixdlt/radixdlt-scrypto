@@ -192,3 +192,15 @@ impl ProtocolUpdates {
         results
     }
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ProtocolVersion {
+    Genesis,
+    ProtocolUpdate(ProtocolUpdate),
+}
+
+impl ProtocolVersion {
+    pub fn all_iterator() -> impl Iterator<Item = Self> {
+        core::iter::once(Self::Genesis).chain(ProtocolUpdate::VARIANTS.map(Self::ProtocolUpdate))
+    }
+}
