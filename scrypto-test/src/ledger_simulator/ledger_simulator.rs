@@ -16,7 +16,7 @@ use radix_engine::transaction::{
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
     WrappedSystem,
 };
-use radix_engine::updates::ProtocolUpdates;
+use radix_engine::updates::{ProtocolUpdate, ProtocolUpdates};
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
@@ -2334,6 +2334,18 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 .expect("Resource reconciliation failed");
         }
     }
+
+    pub fn apply_protocol_updates(&mut self, protocol_updates: &[ProtocolUpdate]) {
+        protocol_updates.iter().for_each(|protocol_update| {
+            protocol_update
+                .generate_state_updates(&self.database, &NetworkDefinition::simulator())
+                .into_iter()
+                .for_each(|update| {
+                    self.database
+                        .commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
+                })
+        })
+    }
 }
 
 impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, StateTreeUpdatingDatabase<D>> {
@@ -2342,22 +2354,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, StateTreeUpdating
     }
 
     pub fn assert_state_tree_matches_substate_store(&mut self) {
-        let hashes_from_tree = self.database.list_substate_hashes();
-        assert_eq!(
-            hashes_from_tree.keys().cloned().collect::<HashSet<_>>(),
-            self.database.list_partition_keys().collect::<HashSet<_>>(),
-            "partitions captured in the state tree should match those in the substate store"
-        );
-        for (db_partition_key, by_db_sort_key) in hashes_from_tree {
-            assert_eq!(
-                by_db_sort_key.into_iter().collect::<HashMap<_, _>>(),
-                self.database.list_entries(&db_partition_key)
-                    .map(|(db_sort_key, substate_value)| (db_sort_key, hash(substate_value)))
-                    .collect::<HashMap<_, _>>(),
-                "partition's {:?} substates in the state tree should match those in the substate store",
-                db_partition_key,
-            )
-        }
+        self.database
+            .validate_state_tree_matches_substate_store()
+            .unwrap()
     }
 }
 

@@ -9,8 +9,7 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
-use radix_transaction_scenarios::scenario::{NextAction, ScenarioCore};
-use radix_transaction_scenarios::scenarios::get_builder_for_every_scenario;
+use radix_transaction_scenarios::executor::*;
 use sbor::rust::ops::Deref;
 use scrypto_test::prelude::*;
 
@@ -35,8 +34,12 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
+    let mut bootstrapper = Bootstrapper::new(
+        NetworkDefinition::simulator(),
+        &mut substate_db,
+        vm_init,
+        true,
+    );
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -155,74 +158,32 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
 
 #[test]
 fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_typed() {
-    let network = NetworkDefinition::simulator();
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let mut next_nonce: u32 = 0;
-    for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = ledger.get_current_epoch();
-        let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
-        let mut previous = None;
-        loop {
-            let next = scenario
-                .next(previous.as_ref())
-                .map_err(|err| err.into_full(&scenario))
-                .unwrap();
-            match next {
-                NextAction::Transaction(next) => {
-                    let receipt = ledger.execute_notarized_transaction(&next.raw_transaction);
-                    match &receipt.result {
-                        TransactionResult::Commit(commit_result) => {
-                            assert_receipt_substate_changes_can_be_typed(commit_result);
-                        }
-                        // Ignore other results - which may be valid in the context of the scenario
-                        _ => {}
-                    }
-                    previous = Some(receipt);
-                }
-                NextAction::Completed(end_state) => {
-                    next_nonce = end_state.next_unused_nonce;
-                    break;
-                }
-            }
-        }
-    }
+    DefaultTransactionScenarioExecutor::new(
+        InMemorySubstateDatabase::standard(),
+        NetworkDefinition::simulator(),
+    )
+    .on_transaction_executed(|_, _, receipt, _| {
+        if let TransactionResult::Commit(ref commit_result) = receipt.result {
+            assert_receipt_substate_changes_can_be_typed(commit_result);
+        };
+    })
+    .execute_all()
+    .expect("Must succeed!");
 }
 
 #[test]
 fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
-    let network = NetworkDefinition::simulator();
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-
-    let mut next_nonce: u32 = 0;
-    for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = ledger.get_current_epoch();
-        let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
-        let mut previous = None;
-        loop {
-            let next = scenario
-                .next(previous.as_ref())
-                .map_err(|err| err.into_full(&scenario))
-                .unwrap();
-            match next {
-                NextAction::Transaction(next) => {
-                    let receipt = ledger.execute_notarized_transaction(&next.raw_transaction);
-                    match &receipt.result {
-                        TransactionResult::Commit(commit_result) => {
-                            assert_receipt_events_can_be_typed(commit_result);
-                        }
-                        // Ignore other results - which may be valid in the context of the scenario
-                        _ => {}
-                    }
-                    previous = Some(receipt);
-                }
-                NextAction::Completed(end_state) => {
-                    next_nonce = end_state.next_unused_nonce;
-                    break;
-                }
-            }
-        }
-    }
+    DefaultTransactionScenarioExecutor::new(
+        InMemorySubstateDatabase::standard(),
+        NetworkDefinition::simulator(),
+    )
+    .on_transaction_executed(|_, _, receipt, _| {
+        if let TransactionResult::Commit(ref commit_result) = receipt.result {
+            assert_receipt_events_can_be_typed(commit_result);
+        };
+    })
+    .execute_all()
+    .expect("Must succeed!");
 }
 
 /// We need to ensure that all of the events registered to native events are included in the typed

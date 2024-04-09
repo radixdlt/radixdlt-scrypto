@@ -22,16 +22,19 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 //====================================================================================
 
 pub mod accounts;
+pub mod executor;
 #[allow(unused)] // Some things are only used in std build
 pub mod runners;
 pub mod scenario;
 pub mod scenarios;
+pub mod utils;
 
 pub mod prelude {}
 
 // Extra things which this crate wants which upstream crates likely don't
 pub(crate) mod internal_prelude {
     pub use crate::accounts::*;
+    pub use crate::executor::*;
     pub use crate::scenario::*;
     pub use radix_common::prelude::*;
     pub use radix_engine::transaction::*;
