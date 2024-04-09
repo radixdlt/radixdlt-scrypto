@@ -202,7 +202,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                         manifest_args!(
                                             config.swapper_account.address,
                                             bucket,
-                                            "SWAP:MAYA.CACAO".to_string(),
+                                            "SWAP:MAYA.CACAO:tmaya1uuds8pd92qnnq0udw0rpg0szpgcslc9p8gps0z".to_string(),
                                         ),
                                     )
                                 })
@@ -214,7 +214,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                         manifest_args!(
                                             config.swapper_account.address,
                                             bucket,
-                                            "SWAP:MAYA.CACAO".to_string(),
+                                            "SWAP:MAYA.CACAO:tmaya1uuds8pd92qnnq0udw0rpg0szpgcslc9p8gps0z".to_string(),
                                         ),
                                     )
                                 })

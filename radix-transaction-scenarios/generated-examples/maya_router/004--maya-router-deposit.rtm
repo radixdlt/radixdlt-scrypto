@@ -24,7 +24,7 @@ CALL_METHOD
     "deposit"
     Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
     Bucket("resource_1")
-    "SWAP:MAYA.CACAO"
+    "SWAP:MAYA.CACAO:tmaya1uuds8pd92qnnq0udw0rpg0szpgcslc9p8gps0z"
 ;
 TAKE_ALL_FROM_WORKTOP
     Address("resource_sim1t40cy00lq4mzz9jw0px9hg6gwey3658mz4y3g8ehl6tfks2vmd798j")
@@ -35,5 +35,5 @@ CALL_METHOD
     "deposit"
     Address("account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x")
     Bucket("resource_2")
-    "SWAP:MAYA.CACAO"
+    "SWAP:MAYA.CACAO:tmaya1uuds8pd92qnnq0udw0rpg0szpgcslc9p8gps0z"
 ;
