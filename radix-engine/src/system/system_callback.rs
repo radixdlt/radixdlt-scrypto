@@ -164,10 +164,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         })
     }
 
-    fn on_ref_check_substate_loading<Y>(
-        api: &mut Y,
-        event: RefCheckEvent,
-    ) -> Result<(), BootloadingError>
+    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
     where
         Y: KernelApi<Self>,
     {

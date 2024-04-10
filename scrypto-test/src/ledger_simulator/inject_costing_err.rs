@@ -360,7 +360,7 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
         )
     }
 
-    fn on_ref_check_substate_loading<Y>(
+    fn on_ref_check<Y>(
         _api: &mut Y,
         _event: radix_engine::kernel::kernel_callback_api::RefCheckEvent,
     ) -> Result<(), BootloadingError>

@@ -67,7 +67,7 @@ impl ProtocolUpdateEntry {
             ProtocolUpdateEntry::TransactionProcessorBlobLimits => {
                 generate_transaction_processor_blob_limits_state_updates(db)
             }
-            ProtocolUpdateEntry::RefCheckCosts => generate_deferred_ref_check_costs_state_updates(),
+            ProtocolUpdateEntry::RefCheckCosts => generate_ref_check_costs_state_updates(),
         }
     }
 }

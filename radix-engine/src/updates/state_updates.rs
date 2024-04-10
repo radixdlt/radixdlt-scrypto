@@ -59,7 +59,7 @@ pub fn generate_bls128_and_keccak256_state_updates() -> StateUpdates {
 }
 
 /// Generates the state updates required for introducing deferred reference check costs
-pub fn generate_deferred_ref_check_costs_state_updates() -> StateUpdates {
+pub fn generate_ref_check_costs_state_updates() -> StateUpdates {
     let substate = scrypto_encode(&KernelVersion::V1).unwrap();
 
     StateUpdates {

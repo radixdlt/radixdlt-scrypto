@@ -150,7 +150,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                     },
                     substate_ref.len(),
                 );
-                M::on_ref_check_substate_loading(kernel, RefCheckEvent::IOAccess(&io_access))?;
+                M::on_ref_check(kernel, RefCheckEvent::IOAccess(&io_access))?;
             }
         }
 
