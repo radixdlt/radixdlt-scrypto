@@ -9,15 +9,19 @@
 #[cfg(feature = "log-error")]
 #[macro_export]
 macro_rules! error {
-    ($($args: expr),+) => {{
-        $crate::runtime::Logger::error(::sbor::rust::format!($($args),+));
+    ($($tokens: tt)*) => {{
+        $crate::runtime::Logger::error(::sbor::rust::format!($($tokens)*));
     }};
 }
 
 #[cfg(not(feature = "log-error"))]
 #[macro_export]
 macro_rules! error {
-    ($($args: expr),+) => {{}};
+    ($($tokens: tt)*) => {{
+        // No logging done, just putting this here to get Rust Analyzer to recognize to have
+        // consistent behavior even when the logging feature is not enabled.
+        let _ = ::sbor::rust::format!($($tokens)*);
+    }};
 }
 
 /// Logs a `WARN` message.
@@ -31,15 +35,19 @@ macro_rules! error {
 #[cfg(feature = "log-warn")]
 #[macro_export]
 macro_rules! warn {
-    ($($args: expr),+) => {{
-        $crate::runtime::Logger::warn(::sbor::rust::format!($($args),+));
+    ($($tokens: tt)*) => {{
+        $crate::runtime::Logger::warn(::sbor::rust::format!($($tokens)*));
     }};
 }
 
 #[cfg(not(feature = "log-warn"))]
 #[macro_export]
 macro_rules! warn {
-    ($($args: expr),+) => {{}};
+    ($($tokens: tt)*) => {{
+        // No logging done, just putting this here to get Rust Analyzer to recognize to have
+        // consistent behavior even when the logging feature is not enabled.
+        let _ = ::sbor::rust::format!($($tokens)*);
+    }};
 }
 
 /// Logs an `INFO` message.
@@ -53,15 +61,19 @@ macro_rules! warn {
 #[cfg(feature = "log-info")]
 #[macro_export]
 macro_rules! info {
-    ($($args: expr),+) => {{
-        $crate::runtime::Logger::info(::sbor::rust::format!($($args),+));
+    ($($tokens: tt)*) => {{
+        $crate::runtime::Logger::info(::sbor::rust::format!($($tokens)*));
     }};
 }
 
 #[cfg(not(feature = "log-info"))]
 #[macro_export]
 macro_rules! info {
-    ($($args: expr),+) => {{}};
+    ($($tokens: tt)*) => {{
+        // No logging done, just putting this here to get Rust Analyzer to recognize to have
+        // consistent behavior even when the logging feature is not enabled.
+        let _ = ::sbor::rust::format!($($tokens)*);
+    }};
 }
 
 /// Logs a `DEBUG` message.
@@ -75,15 +87,19 @@ macro_rules! info {
 #[cfg(feature = "log-debug")]
 #[macro_export]
 macro_rules! debug {
-    ($($args: expr),+) => {{
-        $crate::runtime::Logger::debug(::sbor::rust::format!($($args),+));
+    ($($tokens: tt)*) => {{
+        $crate::runtime::Logger::debug(::sbor::rust::format!($($tokens)*));
     }};
 }
 
 #[cfg(not(feature = "log-debug"))]
 #[macro_export]
 macro_rules! debug {
-    ($($args: expr),+) => {{}};
+    ($($tokens: tt)*) => {{
+        // No logging done, just putting this here to get Rust Analyzer to recognize to have
+        // consistent behavior even when the logging feature is not enabled.
+        let _ = ::sbor::rust::format!($($tokens)*);
+    }};
 }
 
 /// Logs a `TRACE` message.
@@ -97,15 +113,19 @@ macro_rules! debug {
 #[cfg(feature = "log-trace")]
 #[macro_export]
 macro_rules! trace {
-    ($($args: expr),+) => {{
-        $crate::runtime::Logger::trace(::sbor::rust::format!($($args),+));
+    ($($tokens: tt)*) => {{
+        $crate::runtime::Logger::trace(::sbor::rust::format!($($tokens)*));
     }};
 }
 
 #[cfg(not(feature = "log-trace"))]
 #[macro_export]
 macro_rules! trace {
-    ($($args: expr),+) => {{}};
+    ($($tokens: tt)*) => {{
+        // No logging done, just putting this here to get Rust Analyzer to recognize to have
+        // consistent behavior even when the logging feature is not enabled.
+        let _ = ::sbor::rust::format!($($tokens)*);
+    }};
 }
 
 #[macro_export]
