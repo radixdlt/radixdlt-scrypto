@@ -22,7 +22,7 @@ pub mod schema {
 }
 
 // Re-export radix engine common.
-pub extern crate radix_engine_common;
+// TODO: Remove Me
 pub use radix_engine_common::*;
 
 // Re-export SBOR derive.
