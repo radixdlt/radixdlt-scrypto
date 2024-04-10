@@ -1,7 +1,7 @@
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
-use super::kernel_callback_api::RefCheckSubstateLoadingEvent;
+use super::kernel_callback_api::RefCheckEvent;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -150,10 +150,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                     },
                     substate_ref.len(),
                 );
-                M::on_ref_check_substate_loading(
-                    kernel,
-                    RefCheckSubstateLoadingEvent::IOAccess(&io_access),
-                )?;
+                M::on_ref_check_substate_loading(kernel, RefCheckEvent::IOAccess(&io_access))?;
             }
         }
 

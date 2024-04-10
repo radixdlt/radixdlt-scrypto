@@ -33,7 +33,7 @@ pub enum ProtocolUpdateEntry {
     TransactionProcessorBlobLimits,
 
     /// Add deferred reference check costs.
-    DeferredRefCheckCosts,
+    RefCheckCosts,
 }
 
 impl ProtocolUpdateEntry {
@@ -67,9 +67,7 @@ impl ProtocolUpdateEntry {
             ProtocolUpdateEntry::TransactionProcessorBlobLimits => {
                 generate_transaction_processor_blob_limits_state_updates(db)
             }
-            ProtocolUpdateEntry::DeferredRefCheckCosts => {
-                generate_deferred_ref_check_costs_state_updates()
-            }
+            ProtocolUpdateEntry::RefCheckCosts => generate_deferred_ref_check_costs_state_updates(),
         }
     }
 }
@@ -100,6 +98,7 @@ impl ProtocolUpdate {
                 ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges,
                 ProtocolUpdateEntry::ProtocolParamsToState,
                 ProtocolUpdateEntry::TransactionProcessorBlobLimits,
+                ProtocolUpdateEntry::RefCheckCosts,
             ],
         }
         .iter()

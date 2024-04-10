@@ -10,7 +10,7 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
-use crate::kernel::kernel_callback_api::RefCheckSubstateLoadingEvent;
+use crate::kernel::kernel_callback_api::RefCheckEvent;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -166,21 +166,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
     fn on_ref_check_substate_loading<Y>(
         api: &mut Y,
-        event: RefCheckSubstateLoadingEvent,
+        event: RefCheckEvent,
     ) -> Result<(), BootloadingError>
     where
         Y: KernelApi<Self>,
     {
         if let Some(costing) = api.kernel_get_system_state().system.modules.costing_mut() {
-            match event {
-                RefCheckSubstateLoadingEvent::IOAccess(io) => {
-                    costing
-                        .apply_deferred_execution_cost(ExecutionCostingEntry::ReadSubstate {
-                            event: &ReadSubstateEvent::IOAccess(io),
-                        })
-                        .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
-                }
-            }
+            costing
+                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
+                .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
         }
 
         Ok(())

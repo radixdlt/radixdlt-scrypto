@@ -2,7 +2,7 @@ use super::FeeTable;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
-    OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    OpenSubstateEvent, ReadSubstateEvent, RefCheckEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::actor::Actor;
@@ -18,6 +18,9 @@ pub enum ExecutionCostingEntry<'a> {
     },
     ValidateTxPayload {
         size: usize,
+    },
+    RefCheck {
+        event: &'a RefCheckEvent<'a>,
     },
 
     /* run code */
@@ -144,6 +147,7 @@ impl<'a> ExecutionCostingEntry<'a> {
                 num_signatures: num_of_signatures,
             } => ft.verify_tx_signatures_cost(*num_of_signatures),
             ExecutionCostingEntry::ValidateTxPayload { size } => ft.validate_tx_payload_cost(*size),
+            ExecutionCostingEntry::RefCheck { event } => ft.ref_check(event),
             ExecutionCostingEntry::RunNativeCode {
                 package_address,
                 export_name,

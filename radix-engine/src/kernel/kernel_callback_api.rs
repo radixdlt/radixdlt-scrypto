@@ -36,7 +36,7 @@ pub enum DropNodeEvent<'a> {
 }
 
 #[derive(Debug)]
-pub enum RefCheckSubstateLoadingEvent<'a> {
+pub enum RefCheckEvent<'a> {
     IOAccess(&'a IOAccess),
 }
 
@@ -149,7 +149,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_ref_check_substate_loading<Y>(
         api: &mut Y,
-        event: RefCheckSubstateLoadingEvent,
+        event: RefCheckEvent,
     ) -> Result<(), BootloadingError>
     where
         Y: KernelApi<Self>;
