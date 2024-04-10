@@ -30,7 +30,7 @@ pub use radix_engine::object_modules::royalty::*;
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
-use radix_engine::vm::VmBoot;
+use radix_engine::vm::VmVersion;
 pub use radix_engine_interface::object_modules::royalty::*;
 use radix_transactions::prelude::IntentHash;
 
@@ -390,7 +390,7 @@ pub enum TypedSubstateValue {
 
 #[derive(Debug)]
 pub enum BootLoaderSubstateValue {
-    Vm(VmBoot),
+    Vm(VmVersion),
 }
 
 #[derive(Debug)]

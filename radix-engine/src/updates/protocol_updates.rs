@@ -31,6 +31,9 @@ pub enum ProtocolUpdateEntry {
 
     /// Add blob limits to transaction processor.
     TransactionProcessorBlobLimits,
+
+    /// Add deferred reference check costs.
+    DeferredRefCheckCosts,
 }
 
 impl ProtocolUpdateEntry {
@@ -63,6 +66,9 @@ impl ProtocolUpdateEntry {
             }
             ProtocolUpdateEntry::TransactionProcessorBlobLimits => {
                 generate_transaction_processor_blob_limits_state_updates(db)
+            }
+            ProtocolUpdateEntry::DeferredRefCheckCosts => {
+                generate_deferred_ref_check_costs_state_updates()
             }
         }
     }

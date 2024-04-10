@@ -47,6 +47,9 @@ use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+// TODO: use this for missing costing for system api
+pub const BOOT_LOADER_SYSTEM_VERSION_FIELD_KEY: FieldKey = 1u8;
+
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,

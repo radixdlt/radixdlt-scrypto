@@ -235,19 +235,13 @@ where
                     BOOT_LOADER_PARTITION,
                 );
                 let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(
-                    BOOT_LOADER_VM_SUBSTATE_FIELD_KEY,
+                    BOOT_LOADER_VM_VERSION_FIELD_KEY,
                 ));
 
-                let vm_boot = database
+                let vm_version = database
                     .get_substate(&db_partition_key, &db_sort_key)
                     .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                    .unwrap_or(VmBoot::V1 {
-                        scrypto_version: 0u64,
-                    });
-
-                let vm_version = match vm_boot {
-                    VmBoot::V1 { scrypto_version } => VmVersion { scrypto_version },
-                };
+                    .unwrap_or_default();
 
                 System {
                     blueprint_cache: NonIterMap::new(),

@@ -4,6 +4,7 @@ use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
 use crate::internal_prelude::*;
+use crate::kernel::kernel::{KernelVersion, BOOT_LOADER_KERNEL_VERSION_FIELD_KEY};
 use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::{SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY};
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
@@ -37,7 +38,7 @@ macro_rules! scrypto_encode {
 }
 
 pub fn generate_bls128_and_keccak256_state_updates() -> StateUpdates {
-    let substate = scrypto_encode(&VmBoot::V1 {
+    let substate = scrypto_encode(&VmVersion::V1 {
         scrypto_version: ScryptoVmVersion::crypto_utils_added().into(),
     })
     .unwrap();
@@ -48,7 +49,26 @@ pub fn generate_bls128_and_keccak256_state_updates() -> StateUpdates {
                 by_partition: indexmap! {
                     BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(substate)
+                            SubstateKey::Field(BOOT_LOADER_VM_VERSION_FIELD_KEY) => DatabaseUpdate::Set(substate)
+                        }
+                    },
+                }
+            }
+        ),
+    }
+}
+
+/// Generates the state updates required for introducing deferred reference check costs
+pub fn generate_deferred_ref_check_costs_state_updates() -> StateUpdates {
+    let substate = scrypto_encode(&KernelVersion::V1).unwrap();
+
+    StateUpdates {
+        by_node: indexmap!(
+            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Field(BOOT_LOADER_KERNEL_VERSION_FIELD_KEY) => DatabaseUpdate::Set(substate)
                         }
                     },
                 }

@@ -30,6 +30,25 @@ use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_transactions::prelude::PreAllocatedAddress;
 use sbor::rust::mem;
 
+// TODO: use this for missing costing for system api
+pub const BOOT_LOADER_KERNEL_VERSION_FIELD_KEY: FieldKey = 0u8;
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor, Default)]
+pub enum KernelVersion {
+    #[default]
+    V0,
+    V1,
+}
+
+impl KernelVersion {
+    pub fn is_ref_check_costing_enabled(&self) -> bool {
+        match self {
+            KernelVersion::V0 => false,
+            KernelVersion::V1 => true,
+        }
+    }
+}
+
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> {
     pub id_allocator: &'g mut IdAllocator,
