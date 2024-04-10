@@ -166,24 +166,30 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         };
         let callback = C::init(store, init_input.callback_init)?;
 
-        let mut enabled_modules = EnabledModules::empty();
-        enabled_modules |= EnabledModules::TRANSACTION_RUNTIME;
+        let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
 
-        if !init_input.disable_auth {
-            enabled_modules |= EnabledModules::AUTH;
-        }
-        if !init_input.disable_costing {
-            enabled_modules |= EnabledModules::COSTING;
-        }
-        if !init_input.disable_limits{
+        if !executable.is_system() {
             enabled_modules |= EnabledModules::LIMITS;
-        }
+            enabled_modules |= EnabledModules::COSTING;
+        };
+
         if init_input.enable_kernel_trace {
             enabled_modules |= EnabledModules::KERNEL_TRACE;
         }
         if init_input.execution_trace.is_some() {
             enabled_modules |= EnabledModules::EXECUTION_TRACE;
         }
+
+        if init_input.disable_auth {
+            enabled_modules &= !EnabledModules::AUTH;
+        }
+        if init_input.disable_costing {
+            enabled_modules &= !EnabledModules::COSTING;
+        }
+        if init_input.disable_limits {
+            enabled_modules &= !EnabledModules::LIMITS;
+        }
+
 
         let mut modules = SystemModuleMixer::new(
 

@@ -60,7 +60,6 @@ impl KernelCallbackObject for TestCallbackObject {
     fn init<S: BootStore>(
         _store: &S,
         _executable: &Executable,
-        _execution_config: &ExecutionConfig,
         _init_input: Self::InitInput,
     ) -> Result<Self, BootloadingError> {
         Ok(Self)

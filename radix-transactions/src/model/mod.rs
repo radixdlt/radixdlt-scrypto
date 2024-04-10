@@ -225,7 +225,8 @@ Enum<3u8>(
                         free_credit_in_xrd: dec!(0),
                         abort_when_loan_repaid: false,
                     }
-                }
+                },
+                system: false,
             }
         );
 
