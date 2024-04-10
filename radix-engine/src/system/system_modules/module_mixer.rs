@@ -37,10 +37,10 @@ bitflags! {
         const LIMITS = 0x01 << 1;
         const COSTING = 0x01 << 2;
         const AUTH = 0x01 << 3;
-        const TRANSACTION_RUNTIME = 0x01 << 4;
+        const TRANSACTION_RUNTIME = 0x01 << 5;
 
         // Execution trace, for preview only
-        const EXECUTION_TRACE = 0x01 << 5;
+        const EXECUTION_TRACE = 0x01 << 6;
     }
 }
 

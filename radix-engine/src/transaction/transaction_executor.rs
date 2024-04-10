@@ -69,7 +69,6 @@ impl Default for CostingParameters {
             execution_cost_unit_loan: EXECUTION_COST_UNIT_LOAN,
             finalization_cost_unit_price: FINALIZATION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             finalization_cost_unit_limit: FINALIZATION_COST_UNIT_LIMIT,
-
             usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
             state_storage_price: STATE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
             archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
