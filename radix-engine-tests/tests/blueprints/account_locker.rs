@@ -1,6 +1,5 @@
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
-use radix_engine::system::system_modules::*;
 use radix_engine::system::system_type_checker::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;

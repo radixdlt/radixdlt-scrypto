@@ -21,9 +21,12 @@ use crate::system::actor::MethodActor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
+use crate::system::system_modules::auth::AuthModule;
+use crate::system::system_modules::costing::{CostingModule, FeeTable, SystemLoanFeeReserve};
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
+use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
+use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
@@ -167,19 +170,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         };
         let callback = C::init(store, init_input.callback_init)?;
 
-        let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
+        let mut enabled_modules = {
+            let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
+            if !executable.is_system() {
+                enabled_modules |= EnabledModules::LIMITS;
+                enabled_modules |= EnabledModules::COSTING;
+            };
 
-        if !executable.is_system() {
-            enabled_modules |= EnabledModules::LIMITS;
-            enabled_modules |= EnabledModules::COSTING;
+            if init_input.enable_kernel_trace {
+                enabled_modules |= EnabledModules::KERNEL_TRACE;
+            }
+            if init_input.execution_trace.is_some() {
+                enabled_modules |= EnabledModules::EXECUTION_TRACE;
+            }
+            enabled_modules
         };
-
-        if init_input.enable_kernel_trace {
-            enabled_modules |= EnabledModules::KERNEL_TRACE;
-        }
-        if init_input.execution_trace.is_some() {
-            enabled_modules |= EnabledModules::EXECUTION_TRACE;
-        }
 
         if let Some(system_overrides) = init_input.system_overrides {
             if let Some(costing_override) = system_overrides.costing_parameters {
@@ -201,19 +206,50 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             }
         }
 
+        let txn_runtime_module = TransactionRuntimeModule::new(
+            init_input.network_definition.clone(),
+            executable.intent_hash().to_hash(),
+        );
+
+        let auth_module = AuthModule::new(executable.auth_zone_params().clone());
+        let limits_module = LimitsModule::new(TransactionLimitsConfig {
+            max_call_depth: limit_parameters.max_call_depth,
+            max_heap_substate_total_bytes: limit_parameters.max_heap_substate_total_bytes,
+            max_track_substate_total_bytes: limit_parameters.max_track_substate_total_bytes,
+            max_substate_key_size: limit_parameters.max_substate_key_size,
+            max_substate_value_size: limit_parameters.max_substate_value_size,
+            max_invoke_payload_size: limit_parameters.max_invoke_input_size,
+            max_number_of_logs: limit_parameters.max_number_of_logs,
+            max_number_of_events: limit_parameters.max_number_of_events,
+            max_event_size: limit_parameters.max_event_size,
+            max_log_size: limit_parameters.max_log_size,
+            max_panic_message_size: limit_parameters.max_panic_message_size,
+        });
+
+        let costing_module = CostingModule {
+            fee_reserve: SystemLoanFeeReserve::new(
+                &costing_parameters,
+                executable.costing_parameters(),
+            ),
+            fee_table: FeeTable::new(),
+            tx_payload_len: executable.payload_size(),
+            tx_num_of_signature_validations: executable.num_of_signature_validations(),
+            max_per_function_royalty_in_xrd,
+            cost_breakdown: if init_input.enable_cost_breakdown {
+                Some(Default::default())
+            } else {
+                None
+            },
+            on_apply_cost: Default::default(),
+        };
+
         let mut modules = SystemModuleMixer::new(
             enabled_modules,
             KernelTraceModule,
-            init_input.network_definition.clone(),
-            executable.intent_hash().to_hash(),
-            executable.auth_zone_params().clone(),
-            limit_parameters,
-            init_input.enable_cost_breakdown,
-            SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
-            max_per_function_royalty_in_xrd,
-            FeeTable::new(),
-            executable.payload_size(),
-            executable.num_of_signature_validations(),
+            txn_runtime_module,
+            auth_module,
+            limits_module,
+            costing_module,
             ExecutionTraceModule::new(
                 init_input
                     .execution_trace

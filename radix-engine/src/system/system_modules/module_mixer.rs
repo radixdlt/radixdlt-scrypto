@@ -17,19 +17,16 @@ use crate::system::system_callback::System;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
-use crate::system::system_modules::costing::FeeTable;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
-use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
+use crate::system::system_modules::limits::LimitsModule;
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
-use crate::transaction::LimitParameters;
 use bitflags::bitflags;
 use paste::paste;
 use radix_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_profiling_derive::trace_resources;
-use radix_transactions::model::AuthZoneParams;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -124,72 +121,21 @@ macro_rules! internal_call_dispatch {
 impl SystemModuleMixer {
     pub fn new(
         enabled_modules: EnabledModules,
-
-        // Kernel Trace Module
         kernel_trace: KernelTraceModule,
-
-        // Runtime Module
-        network_definition: NetworkDefinition,
-        tx_hash: Hash,
-
-        // Auth Module
-        auth_zone_params: AuthZoneParams,
-
-        // Limits Module
-        limit_parameters: LimitParameters,
-
-        // Costing Module
-        enable_cost_breakdown: bool,
-        fee_reserve: SystemLoanFeeReserve,
-        max_per_function_royalty_in_xrd: Decimal,
-        fee_table: FeeTable,
-        payload_len: usize,
-        num_of_signature_validations: usize,
-
-        // Execution Trace Module
+        transaction_runtime: TransactionRuntimeModule,
+        auth: AuthModule,
+        limits: LimitsModule,
+        costing: CostingModule,
         execution_trace: ExecutionTraceModule,
     ) -> Self {
         Self {
             enabled_modules,
             kernel_trace,
-            costing: CostingModule {
-                fee_reserve,
-                fee_table,
-                tx_payload_len: payload_len,
-                tx_num_of_signature_validations: num_of_signature_validations,
-                max_per_function_royalty_in_xrd,
-                cost_breakdown: if enable_cost_breakdown {
-                    Some(Default::default())
-                } else {
-                    None
-                },
-                on_apply_cost: Default::default(),
-            },
-            auth: AuthModule {
-                params: auth_zone_params.clone(),
-            },
-            limits: LimitsModule::new(TransactionLimitsConfig {
-                max_call_depth: limit_parameters.max_call_depth,
-                max_heap_substate_total_bytes: limit_parameters.max_heap_substate_total_bytes,
-                max_track_substate_total_bytes: limit_parameters.max_track_substate_total_bytes,
-                max_substate_key_size: limit_parameters.max_substate_key_size,
-                max_substate_value_size: limit_parameters.max_substate_value_size,
-                max_invoke_payload_size: limit_parameters.max_invoke_input_size,
-                max_number_of_logs: limit_parameters.max_number_of_logs,
-                max_number_of_events: limit_parameters.max_number_of_events,
-                max_event_size: limit_parameters.max_event_size,
-                max_log_size: limit_parameters.max_log_size,
-                max_panic_message_size: limit_parameters.max_panic_message_size,
-            }),
+            transaction_runtime,
+            auth,
+            costing,
+            limits,
             execution_trace,
-            transaction_runtime: TransactionRuntimeModule {
-                network_definition,
-                tx_hash,
-                next_id: 0,
-                logs: Vec::new(),
-                events: Vec::new(),
-                replacements: index_map_new(),
-            },
         }
     }
 

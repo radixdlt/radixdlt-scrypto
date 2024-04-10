@@ -10,6 +10,7 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::System;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::IOAccess;
+use crate::transaction::LimitParameters;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -51,10 +52,38 @@ pub struct LimitsModule {
     track_substate_total_bytes: usize,
 }
 
+impl Default for LimitsModule {
+    fn default() -> Self {
+        Self::from_params(LimitParameters::default())
+    }
+}
+
 impl LimitsModule {
     pub fn new(limits_config: TransactionLimitsConfig) -> Self {
         LimitsModule {
             config: limits_config,
+            heap_substate_total_bytes: 0,
+            track_substate_total_bytes: 0,
+        }
+    }
+
+    pub fn from_params(limit_parameters: LimitParameters) -> Self {
+        let config = TransactionLimitsConfig {
+            max_call_depth: limit_parameters.max_call_depth,
+            max_heap_substate_total_bytes: limit_parameters.max_heap_substate_total_bytes,
+            max_track_substate_total_bytes: limit_parameters.max_track_substate_total_bytes,
+            max_substate_key_size: limit_parameters.max_substate_key_size,
+            max_substate_value_size: limit_parameters.max_substate_value_size,
+            max_invoke_payload_size: limit_parameters.max_invoke_input_size,
+            max_number_of_logs: limit_parameters.max_number_of_logs,
+            max_number_of_events: limit_parameters.max_number_of_events,
+            max_event_size: limit_parameters.max_event_size,
+            max_log_size: limit_parameters.max_log_size,
+            max_panic_message_size: limit_parameters.max_panic_message_size,
+        };
+
+        LimitsModule {
+            config,
             heap_substate_total_bytes: 0,
             track_substate_total_bytes: 0,
         }
