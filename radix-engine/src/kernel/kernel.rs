@@ -1,7 +1,7 @@
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
-use super::kernel_callback_api::PrestartSubstateLoadingEvent;
+use super::kernel_callback_api::RefCheckSubstateLoadingEvent;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -82,10 +82,11 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
     pub fn check_references(
         kernel: &mut Kernel<M, S>,
         references: &IndexSet<Reference>,
-        enable_costing: bool,
+        kernel_version: KernelVersion,
     ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
+
         for reference in references.iter() {
             let node_id = &reference.0;
 
@@ -140,7 +141,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                 }
             }
 
-            if enable_costing {
+            if kernel_version.is_ref_check_costing_enabled() {
                 let io_access = IOAccess::ReadFromDb(
                     CanonicalSubstateKey {
                         node_id: *node_id,
@@ -149,9 +150,9 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                     },
                     substate_ref.len(),
                 );
-                M::on_prestart_substate_loading(
+                M::on_ref_check_substate_loading(
                     kernel,
-                    PrestartSubstateLoadingEvent::IOAccess(&io_access),
+                    RefCheckSubstateLoadingEvent::IOAccess(&io_access),
                 )?;
             }
         }
@@ -177,10 +178,22 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
             .boot()
             .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
 
+        // Read kernel version
+        let kernel_version = kernel
+            .substate_io
+            .store
+            .read_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
+                &SubstateKey::Field(BOOT_LOADER_KERNEL_VERSION_FIELD_KEY),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or_default();
+
         // Check reference
-        // FIXME: backward compatibility
-        let engine_references = Self::check_references(&mut kernel, manifest_references, false)
-            .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
+        let engine_references =
+            Self::check_references(&mut kernel, manifest_references, kernel_version)
+                .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
 
         // Add visibility
         for global_ref in engine_references.0 {

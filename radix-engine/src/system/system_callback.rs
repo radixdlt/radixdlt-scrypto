@@ -10,7 +10,7 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
-use crate::kernel::kernel_callback_api::PrestartSubstateLoadingEvent;
+use crate::kernel::kernel_callback_api::RefCheckSubstateLoadingEvent;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -164,16 +164,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         })
     }
 
-    fn on_prestart_substate_loading<Y>(
+    fn on_ref_check_substate_loading<Y>(
         api: &mut Y,
-        event: PrestartSubstateLoadingEvent,
+        event: RefCheckSubstateLoadingEvent,
     ) -> Result<(), BootloadingError>
     where
         Y: KernelApi<Self>,
     {
         if let Some(costing) = api.kernel_get_system_state().system.modules.costing_mut() {
             match event {
-                PrestartSubstateLoadingEvent::IOAccess(io) => {
+                RefCheckSubstateLoadingEvent::IOAccess(io) => {
                     costing
                         .apply_deferred_execution_cost(ExecutionCostingEntry::ReadSubstate {
                             event: &ReadSubstateEvent::IOAccess(io),

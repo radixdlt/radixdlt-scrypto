@@ -36,7 +36,7 @@ pub enum DropNodeEvent<'a> {
 }
 
 #[derive(Debug)]
-pub enum PrestartSubstateLoadingEvent<'a> {
+pub enum RefCheckSubstateLoadingEvent<'a> {
     IOAccess(&'a IOAccess),
 }
 
@@ -147,9 +147,9 @@ pub trait KernelCallbackObject: Sized {
         init_input: Self::InitInput,
     ) -> Result<Self, BootloadingError>;
 
-    fn on_prestart_substate_loading<Y>(
+    fn on_ref_check_substate_loading<Y>(
         api: &mut Y,
-        event: PrestartSubstateLoadingEvent,
+        event: RefCheckSubstateLoadingEvent,
     ) -> Result<(), BootloadingError>
     where
         Y: KernelApi<Self>;

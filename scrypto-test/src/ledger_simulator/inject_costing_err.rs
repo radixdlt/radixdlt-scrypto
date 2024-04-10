@@ -360,9 +360,9 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
         )
     }
 
-    fn on_prestart_substate_loading<Y>(
+    fn on_ref_check_substate_loading<Y>(
         _api: &mut Y,
-        _event: radix_engine::kernel::kernel_callback_api::PrestartSubstateLoadingEvent,
+        _event: radix_engine::kernel::kernel_callback_api::RefCheckSubstateLoadingEvent,
     ) -> Result<(), BootloadingError>
     where
         Y: KernelApi<Self>,

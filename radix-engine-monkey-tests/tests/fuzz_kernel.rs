@@ -257,6 +257,16 @@ impl KernelCallbackObject for TestCallbackObject {
     {
         Ok(())
     }
+
+    fn on_ref_check_substate_loading<Y>(
+        _api: &mut Y,
+        _event: scrypto_test::prelude::RefCheckSubstateLoadingEvent,
+    ) -> Result<(), BootloadingError>
+    where
+        Y: KernelApi<Self>,
+    {
+        Ok(())
+    }
 }
 
 struct KernelFuzzer {
