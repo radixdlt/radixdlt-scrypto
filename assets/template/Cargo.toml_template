@@ -7,13 +7,14 @@ resolver = "2"
 [dependencies]
 sbor = ${sbor}
 scrypto = ${scrypto}
+radix-engine-common = ${radix-engine-common}
+radix-engine-interface = ${radix-engine-interface}
 
 [dev-dependencies]
 transaction = ${transaction}
 radix-engine = ${radix-engine}
 scrypto-unit = ${scrypto-unit}
 scrypto-test = ${scrypto-test}
-radix-engine-interface = ${radix-engine-interface}
 ${package_name} = { path = ".", features = ["test"] }
 
 [profile.release]
