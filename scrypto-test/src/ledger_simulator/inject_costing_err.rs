@@ -359,6 +359,16 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
             &mut api,
         )
     }
+
+    fn on_prestart_substate_loading<Y>(
+        _api: &mut Y,
+        _event: radix_engine::kernel::kernel_callback_api::PrestartSubstateLoadingEvent,
+    ) -> Result<(), BootloadingError>
+    where
+        Y: KernelApi<Self>,
+    {
+        Ok(())
+    }
 }
 
 pub struct WrappedKernelApi<'a, M: KernelCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> {

@@ -1,6 +1,7 @@
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
+use super::kernel_callback_api::PrestartSubstateLoadingEvent;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -21,7 +22,7 @@ use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
-use crate::track::BootStore;
+use crate::track::{BootStore, CanonicalSubstateKey};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
@@ -60,8 +61,9 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Bo
 
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
     pub fn check_references(
-        &mut self,
+        kernel: &mut Kernel<M, S>,
         references: &IndexSet<Reference>,
+        enable_costing: bool,
     ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
@@ -79,7 +81,8 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                 continue;
             }
 
-            let substate_ref = self
+            let substate_ref = kernel
+                .substate_io
                 .store
                 .read_substate(
                     node_id,
@@ -87,6 +90,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                     &TypeInfoField::TypeInfo.into(),
                 )
                 .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             match &type_substate {
                 TypeInfoSubstate::Object(
@@ -116,6 +120,21 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                     ));
                 }
             }
+
+            if enable_costing {
+                let io_access = IOAccess::ReadFromDb(
+                    CanonicalSubstateKey {
+                        node_id: *node_id,
+                        partition_number: TYPE_INFO_FIELD_PARTITION,
+                        substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
+                    },
+                    substate_ref.len(),
+                );
+                M::on_prestart_substate_loading(
+                    kernel,
+                    PrestartSubstateLoadingEvent::IOAccess(&io_access),
+                )?;
+            }
         }
 
         Ok((global_addresses, direct_accesses))
@@ -134,14 +153,14 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
             v.borrow_mut();
         });
 
-        // Check reference
-        let engine_references = self
-            .check_references(manifest_references)
-            .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
-
         // Boot kernel
         let mut kernel = self
             .boot()
+            .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
+
+        // Check reference
+        // FIXME: backward compatibility
+        let engine_references = Self::check_references(&mut kernel, manifest_references, false)
             .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
 
         // Add visibility
