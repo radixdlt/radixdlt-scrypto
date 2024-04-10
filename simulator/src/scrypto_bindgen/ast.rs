@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use proc_macro2::*;
 use quote::*;
 use radix_engine_interface::prelude::*;

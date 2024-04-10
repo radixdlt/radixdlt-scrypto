@@ -1,10 +1,4 @@
-use radix_engine::errors::ApplicationError;
-use radix_engine::errors::RuntimeError;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_queries::typed_substate_layout::VaultError;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn test_lock_fee_and_then_withdraw_failure() {

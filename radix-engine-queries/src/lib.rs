@@ -8,3 +8,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 pub mod query;
 pub mod typed_native_events;
 pub mod typed_substate_layout;
+
+pub(crate) mod internal_prelude {
+    pub use radix_engine_common::prelude::*;
+}

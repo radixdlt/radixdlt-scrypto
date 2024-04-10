@@ -1,14 +1,4 @@
-use radix_engine::blueprints::access_controller::AccessControllerError;
-use radix_engine::blueprints::resource::FungibleResourceManagerError;
-use radix_engine::errors::ApplicationError;
-use radix_engine::errors::RuntimeError;
-use radix_engine::errors::SystemModuleError;
-use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::access_controller::*;
-use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 pub fn creating_an_access_controller_succeeds() {

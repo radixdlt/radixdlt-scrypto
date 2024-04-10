@@ -9,8 +9,8 @@ use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_engine_tests::prelude::*;
 use transaction::model::TestTransaction;
-use transaction::prelude::*;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.

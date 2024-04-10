@@ -1,22 +1,8 @@
-use radix_engine::errors::RejectionReason;
-use radix_engine::transaction::CostingParameters;
-use radix_engine::transaction::ExecutionConfig;
-use radix_engine::transaction::TransactionFeeDetails;
-use radix_engine::transaction::TransactionFeeSummary;
-use radix_engine::transaction::TransactionReceipt;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_tests::common::*;
-use scrypto::api::node_modules::ModuleConfig;
-use scrypto::prelude::metadata;
-use scrypto::prelude::metadata_init;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 #[test]
 #[ignore = "Run this test to update expected costs"]
 fn update_expected_costs() {
@@ -167,14 +153,13 @@ pub fn write_cost_breakdown(
 ) {
 }
 
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 pub fn write_cost_breakdown(
     fee_summary: &TransactionFeeSummary,
     fee_details: &TransactionFeeDetails,
     file: &str,
 ) {
-    use std::fs::File;
-    use std::io::Write;
+    use radix_engine_tests::prelude::*;
 
     fn decimal_to_float(d: Decimal) -> f64 {
         f64::from_str(d.to_string().as_str()).unwrap()
@@ -347,7 +332,7 @@ pub fn write_cost_breakdown(
     }
 
     let mut f = File::create(file).unwrap();
-    f.write_all(buffer.as_bytes()).unwrap();
+    std::io::Write::write_all(&mut f, buffer.as_bytes()).unwrap();
 }
 
 pub enum Mode {

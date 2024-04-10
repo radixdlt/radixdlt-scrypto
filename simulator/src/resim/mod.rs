@@ -53,6 +53,7 @@ pub const DEFAULT_SCRYPTO_DIR_UNDER_HOME: &'static str = ".scrypto";
 pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
+use crate::internal_prelude::*;
 use clap::{Parser, Subcommand};
 use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,

@@ -1,8 +1,4 @@
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto::prelude::{WORKTOP_BLUEPRINT, WORKTOP_DROP_IDENT};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn mis_typed_own_passed_to_worktop_drop_function() {

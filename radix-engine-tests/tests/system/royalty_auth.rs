@@ -1,8 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn package_owner_can_claim_royalty() {

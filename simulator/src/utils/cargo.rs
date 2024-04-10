@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::process::ExitStatus;
 
+use crate::internal_prelude::*;
 use cargo_toml::Manifest;
 use radix_engine::types::*;
 use radix_engine::utils::*;

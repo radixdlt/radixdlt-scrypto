@@ -1,21 +1,11 @@
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "std")]
 #[cfg(not(feature = "resource_tracker"))]
 mod multi_threaded_test {
-    use radix_engine::system::bootstrap::Bootstrapper;
-    use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
-    use radix_engine::transaction::{CostingParameters, ExecutionConfig};
-    use radix_engine::types::*;
-    use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-    use radix_engine_interface::dec;
-    use radix_engine_interface::rule;
-    use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-    use transaction::model::TestTransaction;
-    use transaction::prelude::*;
+    use radix_engine_tests::prelude::*;
+
     // using crossbeam for its scoped thread feature, which allows non-static lifetimes for data being
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
-    use crossbeam::thread;
-    use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
@@ -106,7 +96,7 @@ mod multi_threaded_test {
 
         // Spawning threads that will attempt to withdraw some XRD amount from account1 and deposit to
         // account2
-        thread::scope(|s| {
+        crossbeam::thread::scope(|s| {
             for _i in 0..20 {
                 // Note - we run the same transaction on all threads, but don't commit anything
                 s.spawn(|_| {

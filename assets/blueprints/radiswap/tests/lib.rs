@@ -1,4 +1,5 @@
 use radiswap::test_bindings::*;
+use radix_engine::blueprints::pool::v1::substates::two_resource_pool::*;
 use scrypto::*;
 use scrypto_test::prelude::*;
 
@@ -62,10 +63,10 @@ fn reading_and_asserting_against_radiswap_pool_state() -> Result<(), RuntimeErro
     let _ = radiswap.add_liquidity(bucket1, bucket2, &mut env)?;
     let radiswap_state = env.read_component_state::<RadiswapState, _>(radiswap)?;
 
-    let VersionedTwoResourcePoolState::V1(TwoResourcePoolSubstate {
-        vaults: [(_, vault1), (_, vault2)],
-        ..
-    }) = env.read_component_state(radiswap_state.pool_component)?;
+    let [(_, vault1), (_, vault2)] = env
+        .read_component_state::<VersionedTwoResourcePoolState, _>(radiswap_state.pool_component)?
+        .into_latest()
+        .vaults;
 
     // Assert
     let amount1 = vault1.amount(&mut env)?;

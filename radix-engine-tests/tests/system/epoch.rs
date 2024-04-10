@@ -1,5 +1,4 @@
-use radix_engine_common::types::Epoch;
-use scrypto_unit::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn setting_single_epoch_succeeds() {

@@ -1,4 +1,4 @@
-use radix_engine::types::*;
+use radix_engine_tests::prelude::*;
 
 // The test is ensuring the below compiles, to avoid regression of an issue where
 // Sbor works with generic parameters but ScryptoSbor doesn't

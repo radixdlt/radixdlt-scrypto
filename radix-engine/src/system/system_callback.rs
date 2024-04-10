@@ -5,6 +5,7 @@ use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};

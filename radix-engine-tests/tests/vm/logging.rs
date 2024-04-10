@@ -1,12 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::{
-    errors::{ApplicationError, RuntimeError},
-    transaction::TransactionReceipt,
-    types::*,
-};
-use radix_engine_interface::types::Level;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
     let mut test_runner = TestRunnerBuilder::new().build();

@@ -1,6 +1,7 @@
 //! This module converts the models from `schema.rs` to the `ast.rs` models which are eventually
 //! converted to a TokenStream.
 
+use crate::internal_prelude::*;
 use radix_engine_interface::prelude::*;
 
 use super::{ast, schema};

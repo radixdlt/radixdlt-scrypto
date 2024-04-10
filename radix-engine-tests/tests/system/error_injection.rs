@@ -1,8 +1,4 @@
-use radix_engine::vm::NoExtension;
-use radix_engine_interface::dec;
-use radix_engine_interface::prelude::{FromPublicKey, NonFungibleGlobalId};
-use scrypto_unit::{InjectSystemCostingError, TestRunnerBuilder};
-use transaction::builder::ManifestBuilder;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn lock_fee_from_faucet_error_injection() {

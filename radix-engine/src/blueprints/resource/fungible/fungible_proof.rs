@@ -1,5 +1,6 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::{ApplicationError, RuntimeError};
+use crate::internal_prelude::*;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};

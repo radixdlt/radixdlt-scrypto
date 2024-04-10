@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::types::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor)]

@@ -1,4 +1,5 @@
 use crate::errors::{ApplicationError, RuntimeError};
+use crate::internal_prelude::*;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;

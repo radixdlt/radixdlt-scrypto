@@ -1,6 +1,7 @@
 use super::costing::{ExecutionCostingEntry, FinalizationCostingEntry, StorageType};
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};

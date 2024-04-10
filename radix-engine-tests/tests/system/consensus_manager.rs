@@ -1,28 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::blueprints::consensus_manager::UnstakeData;
-use radix_engine::blueprints::consensus_manager::{
-    Validator, ValidatorEmissionAppliedEvent, ValidatorError,
-};
-use radix_engine::blueprints::resource::BucketError;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
-use radix_engine::system::bootstrap::*;
-use radix_engine::transaction::CostingParameters;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_queries::typed_substate_layout::{
-    ConsensusManagerError, ValidatorRewardAppliedEvent,
-};
-use rand::prelude::SliceRandom;
-use rand::Rng;
-use rand_chacha;
-use rand_chacha::rand_core::SeedableRng;
-use rand_chacha::ChaCha8Rng;
-use scrypto::api::node_modules::*;
-use scrypto_test::prelude::AuthError;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn genesis_epoch_has_correct_initial_validators() {
@@ -942,11 +918,11 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         next_epoch_validators,
         // Note - it's ordered by stake desc, so b is first
         vec![
-            Validator {
+            radix_engine::blueprints::consensus_manager::Validator {
                 key: b_key,
                 stake: b_new_stake,
             },
-            Validator {
+            radix_engine::blueprints::consensus_manager::Validator {
                 key: a_key,
                 stake: a_new_stake,
             },
@@ -1072,7 +1048,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         .collect::<Vec<_>>();
     assert_eq!(
         next_epoch_validators,
-        vec![Validator {
+        vec![radix_engine::blueprints::consensus_manager::Validator {
             key: validator_pub_key,
             stake: validator_new_stake,
         },]
@@ -1142,7 +1118,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         .collect::<Vec<_>>();
     assert_eq!(
         next_epoch_validators,
-        vec![Validator {
+        vec![radix_engine::blueprints::consensus_manager::Validator {
             key: validator_pub_key,
             stake: validator_stake
         },]

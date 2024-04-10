@@ -1,7 +1,4 @@
-use radix_engine_common::prelude::*;
-use radix_engine_store_interface::{interface::*, db_key_mapper::{SpreadPrefixKeyMapper, DatabaseKeyMapper}};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn test_stake_reconciliation() {
@@ -30,7 +27,8 @@ fn test_stake_reconciliation() {
     receipt.expect_commit_success();
 
     // Store current DB substate value hashes for comparision after staking execution
-    let mut pre_transaction_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>> = HashMap::new();
+    let mut pre_transaction_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>> =
+        HashMap::new();
     let db = test_runner.substate_db();
     let old_keys: Vec<DbPartitionKey> = db.list_partition_keys().collect();
     for key in old_keys {
@@ -213,14 +211,16 @@ fn test_stake_reconciliation() {
     for (full_key, (expected_old_value, _)) in expected_updated_substates.iter() {
         let database_value = &pre_transaction_substates[full_key];
         let address = AddressBech32Encoder::for_simulator()
-            .encode(&SpreadPrefixKeyMapper::from_db_partition_key(&full_key.0).0.0)
+            .encode(
+                &SpreadPrefixKeyMapper::from_db_partition_key(&full_key.0)
+                    .0
+                     .0,
+            )
             .unwrap();
         assert_eq!(
-            database_value,
-            expected_old_value,
+            database_value, expected_old_value,
             "The pre-transaction value of updated substate under {} is not expected: {:?}",
-            address,
-            full_key
+            address, full_key
         );
         // For printing:
         // let (db_partition_key, db_sort_key) = full_key;
@@ -250,7 +250,11 @@ fn test_stake_reconciliation() {
         for (sort_key, current_value) in partition_entries {
             let full_key = (key.clone(), sort_key.clone());
             let address = AddressBech32Encoder::for_simulator()
-                .encode(&SpreadPrefixKeyMapper::from_db_partition_key(&full_key.0).0.0)
+                .encode(
+                    &SpreadPrefixKeyMapper::from_db_partition_key(&full_key.0)
+                        .0
+                         .0,
+                )
                 .unwrap();
 
             if let Some(old_value) = pre_transaction_substates.get(&full_key) {
@@ -258,7 +262,8 @@ fn test_stake_reconciliation() {
                     same_substates_count += 1;
                 } else {
                     changed_substates_count += 1;
-                    let expected_updated_value = expected_updated_substates.get(&full_key).map(|x| &x.1);
+                    let expected_updated_value =
+                        expected_updated_substates.get(&full_key).map(|x| &x.1);
                     assert_eq!(
                         Some(&current_value),
                         expected_updated_value,

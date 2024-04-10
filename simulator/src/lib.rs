@@ -12,3 +12,7 @@ pub mod scrypto;
 pub mod scrypto_bindgen;
 /// Utility functions.
 pub mod utils;
+
+pub(crate) mod internal_prelude {
+    pub use radix_engine_common::prelude::*;
+}

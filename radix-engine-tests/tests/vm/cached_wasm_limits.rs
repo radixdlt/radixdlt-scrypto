@@ -1,6 +1,4 @@
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 /// Long running test which verifies that the Wasm cache is properly evicting entries
 /// Ignored for day-to-day unit testing as it takes a long while to execute

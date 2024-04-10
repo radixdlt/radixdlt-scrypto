@@ -1,16 +1,11 @@
-use radix_engine_tests::common::*;
-use paste::paste;
-use radix_engine::types::*;
-use radix_engine::vm::wasm::WasmModule;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 // Verify WASM sign-extensions, which were enabled by default to the wasm32 target
 // since rust 1.70.0
 // see: https://github.com/rust-lang/rust/issues/109807
 macro_rules! assert_sign_extensions {
     ($type:expr, $instruction:expr, $input:expr, $output:expr) => {
-        paste! {
+        paste::paste! {
             #[test]
             fn [<test_wasm_non_mvp_sign_extensions_ $type _ $instruction>]() {
                 // Arrange

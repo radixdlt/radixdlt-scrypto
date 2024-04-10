@@ -1,10 +1,15 @@
+use native_sdk::resource::*;
 use radix_engine::blueprints::pool::v1::errors::{
     multi_resource_pool::Error as MultiResourcePoolError,
     one_resource_pool::Error as OneResourcePoolError,
     two_resource_pool::Error as TwoResourcePoolError,
 };
+use radix_engine::errors::*;
+use radix_engine_common::prelude::*;
+use radix_engine_interface::prelude::*;
 use radix_engine_tests::pool_stubs::*;
-use scrypto_test::prelude::*;
+use scrypto_test::environment::*;
+use scrypto_test::sdk::*;
 
 macro_rules! atto {
     (
@@ -156,10 +161,10 @@ fn two_resource_pool_redemption_value_calculation_does_not_lose_precision_at_div
     let env = &mut TestEnvironment::new();
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
     let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
 
     let resource_address1 = bucket1.resource_address(env)?;
@@ -226,10 +231,10 @@ fn two_resource_pool_very_small_contributions_should_return_pool_units1() -> Res
     let env = &mut TestEnvironment::new();
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
     let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
 
     let resource_address1 = bucket1.resource_address(env)?;
@@ -266,10 +271,10 @@ fn two_resource_pool_calculations_loading_to_zero_should_error() -> Result<(), R
     let env = &mut TestEnvironment::new();
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(atto!(2), env)?;
     let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(atto!(150), env)?;
 
     let resource_address1 = bucket1.resource_address(env)?;
@@ -354,10 +359,10 @@ fn two_resource_pool_one_sided_liquidity_can_be_provided_when_one_of_the_reserve
     let env = &mut TestEnvironment::new();
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
     let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
 
     let resource_address1 = bucket1.resource_address(env)?;
@@ -403,10 +408,10 @@ fn two_resource_pool_one_sided_liquidity_can_be_provided_when_one_of_the_reserve
     let env = &mut TestEnvironment::new();
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
     let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
 
     let resource_address1 = bucket1.resource_address(env)?;
@@ -452,10 +457,10 @@ fn two_resource_pool_initial_contribution_should_not_return_zero_pool_units(
     let env = &mut TestEnvironment::new();
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
     let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
 
     let resource_address1 = bucket1.resource_address(env)?;
@@ -487,10 +492,10 @@ fn two_resource_pool_contributing_to_pool_with_concentrated_pool_units_should_er
     let env = &mut TestEnvironment::new();
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
     let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
 
     let resource_address1 = bucket1.resource_address(env)?;
@@ -540,10 +545,10 @@ fn two_resource_pool_contribution_errors_when_both_reserves_are_empty() -> Resul
     let env = &mut TestEnvironment::new();
 
     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
     let bucket2 = ResourceBuilder::new_fungible(OwnerRole::None)
-        .divisibility(DIVISIBILITY_MAXIMUM)
+        .divisibility(18)
         .mint_initial_supply(dec!(100_000_000_000), env)?;
 
     let resource_address1 = bucket1.resource_address(env)?;
@@ -642,7 +647,7 @@ fn two_resource_pool_errors_out_when_one_of_the_resources_is_calculated_out_to_b
 #[test]
 fn multi_resource_pool_accepts_very_large_contributions() -> Result<(), RuntimeError> {
     // Arrange
-    let divisibility = core::array::from_fn::<u8, 16, _>(|_| DIVISIBILITY_MAXIMUM);
+    let divisibility = core::array::from_fn::<u8, 16, _>(|_| 18);
     with_multi_resource_pool(divisibility, |env, buckets, mut pool| {
         // Act
         let (pool_units, _) = pool

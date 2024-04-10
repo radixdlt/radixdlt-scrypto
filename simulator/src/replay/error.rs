@@ -1,4 +1,4 @@
-use radix_engine_interface::prelude::ParseNetworkError;
+use crate::internal_prelude::*;
 
 #[derive(Debug)]
 pub enum Error {

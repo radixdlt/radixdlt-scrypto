@@ -336,6 +336,7 @@ name = "faucet"
 version = "1.1.1"
 dependencies = [
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -353,6 +354,7 @@ name = "flash_loan"
 version = "1.1.1"
 dependencies = [
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -375,6 +377,7 @@ version = "1.1.1"
 dependencies = [
  "native-sdk",
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -420,6 +423,7 @@ name = "global_n_owned"
 version = "1.1.1"
 dependencies = [
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -540,6 +544,7 @@ name = "kv_store"
 version = "0.1.0"
 dependencies = [
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -591,6 +596,7 @@ name = "max_transaction"
 version = "0.1.0"
 dependencies = [
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -618,6 +624,7 @@ version = "1.1.1"
 dependencies = [
  "native-sdk",
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-unit",
@@ -828,6 +835,7 @@ dependencies = [
  "native-sdk",
  "radiswap",
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-test",
@@ -945,6 +953,7 @@ dependencies = [
  "itertools",
  "paste",
  "radix-engine",
+ "radix-engine-common",
  "radix-engine-interface",
  "radix-engine-store-interface",
  "sbor",
@@ -1221,6 +1230,7 @@ name = "scrypto-unit"
 version = "1.1.1"
 dependencies = [
  "radix-engine",
+ "radix-engine-common",
  "radix-engine-interface",
  "radix-engine-queries",
  "radix-engine-store-interface",
@@ -1438,6 +1448,7 @@ name = "test_environment"
 version = "1.1.1"
 dependencies = [
  "radix-engine",
+ "radix-engine-common",
  "sbor",
  "scrypto",
  "scrypto-unit",

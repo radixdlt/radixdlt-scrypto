@@ -1,14 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::blueprints::resource::ResourceNativePackage;
-use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
-use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
-use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn global_address_access_from_frame_owned_object_should_not_succeed() {

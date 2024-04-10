@@ -1,24 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use paste::paste;
-use radix_engine::{
-    system::system_modules::costing::SystemLoanFeeReserve,
-    transaction::CostingParameters,
-    types::*,
-    utils::ExtractSchemaError,
-    vm::{
-        wasm::{
-            DefaultWasmEngine, ScryptoV1WasmValidator, WasmEngine, WasmInstance, WasmModule,
-            WasmRuntime,
-        },
-        wasm_runtime::NoOpWasmRuntime,
-    },
-};
-use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
-use radix_engine_queries::typed_substate_layout::{CodeHash, PackageDefinition};
-use radix_engine_tests::common::*;
-use sbor::rust::iter;
-use scrypto_unit::TestRunnerBuilder;
-use transaction::prelude::TransactionCostingParameters;
+use radix_engine_tests::prelude::*;
 use wabt::wat2wasm;
 
 fn bench_decode_sbor(c: &mut Criterion) {
@@ -98,7 +80,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     // Instrument
     let validator = ScryptoV1WasmValidator::new(0u64);
     let instrumented_code = validator
-        .validate(&code, iter::empty())
+        .validate(&code, core::iter::empty())
         .map_err(|e| ExtractSchemaError::InvalidWasm(e))
         .unwrap()
         .0;
@@ -146,7 +128,7 @@ macro_rules! bench_instantiate {
             // Instrument
             let validator = ScryptoV1WasmValidator::new(0u64);
             let instrumented_code = validator
-                .validate(code, iter::empty())
+                .validate(code, core::iter::empty())
                 .map_err(|e| ExtractSchemaError::InvalidWasm(e))
                 .unwrap()
                 .0;

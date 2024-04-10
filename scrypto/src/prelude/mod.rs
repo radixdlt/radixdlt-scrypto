@@ -41,6 +41,12 @@ pub use radix_engine_interface::{
     ScryptoEvent, ScryptoSbor,
 };
 
+//=====================
+// Radix Engine Common
+//=====================
+
+pub use radix_engine_common::prelude::*;
+
 //=======
 // SBOR
 //=======

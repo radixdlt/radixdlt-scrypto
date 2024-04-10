@@ -1,4 +1,3 @@
-use radix_engine_tests::common::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
@@ -21,11 +20,11 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
+use radix_engine_tests::common::*;
+use radix_engine_tests::prelude::*;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
-use scrypto_unit::*;
 use transaction::model::InstructionV1;
-use transaction::prelude::*;
 
 #[test]
 fn test_events_of_commit_failure() {

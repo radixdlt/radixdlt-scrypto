@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../../../sbor" }
 scrypto = { path = "../../../scrypto" }
+radix-engine-common = { path = "../../../radix-engine-common" }
 
 [dev-dependencies]
 transaction = { path = "../../../transaction" }

@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::prelude::*;
 use radix_engine::system::attached_modules::royalty::{

@@ -26,6 +26,9 @@ pub mod prelude {
 pub(crate) mod internal_prelude {
     pub use crate::prelude::*;
 
+    pub use radix_engine_common::crypto::*;
+    pub use radix_engine_common::prelude::*;
+
     pub use crate::define_raw_transaction_payload;
     pub use crate::errors::*;
     pub use crate::manifest::*;

@@ -1,4 +1,5 @@
 use super::Error;
+use crate::internal_prelude::*;
 use flate2::read::GzDecoder;
 use flume;
 use flume::Sender;

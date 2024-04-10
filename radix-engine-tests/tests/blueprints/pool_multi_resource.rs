@@ -4,6 +4,7 @@ use radix_engine::{
     transaction::{BalanceChange, TransactionReceipt},
     types::*,
 };
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;

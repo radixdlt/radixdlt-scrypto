@@ -5,6 +5,7 @@ edition = "2021"
 
 [dev-dependencies]
 scrypto = { path = "../scrypto", default-features = false}
+radix-engine-common = { path = "../radix-engine-common", default-features = false}
 sbor = { path = "../sbor", default-features = false }
 serde = { version = "1.0.144", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }

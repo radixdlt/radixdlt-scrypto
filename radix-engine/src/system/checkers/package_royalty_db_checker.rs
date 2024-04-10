@@ -1,5 +1,6 @@
 use super::*;
 use crate::blueprints::package::*;
+use crate::internal_prelude::*;
 
 use radix_engine_interface::prelude::*;
 

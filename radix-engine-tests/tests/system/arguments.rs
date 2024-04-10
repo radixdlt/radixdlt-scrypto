@@ -1,7 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {

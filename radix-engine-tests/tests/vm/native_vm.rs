@@ -1,25 +1,6 @@
 #![cfg(feature = "std")]
 
-use radix_engine::errors::*;
-use radix_engine::kernel::id_allocator::*;
-use radix_engine::kernel::kernel::*;
-use radix_engine::kernel::kernel_api::*;
-use radix_engine::system::bootstrap::*;
-use radix_engine::system::system::*;
-use radix_engine::system::system_callback::*;
-use radix_engine::system::system_modules::costing::*;
-use radix_engine::system::system_modules::*;
-use radix_engine::track::*;
-use radix_engine::transaction::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::*;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::test_utils::invocations::*;
-use radix_engine_interface::prelude::*;
-use radix_engine_store_interface::db_key_mapper::*;
-use radix_engine_stores::memory_db::*;
-use scrypto_unit::TestRunnerBuilder;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {

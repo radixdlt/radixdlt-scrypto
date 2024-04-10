@@ -1,10 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::errors::SystemError;
-use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine::{errors::RuntimeError, types::*};
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn test_add_direct_access_ref_to_stored_substate_external_vault() {

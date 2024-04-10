@@ -1,16 +1,5 @@
-use radix_engine_tests::common::*;
-use radix_engine::blueprints::package::*;
-use radix_engine::errors::*;
-use radix_engine::system::system_modules::auth::*;
-use radix_engine::types::*;
 use radix_engine::vm::wasm::PrepareError;
-use radix_engine::vm::wasm::*;
-use radix_engine_common::constants::MAX_NUMBER_OF_BLUEPRINT_FIELDS;
-use radix_engine_interface::*;
-use sbor::basic_well_known_types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
-
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn missing_memory_should_cause_error() {
@@ -476,7 +465,7 @@ fn well_known_types_in_schema_are_validated() {
         .schema
         .functions
         .functions
-        .get_mut("some_method".into())
+        .get_mut("some_method")
         .unwrap();
 
     // Invalid well known type

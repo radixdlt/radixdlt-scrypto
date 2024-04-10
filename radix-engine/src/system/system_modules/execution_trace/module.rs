@@ -1,5 +1,6 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};

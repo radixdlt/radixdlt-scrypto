@@ -1,18 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::blueprints::resource::{
-    FungibleResourceManagerError, NonFungibleResourceManagerError, ProofError, VaultError,
-};
-use radix_engine::errors::SystemError;
-use radix_engine::transaction::TransactionReceipt;
-use radix_engine::{
-    blueprints::resource::BucketError,
-    errors::{ApplicationError, CallFrameError, KernelError, RuntimeError},
-    kernel::call_frame::DropNodeError,
-    types::*,
-};
-use scrypto_unit::*;
-use transaction::prelude::*;
-use utils::ContextualDisplay;
+use radix_engine_tests::prelude::*;
 
 fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: bool) {
     // Arrange

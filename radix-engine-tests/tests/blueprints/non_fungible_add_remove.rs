@@ -1,8 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::errors::{RuntimeError, SystemError};
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn add_and_remove_of_non_fungible_should_succeed() {

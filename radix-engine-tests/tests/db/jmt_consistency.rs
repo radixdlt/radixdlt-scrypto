@@ -1,7 +1,4 @@
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction_scenarios::scenario::{NextAction, ScenarioCore};
-use transaction_scenarios::scenarios::get_builder_for_every_scenario;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn substate_store_matches_hash_tree_after_each_scenario() {

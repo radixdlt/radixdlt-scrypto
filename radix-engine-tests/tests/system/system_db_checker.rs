@@ -1,15 +1,4 @@
-use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::checkers::{
-    SystemDatabaseCheckError, SystemDatabaseChecker, SystemNodeCheckError,
-};
-use radix_engine::types::*;
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::*;
-use radix_engine_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
-use radix_engine_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, DbPartitionKey,
-};
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn system_database_checker_should_report_missing_owner_error_on_broken_db() {

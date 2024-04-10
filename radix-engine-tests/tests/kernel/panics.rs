@@ -1,17 +1,4 @@
-use radix_engine::errors::*;
-use radix_engine::kernel::call_frame::*;
-use radix_engine::kernel::kernel_api::*;
-use radix_engine::system::actor::*;
-#[cfg(not(feature = "alloc"))]
-use radix_engine::system::system::SystemService;
-use radix_engine::system::system_callback::*;
-use radix_engine::system::system_modules::execution_trace::*;
-use radix_engine::track::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::*;
-use radix_engine_common::types::*;
-use radix_engine_interface::prelude::*;
-use radix_engine_store_interface::db_key_mapper::*;
+use radix_engine_tests::prelude::*;
 
 #[cfg(feature = "std")]
 #[test]

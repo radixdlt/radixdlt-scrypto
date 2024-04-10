@@ -1,13 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::blueprints::transaction_processor::*;
-use radix_engine::errors::*;
-use radix_engine::transaction::*;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::*;
-use scrypto_test::prelude::*;
-use scrypto_unit::*;
-use transaction::validation::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {

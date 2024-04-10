@@ -1,4 +1,4 @@
-use radix_engine_interface::prelude::*;
+use radix_engine_tests::prelude::*;
 
 fn main() {
     const X: Decimal = dec!(11.12e3);

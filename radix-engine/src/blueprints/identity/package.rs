@@ -1,5 +1,6 @@
 use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::{ApplicationError, RuntimeError};
+use crate::internal_prelude::*;
 use crate::roles_template;
 use crate::types::*;
 use native_sdk::modules::metadata::Metadata;

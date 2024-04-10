@@ -1,4 +1,5 @@
 use crate::blueprints::consensus_manager::ActiveValidatorSet;
+use crate::internal_prelude::*;
 use crate::types::*;
 
 #[derive(Debug, Clone, ScryptoSbor, ScryptoEvent, PartialEq, Eq)]

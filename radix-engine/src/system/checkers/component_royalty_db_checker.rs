@@ -1,4 +1,5 @@
 use super::*;
+use crate::internal_prelude::*;
 use crate::system::attached_modules::royalty::*;
 
 use radix_engine_interface::prelude::*;

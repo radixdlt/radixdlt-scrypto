@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use radix_engine_interface::prelude::*;
 
 pub mod one_resource_pool {

@@ -1,8 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::types::*;
-use scrypto::resource::DIVISIBILITY_MAXIMUM;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn test_simple_deterministic_execution() {
@@ -41,8 +37,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().with_state_hashing().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+    let resource_address = test_runner.create_fungible_resource(100.into(), 18, account);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act

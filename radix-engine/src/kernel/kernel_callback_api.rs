@@ -1,5 +1,6 @@
 use super::call_frame::CallFrameMessage;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;

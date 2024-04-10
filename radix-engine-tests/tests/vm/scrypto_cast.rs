@@ -1,8 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn should_error_if_trying_to_cast_to_invalid_type() {

@@ -1,7 +1,6 @@
 use crate::resim::*;
 use clap::Parser;
 use colored::*;
-use radix_engine::types::*;
 use rand::Rng;
 
 /// Generate a key pair

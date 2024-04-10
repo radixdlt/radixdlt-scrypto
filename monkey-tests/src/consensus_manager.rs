@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::{SystemTestFuzzer, ValidatorMeta};
 use radix_engine_common::constants::{CONSENSUS_MANAGER, XRD};
 use radix_engine_common::prelude::ComponentAddress;
@@ -5,8 +6,6 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerCreateValidatorManifestInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
 };
 use radix_engine_interface::types::FromRepr;
-use transaction::builder::ManifestBuilder;
-use transaction::prelude::Secp256k1PrivateKey;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromRepr, Ord, PartialOrd, Eq, PartialEq)]

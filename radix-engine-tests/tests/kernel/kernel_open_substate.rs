@@ -1,24 +1,4 @@
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::BootLoader;
-use radix_engine::kernel::kernel_api::KernelSubstateApi;
-use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system_callback::{SystemConfig, SystemLockData};
-use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
-use radix_engine::system::system_modules::SystemModuleMixer;
-use radix_engine::track::Track;
-use radix_engine::transaction::ExecutionConfig;
-use radix_engine::types::*;
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
-use radix_engine_interface::api::LockFlags;
-use radix_engine_queries::typed_substate_layout::{
-    BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
-};
-use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {

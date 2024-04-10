@@ -1,14 +1,4 @@
-use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::BalanceChange;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::identity::{
-    IdentityCreateAdvancedInput, IdentitySecurifyToSingleBadgeInput, IDENTITY_BLUEPRINT,
-    IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
-};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn cannot_securify_in_advanced_mode() {

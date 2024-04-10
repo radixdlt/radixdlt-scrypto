@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::internal_prelude::*;
 use radix_engine_common::data::scrypto::model::*;
 use radix_engine_interface::data::manifest::{model::*, ManifestValue};
 use radix_engine_interface::math::Decimal;

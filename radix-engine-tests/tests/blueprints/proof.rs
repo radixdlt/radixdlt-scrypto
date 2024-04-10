@@ -1,11 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto::resource::DIVISIBILITY_MAXIMUM;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
@@ -48,8 +41,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+    let resource_address = test_runner.create_fungible_resource(100.into(), 18, account);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -224,8 +216,7 @@ fn can_create_proof_from_account_and_pass_on() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+    let resource_address = test_runner.create_fungible_resource(100.into(), 18, account);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
@@ -257,8 +248,7 @@ fn cant_move_restricted_proof_to_auth_zone() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let resource_address = test_runner.create_fungible_resource(100u32.into(), 18, account);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
@@ -296,8 +286,7 @@ fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let resource_address = test_runner.create_fungible_resource(100u32.into(), 18, account);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
@@ -335,8 +324,7 @@ fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let resource_address = test_runner.create_fungible_resource(100u32.into(), 18, account);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
@@ -402,8 +390,7 @@ fn can_move_locked_bucket() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let resource_address = test_runner.create_fungible_resource(100u32.into(), 18, account);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
 
     // Act
@@ -435,8 +422,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let resource_address = test_runner.create_fungible_resource(100u32.into(), 18, account);
     let package_address = test_runner.publish_package_simple(PackageLoader::get("proof"));
     let component_address = test_runner.new_component(
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],

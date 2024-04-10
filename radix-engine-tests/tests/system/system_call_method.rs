@@ -1,13 +1,4 @@
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::{CreateFrameError, PassMessageError};
-use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn call_method_with_owned_actor_should_fail() {

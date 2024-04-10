@@ -1,4 +1,5 @@
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::types::*;
 use native_sdk::modules::role_assignment::{
     AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,

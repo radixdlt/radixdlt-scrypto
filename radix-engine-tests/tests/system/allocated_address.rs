@@ -1,10 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::{
-    errors::{CannotGlobalizeError, KernelError, RuntimeError, SystemError},
-    types::*,
-};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn test_create_and_return() {

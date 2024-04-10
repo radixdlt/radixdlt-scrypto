@@ -1,6 +1,7 @@
 use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,

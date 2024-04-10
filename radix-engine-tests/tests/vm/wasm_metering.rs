@@ -1,11 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::{
-    errors::{RuntimeError, VmError},
-    types::*,
-    vm::wasm::WasmRuntimeError,
-};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn test_loop() {
@@ -130,7 +123,8 @@ fn test_grow_memory_within_limit() {
     let grow_value = MAX_MEMORY_SIZE_IN_PAGES - 1;
 
     // Act
-    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
+    let code =
+        wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -156,7 +150,8 @@ fn test_grow_memory_beyond_limit() {
     let grow_value = MAX_MEMORY_SIZE_IN_PAGES;
 
     // Act
-    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
+    let code =
+        wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),
@@ -188,7 +183,8 @@ fn test_grow_memory_by_more_than_65536() {
     let grow_value = 0x10000;
 
     // Act
-    let code = wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
+    let code =
+        wat2wasm(&include_local_wasm_str!("memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),

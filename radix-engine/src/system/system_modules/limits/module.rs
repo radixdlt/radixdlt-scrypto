@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent,

@@ -1,12 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::blueprints::resource::ProofError;
-use radix_engine::errors::{
-    ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
-};
-use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 fn create_payload_of_depth(n: usize) -> Vec<u8> {
     assert!(n >= 1);

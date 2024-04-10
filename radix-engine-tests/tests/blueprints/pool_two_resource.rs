@@ -4,6 +4,7 @@ use radix_engine::blueprints::pool::v1::events::two_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
+use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;

@@ -1,5 +1,6 @@
 use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
+use crate::internal_prelude::*;
 use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::api::actor_api::EventFlags;

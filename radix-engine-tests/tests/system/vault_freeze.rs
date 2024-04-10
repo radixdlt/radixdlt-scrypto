@@ -1,9 +1,4 @@
-use radix_engine::blueprints::resource::{NonFungibleResourceManagerError, VaultError};
-use radix_engine::errors::{ApplicationError, RuntimeError};
-use radix_engine::types::*;
-use scrypto::prelude::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn cannot_burn_frozen_burn_fungible_vault() {

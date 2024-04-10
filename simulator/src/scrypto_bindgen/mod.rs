@@ -9,9 +9,9 @@ use radix_engine::types::*;
 use radix_engine_store_interface::interface::SubstateDatabase;
 use std::io::Write;
 
-use crate::resim::*;
-
 use self::schema::*;
+use crate::internal_prelude::*;
+use crate::resim::*;
 
 /// Generates interfaces for Scrypto packages to ease the use of external packages.
 #[derive(Parser, Debug)]

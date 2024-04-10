@@ -1,10 +1,4 @@
-use radix_engine::blueprints::pool::v1::constants::*;
-use radix_engine::blueprints::pool::v1::errors::{
-    multi_resource_pool::Error as MultiResourcePoolError,
-    two_resource_pool::Error as TwoResourcePoolError,
-};
-use scrypto_test::prelude::*;
-use scrypto_unit::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn database_is_consistent_before_and_after_protocol_update() {

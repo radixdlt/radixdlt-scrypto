@@ -1,6 +1,7 @@
 pub mod consensus_manager;
 pub mod multi_pool;
 pub mod one_pool;
+pub mod prelude;
 pub mod resource;
 pub mod two_pool;
 pub mod validator;
@@ -8,6 +9,7 @@ pub mod validator;
 use crate::consensus_manager::ConsensusManagerFuzzAction;
 use crate::multi_pool::MultiPoolFuzzAction;
 use crate::one_pool::OnePoolFuzzAction;
+use crate::prelude::*;
 use crate::resource::{
     FungibleResourceFuzzGetBucketAction, NonFungibleResourceFuzzGetBucketAction,
     ResourceFuzzRandomAction, ResourceFuzzTransformBucketAction, ResourceFuzzUseBucketAction,
@@ -37,8 +39,6 @@ use rayon::iter::ParallelIterator;
 use scrypto::prelude::Zero;
 use scrypto_unit::InjectSystemCostingError;
 use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
-use transaction::builder::ManifestBuilder;
-use transaction::prelude::Secp256k1PrivateKey;
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,

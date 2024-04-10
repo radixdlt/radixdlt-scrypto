@@ -1,11 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::{metadata, metadata_init};
-use scrypto_unit::*;
-use transaction::model::InstructionV1;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack

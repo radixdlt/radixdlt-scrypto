@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../../../../sbor" }
 scrypto = { path = "../../../../scrypto" }
+radix-engine-common = { path = "../../../../radix-engine-common" }
 
 non_fungible = { path = "../non_fungible" }
 fake_bucket = { path = "../fake_bucket" }

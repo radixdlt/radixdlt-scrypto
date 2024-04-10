@@ -1,13 +1,4 @@
-use radix_engine::blueprints::resource::{NonFungibleResourceManagerError, VaultError};
-use radix_engine::errors::{ApplicationError, RejectionReason, RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::BalanceChange;
-use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn can_securify_virtual_account() {

@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::types::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
 use num_traits::CheckedAdd;

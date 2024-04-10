@@ -1,8 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::{transaction::BalanceChange, types::*};
-use radix_engine_interface::blueprints::resource::FromPublicKey;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn test_balance_changes_when_success() {

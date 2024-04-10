@@ -1,5 +1,6 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorBlueprint};
 use crate::errors::{ApplicationError, RuntimeError};
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;

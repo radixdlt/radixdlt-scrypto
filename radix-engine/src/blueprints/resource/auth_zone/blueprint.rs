@@ -1,5 +1,6 @@
 use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
+use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::system_callback::SystemLockData;

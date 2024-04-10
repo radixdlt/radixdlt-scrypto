@@ -2,6 +2,7 @@
 //! model based on the [`EventTypeIdentifier`] and the raw SBOR bytes of the event. This is used in
 //! the toolkit and consumed by the gateway for some of its internal operations.
 
+use crate::internal_prelude::*;
 use crate::typed_substate_layout::*;
 use radix_engine::blueprints::account;
 use radix_engine::blueprints::native_schema::*;
@@ -422,7 +423,7 @@ macro_rules! define_structure {
                 }
 
                 $(
-                    #[derive(radix_engine_interface::prelude::ScryptoSbor)]
+                    #[derive(radix_engine_common::prelude::ScryptoSbor)]
                     pub enum [< Typed $blueprint_ident BlueprintEventKey >] {
                         $(
                             $event_ty,
@@ -542,7 +543,7 @@ macro_rules! define_structure {
                                 ) => Ok(TypedNativeEvent::$package_ident(
                                     [< Typed $package_ident PackageEvent >]::$blueprint_ident(
                                         [< Typed $blueprint_ident BlueprintEvent >]::$event_ty(
-                                            radix_engine_interface::prelude::scrypto_decode(data)?
+                                            radix_engine_common::prelude::scrypto_decode(data)?
                                         )
                                     )
                                 )),

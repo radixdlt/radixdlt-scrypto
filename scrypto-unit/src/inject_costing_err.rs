@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{

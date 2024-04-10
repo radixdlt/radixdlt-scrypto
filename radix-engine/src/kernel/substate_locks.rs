@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::types::*;
 
 pub struct SubstateLockError;

@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../../../../sbor", default-features = false }
 scrypto = { path = "../../../../scrypto", default-features = false }
+radix-engine-common = { path = "../../../../radix-engine-common", default-features = false }
 
 [features]
 default = ["std"]

@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::types::*;

@@ -1,10 +1,4 @@
-use radix_engine::{
-    errors::{RuntimeError, SystemModuleError},
-    system::system_modules::limits::TransactionLimitsError,
-    types::*,
-};
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
     wat2wasm(

@@ -1,16 +1,7 @@
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::resource::{NativeFungibleVault, ResourceManager};
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::types::*;
-use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{AttachedModuleId, ClientApi, LockFlags, ACTOR_STATE_SELF};
-use radix_engine_interface::blueprints::package::PackageDefinition;
-use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use native_sdk::resource::ResourceManager;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn cannot_lock_fee_on_new_global_vault() {

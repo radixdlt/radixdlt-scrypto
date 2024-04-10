@@ -3,6 +3,7 @@
 //! parsing logic as well as the logic needed ot add these instructions to the original manifest
 //! builder that is being used.
 
+use crate::internal_prelude::*;
 use radix_engine::types::*;
 use radix_engine_interface::math::ParseDecimalError;
 

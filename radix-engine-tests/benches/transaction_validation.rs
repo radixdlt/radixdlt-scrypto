@@ -3,8 +3,7 @@ use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use radix_engine_common::crypto::{recover_secp256k1, verify_secp256k1};
-use transaction::prelude::*;
-use transaction::validation::*;
+use radix_engine_tests::prelude::*;
 
 fn bench_secp256k1_validation(c: &mut Criterion) {
     let message_hash = hash("This is a long message".repeat(100));

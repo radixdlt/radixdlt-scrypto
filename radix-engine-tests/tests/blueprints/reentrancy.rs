@@ -1,9 +1,4 @@
-use radix_engine_tests::common::*;
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::types::*;
-use scrypto_unit::*;
-use transaction::prelude::*;
+use radix_engine_tests::prelude::*;
 
 #[test]
 fn mut_reentrancy_should_not_be_possible() {
