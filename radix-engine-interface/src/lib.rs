@@ -26,7 +26,7 @@ pub mod schema {
 pub use radix_engine_common::*;
 
 // Re-export SBOR derive.
-pub extern crate sbor;
+// TODO: Remove Me
 pub use sbor::{Categorize, Decode, Encode, Sbor};
 
 // This is to make derives work within this crate.

@@ -1,5 +1,4 @@
 use crate::data::scrypto::model::*;
-use crate::*;
 use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::*;
