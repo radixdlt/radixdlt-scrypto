@@ -1,5 +1,8 @@
+use radix_engine::updates::ProtocolVersion;
+
 use crate::internal_prelude::*;
 
+#[allow(deprecated)]
 pub struct TransferXrdConfig {
     pub from_account: VirtualAccount,
     pub to_account_1: VirtualAccount,
@@ -21,12 +24,15 @@ pub enum TransferXrdScenarioCreator {}
 impl ScenarioCreator for TransferXrdScenarioCreator {
     type Config = TransferXrdConfig;
     type State = ();
+    type Instance = Scenario<Self::Config, Self::State>;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
+    #[allow(deprecated)]
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "transfer_xrd",
         };

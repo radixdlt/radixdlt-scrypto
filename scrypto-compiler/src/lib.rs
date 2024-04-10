@@ -157,7 +157,7 @@ impl Profile {
 pub struct ParseProfileError;
 impl fmt::Display for ParseProfileError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("{}", self))
+        f.write_fmt(format_args!("{:?}", self))
     }
 }
 impl Error for ParseProfileError {}

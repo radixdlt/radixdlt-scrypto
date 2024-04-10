@@ -66,11 +66,51 @@ impl ProtocolUpdateEntry {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProtocolUpdate {
-    Anemone,
+macro_rules! count {
+    (
+        $ident: ident, $($other_idents: ident),* $(,)?
+    ) => {
+        1 + count!( $($other_idents),* )
+    };
+    (
+        $ident: ident $(,)?
+    ) => {
+        1
+    }
+}
 
-    Bottlenose,
+macro_rules! enum_const_array {
+    (
+        $(#[$meta:meta])*
+        $vis: vis enum $ident: ident {
+            $(
+                $variant_ident: ident
+            ),* $(,)?
+        }
+    ) => {
+        $(#[$meta])*
+        $vis enum $ident {
+            $(
+                $variant_ident
+            ),*
+        }
+
+        impl $ident {
+            pub const VARIANTS: [Self; count!( $($variant_ident),* )] = [
+                $(
+                    Self::$variant_ident
+                ),*
+            ];
+        }
+    };
+}
+
+enum_const_array! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub enum ProtocolUpdate {
+        Anemone,
+        Bottlenose,
+    }
 }
 
 impl ProtocolUpdate {
@@ -150,5 +190,17 @@ impl ProtocolUpdates {
             results.push(protocol_update.generate_state_updates(db, network));
         }
         results
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ProtocolVersion {
+    Genesis,
+    ProtocolUpdate(ProtocolUpdate),
+}
+
+impl ProtocolVersion {
+    pub fn all_iterator() -> impl Iterator<Item = Self> {
+        core::iter::once(Self::Genesis).chain(ProtocolUpdate::VARIANTS.map(Self::ProtocolUpdate))
     }
 }
