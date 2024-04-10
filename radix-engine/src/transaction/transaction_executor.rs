@@ -176,7 +176,7 @@ pub struct ExecutionConfig {
     pub execution_trace: Option<usize>,
 
     pub network_definition: NetworkDefinition,
-    pub overrides: SystemOverrides,
+    pub system_overrides: Option<SystemOverrides>,
 }
 
 impl ExecutionConfig {
@@ -188,29 +188,29 @@ impl ExecutionConfig {
             enable_kernel_trace: false,
             enable_cost_breakdown: false,
             execution_trace: None,
-            overrides: SystemOverrides::default(),
+            system_overrides: None,
         }
     }
 
     pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            overrides: SystemOverrides {
+            system_overrides: Some(SystemOverrides {
                 disable_costing: true,
                 disable_limits: true,
                 disable_auth: true,
                 ..Default::default()
-            },
+            }),
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_system_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            overrides: SystemOverrides {
+            system_overrides: Some(SystemOverrides {
                 disable_costing: true,
                 disable_limits: true,
                 ..Default::default()
-            },
+            }),
             ..Self::default(network_definition)
         }
     }
@@ -239,10 +239,10 @@ impl ExecutionConfig {
 
     pub fn for_preview_no_auth(network_definition: NetworkDefinition) -> Self {
         Self {
-            overrides: SystemOverrides {
+            system_overrides: Some(SystemOverrides {
                 disable_auth: true,
                 ..Default::default()
-            },
+            }),
             enable_cost_breakdown: true,
             execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
             ..Self::default(network_definition)
@@ -1302,11 +1302,7 @@ pub fn execute_transaction_with_configuration<
             execution_trace: execution_config.execution_trace,
 
             network_definition: execution_config.network_definition.clone(),
-            disable_auth: execution_config.overrides.disable_auth,
-            disable_limits: execution_config.overrides.disable_limits,
-            disable_costing: execution_config.overrides.disable_costing,
-            costing_parameters: execution_config.overrides.costing_parameters,
-            limit_parameters: execution_config.overrides.limit_parameters,
+            system_overrides: execution_config.system_overrides.clone(),
             callback_init: vms,
         }
     );

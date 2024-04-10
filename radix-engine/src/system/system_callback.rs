@@ -26,7 +26,7 @@ use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
-use crate::transaction::{CostingParameters, ExecutionConfig, LimitParameters};
+use crate::transaction::{CostingParameters, ExecutionConfig, LimitParameters, SystemOverrides};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -108,18 +108,13 @@ impl SystemLockData {
 
 #[derive(Clone)]
 pub struct SystemInit<C> {
-    // These parameters do not affect state execution but only affect side effects
+    // These fields only affect side effects and do not affect ledger state execution
     pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
 
-    pub disable_costing: bool,
-    pub disable_limits: bool,
-    pub disable_auth: bool,
     pub network_definition: NetworkDefinition,
-    pub costing_parameters: Option<CostingParameters>,
-    pub limit_parameters: Option<LimitParameters>,
-
+    pub system_overrides: Option<SystemOverrides>,
     pub callback_init: C,
 }
 
@@ -141,7 +136,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         executable: &Executable,
         init_input: SystemInit<C::InitInput>,
     ) -> Result<Self, BootloadingError> {
-        let (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd) = {
+        let (mut costing_parameters, mut limit_parameters, max_per_function_royalty_in_xrd) = {
             let system_boot = store
                 .read_substate(
                     TRANSACTION_TRACKER.as_node_id(),
@@ -158,8 +153,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
             match system_boot {
                 SystemBoot::V1 { costing_parameters, limit_parameters, max_per_function_royalty_in_xrd } => {
-                    let costing_parameters = init_input.costing_parameters.unwrap_or(costing_parameters);
-                    let limit_parameters = init_input.limit_parameters.unwrap_or(limit_parameters);
                     (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd)
                 }
             }
@@ -180,16 +173,25 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             enabled_modules |= EnabledModules::EXECUTION_TRACE;
         }
 
-        if init_input.disable_auth {
-            enabled_modules &= !EnabledModules::AUTH;
-        }
-        if init_input.disable_costing {
-            enabled_modules &= !EnabledModules::COSTING;
-        }
-        if init_input.disable_limits {
-            enabled_modules &= !EnabledModules::LIMITS;
-        }
+        if let Some(system_overrides) = init_input.system_overrides {
+            if let Some(costing_override) = system_overrides.costing_parameters {
+                costing_parameters = costing_override;
+            }
 
+            if let Some(limits_override) = system_overrides.limit_parameters {
+                limit_parameters = limits_override;
+            }
+
+            if system_overrides.disable_auth {
+                enabled_modules &= !EnabledModules::AUTH;
+            }
+            if system_overrides.disable_costing {
+                enabled_modules &= !EnabledModules::COSTING;
+            }
+            if system_overrides.disable_limits {
+                enabled_modules &= !EnabledModules::LIMITS;
+            }
+        }
 
         let mut modules = SystemModuleMixer::new(
 
