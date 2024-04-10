@@ -16,7 +16,7 @@ use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_callback::{System, SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY, SystemInit};
+use crate::system::system_callback::{System, SystemInit};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
@@ -89,7 +89,6 @@ impl Default for CostingParameters {
         }
     }
 }
-
 
 impl CostingParameters {
     pub fn with_execution_cost_unit_limit(mut self, limit: u32) -> Self {
@@ -324,8 +323,7 @@ where
     ) -> TransactionReceipt {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
-        if self.system_init.enable_kernel_trace
-        {
+        if self.system_init.enable_kernel_trace {
             Self::print_executable(&executable);
         }
 
@@ -338,11 +336,7 @@ where
             boot_store: self.substate_db,
         };
 
-        let system_boot_result = System::init(
-            &boot_store,
-            executable,
-            self.system_init.clone(),
-        );
+        let system_boot_result = System::init(&boot_store, executable, self.system_init.clone());
 
         // Create a track
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
@@ -387,8 +381,7 @@ where
                 ) = self.interpret_manifest::<T>(&mut track, system, init, executable);
 
                 #[cfg(not(feature = "alloc"))]
-                if self.system_init.enable_kernel_trace
-                {
+                if self.system_init.enable_kernel_trace {
                     println!("{:-^120}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
                 }
@@ -583,8 +576,7 @@ where
 
         // Dump summary
         #[cfg(not(feature = "alloc"))]
-        if self.system_init.enable_kernel_trace
-        {
+        if self.system_init.enable_kernel_trace {
             Self::print_execution_summary(&receipt);
         }
 
@@ -1304,13 +1296,10 @@ pub fn execute_transaction_with_configuration<
             network_definition: execution_config.network_definition.clone(),
             system_overrides: execution_config.system_overrides.clone(),
             callback_init: vms,
-        }
+        },
     );
 
-    executor.execute::<T>(
-        transaction,
-        init,
-    )
+    executor.execute::<T>(transaction, init)
 }
 
 pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(

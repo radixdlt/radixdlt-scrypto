@@ -23,7 +23,7 @@ use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
-use crate::transaction::{ExecutionConfig, LimitParameters};
+use crate::transaction::LimitParameters;
 use bitflags::bitflags;
 use paste::paste;
 use radix_common::crypto::Hash;

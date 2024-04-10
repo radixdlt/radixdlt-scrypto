@@ -22,11 +22,13 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
+use crate::system::system_modules::execution_trace::ExecutionTraceModule;
+use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
-use crate::transaction::{CostingParameters, ExecutionConfig, LimitParameters, SystemOverrides};
+use crate::transaction::{CostingParameters, LimitParameters, SystemOverrides};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -44,8 +46,6 @@ use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_transactions::model::{Executable, PreAllocatedAddress};
-use crate::system::system_modules::execution_trace::ExecutionTraceModule;
-use crate::system::system_modules::kernel_trace::KernelTraceModule;
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -147,14 +147,22 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .unwrap_or(SystemBoot::V1 {
                     costing_parameters: CostingParameters::default(),
                     limit_parameters: LimitParameters::default(),
-                    max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
-                        .unwrap(),
+                    max_per_function_royalty_in_xrd: Decimal::try_from(
+                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
+                    )
+                    .unwrap(),
                 });
 
             match system_boot {
-                SystemBoot::V1 { costing_parameters, limit_parameters, max_per_function_royalty_in_xrd } => {
-                    (costing_parameters, limit_parameters, max_per_function_royalty_in_xrd)
-                }
+                SystemBoot::V1 {
+                    costing_parameters,
+                    limit_parameters,
+                    max_per_function_royalty_in_xrd,
+                } => (
+                    costing_parameters,
+                    limit_parameters,
+                    max_per_function_royalty_in_xrd,
+                ),
             }
         };
         let callback = C::init(store, init_input.callback_init)?;
@@ -194,25 +202,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
 
         let mut modules = SystemModuleMixer::new(
-
-
             enabled_modules,
-
             KernelTraceModule,
-
             init_input.network_definition.clone(),
             executable.intent_hash().to_hash(),
             executable.auth_zone_params().clone(),
             limit_parameters,
-
             init_input.enable_cost_breakdown,
             SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
             max_per_function_royalty_in_xrd,
             FeeTable::new(),
             executable.payload_size(),
             executable.num_of_signature_validations(),
-
-            ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(MAX_EXECUTION_TRACE_DEPTH)),
+            ExecutionTraceModule::new(
+                init_input
+                    .execution_trace
+                    .unwrap_or(MAX_EXECUTION_TRACE_DEPTH),
+            ),
         );
 
         modules.init()?;

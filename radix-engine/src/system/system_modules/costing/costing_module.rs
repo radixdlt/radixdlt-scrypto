@@ -106,7 +106,8 @@ impl CostingModule {
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            cost_breakdown.execution_cost_breakdown
+            cost_breakdown
+                .execution_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -129,7 +130,8 @@ impl CostingModule {
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            cost_breakdown.execution_cost_breakdown
+            cost_breakdown
+                .execution_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -150,7 +152,8 @@ impl CostingModule {
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
-            cost_breakdown.storage_cost_breakdown
+            cost_breakdown
+                .storage_cost_breakdown
                 .entry(storage_type)
                 .or_default()
                 .add_assign(size_increase);
@@ -173,7 +176,8 @@ impl CostingModule {
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            cost_breakdown.finalization_cost_breakdown
+            cost_breakdown
+                .finalization_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -194,7 +198,8 @@ impl CostingModule {
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
-            cost_breakdown.storage_cost_breakdown
+            cost_breakdown
+                .storage_cost_breakdown
                 .entry(storage_type)
                 .or_default()
                 .add_assign(size_increase);

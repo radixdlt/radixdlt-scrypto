@@ -163,7 +163,6 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
-
         // Check depth
         let current_depth = api.kernel_get_current_depth();
         let limits = &mut api.kernel_get_system().modules.limits.config;

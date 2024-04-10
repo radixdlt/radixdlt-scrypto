@@ -201,8 +201,6 @@ pub struct LedgerSimulatorBuilder<E, D> {
     custom_database: D,
     custom_protocol_updates: ProtocolUpdates,
 
-    system_overrides: Option<SystemOverrides>,
-
     // General options
     with_kernel_trace: bool,
     with_receipt_substate_check: bool,
@@ -215,7 +213,6 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
             custom_protocol_updates: ProtocolUpdates::all(),
-            system_overrides: None,
             with_kernel_trace: true,
             with_receipt_substate_check: true,
         }
@@ -229,15 +226,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_extension: self.custom_extension,
             custom_database: StateTreeUpdatingDatabase::new(self.custom_database),
             custom_protocol_updates: self.custom_protocol_updates,
-            system_overrides: self.system_overrides,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
-    }
-
-    pub fn with_system_overrides(mut self, system_overrides: SystemOverrides) -> Self {
-        self.system_overrides = Some(system_overrides);
-        self
     }
 
     pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
