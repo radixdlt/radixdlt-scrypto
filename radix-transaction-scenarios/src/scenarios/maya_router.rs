@@ -183,47 +183,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-deposit",
-                        |builder| {
-                            let resource_1 = state.maya_router_data.resource_1.get()?;
-                            let resource_2 = state.maya_router_data.resource_2.get()?;
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            builder
-                                .withdraw_from_account(config.swapper_account.address, resource_1, dec!(100))
-                                .withdraw_from_account(config.swapper_account.address, resource_2, dec!(200))
-                                .take_all_from_worktop(resource_1, "resource_1")
-                                .with_bucket("resource_1", |builder, bucket| {
-                                    builder.call_method(
-                                        router_address,
-                                        "deposit",
-                                        manifest_args!(
-                                            config.swapper_account.address,
-                                            bucket,
-                                            "SWAP:MAYA.CACAO:tmaya1uuds8pd92qnnq0udw0rpg0szpgcslc9p8gps0z".to_string(),
-                                        ),
-                                    )
-                                })
-                                .take_all_from_worktop(resource_2, "resource_2")
-                                .with_bucket("resource_2", |builder, bucket| {
-                                    builder.call_method(
-                                        router_address,
-                                        "deposit",
-                                        manifest_args!(
-                                            config.swapper_account.address,
-                                            bucket,
-                                            "SWAP:MAYA.CACAO:tmaya1uuds8pd92qnnq0udw0rpg0szpgcslc9p8gps0z".to_string(),
-                                        ),
-                                    )
-                                })
-                                .done()
-                        },
-                        vec![&config.swapper_account.key],
-                    )
-                }
-            )
+            /*
             .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
@@ -365,6 +325,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     )
                 },
             )
+             */
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
