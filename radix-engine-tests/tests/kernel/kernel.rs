@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RuntimeError};
+use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError};
 use radix_engine::kernel::call_frame::{
     CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
     PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
@@ -20,6 +20,7 @@ use radix_engine::track::{BootStore, Track};
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::{Executable, PreAllocatedAddress};
 
 struct TestCallFrameData;
@@ -54,6 +55,10 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn init<S: BootStore>(_store: &S, _executable: &Executable, _init_input: Self::InitInput) -> Result<Self, BootloadingError> {
         Ok(Self)
+    }
+
+    fn init2<S: SubstateDatabase>(&self, _track: &mut Track<S, SpreadPrefixKeyMapper>, _executable: &Executable) -> Result<(), RejectionReason> {
+        Ok(())
     }
 
     fn start<Y>(

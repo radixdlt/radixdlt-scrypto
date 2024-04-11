@@ -30,7 +30,7 @@ use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
-use crate::track::BootStore;
+use crate::track::{BootStore, CommitableSubstateStore, Track};
 use crate::transaction::{CostingParameters, LimitParameters, SystemOverrides};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -48,7 +48,10 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
+use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::{Executable, PreAllocatedAddress};
+use crate::blueprints::consensus_manager::{ConsensusManagerField, ConsensusManagerStateFieldPayload};
+use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate};
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -147,6 +150,95 @@ pub struct System<C: SystemCallbackObject> {
     pub modules: SystemModuleMixer,
 }
 
+impl<C: SystemCallbackObject> System<C> {
+    pub fn read_epoch<S: SubstateDatabase>(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
+        // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
+        //        Which could allow for better caching of transaction validity over epoch boundaries
+        match track.read_substate(
+            CONSENSUS_MANAGER.as_node_id(),
+            MAIN_BASE_PARTITION,
+            &ConsensusManagerField::State.into(),
+        ) {
+            Some(x) => {
+                let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
+                    x.as_typed().unwrap();
+                Some(substate.into_payload().into_latest().epoch)
+            }
+            None => None,
+        }
+    }
+
+    pub fn validate_epoch_range(
+        current_epoch: Epoch,
+        start_epoch_inclusive: Epoch,
+        end_epoch_exclusive: Epoch,
+    ) -> Result<(), RejectionReason> {
+        if current_epoch < start_epoch_inclusive {
+            return Err(RejectionReason::TransactionEpochNotYetValid {
+                valid_from: start_epoch_inclusive,
+                current_epoch,
+            });
+        }
+        if current_epoch >= end_epoch_exclusive {
+            return Err(RejectionReason::TransactionEpochNoLongerValid {
+                valid_until: end_epoch_exclusive.previous(),
+                current_epoch,
+            });
+        }
+
+        Ok(())
+    }
+
+    pub fn validate_intent_hash<S: SubstateDatabase>(
+        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        intent_hash: Hash,
+        expiry_epoch: Epoch,
+    ) -> Result<(), RejectionReason> {
+        let substate: FieldSubstate<TransactionTrackerSubstate> = track
+            .read_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &TransactionTrackerField::TransactionTracker.into(),
+            )
+            .unwrap()
+            .as_typed()
+            .unwrap();
+
+        let partition_number = substate
+            .into_payload()
+            .v1()
+            .partition_for_expiry_epoch(expiry_epoch)
+            .expect("Transaction tracker should cover all valid epoch ranges");
+
+        let substate = track.read_substate(
+            TRANSACTION_TRACKER.as_node_id(),
+            PartitionNumber(partition_number),
+            &SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
+        );
+
+        match substate {
+            Some(value) => {
+                let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
+                match substate.into_value() {
+                    Some(status) => match status.into_v1() {
+                        TransactionStatusV1::CommittedSuccess
+                        | TransactionStatusV1::CommittedFailure => {
+                            return Err(RejectionReason::IntentHashPreviouslyCommitted);
+                        }
+                        TransactionStatusV1::Cancelled => {
+                            return Err(RejectionReason::IntentHashPreviouslyCancelled);
+                        }
+                    },
+                    None => {}
+                }
+            }
+            None => {}
+        }
+
+        Ok(())
+    }
+}
+
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
@@ -159,7 +251,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     ) -> Result<Self, BootloadingError> {
         let mut system_parameters = {
             let system_boot = store
-                .read_substate(
+                .read_boot_substate(
                     TRANSACTION_TRACKER.as_node_id(),
                     BOOT_LOADER_PARTITION,
                     &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
@@ -265,6 +357,34 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             callback,
             modules,
         })
+    }
+
+    fn init2<S: SubstateDatabase>(&self, track: &mut Track<S, SpreadPrefixKeyMapper>, executable: &Executable) -> Result<(), RejectionReason> {
+        // Perform runtime validation.
+        // TODO: the following assumptions can be removed with better interface.
+        // We are assuming that intent hash store is ready when epoch manager is ready.
+        let current_epoch = Self::read_epoch(track);
+        if let Some(current_epoch) = current_epoch {
+            if let Some(range) = executable.epoch_range() {
+                Self::validate_epoch_range(
+                    current_epoch,
+                    range.start_epoch_inclusive,
+                    range.end_epoch_exclusive,
+                )
+                    .and_then(|_| {
+                        Self::validate_intent_hash(
+                            track,
+                            executable.intent_hash().to_hash(),
+                            range.end_epoch_exclusive,
+                        )
+                    })
+                    .and_then(|_| Ok(()))
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(())
+        }
     }
 
     fn start<Y>(

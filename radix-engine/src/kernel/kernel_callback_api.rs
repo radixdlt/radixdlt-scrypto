@@ -5,8 +5,10 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
-use crate::track::BootStore;
+use crate::track::{BootStore, Track};
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
 
@@ -139,6 +141,12 @@ pub trait KernelCallbackObject: Sized {
         executable: &Executable,
         init_input: Self::InitInput,
     ) -> Result<Self, BootloadingError>;
+
+    fn init2<S: SubstateDatabase>(
+        &self,
+        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        executable: &Executable,
+    ) -> Result<(), RejectionReason>;
 
     fn start<Y>(
         api: &mut Y,

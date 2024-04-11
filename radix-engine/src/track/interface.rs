@@ -41,7 +41,7 @@ pub enum TrackedSubstateInfo {
 /// cause a protocol break.
 pub trait BootStore {
     /// Read a substate from the store
-    fn read_substate(
+    fn read_boot_substate(
         &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

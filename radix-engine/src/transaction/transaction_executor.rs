@@ -281,7 +281,7 @@ pub struct SubstateBootStore<'a, S: SubstateDatabase> {
 }
 
 impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
-    fn read_substate(
+    fn read_boot_substate(
         &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -344,31 +344,7 @@ where
 
         let validation_result = match system_boot_result {
             Ok(system) => {
-                // Perform runtime validation.
-                // TODO: the following assumptions can be removed with better interface.
-                // We are assuming that intent hash store is ready when epoch manager is ready.
-                let current_epoch = Self::read_epoch(&mut track);
-                if let Some(current_epoch) = current_epoch {
-                    if let Some(range) = executable.epoch_range() {
-                        Self::validate_epoch_range(
-                            current_epoch,
-                            range.start_epoch_inclusive,
-                            range.end_epoch_exclusive,
-                        )
-                        .and_then(|_| {
-                            Self::validate_intent_hash(
-                                &mut track,
-                                executable.intent_hash().to_hash(),
-                                range.end_epoch_exclusive,
-                            )
-                        })
-                        .and_then(|_| Ok(system))
-                    } else {
-                        Ok(system)
-                    }
-                } else {
-                    Ok(system)
-                }
+                system.init2(&mut track, executable).map(|_| system)
             }
             Err(e) => Err(RejectionReason::BootloadingError(e)),
         };
@@ -584,6 +560,24 @@ where
         receipt
     }
 
+    pub fn read_epoch<K: SubstateDatabase>(track: &mut Track<K, SpreadPrefixKeyMapper>) -> Option<Epoch> {
+        // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
+        //        Which could allow for better caching of transaction validity over epoch boundaries
+        match track.read_substate(
+            CONSENSUS_MANAGER.as_node_id(),
+            MAIN_BASE_PARTITION,
+            &ConsensusManagerField::State.into(),
+        ) {
+            Some(x) => {
+                let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
+                    x.as_typed().unwrap();
+                Some(substate.into_payload().into_latest().epoch)
+            }
+            None => None,
+        }
+    }
+
+    /*
     fn read_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
@@ -600,6 +594,7 @@ where
             None => None,
         }
     }
+     */
 
     fn validate_epoch_range(
         current_epoch: Epoch,

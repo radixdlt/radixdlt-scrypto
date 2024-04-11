@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::BootloadingError;
+use radix_engine::errors::{BootloadingError, RejectionReason};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
@@ -15,12 +15,13 @@ use radix_engine::system::system_callback::System;
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use radix_engine::track::{BootStore, NodeSubstates};
+use radix_engine::track::{BootStore, NodeSubstates, Track};
 use radix_engine::transaction::WrappedSystem;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
 use radix_engine_interface::prelude::*;
-use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
+use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
 
@@ -107,6 +108,10 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
         _executable: &Executable,
         _bootstrap_input: Self::InitInput,
     ) -> Result<Self, BootloadingError> {
+        panic!();
+    }
+
+    fn init2<S: SubstateDatabase>(&self, _track: &mut Track<S, SpreadPrefixKeyMapper>, _executable: &Executable) -> Result<(), RejectionReason> {
         panic!();
     }
 

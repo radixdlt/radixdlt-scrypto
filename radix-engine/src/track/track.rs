@@ -39,7 +39,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
 }
 
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Track<'s, S, M> {
-    fn read_substate(
+    fn read_boot_substate(
         &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
