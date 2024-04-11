@@ -25,7 +25,7 @@ use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::{CostingModule, FeeTable, SystemLoanFeeReserve};
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
-use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
+use crate::system::system_modules::limits::LimitsModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
@@ -53,12 +53,28 @@ use radix_transactions::model::{Executable, PreAllocatedAddress};
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct SystemParameters {
+    pub network_definition: NetworkDefinition,
+    pub costing_parameters: CostingParameters,
+    pub limit_parameters: LimitParameters,
+    pub max_per_function_royalty_in_xrd: Decimal,
+}
+
+impl Default for SystemParameters {
+    fn default() -> Self {
+        Self {
+            network_definition: NetworkDefinition::mainnet(),
+            costing_parameters: CostingParameters::default(),
+            limit_parameters: LimitParameters::default(),
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
-    V1 {
-        costing_parameters: CostingParameters,
-        limit_parameters: LimitParameters,
-        max_per_function_royalty_in_xrd: Decimal,
-    },
+    V1(SystemParameters),
 }
 
 #[derive(Clone)]
@@ -116,9 +132,11 @@ pub struct SystemInit<C> {
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
 
-    pub network_definition: NetworkDefinition,
-    pub system_overrides: Option<SystemOverrides>,
+    // Higher layer initialization object
     pub callback_init: C,
+
+    // An override of system configuration
+    pub system_overrides: Option<SystemOverrides>,
 }
 
 pub struct System<C: SystemCallbackObject> {
@@ -139,7 +157,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         executable: &Executable,
         init_input: SystemInit<C::InitInput>,
     ) -> Result<Self, BootloadingError> {
-        let (mut costing_parameters, mut limit_parameters, max_per_function_royalty_in_xrd) = {
+        let mut system_parameters = {
             let system_boot = store
                 .read_substate(
                     TRANSACTION_TRACKER.as_node_id(),
@@ -147,30 +165,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
                 )
                 .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                .unwrap_or(SystemBoot::V1 {
-                    costing_parameters: CostingParameters::default(),
-                    limit_parameters: LimitParameters::default(),
-                    max_per_function_royalty_in_xrd: Decimal::try_from(
-                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-                    )
-                    .unwrap(),
-                });
+                .unwrap_or(SystemBoot::V1(SystemParameters::default()));
 
             match system_boot {
-                SystemBoot::V1 {
-                    costing_parameters,
-                    limit_parameters,
-                    max_per_function_royalty_in_xrd,
-                } => (
-                    costing_parameters,
-                    limit_parameters,
-                    max_per_function_royalty_in_xrd,
-                ),
+                SystemBoot::V1(system_parameters) => system_parameters,
             }
         };
+
         let callback = C::init(store, init_input.callback_init)?;
 
-        let mut enabled_modules = {
+        let enabled_modules = {
             let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
             if !executable.is_system() {
                 enabled_modules |= EnabledModules::LIMITS;
@@ -183,58 +187,53 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             if init_input.execution_trace.is_some() {
                 enabled_modules |= EnabledModules::EXECUTION_TRACE;
             }
+
+            if let Some(system_overrides) = &init_input.system_overrides {
+                if system_overrides.disable_auth {
+                    enabled_modules &= !EnabledModules::AUTH;
+                }
+                if system_overrides.disable_costing {
+                    enabled_modules &= !EnabledModules::COSTING;
+                }
+                if system_overrides.disable_limits {
+                    enabled_modules &= !EnabledModules::LIMITS;
+                }
+            }
+
             enabled_modules
         };
 
         if let Some(system_overrides) = init_input.system_overrides {
             if let Some(costing_override) = system_overrides.costing_parameters {
-                costing_parameters = costing_override;
+                system_parameters.costing_parameters = costing_override;
             }
 
             if let Some(limits_override) = system_overrides.limit_parameters {
-                limit_parameters = limits_override;
+                system_parameters.limit_parameters = limits_override;
             }
 
-            if system_overrides.disable_auth {
-                enabled_modules &= !EnabledModules::AUTH;
-            }
-            if system_overrides.disable_costing {
-                enabled_modules &= !EnabledModules::COSTING;
-            }
-            if system_overrides.disable_limits {
-                enabled_modules &= !EnabledModules::LIMITS;
+            if let Some(network_definition) = system_overrides.network_definition {
+                system_parameters.network_definition = network_definition;
             }
         }
 
         let txn_runtime_module = TransactionRuntimeModule::new(
-            init_input.network_definition.clone(),
+            system_parameters.network_definition,
             executable.intent_hash().to_hash(),
         );
 
         let auth_module = AuthModule::new(executable.auth_zone_params().clone());
-        let limits_module = LimitsModule::new(TransactionLimitsConfig {
-            max_call_depth: limit_parameters.max_call_depth,
-            max_heap_substate_total_bytes: limit_parameters.max_heap_substate_total_bytes,
-            max_track_substate_total_bytes: limit_parameters.max_track_substate_total_bytes,
-            max_substate_key_size: limit_parameters.max_substate_key_size,
-            max_substate_value_size: limit_parameters.max_substate_value_size,
-            max_invoke_payload_size: limit_parameters.max_invoke_input_size,
-            max_number_of_logs: limit_parameters.max_number_of_logs,
-            max_number_of_events: limit_parameters.max_number_of_events,
-            max_event_size: limit_parameters.max_event_size,
-            max_log_size: limit_parameters.max_log_size,
-            max_panic_message_size: limit_parameters.max_panic_message_size,
-        });
+        let limits_module = { LimitsModule::from_params(system_parameters.limit_parameters) };
 
         let costing_module = CostingModule {
             fee_reserve: SystemLoanFeeReserve::new(
-                &costing_parameters,
+                &system_parameters.costing_parameters,
                 executable.costing_parameters(),
             ),
             fee_table: FeeTable::new(),
             tx_payload_len: executable.payload_size(),
             tx_num_of_signature_validations: executable.num_of_signature_validations(),
-            max_per_function_royalty_in_xrd,
+            max_per_function_royalty_in_xrd: system_parameters.max_per_function_royalty_in_xrd,
             cost_breakdown: if init_input.enable_cost_breakdown {
                 Some(Default::default())
             } else {

@@ -150,6 +150,7 @@ pub struct SystemOverrides {
     pub disable_costing: bool,
     pub disable_limits: bool,
     pub disable_auth: bool,
+    pub network_definition: Option<NetworkDefinition>,
     pub costing_parameters: Option<CostingParameters>,
     pub limit_parameters: Option<LimitParameters>,
 }
@@ -160,6 +161,7 @@ impl Default for SystemOverrides {
             disable_costing: false,
             disable_limits: false,
             disable_auth: false,
+            network_definition: None,
             costing_parameters: None,
             limit_parameters: None,
         }
@@ -1291,10 +1293,8 @@ pub fn execute_transaction_with_configuration<
             enable_kernel_trace: execution_config.enable_kernel_trace,
             enable_cost_breakdown: execution_config.enable_cost_breakdown,
             execution_trace: execution_config.execution_trace,
-
-            network_definition: execution_config.network_definition.clone(),
-            system_overrides: execution_config.system_overrides.clone(),
             callback_init: vms,
+            system_overrides: execution_config.system_overrides.clone(),
         },
     );
 

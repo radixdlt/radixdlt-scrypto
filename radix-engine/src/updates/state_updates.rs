@@ -5,7 +5,9 @@ use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
 use crate::internal_prelude::*;
 use crate::object_modules::role_assignment::*;
-use crate::system::system_callback::{SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY};
+use crate::system::system_callback::{
+    SystemBoot, SystemParameters, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+};
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use crate::transaction::{CostingParameters, LimitParameters};
@@ -689,7 +691,9 @@ pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase>(
     }
 }
 
-pub fn generate_protocol_params_to_state_state_updates() -> StateUpdates {
+pub fn generate_protocol_params_to_state_state_updates(
+    network_definition: NetworkDefinition,
+) -> StateUpdates {
     StateUpdates {
         by_node: indexmap!(
             TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
@@ -697,11 +701,12 @@ pub fn generate_protocol_params_to_state_state_updates() -> StateUpdates {
                     BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
                             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
-                                scrypto_encode(&SystemBoot::V1 {
+                                scrypto_encode(&SystemBoot::V1(SystemParameters {
+                                    network_definition,
                                     costing_parameters: CostingParameters::default(),
                                     limit_parameters: LimitParameters::default(),
                                     max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
-                                }).unwrap()
+                                })).unwrap()
                             )
                         }
                     },
