@@ -59,6 +59,7 @@ impl ValidatedNotarizedTransactionV1 {
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: intent.header.inner.tip_percentage,
                     free_credit_in_xrd,
+                    abort_when_loan_repaid: false,
                 },
                 pre_allocated_addresses: vec![],
             },

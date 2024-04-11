@@ -140,8 +140,12 @@ fn references_read_from_state_are_visible_in_tests() {
     )
     .unwrap();
 
-    let code = include_workspace_asset_bytes!("radiswap.wasm");
-    let definition = manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
+    let code = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm");
+    let definition = manifest_decode(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "radiswap.rpd"
+    ))
+    .unwrap();
 
     let (radiswap_package, _) =
         PackageFactory::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();
@@ -198,8 +202,12 @@ fn references_read_from_state_are_visible_in_tests1() {
     )
     .unwrap();
 
-    let code = include_workspace_asset_bytes!("radiswap.wasm");
-    let definition = manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap();
+    let code = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm");
+    let definition = manifest_decode(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "radiswap.rpd"
+    ))
+    .unwrap();
 
     let (radiswap_package, _) =
         PackageFactory::publish(code.to_vec(), definition, Default::default(), &mut env).unwrap();

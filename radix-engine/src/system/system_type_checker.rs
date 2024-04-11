@@ -3,7 +3,7 @@ use crate::errors::{RuntimeError, SystemError};
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::{System, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, LockStatus};
 use crate::track::interface::NodeSubstates;
@@ -57,7 +57,7 @@ pub enum TypeCheckError {
 
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     /// Validate that the type substitutions match the generic definition of a given blueprint

@@ -25,7 +25,7 @@ use crate::object_modules::role_assignment::*;
 use crate::object_modules::royalty::RoyaltyUtil;
 use crate::roles_template;
 use crate::system::system::*;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::{System, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::system::system_type_checker::SystemMapper;
@@ -1450,7 +1450,7 @@ impl PackageRoyaltyNativeBlueprint {
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         {
             let mut service = SystemService::new(api);
@@ -1556,7 +1556,7 @@ impl PackageAuthNativeBlueprint {
         api: &mut Y,
     ) -> Result<ResolvedPermission, RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V>>,
         V: SystemCallbackObject,
     {
         let auth_config = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
@@ -1594,7 +1594,7 @@ impl PackageAuthNativeBlueprint {
         api: &mut Y,
     ) -> Result<AuthConfig, RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V>>,
         V: SystemCallbackObject,
     {
         let package_bp_version_id = CanonicalBlueprintId {
