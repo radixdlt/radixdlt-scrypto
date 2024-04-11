@@ -66,7 +66,7 @@ pub fn run_all_in_memory_and_dump_examples(
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "b15ab5e1f509966765143cb585f1b80cc7db61a87c4f483ff83563b363eab93f"
+        "4bc5ff144dacf6ebac04bfcda682f5e299449d52a6f30856ed62595123acf624"
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
@@ -175,7 +175,7 @@ mod test {
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_bottlenose_scenarios() {
         assert_event_and_state_hashes(
-            "b15ab5e1f509966765143cb585f1b80cc7db61a87c4f483ff83563b363eab93f",
+            "4bc5ff144dacf6ebac04bfcda682f5e299449d52a6f30856ed62595123acf624",
             "18e1b9cc48ee2a71c154b835c7dac587dae165e0e25d85a4e871879528e929ab",
             ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
                 ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose),
@@ -200,7 +200,7 @@ mod test {
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios_on_bottlenose() {
         assert_event_and_state_hashes(
-            "9d06891ba213a57e14031af89cd21b040a1e0c7b362f5e425d1dd281e258d47d",
+            "0776c7efd0d550e19f03587f7d6022766f4902049e3f7f40b3b07ac516f5ada3",
             "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
             ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
                 ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
@@ -227,7 +227,7 @@ mod test {
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_bottlenose() {
         assert_event_and_state_hashes(
-            "9d06891ba213a57e14031af89cd21b040a1e0c7b362f5e425d1dd281e258d47d",
+            "0776c7efd0d550e19f03587f7d6022766f4902049e3f7f40b3b07ac516f5ada3",
             "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
             ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
                 ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
