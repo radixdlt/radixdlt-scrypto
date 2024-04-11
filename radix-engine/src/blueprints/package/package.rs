@@ -136,6 +136,8 @@ pub enum PackageError {
 
     RoyaltiesNotEnabled,
     RoyaltyAmountIsNegative(RoyaltyAmount),
+
+    InvalidRoleKey(String),
 }
 
 impl From<InvalidNameError> for PackageError {
