@@ -305,7 +305,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-failed-asset-not-available",
+                        "maya-router-transfer-out-from-asgard-vault-1-resource-3-failed-asset-not-available",
                         |builder| {
                             // resource_3 is not available in the deposited resources in MayaRouter
                             let resource_3 = state.maya_router_data.resource_3.get()?;
@@ -352,6 +352,69 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                         },
                         // Transaction should fail, because asgard_vault_2 key is used
                         vec![&config.asgard_vault_2_private_key],
+                    )
+                },
+                |_, _, _, _| Ok(()),
+            )
+            .successful_transaction(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee_fallible(
+                        "maya-router-transfer-between-asgard-vaults",
+                        |builder| {
+                            let resource_1 = state.maya_router_data.resource_1.get()?;
+                            let resource_2 = state.maya_router_data.resource_2.get()?;
+                            let router_address = state.maya_router_data.maya_router_address.get()?;
+                            builder
+                                .call_method(
+                                    router_address,
+                                    "transfer_between_asgard_vaults",
+                                    manifest_args!(
+                                        config.asgard_vault_1_public_key,
+                                        config.asgard_vault_2_public_key,
+                                        resource_1,
+                                        "OUT:".to_string(),
+                                    ),
+                                )
+                                .call_method(
+                                    router_address,
+                                    "transfer_between_asgard_vaults",
+                                    manifest_args!(
+                                        config.asgard_vault_1_public_key,
+                                        config.asgard_vault_2_public_key,
+                                        resource_2,
+                                        "OUT:".to_string(),
+                                    ),
+                                )
+                                .done()
+                        },
+                        //
+                        vec![&config.asgard_vault_1_private_key],
+                    )
+                },
+            )
+            .failed_transaction_with_error_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee_fallible(
+                        "maya-router-transfer-out-from-asgard-vault-1-resource-1-failed-asset-not-available",
+                        |builder| {
+                            // resource_1 shall no longer be available in the Asgard Vault 1
+                            let resource_1 = state.maya_router_data.resource_1.get()?;
+                            let router_address = state.maya_router_data.maya_router_address.get()?;
+                            builder
+                                .call_method(
+                                    router_address,
+                                    "transfer_out",
+                                    manifest_args!(
+                                        config.asgard_vault_1_public_key,
+                                        state.swapper_account.get()?,
+                                        resource_1,
+                                        dec!(30),
+                                        "OUT:".to_string()
+                                    ),
+                                )
+                                .done()
+                        },
+                        vec![&config.asgard_vault_1_private_key],
                     )
                 },
                 |_, _, _, _| Ok(()),

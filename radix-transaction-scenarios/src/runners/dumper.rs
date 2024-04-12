@@ -66,11 +66,11 @@ pub fn run_all_in_memory_and_dump_examples(
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "15fbc1095b91d19bfc85c6414059cb6bb4e196563a0e1578bec21d8c30863abd"
+        "04a98b09bf1964c045afc1b6c9cf01696bf07df2499a73c2294d0e66173c18db",
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
-        "5e7c8490684bdc63b9eab93b93f45889f344721822e4597613ee717b2d31b08c",
+        "8fb80ac9e200cd9069f648bbce485a20fca75bc26b8bc8f0ea714feeeb827e64",
     );
 
     Ok(())
@@ -175,8 +175,8 @@ mod test {
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_bottlenose_scenarios() {
         assert_event_and_state_hashes(
-            "15fbc1095b91d19bfc85c6414059cb6bb4e196563a0e1578bec21d8c30863abd",
-            "5e7c8490684bdc63b9eab93b93f45889f344721822e4597613ee717b2d31b08c",
+            "04a98b09bf1964c045afc1b6c9cf01696bf07df2499a73c2294d0e66173c18db",
+            "8fb80ac9e200cd9069f648bbce485a20fca75bc26b8bc8f0ea714feeeb827e64",
             ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
                 ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose),
             )),
