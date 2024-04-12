@@ -1,4 +1,5 @@
 use crate::internal_prelude::*;
+use crate::utils::new_ed25519_private_key;
 use radix_engine::updates::{ProtocolUpdate, ProtocolVersion};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::ModuleConfig;
@@ -6,18 +7,26 @@ use radix_engine_interface::*;
 
 pub struct MayaRouterScenarioConfig {
     pub owner_account: VirtualAccount,
-    pub admin_1_account: VirtualAccount,
-    pub admin_2_account: VirtualAccount,
+    pub asgard_vault_1_private_key: PrivateKey,
+    pub asgard_vault_2_private_key: PrivateKey,
     pub swapper_account: VirtualAccount,
+    pub asgard_vault_1_public_key: Ed25519PublicKey,
+    pub asgard_vault_2_public_key: Ed25519PublicKey,
 }
 
 impl Default for MayaRouterScenarioConfig {
     fn default() -> Self {
+        let key_1 = new_ed25519_private_key(1);
+        let key_2 = new_ed25519_private_key(2);
+        let pub_key_1 = key_1.public_key();
+        let pub_key_2 = key_2.public_key();
         Self {
             owner_account: secp256k1_account_2(),
-            admin_1_account: secp256k1_account_1(),
-            admin_2_account: ed25519_account_1(),
-            swapper_account: ed25519_account_2(),
+            asgard_vault_1_private_key: key_1.into(),
+            asgard_vault_2_private_key: key_2.into(),
+            swapper_account: ed25519_account_3(),
+            asgard_vault_1_public_key: pub_key_1,
+            asgard_vault_2_public_key: pub_key_2,
         }
     }
 }
@@ -25,8 +34,6 @@ impl Default for MayaRouterScenarioConfig {
 #[derive(Default)]
 pub struct MayaRouterScenarioState {
     owner_badge: State<NonFungibleGlobalId>,
-    admin_1_badge: State<NonFungibleGlobalId>,
-    admin_2_badge: State<NonFungibleGlobalId>,
     swapper_badge: State<NonFungibleGlobalId>,
 
     maya_router_package: State<PackageAddress>,
@@ -127,8 +134,6 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     state.maya_router_data.resource_3.set(result.new_resource_addresses()[1]);
 
                     state.owner_badge.set(NonFungibleGlobalId::from_public_key(&config.owner_account.public_key));
-                    state.admin_1_badge.set(NonFungibleGlobalId::from_public_key(&config.admin_1_account.public_key));
-                    state.admin_2_badge.set(NonFungibleGlobalId::from_public_key(&config.admin_2_account.public_key));
                     state.swapper_badge.set(NonFungibleGlobalId::from_public_key(&config.swapper_account.public_key));
                     Ok(())
                 },
@@ -140,8 +145,6 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                         "../../assets/maya_router.rpd"
                     ))
                     .unwrap();
-                    let admin_badge = state.admin_1_badge.get()?;
-                    let admin_rule = rule!(require(admin_badge));
 
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "maya-router-publish-and-instantiate",
@@ -168,10 +171,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 lookup.named_address("maya_router_package"),
                                 "MayaRouter",
                                 "instantiate",
-                                manifest_args!(
-                                    admin_rule,
-                                    config.admin_1_account.address,
-                                ),
+                                manifest_args!(),
                             )
                             .done()
                         },
@@ -189,11 +189,12 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
             .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-deposit",
+                        "maya-router-deposit-to-asgard-vault-1",
                         |builder| {
                             let resource_1 = state.maya_router_data.resource_1.get()?;
                             let resource_2 = state.maya_router_data.resource_2.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
+
                             builder
                                 .withdraw_from_account(config.swapper_account.address, resource_1, dec!(100))
                                 .withdraw_from_account(config.swapper_account.address, resource_2, dec!(200))
@@ -204,6 +205,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                         "deposit",
                                         manifest_args!(
                                             config.swapper_account.address,
+                                            config.asgard_vault_1_public_key,
                                             bucket,
                                             "SWAP:MAYA.CACAO".to_string(),
                                         ),
@@ -216,6 +218,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                         "deposit",
                                         manifest_args!(
                                             config.swapper_account.address,
+                                            config.asgard_vault_1_public_key,
                                             bucket,
                                             "SWAP:MAYA.CACAO".to_string(),
                                         ),
@@ -230,7 +233,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
             .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out",
+                        "maya-router-transfer-out-from-asgard-vault-1",
                         |builder| {
                             let resource_1 = state.maya_router_data.resource_1.get()?;
                             let resource_2 = state.maya_router_data.resource_2.get()?;
@@ -240,7 +243,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     router_address,
                                     "transfer_out",
                                     manifest_args!(
-                                        config.admin_1_account.address,
+                                        config.asgard_vault_1_public_key,
                                         config.swapper_account.address,
                                         resource_1,
                                         dec!(10),
@@ -251,7 +254,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     router_address,
                                     "transfer_out",
                                     manifest_args!(
-                                        config.admin_1_account.address,
+                                        config.asgard_vault_1_public_key,
                                         config.swapper_account.address,
                                         resource_2,
                                         dec!(20),
@@ -260,7 +263,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 )
                                 .done()
                         },
-                        vec![&config.admin_1_account.key],
+                        vec![&config.asgard_vault_1_private_key],
                     )
                 }
             )
@@ -277,7 +280,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     router_address,
                                     "transfer_out",
                                     manifest_args!(
-                                        config.admin_1_account.address,
+                                        config.asgard_vault_1_public_key,
                                         config.swapper_account.address,
                                         resource_3,
                                         dec!(30),
@@ -286,34 +289,10 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 )
                                 .done()
                         },
-                        vec![&config.admin_1_account.key],
+                        vec![&config.asgard_vault_1_private_key],
                     )
                 },
                 |_, _, _, _| Ok(()),
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-update-admin",
-                        |builder| {
-
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            let admin_2_rule = rule!(require(state.admin_2_badge.get()?));
-
-                            builder
-                                .call_method(
-                                    router_address,
-                                    "update_admin",
-                                    manifest_args!(
-                                        admin_2_rule,
-                                        config.admin_2_account.address,
-                                    ),
-                                )
-                                .done()
-                        },
-                        vec![&config.admin_1_account.key],
-                    )
-                }
             )
             .failed_transaction_with_error_handler(
                 |core, config, state| {
@@ -327,7 +306,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     router_address,
                                     "transfer_out",
                                     manifest_args!(
-                                        config.admin_1_account.address,
+                                        config.asgard_vault_1_public_key,
                                         config.swapper_account.address,
                                         resource_2,
                                         dec!(20),
@@ -337,7 +316,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 .done()
                         },
                         // Transaction should fail, because admin_1 badge is used
-                        vec![&config.admin_1_account.key],
+                        vec![&config.asgard_vault_2_private_key],
                     )
                 },
                 |_, _, _, _| Ok(()),
@@ -345,16 +324,44 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
             .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-admin-2",
+                        "maya-router-deposit-to-asgard-vault-2",
                         |builder| {
-                            let resource_2 = state.maya_router_data.resource_1.get()?;
+                            let resource_2 = state.maya_router_data.resource_2.get()?;
+                            let router_address = state.maya_router_data.maya_router_address.get()?;
+                            builder
+                                .withdraw_from_account(config.swapper_account.address, resource_2, dec!(200))
+                                .take_all_from_worktop(resource_2, "resource_2")
+                                .with_bucket("resource_2", |builder, bucket| {
+                                    builder.call_method(
+                                        router_address,
+                                        "deposit",
+                                        manifest_args!(
+                                            config.swapper_account.address,
+                                            config.asgard_vault_2_public_key,
+                                            bucket,
+                                            "SWAP:MAYA.CACAO".to_string(),
+                                        ),
+                                    )
+                                })
+                                .done()
+                        },
+                        vec![&config.swapper_account.key],
+                    )
+                }
+            )
+            .successful_transaction(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee_fallible(
+                        "maya-router-transfer-out-asgard-vault-2",
+                        |builder| {
+                            let resource_2 = state.maya_router_data.resource_2.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
                             builder
                                 .call_method(
                                     router_address,
                                     "transfer_out",
                                     manifest_args!(
-                                        config.admin_2_account.address,
+                                        config.asgard_vault_2_public_key,
                                         config.swapper_account.address,
                                         resource_2,
                                         dec!(20),
@@ -364,7 +371,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 .done()
                         },
                         //
-                        vec![&config.admin_2_account.key],
+                        vec![&config.asgard_vault_2_private_key],
                     )
                 },
             )
@@ -373,8 +380,6 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     interesting_addresses: DescribedAddresses::new()
                         .add("owner_account", &config.owner_account)
                         .add("owner_badge", state.owner_badge.get()?)
-                        .add("admin_account", &config.admin_1_account)
-                        .add("admin_badge", state.admin_1_badge.get()?)
                         .add("swapper_account", &config.swapper_account)
                         .add("swapper_badge", state.swapper_badge.get()?)
                         .add("maya_router_package", state.maya_router_package.get()?)

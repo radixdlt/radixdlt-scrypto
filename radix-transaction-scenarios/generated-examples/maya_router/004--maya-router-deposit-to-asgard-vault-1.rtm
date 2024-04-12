@@ -1,0 +1,41 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("account_sim128cqk4tgnu2trlvmpf242a0lsq4062a2c45hhymr3tly0ps3w57yav")
+    "withdraw"
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Decimal("100")
+;
+CALL_METHOD
+    Address("account_sim128cqk4tgnu2trlvmpf242a0lsq4062a2c45hhymr3tly0ps3w57yav")
+    "withdraw"
+    Address("resource_sim1t5v6ddrzy9j9nhpmv2lktwk6sxumhx704dvkz46u5a5uu3t4jlc7c4")
+    Decimal("200")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+    Bucket("resource_1")
+;
+CALL_METHOD
+    Address("component_sim1cqmr0femmv4h42wsxvwfwu8pwt0px6v6gl763atun6zktt92jm8302")
+    "deposit"
+    Address("account_sim128cqk4tgnu2trlvmpf242a0lsq4062a2c45hhymr3tly0ps3w57yav")
+    Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
+    Bucket("resource_1")
+    "SWAP:MAYA.CACAO"
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1t5v6ddrzy9j9nhpmv2lktwk6sxumhx704dvkz46u5a5uu3t4jlc7c4")
+    Bucket("resource_2")
+;
+CALL_METHOD
+    Address("component_sim1cqmr0femmv4h42wsxvwfwu8pwt0px6v6gl763atun6zktt92jm8302")
+    "deposit"
+    Address("account_sim128cqk4tgnu2trlvmpf242a0lsq4062a2c45hhymr3tly0ps3w57yav")
+    Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
+    Bucket("resource_2")
+    "SWAP:MAYA.CACAO"
+;

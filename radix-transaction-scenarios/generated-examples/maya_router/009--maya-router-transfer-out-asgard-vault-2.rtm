@@ -6,9 +6,9 @@ CALL_METHOD
 CALL_METHOD
     Address("component_sim1cqmr0femmv4h42wsxvwfwu8pwt0px6v6gl763atun6zktt92jm8302")
     "transfer_out"
-    Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
+    Bytes("7422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674")
     Address("account_sim128cqk4tgnu2trlvmpf242a0lsq4062a2c45hhymr3tly0ps3w57yav")
-    Address("resource_sim1tkqs5wz7kl3ug367376umnn90f0am97td2420qafkukmgk0zsqp0ev")
-    Decimal("30")
+    Address("resource_sim1t5v6ddrzy9j9nhpmv2lktwk6sxumhx704dvkz46u5a5uu3t4jlc7c4")
+    Decimal("20")
     "OUT:"
 ;
