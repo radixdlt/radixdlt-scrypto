@@ -12,7 +12,7 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("free_xrd")
 ;
 CALL_METHOD
-    Address("account_sim128cqk4tgnu2trlvmpf242a0lsq4062a2c45hhymr3tly0ps3w57yav")
+    Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
     "try_deposit_or_abort"
     Bucket("free_xrd")
     Enum<0u8>()
