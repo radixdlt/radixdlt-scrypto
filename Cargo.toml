@@ -125,6 +125,7 @@ wasmer = { version = "2.2.1" }
 wasmer-compiler-singlepass = { version = "2.2.1" }
 wasmparser = { version = "0.107.0", default-features = false }
 extend = { version = "1.2.0" }
+zeroize = { version = "1.7.0" }
 
 # Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix
 # Engine to be able to catch panics. As an example, the native-vm has a `catch_unwind` to catch

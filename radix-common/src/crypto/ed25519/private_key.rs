@@ -1,7 +1,9 @@
 use super::Ed25519Signature;
 use crate::internal_prelude::*;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey, Signer};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub struct Ed25519PrivateKey(SecretKey);
 
 impl Ed25519PrivateKey {
