@@ -121,25 +121,48 @@ impl<'a> Executable<'a> {
         }
     }
 
+    // Consuming builder-like customization methods:
+
+    pub fn overwrite_intent_hash(self, hash: Hash) -> Self {
+        let mut updated_self = self;
+        match &mut updated_self.context.intent_hash {
+            TransactionIntentHash::ToCheck { intent_hash, .. }
+            | TransactionIntentHash::NotToCheck { intent_hash } => {
+                *intent_hash = hash;
+            }
+        }
+        updated_self
+    }
+
+    pub fn skip_epoch_range_check(self) -> Self {
+        let mut updated_self = self;
+        updated_self.context.epoch_range = None;
+        updated_self
+    }
+
+    pub fn apply_free_credit(self, free_credit_in_xrd: Decimal) -> Self {
+        let mut updated_self = self;
+        updated_self.context.costing_parameters.free_credit_in_xrd = free_credit_in_xrd;
+        updated_self
+    }
+
+    pub fn abort_when_loan_repaid(self) -> Self {
+        let mut updated_self = self;
+        updated_self
+            .context
+            .costing_parameters
+            .abort_when_loan_repaid = true;
+        updated_self
+    }
+
+    // Getters:
+
     pub fn intent_hash(&self) -> &TransactionIntentHash {
         &self.context.intent_hash
     }
 
     pub fn epoch_range(&self) -> Option<&EpochRange> {
         self.context.epoch_range.as_ref()
-    }
-
-    pub fn overwrite_intent_hash(&mut self, hash: Hash) {
-        match &mut self.context.intent_hash {
-            TransactionIntentHash::ToCheck { intent_hash, .. }
-            | TransactionIntentHash::NotToCheck { intent_hash } => {
-                *intent_hash = hash;
-            }
-        }
-    }
-
-    pub fn skip_epoch_range_check(&mut self) {
-        self.context.epoch_range = None;
     }
 
     pub fn costing_parameters(&self) -> &TransactionCostingParameters {
