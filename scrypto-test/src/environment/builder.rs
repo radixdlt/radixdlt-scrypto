@@ -263,7 +263,7 @@ where
                     virtual_resources: Default::default(),
                 });
 
-                let limits_module = LimitsModule::from_params(LimitParameters::default());
+                let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
 
                 let costing_module = CostingModule {
                     fee_reserve: SystemLoanFeeReserve::default(),

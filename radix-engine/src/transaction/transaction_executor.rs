@@ -60,9 +60,9 @@ pub struct CostingParameters {
     pub archive_storage_price: Decimal,
 }
 
-impl Default for CostingParameters {
+impl CostingParameters {
     #[cfg(not(feature = "coverage"))]
-    fn default() -> Self {
+    pub fn babylon_genesis() -> Self {
         Self {
             execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             execution_cost_unit_limit: EXECUTION_COST_UNIT_LIMIT,
@@ -75,7 +75,7 @@ impl Default for CostingParameters {
         }
     }
     #[cfg(feature = "coverage")]
-    fn default() -> Self {
+    pub fn babylon_genesis() -> Self {
         Self {
             execution_cost_unit_price: Decimal::zero(),
             execution_cost_unit_limit: u32::MAX,
@@ -87,9 +87,7 @@ impl Default for CostingParameters {
             archive_storage_price: Decimal::zero(),
         }
     }
-}
 
-impl CostingParameters {
     pub fn with_execution_cost_unit_limit(mut self, limit: u32) -> Self {
         self.execution_cost_unit_limit = limit;
         self
@@ -116,8 +114,8 @@ pub struct LimitParameters {
     pub max_number_of_events: usize,
 }
 
-impl Default for LimitParameters {
-    fn default() -> Self {
+impl LimitParameters {
+    pub fn babylon_genesis() -> Self {
         Self {
             max_call_depth: MAX_CALL_DEPTH,
             max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
@@ -132,15 +130,13 @@ impl Default for LimitParameters {
             max_number_of_events: MAX_NUMBER_OF_EVENTS,
         }
     }
-}
 
-impl LimitParameters {
     pub fn for_genesis_transaction() -> Self {
         Self {
             max_heap_substate_total_bytes: 512 * 1024 * 1024,
             max_track_substate_total_bytes: 512 * 1024 * 1024,
             max_number_of_events: 1024 * 1024,
-            ..Self::default()
+            ..Self::babylon_genesis()
         }
     }
 }
@@ -175,7 +171,7 @@ pub struct ExecutionConfig {
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
 
-    pub network_definition: NetworkDefinition,
+    pub network_definition: Option<NetworkDefinition>,
     pub system_overrides: Option<SystemOverrides>,
 }
 
@@ -184,7 +180,7 @@ impl ExecutionConfig {
     /// This is internal. Clients should use `for_xxx` constructors instead.
     fn default(network_definition: NetworkDefinition) -> Self {
         Self {
-            network_definition,
+            network_definition: Some(network_definition),
             enable_kernel_trace: false,
             enable_cost_breakdown: false,
             execution_trace: None,
@@ -546,7 +542,7 @@ where
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
-                CostingParameters::default(),
+                CostingParameters::babylon_genesis(),
                 TransactionFeeSummary::default(),
                 if self.system_init.enable_cost_breakdown {
                     Some(TransactionFeeDetails::default())
