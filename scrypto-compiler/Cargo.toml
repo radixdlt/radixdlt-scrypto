@@ -2,7 +2,7 @@
 name = "scrypto-compiler"
 version = "1.2.0-dev"
 edition = "2021"
-description = "A library for compiling Scrypto code."
+description = "A library for compiling Scrypto code, from the Radix DLT project."
 readme = "README.md"
 license-file = "../LICENSE"
 

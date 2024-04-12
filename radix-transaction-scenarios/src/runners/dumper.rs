@@ -30,16 +30,16 @@ pub fn run_all_in_memory_and_dump_examples(
     let mut event_hasher = HashAccumulator::new();
     let mut substate_db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
 
-    let CompletedExecutionReceipt {
+    let ScenarioExecutionReceipt {
         database: mut substate_db,
-    } = DefaultTransactionScenarioExecutor::new(substate_db)
+    } = DefaultTransactionScenarioExecutor::new(substate_db, NetworkDefinition::simulator())
         .on_scenario_start(|scenario_metadata| {
             let sub_folder = root_path.join(scenario_metadata.logical_name);
             if sub_folder.exists() {
                 std::fs::remove_dir_all(&sub_folder).unwrap();
             }
         })
-        .on_transaction_execution(|scenario_metadata, transaction, receipt, _| {
+        .on_transaction_executed(|scenario_metadata, transaction, receipt, _| {
             transaction.dump_manifest(
                 &Some(root_path.join(scenario_metadata.logical_name)),
                 &NetworkDefinition::simulator(),
@@ -58,30 +58,33 @@ pub fn run_all_in_memory_and_dump_examples(
                 TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
             }
         })
-        .nonce_handling(NonceHandling::Increment(1000))
-        .execute()
+        .nonce_handling(ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
+            1000,
+        ))
+        .execute_all()
         .expect("Must succeed");
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "7c6b16ffc2ebdde829ee95c83940f47292f7647778694080481a4671624fdfdc"
+        "b15ab5e1f509966765143cb585f1b80cc7db61a87c4f483ff83563b363eab93f"
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
-        "5e27fa71b2c6e1d0c56bc25603768f190e76e211e08d30f19ee3b8ae3bfcd934"
+        "18e1b9cc48ee2a71c154b835c7dac587dae165e0e25d85a4e871879528e929ab"
     );
 
     Ok(())
 }
 
 #[cfg(test)]
-#[cfg(feature = "std")]
+#[allow(irrefutable_let_patterns)]
 mod test {
-    use radix_transactions::manifest::{compile, MockBlobProvider};
-
     use super::*;
+    use radix_engine::vm::*;
+    use radix_transactions::manifest::*;
 
     #[test]
+    #[cfg(feature = "std")]
     pub fn update_expected_scenario_output() {
         let network_definition = NetworkDefinition::simulator();
         let scenarios_dir =
@@ -104,5 +107,200 @@ mod test {
             )
             .unwrap();
         }
+    }
+
+    #[test]
+    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios() {
+        assert_event_and_state_hashes(
+            "43be4cce2d4f2ed2eb519d77dfa770697244e843b2a0f7fd86bdf773d9b6f278",
+            "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc",
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
+            )),
+            |_, _, _| {},
+            |_, _| {},
+        );
+    }
+
+    // No scenarios but ends with the protocol update which makes the root hash different but the
+    // event hash the same as genesis.
+    #[test]
+    pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios() {
+        assert_event_and_state_hashes(
+            "17567dbaf89a77a20e837e8d48187585b0547374fac9e19b9acc9d04d630a774",
+            "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc",
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
+            )),
+            |network, protocol_update, db| {
+                if let ProtocolVersion::ProtocolUpdate(protocol_update @ ProtocolUpdate::Anemone) =
+                    protocol_update
+                {
+                    protocol_update
+                        .generate_state_updates(db, network)
+                        .into_iter()
+                        .for_each(|update| {
+                            db.commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
+                        });
+                }
+            },
+            |_, _| {},
+        );
+    }
+
+    // Running the genesis scenarios against the anemone protocol update. We expect the state root
+    // hash and the event hash to differ since the behavior of some blueprints changed in that
+    // update.
+    #[test]
+    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_anemone() {
+        assert_event_and_state_hashes(
+            "dbba9b7154eb40b3978a4d4b7921945178ee93f3bb04aad4ab08db98287a7785",
+            "57e3e4d7a7232612540d949dcea540f7ead064a92d5da50fbe60b5659a2ddd0b",
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
+            )),
+            |_, _, _| {},
+            // Update to anemone immediately after bootstrapping.
+            |network, db| {
+                ProtocolUpdate::Anemone
+                    .generate_state_updates(db, network)
+                    .into_iter()
+                    .for_each(|update| {
+                        db.commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
+                    })
+            },
+        );
+    }
+
+    #[test]
+    pub fn check_state_and_event_hashes_for_up_to_bottlenose_scenarios() {
+        assert_event_and_state_hashes(
+            "b15ab5e1f509966765143cb585f1b80cc7db61a87c4f483ff83563b363eab93f",
+            "18e1b9cc48ee2a71c154b835c7dac587dae165e0e25d85a4e871879528e929ab",
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose),
+            )),
+            |network, protocol_update, db| {
+                if let ProtocolVersion::ProtocolUpdate(
+                    protocol_update @ (ProtocolUpdate::Anemone | ProtocolUpdate::Bottlenose),
+                ) = protocol_update
+                {
+                    protocol_update
+                        .generate_state_updates(db, network)
+                        .into_iter()
+                        .for_each(|update| {
+                            db.commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
+                        });
+                }
+            },
+            |_, _| {},
+        );
+    }
+
+    #[test]
+    pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios_on_bottlenose() {
+        assert_event_and_state_hashes(
+            "9d06891ba213a57e14031af89cd21b040a1e0c7b362f5e425d1dd281e258d47d",
+            "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
+            )),
+            |_, _, _| {},
+            // Update to bottlenose immediately after bootstrapping.
+            |network, db| {
+                [ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose]
+                    .into_iter()
+                    .for_each(|protocol_update| {
+                        protocol_update
+                            .generate_state_updates(db, network)
+                            .into_iter()
+                            .for_each(|update| {
+                                db.commit(
+                                    &update.create_database_updates::<SpreadPrefixKeyMapper>(),
+                                )
+                            })
+                    })
+            },
+        );
+    }
+
+    #[test]
+    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_bottlenose() {
+        assert_event_and_state_hashes(
+            "9d06891ba213a57e14031af89cd21b040a1e0c7b362f5e425d1dd281e258d47d",
+            "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
+            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
+                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
+            )),
+            |_, _, _| {},
+            // Update to bottlenose immediately after bootstrapping.
+            |network, db| {
+                [ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose]
+                    .into_iter()
+                    .for_each(|protocol_update| {
+                        protocol_update
+                            .generate_state_updates(db, network)
+                            .into_iter()
+                            .for_each(|update| {
+                                db.commit(
+                                    &update.create_database_updates::<SpreadPrefixKeyMapper>(),
+                                )
+                            })
+                    })
+            },
+        );
+    }
+
+    fn assert_event_and_state_hashes<P, B>(
+        expected_state_root_hash: &str,
+        expected_event_hash: &str,
+        filter: ScenarioFilter,
+        protocol_update_handling: P,
+        after_bootstrap: B,
+    ) where
+        P: FnMut(
+            &NetworkDefinition,
+            ProtocolVersion,
+            &mut StateTreeUpdatingDatabase<InMemorySubstateDatabase>,
+        ),
+        B: FnMut(&NetworkDefinition, &mut StateTreeUpdatingDatabase<InMemorySubstateDatabase>),
+    {
+        // Arrange
+        let mut event_hasher = HashAccumulator::new();
+        let mut substate_db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
+
+        // Act
+        let ScenarioExecutionReceipt {
+            database: mut substate_db,
+        } = DefaultTransactionScenarioExecutor::new(substate_db, NetworkDefinition::simulator())
+            .on_transaction_executed(|metadata, transaction, receipt, _| {
+                let intent_hash =
+                    PreparedNotarizedTransactionV1::prepare_from_raw(&transaction.raw_transaction)
+                        .unwrap()
+                        .intent_hash();
+
+                match &receipt.result {
+                    TransactionResult::Commit(c) => {
+                        event_hasher.update_no_chain(intent_hash.as_hash().as_bytes());
+                        event_hasher
+                            .update_no_chain(scrypto_encode(&c.application_events).unwrap());
+                    }
+                    TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
+                }
+            })
+            .on_new_protocol_requirement_encountered(protocol_update_handling)
+            .after_bootstrap(after_bootstrap)
+            .nonce_handling(ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
+                1000,
+            ))
+            .execute_all_matching(filter)
+            .expect("Must succeed");
+
+        // Assert
+        assert_eq!(
+            substate_db.get_current_root_hash().to_string(),
+            expected_state_root_hash
+        );
+        assert_eq!(event_hasher.finalize().to_string(), expected_event_hash);
     }
 }

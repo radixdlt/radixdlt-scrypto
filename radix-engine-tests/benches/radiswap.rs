@@ -47,8 +47,12 @@ fn bench_radiswap(c: &mut Criterion) {
     let (pk, _, account) = ledger.new_allocated_account();
     let package_address = ledger.publish_package(
         (
-            include_workspace_asset_bytes!("radiswap.wasm").to_vec(),
-            manifest_decode(include_workspace_asset_bytes!("radiswap.rpd")).unwrap(),
+            include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
+            manifest_decode(include_workspace_asset_bytes!(
+                "radix-transaction-scenarios",
+                "radiswap.rpd"
+            ))
+            .unwrap(),
         ),
         btreemap!(),
         OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk)))),

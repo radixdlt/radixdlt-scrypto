@@ -151,7 +151,6 @@ fn transfer_test(c: &mut Criterion) {
             let account = execute_and_commit_transaction(
                 &mut substate_db,
                 &mut scrypto_interpreter,
-                &CostingParameters::default(),
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
@@ -169,7 +168,6 @@ fn transfer_test(c: &mut Criterion) {
             execute_and_commit_transaction(
                 &mut substate_db,
                 &mut scrypto_interpreter,
-                &CostingParameters::default(),
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
                     .prepare()
@@ -196,7 +194,6 @@ fn transfer_test(c: &mut Criterion) {
         execute_and_commit_transaction(
             &mut substate_db,
             &mut scrypto_interpreter,
-            &CostingParameters::default(),
             &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
@@ -220,7 +217,6 @@ fn transfer_test(c: &mut Criterion) {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
                 &mut scrypto_interpreter,
-                &CostingParameters::default(),
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()

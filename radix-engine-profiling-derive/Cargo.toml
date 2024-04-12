@@ -2,7 +2,7 @@
 name = "radix-engine-profiling-derive"
 version = "1.2.0-dev"
 edition = "2021"
-description = "Macros for profiling to any function inside engine implementation."
+description = "Macros for profiling to any function inside engine implementation, from the Radix DLT project."
 readme = "README.md"
 license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"

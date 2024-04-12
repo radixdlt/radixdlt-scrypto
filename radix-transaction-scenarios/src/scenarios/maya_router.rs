@@ -1,8 +1,8 @@
+use crate::internal_prelude::*;
+use radix_engine::updates::{ProtocolUpdate, ProtocolVersion};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
-
-use crate::internal_prelude::*;
 
 pub struct MayaRouterScenarioConfig {
     pub owner_account: VirtualAccount,
@@ -46,12 +46,15 @@ pub struct MayaRouterScenarioCreator;
 impl ScenarioCreator for MayaRouterScenarioCreator {
     type Config = MayaRouterScenarioConfig;
     type State = MayaRouterScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion =
+        ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose);
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "maya_router",
         };

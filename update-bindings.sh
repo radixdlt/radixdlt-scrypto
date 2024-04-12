@@ -28,7 +28,7 @@ list=(
     "package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6" # Account
     "package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6" # Pools
     "package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l" # Access Controller
-    "package_rdx1pkgxxxxxxxxxl0ckerxxxxxxxxx002629568967xxxxxxxxxl0cker" # Locker Package
+    "package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6" # Locker Package
 );
 for address in ${list[@]}; 
 do

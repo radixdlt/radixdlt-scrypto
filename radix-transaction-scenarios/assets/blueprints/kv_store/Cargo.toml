@@ -1,0 +1,11 @@
+[package]
+name = "kv_store"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+sbor = { version = "1.2.0-dev" }
+scrypto = { version = "1.2.0-dev" }
+
+[lib]
+crate-type = ["cdylib", "lib"]

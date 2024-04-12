@@ -14,7 +14,7 @@ use radix_native_sdk::resource::NativeVault;
 use crate::blueprints::package::PackageError;
 use crate::kernel::kernel_api::KernelApi;
 use crate::roles_template;
-use crate::system::system_callback::{SystemConfig, SystemLockData};
+use crate::system::system_callback::{System, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
@@ -441,7 +441,7 @@ impl ComponentRoyaltyBlueprint {
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         let accumulator_handle = api.kernel_open_substate(
             receiver,

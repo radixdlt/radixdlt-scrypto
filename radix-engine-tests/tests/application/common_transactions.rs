@@ -22,7 +22,8 @@ macro_rules! replace_variables {
 #[test]
 fn test_allocate_address_and_call_it() {
     run_manifest(|account_address, address_bech32_encoder| {
-        let code_blob = include_workspace_asset_bytes!("radiswap.wasm").to_vec();
+        let code_blob =
+            include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec();
         let manifest = replace_variables!(
             include_workspace_transaction_examples_str!("address_allocation/allocate_address.rtm"),
             account_address = account_address.display(address_bech32_encoder),
@@ -182,7 +183,7 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 #[test]
 fn publish_package_succeeds() {
     run_manifest(|account_address, address_bech32_encoder| {
-        let code_blob = include_workspace_asset_bytes!("faucet.wasm").to_vec();
+        let code_blob = include_workspace_asset_bytes!("radix-engine", "faucet.wasm").to_vec();
 
         let manifest = replace_variables!(
             include_workspace_transaction_examples_str!("package/publish.rtm"),
