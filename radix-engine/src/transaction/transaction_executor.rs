@@ -353,138 +353,7 @@ where
         // Run manifest
         let (costing_parameters, fee_summary, fee_details, result) = match validation_result {
             Ok(system) => {
-                let (
-                    interpretation_result,
-                    costing_parameters,
-                    fee_details,
-                    (mut costing_module, runtime_module, execution_trace_module),
-                ) = self.interpret_manifest::<T>(&mut track, system, init, executable);
-
-
-                let result_type = Self::determine_result_type(
-                    interpretation_result,
-                    &mut costing_module.fee_reserve,
-                );
-                match result_type {
-                    TransactionResultType::Commit(outcome) => {
-                        let is_success = outcome.is_ok();
-
-                        // Commit/revert
-                        if !is_success {
-                            costing_module.fee_reserve.revert_royalty();
-                            track.revert_non_force_write_changes();
-                        }
-
-                        // Distribute fees
-                        let (fee_reserve_finalization, paying_vaults, finalization_events) =
-                            Self::finalize_fees(
-                                &mut track,
-                                costing_module.fee_reserve,
-                                is_success,
-                                executable.costing_parameters().free_credit_in_xrd,
-                            );
-                        let fee_destination = FeeDestination {
-                            to_proposer: fee_reserve_finalization.to_proposer_amount(),
-                            to_validator_set: fee_reserve_finalization.to_validator_set_amount(),
-                            to_burn: fee_reserve_finalization.to_burn_amount(),
-                            to_royalty_recipients: fee_reserve_finalization
-                                .royalty_cost_breakdown
-                                .clone(),
-                        };
-
-                        // Update intent hash status
-                        if let Some(next_epoch) = Self::read_epoch(&mut track) {
-                            Self::update_transaction_tracker(
-                                &mut track,
-                                next_epoch,
-                                executable.intent_hash(),
-                                is_success,
-                            );
-                        }
-
-                        // Finalize events and logs
-                        let (mut application_events, application_logs) =
-                            runtime_module.finalize(is_success);
-                        application_events.extend(finalization_events);
-
-                        // Finalize execution trace
-                        let execution_trace =
-                            execution_trace_module.finalize(&paying_vaults, is_success);
-
-                        // Finalize track
-                        let tracked_substates = {
-                            match track.finalize() {
-                                Ok(result) => result,
-                                Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
-                                    panic!("System invariants should prevent transient substate from owning nodes");
-                                }
-                            }
-                        };
-
-                        // Generate state updates from tracked substates
-                        // Note that this process will prune invalid reads
-                        let (new_node_ids, state_updates) =
-                            to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
-
-                        // Summarizes state updates
-                        let system_structure = SystemStructure::resolve(
-                            self.substate_db,
-                            &state_updates,
-                            &application_events,
-                        );
-                        let state_update_summary =
-                            StateUpdateSummary::new(self.substate_db, new_node_ids, &state_updates);
-
-                        // Resource reconciliation does not currently work in preview mode
-                        if executable.costing_parameters().free_credit_in_xrd.is_zero() {
-                            let system_reader = SystemDatabaseReader::new_with_overlay(
-                                self.substate_db,
-                                &state_updates,
-                            );
-                            reconcile_resource_state_and_events(
-                                &state_update_summary,
-                                &application_events,
-                                system_reader,
-                            );
-                        }
-
-                        (
-                            costing_parameters,
-                            fee_reserve_finalization.into(),
-                            fee_details,
-                            TransactionResult::Commit(CommitResult {
-                                state_updates,
-                                state_update_summary,
-                                fee_source: FeeSource { paying_vaults },
-                                fee_destination,
-                                outcome: match outcome {
-                                    Ok(o) => TransactionOutcome::Success(o),
-                                    Err(e) => TransactionOutcome::Failure(e),
-                                },
-                                application_events,
-                                application_logs,
-                                system_structure,
-                                execution_trace: if self.system_init.execution_trace.is_some() {
-                                    Some(execution_trace)
-                                } else {
-                                    None
-                                },
-                            }),
-                        )
-                    }
-                    TransactionResultType::Reject(reason) => (
-                        costing_parameters,
-                        costing_module.fee_reserve.finalize().into(),
-                        fee_details,
-                        TransactionResult::Reject(RejectResult { reason }),
-                    ),
-                    TransactionResultType::Abort(reason) => (
-                        costing_parameters,
-                        costing_module.fee_reserve.finalize().into(),
-                        fee_details,
-                        TransactionResult::Abort(AbortResult { reason }),
-                    ),
-                }
+                self.interpret_manifest::<T>(track, system, init, executable)
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
@@ -545,19 +414,15 @@ where
 
     fn interpret_manifest<T: WrappedSystem<V>>(
         &self,
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
+        mut track: Track<S, SpreadPrefixKeyMapper>,
         system: System<V>,
         init: T::Init,
         executable: &Executable,
     ) -> (
-        Result<Vec<InstructionOutput>, TransactionExecutionError>,
         CostingParameters,
+        TransactionFeeSummary,
         Option<TransactionFeeDetails>,
-        (
-            CostingModule,
-            TransactionRuntimeModule,
-            ExecutionTraceModule,
-        ),
+        TransactionResult,
     ) {
         let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
         let mut wrapped_system = T::create(system, init);
@@ -565,7 +430,7 @@ where
         let kernel_boot = BootLoader {
             id_allocator: &mut id_allocator,
             callback: &mut wrapped_system,
-            store: track,
+            store: &mut track,
         };
 
         let interpretation_result = kernel_boot
@@ -605,11 +470,11 @@ where
             println!("{:?}", interpretation_result);
         }
 
-        let modules = system.modules.unpack();
+        let (mut costing_module, runtime_module, execution_trace_module) = system.modules.unpack();
 
-        let costing_parameters = modules.0.fee_reserve.costing_parameters();
+        let costing_parameters = costing_module.fee_reserve.costing_parameters();
 
-        let fee_details = if let Some(cost_breakdown) = &modules.0.cost_breakdown {
+        let fee_details = if let Some(cost_breakdown) = &costing_module.cost_breakdown {
             let cost_breakdown = cost_breakdown.clone();
             let execution_cost_breakdown = cost_breakdown
                 .execution_cost_breakdown
@@ -629,7 +494,130 @@ where
             None
         };
 
-        (interpretation_result, costing_parameters, fee_details, modules)
+        let result_type = Self::determine_result_type(
+            interpretation_result,
+            &mut costing_module.fee_reserve,
+        );
+        match result_type {
+            TransactionResultType::Commit(outcome) => {
+                let is_success = outcome.is_ok();
+
+                // Commit/revert
+                if !is_success {
+                    costing_module.fee_reserve.revert_royalty();
+                    track.revert_non_force_write_changes();
+                }
+
+                // Distribute fees
+                let (fee_reserve_finalization, paying_vaults, finalization_events) =
+                    Self::finalize_fees(
+                        &mut track,
+                        costing_module.fee_reserve,
+                        is_success,
+                        executable.costing_parameters().free_credit_in_xrd,
+                    );
+                let fee_destination = FeeDestination {
+                    to_proposer: fee_reserve_finalization.to_proposer_amount(),
+                    to_validator_set: fee_reserve_finalization.to_validator_set_amount(),
+                    to_burn: fee_reserve_finalization.to_burn_amount(),
+                    to_royalty_recipients: fee_reserve_finalization
+                        .royalty_cost_breakdown
+                        .clone(),
+                };
+
+                // Update intent hash status
+                if let Some(next_epoch) = Self::read_epoch(&mut track) {
+                    Self::update_transaction_tracker(
+                        &mut track,
+                        next_epoch,
+                        executable.intent_hash(),
+                        is_success,
+                    );
+                }
+
+                // Finalize events and logs
+                let (mut application_events, application_logs) =
+                    runtime_module.finalize(is_success);
+                application_events.extend(finalization_events);
+
+                // Finalize execution trace
+                let execution_trace =
+                    execution_trace_module.finalize(&paying_vaults, is_success);
+
+                // Finalize track
+                let tracked_substates = {
+                    match track.finalize() {
+                        Ok(result) => result,
+                        Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
+                            panic!("System invariants should prevent transient substate from owning nodes");
+                        }
+                    }
+                };
+
+                // Generate state updates from tracked substates
+                // Note that this process will prune invalid reads
+                let (new_node_ids, state_updates) =
+                    to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
+
+                // Summarizes state updates
+                let system_structure = SystemStructure::resolve(
+                    self.substate_db,
+                    &state_updates,
+                    &application_events,
+                );
+                let state_update_summary =
+                    StateUpdateSummary::new(self.substate_db, new_node_ids, &state_updates);
+
+                // Resource reconciliation does not currently work in preview mode
+                if executable.costing_parameters().free_credit_in_xrd.is_zero() {
+                    let system_reader = SystemDatabaseReader::new_with_overlay(
+                        self.substate_db,
+                        &state_updates,
+                    );
+                    reconcile_resource_state_and_events(
+                        &state_update_summary,
+                        &application_events,
+                        system_reader,
+                    );
+                }
+
+                (
+                    costing_parameters,
+                    fee_reserve_finalization.into(),
+                    fee_details,
+                    TransactionResult::Commit(CommitResult {
+                        state_updates,
+                        state_update_summary,
+                        fee_source: FeeSource { paying_vaults },
+                        fee_destination,
+                        outcome: match outcome {
+                            Ok(o) => TransactionOutcome::Success(o),
+                            Err(e) => TransactionOutcome::Failure(e),
+                        },
+                        application_events,
+                        application_logs,
+                        system_structure,
+                        execution_trace: if self.system_init.execution_trace.is_some() {
+                            Some(execution_trace)
+                        } else {
+                            None
+                        },
+                    }),
+                )
+            }
+            TransactionResultType::Reject(reason) => (
+                costing_parameters,
+                costing_module.fee_reserve.finalize().into(),
+                fee_details,
+                TransactionResult::Reject(RejectResult { reason }),
+            ),
+            TransactionResultType::Abort(reason) => (
+                costing_parameters,
+                costing_module.fee_reserve.finalize().into(),
+                fee_details,
+                TransactionResult::Abort(AbortResult { reason }),
+            ),
+        }
     }
 
     fn determine_result_type(
