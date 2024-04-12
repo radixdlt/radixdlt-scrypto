@@ -153,16 +153,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
                 )
                 .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                .unwrap_or(
-                     SystemBoot::V1(SystemParameters {
-                        network_definition: NetworkDefinition::mainnet(),
-                        costing_parameters: CostingParameters::babylon_genesis(),
-                        limit_parameters: LimitParameters::babylon_genesis(),
-                        max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
-                            .unwrap(),
-                    })
-                );
-
+                .unwrap_or(SystemBoot::V1(SystemParameters {
+                    network_definition: NetworkDefinition::mainnet(),
+                    costing_parameters: CostingParameters::babylon_genesis(),
+                    limit_parameters: LimitParameters::babylon_genesis(),
+                    max_per_function_royalty_in_xrd: Decimal::try_from(
+                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
+                    )
+                    .unwrap(),
+                }));
 
             match system_boot {
                 SystemBoot::V1(system_parameters) => system_parameters,
@@ -247,11 +246,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             auth_module,
             limits_module,
             costing_module,
-            ExecutionTraceModule::new(
-                init_input
-                    .execution_trace
-                    .unwrap_or(0),
-            ),
+            ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(0)),
         );
 
         modules.init()?;
