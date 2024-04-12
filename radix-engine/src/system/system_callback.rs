@@ -22,7 +22,7 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
-use crate::system::system_modules::costing::{CostingModule, FeeTable, SystemLoanFeeReserve};
+use crate::system::system_modules::costing::{CostingModule, FeeTable, FinalizationCostingEntry, StorageType, SystemLoanFeeReserve};
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::LimitsModule;
@@ -30,7 +30,7 @@ use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
-use crate::track::{BootStore, CommitableSubstateStore, Track};
+use crate::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
 use crate::transaction::{CostingParameters, LimitParameters, SystemOverrides};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -433,6 +433,67 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_teardown(api)
+    }
+
+    fn on_teardown2(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError>
+    {
+        // Note that if a transactions fails during this phase, the costing is
+        // done as if it would succeed.
+        for store_commit in &info {
+            self
+                .modules
+                .apply_finalization_cost(FinalizationCostingEntry::CommitStateUpdates {
+                    store_commit,
+                })
+                .map_err(|e| {
+                        RuntimeError::FinalizationCostingError(e)
+                })?;
+        }
+        self
+            .modules
+            .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
+                events: &self.modules.events().clone(),
+            })
+            .map_err(|e| {
+                RuntimeError::FinalizationCostingError(e)
+            })?;
+        self
+            .modules
+            .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
+                logs: &self.modules.logs().clone(),
+            })
+            .map_err(|e| {
+                RuntimeError::FinalizationCostingError(e)
+            })?;
+
+        /* state storage costs */
+        for store_commit in &info {
+            self
+                .modules
+                .apply_storage_cost(StorageType::State, store_commit.len_increase())
+                .map_err(|e| {
+                    RuntimeError::FinalizationCostingError(e)
+                })?;
+        }
+
+        /* archive storage costs */
+        let total_event_size = self.modules.events().iter().map(|x| x.len()).sum();
+        self
+            .modules
+            .apply_storage_cost(StorageType::Archive, total_event_size)
+            .map_err(|e| {
+                RuntimeError::FinalizationCostingError(e)
+            })?;
+
+        let total_log_size = self.modules.logs().iter().map(|x| x.1.len()).sum();
+        self
+            .modules
+            .apply_storage_cost(StorageType::Archive, total_log_size)
+            .map_err(|e| {
+                RuntimeError::FinalizationCostingError(e)
+            })?;
+
+        Ok(())
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

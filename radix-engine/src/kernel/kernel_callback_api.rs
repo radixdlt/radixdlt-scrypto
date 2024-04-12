@@ -5,7 +5,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
-use crate::track::{BootStore, Track};
+use crate::track::{BootStore, StoreCommitInfo, Track};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
@@ -161,6 +161,8 @@ pub trait KernelCallbackObject: Sized {
     fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
+
+    fn on_teardown2(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 

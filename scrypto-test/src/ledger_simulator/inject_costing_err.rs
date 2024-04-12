@@ -15,7 +15,7 @@ use radix_engine::system::system_callback::System;
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use radix_engine::track::{BootStore, NodeSubstates, Track};
+use radix_engine::track::{BootStore, NodeSubstates, StoreCommitInfo, Track};
 use radix_engine::transaction::WrappedSystem;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
@@ -142,6 +142,10 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         K::on_teardown(&mut api)
+    }
+
+    fn on_teardown2(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
+        self.callback_object.on_teardown2(store_commit_info)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

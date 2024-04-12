@@ -36,6 +36,7 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::*;
+use crate::system::system_modules::EnabledModules;
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -354,46 +355,11 @@ where
             Ok(system) => {
                 let (
                     interpretation_result,
+                    costing_parameters,
+                    fee_details,
                     (mut costing_module, runtime_module, execution_trace_module),
                 ) = self.interpret_manifest::<T>(&mut track, system, init, executable);
 
-                #[cfg(not(feature = "alloc"))]
-                if self.system_init.enable_kernel_trace {
-                    println!("{:-^120}", "Interpretation Results");
-                    println!("{:?}", interpretation_result);
-                }
-
-                let costing_parameters = costing_module.fee_reserve.costing_parameters();
-
-                let fee_details = if let Some(cost_breakdown) = costing_module.cost_breakdown {
-                    let execution_cost_breakdown = cost_breakdown
-                        .execution_cost_breakdown
-                        .into_iter()
-                        .map(|(k, v)| (k.to_string(), v))
-                        .collect();
-                    let finalization_cost_breakdown = cost_breakdown
-                        .finalization_cost_breakdown
-                        .into_iter()
-                        .map(|(k, v)| (k.to_string(), v))
-                        .collect();
-                    Some(TransactionFeeDetails {
-                        execution_cost_breakdown,
-                        finalization_cost_breakdown,
-                    })
-                } else {
-                    None
-                };
-
-                // Panic if an error is encountered in the system layer or below. The following code
-                // is only enabled when compiling with the standard library since the panic catching
-                // machinery and `SystemPanic` errors are only implemented in `std`.
-                #[cfg(feature = "std")]
-                if let Err(TransactionExecutionError::RuntimeError(RuntimeError::SystemError(
-                    SystemError::SystemPanic(..),
-                ))) = interpretation_result
-                {
-                    panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{interpretation_result:?}\"")
-                }
 
                 let result_type = Self::determine_result_type(
                     interpretation_result,
@@ -577,95 +543,6 @@ where
         }
     }
 
-    /*
-    fn read_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
-        // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
-        //        Which could allow for better caching of transaction validity over epoch boundaries
-        match track.read_substate(
-            CONSENSUS_MANAGER.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &ConsensusManagerField::State.into(),
-        ) {
-            Some(x) => {
-                let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
-                    x.as_typed().unwrap();
-                Some(substate.into_payload().into_latest().epoch)
-            }
-            None => None,
-        }
-    }
-     */
-
-    fn validate_epoch_range(
-        current_epoch: Epoch,
-        start_epoch_inclusive: Epoch,
-        end_epoch_exclusive: Epoch,
-    ) -> Result<(), RejectionReason> {
-        if current_epoch < start_epoch_inclusive {
-            return Err(RejectionReason::TransactionEpochNotYetValid {
-                valid_from: start_epoch_inclusive,
-                current_epoch,
-            });
-        }
-        if current_epoch >= end_epoch_exclusive {
-            return Err(RejectionReason::TransactionEpochNoLongerValid {
-                valid_until: end_epoch_exclusive.previous(),
-                current_epoch,
-            });
-        }
-
-        Ok(())
-    }
-
-    fn validate_intent_hash(
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
-        intent_hash: Hash,
-        expiry_epoch: Epoch,
-    ) -> Result<(), RejectionReason> {
-        let substate: FieldSubstate<TransactionTrackerSubstate> = track
-            .read_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                MAIN_BASE_PARTITION,
-                &TransactionTrackerField::TransactionTracker.into(),
-            )
-            .unwrap()
-            .as_typed()
-            .unwrap();
-
-        let partition_number = substate
-            .into_payload()
-            .v1()
-            .partition_for_expiry_epoch(expiry_epoch)
-            .expect("Transaction tracker should cover all valid epoch ranges");
-
-        let substate = track.read_substate(
-            TRANSACTION_TRACKER.as_node_id(),
-            PartitionNumber(partition_number),
-            &SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
-        );
-
-        match substate {
-            Some(value) => {
-                let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
-                match substate.into_value() {
-                    Some(status) => match status.into_v1() {
-                        TransactionStatusV1::CommittedSuccess
-                        | TransactionStatusV1::CommittedFailure => {
-                            return Err(RejectionReason::IntentHashPreviouslyCommitted);
-                        }
-                        TransactionStatusV1::Cancelled => {
-                            return Err(RejectionReason::IntentHashPreviouslyCancelled);
-                        }
-                    },
-                    None => {}
-                }
-            }
-            None => {}
-        }
-
-        Ok(())
-    }
-
     fn interpret_manifest<T: WrappedSystem<V>>(
         &self,
         track: &mut Track<S, SpreadPrefixKeyMapper>,
@@ -674,6 +551,8 @@ where
         executable: &Executable,
     ) -> (
         Result<Vec<InstructionOutput>, TransactionExecutionError>,
+        CostingParameters,
+        Option<TransactionFeeDetails>,
         (
             CostingModule,
             TransactionRuntimeModule,
@@ -681,7 +560,6 @@ where
         ),
     ) {
         let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
-
         let mut wrapped_system = T::create(system, init);
 
         let kernel_boot = BootLoader {
@@ -697,98 +575,61 @@ where
                 executable.references(),
                 executable.blobs(),
             )
-            .and_then(|x| {
-                let system = wrapped_system.system_mut();
-
-                // Note that if a transactions fails during this phase, the costing is
-                // done as if it would succeed.
-
-                /* finalization costs: computation on Node side */
-                let info = track.get_commit_info();
-                for store_commit in &info {
-                    system
-                        .modules
-                        .apply_finalization_cost(FinalizationCostingEntry::CommitStateUpdates {
-                            store_commit,
-                        })
-                        .map_err(|e| {
-                            TransactionExecutionError::RuntimeError(
-                                RuntimeError::FinalizationCostingError(e),
-                            )
-                        })?;
-                }
-                system
-                    .modules
-                    .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
-                        events: &system.modules.events().clone(),
-                    })
-                    .map_err(|e| {
-                        TransactionExecutionError::RuntimeError(
-                            RuntimeError::FinalizationCostingError(e),
-                        )
-                    })?;
-                system
-                    .modules
-                    .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
-                        logs: &system.modules.logs().clone(),
-                    })
-                    .map_err(|e| {
-                        TransactionExecutionError::RuntimeError(
-                            RuntimeError::FinalizationCostingError(e),
-                        )
-                    })?;
-
-                /* state storage costs */
-                for store_commit in &info {
-                    system
-                        .modules
-                        .apply_storage_cost(StorageType::State, store_commit.len_increase())
-                        .map_err(|e| {
-                            TransactionExecutionError::RuntimeError(
-                                RuntimeError::FinalizationCostingError(e),
-                            )
-                        })?;
-                }
-
-                /* archive storage costs */
-                let total_event_size = system.modules.events().iter().map(|x| x.len()).sum();
-                system
-                    .modules
-                    .apply_storage_cost(StorageType::Archive, total_event_size)
-                    .map_err(|e| {
-                        TransactionExecutionError::RuntimeError(
-                            RuntimeError::FinalizationCostingError(e),
-                        )
-                    })?;
-
-                let total_log_size = system.modules.logs().iter().map(|x| x.1.len()).sum();
-                system
-                    .modules
-                    .apply_storage_cost(StorageType::Archive, total_log_size)
-                    .map_err(|e| {
-                        TransactionExecutionError::RuntimeError(
-                            RuntimeError::FinalizationCostingError(e),
-                        )
-                    })?;
-
-                Ok(x)
-            })
-            .or_else(|e| {
-                // State updates are reverted
-
-                // Events are reverted
-
-                // Logs are NOT reverted (This is not ideal, as it means logs are free if the transaction fails)
-
-                Err(e)
-            })
             .map(|rtn| {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output
+            })
+            .or_else(|e| {
+                // State updates are reverted
+                // Events are reverted
+                // Logs are NOT reverted (This is not ideal, as it means logs are free if the transaction fails)
+                Err(e)
             });
 
+        // Panic if an error is encountered in the system layer or below. The following code
+        // is only enabled when compiling with the standard library since the panic catching
+        // machinery and `SystemPanic` errors are only implemented in `std`.
+        #[cfg(feature = "std")]
+        if let Err(TransactionExecutionError::RuntimeError(RuntimeError::SystemError(
+                                                               SystemError::SystemPanic(..),
+                                                           ))) = interpretation_result
+        {
+            panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{interpretation_result:?}\"")
+        }
+
         let system = wrapped_system.to_system();
-        (interpretation_result, system.modules.unpack())
+
+        #[cfg(not(feature = "alloc"))]
+        if system.modules.enabled_modules.contains(EnabledModules::KERNEL_TRACE) {
+            println!("{:-^120}", "Interpretation Results");
+            println!("{:?}", interpretation_result);
+        }
+
+        let modules = system.modules.unpack();
+
+        let costing_parameters = modules.0.fee_reserve.costing_parameters();
+
+        let fee_details = if let Some(cost_breakdown) = &modules.0.cost_breakdown {
+            let cost_breakdown = cost_breakdown.clone();
+            let execution_cost_breakdown = cost_breakdown
+                .execution_cost_breakdown
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect();
+            let finalization_cost_breakdown = cost_breakdown
+                .finalization_cost_breakdown
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect();
+            Some(TransactionFeeDetails {
+                execution_cost_breakdown,
+                finalization_cost_breakdown,
+            })
+        } else {
+            None
+        };
+
+        (interpretation_result, costing_parameters, fee_details, modules)
     }
 
     fn determine_result_type(

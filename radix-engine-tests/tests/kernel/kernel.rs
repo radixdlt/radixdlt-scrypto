@@ -16,7 +16,7 @@ use radix_engine::kernel::kernel_callback_api::{
     RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
     WriteSubstateEvent,
 };
-use radix_engine::track::{BootStore, Track};
+use radix_engine::track::{BootStore, StoreCommitInfo, Track};
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
@@ -78,6 +78,10 @@ impl KernelCallbackObject for TestCallbackObject {
     where
         Y: KernelApi<Self>,
     {
+        Ok(())
+    }
+
+    fn on_teardown2(&mut self, _store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
         Ok(())
     }
 
