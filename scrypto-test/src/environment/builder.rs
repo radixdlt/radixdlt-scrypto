@@ -9,7 +9,6 @@ use radix_engine::system::actor::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
-use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::auth::*;
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
@@ -193,14 +192,14 @@ where
         // Create the various VMs we will use
         let native_vm = NativeVm::new();
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let vm = Vm::new(&scrypto_vm, native_vm.clone());
+        let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
         if self.bootstrap {
             // Run genesis against the substate store.
             let mut bootstrapper = Bootstrapper::new(
                 NetworkDefinition::simulator(),
                 &mut self.database,
-                vm,
+                vm_init,
                 false,
             );
             bootstrapper.bootstrap_test_default().unwrap();
@@ -230,31 +229,54 @@ where
             native_vm.clone(),
             id_allocator,
             |substate_database| Track::new(substate_database),
-            |scrypto_vm| SystemConfig {
-                blueprint_cache: NonIterMap::new(),
-                auth_cache: NonIterMap::new(),
-                schema_cache: NonIterMap::new(),
-                callback_obj: Vm::new(scrypto_vm, native_vm.clone()),
-                modules: SystemModuleMixer::new(
-                    EnabledModules::LIMITS
-                        | EnabledModules::AUTH
-                        | EnabledModules::TRANSACTION_RUNTIME,
-                    NetworkDefinition::simulator(),
-                    Self::DEFAULT_INTENT_HASH,
-                    AuthZoneParams {
-                        initial_proofs: Default::default(),
-                        virtual_resources: Default::default(),
+            |scrypto_vm, database| {
+                let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                    TRANSACTION_TRACKER.as_node_id(),
+                    BOOT_LOADER_PARTITION,
+                );
+                let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(
+                    BOOT_LOADER_VM_SUBSTATE_FIELD_KEY,
+                ));
+
+                let vm_boot = database
+                    .get_substate(&db_partition_key, &db_sort_key)
+                    .map(|v| scrypto_decode(v.as_slice()).unwrap())
+                    .unwrap_or(VmBoot::V1 {
+                        scrypto_version: 0u64,
+                    });
+
+                let vm_version = match vm_boot {
+                    VmBoot::V1 { scrypto_version } => VmVersion { scrypto_version },
+                };
+
+                System {
+                    blueprint_cache: NonIterMap::new(),
+                    auth_cache: NonIterMap::new(),
+                    schema_cache: NonIterMap::new(),
+                    callback: Vm {
+                        scrypto_vm,
+                        native_vm: native_vm.clone(),
+                        vm_version,
                     },
-                    SystemLoanFeeReserve::default(),
-                    FeeTable::new(),
-                    0,
-                    0,
-                    &ExecutionConfig::for_test_transaction().with_kernel_trace(false),
-                ),
+                    modules: SystemModuleMixer::new(
+                        EnabledModules::LIMITS
+                            | EnabledModules::AUTH
+                            | EnabledModules::TRANSACTION_RUNTIME,
+                        NetworkDefinition::simulator(),
+                        Self::DEFAULT_INTENT_HASH,
+                        AuthZoneParams {
+                            initial_proofs: Default::default(),
+                            virtual_resources: Default::default(),
+                        },
+                        SystemLoanFeeReserve::default(),
+                        FeeTable::new(),
+                        0,
+                        0,
+                        &ExecutionConfig::for_test_transaction().with_kernel_trace(false),
+                    ),
+                }
             },
             |system_config, track, id_allocator| {
-                // Get version from the boot store
-                let vm_version = system_config.callback_obj.init(track).unwrap();
                 Kernel::kernel_create_kernel_for_testing(
                     SubstateIO {
                         heap: Heap::new(),
@@ -270,7 +292,6 @@ where
                     CallFrame::new_root(Actor::Root),
                     vec![],
                     system_config,
-                    vm_version,
                 )
             },
         ));

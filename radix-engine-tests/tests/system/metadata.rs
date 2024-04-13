@@ -11,7 +11,10 @@ use scrypto_test::prelude::*;
 fn can_get_from_scrypto() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!("metadata"));
+    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
+        "radix-transaction-scenarios",
+        "metadata"
+    ));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -45,7 +48,10 @@ fn can_get_from_scrypto() {
 fn can_set_from_scrypto() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!("metadata"));
+    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
+        "radix-transaction-scenarios",
+        "metadata"
+    ));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
@@ -72,7 +78,10 @@ fn can_set_from_scrypto() {
 fn cannot_initialize_metadata_if_key_too_long() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!("metadata"));
+    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
+        "radix-transaction-scenarios",
+        "metadata"
+    ));
 
     // Act
     let key = "a".repeat(MAX_METADATA_KEY_STRING_LEN + 1);
@@ -102,7 +111,10 @@ fn cannot_initialize_metadata_if_key_too_long() {
 fn cannot_set_metadata_if_key_too_long() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!("metadata"));
+    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
+        "radix-transaction-scenarios",
+        "metadata"
+    ));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
@@ -136,7 +148,10 @@ fn cannot_set_metadata_if_key_too_long() {
 fn cannot_initialize_metadata_if_value_too_long() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!("metadata"));
+    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
+        "radix-transaction-scenarios",
+        "metadata"
+    ));
 
     // Act
     let value = "a".repeat(MAX_METADATA_VALUE_SBOR_LEN + 1);
@@ -166,7 +181,10 @@ fn cannot_initialize_metadata_if_value_too_long() {
 fn cannot_set_metadata_if_value_too_long() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!("metadata"));
+    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
+        "radix-transaction-scenarios",
+        "metadata"
+    ));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
@@ -200,7 +218,10 @@ fn cannot_set_metadata_if_value_too_long() {
 fn cannot_set_metadata_if_initialized_empty_locked() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!("metadata"));
+    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
+        "radix-transaction-scenarios",
+        "metadata"
+    ));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())

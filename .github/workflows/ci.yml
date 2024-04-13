@@ -92,17 +92,6 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
-      - name: Build faucet
-        run: cargo build --target wasm32-unknown-unknown --release
-        working-directory: assets/blueprints/faucet
-      - name: Build and test radiswap
-        run: |
-          cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release
-        working-directory: assets/blueprints/radiswap
-      - name: Build no-std
-        run: cargo build --target wasm32-unknown-unknown --release
-        working-directory: examples/no-std
       - name: Build and test hello-world
         run: |
           cargo build --target wasm32-unknown-unknown --release
@@ -113,6 +102,9 @@ jobs:
           cargo build --target wasm32-unknown-unknown --release
           cargo nextest run --release
         working-directory: examples/everything
+      - name: Build no-std
+        run: cargo build --target wasm32-unknown-unknown --release
+        working-directory: examples/no-std
 
   scrypto-stubs:
     name: Check Scrypto Stubs

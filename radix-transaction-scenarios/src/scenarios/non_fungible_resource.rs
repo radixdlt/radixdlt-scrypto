@@ -1,7 +1,9 @@
 use crate::internal_prelude::*;
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
+#[allow(deprecated)]
 pub struct NonFungibleResourceScenarioConfig {
     pub main_account: VirtualAccount,
     pub occasional_recipient_account: VirtualAccount,
@@ -32,14 +34,16 @@ pub struct NonFungibleResourceScenarioCreator;
 
 impl ScenarioCreator for NonFungibleResourceScenarioCreator {
     type Config = NonFungibleResourceScenarioConfig;
-
     type State = NonFungibleResourceScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
+    #[allow(deprecated)]
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "non_fungible_resource",
         };
@@ -544,10 +548,10 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("main_account", config.main_account.address.clone())
+                        .add("main_account", config.main_account.address)
                         .add(
                             "occasional_recipient_account",
-                            config.occasional_recipient_account.address.clone(),
+                            config.occasional_recipient_account.address,
                         )
                         .add(
                             "integer_non_fungible_resource",

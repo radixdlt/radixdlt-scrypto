@@ -14,7 +14,7 @@ use crate::kernel::kernel_api::*;
 use crate::system::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::system::node_init::type_info_partition;
 use crate::system::system_callback::{
-    FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
+    FieldLockData, KeyValueEntryLockData, System, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -48,7 +48,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
 /// Provided to upper layer for invoking lower layer service
-pub struct SystemService<'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> {
+pub struct SystemService<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
     pub phantom: PhantomData<V>,
 }
@@ -100,7 +100,7 @@ enum EmitterActor {
 
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     pub fn new(api: &'a mut Y) -> Self {
@@ -117,7 +117,7 @@ where
 )]
 impl<'a, Y, V> SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     fn validate_new_object(
@@ -1113,7 +1113,7 @@ where
 )]
 impl<'a, Y, V> ClientFieldApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
@@ -1206,7 +1206,7 @@ where
 )]
 impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
@@ -1595,7 +1595,7 @@ where
 )]
 impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
@@ -1734,7 +1734,7 @@ where
 )]
 impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
@@ -1888,7 +1888,7 @@ where
 )]
 impl<'a, Y, V> ClientActorIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
@@ -2022,7 +2022,7 @@ where
 )]
 impl<'a, Y, V> ClientActorSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
@@ -2142,7 +2142,7 @@ where
 )]
 impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
@@ -2190,7 +2190,7 @@ where
 )]
 impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // No costing should be applied
@@ -2431,7 +2431,7 @@ where
 )]
 impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -2652,7 +2652,7 @@ where
 )]
 impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
@@ -2745,7 +2745,7 @@ where
 )]
 impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     // No costing should be applied
@@ -2765,7 +2765,7 @@ where
 )]
 impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources]
@@ -2854,7 +2854,7 @@ where
 )]
 impl<'a, Y, V> ClientCryptoUtilsApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     #[trace_resources(log=message.len())]
@@ -2946,7 +2946,7 @@ where
 )]
 impl<'a, Y, V> ClientApi<RuntimeError> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
 }
@@ -2957,7 +2957,7 @@ where
 )]
 impl<'a, Y, V> KernelNodeApi for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
@@ -2995,7 +2995,7 @@ where
 )]
 impl<'a, Y, V> KernelSubstateApi<SystemLockData> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
     fn kernel_mark_substate_as_transient(
@@ -3105,12 +3105,12 @@ where
     }
 }
 
-impl<'a, Y, V> KernelInternalApi<SystemConfig<V>> for SystemService<'a, Y, V>
+impl<'a, Y, V> KernelInternalApi<System<V>> for SystemService<'a, Y, V>
 where
-    Y: KernelApi<SystemConfig<V>>,
+    Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, SystemConfig<V>> {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<V>> {
         self.api.kernel_get_system_state()
     }
 

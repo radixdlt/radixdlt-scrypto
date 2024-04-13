@@ -21,10 +21,12 @@ use crate::system::actor::MethodActor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use crate::system::system_modules::SystemModuleMixer;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
+use crate::transaction::{CostingParameters, ExecutionConfig};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -41,7 +43,16 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
-use radix_transactions::model::PreAllocatedAddress;
+use radix_transactions::model::{Executable, PreAllocatedAddress};
+
+pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SystemBoot {
+    V1 {
+        costing_parameters: CostingParameters,
+    },
+}
 
 #[derive(Clone)]
 pub enum SystemLockData {
@@ -91,25 +102,64 @@ impl SystemLockData {
     }
 }
 
-pub struct SystemConfig<C: SystemCallbackObject> {
-    pub callback_obj: C,
+pub struct System<C: SystemCallbackObject> {
+    pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
-    type CallFrameData = Actor;
+impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
-    type CallbackState = C::CallbackState;
+    type CallFrameData = Actor;
+    type InitInput = C::InitInput;
 
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<C::CallbackState, BootloadingError> {
-        self.modules.on_init()?;
+    fn init<S: BootStore>(
+        store: &S,
+        executable: &Executable,
+        execution_config: &ExecutionConfig,
+        init_input: C::InitInput,
+    ) -> Result<Self, BootloadingError> {
+        let costing_parameters = {
+            let system_boot = store
+                .read_substate(
+                    TRANSACTION_TRACKER.as_node_id(),
+                    BOOT_LOADER_PARTITION,
+                    &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
+                )
+                .map(|v| scrypto_decode(v.as_slice()).unwrap())
+                .unwrap_or(SystemBoot::V1 {
+                    costing_parameters: CostingParameters::default(),
+                });
 
-        let callback_state = self.callback_obj.init(store)?;
+            match system_boot {
+                SystemBoot::V1 { costing_parameters } => costing_parameters,
+            }
+        };
+        let callback = C::init(store, init_input)?;
 
-        Ok(callback_state)
+        let mut modules = SystemModuleMixer::new(
+            execution_config.enabled_modules,
+            execution_config.network_definition.clone(),
+            executable.intent_hash().to_hash(),
+            executable.auth_zone_params().clone(),
+            SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
+            FeeTable::new(),
+            executable.payload_size(),
+            executable.num_of_signature_validations(),
+            execution_config,
+        );
+
+        modules.init()?;
+
+        Ok(System {
+            blueprint_cache: NonIterMap::new(),
+            auth_cache: NonIterMap::new(),
+            schema_cache: NonIterMap::new(),
+            callback,
+            modules,
+        })
     }
 
     fn start<Y>(
@@ -164,18 +214,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_pin_node(self, node_id)
     }
 
-    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
-        SystemModuleMixer::on_drop_node(api, &event)
-    }
-
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_create_node(api, &event)
+    }
+
+    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>,
+    {
+        SystemModuleMixer::on_drop_node(api, &event)
     }
 
     fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
@@ -225,15 +275,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_scan_keys(self, &event)
     }
 
+    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_drain_substates(self, &event)
+    }
+
     fn on_scan_sorted_substates(
         &mut self,
         event: ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_scan_sorted_substates(self, &event)
-    }
-
-    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_drain_substates(self, &event)
     }
 
     fn before_invoke<Y>(
@@ -259,22 +309,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_invoke(api, invocation)
     }
 
-    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_execution_start(api)
-    }
-
-    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_execution_finish(api, message)?;
-
-        Ok(())
-    }
-
     fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
@@ -295,6 +329,22 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_invoke(api, output)
     }
 
+    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_execution_start(api)
+    }
+
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_execution_finish(api, message)?;
+
+        Ok(())
+    }
+
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
@@ -311,7 +361,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelApi<SystemConfig<C>>,
+        Y: KernelApi<System<C>>,
     {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();

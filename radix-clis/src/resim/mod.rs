@@ -65,14 +65,14 @@ use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
+use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
 use radix_engine::transaction::TransactionResult;
-use radix_engine::transaction::{execute_and_commit_transaction, CostingParameters};
 use radix_engine::vm::wasm::*;
-use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
@@ -169,12 +169,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
-    let SimulatorEnvironment {
-        mut db,
-        scrypto_vm,
-        native_vm,
-    } = SimulatorEnvironment::new()?;
-    let vm = Vm::new(&scrypto_vm, native_vm);
+    let SimulatorEnvironment { mut db, scrypto_vm } = SimulatorEnvironment::new()?;
+    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
     let nonce = get_nonce()?;
     let transaction = SystemTransactionV1 {
@@ -188,8 +184,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 
     let receipt = execute_and_commit_transaction(
         &mut db,
-        vm,
-        &CostingParameters::default(),
+        vm_init,
         &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
             .with_kernel_trace(trace),
         &transaction
@@ -245,12 +240,8 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let SimulatorEnvironment {
-                mut db,
-                scrypto_vm,
-                native_vm,
-            } = SimulatorEnvironment::new()?;
-            let vm = Vm::new(&scrypto_vm, native_vm);
+            let SimulatorEnvironment { mut db, scrypto_vm } = SimulatorEnvironment::new()?;
+            let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -262,8 +253,7 @@ pub fn handle_manifest<O: std::io::Write>(
 
             let receipt = execute_and_commit_transaction(
                 &mut db,
-                vm,
-                &CostingParameters::default(),
+                vm_init,
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
                 &transaction
                     .prepare()

@@ -10,7 +10,7 @@ use sbor::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
 
 use super::system::SystemService;
-use super::system_callback::SystemConfig;
+use super::system_callback::System;
 use super::system_callback_api::SystemCallbackObject;
 use super::type_info::TypeInfoSubstate;
 
@@ -49,19 +49,14 @@ pub enum SchemaOrigin {
 // SYSTEM ADAPTERS
 //==================
 
-pub struct SystemServiceTypeInfoLookup<
-    's,
-    'a,
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-> {
+pub struct SystemServiceTypeInfoLookup<'s, 'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> {
     system_service: RefCell<&'s mut SystemService<'a, Y, V>>,
     schema_origin: SchemaOrigin,
     allow_ownership: bool,
     allow_non_global_ref: bool,
 }
 
-impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>
+impl<'s, 'a, Y: KernelApi<System<V>>, V: SystemCallbackObject>
     SystemServiceTypeInfoLookup<'s, 'a, Y, V>
 {
     pub fn new(
@@ -79,7 +74,7 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>
     }
 }
 
-impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> ValidationContext
+impl<'s, 'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> ValidationContext
     for SystemServiceTypeInfoLookup<'s, 'a, Y, V>
 {
     type Error = RuntimeError;

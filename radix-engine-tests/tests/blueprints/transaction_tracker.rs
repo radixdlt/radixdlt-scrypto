@@ -1,7 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::track::{BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates};
-use radix_engine::transaction::{CostingParameters, ExecutionConfig};
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
 use radix_transactions::errors::TransactionValidationError;
 use scrypto_test::prelude::*;
@@ -34,7 +34,6 @@ fn test_transaction_replay_protection() {
     let validated = get_validated(&transaction).unwrap();
     let receipt = ledger.execute_transaction(
         validated.get_executable(),
-        CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();
@@ -50,7 +49,6 @@ fn test_transaction_replay_protection() {
     // 3. Run the transaction again
     let receipt = ledger.execute_transaction(
         validated.get_executable(),
-        CostingParameters::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_specific_rejection(|e| match e {
@@ -84,11 +82,8 @@ fn test_transaction_replay_protection() {
 
     // 5. Run the transaction the 3rd time (with epoch range check disabled)
     // Note that in production, this won't be possible.
-    let mut executable = validated.get_executable();
-    executable.skip_epoch_range_check();
     let receipt = ledger.execute_transaction(
-        executable,
-        CostingParameters::default(),
+        validated.get_executable().skip_epoch_range_check(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();

@@ -388,8 +388,8 @@ extern_blueprint_internal! {
 
 extern_blueprint_internal! {
     PackageAddress::new_or_panic([
-        13u8, 144u8, 99u8, 24u8, 198u8, 49u8, 140u8, 111u8, 191u8, 22u8, 200u8, 204u8, 99u8, 24u8,
-        198u8, 49u8, 140u8, 247u8, 171u8, 74u8, 45u8, 52u8, 114u8, 235u8, 198u8, 49u8, 140u8, 99u8,
+        13u8, 144u8, 99u8, 24u8, 198u8, 49u8, 140u8, 111u8, 226u8, 217u8, 25u8, 140u8, 99u8, 24u8,
+        198u8, 49u8, 140u8, 247u8, 189u8, 79u8, 59u8, 245u8, 85u8, 87u8, 198u8, 49u8, 140u8, 99u8,
         24u8, 198u8,
     ]),
     AccountLocker,
@@ -408,17 +408,12 @@ extern_blueprint_internal! {
         fn instantiate_simple(allow_recover: bool) -> (Global<AccountLocker>, Bucket);
     },
     {
-        fn store(&mut self, claimant: Global<Account>, bucket: Bucket);
-        fn store_batch(
+        fn store(&mut self, claimant: Global<Account>, bucket: Bucket, try_direct_send: bool);
+        fn airdrop(
             &mut self,
             claimants: IndexMap<Global<Account>, ResourceSpecifier>,
             bucket: Bucket,
-        ) -> Option<Bucket>;
-        fn send_or_store(&mut self, claimant: Global<Account>, bucket: Bucket);
-        fn send_or_store_batch(
-            &mut self,
-            claimants: IndexMap<Global<Account>, ResourceSpecifier>,
-            bucket: Bucket,
+            try_direct_send: bool,
         ) -> Option<Bucket>;
         fn recover(
             &mut self,
