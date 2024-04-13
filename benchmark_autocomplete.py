@@ -74,9 +74,9 @@ def main() -> None:
         test_results.append((test_name, duration))
 
     # Output the results as a markdown table to stdout
-    markdown_table: str = "| Test Name | Autocomplete (ms) |\n| -- | -- |\n"
+    markdown_table: str = "## Autocomplete Benchmark Results\n| Test Name | Autocomplete (ms) |\n| -- | -- |\n"
     for (test_name, duration) in test_results:
-        markdown_table += f"| {test_name} | {duration} |\n"
+        markdown_table += f"| `{test_name}` | {duration} |\n"
     print(markdown_table)
 
 
