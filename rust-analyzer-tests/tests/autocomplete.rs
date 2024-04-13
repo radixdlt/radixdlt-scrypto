@@ -16,7 +16,40 @@ use cargo_toml::Manifest;
 use rust_analyzer_tests::*;
 
 #[test]
-fn end_to_end_test_autocomplete_benchmark() -> Result<(), TimingError> {
+fn benchmark_baseline() -> Result<(), TimingError> {
+    let duration = time_autocompletion(
+        r#"
+        use std::collections::{{%EXPECT_ANY_OF:HashMap,BTreeMap,HashSet,BTreeSet%}}HashMap;
+        "#,
+        Some(remove_all_modifier),
+        Some(no_changes_modifier),
+        LoggingHandling::LogToStdOut,
+    )?;
+    println!("Autocomplete took: {}ms", duration.as_millis());
+    Ok(())
+}
+
+#[test]
+fn benchmark_resource_builder_method_outside_blueprint_with_dev_dependencies(
+) -> Result<(), TimingError> {
+    let duration = time_autocompletion(
+        r#"
+        use scrypto::prelude::*;
+        pub fn some_function() {
+            ResourceBuilder::{{%EXPECT_ANY_OF:new_fungible,new_non_fungible%}}
+        }
+        "#,
+        Some(remove_all_modifier),
+        Some(no_changes_modifier),
+        LoggingHandling::LogToStdOut,
+    )?;
+    println!("Autocomplete took: {}ms", duration.as_millis());
+    Ok(())
+}
+
+#[test]
+fn benchmark_resource_builder_method_outside_blueprint_without_dev_dependencies(
+) -> Result<(), TimingError> {
     let duration = time_autocompletion(
         r#"
         use scrypto::prelude::*;
