@@ -355,12 +355,10 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
-      - uses: actions/github-script@v6
+      - name: Run Benchmarks
+        run: python3 benchmark_autocomplete.py > results.md
+      - uses: RDXWorks-actions/upload-artifact@main
         with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'Some example comment on the PR from the runner'
-            })
+          name: autocomplete-benchmarks
+          path: results.md
+      # TODO: Comment on the PR with the content of the results.md file. 
