@@ -361,4 +361,6 @@ jobs:
         with:
           name: autocomplete-benchmarks
           path: results.md
-      # TODO: Comment on the PR with the content of the results.md file. 
+      - uses: RDXWorks-actions/actions-comment-pull-request@main
+        with:
+          filePath: results.md

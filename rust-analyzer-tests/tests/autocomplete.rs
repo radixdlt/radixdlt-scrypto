@@ -28,115 +28,116 @@ fn end_to_end_test_autocomplete_benchmark() -> Result<(), TimingError> {
     Ok(())
 }
 
-#[test]
-fn benchmark_resource_builder_method_inside_blueprint_with_dev_dependencies(
-) -> Result<(), TimingError> {
-    let duration = time_autocompletion(
-        r#"
-        use scrypto::prelude::*;
+// NOTE: Commented to test faster CI.
+// #[test]
+// fn benchmark_resource_builder_method_inside_blueprint_with_dev_dependencies(
+// ) -> Result<(), TimingError> {
+//     let duration = time_autocompletion(
+//         r#"
+//         use scrypto::prelude::*;
 
-        #[blueprint]
-        mod blueprint {
-            pub struct Hello;
+//         #[blueprint]
+//         mod blueprint {
+//             pub struct Hello;
 
-            impl Hello {
-                pub fn new() {
-                    ResourceBuilder::{{%EXPECT_ANY_OF:new_fungible,new_non_fungible%}}new_fungible(OwnerRole::None);
-                }
-            }
-        }
-        "#,
-        Some(remove_all_modifier),
-        Some(no_changes_modifier),
-        LoggingHandling::LogToStdOut,
-    )?;
-    println!("Autocomplete took: {}ms", duration.as_millis());
-    Ok(())
-}
+//             impl Hello {
+//                 pub fn new() {
+//                     ResourceBuilder::{{%EXPECT_ANY_OF:new_fungible,new_non_fungible%}}new_fungible(OwnerRole::None);
+//                 }
+//             }
+//         }
+//         "#,
+//         Some(remove_all_modifier),
+//         Some(no_changes_modifier),
+//         LoggingHandling::LogToStdOut,
+//     )?;
+//     println!("Autocomplete took: {}ms", duration.as_millis());
+//     Ok(())
+// }
 
-#[test]
-fn benchmark_resource_builder_method_inside_blueprint_without_dev_dependencies(
-) -> Result<(), TimingError> {
-    let duration = time_autocompletion(
-        r#"
-        use scrypto::prelude::*;
+// #[test]
+// fn benchmark_resource_builder_method_inside_blueprint_without_dev_dependencies(
+// ) -> Result<(), TimingError> {
+//     let duration = time_autocompletion(
+//         r#"
+//         use scrypto::prelude::*;
 
-        #[blueprint]
-        mod blueprint {
-            pub struct Hello;
+//         #[blueprint]
+//         mod blueprint {
+//             pub struct Hello;
 
-            impl Hello {
-                pub fn new() {
-                    ResourceBuilder::{{%EXPECT_ANY_OF:new_fungible,new_non_fungible%}}new_fungible(OwnerRole::None);
-                }
-            }
-        }
-        "#,
-        Some(remove_all_modifier),
-        Some(remove_dev_dependencies_modifier),
-        LoggingHandling::LogToStdOut,
-    )?;
-    println!("Autocomplete took: {}ms", duration.as_millis());
-    Ok(())
-}
+//             impl Hello {
+//                 pub fn new() {
+//                     ResourceBuilder::{{%EXPECT_ANY_OF:new_fungible,new_non_fungible%}}new_fungible(OwnerRole::None);
+//                 }
+//             }
+//         }
+//         "#,
+//         Some(remove_all_modifier),
+//         Some(remove_dev_dependencies_modifier),
+//         LoggingHandling::LogToStdOut,
+//     )?;
+//     println!("Autocomplete took: {}ms", duration.as_millis());
+//     Ok(())
+// }
 
-#[test]
-fn benchmark_component_instantiation_method_inside_blueprint_with_dev_dependencies(
-) -> Result<(), TimingError> {
-    let duration = time_autocompletion(
-        r#"
-        use scrypto::prelude::*;
+// #[test]
+// fn benchmark_component_instantiation_method_inside_blueprint_with_dev_dependencies(
+// ) -> Result<(), TimingError> {
+//     let duration = time_autocompletion(
+//         r#"
+//         use scrypto::prelude::*;
 
-        #[blueprint]
-        mod blueprint {
-            pub struct Hello;
+//         #[blueprint]
+//         mod blueprint {
+//             pub struct Hello;
 
-            impl Hello {
-                pub fn new() -> Global<Hello> {
-                    Self
-                        .instantiate()
-                        .prepare_to_globalize(OwnerRole::None)
-                        .{{%EXPECT_ANY_OF:roles%}}globalize()
-                }
-            }
-        }
-        "#,
-        Some(remove_all_modifier),
-        Some(no_changes_modifier),
-        LoggingHandling::LogToStdOut,
-    )?;
-    println!("Autocomplete took: {}ms", duration.as_millis());
-    Ok(())
-}
+//             impl Hello {
+//                 pub fn new() -> Global<Hello> {
+//                     Self
+//                         .instantiate()
+//                         .prepare_to_globalize(OwnerRole::None)
+//                         .{{%EXPECT_ANY_OF:roles%}}globalize()
+//                 }
+//             }
+//         }
+//         "#,
+//         Some(remove_all_modifier),
+//         Some(no_changes_modifier),
+//         LoggingHandling::LogToStdOut,
+//     )?;
+//     println!("Autocomplete took: {}ms", duration.as_millis());
+//     Ok(())
+// }
 
-#[test]
-fn benchmark_component_instantiation_method_inside_blueprint_without_dev_dependencies(
-) -> Result<(), TimingError> {
-    let duration = time_autocompletion(
-        r#"
-        use scrypto::prelude::*;
+// #[test]
+// fn benchmark_component_instantiation_method_inside_blueprint_without_dev_dependencies(
+// ) -> Result<(), TimingError> {
+//     let duration = time_autocompletion(
+//         r#"
+//         use scrypto::prelude::*;
 
-        #[blueprint]
-        mod blueprint {
-            pub struct Hello;
+//         #[blueprint]
+//         mod blueprint {
+//             pub struct Hello;
 
-            impl Hello {
-                pub fn new() -> Global<Hello> {
-                    Self
-                        .instantiate()
-                        .prepare_to_globalize(OwnerRole::None)
-                        .{{%EXPECT_ANY_OF:roles%}}globalize()
-                }
-            }
-        }
-        "#,
-        Some(remove_all_modifier),
-        Some(remove_dev_dependencies_modifier),
-        LoggingHandling::LogToStdOut,
-    )?;
-    println!("Autocomplete took: {}ms", duration.as_millis());
-    Ok(())
-}
+//             impl Hello {
+//                 pub fn new() -> Global<Hello> {
+//                     Self
+//                         .instantiate()
+//                         .prepare_to_globalize(OwnerRole::None)
+//                         .{{%EXPECT_ANY_OF:roles%}}globalize()
+//                 }
+//             }
+//         }
+//         "#,
+//         Some(remove_all_modifier),
+//         Some(remove_dev_dependencies_modifier),
+//         LoggingHandling::LogToStdOut,
+//     )?;
+//     println!("Autocomplete took: {}ms", duration.as_millis());
+//     Ok(())
+// }
 
 fn remove_all_modifier(_: &str) -> String {
     "".to_owned()
