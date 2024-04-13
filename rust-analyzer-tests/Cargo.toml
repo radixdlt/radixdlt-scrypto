@@ -11,10 +11,14 @@ repository = "https://github.com/radixdlt/radixdlt-scrypto"
 radix-clis-common = { workspace = true }
 serde_json = { workspace = true }
 regex = { workspace = true }
+toml = { workspace = true }
+cargo_toml = { workspace = true }
 tempfile = { version = "3.8.0" }
 
 # The following must all match the versions used by Rust Analyzer itself. Otherwise you might run
-# into type errors. 
+# into type errors. Therefore, they're made separate from the workspace dependencies to make it 
+# clear that we can very well have two versions of the below dependncies at any point of time, one 
+# in the workspace manifest and another in here.
 rust-analyzer = { git = "https://github.com/rust-lang/rust-analyzer", tag = "2024-04-01" }
 paths = { git = "https://github.com/rust-lang/rust-analyzer", tag = "2024-04-01" }
 lsp-server = { version = "0.7.6" }

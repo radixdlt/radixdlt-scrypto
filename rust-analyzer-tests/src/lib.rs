@@ -216,7 +216,12 @@ where
                 None,
             );
             config
-                .update(serde_json::to_value(include_str!("../assets/config.json")).unwrap())
+                .update(
+                    serde_json::from_str::<serde_json::Value>(include_str!(
+                        "../assets/config.json"
+                    ))
+                    .unwrap(),
+                )
                 .map_err(TimingError::ConfigurationUpdateError)?;
             config.rediscover_workspaces();
             config
