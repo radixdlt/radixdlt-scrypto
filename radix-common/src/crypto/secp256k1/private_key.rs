@@ -11,10 +11,9 @@ lazy_static::lazy_static! {
 pub struct SecretKeyWrapper(SecretKey);
 impl Default for SecretKeyWrapper {
     fn default() -> Self {
-        let mut key =
-            SecretKey::from_slice(&[0xaau8; secp256k1::constants::SECRET_KEY_SIZE]).unwrap();
-        key.non_secure_erase();
-        Self(key)
+        let mut data = [0u8; secp256k1::constants::SECRET_KEY_SIZE];
+        data[secp256k1::constants::SECRET_KEY_SIZE - 1] = 1;
+        Self(SecretKey::from_slice(&data).unwrap())
     }
 }
 impl DefaultIsZeroes for SecretKeyWrapper {}
@@ -99,6 +98,12 @@ mod tests {
     #[test]
     fn default_value() {
         let key: SecretKeyWrapper = SecretKeyWrapper::default();
-        assert_eq!(key.0.secret_bytes(), [1u8; 32]);
+        assert_eq!(
+            key.0.secret_bytes(),
+            [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1
+            ]
+        );
     }
 }
