@@ -92,7 +92,7 @@
         ]
     },
     "checkOnSave": {
-        "command": "cargo"
+        "command": "check"
     },
     "check": {
         "allTargets": null,
