@@ -10,14 +10,14 @@ CALL_METHOD
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
     Decimal("10")
-    "OUT:"
+    "=:XRD.XRD:account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k::wr:100"
 ;
 CALL_METHOD
     Address("component_sim1cz6dyayd3hqrcjufqts5ff80fx78a7h2hhav8ge9j4ygl7w4skqntk")
     "transfer_out"
     Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
-    Address("resource_sim1t5kayp07fdx6m8w2tf8hcn95d6fjr6fmnk9636fzl8g8hda7ud3rlx")
+    Address("resource_sim1th6dkjmld5sj7xkj0kjxtsfkcvuu786f2xy8ry4jjt0kpx749l7v0a")
     Decimal("20")
-    "OUT:"
+    "=:XRD.FIZZ:account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k::wr:100"
 ;

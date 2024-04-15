@@ -8,7 +8,7 @@ CALL_METHOD
     "transfer_out"
     Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
-    Address("resource_sim1tkehezwwj76pjqyueguar5em5ezjz93q8sfaurw7d8yplk43edzpr5")
+    Address("resource_sim1t43znq5awgypdf27k7j6f9eswhd8pyxhal36e03zh5um4kju9j63fj")
     Decimal("30")
-    "OUT:"
+    "=:XRD.BUZZ:account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k::wr:100"
 ;

@@ -12,23 +12,23 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
     "withdraw"
-    Address("resource_sim1t5kayp07fdx6m8w2tf8hcn95d6fjr6fmnk9636fzl8g8hda7ud3rlx")
+    Address("resource_sim1th6dkjmld5sj7xkj0kjxtsfkcvuu786f2xy8ry4jjt0kpx749l7v0a")
     Decimal("200")
 ;
 TAKE_ALL_FROM_WORKTOP
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Bucket("resource_1")
+    Bucket("xrds")
 ;
 CALL_METHOD
     Address("component_sim1cz6dyayd3hqrcjufqts5ff80fx78a7h2hhav8ge9j4ygl7w4skqntk")
     "deposit"
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
     Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
-    Bucket("resource_1")
-    "SWAP:MAYA.CACAO"
+    Bucket("xrds")
+    "=:MAYA.CACAO:maya12ehykd8m4a79av36x0m9wzvq3uf06x5xa2yzd2::wr:100"
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1t5kayp07fdx6m8w2tf8hcn95d6fjr6fmnk9636fzl8g8hda7ud3rlx")
+    Address("resource_sim1th6dkjmld5sj7xkj0kjxtsfkcvuu786f2xy8ry4jjt0kpx749l7v0a")
     Bucket("resource_2")
 ;
 CALL_METHOD
@@ -37,5 +37,5 @@ CALL_METHOD
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
     Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
     Bucket("resource_2")
-    "SWAP:MAYA.CACAO"
+    "=:MAYA.CACAO:maya12ehykd8m4a79av36x0m9wzvq3uf06x5xa2yzd2::wr:100"
 ;

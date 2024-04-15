@@ -30,7 +30,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "name" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "EARLY"
+                        "Fizz"
                     )
                 ),
                 true
@@ -38,7 +38,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "symbol" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "EARLY"
+                        "FIZZ"
                     )
                 ),
                 true
@@ -46,7 +46,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "description" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "Today, you’re still early…but not for long."
+                        "Fizz token"
                     )
                 ),
                 true
@@ -55,7 +55,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 Enum<1u8>(
                     Enum<128u8>(
                         Array<String>(
-                            "memecoin"
+                            "test"
                         )
                     )
                 ),
@@ -64,7 +64,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "icon_url" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "https://arweave.net/uXCQ9YVGkEijn7PS2wdkXqwkU_YrdgpNtQPH2Y1-Qcs"
+                        "https://example.com/icon.png"
                     )
                 ),
                 true
@@ -72,7 +72,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "info_url" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "https://twitter.com/earlyxrd"
+                        "https://example.com"
                     )
                 ),
                 true
@@ -109,7 +109,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "name" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "Hug"
+                        "Buzz"
                     )
                 ),
                 true
@@ -117,7 +117,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "symbol" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "HUG"
+                        "BUZZ"
                     )
                 ),
                 true
@@ -125,7 +125,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "description" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "give hugs"
+                        "Buzz"
                     )
                 ),
                 true
@@ -134,7 +134,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 Enum<1u8>(
                     Enum<128u8>(
                         Array<String>(
-                            "memecoin"
+                            "test"
                         )
                     )
                 ),
@@ -143,7 +143,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "icon_url" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "https://i.imgur.com/TjciHNV.png"
+                        "https://example.com/icon.png"
                     )
                 ),
                 true
@@ -151,7 +151,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             "info_url" => Tuple(
                 Enum<1u8>(
                     Enum<0u8>(
-                        "https://hug.meme"
+                        "https://example.com"
                     )
                 ),
                 true
