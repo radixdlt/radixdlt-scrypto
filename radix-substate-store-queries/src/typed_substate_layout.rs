@@ -27,6 +27,7 @@ use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::object_modules::role_assignment::*;
 pub use radix_engine::object_modules::royalty::*;
+use radix_engine::system::system_callback::SystemBoot;
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
@@ -390,6 +391,7 @@ pub enum TypedSubstateValue {
 
 #[derive(Debug)]
 pub enum BootLoaderSubstateValue {
+    System(SystemBoot),
     Vm(VmBoot),
 }
 
@@ -467,10 +469,10 @@ fn to_typed_substate_value_internal(
 ) -> Result<TypedSubstateValue, DecodeError> {
     let substate_value = match substate_key {
         TypedSubstateKey::BootLoader(boot_loader_key) => {
-            TypedSubstateValue::BootLoader(match boot_loader_key {
-                TypedBootLoaderSubstateKey::BootLoaderField(BootLoaderField::Vm) => {
-                    BootLoaderSubstateValue::Vm(scrypto_decode(data)?)
-                }
+            let TypedBootLoaderSubstateKey::BootLoaderField(boot_loader_field) = boot_loader_key;
+            TypedSubstateValue::BootLoader(match boot_loader_field {
+                BootLoaderField::SystemBoot => BootLoaderSubstateValue::Vm(scrypto_decode(data)?),
+                BootLoaderField::VmBoot => BootLoaderSubstateValue::Vm(scrypto_decode(data)?),
             })
         }
         TypedSubstateKey::TypeInfo(type_info_key) => {
