@@ -1,35 +1,49 @@
+use super::Secp256k1Signature;
 use crate::internal_prelude::*;
 use ::secp256k1::{All, Message, PublicKey, Secp256k1, SecretKey};
-
-use super::Secp256k1Signature;
+use zeroize::{DefaultIsZeroes, Zeroize};
 
 lazy_static::lazy_static! {
     pub(crate) static ref SECP256K1_CTX: Secp256k1<All> = secp256k1::Secp256k1::new();
 }
 
-pub struct Secp256k1PrivateKey(SecretKey);
+#[derive(Copy, Clone)]
+pub struct SecretKeyWrapper(SecretKey);
+impl Default for SecretKeyWrapper {
+    fn default() -> Self {
+        let mut key =
+            SecretKey::from_slice(&[0xaau8; secp256k1::constants::SECRET_KEY_SIZE]).unwrap();
+        key.non_secure_erase();
+        Self(key)
+    }
+}
+impl DefaultIsZeroes for SecretKeyWrapper {}
+
+#[derive(Zeroize)]
+#[zeroize(drop)]
+pub struct Secp256k1PrivateKey(SecretKeyWrapper);
 
 impl Secp256k1PrivateKey {
-    pub const LENGTH: usize = 32;
+    pub const LENGTH: usize = secp256k1::constants::SECRET_KEY_SIZE;
 
     pub fn public_key(&self) -> Secp256k1PublicKey {
-        Secp256k1PublicKey(PublicKey::from_secret_key(&SECP256K1_CTX, &self.0).serialize())
+        Secp256k1PublicKey(PublicKey::from_secret_key(&SECP256K1_CTX, &self.0 .0).serialize())
     }
 
     pub fn sign(&self, msg_hash: &impl IsHash) -> Secp256k1Signature {
         let m =
             Message::from_digest_slice(msg_hash.as_ref()).expect("Hash is always a valid message");
-        let signature = SECP256K1_CTX.sign_ecdsa_recoverable(&m, &self.0);
+        let signature = SECP256K1_CTX.sign_ecdsa_recoverable(&m, &self.0 .0);
         let (recovery_id, signature_data) = signature.serialize_compact();
 
-        let mut buf = [0u8; 65];
+        let mut buf = [0u8; Secp256k1Signature::LENGTH];
         buf[0] = recovery_id.to_i32() as u8;
         buf[1..].copy_from_slice(&signature_data);
         Secp256k1Signature(buf)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.secret_bytes().to_vec()
+        self.0 .0.secret_bytes().to_vec()
     }
 
     pub fn to_hex(&self) -> String {
@@ -46,7 +60,9 @@ impl Secp256k1PrivateKey {
         if slice.len() != Secp256k1PrivateKey::LENGTH {
             return Err(());
         }
-        Ok(Self(SecretKey::from_slice(slice).map_err(|_| ())?))
+        Ok(Self(SecretKeyWrapper(
+            SecretKey::from_slice(slice).map_err(|_| ())?,
+        )))
     }
 
     pub fn from_u64(n: u64) -> Result<Self, ()> {
@@ -54,7 +70,9 @@ impl Secp256k1PrivateKey {
         (&mut bytes[Secp256k1PrivateKey::LENGTH - 8..Secp256k1PrivateKey::LENGTH])
             .copy_from_slice(&n.to_be_bytes());
 
-        Ok(Self(SecretKey::from_slice(&bytes).map_err(|_| ())?))
+        Ok(Self(SecretKeyWrapper(
+            SecretKey::from_slice(&bytes).map_err(|_| ())?,
+        )))
     }
 }
 
@@ -76,5 +94,11 @@ mod tests {
         assert_eq!(sk.public_key(), pk);
         assert_eq!(sk.sign(&test_message_hash), sig);
         assert!(verify_secp256k1(&test_message_hash, &pk, &sig));
+    }
+
+    #[test]
+    fn default_value() {
+        let key: SecretKeyWrapper = SecretKeyWrapper::default();
+        assert_eq!(key.0.secret_bytes(), [1u8; 32]);
     }
 }
