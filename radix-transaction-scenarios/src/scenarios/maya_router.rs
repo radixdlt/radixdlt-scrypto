@@ -46,7 +46,6 @@ pub struct MayaRouterData {
     maya_router_address: State<ComponentAddress>,
     resource_1: State<ResourceAddress>,
     resource_2: State<ResourceAddress>,
-    resource_3: State<ResourceAddress>,
 }
 
 pub struct MayaRouterScenarioCreator;
@@ -167,9 +166,8 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     )
                 },
                 |core, config, state, result| {
-                    state.maya_router_data.resource_1.set(XRD);
-                    state.maya_router_data.resource_2.set(result.new_resource_addresses()[0]);
-                    state.maya_router_data.resource_3.set(result.new_resource_addresses()[1]);
+                    state.maya_router_data.resource_1.set(result.new_resource_addresses()[0]);
+                    state.maya_router_data.resource_2.set(result.new_resource_addresses()[1]);
                     Ok(())
                 },
             )
@@ -226,13 +224,13 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "maya-router-deposit-to-asgard-vault-1",
                         |builder| {
-                            let resource_2 = state.maya_router_data.resource_2.get()?;
+                            let resource_1 = state.maya_router_data.resource_1.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
                             let swapper_account = state.swapper_account.get()?;
 
                             builder
                                 .withdraw_from_account(state.swapper_account.get()?, XRD, dec!(100))
-                                .withdraw_from_account(state.swapper_account.get()?, resource_2, dec!(200))
+                                .withdraw_from_account(state.swapper_account.get()?, resource_1, dec!(200))
                                 .take_all_from_worktop(XRD, "xrds")
                                 .with_bucket("xrds", |builder, bucket| {
                                     builder.call_method(
@@ -246,7 +244,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                         ),
                                     )
                                 })
-                                .take_all_from_worktop(resource_2, "resource_2")
+                                .take_all_from_worktop(resource_1, "resource_2")
                                 .with_bucket("resource_2", |builder, bucket| {
                                     builder.call_method(
                                         router_address,
@@ -272,7 +270,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "maya-router-transfer-out-from-asgard-vault-1",
                         |builder| {
-                            let resource_2 = state.maya_router_data.resource_2.get()?;
+                            let resource_1 = state.maya_router_data.resource_1.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
                             builder
                                 .call_method(
@@ -292,7 +290,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     manifest_args!(
                                         config.asgard_vault_1_public_key,
                                         swapper_account,
-                                        resource_2,
+                                        resource_1,
                                         dec!(20),
                                         format!("=:XRD.FIZZ:{}::wr:100", swapper_account_str),
                                     ),
@@ -310,8 +308,8 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "maya-router-transfer-out-from-asgard-vault-1-resource-3-failed-asset-not-available",
                         |builder| {
-                            // resource_3 is not available in the deposited resources in MayaRouter
-                            let resource_3 = state.maya_router_data.resource_3.get()?;
+                            // resource_2 is not available in the deposited resources in MayaRouter
+                            let resource_2 = state.maya_router_data.resource_2.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
                             builder
                                 .call_method(
@@ -320,7 +318,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     manifest_args!(
                                         config.asgard_vault_1_public_key,
                                         swapper_account,
-                                        resource_3,
+                                        resource_2,
                                         dec!(30),
                                         format!("=:XRD.BUZZ:{}::wr:100", swapper_account_str),
                                     ),
@@ -365,7 +363,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "maya-router-transfer-between-asgard-vaults",
                         |builder| {
-                            let resource_2 = state.maya_router_data.resource_2.get()?;
+                            let resource_1 = state.maya_router_data.resource_1.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
                             builder
                                 .call_method(
@@ -384,7 +382,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     manifest_args!(
                                         config.asgard_vault_1_public_key,
                                         config.asgard_vault_2_public_key,
-                                        resource_2,
+                                        resource_1,
                                         "migrate:3494355".to_string(),
                                     ),
                                 )
@@ -428,12 +426,12 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "maya-router-deposit-to-asgard-vault-2",
                         |builder| {
-                            let resource_2 = state.maya_router_data.resource_2.get()?;
+                            let resource_1 = state.maya_router_data.resource_1.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
                             let swapper_account = state.swapper_account.get()?;
                             builder
-                                .withdraw_from_account(state.swapper_account.get()?, resource_2, dec!(200))
-                                .take_all_from_worktop(resource_2, "resource_2")
+                                .withdraw_from_account(state.swapper_account.get()?, resource_1, dec!(200))
+                                .take_all_from_worktop(resource_1, "resource_2")
                                 .with_bucket("resource_2", |builder, bucket| {
                                     builder.call_method(
                                         router_address,
@@ -459,7 +457,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "maya-router-transfer-out-asgard-vault-2",
                         |builder| {
-                            let resource_2 = state.maya_router_data.resource_2.get()?;
+                            let resource_1 = state.maya_router_data.resource_1.get()?;
                             let router_address = state.maya_router_data.maya_router_address.get()?;
                             builder
                                 .call_method(
@@ -468,7 +466,7 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                     manifest_args!(
                                         config.asgard_vault_2_public_key,
                                         swapper_account,
-                                        resource_2,
+                                        resource_1,
                                         dec!(20),
                                         format!("=:XRD.FIZZ:{}::wr:100", swapper_account_str),
                                     ),
@@ -487,9 +485,9 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                         .add("swapper_account", state.swapper_account.get()?)
                         .add("maya_router_package", state.maya_router_package.get()?)
                         .add("maya_router_address", state.maya_router_data.maya_router_address.get()?)
+                        .add("XRD", XRD)
                         .add("resource_1", state.maya_router_data.resource_1.get()?)
                         .add("resource_2", state.maya_router_data.resource_2.get()?)
-                        .add("resource_3", state.maya_router_data.resource_3.get()?)
                 })
             })
     }
