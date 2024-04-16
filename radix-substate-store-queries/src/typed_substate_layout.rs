@@ -471,7 +471,7 @@ fn to_typed_substate_value_internal(
         TypedSubstateKey::BootLoader(boot_loader_key) => {
             let TypedBootLoaderSubstateKey::BootLoaderField(boot_loader_field) = boot_loader_key;
             TypedSubstateValue::BootLoader(match boot_loader_field {
-                BootLoaderField::SystemBoot => BootLoaderSubstateValue::Vm(scrypto_decode(data)?),
+                BootLoaderField::SystemBoot => BootLoaderSubstateValue::System(scrypto_decode(data)?),
                 BootLoaderField::VmBoot => BootLoaderSubstateValue::Vm(scrypto_decode(data)?),
             })
         }
