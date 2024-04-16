@@ -106,4 +106,16 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn verify_zeroize() {
+        let bytes = "4fd3fb62d6b7a4749f75d56d06b0aea1ec2c2a6986d2bfa975d7891585590fea";
+        let mut key = Secp256k1PrivateKey::from_bytes(&hex::decode(bytes).unwrap()).unwrap();
+        key.zeroize();
+
+        assert_eq!(
+            key.0 .0.secret_bytes(),
+            SecretKeyWrapper::default().0.secret_bytes()
+        );
+    }
 }
