@@ -127,7 +127,7 @@ use tempfile::tempdir;
 /// `CHALK_DEBUG`, and `RA_PROFILE` can be used to set the logging level. They carry the same
 /// meaning as they do in the rust-analyzer codebase.
 pub fn time_autocompletion<T, M>(
-    source_code: &str,
+    template_source_code: &str,
     test_code_modifier: Option<T>,
     cargo_manifest_modifier: Option<M>,
     logging_handling: LoggingHandling,
@@ -160,10 +160,7 @@ where
 
     // Getting the autocomplete expectation patterns found in the source code. Return an error if
     // more than one autocomplete pattern is found.
-    let (source_code, autocomplete_patterns) = AutocompleteExpectation::new_from_code(source_code)?;
-    let [autocomplete_pattern] = autocomplete_patterns.as_slice() else {
-        return Err(TimingError::AutocompletePatternsAreNotOne);
-    };
+    let autocomplete_document = AutocompleteDocument::new_from_code(template_source_code)?;
 
     // Creating a temporary directory and a Scrypto package in that temporary directory. The Scrypto
     // package is created at a relative path to the temporary directory of ./${timestamp}/. The
@@ -179,9 +176,12 @@ where
     let test_code_path = crate_directory.join("tests").join("lib.rs");
     let manifest_path = crate_directory.join("Cargo.toml");
 
+    let source_code_uri = url::Url::from_file_path(&source_code_path).expect("Can't fail!");
+
     // Writing the source code file to the package and performing the modification on the test and
     // manifest file and writing them.
-    write(&source_code_path, &source_code).map_err(TimingError::FileWriteError)?;
+    write(&source_code_path, &autocomplete_document.starting_code)
+        .map_err(TimingError::FileWriteError)?;
     if let Some(callback) = test_code_modifier {
         read_to_string(&test_code_path)
             .map_err(TimingError::FileReadError)
@@ -309,41 +309,86 @@ where
         &client_connection,
         &lsp_types::DidOpenTextDocumentParams {
             text_document: lsp_types::TextDocumentItem {
-                uri: url::Url::from_file_path(&source_code_path).expect("Can't fail!"),
+                uri: source_code_uri.clone(),
                 language_id: "rust".to_owned(),
                 version: 1,
-                text: source_code.clone(),
+                text: autocomplete_document.starting_code.clone(),
             },
         },
     )?;
 
-    // Send the server the autocomplete request
-    send_request::<lsp_types::request::Completion>(
-        &client_connection,
-        // Large id to avoid possibility of collision.
-        100_000_000.into(),
-        &lsp_types::CompletionParams {
-            text_document_position: lsp_types::TextDocumentPositionParams {
+    // The allocator used for allocating new request ids for the various requests we will be making.
+    let mut id_allocator = IdAllocator::new();
+
+    // Right after opening the file run a full sematic analysis over the file.
+    {
+        let request_id = id_allocator.next();
+        send_request::<lsp_types::request::SemanticTokensFullRequest>(
+            &client_connection,
+            request_id.clone(),
+            &lsp_types::SemanticTokensParams {
                 text_document: lsp_types::TextDocumentIdentifier {
-                    uri: url::Url::from_file_path(&source_code_path).expect("Can't fail!"),
+                    uri: source_code_uri.clone(),
                 },
-                position: autocomplete_pattern.position,
+                work_done_progress_params: Default::default(),
+                partial_result_params: Default::default(),
             },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-            context: Default::default(),
+        )?;
+        loop {
+            let Ok(lsp_server::Message::Response(response)) = client_connection.receiver.recv()
+            else {
+                continue;
+            };
+            if response.id == request_id {
+                break;
+            }
+        }
+    };
+
+    // Make changes to the `lib.rs` file and notify the server of them. We will now write the
+    // item that we want to get autocomplete for.
+    write(source_code_path, &autocomplete_document.final_code)
+        .map_err(TimingError::FileWriteError)?;
+    send_notification::<lsp_types::notification::DidChangeTextDocument>(
+        &client_connection,
+        &lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: source_code_uri.clone(),
+                version: 1,
+            },
+            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
+                range: None,
+                text: autocomplete_document.final_code,
+                range_length: None,
+            }],
         },
     )?;
 
-    // Await a response with the same request id.
+    // Sending the autocomplete request
     let (duration, completion_result) = time_execution(|| -> Result<_, TimingError> {
+        let request_id = id_allocator.next();
+        send_request::<lsp_types::request::Completion>(
+            &client_connection,
+            request_id.clone(),
+            &lsp_types::CompletionParams {
+                text_document_position: dbg!(lsp_types::TextDocumentPositionParams {
+                    text_document: lsp_types::TextDocumentIdentifier {
+                        uri: source_code_uri,
+                    },
+                    position: autocomplete_document.autocomplete_position,
+                }),
+                work_done_progress_params: Default::default(),
+                partial_result_params: Default::default(),
+                context: Default::default(),
+            },
+        )?;
         loop {
             let Ok(lsp_server::Message::Response(lsp_server::Response { id, result, error })) =
                 client_connection.receiver.recv()
             else {
                 continue;
             };
-            if id != 100_000_000.into() {
+            if id != request_id {
                 continue;
             }
 
@@ -364,7 +409,10 @@ where
     });
 
     // Ensure the completion result satisfies the completion pattern.
-    match (completion_result?, &autocomplete_pattern.pattern) {
+    match (
+        dbg!(completion_result?),
+        &autocomplete_document.autocomplete_expectations,
+    ) {
         (None, AutocompleteExpectationPattern::AnyOf(any_of)) if any_of.is_empty() => {}
         (None, AutocompleteExpectationPattern::AnyOf(_)) => {
             return Err(TimingError::AutocompleteExpectationNotMet);
@@ -376,7 +424,7 @@ where
             ),
             AutocompleteExpectationPattern::AnyOf(any_of),
         ) => {
-            if !items.iter().any(|item| any_of.contains(&item.label)) {
+            if !items.iter().any(|item| any_of.contains(dbg!(&item.label))) {
                 return Err(TimingError::AutocompleteExpectationNotMet);
             }
         }
@@ -499,7 +547,7 @@ impl AutocompleteExpectation {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AutocompleteExpectationPattern {
     AnyOf(Vec<String>),
 }
@@ -519,6 +567,7 @@ pub enum TimingError {
     ChannelSendingError(SendError<lsp_server::Message>),
     AutocompleteError(lsp_server::ResponseError),
     AutocompleteExpectationNotMet,
+    Unexpected,
 }
 
 fn send_notification<N: lsp_types::notification::Notification>(
@@ -606,4 +655,355 @@ where
     let after = Instant::now();
     let duration = after - before;
     (duration, out)
+}
+
+pub struct IdAllocator(i32);
+
+impl IdAllocator {
+    pub fn new() -> Self {
+        Self(0)
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> lsp_server::RequestId {
+        let id = lsp_server::RequestId::from(self.0);
+        self.0 += 1;
+        id
+    }
+}
+
+impl Default for IdAllocator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct AutocompleteDocument {
+    /// The original code template as it was passed in by the user with the item identifier and the
+    /// autocomplete pattern.
+    ///
+    /// ## Example
+    ///
+    /// ```txt
+    /// fn some_function() {
+    ///     {{%
+    ///         ResourceBuilder::new_fungible(OwnerRole::None)
+    ///             .{{%EXPECT_ANY_OF:divisibility%}}divisibility(18);
+    ///     %}}}
+    /// }
+    /// ```
+    code_template: String,
+    /// The original code without the item identified by the item identifier. Typically this is what
+    /// is written to the `lib.rs` file when the package is first created since the item might not
+    /// be syntactically valid (e.g., it might end with a dot)
+    ///
+    /// /// ## Example
+    ///
+    /// ```txt
+    /// fn some_function() {
+    /// }
+    /// ```
+    starting_code: String,
+    /// The original code but without the item identifiers and with the contents of it. Typically
+    /// this is the code that is written to the file after the first pass of analysis to trigger
+    /// autocompletion on.
+    ///
+    /// ## Example
+    ///
+    /// ```txt
+    /// fn some_function() {
+    ///     ResourceBuilder::new_fungible(OwnerRole::None)
+    ///         .divisibility(18);
+    /// }
+    /// ```
+    final_code: String,
+    /// The position to perform the autocomplete at.
+    autocomplete_position: lsp_types::Position,
+    /// The autocomplete expectations.
+    autocomplete_expectations: AutocompleteExpectationPattern,
+    /// The starting position of the entire item identifier pattern.
+    position_of_entire_item_identifier_pattern: lsp_types::Position,
+    /// The changes between the starting and the final version.
+    changes: String,
+    /// The range where the changes were made.
+    changes_range: lsp_types::Range,
+}
+
+impl AutocompleteDocument {
+    pub fn new_from_code(code: &str) -> Result<Self, TimingError> {
+        // Capture the regex pattern in the document.
+        let pattern = Self::regex_pattern();
+        let mut captures = pattern.captures_iter(code);
+
+        // Ensure that there is only a single capture, as in, there is only a single item identifier
+        // that is needed.
+        let (Some(capture), None) = (captures.next(), captures.next()) else {
+            return Err(TimingError::RegexMatchError);
+        };
+
+        // Extract useful information from the capture.
+
+        // Eg: {{%ResourceBuilder::new_fungible(OwnerRole::None).{{%EXPECT_ANY_OF:divisibility%}}%}}
+        let entire_item_identifier_pattern = capture.get(0).ok_or(TimingError::RegexMatchError)?;
+        // Eg: ResourceBuilder::new_fungible
+        let item_pre_autocomplete_pattern = capture.get(1).ok_or(TimingError::RegexMatchError)?;
+        // Eg: {{%EXPECT_ANY_OF:divisibility%}}
+        let entire_autocomplete_pattern = capture.get(2).ok_or(TimingError::RegexMatchError)?;
+        // Eg: EXPECT_ANY_OF
+        let _ = capture.get(3).ok_or(TimingError::RegexMatchError)?;
+        // Eg: divisibility
+        let autocomplete_qualifier_args = capture.get(4).ok_or(TimingError::RegexMatchError)?;
+        // Eg: .
+        let item_post_autocomplete_pattern = capture.get(5).ok_or(TimingError::RegexMatchError)?;
+
+        let code_template = code.to_owned();
+        let starting_code = pattern.replace(code, "").into_owned();
+        let final_code = pattern.replace(code, "$1$5").into_owned();
+
+        let autocomplete_position = pattern
+            .replace(code, "$1$2$5")
+            .split('\n')
+            .enumerate()
+            .find_map(|(line_number, line)| {
+                line.find(entire_autocomplete_pattern.as_str())
+                    .map(|column| lsp_types::Position::new(line_number as u32, column as u32))
+            })
+            .expect("Pattern was captured but not found in file?");
+        let autocomplete_expectations = AutocompleteExpectationPattern::AnyOf(
+            autocomplete_qualifier_args
+                .as_str()
+                .trim()
+                .trim_matches(',')
+                .split(',')
+                .map(|item| item.trim().to_owned())
+                .collect::<Vec<_>>(),
+        );
+
+        let position_of_entire_item_identifier_pattern = (0..entire_item_identifier_pattern
+            .start())
+            .zip(code_template.chars())
+            .fold(lsp_types::Position::new(0, 0), |mut acc, (_, char)| {
+                // If char is '\n' then reset the character to zero and increment the line.
+                match char {
+                    '\n' => {
+                        acc.line += 1;
+                        acc.character = 0;
+                        acc
+                    }
+                    _ => {
+                        acc.character += 1;
+                        acc
+                    }
+                }
+            });
+
+        let changes = format!(
+            "{}{}",
+            item_pre_autocomplete_pattern.as_str(),
+            item_post_autocomplete_pattern.as_str()
+        );
+        let changes_range = lsp_types::Range::new(
+            position_of_entire_item_identifier_pattern,
+            lsp_types::Position::new(
+                position_of_entire_item_identifier_pattern.line,
+                position_of_entire_item_identifier_pattern.character + changes.len() as u32,
+            ),
+        );
+
+        Ok(Self {
+            code_template,
+            starting_code,
+            final_code,
+            autocomplete_position,
+            autocomplete_expectations,
+            position_of_entire_item_identifier_pattern,
+            changes,
+            changes_range,
+        })
+    }
+
+    fn regex_pattern() -> &'static Regex {
+        static REGEX_PATTERN: OnceLock<Regex> = OnceLock::new();
+        REGEX_PATTERN.get_or_init(|| {
+            Regex::new(r"(?s)\{\{%(.*)(\{\{%(EXPECT_ANY_OF):([0-9a-zA-z _,]*)%\}\})(.*)%}}")
+                .expect("Must be valid!")
+        })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use indoc::indoc;
+
+    #[test]
+    fn test_autocomplete_document() {
+        // Arrange
+        const DOCUMENT: &str = indoc!(
+            r#"
+            use scrypto::prelude::*;
+
+            #[blueprint]
+            mod hello {
+                struct Hello {
+                    sample_vault: Vault,
+                }
+
+                impl Hello {
+
+                    pub fn instantiate_hello() -> Global<Hello> {
+                        let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                            .metadata(metadata! {
+                                init {
+                                    "name" => "HelloToken".to_owned(), locked;
+                                    "symbol" => "HT".to_owned(), locked;
+                                }
+                            })
+                            .mint_initial_supply(1000);
+
+                        {{%ResourceBuilder::new_fungible(OwnerRole::None).{{%EXPECT_ANY_OF:divisibility%}}%}}
+
+                        Self {
+                            sample_vault: Vault::with_bucket(my_bucket),
+                        }
+                        .instantiate()
+                        .prepare_to_globalize(OwnerRole::None)
+                        .globalize()
+                    }
+
+                    pub fn free_token(&mut self) -> Bucket {
+                        info!(
+                            "My balance is: {} HelloToken. Now giving away a token!",
+                            self.sample_vault.amount()
+                        );
+                        self.sample_vault.take(1)
+                    }
+                }
+            }
+            "#
+        );
+
+        // Act
+        let document = AutocompleteDocument::new_from_code(DOCUMENT).unwrap();
+
+        // Assert
+        assert_eq!(document.code_template, DOCUMENT);
+        assert_eq!(
+            document.starting_code,
+            indoc!(
+                r#"
+                use scrypto::prelude::*;
+
+                #[blueprint]
+                mod hello {
+                    struct Hello {
+                        sample_vault: Vault,
+                    }
+
+                    impl Hello {
+
+                        pub fn instantiate_hello() -> Global<Hello> {
+                            let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                                .metadata(metadata! {
+                                    init {
+                                        "name" => "HelloToken".to_owned(), locked;
+                                        "symbol" => "HT".to_owned(), locked;
+                                    }
+                                })
+                                .mint_initial_supply(1000);
+
+                            
+
+                            Self {
+                                sample_vault: Vault::with_bucket(my_bucket),
+                            }
+                            .instantiate()
+                            .prepare_to_globalize(OwnerRole::None)
+                            .globalize()
+                        }
+
+                        pub fn free_token(&mut self) -> Bucket {
+                            info!(
+                                "My balance is: {} HelloToken. Now giving away a token!",
+                                self.sample_vault.amount()
+                            );
+                            self.sample_vault.take(1)
+                        }
+                    }
+                }
+                "#
+            )
+        );
+        assert_eq!(
+            document.final_code,
+            indoc!(
+                r#"
+                use scrypto::prelude::*;
+    
+                #[blueprint]
+                mod hello {
+                    struct Hello {
+                        sample_vault: Vault,
+                    }
+    
+                    impl Hello {
+    
+                        pub fn instantiate_hello() -> Global<Hello> {
+                            let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                                .metadata(metadata! {
+                                    init {
+                                        "name" => "HelloToken".to_owned(), locked;
+                                        "symbol" => "HT".to_owned(), locked;
+                                    }
+                                })
+                                .mint_initial_supply(1000);
+    
+                            ResourceBuilder::new_fungible(OwnerRole::None).
+    
+                            Self {
+                                sample_vault: Vault::with_bucket(my_bucket),
+                            }
+                            .instantiate()
+                            .prepare_to_globalize(OwnerRole::None)
+                            .globalize()
+                        }
+    
+                        pub fn free_token(&mut self) -> Bucket {
+                            info!(
+                                "My balance is: {} HelloToken. Now giving away a token!",
+                                self.sample_vault.amount()
+                            );
+                            self.sample_vault.take(1)
+                        }
+                    }
+                }
+                "#
+            )
+        );
+        assert_eq!(
+            document.autocomplete_position,
+            lsp_types::Position::new(20, 59)
+        );
+        assert_eq!(
+            document.autocomplete_expectations,
+            AutocompleteExpectationPattern::AnyOf(vec!["divisibility".to_owned()])
+        );
+        assert_eq!(
+            document.position_of_entire_item_identifier_pattern,
+            lsp_types::Position::new(20, 12)
+        );
+        assert_eq!(
+            document.changes,
+            "ResourceBuilder::new_fungible(OwnerRole::None)."
+        );
+        assert_eq!(
+            document.changes_range,
+            lsp_types::Range::new(
+                lsp_types::Position::new(20, 12),
+                lsp_types::Position::new(20, 59)
+            )
+        );
+    }
 }

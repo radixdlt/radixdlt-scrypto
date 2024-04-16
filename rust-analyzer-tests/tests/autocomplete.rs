@@ -13,8 +13,10 @@
 //! sequentially and generates a report from them.
 
 use cargo_toml::Manifest;
+use indoc::indoc;
 use rust_analyzer_tests::*;
 
+/*
 #[test]
 fn benchmark_baseline() -> Result<(), TimingError> {
     let duration = time_autocompletion(
@@ -169,6 +171,167 @@ fn benchmark_component_instantiation_method_inside_blueprint_without_dev_depende
         "#,
         Some(remove_all_modifier),
         Some(remove_dev_dependencies_modifier),
+        LoggingHandling::LogToStdOut,
+    )?;
+    println!("Autocomplete took: {}ms", duration.as_millis());
+    Ok(())
+}
+*/
+
+#[test]
+fn benchmark_slower() -> Result<(), TimingError> {
+    let duration = time_autocompletion(
+        r#"
+        use scrypto::prelude::*;
+
+        #[blueprint]
+        mod hello {
+            struct Hello {
+                sample_vault: Vault,
+            }
+
+            impl Hello {
+
+                pub fn instantiate_hello() -> Global<Hello> {
+                    let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                        .metadata(metadata! {
+                            init {
+                                "name" => "HelloToken".to_owned(), locked;
+                                "symbol" => "HT".to_owned(), locked;
+                            }
+                        })
+                        .mint_initial_supply(1000);
+
+                    {{%ResourceBuilder::new_fungible(OwnerRole::None).{{%EXPECT_ANY_OF:divisibility%}}%}}
+
+                    Self {
+                        sample_vault: Vault::with_bucket(my_bucket),
+                    }
+                    .instantiate()
+                    .prepare_to_globalize(OwnerRole::None)
+                    .globalize()
+                }
+
+                pub fn free_token(&mut self) -> Bucket {
+                    info!(
+                        "My balance is: {} HelloToken. Now giving away a token!",
+                        self.sample_vault.amount()
+                    );
+                    self.sample_vault.take(1)
+                }
+            }
+        }
+        "#,
+        Some(remove_all_modifier),
+        Some(|manifest: &str| {
+            let package_name = Manifest::from_str(manifest).unwrap().package.unwrap().name;
+            format!(
+                r#"
+                [package]
+                name = "{package_name}"
+                version = "1.0.0"
+                edition = "2021"
+                resolver = "2"
+
+                [dependencies]
+                sbor = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "6c635d3360b1b6a352ae83234fad278b524b040e" }}
+                scrypto = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "6c635d3360b1b6a352ae83234fad278b524b040e" }}
+
+                [dev-dependencies]
+                transaction = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "6c635d3360b1b6a352ae83234fad278b524b040e" }}
+                radix-engine = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "6c635d3360b1b6a352ae83234fad278b524b040e" }}
+                scrypto-unit = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "6c635d3360b1b6a352ae83234fad278b524b040e" }}
+
+                [features]
+                default = []
+                test = []
+
+                [lib]
+                crate-type = ["cdylib", "lib"]
+                "#
+            )
+        }),
+        LoggingHandling::LogToStdOut,
+    )?;
+    println!("Autocomplete took: {}ms", duration.as_millis());
+    Ok(())
+}
+
+#[test]
+fn benchmark_faster() -> Result<(), TimingError> {
+    let duration = time_autocompletion(
+        indoc!(
+            r#"
+            use scrypto::prelude::*;
+
+            #[blueprint]
+            mod hello {
+                struct Hello {
+                    sample_vault: Vault,
+                }
+
+                impl Hello {
+
+                    pub fn instantiate_hello() -> Global<Hello> {
+                        let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                            .metadata(metadata! {
+                                init {
+                                    "name" => "HelloToken".to_owned(), locked;
+                                    "symbol" => "HT".to_owned(), locked;
+                                }
+                            })
+                            .mint_initial_supply(1000);
+
+                        {{%ResourceBuilder::new_fungible(OwnerRole::None).{{%EXPECT_ANY_OF:divisibility%}}%}}
+
+                        Self {
+                            sample_vault: Vault::with_bucket(my_bucket),
+                        }
+                        .instantiate()
+                        .prepare_to_globalize(OwnerRole::None)
+                        .globalize()
+                    }
+
+                    pub fn free_token(&mut self) -> Bucket {
+                        info!(
+                            "My balance is: {} HelloToken. Now giving away a token!",
+                            self.sample_vault.amount()
+                        );
+                        self.sample_vault.take(1)
+                    }
+                }
+            }
+            "#
+        ),
+        Some(remove_all_modifier),
+        Some(|manifest: &str| {
+            let package_name = Manifest::from_str(manifest).unwrap().package.unwrap().name;
+            format!(
+                r#"
+                [package]
+                name = "{package_name}"
+                version = "1.0.0"
+                edition = "2021"
+                resolver = "2"
+
+                [dependencies]
+                sbor = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "204f2c5a2571ec5e5dab7d51c9f12b68eb684ead" }}
+                scrypto = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "204f2c5a2571ec5e5dab7d51c9f12b68eb684ead" }}
+
+                [dev-dependencies]
+                transaction = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "204f2c5a2571ec5e5dab7d51c9f12b68eb684ead" }}
+                radix-engine = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "204f2c5a2571ec5e5dab7d51c9f12b68eb684ead" }}
+                scrypto-unit = {{ git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "204f2c5a2571ec5e5dab7d51c9f12b68eb684ead" }}
+
+                [features]
+                default = []
+                test = []
+
+                [lib]
+                crate-type = ["cdylib", "lib"]
+                "#
+            )
+        }),
         LoggingHandling::LogToStdOut,
     )?;
     println!("Autocomplete took: {}ms", duration.as_millis());

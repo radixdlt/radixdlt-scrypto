@@ -14,6 +14,7 @@ regex = { workspace = true }
 toml = { workspace = true }
 cargo_toml = { workspace = true }
 tempfile = { version = "3.8.0" }
+indoc = { version = "2.0.0" }
 
 # The following must all match the versions used by Rust Analyzer itself. Otherwise you might run
 # into type errors. Therefore, they're made separate from the workspace dependencies to make it 

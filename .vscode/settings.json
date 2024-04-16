@@ -26,6 +26,7 @@
         "flamegraph",
         "Formattable",
         "generification",
+        "indoc",
         "instantiatable",
         "Instrumenter",
         "Invokable",
