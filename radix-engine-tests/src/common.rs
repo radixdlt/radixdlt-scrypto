@@ -3,6 +3,7 @@
 pub mod package_loader {
     use radix_common::prelude::*;
     use radix_substate_store_queries::typed_substate_layout::*;
+    use std::path::PathBuf;
 
     const PACKAGES_BINARY: &[u8] =
         include_bytes!(concat!(env!("OUT_DIR"), "/compiled_packages.bin"));
@@ -16,7 +17,14 @@ pub mod package_loader {
     pub struct PackageLoader;
     impl PackageLoader {
         pub fn get(name: &str) -> (Vec<u8>, PackageDefinition) {
-            if let Some(rtn) = PACKAGES.get(name) {
+            // Extract package file name if specified package name contains also a path.
+            let file_name = PathBuf::from(name)
+                .file_name()
+                .unwrap()
+                .to_os_string()
+                .into_string()
+                .unwrap();
+            if let Some(rtn) = PACKAGES.get(&file_name) {
                 rtn.clone()
             } else {
                 panic!("Package \"{}\" not found. Are you sure that this package is: a) in the blueprints folder, b) that this is the same as the package name in the Cargo.toml file?", name)
