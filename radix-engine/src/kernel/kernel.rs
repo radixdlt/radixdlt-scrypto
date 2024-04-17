@@ -30,7 +30,7 @@ use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, Subst
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::prelude::{Executable, PreAllocatedAddress};
 use sbor::rust::mem;
-use crate::transaction::{CostingParameters, TransactionFeeDetails, TransactionFeeSummary, TransactionResult};
+use crate::transaction::{CostingParameters, RejectResult, TransactionFeeDetails, TransactionFeeSummary, TransactionResult};
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
@@ -132,6 +132,24 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         Option<TransactionFeeDetails>,
         TransactionResult,
     ) {
+        match self.callback.init2(&mut self.store, executable) {
+            Ok(()) => {}
+            Err(reason) => {
+                return (
+                    CostingParameters::babylon_genesis(),
+                    TransactionFeeSummary::default(),
+                    /*
+                    if self.system_init.enable_cost_breakdown {
+                        Some(TransactionFeeDetails::default())
+                    } else {
+                     */
+                        None,
+                    //},
+                    TransactionResult::Reject(RejectResult { reason }),
+                )
+            }
+        }
+
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();

@@ -326,25 +326,19 @@ where
         let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-        let boot_store = SubstateBootStore {
-            boot_store: self.substate_db,
+        let system_boot_result = {
+            let boot_store = SubstateBootStore {
+                boot_store: self.substate_db,
+            };
+            System::init(&boot_store, executable, self.system_init.clone()).map_err(|e| {
+                RejectionReason::BootloadingError(e)
+            })
         };
 
-        let system_boot_result = System::init(&boot_store, executable, self.system_init.clone());
-
-        // Create a track
-        let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
-
-        let validation_result = match system_boot_result {
+        let (costing_parameters, fee_summary, fee_details, result) = match system_boot_result {
             Ok(system) => {
-                system.init2(&mut track, executable).map(|_| system)
-            }
-            Err(e) => Err(RejectionReason::BootloadingError(e)),
-        };
+                let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
-        // Run manifest
-        let (costing_parameters, fee_summary, fee_details, result) = match validation_result {
-            Ok(system) => {
                 let mut wrapped_system = T::create(system, init);
 
                 let kernel_boot = BootLoader {
@@ -355,18 +349,17 @@ where
 
                 kernel_boot.execute(executable)
             }
-            Err(reason) => (
-                // No execution is done, so add empty fee summary and details
-                CostingParameters::babylon_genesis(),
-                TransactionFeeSummary::default(),
-                if self.system_init.enable_cost_breakdown {
-                    Some(TransactionFeeDetails::default())
-                } else {
-                    None
-                },
-                TransactionResult::Reject(RejectResult { reason }),
-            ),
+            Err(reason) => {
+                (
+                    CostingParameters::babylon_genesis(),
+                    TransactionFeeSummary::default(),
+                    None,
+                    TransactionResult::Reject(RejectResult { reason }),
+                )
+            }
         };
+
+
 
         // Stop hardware resource usage tracker
         let resources_usage = match () {
