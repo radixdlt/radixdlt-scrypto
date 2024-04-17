@@ -358,7 +358,7 @@ impl TransactionReceipt {
     /// An empty receipt for merging changes into.
     pub fn empty_with_commit(commit_result: CommitResult) -> Self {
         Self {
-            costing_parameters: Default::default(),
+            costing_parameters: CostingParameters::babylon_genesis(),
             transaction_costing_parameters: Default::default(),
             fee_summary: Default::default(),
             fee_details: Default::default(),

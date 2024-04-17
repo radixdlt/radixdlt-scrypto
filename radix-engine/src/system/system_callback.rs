@@ -63,18 +63,6 @@ pub struct SystemParameters {
     pub max_per_function_royalty_in_xrd: Decimal,
 }
 
-impl Default for SystemParameters {
-    fn default() -> Self {
-        Self {
-            network_definition: NetworkDefinition::mainnet(),
-            costing_parameters: CostingParameters::default(),
-            limit_parameters: LimitParameters::default(),
-            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
-                .unwrap(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),
@@ -257,7 +245,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
                 )
                 .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                .unwrap_or(SystemBoot::V1(SystemParameters::default()));
+                .unwrap_or(SystemBoot::V1(SystemParameters {
+                    network_definition: NetworkDefinition::mainnet(),
+                    costing_parameters: CostingParameters::babylon_genesis(),
+                    limit_parameters: LimitParameters::babylon_genesis(),
+                    max_per_function_royalty_in_xrd: Decimal::try_from(
+                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
+                    )
+                    .unwrap(),
+                }));
 
             match system_boot {
                 SystemBoot::V1(system_parameters) => system_parameters,
@@ -266,7 +262,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         let callback = C::init(store, init_input.callback_init)?;
 
-        let enabled_modules = {
+        let mut enabled_modules = {
             let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
             if !executable.is_system() {
                 enabled_modules |= EnabledModules::LIMITS;
@@ -280,21 +276,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 enabled_modules |= EnabledModules::EXECUTION_TRACE;
             }
 
-            if let Some(system_overrides) = &init_input.system_overrides {
-                if system_overrides.disable_auth {
-                    enabled_modules &= !EnabledModules::AUTH;
-                }
-                if system_overrides.disable_costing {
-                    enabled_modules &= !EnabledModules::COSTING;
-                }
-                if system_overrides.disable_limits {
-                    enabled_modules &= !EnabledModules::LIMITS;
-                }
-            }
-
             enabled_modules
         };
 
+        // Override system configuration
         if let Some(system_overrides) = init_input.system_overrides {
             if let Some(costing_override) = system_overrides.costing_parameters {
                 system_parameters.costing_parameters = costing_override;
@@ -306,6 +291,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
             if let Some(network_definition) = system_overrides.network_definition {
                 system_parameters.network_definition = network_definition;
+            }
+
+            if system_overrides.disable_auth {
+                enabled_modules.remove(EnabledModules::AUTH);
+            }
+
+            if system_overrides.disable_costing {
+                enabled_modules.remove(EnabledModules::COSTING);
+            }
+
+            if system_overrides.disable_limits {
+                enabled_modules.remove(EnabledModules::LIMITS);
             }
         }
 
@@ -341,11 +338,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             auth_module,
             limits_module,
             costing_module,
-            ExecutionTraceModule::new(
-                init_input
-                    .execution_trace
-                    .unwrap_or(MAX_EXECUTION_TRACE_DEPTH),
-            ),
+            ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(0)),
         );
 
         modules.init()?;

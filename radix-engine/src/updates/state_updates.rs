@@ -703,8 +703,8 @@ pub fn generate_protocol_params_to_state_state_updates(
                             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
                                 scrypto_encode(&SystemBoot::V1(SystemParameters {
                                     network_definition,
-                                    costing_parameters: CostingParameters::default(),
-                                    limit_parameters: LimitParameters::default(),
+                                    costing_parameters: CostingParameters::babylon_genesis(),
+                                    limit_parameters: LimitParameters::babylon_genesis(),
                                     max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
                                 })).unwrap()
                             )

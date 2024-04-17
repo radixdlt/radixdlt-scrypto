@@ -7,13 +7,12 @@ use crate::internal_prelude::ScenarioCore;
 
 /// A virtual account as well as it's controlling private key.
 ///
-/// # Deprecated
+/// # Warning
 ///
 /// Any scenario that is run after genesis can not use virtual accounts as users could find private
 /// key we're using (these are public private key anyway and we're not trying to hide them) and
 /// change the account's settings or perhaps even the access rule of the account leading scenarios
 /// to fail. An allocated account **MUST** be used for any scenario that runs after genesis.
-#[deprecated = "Use an allocated account instead"]
 pub struct VirtualAccount {
     pub key: PrivateKey,
     pub public_key: PublicKey,
@@ -49,74 +48,50 @@ impl From<&VirtualAccount> for GlobalAddress {
     }
 }
 
-pub fn secp256k1_account_1() -> VirtualAccount {
+pub fn secp256k1_account_from_u64(val: u64) -> VirtualAccount {
     VirtualAccount::for_private_key(
-        Secp256k1PrivateKey::from_u64(33311)
+        Secp256k1PrivateKey::from_u64(val)
             .expect("Should be valid")
             .into(),
     )
+}
+
+pub fn secp256k1_account_1() -> VirtualAccount {
+    secp256k1_account_from_u64(33311)
 }
 
 pub fn secp256k1_account_2() -> VirtualAccount {
-    VirtualAccount::for_private_key(
-        Secp256k1PrivateKey::from_u64(32144)
-            .expect("Should be valid")
-            .into(),
-    )
+    secp256k1_account_from_u64(32144)
 }
 
 pub fn secp256k1_account_3() -> VirtualAccount {
-    VirtualAccount::for_private_key(
-        Secp256k1PrivateKey::from_u64(53213)
-            .expect("Should be valid")
-            .into(),
-    )
+    secp256k1_account_from_u64(53213)
 }
 
 pub fn secp256k1_account_dashboard() -> VirtualAccount {
-    VirtualAccount::for_private_key(
-        Secp256k1PrivateKey::from_u64(53214)
-            .expect("Should be valid")
-            .into(),
-    )
+    secp256k1_account_from_u64(53214)
 }
 
 pub fn secp256k1_account_sandbox() -> VirtualAccount {
+    secp256k1_account_from_u64(53215)
+}
+
+pub fn ed25519_account_from_u64(key: u64) -> VirtualAccount {
     VirtualAccount::for_private_key(
-        Secp256k1PrivateKey::from_u64(53215)
+        Ed25519PrivateKey::from_u64(key)
             .expect("Should be valid")
             .into(),
     )
 }
 
 pub fn ed25519_account_1() -> VirtualAccount {
-    VirtualAccount::for_private_key(
-        Ed25519PrivateKey::from_u64(12451)
-            .expect("Should be valid")
-            .into(),
-    )
+    ed25519_account_from_u64(12451)
 }
 
 pub fn ed25519_account_2() -> VirtualAccount {
-    VirtualAccount::for_private_key(
-        Ed25519PrivateKey::from_u64(43213)
-            .expect("Should be valid")
-            .into(),
-    )
+    ed25519_account_from_u64(43213)
 }
 
 pub fn ed25519_account_3() -> VirtualAccount {
-    VirtualAccount::for_private_key(
-        Ed25519PrivateKey::from_u64(54421)
-            .expect("Should be valid")
-            .into(),
-    )
-}
-
-pub fn ed25519_account_for_private_key(key: u64) -> VirtualAccount {
-    VirtualAccount::for_private_key(
-        Ed25519PrivateKey::from_u64(key)
-            .expect("Should be valid")
-            .into(),
-    )
+    ed25519_account_from_u64(54421)
 }

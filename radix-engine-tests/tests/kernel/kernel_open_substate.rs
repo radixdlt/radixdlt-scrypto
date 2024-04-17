@@ -63,7 +63,7 @@ pub fn test_open_substate_of_invisible_package_address() {
                 executable.intent_hash().to_hash(),
             ),
             AuthModule::new(executable.auth_zone_params().clone()),
-            LimitsModule::default(),
+            LimitsModule::babylon_genesis(),
             CostingModule {
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),

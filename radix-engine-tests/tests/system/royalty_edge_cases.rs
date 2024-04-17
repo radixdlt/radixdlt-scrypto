@@ -561,7 +561,7 @@ fn royalty_amount_to_xrd(royalty_amount: &RoyaltyAmount) -> Decimal {
     match royalty_amount {
         RoyaltyAmount::Free => Decimal::zero(),
         RoyaltyAmount::Xrd(amount) => *amount,
-        RoyaltyAmount::Usd(amount) => *amount * CostingParameters::default().usd_price,
+        RoyaltyAmount::Usd(amount) => *amount * CostingParameters::babylon_genesis().usd_price,
     }
 }
 
@@ -623,7 +623,7 @@ fn max_per_function_royalty_in_xrd() -> Decimal {
 
 fn max_per_function_royalty_in_usd() -> Decimal {
     let max_per_function_royalty_in_xrd = max_per_function_royalty_in_xrd();
-    let CostingParameters { usd_price, .. } = CostingParameters::default();
+    let CostingParameters { usd_price, .. } = CostingParameters::babylon_genesis();
     max_per_function_royalty_in_xrd / usd_price
 }
 

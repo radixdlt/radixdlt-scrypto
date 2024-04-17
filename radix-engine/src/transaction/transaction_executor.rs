@@ -61,9 +61,9 @@ pub struct CostingParameters {
     pub archive_storage_price: Decimal,
 }
 
-impl Default for CostingParameters {
+impl CostingParameters {
     #[cfg(not(feature = "coverage"))]
-    fn default() -> Self {
+    pub fn babylon_genesis() -> Self {
         Self {
             execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             execution_cost_unit_limit: EXECUTION_COST_UNIT_LIMIT,
@@ -76,7 +76,7 @@ impl Default for CostingParameters {
         }
     }
     #[cfg(feature = "coverage")]
-    fn default() -> Self {
+    pub fn babylon_genesis() -> Self {
         Self {
             execution_cost_unit_price: Decimal::zero(),
             execution_cost_unit_limit: u32::MAX,
@@ -88,9 +88,7 @@ impl Default for CostingParameters {
             archive_storage_price: Decimal::zero(),
         }
     }
-}
 
-impl CostingParameters {
     pub fn with_execution_cost_unit_limit(mut self, limit: u32) -> Self {
         self.execution_cost_unit_limit = limit;
         self
@@ -117,8 +115,8 @@ pub struct LimitParameters {
     pub max_number_of_events: usize,
 }
 
-impl Default for LimitParameters {
-    fn default() -> Self {
+impl LimitParameters {
+    pub fn babylon_genesis() -> Self {
         Self {
             max_call_depth: MAX_CALL_DEPTH,
             max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
@@ -133,15 +131,13 @@ impl Default for LimitParameters {
             max_number_of_events: MAX_NUMBER_OF_EVENTS,
         }
     }
-}
 
-impl LimitParameters {
     pub fn for_genesis_transaction() -> Self {
         Self {
             max_heap_substate_total_bytes: 512 * 1024 * 1024,
             max_track_substate_total_bytes: 512 * 1024 * 1024,
             max_number_of_events: 1024 * 1024,
-            ..Self::default()
+            ..Self::babylon_genesis()
         }
     }
 }
@@ -151,6 +147,8 @@ pub struct SystemOverrides {
     pub disable_costing: bool,
     pub disable_limits: bool,
     pub disable_auth: bool,
+    /// This is required for pre-bottlenose testnets which need to override
+    /// the default Mainnet network definition
     pub network_definition: Option<NetworkDefinition>,
     pub costing_parameters: Option<CostingParameters>,
     pub limit_parameters: Option<LimitParameters>,
@@ -176,7 +174,7 @@ pub struct ExecutionConfig {
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
 
-    pub network_definition: NetworkDefinition,
+    pub network_definition: Option<NetworkDefinition>,
     pub system_overrides: Option<SystemOverrides>,
 }
 
@@ -185,7 +183,7 @@ impl ExecutionConfig {
     /// This is internal. Clients should use `for_xxx` constructors instead.
     fn default(network_definition: NetworkDefinition) -> Self {
         Self {
-            network_definition,
+            network_definition: Some(network_definition),
             enable_kernel_trace: false,
             enable_cost_breakdown: false,
             execution_trace: None,
@@ -357,7 +355,7 @@ where
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
-                CostingParameters::default(),
+                CostingParameters::babylon_genesis(),
                 TransactionFeeSummary::default(),
                 if self.system_init.enable_cost_breakdown {
                     Some(TransactionFeeDetails::default())
@@ -621,7 +619,7 @@ where
     }
 
     fn determine_result_type(
-        mut interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
+        interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
         fee_reserve: &mut SystemLoanFeeReserve,
     ) -> TransactionResultType {
         // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before
@@ -629,24 +627,19 @@ where
         // enough fee has been locked.
         //
         // Do another `repay` try during finalization to remedy it.
-        if let Err(err) = fee_reserve.repay_all() {
-            if interpretation_result.is_ok() {
-                interpretation_result = Err(TransactionExecutionError::RuntimeError(
-                    RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                        CostingError::FeeReserveError(err),
-                    )),
-                ));
-            }
-        }
+        let final_repay_result = fee_reserve.repay_all();
 
         match interpretation_result {
-            Ok(output) => {
-                if fee_reserve.fully_repaid() {
-                    TransactionResultType::Commit(Ok(output))
-                } else {
-                    panic!("Manifest interpretation result was okay, but fee reserve wasn't fully repaid.")
+            Ok(output) => match final_repay_result {
+                Ok(_) => TransactionResultType::Commit(Ok(output)), // success and system loan repaid fully
+                Err(e) => {
+                    if let Some(abort_reason) = e.abortion() {
+                        TransactionResultType::Abort(abort_reason.clone())
+                    } else {
+                        TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
+                    }
                 }
-            }
+            },
             Err(e) => match e {
                 TransactionExecutionError::BootloadingError(e) => {
                     TransactionResultType::Reject(RejectionReason::BootloadingError(e))

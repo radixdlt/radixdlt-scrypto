@@ -52,13 +52,11 @@ pub struct LimitsModule {
     track_substate_total_bytes: usize,
 }
 
-impl Default for LimitsModule {
-    fn default() -> Self {
-        Self::from_params(LimitParameters::default())
-    }
-}
-
 impl LimitsModule {
+    pub fn babylon_genesis() -> Self {
+        Self::from_params(LimitParameters::babylon_genesis())
+    }
+
     pub fn new(limits_config: TransactionLimitsConfig) -> Self {
         LimitsModule {
             config: limits_config,

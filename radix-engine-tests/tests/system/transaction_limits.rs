@@ -49,8 +49,8 @@ fn test_read_non_existent_entries_from_kv_store_exceeding_limit() {
 
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
-        let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
-        let mut limit_parameters = LimitParameters::default();
+        let fee_config = CostingParameters::babylon_genesis().with_execution_cost_unit_limit(1_000_000_000);
+        let mut limit_parameters = LimitParameters::babylon_genesis();
         limit_parameters.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
         execution_config.system_overrides = Some(SystemOverrides {
             limit_parameters: Some(limit_parameters),
@@ -116,9 +116,9 @@ fn test_write_entries_to_kv_store_exceeding_limit() {
     let prepared = transactions.prepare().unwrap();
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
-        let mut limit_parameters = LimitParameters::default();
+        let mut limit_parameters = LimitParameters::babylon_genesis();
         limit_parameters.max_track_substate_total_bytes = code_len * 2 + definition_len + 10 * 1024;
-        let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
+        let fee_config = CostingParameters::babylon_genesis().with_execution_cost_unit_limit(1_000_000_000);
         execution_config.system_overrides = Some(SystemOverrides {
             limit_parameters: Some(limit_parameters),
             costing_parameters: Some(fee_config),
@@ -168,9 +168,9 @@ fn test_write_entries_to_heap_kv_store_exceeding_limit() {
     let prepared = transactions.prepare().unwrap();
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
-        let mut limit_parameters = LimitParameters::default();
+        let mut limit_parameters = LimitParameters::babylon_genesis();
         limit_parameters.max_heap_substate_total_bytes = 1024 * 1024;
-        let fee_config = CostingParameters::default().with_execution_cost_unit_limit(1_000_000_000);
+        let fee_config = CostingParameters::babylon_genesis().with_execution_cost_unit_limit(1_000_000_000);
         execution_config.system_overrides = Some(SystemOverrides {
             limit_parameters: Some(limit_parameters),
             costing_parameters: Some(fee_config),
