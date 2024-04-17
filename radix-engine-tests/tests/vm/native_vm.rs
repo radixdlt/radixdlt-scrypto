@@ -110,10 +110,12 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 
     let mut boot_loader = BootLoader {
         id_allocator: IdAllocator::new(intent_hash),
-        callback: &mut system,
-        store: &mut track,
+        callback: system,
+        store: track,
     };
-    let mut kernel = boot_loader.boot().unwrap();
+    let mut kernel =
+
+        boot_loader.boot().unwrap();
     let mut api = SystemService {
         api: &mut kernel,
         phantom: Default::default(),
@@ -197,8 +199,8 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 
     let mut boot_loader = BootLoader {
         id_allocator: IdAllocator::new(intent_hash),
-        callback: &mut system,
-        store: &mut track,
+        callback: system,
+        store: track,
     };
     let mut kernel = boot_loader.boot().unwrap();
     let mut api = SystemService {

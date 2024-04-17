@@ -30,21 +30,22 @@ use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, Subst
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::prelude::{Executable, PreAllocatedAddress};
 use sbor::rust::mem;
+use crate::transaction::{CostingParameters, TransactionFeeDetails, TransactionFeeSummary, TransactionResult};
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct BootLoader<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> {
+pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
     pub id_allocator: IdAllocator,
-    pub callback: &'g mut M,
-    pub store: &'g mut Track<'h, S, SpreadPrefixKeyMapper>,
+    pub callback: M,
+    pub store: Track<'h, S, SpreadPrefixKeyMapper>,
 }
 
-impl<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'g, 'h, M, S> {
+impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Creates a new kernel with data loaded from the substate store
     pub fn boot(&mut self) -> Result<Kernel<M, Track<'h, S, SpreadPrefixKeyMapper>>, BootloadingError> {
         let kernel = Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
-                store: self.store,
+                store: &mut self.store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
                 heap_transient_substates: TransientSubstates::new(),
@@ -53,14 +54,12 @@ impl<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'g, 'h, M,
             id_allocator: &mut self.id_allocator,
             current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
-            callback: self.callback,
+            callback: &mut self.callback,
         };
 
         Ok(kernel)
     }
-}
 
-impl<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'g, 'h, M, S> {
     pub fn check_references(
         &mut self,
         references: &IndexSet<Reference>,
@@ -127,21 +126,39 @@ impl<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'g, 'h, M,
     pub fn execute<'a>(
         mut self,
         executable: &Executable,
-    ) -> Result<Vec<InstructionOutput>, TransactionExecutionError> {
+    ) -> (
+        CostingParameters,
+        TransactionFeeSummary,
+        Option<TransactionFeeDetails>,
+        TransactionResult,
+    ) {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
 
         // Check reference
-        let engine_references = self
-            .check_references(executable.references())
-            .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
+        let engine_references = match self.check_references(executable.references()) {
+            Ok(engine_references) => engine_references,
+            Err(e) => {
+                return self.callback.on_teardown3(self.store, executable, Err(TransactionExecutionError::BootloadingError(e)));
+            }
+        };
 
-        // Boot kernel
-        let mut kernel = self
-            .boot()
-            .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
+        let mut kernel = Kernel {
+            substate_io: SubstateIO {
+                heap: Heap::new(),
+                store: &mut self.store,
+                non_global_node_refs: NonGlobalNodeRefs::new(),
+                substate_locks: SubstateLocks::new(),
+                heap_transient_substates: TransientSubstates::new(),
+                pinned_to_heap: BTreeSet::new(),
+            },
+            id_allocator: &mut self.id_allocator,
+            current_frame: CallFrame::new_root(M::CallFrameData::root()),
+            prev_frame_stack: vec![],
+            callback: &mut self.callback,
+        };
 
         // Add visibility
         for global_ref in engine_references.0 {
@@ -189,12 +206,14 @@ impl<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'g, 'h, M,
             panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{result:?}\"")
         }
 
-        result
+        let result = result
             .map(|rtn| {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output
             })
-            .map_err(|e| TransactionExecutionError::RuntimeError(e))
+            .map_err(|e| TransactionExecutionError::RuntimeError(e));
+
+        self.callback.on_teardown3(self.store, executable, result)
     }
 }
 

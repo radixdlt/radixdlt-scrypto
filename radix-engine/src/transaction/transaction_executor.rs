@@ -349,14 +349,11 @@ where
 
                 let kernel_boot = BootLoader {
                     id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
-                    callback: &mut wrapped_system,
-                    store: &mut track,
+                    callback: wrapped_system,
+                    store: track,
                 };
 
-                let interpretation_result = kernel_boot.execute(executable);
-
-                let system = wrapped_system.to_system();
-                system.on_teardown3(track, executable, interpretation_result)
+                kernel_boot.execute(executable)
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details

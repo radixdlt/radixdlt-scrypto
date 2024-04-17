@@ -78,8 +78,8 @@ pub fn test_open_substate_of_invisible_package_address() {
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut boot_loader = BootLoader {
         id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
-        callback: &mut system,
-        store: &mut track,
+        callback: system,
+        store: track,
     };
     let mut kernel = boot_loader.boot().unwrap();
 

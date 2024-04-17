@@ -276,11 +276,10 @@ fn kernel_move_node_via_create_with_opened_substate(
 ) -> Result<(), RuntimeError> {
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
-    let mut callback = TestCallbackObject;
     let mut boot_loader = BootLoader {
         id_allocator: IdAllocator::new(Hash([0u8; Hash::LENGTH])),
-        callback: &mut callback,
-        store: &mut track,
+        callback: TestCallbackObject,
+        store: track,
     };
     let mut kernel = boot_loader.boot().unwrap();
 
@@ -417,11 +416,10 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
     // Arrange
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
-    let mut callback = TestCallbackObject;
     let mut boot_loader = BootLoader {
         id_allocator: IdAllocator::new(Hash([0u8; Hash::LENGTH])),
-        callback: &mut callback,
-        store: &mut track,
+        callback: TestCallbackObject,
+        store: track,
     };
     let mut kernel = boot_loader.boot().unwrap();
     let mut create_node = || {
