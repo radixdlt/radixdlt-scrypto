@@ -294,21 +294,21 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
     }
 }
 
-struct TransactionExecutor<'s, S, V: SystemCallbackObject>
+pub struct TransactionExecutor<'s, S, V: KernelCallbackObject>
 where
     S: SubstateDatabase,
 {
     substate_db: &'s S,
-    system_init: SystemInit<V::InitInput>,
+    system_init: V::InitInput,
     phantom: PhantomData<V>,
 }
 
 impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    V: SystemCallbackObject,
+    V: KernelCallbackObject,
 {
-    pub fn new(substate_db: &'s S, system_init: SystemInit<V::InitInput>) -> Self {
+    pub fn new(substate_db: &'s S, system_init: V::InitInput) -> Self {
         Self {
             substate_db,
             system_init,
@@ -316,10 +316,9 @@ where
         }
     }
 
-    pub fn execute<T: WrappedSystem<V>>(
+    pub fn execute(
         &mut self,
         executable: &Executable,
-        init: T::Init,
     ) -> TransactionReceipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
@@ -330,7 +329,7 @@ where
             let boot_store = SubstateBootStore {
                 boot_store: self.substate_db,
             };
-            System::init(&boot_store, executable, self.system_init.clone()).map_err(|e| {
+            V::init(&boot_store, executable, self.system_init.clone()).map_err(|e| {
                 RejectionReason::BootloadingError(e)
             })
         };
@@ -339,11 +338,9 @@ where
             Ok(system) => {
                 let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
 
-                let mut wrapped_system = T::create(system, init);
-
                 let kernel_boot = BootLoader {
                     id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
-                    callback: wrapped_system,
+                    callback: system,
                     store: track,
                 };
 
@@ -380,10 +377,12 @@ where
         };
 
         // Dump summary
+        /*
         #[cfg(not(feature = "alloc"))]
         if self.system_init.enable_kernel_trace {
             Self::print_execution_summary(&receipt);
         }
+         */
 
         receipt
     }
@@ -483,15 +482,13 @@ where
 pub fn execute_transaction_with_configuration<
     S: SubstateDatabase,
     V: SystemCallbackObject,
-    T: WrappedSystem<V>,
 >(
     substate_db: &S,
     vms: V::InitInput,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
-    init: T::Init,
 ) -> TransactionReceipt {
-    let mut executor = TransactionExecutor::new(
+    let mut executor = TransactionExecutor::<_, System<V>>::new(
         substate_db,
         SystemInit {
             enable_kernel_trace: execution_config.enable_kernel_trace,
@@ -502,7 +499,7 @@ pub fn execute_transaction_with_configuration<
         },
     );
 
-    executor.execute::<T>(transaction, init)
+    executor.execute(transaction)
 }
 
 pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
@@ -511,12 +508,11 @@ pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmEx
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
+    execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
         substate_db,
         vm_init,
         execution_config,
         transaction,
-        (),
     )
 }
 
@@ -531,12 +527,11 @@ pub fn execute_and_commit_transaction<
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    let receipt = execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
+    let receipt = execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
         substate_db,
         vms,
         execution_config,
         transaction,
-        (),
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(

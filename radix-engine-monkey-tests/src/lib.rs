@@ -722,7 +722,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build();
 
                 let receipt = if let Some(error_after_count) = error_after_system_callback_count {
-                    self.ledger.execute_manifest_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
+                    self.ledger.execute_manifest_with_injected_error::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
                         manifest,
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,

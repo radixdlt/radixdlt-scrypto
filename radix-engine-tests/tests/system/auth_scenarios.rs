@@ -155,7 +155,7 @@ fn scenario_1_with_injected_costing_error() {
             .call_method(env.swappy, "protected_method", manifest_args!())
             .build();
         let receipt = ledger
-            .execute_manifest_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
+            .execute_manifest_with_injected_error(
                 manifest,
                 vec![env.virtua_sig.clone()],
                 inject_err_after_count,
