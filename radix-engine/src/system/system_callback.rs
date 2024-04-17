@@ -140,6 +140,23 @@ pub struct System<C: SystemCallbackObject> {
 }
 
 impl<C: SystemCallbackObject> System<C> {
+    #[cfg(not(feature = "alloc"))]
+    fn print_executable(executable: &Executable) {
+        println!("{:-^120}", "Executable");
+        println!("Intent hash: {}", executable.intent_hash().as_hash());
+        println!("Payload size: {}", executable.payload_size());
+        println!(
+            "Transaction costing parameters: {:?}",
+            executable.costing_parameters()
+        );
+        println!(
+            "Pre-allocated addresses: {:?}",
+            executable.pre_allocated_addresses()
+        );
+        println!("Blobs: {:?}", executable.blobs().keys());
+        println!("References: {:?}", executable.references());
+    }
+
     pub fn read_epoch<S: SubstateDatabase>(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
@@ -607,6 +624,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         executable: &Executable,
         init_input: SystemInit<C::InitInput>,
     ) -> Result<Self, BootloadingError> {
+        // Dump executable
+        #[cfg(not(feature = "alloc"))]
+        if init_input.enable_kernel_trace {
+            Self::print_executable(&executable);
+        }
+
+
         let mut system_parameters = {
             let system_boot = store
                 .read_boot_substate(

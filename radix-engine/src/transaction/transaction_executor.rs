@@ -321,12 +321,6 @@ where
         executable: &Executable,
         init: T::Init,
     ) -> TransactionReceipt {
-        // Dump executable
-        #[cfg(not(feature = "alloc"))]
-        if self.system_init.enable_kernel_trace {
-            Self::print_executable(&executable);
-        }
-
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker =
@@ -351,7 +345,19 @@ where
         // Run manifest
         let (costing_parameters, fee_summary, fee_details, result) = match validation_result {
             Ok(system) => {
-                self.interpret_manifest::<T>(track, system, init, executable)
+                let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
+                let mut wrapped_system = T::create(system, init);
+
+                let kernel_boot = BootLoader {
+                    id_allocator: &mut id_allocator,
+                    callback: &mut wrapped_system,
+                    store: &mut track,
+                };
+
+                let interpretation_result = kernel_boot.execute(executable);
+
+                let system = wrapped_system.to_system();
+                system.on_teardown3(track, executable, interpretation_result)
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
@@ -393,78 +399,6 @@ where
         receipt
     }
 
-    fn interpret_manifest<T: WrappedSystem<V>>(
-        &self,
-        mut track: Track<S, SpreadPrefixKeyMapper>,
-        system: System<V>,
-        init: T::Init,
-        executable: &Executable,
-    ) -> (
-        CostingParameters,
-        TransactionFeeSummary,
-        Option<TransactionFeeDetails>,
-        TransactionResult,
-    ) {
-        let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
-        let mut wrapped_system = T::create(system, init);
-
-        let kernel_boot = BootLoader {
-            id_allocator: &mut id_allocator,
-            callback: &mut wrapped_system,
-            store: &mut track,
-        };
-
-        let interpretation_result = kernel_boot
-            .execute(
-                executable.encoded_instructions(),
-                executable.pre_allocated_addresses(),
-                executable.references(),
-                executable.blobs(),
-            )
-            .map(|rtn| {
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
-            })
-            .or_else(|e| {
-                // State updates are reverted
-                // Events are reverted
-                // Logs are NOT reverted (This is not ideal, as it means logs are free if the transaction fails)
-                Err(e)
-            });
-
-        // Panic if an error is encountered in the system layer or below. The following code
-        // is only enabled when compiling with the standard library since the panic catching
-        // machinery and `SystemPanic` errors are only implemented in `std`.
-        #[cfg(feature = "std")]
-        if let Err(TransactionExecutionError::RuntimeError(RuntimeError::SystemError(
-                                                               SystemError::SystemPanic(..),
-                                                           ))) = interpretation_result
-        {
-            panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{interpretation_result:?}\"")
-        }
-
-        let system = wrapped_system.to_system();
-
-        system.on_teardown3(track, executable, interpretation_result)
-
-    }
-
-    #[cfg(not(feature = "alloc"))]
-    fn print_executable(executable: &Executable) {
-        println!("{:-^120}", "Executable");
-        println!("Intent hash: {}", executable.intent_hash().as_hash());
-        println!("Payload size: {}", executable.payload_size());
-        println!(
-            "Transaction costing parameters: {:?}",
-            executable.costing_parameters()
-        );
-        println!(
-            "Pre-allocated addresses: {:?}",
-            executable.pre_allocated_addresses()
-        );
-        println!("Blobs: {:?}", executable.blobs().keys());
-        println!("References: {:?}", executable.references());
-    }
 
     #[cfg(not(feature = "alloc"))]
     fn print_execution_summary(receipt: &TransactionReceipt) {

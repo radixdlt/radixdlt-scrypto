@@ -27,7 +27,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_transactions::prelude::PreAllocatedAddress;
+use radix_transactions::prelude::{Executable, PreAllocatedAddress};
 use sbor::rust::mem;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
@@ -125,11 +125,8 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
     /// Executes a transaction
     pub fn execute<'a>(
         mut self,
-        manifest_encoded_instructions: &'a [u8],
-        pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
-        manifest_references: &'a IndexSet<Reference>,
-        blobs: &'a IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, TransactionExecutionError> {
+        executable: &Executable,
+    ) -> Result<Vec<InstructionOutput>, TransactionExecutionError> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
@@ -137,7 +134,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
 
         // Check reference
         let engine_references = self
-            .check_references(manifest_references)
+            .check_references(executable.references())
             .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
 
         // Boot kernel
@@ -155,31 +152,48 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                 .add_direct_access_reference(direct_access);
         }
 
-        // Invoke transaction processor
-        let rtn = M::start(
-            &mut kernel,
-            manifest_encoded_instructions,
-            pre_allocated_addresses,
-            manifest_references,
-            blobs,
-        )
-        .map_err(|e| TransactionExecutionError::RuntimeError(e))?;
+        let mut sys_exec = || -> Result<Vec<u8>, RuntimeError> {
+            // Invoke transaction processor
+            let rtn = M::start(
+                &mut kernel,
+                executable.encoded_instructions(),
+                executable.pre_allocated_addresses(),
+                executable.references(),
+                executable.blobs(),
+            )?;
 
-        // Sanity check call frame
-        assert!(kernel.prev_frame_stack.is_empty());
+            // Sanity check call frame
+            assert!(kernel.prev_frame_stack.is_empty());
 
-        // Sanity check heap
-        assert!(kernel.substate_io.heap.is_empty());
+            // Sanity check heap
+            assert!(kernel.substate_io.heap.is_empty());
 
-        M::on_teardown(&mut kernel).map_err(|e| TransactionExecutionError::RuntimeError(e))?;
+            M::on_teardown(&mut kernel)?;
 
-        let commit_info = kernel.substate_io.store.get_commit_info();
+            let commit_info = kernel.substate_io.store.get_commit_info();
 
-        kernel.callback.on_teardown2(commit_info).map_err(|e| {
-            TransactionExecutionError::RuntimeError(e)
-        })?;
+            kernel.callback.on_teardown2(commit_info)?;
 
-        Ok(rtn)
+            Ok(rtn)
+        };
+
+        let result = sys_exec();
+
+        // Panic if an error is encountered in the system layer or below. The following code
+        // is only enabled when compiling with the standard library since the panic catching
+        // machinery and `SystemPanic` errors are only implemented in `std`.
+        #[cfg(feature = "std")]
+        if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) = result
+        {
+            panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{result:?}\"")
+        }
+
+        result
+            .map(|rtn| {
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            })
+            .map_err(|e| TransactionExecutionError::RuntimeError(e))
     }
 }
 
