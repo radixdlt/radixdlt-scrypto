@@ -795,8 +795,12 @@ where
         match interpretation_result {
             Ok(output) => match final_repay_result {
                 Ok(_) => TransactionResultType::Commit(Ok(output)), // success and system loan repaid fully
-                Err(_) => {
-                    TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
+                Err(e) => {
+                    if let Some(abort_reason) = e.abortion() {
+                        TransactionResultType::Abort(abort_reason.clone())
+                    } else {
+                        TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
+                    }
                 }
             },
             Err(e) => match e {
