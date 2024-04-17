@@ -782,7 +782,7 @@ where
     }
 
     fn determine_result_type(
-        mut interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
+        interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
         fee_reserve: &mut SystemLoanFeeReserve,
     ) -> TransactionResultType {
         // A `SuccessButFeeLoanNotRepaid` error is issued if a transaction finishes before
@@ -790,24 +790,15 @@ where
         // enough fee has been locked.
         //
         // Do another `repay` try during finalization to remedy it.
-        if let Err(err) = fee_reserve.repay_all() {
-            if interpretation_result.is_ok() {
-                interpretation_result = Err(TransactionExecutionError::RuntimeError(
-                    RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                        CostingError::FeeReserveError(err),
-                    )),
-                ));
-            }
-        }
+        let final_repay_result = fee_reserve.repay_all();
 
         match interpretation_result {
-            Ok(output) => {
-                if fee_reserve.fully_repaid() {
-                    TransactionResultType::Commit(Ok(output))
-                } else {
-                    panic!("Manifest interpretation result was okay, but fee reserve wasn't fully repaid.")
+            Ok(output) => match final_repay_result {
+                Ok(_) => TransactionResultType::Commit(Ok(output)), // success and system loan repaid fully
+                Err(_) => {
+                    TransactionResultType::Reject(RejectionReason::SuccessButFeeLoanNotRepaid)
                 }
-            }
+            },
             Err(e) => match e {
                 TransactionExecutionError::BootloadingError(e) => {
                     TransactionResultType::Reject(RejectionReason::BootloadingError(e))

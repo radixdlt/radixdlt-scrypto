@@ -61,6 +61,7 @@ pub enum RejectionReason {
     BootloadingError(BootloadingError),
 
     ErrorBeforeLoanAndDeferredCostsRepaid(RuntimeError),
+    SuccessButFeeLoanNotRepaid,
 }
 
 impl fmt::Display for RejectionReason {
