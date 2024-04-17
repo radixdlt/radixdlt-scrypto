@@ -32,7 +32,7 @@ use sbor::rust::mem;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> {
-    pub id_allocator: &'g mut IdAllocator,
+    pub id_allocator: IdAllocator,
     pub callback: &'g mut M,
     pub store: &'g mut S,
 }
@@ -49,7 +49,7 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Bo
                 heap_transient_substates: TransientSubstates::new(),
                 pinned_to_heap: BTreeSet::new(),
             },
-            id_allocator: self.id_allocator,
+            id_allocator: &mut self.id_allocator,
             current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
             callback: self.callback,

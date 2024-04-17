@@ -274,12 +274,11 @@ enum MoveVariation {
 fn kernel_move_node_via_create_with_opened_substate(
     variation: MoveVariation,
 ) -> Result<(), RuntimeError> {
-    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut callback = TestCallbackObject;
     let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
+        id_allocator: IdAllocator::new(Hash([0u8; Hash::LENGTH])),
         callback: &mut callback,
         store: &mut track,
     };
@@ -416,12 +415,11 @@ fn test_kernel_move_node_via_invoke_with_opened_substate() {
 #[test]
 fn kernel_close_substate_should_fail_if_opened_child_exists() {
     // Arrange
-    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut callback = TestCallbackObject;
     let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
+        id_allocator: IdAllocator::new(Hash([0u8; Hash::LENGTH])),
         callback: &mut callback,
         store: &mut track,
     };

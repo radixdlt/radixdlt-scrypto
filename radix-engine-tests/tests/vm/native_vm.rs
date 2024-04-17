@@ -72,7 +72,6 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let native_vm = NativeVm::new_with_extension(Extension);
 
     let intent_hash = Hash([0; 32]);
-    let mut id_allocator = IdAllocator::new(intent_hash);
     let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
@@ -110,7 +109,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     };
 
     let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
+        id_allocator: IdAllocator::new(intent_hash),
         callback: &mut system,
         store: &mut track,
     };
@@ -160,7 +159,6 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let native_vm = NativeVm::new_with_extension(NonStringPanicExtension);
 
     let intent_hash = Hash([0; 32]);
-    let mut id_allocator = IdAllocator::new(intent_hash);
     let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
@@ -198,7 +196,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     };
 
     let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
+        id_allocator: IdAllocator::new(intent_hash),
         callback: &mut system,
         store: &mut track,
     };

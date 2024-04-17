@@ -345,11 +345,10 @@ where
         // Run manifest
         let (costing_parameters, fee_summary, fee_details, result) = match validation_result {
             Ok(system) => {
-                let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
                 let mut wrapped_system = T::create(system, init);
 
                 let kernel_boot = BootLoader {
-                    id_allocator: &mut id_allocator,
+                    id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
                     callback: &mut wrapped_system,
                     store: &mut track,
                 };

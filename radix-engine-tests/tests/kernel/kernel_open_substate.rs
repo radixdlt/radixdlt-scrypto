@@ -45,7 +45,6 @@ pub fn test_open_substate_of_invisible_package_address() {
     Bootstrapper::new(NetworkDefinition::simulator(), &mut database, vm_init, false);
 
     // Create kernel
-    let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
     let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
@@ -78,7 +77,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
+        id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
         callback: &mut system,
         store: &mut track,
     };
