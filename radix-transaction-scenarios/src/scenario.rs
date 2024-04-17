@@ -198,6 +198,10 @@ impl ScenarioCore {
         AddressBech32Encoder::new(&self.network)
     }
 
+    pub fn decoder(&self) -> AddressBech32Decoder {
+        AddressBech32Decoder::new(&self.network)
+    }
+
     pub fn check_start(&self, previous: &Option<&TransactionReceipt>) -> Result<(), ScenarioError> {
         match previous {
             Some(_) => Err(ScenarioError::PreviousResultProvidedAtStart),
