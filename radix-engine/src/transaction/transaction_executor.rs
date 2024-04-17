@@ -146,6 +146,8 @@ pub struct SystemOverrides {
     pub disable_costing: bool,
     pub disable_limits: bool,
     pub disable_auth: bool,
+    /// This is required for pre-bottlenose testnets which need to override
+    /// the default Mainnet network definition
     pub network_definition: Option<NetworkDefinition>,
     pub costing_parameters: Option<CostingParameters>,
     pub limit_parameters: Option<LimitParameters>,
