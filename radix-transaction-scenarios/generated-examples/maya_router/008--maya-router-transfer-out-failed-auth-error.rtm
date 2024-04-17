@@ -4,9 +4,11 @@ CALL_METHOD
     Decimal("5000")
 ;
 CALL_METHOD
-    Address("component_sim1cz6dyayd3hqrcjufqts5ff80fx78a7h2hhav8ge9j4ygl7w4skqntk")
+    Address("component_sim1cr5ycjysra7c53f95rr68cvd73r4cnhv29hn3nralyqvt6nplc2k3t")
     "transfer_out"
-    Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
+    Enum<0u8>(
+        Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5")
+    )
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
     Decimal("20")

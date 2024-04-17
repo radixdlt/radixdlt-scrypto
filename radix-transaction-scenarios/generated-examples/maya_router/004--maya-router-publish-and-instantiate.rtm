@@ -25,10 +25,16 @@ PUBLISH_PACKAGE_ADVANCED
                             Array<Enum>(
                                 Enum<14u8>(
                                     Array<Enum>(
+                                        Enum<1u8>(
+                                            1u64
+                                        ),
                                         Enum<0u8>(
                                             170u8
                                         )
                                     )
+                                ),
+                                Enum<17u8>(
+                                    Enum<0u8>()
                                 ),
                                 Enum<14u8>(
                                     Array<Enum>()
@@ -39,10 +45,10 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<14u8>(
                                     Array<Enum>(
                                         Enum<1u8>(
-                                            4u64
+                                            5u64
                                         ),
                                         Enum<0u8>(
-                                            210u8
+                                            208u8
                                         ),
                                         Enum<0u8>(
                                             162u8
@@ -58,10 +64,10 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<14u8>(
                                     Array<Enum>(
                                         Enum<0u8>(
-                                            210u8
+                                            208u8
                                         ),
                                         Enum<1u8>(
-                                            4u64
+                                            5u64
                                         ),
                                         Enum<0u8>(
                                             133u8
@@ -77,10 +83,10 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<14u8>(
                                     Array<Enum>(
                                         Enum<0u8>(
-                                            210u8
+                                            208u8
                                         ),
                                         Enum<0u8>(
-                                            210u8
+                                            208u8
                                         ),
                                         Enum<0u8>(
                                             133u8
@@ -96,7 +102,7 @@ PUBLISH_PACKAGE_ADVANCED
                                             132u8
                                         ),
                                         Enum<0u8>(
-                                            210u8
+                                            208u8
                                         ),
                                         Enum<0u8>(
                                             133u8
@@ -112,10 +118,10 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<14u8>(
                                     Array<Enum>(
                                         Enum<0u8>(
-                                            210u8
+                                            208u8
                                         ),
                                         Enum<0u8>(
-                                            210u8
+                                            208u8
                                         ),
                                         Enum<0u8>(
                                             133u8
@@ -131,7 +137,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<14u8>(
                                     Array<Enum>(
                                         Enum<0u8>(
-                                            210u8
+                                            208u8
                                         ),
                                         Enum<0u8>(
                                             132u8
@@ -156,10 +162,17 @@ PUBLISH_PACKAGE_ADVANCED
                                     Enum<1u8>(
                                         Enum<0u8>(
                                             Array<String>(
+                                                "locker",
                                                 "vaults"
                                             )
                                         )
                                     )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "GlobalAccountLocker"
+                                    ),
+                                    Enum<0u8>()
                                 ),
                                 Tuple(
                                     Enum<1u8>(
@@ -280,6 +293,16 @@ PUBLISH_PACKAGE_ADVANCED
                             ),
                             Array<Enum>(
                                 Enum<0u8>(),
+                                Enum<14u8>(
+                                    Enum<0u8>(
+                                        Enum<4u8>(
+                                            Enum<1u8>(
+                                                Address("package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6")
+                                            ),
+                                            "AccountLocker"
+                                        )
+                                    )
+                                ),
                                 Enum<0u8>(),
                                 Enum<14u8>(
                                     Enum<0u8>(
@@ -325,17 +348,17 @@ PUBLISH_PACKAGE_ADVANCED
                     Map<String, Enum>(
                         "MayaRouterDepositEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                7u64
+                                8u64
                             )
                         ),
                         "MayaRouterTransferAsgardVaultEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                8u64
+                                9u64
                             )
                         ),
                         "MayaRouterTransferOutEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                9u64
+                                10u64
                             )
                         )
                     ),
@@ -346,12 +369,12 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<0u8>(),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        1u64
+                                        2u64
                                     )
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        2u64
+                                        3u64
                                     )
                                 ),
                                 "MayaRouter_instantiate"
@@ -367,7 +390,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        3u64
+                                        4u64
                                     )
                                 ),
                                 Enum<0u8>(
@@ -388,7 +411,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        5u64
+                                        6u64
                                     )
                                 ),
                                 Enum<0u8>(
@@ -409,7 +432,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        6u64
+                                        7u64
                                     )
                                 ),
                                 Enum<0u8>(
@@ -444,7 +467,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("6fd94dbc76f9556c6d16e15d45cf7865c4a543b030a12d3f75ca9ffe04cb4be6")
+    Blob("814a1af902d10c59dd1b9d06a49db48cd9d9e76b6666a56435c5f1496de78794")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(

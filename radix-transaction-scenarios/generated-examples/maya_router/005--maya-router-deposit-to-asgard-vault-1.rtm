@@ -20,10 +20,12 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("xrds")
 ;
 CALL_METHOD
-    Address("component_sim1cz6dyayd3hqrcjufqts5ff80fx78a7h2hhav8ge9j4ygl7w4skqntk")
+    Address("component_sim1cr5ycjysra7c53f95rr68cvd73r4cnhv29hn3nralyqvt6nplc2k3t")
     "deposit"
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
-    Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
+    Enum<0u8>(
+        Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5")
+    )
     Bucket("xrds")
     "=:MAYA.CACAO:maya12ehykd8m4a79av36x0m9wzvq3uf06x5xa2yzd2::wr:100"
 ;
@@ -32,10 +34,12 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("resource_2")
 ;
 CALL_METHOD
-    Address("component_sim1cz6dyayd3hqrcjufqts5ff80fx78a7h2hhav8ge9j4ygl7w4skqntk")
+    Address("component_sim1cr5ycjysra7c53f95rr68cvd73r4cnhv29hn3nralyqvt6nplc2k3t")
     "deposit"
     Address("account_sim1cy2d4n3tfyddw8euefg66pqlxqwvl45cuwgx3ld2hm378rwd8w8s9k")
-    Bytes("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29")
+    Enum<0u8>(
+        Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5")
+    )
     Bucket("resource_2")
     "=:MAYA.CACAO:maya12ehykd8m4a79av36x0m9wzvq3uf06x5xa2yzd2::wr:100"
 ;
