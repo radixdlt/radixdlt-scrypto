@@ -16,13 +16,12 @@ use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_callback::{System, SystemBoot, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY};
+use crate::system::system_callback::{System, SystemInit};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::system::system_modules::EnabledModules;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_substates::{FieldSubstate, LockStatus};
 use crate::track::interface::CommitableSubstateStore;
@@ -61,9 +60,9 @@ pub struct CostingParameters {
     pub archive_storage_price: Decimal,
 }
 
-impl Default for CostingParameters {
+impl CostingParameters {
     #[cfg(not(feature = "coverage"))]
-    fn default() -> Self {
+    pub fn babylon_genesis() -> Self {
         Self {
             execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
             execution_cost_unit_limit: EXECUTION_COST_UNIT_LIMIT,
@@ -76,7 +75,7 @@ impl Default for CostingParameters {
         }
     }
     #[cfg(feature = "coverage")]
-    fn default() -> Self {
+    pub fn babylon_genesis() -> Self {
         Self {
             execution_cost_unit_price: Decimal::zero(),
             execution_cost_unit_limit: u32::MAX,
@@ -88,9 +87,7 @@ impl Default for CostingParameters {
             archive_storage_price: Decimal::zero(),
         }
     }
-}
 
-impl CostingParameters {
     pub fn with_execution_cost_unit_limit(mut self, limit: u32) -> Self {
         self.execution_cost_unit_limit = limit;
         self
@@ -102,14 +99,8 @@ impl CostingParameters {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ExecutionConfig {
-    pub enable_cost_breakdown: bool,
-    pub enabled_modules: EnabledModules,
-
-    // TODO: Add the following to a substate
-    pub network_definition: NetworkDefinition,
-    pub max_execution_trace_depth: usize,
+#[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct LimitParameters {
     pub max_call_depth: usize,
     pub max_heap_substate_total_bytes: usize,
     pub max_track_substate_total_bytes: usize,
@@ -121,18 +112,11 @@ pub struct ExecutionConfig {
     pub max_panic_message_size: usize,
     pub max_number_of_logs: usize,
     pub max_number_of_events: usize,
-    pub max_per_function_royalty_in_xrd: Decimal,
 }
 
-impl ExecutionConfig {
-    /// Creates an `ExecutionConfig` using default configurations.
-    /// This is internal. Clients should use `for_xxx` constructors instead.
-    fn default(network_definition: NetworkDefinition) -> Self {
+impl LimitParameters {
+    pub fn babylon_genesis() -> Self {
         Self {
-            network_definition,
-            enabled_modules: EnabledModules::for_notarized_transaction(),
-            enable_cost_breakdown: false,
-            max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
             max_call_depth: MAX_CALL_DEPTH,
             max_heap_substate_total_bytes: MAX_HEAP_SUBSTATE_TOTAL_BYTES,
             max_track_substate_total_bytes: MAX_TRACK_SUBSTATE_TOTAL_BYTES,
@@ -144,38 +128,100 @@ impl ExecutionConfig {
             max_panic_message_size: MAX_PANIC_MESSAGE_SIZE,
             max_number_of_logs: MAX_NUMBER_OF_LOGS,
             max_number_of_events: MAX_NUMBER_OF_EVENTS,
-            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
-                .unwrap(),
+        }
+    }
+
+    pub fn for_genesis_transaction() -> Self {
+        Self {
+            max_heap_substate_total_bytes: 512 * 1024 * 1024,
+            max_track_substate_total_bytes: 512 * 1024 * 1024,
+            max_number_of_events: 1024 * 1024,
+            ..Self::babylon_genesis()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SystemOverrides {
+    pub disable_costing: bool,
+    pub disable_limits: bool,
+    pub disable_auth: bool,
+    /// This is required for pre-bottlenose testnets which need to override
+    /// the default Mainnet network definition
+    pub network_definition: Option<NetworkDefinition>,
+    pub costing_parameters: Option<CostingParameters>,
+    pub limit_parameters: Option<LimitParameters>,
+}
+
+impl Default for SystemOverrides {
+    fn default() -> Self {
+        Self {
+            disable_costing: false,
+            disable_limits: false,
+            disable_auth: false,
+            network_definition: None,
+            costing_parameters: None,
+            limit_parameters: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ExecutionConfig {
+    // These parameters do not affect state execution but only affect side effects
+    pub enable_kernel_trace: bool,
+    pub enable_cost_breakdown: bool,
+    pub execution_trace: Option<usize>,
+
+    pub network_definition: Option<NetworkDefinition>,
+    pub system_overrides: Option<SystemOverrides>,
+}
+
+impl ExecutionConfig {
+    /// Creates an `ExecutionConfig` using default configurations.
+    /// This is internal. Clients should use `for_xxx` constructors instead.
+    fn default(network_definition: NetworkDefinition) -> Self {
+        Self {
+            network_definition: Some(network_definition),
+            enable_kernel_trace: false,
+            enable_cost_breakdown: false,
+            execution_trace: None,
+            system_overrides: None,
         }
     }
 
     pub fn for_genesis_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_genesis_transaction(),
-            max_heap_substate_total_bytes: 512 * 1024 * 1024,
-            max_track_substate_total_bytes: 512 * 1024 * 1024,
-            max_number_of_events: 1024 * 1024,
+            system_overrides: Some(SystemOverrides {
+                disable_costing: true,
+                disable_limits: true,
+                disable_auth: true,
+                ..Default::default()
+            }),
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_system_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_system_transaction(),
+            system_overrides: Some(SystemOverrides {
+                disable_costing: true,
+                disable_limits: true,
+                ..Default::default()
+            }),
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_notarized_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_notarized_transaction(),
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_test_transaction() -> Self {
         Self {
-            enabled_modules: EnabledModules::for_test_transaction(),
+            enable_kernel_trace: true,
             enable_cost_breakdown: true,
             ..Self::default(NetworkDefinition::simulator())
         }
@@ -183,26 +229,26 @@ impl ExecutionConfig {
 
     pub fn for_preview(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_preview(),
             enable_cost_breakdown: true,
+            execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
             ..Self::default(network_definition)
         }
     }
 
     pub fn for_preview_no_auth(network_definition: NetworkDefinition) -> Self {
         Self {
-            enabled_modules: EnabledModules::for_preview_no_auth(),
+            system_overrides: Some(SystemOverrides {
+                disable_auth: true,
+                ..Default::default()
+            }),
             enable_cost_breakdown: true,
+            execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
             ..Self::default(network_definition)
         }
     }
 
     pub fn with_kernel_trace(mut self, enabled: bool) -> Self {
-        if enabled {
-            self.enabled_modules.insert(EnabledModules::KERNEL_TRACE);
-        } else {
-            self.enabled_modules.remove(EnabledModules::KERNEL_TRACE);
-        }
+        self.enable_kernel_trace = enabled;
         self
     }
 
@@ -229,7 +275,6 @@ impl<C: SystemCallbackObject> WrappedSystem<C> for System<C> {
 }
 
 pub struct SubstateBootStore<'a, S: SubstateDatabase> {
-    costing_parameters: Option<CostingParameters>,
     boot_store: &'a S,
 }
 
@@ -240,18 +285,6 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Option<IndexedScryptoValue> {
-        if node_id.eq(TRANSACTION_TRACKER.as_node_id())
-            && partition_num == BOOT_LOADER_PARTITION
-            && substate_key.eq(&SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY))
-        {
-            if let Some(costing_override) = &self.costing_parameters {
-                let value = IndexedScryptoValue::from_typed(&SystemBoot::V1 {
-                    costing_parameters: costing_override.clone(),
-                });
-                return Some(value);
-            }
-        }
-
         let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_num);
         let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
         self.boot_store
@@ -265,7 +298,7 @@ where
     S: SubstateDatabase,
 {
     substate_db: &'s S,
-    input: V::InitInput,
+    system_init: SystemInit<V::InitInput>,
     phantom: PhantomData<V>,
 }
 
@@ -274,10 +307,10 @@ where
     S: SubstateDatabase,
     V: SystemCallbackObject,
 {
-    pub fn new(substate_db: &'s S, vm: V::InitInput) -> Self {
+    pub fn new(substate_db: &'s S, system_init: SystemInit<V::InitInput>) -> Self {
         Self {
             substate_db,
-            input: vm,
+            system_init,
             phantom: PhantomData::default(),
         }
     }
@@ -285,16 +318,11 @@ where
     pub fn execute<T: WrappedSystem<V>>(
         &mut self,
         executable: &Executable,
-        costing_parameters: Option<CostingParameters>,
-        execution_config: &ExecutionConfig,
         init: T::Init,
     ) -> TransactionReceipt {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
-        if execution_config
-            .enabled_modules
-            .contains(EnabledModules::KERNEL_TRACE)
-        {
+        if self.system_init.enable_kernel_trace {
             Self::print_executable(&executable);
         }
 
@@ -305,15 +333,9 @@ where
 
         let boot_store = SubstateBootStore {
             boot_store: self.substate_db,
-            costing_parameters,
         };
 
-        let system_boot_result = System::init(
-            &boot_store,
-            executable,
-            execution_config,
-            self.input.clone(),
-        );
+        let system_boot_result = System::init(&boot_store, executable, self.system_init.clone());
 
         // Create a track
         let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
@@ -358,23 +380,20 @@ where
                 ) = self.interpret_manifest::<T>(&mut track, system, init, executable);
 
                 #[cfg(not(feature = "alloc"))]
-                if execution_config
-                    .enabled_modules
-                    .contains(EnabledModules::KERNEL_TRACE)
-                {
+                if self.system_init.enable_kernel_trace {
                     println!("{:-^120}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
                 }
 
                 let costing_parameters = costing_module.fee_reserve.costing_parameters();
 
-                let fee_details = if execution_config.enable_cost_breakdown {
-                    let execution_cost_breakdown = costing_module
+                let fee_details = if let Some(cost_breakdown) = costing_module.cost_breakdown {
+                    let execution_cost_breakdown = cost_breakdown
                         .execution_cost_breakdown
                         .into_iter()
                         .map(|(k, v)| (k.to_string(), v))
                         .collect();
-                    let finalization_cost_breakdown = costing_module
+                    let finalization_cost_breakdown = cost_breakdown
                         .finalization_cost_breakdown
                         .into_iter()
                         .map(|(k, v)| (k.to_string(), v))
@@ -501,10 +520,7 @@ where
                                 application_events,
                                 application_logs,
                                 system_structure,
-                                execution_trace: if execution_config
-                                    .enabled_modules
-                                    .contains(EnabledModules::EXECUTION_TRACE)
-                                {
+                                execution_trace: if self.system_init.execution_trace.is_some() {
                                     Some(execution_trace)
                                 } else {
                                     None
@@ -528,9 +544,9 @@ where
             }
             Err(reason) => (
                 // No execution is done, so add empty fee summary and details
-                CostingParameters::default(),
+                CostingParameters::babylon_genesis(),
                 TransactionFeeSummary::default(),
-                if execution_config.enable_cost_breakdown {
+                if self.system_init.enable_cost_breakdown {
                     Some(TransactionFeeDetails::default())
                 } else {
                     None
@@ -559,10 +575,7 @@ where
 
         // Dump summary
         #[cfg(not(feature = "alloc"))]
-        if execution_config
-            .enabled_modules
-            .contains(EnabledModules::KERNEL_TRACE)
-        {
+        if self.system_init.enable_kernel_trace {
             Self::print_execution_summary(&receipt);
         }
 
@@ -1263,17 +1276,22 @@ pub fn execute_transaction_with_configuration<
 >(
     substate_db: &S,
     vms: V::InitInput,
-    costing_parameters: Option<CostingParameters>,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
     init: T::Init,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_db, vms).execute::<T>(
-        transaction,
-        costing_parameters,
-        execution_config,
-        init,
-    )
+    let mut executor = TransactionExecutor::new(
+        substate_db,
+        SystemInit {
+            enable_kernel_trace: execution_config.enable_kernel_trace,
+            enable_cost_breakdown: execution_config.enable_cost_breakdown,
+            execution_trace: execution_config.execution_trace,
+            callback_init: vms,
+            system_overrides: execution_config.system_overrides.clone(),
+        },
+    );
+
+    executor.execute::<T>(transaction, init)
 }
 
 pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
@@ -1285,7 +1303,6 @@ pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmEx
     execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
         substate_db,
         vm_init,
-        None,
         execution_config,
         transaction,
         (),
@@ -1306,7 +1323,6 @@ pub fn execute_and_commit_transaction<
     let receipt = execute_transaction_with_configuration::<S, Vm<'s, W, E>, System<Vm<'s, W, E>>>(
         substate_db,
         vms,
-        None,
         execution_config,
         transaction,
         (),

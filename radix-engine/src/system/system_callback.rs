@@ -21,12 +21,17 @@ use crate::system::actor::MethodActor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
-use crate::system::system_modules::SystemModuleMixer;
+use crate::system::system_modules::auth::AuthModule;
+use crate::system::system_modules::costing::{CostingModule, FeeTable, SystemLoanFeeReserve};
+use crate::system::system_modules::execution_trace::ExecutionTraceModule;
+use crate::system::system_modules::kernel_trace::KernelTraceModule;
+use crate::system::system_modules::limits::LimitsModule;
+use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
+use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
-use crate::transaction::{CostingParameters, ExecutionConfig};
+use crate::transaction::{CostingParameters, LimitParameters, SystemOverrides};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -48,10 +53,16 @@ use radix_transactions::model::{Executable, PreAllocatedAddress};
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct SystemParameters {
+    pub network_definition: NetworkDefinition,
+    pub costing_parameters: CostingParameters,
+    pub limit_parameters: LimitParameters,
+    pub max_per_function_royalty_in_xrd: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
-    V1 {
-        costing_parameters: CostingParameters,
-    },
+    V1(SystemParameters),
 }
 
 #[derive(Clone)]
@@ -102,6 +113,20 @@ impl SystemLockData {
     }
 }
 
+#[derive(Clone)]
+pub struct SystemInit<C> {
+    // These fields only affect side effects and do not affect ledger state execution
+    pub enable_kernel_trace: bool,
+    pub enable_cost_breakdown: bool,
+    pub execution_trace: Option<usize>,
+
+    // Higher layer initialization object
+    pub callback_init: C,
+
+    // An override of system configuration
+    pub system_overrides: Option<SystemOverrides>,
+}
+
 pub struct System<C: SystemCallbackObject> {
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
@@ -113,15 +138,14 @@ pub struct System<C: SystemCallbackObject> {
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
-    type InitInput = C::InitInput;
+    type InitInput = SystemInit<C::InitInput>;
 
     fn init<S: BootStore>(
         store: &S,
         executable: &Executable,
-        execution_config: &ExecutionConfig,
-        init_input: C::InitInput,
+        init_input: SystemInit<C::InitInput>,
     ) -> Result<Self, BootloadingError> {
-        let costing_parameters = {
+        let mut system_parameters = {
             let system_boot = store
                 .read_substate(
                     TRANSACTION_TRACKER.as_node_id(),
@@ -129,26 +153,100 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
                 )
                 .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                .unwrap_or(SystemBoot::V1 {
-                    costing_parameters: CostingParameters::default(),
-                });
+                .unwrap_or(SystemBoot::V1(SystemParameters {
+                    network_definition: NetworkDefinition::mainnet(),
+                    costing_parameters: CostingParameters::babylon_genesis(),
+                    limit_parameters: LimitParameters::babylon_genesis(),
+                    max_per_function_royalty_in_xrd: Decimal::try_from(
+                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
+                    )
+                    .unwrap(),
+                }));
 
             match system_boot {
-                SystemBoot::V1 { costing_parameters } => costing_parameters,
+                SystemBoot::V1(system_parameters) => system_parameters,
             }
         };
-        let callback = C::init(store, init_input)?;
+
+        let callback = C::init(store, init_input.callback_init)?;
+
+        let mut enabled_modules = {
+            let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
+            if !executable.is_system() {
+                enabled_modules |= EnabledModules::LIMITS;
+                enabled_modules |= EnabledModules::COSTING;
+            };
+
+            if init_input.enable_kernel_trace {
+                enabled_modules |= EnabledModules::KERNEL_TRACE;
+            }
+            if init_input.execution_trace.is_some() {
+                enabled_modules |= EnabledModules::EXECUTION_TRACE;
+            }
+
+            enabled_modules
+        };
+
+        // Override system configuration
+        if let Some(system_overrides) = init_input.system_overrides {
+            if let Some(costing_override) = system_overrides.costing_parameters {
+                system_parameters.costing_parameters = costing_override;
+            }
+
+            if let Some(limits_override) = system_overrides.limit_parameters {
+                system_parameters.limit_parameters = limits_override;
+            }
+
+            if let Some(network_definition) = system_overrides.network_definition {
+                system_parameters.network_definition = network_definition;
+            }
+
+            if system_overrides.disable_auth {
+                enabled_modules.remove(EnabledModules::AUTH);
+            }
+
+            if system_overrides.disable_costing {
+                enabled_modules.remove(EnabledModules::COSTING);
+            }
+
+            if system_overrides.disable_limits {
+                enabled_modules.remove(EnabledModules::LIMITS);
+            }
+        }
+
+        let txn_runtime_module = TransactionRuntimeModule::new(
+            system_parameters.network_definition,
+            executable.intent_hash().to_hash(),
+        );
+
+        let auth_module = AuthModule::new(executable.auth_zone_params().clone());
+        let limits_module = { LimitsModule::from_params(system_parameters.limit_parameters) };
+
+        let costing_module = CostingModule {
+            fee_reserve: SystemLoanFeeReserve::new(
+                &system_parameters.costing_parameters,
+                executable.costing_parameters(),
+            ),
+            fee_table: FeeTable::new(),
+            tx_payload_len: executable.payload_size(),
+            tx_num_of_signature_validations: executable.num_of_signature_validations(),
+            max_per_function_royalty_in_xrd: system_parameters.max_per_function_royalty_in_xrd,
+            cost_breakdown: if init_input.enable_cost_breakdown {
+                Some(Default::default())
+            } else {
+                None
+            },
+            on_apply_cost: Default::default(),
+        };
 
         let mut modules = SystemModuleMixer::new(
-            execution_config.enabled_modules,
-            execution_config.network_definition.clone(),
-            executable.intent_hash().to_hash(),
-            executable.auth_zone_params().clone(),
-            SystemLoanFeeReserve::new(&costing_parameters, executable.costing_parameters()),
-            FeeTable::new(),
-            executable.payload_size(),
-            executable.num_of_signature_validations(),
-            execution_config,
+            enabled_modules,
+            KernelTraceModule,
+            txn_runtime_module,
+            auth_module,
+            limits_module,
+            costing_module,
+            ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(0)),
         );
 
         modules.init()?;

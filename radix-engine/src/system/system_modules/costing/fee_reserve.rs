@@ -145,7 +145,7 @@ pub struct SystemLoanFeeReserve {
 impl Default for SystemLoanFeeReserve {
     fn default() -> Self {
         Self::new(
-            &CostingParameters::default(),
+            &CostingParameters::babylon_genesis(),
             &TransactionCostingParameters::default(),
         )
     }
@@ -602,7 +602,7 @@ mod tests {
         execution_cost_unit_loan: u32,
         abort_when_loan_repaid: bool,
     ) -> SystemLoanFeeReserve {
-        let mut costing_parameters = CostingParameters::default();
+        let mut costing_parameters = CostingParameters::babylon_genesis();
         costing_parameters.execution_cost_unit_price = execution_cost_unit_price;
         costing_parameters.execution_cost_unit_limit = execution_cost_unit_limit;
         costing_parameters.execution_cost_unit_loan = execution_cost_unit_loan;

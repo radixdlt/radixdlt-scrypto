@@ -16,7 +16,7 @@ use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use radix_engine::track::{BootStore, NodeSubstates};
-use radix_engine::transaction::{ExecutionConfig, WrappedSystem};
+use radix_engine::transaction::WrappedSystem;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
 use radix_engine_interface::prelude::*;
@@ -105,7 +105,6 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
     fn init<S: BootStore>(
         _store: &S,
         _executable: &Executable,
-        _execution_config: &ExecutionConfig,
         _bootstrap_input: Self::InitInput,
     ) -> Result<Self, BootloadingError> {
         panic!();

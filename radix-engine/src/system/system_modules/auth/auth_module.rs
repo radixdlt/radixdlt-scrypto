@@ -70,6 +70,10 @@ pub enum ResolvedPermission {
 }
 
 impl AuthModule {
+    pub fn new(params: AuthZoneParams) -> Self {
+        Self { params }
+    }
+
     pub fn on_call_function<V, Y>(
         api: &mut SystemService<Y, V>,
         blueprint_id: &BlueprintId,

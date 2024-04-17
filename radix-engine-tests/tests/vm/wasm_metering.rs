@@ -25,7 +25,7 @@ fn test_loop() {
     let receipt = ledger.execute_manifest_with_costing_params(
         manifest,
         vec![],
-        CostingParameters::default().with_execution_cost_unit_limit(15_000_000),
+        CostingParameters::babylon_genesis().with_execution_cost_unit_limit(15_000_000),
     );
 
     // Assert
@@ -73,7 +73,7 @@ fn test_loop_out_of_cost_unit() {
     let receipt = ledger.execute_manifest_with_costing_params(
         manifest,
         vec![],
-        CostingParameters::default().with_execution_cost_unit_limit(15_000_000),
+        CostingParameters::babylon_genesis().with_execution_cost_unit_limit(15_000_000),
     );
 
     // Assert

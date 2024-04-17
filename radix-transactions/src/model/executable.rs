@@ -86,6 +86,7 @@ pub struct Executable<'a> {
     pub(crate) references: IndexSet<Reference>,
     pub(crate) blobs: &'a IndexMap<Hash, Vec<u8>>,
     pub(crate) context: ExecutionContext,
+    pub(crate) system: bool,
 }
 
 impl<'a> Executable<'a> {
@@ -94,6 +95,7 @@ impl<'a> Executable<'a> {
         references: &IndexSet<Reference>,
         blobs: &'a IndexMap<Hash, Vec<u8>>,
         context: ExecutionContext,
+        system: bool,
     ) -> Self {
         let mut references = references.clone();
 
@@ -118,10 +120,15 @@ impl<'a> Executable<'a> {
             references,
             blobs,
             context,
+            system,
         }
     }
 
     // Consuming builder-like customization methods:
+
+    pub fn is_system(&self) -> bool {
+        self.system
+    }
 
     pub fn overwrite_intent_hash(mut self, hash: Hash) -> Self {
         match &mut self.context.intent_hash {

@@ -37,7 +37,7 @@ impl ProtocolUpdateEntry {
     pub fn generate_state_updates<S: SubstateDatabase>(
         &self,
         db: &S,
-        _network: &NetworkDefinition,
+        network: &NetworkDefinition,
     ) -> StateUpdates {
         match self {
             ProtocolUpdateEntry::Bls12381AndKeccak256 => {
@@ -60,7 +60,7 @@ impl ProtocolUpdateEntry {
             // TODO implement the following
             ProtocolUpdateEntry::SystemPatches => StateUpdates::default(),
             ProtocolUpdateEntry::ProtocolParamsToState => {
-                generate_protocol_params_to_state_state_updates()
+                generate_protocol_params_to_state_state_updates(network.clone())
             }
         }
     }

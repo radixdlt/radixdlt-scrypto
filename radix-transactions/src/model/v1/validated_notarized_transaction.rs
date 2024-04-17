@@ -60,6 +60,7 @@ impl ValidatedNotarizedTransactionV1 {
                 },
                 pre_allocated_addresses: vec![],
             },
+            false,
         )
     }
 }
