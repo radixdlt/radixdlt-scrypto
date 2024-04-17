@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{BootloadingError, RejectionReason};
+use radix_engine::errors::{BootloadingError, RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
@@ -16,9 +16,10 @@ use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use radix_engine::track::{BootStore, NodeSubstates, StoreCommitInfo, Track};
-use radix_engine::transaction::WrappedSystem;
+use radix_engine::transaction::{CostingParameters, TransactionFeeDetails, TransactionFeeSummary, TransactionResult, WrappedSystem};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
@@ -146,6 +147,10 @@ impl<'a, K: KernelCallbackObject + 'a> KernelCallbackObject for InjectCostingErr
 
     fn on_teardown2(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
         self.callback_object.on_teardown2(store_commit_info)
+    }
+
+    fn on_teardown3<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> (CostingParameters, TransactionFeeSummary, Option<TransactionFeeDetails>, TransactionResult) {
+        self.callback_object.on_teardown3(track, executable, result)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

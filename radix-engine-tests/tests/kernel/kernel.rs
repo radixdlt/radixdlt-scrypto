@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError};
+use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
 use radix_engine::kernel::call_frame::{
     CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
     PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
@@ -17,6 +17,8 @@ use radix_engine::kernel::kernel_callback_api::{
     WriteSubstateEvent,
 };
 use radix_engine::track::{BootStore, StoreCommitInfo, Track};
+use radix_engine::transaction::{CostingParameters, TransactionFeeDetails, TransactionFeeSummary, TransactionResult};
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
@@ -83,6 +85,10 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn on_teardown2(&mut self, _store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
         Ok(())
+    }
+
+    fn on_teardown3<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> (CostingParameters, TransactionFeeSummary, Option<TransactionFeeDetails>, TransactionResult) {
+        unreachable!()
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
