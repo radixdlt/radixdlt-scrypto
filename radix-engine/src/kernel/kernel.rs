@@ -21,25 +21,26 @@ use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
-use crate::track::BootStore;
+use crate::track::{BootStore, Track};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_profiling_derive::trace_resources;
-use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
+use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
+use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::prelude::{Executable, PreAllocatedAddress};
 use sbor::rust::mem;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> {
+pub struct BootLoader<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> {
     pub id_allocator: IdAllocator,
     pub callback: &'g mut M,
-    pub store: &'g mut S,
+    pub store: &'g mut Track<'h, S, SpreadPrefixKeyMapper>,
 }
 
-impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
+impl<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'g, 'h, M, S> {
     /// Creates a new kernel with data loaded from the substate store
-    pub fn boot(&mut self) -> Result<Kernel<M, S>, BootloadingError> {
+    pub fn boot(&mut self) -> Result<Kernel<M, Track<'h, S, SpreadPrefixKeyMapper>>, BootloadingError> {
         let kernel = Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -59,7 +60,7 @@ impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Bo
     }
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
+impl<'g, 'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'g, 'h, M, S> {
     pub fn check_references(
         &mut self,
         references: &IndexSet<Reference>,
