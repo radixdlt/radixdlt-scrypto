@@ -186,7 +186,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             // Sanity check heap
             assert!(kernel.substate_io.heap.is_empty());
 
-            M::on_teardown(&mut kernel)?;
+            kernel.callback.on_teardown()?;
 
             let commit_info = kernel.substate_io.store.get_commit_info();
 

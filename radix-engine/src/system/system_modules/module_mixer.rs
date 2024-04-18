@@ -192,14 +192,34 @@ impl InitSystemModule for SystemModuleMixer {
 
         Ok(())
     }
+
+    #[trace_resources]
+    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
+        let modules: EnabledModules = self.enabled_modules;
+        if modules.contains(EnabledModules::KERNEL_TRACE) {
+            self.kernel_trace.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::LIMITS) {
+            self.limits.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::COSTING) {
+            self.costing.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::AUTH) {
+            self.auth.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
+            self.transaction_runtime.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::EXECUTION_TRACE) {
+            self.execution_trace.on_teardown()?;
+        }
+
+        Ok(())
+    }
 }
 
 impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
-    #[trace_resources]
-    fn on_teardown<Y: KernelApi<System<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_teardown(api))
-    }
-
     #[trace_resources(log=invocation.len())]
     fn before_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
@@ -229,6 +249,11 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
         internal_call_dispatch!(api.kernel_get_system(), after_invoke(api, output))
     }
 
+    #[trace_resources]
+    fn on_pin_node(system: &mut System<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(system, on_pin_node(system, node_id))
+    }
+
     #[trace_resources(log=entity_type)]
     fn on_allocate_node_id<Y: KernelApi<System<V>>>(
         api: &mut Y,
@@ -249,19 +274,6 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
     }
 
     #[trace_resources]
-    fn on_pin_node(system: &mut System<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_pin_node(system, node_id))
-    }
-
-    #[trace_resources]
-    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
-        api: &mut Y,
-        event: &DropNodeEvent,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_drop_node(api, event))
-    }
-
-    #[trace_resources]
     fn on_move_module<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &MoveModuleEvent,
@@ -270,11 +282,11 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
     }
 
     #[trace_resources]
-    fn on_open_substate<Y: KernelInternalApi<System<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
-        event: &OpenSubstateEvent,
+        event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
+        internal_call_dispatch!(api.kernel_get_system(), on_drop_node(api, event))
     }
 
     #[trace_resources]
@@ -288,6 +300,14 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
             system,
             on_mark_substate_as_transient(system, node_id, partition_number, substate_key)
         )
+    }
+
+    #[trace_resources]
+    fn on_open_substate<Y: KernelInternalApi<System<V>>>(
+        api: &mut Y,
+        event: &OpenSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
     }
 
     #[trace_resources(log=event.is_about_heap())]

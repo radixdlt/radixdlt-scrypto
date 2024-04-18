@@ -156,9 +156,8 @@ pub trait KernelCallbackObject: Sized {
         where
             Y: KernelApi<Self>;
 
-    fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    /// Finish execution
+    fn on_teardown(&mut self) -> Result<(), RuntimeError>;
 
     fn on_teardown2(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
 

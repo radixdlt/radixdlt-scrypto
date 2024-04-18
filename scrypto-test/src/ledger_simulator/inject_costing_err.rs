@@ -125,13 +125,9 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         )
     }
 
-    fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::on_teardown(&mut api)
+    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
+        self.maybe_err()?;
+        self.system.on_teardown()
     }
 
     fn on_teardown2(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {

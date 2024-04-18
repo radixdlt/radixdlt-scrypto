@@ -72,10 +72,7 @@ impl KernelCallbackObject for TestCallbackObject {
         unreachable!()
     }
 
-    fn on_teardown<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
         Ok(())
     }
 

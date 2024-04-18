@@ -812,11 +812,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         Ok(rtn)
     }
 
-    fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_teardown(api)
+    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
+        self.modules.on_teardown()
     }
 
     fn on_teardown2(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError>
