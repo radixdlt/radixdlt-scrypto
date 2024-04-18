@@ -304,34 +304,15 @@ impl<'s, S, V> TransactionExecutor<'s, S, V>
         &mut self,
         executable: &Executable,
     ) -> TransactionReceipt {
-        // Start hardware resource usage tracker
-        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-            let mut resources_tracker =
-            crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-        let (costing_parameters, fee_summary, fee_details, result) = {
-            let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
-
-            let kernel_boot = BootLoader {
-                id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
-                store: track,
-                init: self.system_init.clone(),
-                phantom: PhantomData::<V>::default()
-            };
-
-            kernel_boot.execute(executable)
+        let kernel_boot = BootLoader {
+            id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
+            store: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
+            init: self.system_init.clone(),
+            phantom: PhantomData::<V>::default()
         };
 
-        // Stop hardware resource usage tracker
-        let resources_usage = match () {
-            #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
-            () => None,
-            #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-            () => Some(resources_tracker.end_measurement()),
-        };
-
-        // Produce final receipt
-        V::finalize_receipt(executable, costing_parameters, fee_summary, fee_details, result, resources_usage)
+        kernel_boot.execute(executable)
 
         // Dump summary
         /*

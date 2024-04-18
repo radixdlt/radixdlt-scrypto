@@ -30,7 +30,7 @@ use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, Subst
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::prelude::{Executable, PreAllocatedAddress};
 use sbor::rust::mem;
-use crate::transaction::{CostingParameters, RejectResult, TransactionFeeDetails, TransactionFeeSummary, TransactionResult};
+use crate::transaction::{CostingParameters, RejectResult, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult, TransactionResultType};
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
@@ -103,43 +103,57 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         Ok((global_addresses, direct_accesses))
     }
 
-    /// Executes a transaction
     pub fn execute<'a>(
         mut self,
         executable: &Executable,
-    ) -> (
+    ) -> TransactionReceipt {
+        // Start hardware resource usage tracker
+        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+        let mut resources_tracker = crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
+
+        let (costing_parameters, fee_summary, fee_details, result) = self.execute_internal(executable)
+            .unwrap_or_else(|reason| {
+                (
+                    CostingParameters::babylon_genesis(),
+                    TransactionFeeSummary::default(),
+                    None,
+                    TransactionResult::Reject(RejectResult { reason }),
+                )
+            });
+
+        // Stop hardware resource usage tracker
+        let resources_usage = match () {
+            #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
+            () => None,
+            #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+            () => Some(resources_tracker.end_measurement()),
+        };
+
+        M::finalize_receipt(executable, costing_parameters, fee_summary, fee_details, result, resources_usage)
+    }
+
+    /// Executes a transaction
+    fn execute_internal<'a>(
+        mut self,
+        executable: &Executable,
+    ) -> Result<(
         CostingParameters,
         TransactionFeeSummary,
         Option<TransactionFeeDetails>,
         TransactionResult,
-    ) {
+    ), RejectionReason> {
+
         let mut callback = match M::init(&self.store, executable, self.init.clone()) {
             Ok(callback) => callback,
             Err(e) => {
-                return (
-                    CostingParameters::babylon_genesis(),
-                    TransactionFeeSummary::default(),
-                    None,
-                    TransactionResult::Reject(RejectResult { reason: RejectionReason::BootloadingError(e) }),
-                );
+                return Err(RejectionReason::BootloadingError(e));
             }
         };
 
         match callback.init2(&mut self.store, executable) {
             Ok(()) => {}
             Err(reason) => {
-                return (
-                    CostingParameters::babylon_genesis(),
-                    TransactionFeeSummary::default(),
-                    /*
-                    if self.system_init.enable_cost_breakdown {
-                        Some(TransactionFeeDetails::default())
-                    } else {
-                     */
-                        None,
-                    //},
-                    TransactionResult::Reject(RejectResult { reason }),
-                )
+                return Err(reason);
             }
         }
 
@@ -148,11 +162,11 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             v.borrow_mut();
         });
 
-        // Check reference
+        // Check references
         let engine_references = match self.check_references(executable.references()) {
             Ok(engine_references) => engine_references,
             Err(e) => {
-                return callback.on_teardown3(self.store, executable, Err(TransactionExecutionError::BootloadingError(e)));
+                return Err(RejectionReason::BootloadingError(e));
             }
         };
 
@@ -224,7 +238,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             })
             .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
-        callback.on_teardown3(self.store, executable, result)
+        Ok(callback.on_teardown3(self.store, executable, result))
     }
 }
 
