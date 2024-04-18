@@ -143,59 +143,36 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         TransactionResult,
     ), RejectionReason> {
 
-        let mut callback = match M::init(&self.store, executable, self.init.clone()) {
-            Ok(callback) => callback,
-            Err(e) => {
-                return Err(RejectionReason::BootloadingError(e));
-            }
-        };
-
-        match callback.init2(&mut self.store, executable) {
-            Ok(()) => {}
-            Err(reason) => {
-                return Err(reason);
-            }
-        }
+        let mut callback = M::init(&self.store, executable, self.init.clone())
+            .map_err(RejectionReason::BootloadingError)?;
+        callback.init2(&mut self.store, executable)?;
 
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
 
-        // Check references
-        let engine_references = match self.check_references(executable.references()) {
-            Ok(engine_references) => engine_references,
-            Err(e) => {
-                return Err(RejectionReason::BootloadingError(e));
+        let mut kernel = {
+            // Check references
+            let engine_references = self.check_references(executable.references())
+                .map_err(RejectionReason::BootloadingError)?;
+
+            let mut kernel = Kernel::new(&mut self.store, &mut self.id_allocator, &mut callback);
+
+            // Add visibility
+            for global_ref in engine_references.0 {
+                kernel.current_frame.add_global_reference(global_ref);
             }
-        };
+            for direct_access in engine_references.1 {
+                kernel
+                    .current_frame
+                    .add_direct_access_reference(direct_access);
+            }
 
-        let mut kernel = Kernel {
-            substate_io: SubstateIO {
-                heap: Heap::new(),
-                store: &mut self.store,
-                non_global_node_refs: NonGlobalNodeRefs::new(),
-                substate_locks: SubstateLocks::new(),
-                heap_transient_substates: TransientSubstates::new(),
-                pinned_to_heap: BTreeSet::new(),
-            },
-            id_allocator: &mut self.id_allocator,
-            current_frame: CallFrame::new_root(M::CallFrameData::root()),
-            prev_frame_stack: vec![],
-            callback: &mut callback,
-        };
-
-        // Add visibility
-        for global_ref in engine_references.0 {
-            kernel.current_frame.add_global_reference(global_ref);
-        }
-        for direct_access in engine_references.1 {
             kernel
-                .current_frame
-                .add_direct_access_reference(direct_access);
-        }
+        };
 
-        let mut sys_exec = || -> Result<Vec<u8>, RuntimeError> {
+        let result = || -> Result<Vec<InstructionOutput>, RuntimeError> {
             // Invoke transaction processor
             let rtn = M::start(
                 &mut kernel,
@@ -217,26 +194,9 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
 
             kernel.callback.on_teardown2(commit_info)?;
 
-            Ok(rtn)
-        };
-
-        let result = sys_exec();
-
-        // Panic if an error is encountered in the system layer or below. The following code
-        // is only enabled when compiling with the standard library since the panic catching
-        // machinery and `SystemPanic` errors are only implemented in `std`.
-        #[cfg(feature = "std")]
-        if let Err(RuntimeError::SystemError(SystemError::SystemPanic(..))) = result
-        {
-            panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{result:?}\"")
-        }
-
-        let result = result
-            .map(|rtn| {
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
-            })
-            .map_err(|e| TransactionExecutionError::RuntimeError(e));
+            let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+            Ok(output)
+        }().map_err(|e| TransactionExecutionError::RuntimeError(e));
 
         Ok(callback.on_teardown3(self.store, executable, result))
     }

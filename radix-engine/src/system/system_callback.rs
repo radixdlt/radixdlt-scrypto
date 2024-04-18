@@ -894,6 +894,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         Option<TransactionFeeDetails>,
         TransactionResult,
     ) {
+
+        // Panic if an error is encountered in the system layer or below. The following code
+        // is only enabled when compiling with the standard library since the panic catching
+        // machinery and `SystemPanic` errors are only implemented in `std`.
+        #[cfg(feature = "std")]
+        if let Err(TransactionExecutionError::RuntimeError(RuntimeError::SystemError(SystemError::SystemPanic(..)))) = interpretation_result
+        {
+            panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{interpretation_result:?}\"")
+        }
+
         #[cfg(not(feature = "alloc"))]
         if self.modules.enabled_modules.contains(EnabledModules::KERNEL_TRACE) {
             println!("{:-^120}", "Interpretation Results");
