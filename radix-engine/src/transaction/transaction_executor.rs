@@ -131,6 +131,15 @@ pub struct SystemOverrides {
     pub limit_parameters: Option<LimitParameters>,
 }
 
+impl SystemOverrides {
+    pub fn with_network(network_definition: NetworkDefinition) -> Self {
+        Self {
+            network_definition: Some(network_definition),
+            ..Default::default()
+        }
+    }
+}
+
 impl Default for SystemOverrides {
     fn default() -> Self {
         Self {
@@ -151,20 +160,27 @@ pub struct ExecutionConfig {
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
 
-    pub network_definition: Option<NetworkDefinition>,
     pub system_overrides: Option<SystemOverrides>,
+}
+
+impl Default for ExecutionConfig {
+    fn default() -> Self {
+        Self {
+            enable_kernel_trace: false,
+            enable_cost_breakdown: false,
+            execution_trace: None,
+            system_overrides: None,
+        }
+    }
 }
 
 impl ExecutionConfig {
     /// Creates an `ExecutionConfig` using default configurations.
     /// This is internal. Clients should use `for_xxx` constructors instead.
-    fn default(network_definition: NetworkDefinition) -> Self {
+    fn with_network(network_definition: NetworkDefinition) -> Self {
         Self {
-            network_definition: Some(network_definition),
-            enable_kernel_trace: false,
-            enable_cost_breakdown: false,
-            execution_trace: None,
-            system_overrides: None,
+            system_overrides: Some(SystemOverrides::with_network(network_definition)),
+            ..Default::default()
         }
     }
 
@@ -174,9 +190,10 @@ impl ExecutionConfig {
                 disable_costing: true,
                 disable_limits: true,
                 disable_auth: true,
+                network_definition: Some(network_definition),
                 ..Default::default()
             }),
-            ..Self::default(network_definition)
+            ..Default::default()
         }
     }
 
@@ -185,15 +202,16 @@ impl ExecutionConfig {
             system_overrides: Some(SystemOverrides {
                 disable_costing: true,
                 disable_limits: true,
+                network_definition: Some(network_definition),
                 ..Default::default()
             }),
-            ..Self::default(network_definition)
+            ..Default::default()
         }
     }
 
     pub fn for_notarized_transaction(network_definition: NetworkDefinition) -> Self {
         Self {
-            ..Self::default(network_definition)
+            ..Self::with_network(network_definition)
         }
     }
 
@@ -201,7 +219,7 @@ impl ExecutionConfig {
         Self {
             enable_kernel_trace: true,
             enable_cost_breakdown: true,
-            ..Self::default(NetworkDefinition::simulator())
+            ..Self::with_network(NetworkDefinition::simulator())
         }
     }
 
@@ -209,19 +227,20 @@ impl ExecutionConfig {
         Self {
             enable_cost_breakdown: true,
             execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
-            ..Self::default(network_definition)
+            ..Self::with_network(network_definition)
         }
     }
 
     pub fn for_preview_no_auth(network_definition: NetworkDefinition) -> Self {
         Self {
-            system_overrides: Some(SystemOverrides {
-                disable_auth: true,
-                ..Default::default()
-            }),
             enable_cost_breakdown: true,
             execution_trace: Some(MAX_EXECUTION_TRACE_DEPTH),
-            ..Self::default(network_definition)
+            system_overrides: Some(SystemOverrides {
+                disable_auth: true,
+                network_definition: Some(network_definition),
+                ..Default::default()
+            }),
+            ..Default::default()
         }
     }
 
