@@ -17,7 +17,7 @@ use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use radix_engine::track::{BootStore, NodeSubstates, StoreCommitInfo, Track};
-use radix_engine::transaction::{CostingParameters, TransactionFeeDetails, TransactionFeeSummary, TransactionResult, WrappedSystem};
+use radix_engine::transaction::{CostingParameters, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{NativeVmExtension, Vm, VmInit};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
@@ -144,6 +144,10 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
 
     fn on_teardown3<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> (CostingParameters, TransactionFeeSummary, Option<TransactionFeeDetails>, TransactionResult) {
         self.system.on_teardown3(track, executable, result)
+    }
+
+    fn finalize_receipt(executable: &Executable, costing_parameters: CostingParameters, fee_summary: TransactionFeeSummary, fee_details: Option<TransactionFeeDetails>, transaction_result: TransactionResult, resources_usage: Option<ResourcesUsage>) -> TransactionReceipt {
+        System::<K>::finalize_receipt(executable, costing_parameters, fee_summary, fee_details, transaction_result, resources_usage)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

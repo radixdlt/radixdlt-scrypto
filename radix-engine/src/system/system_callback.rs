@@ -31,7 +31,7 @@ use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, to_state_updates, Track, TrackFinalizeError};
-use crate::transaction::{AbortResult, CommitResult, CostingParameters, FeeDestination, FeeSource, LimitParameters, reconcile_resource_state_and_events, RejectResult, StateUpdateSummary, SystemOverrides, SystemStructure, TransactionFeeDetails, TransactionFeeSummary, TransactionOutcome, TransactionResult, TransactionResultType};
+use crate::transaction::{AbortResult, CommitResult, CostingParameters, FeeDestination, FeeSource, LimitParameters, reconcile_resource_state_and_events, RejectResult, ResourcesUsage, StateUpdateSummary, SystemOverrides, SystemStructure, TransactionFeeDetails, TransactionFeeSummary, TransactionOutcome, TransactionReceipt, TransactionResult, TransactionResultType};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -646,7 +646,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     max_per_function_royalty_in_xrd: Decimal::try_from(
                         MAX_PER_FUNCTION_ROYALTY_IN_XRD,
                     )
-                    .unwrap(),
+                        .unwrap(),
                 }));
 
             match system_boot {
@@ -781,8 +781,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
     ) -> Result<Vec<u8>, RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         let mut system = SystemService::new(api);
 
@@ -809,15 +809,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 references,
                 blobs,
             })
-            .unwrap(),
+                .unwrap(),
         )?;
 
         Ok(rtn)
     }
 
     fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_teardown(api)
     }
@@ -833,7 +833,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     store_commit,
                 })
                 .map_err(|e| {
-                        RuntimeError::FinalizationCostingError(e)
+                    RuntimeError::FinalizationCostingError(e)
                 })?;
         }
         self
@@ -1053,55 +1053,74 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
 
+    fn finalize_receipt(
+        executable: &Executable,
+        costing_parameters: CostingParameters,
+        fee_summary: TransactionFeeSummary,
+        fee_details: Option<TransactionFeeDetails>,
+        result: TransactionResult,
+        resources_usage: Option<ResourcesUsage>,
+    ) -> TransactionReceipt {
+        TransactionReceipt {
+            costing_parameters,
+            transaction_costing_parameters: executable.costing_parameters().clone(),
+            fee_summary,
+            fee_details,
+            result,
+            resources_usage,
+        }
+    }
+
+
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_pin_node(self, node_id)
     }
 
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
+        where
+            Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_create_node(api, &event)
     }
 
     fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
+        where
+            Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_drop_node(api, &event)
     }
 
     fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
+        where
+            Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_move_module(api, &event)
     }
 
     fn on_open_substate<Y>(api: &mut Y, event: OpenSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
+        where
+            Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_open_substate(api, &event)
     }
 
     fn on_close_substate<Y>(api: &mut Y, event: CloseSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
+        where
+            Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_close_substate(api, &event)
     }
 
     fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
+        where
+            Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_read_substate(api, &event)
     }
 
     fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
+        where
+            Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_write_substate(api, &event)
     }
@@ -1133,8 +1152,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         invocation: &KernelInvocation<Actor>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         let is_to_barrier = invocation.call_frame_data.is_barrier();
         let destination_blueprint_id = invocation.call_frame_data.blueprint_id();
@@ -1153,8 +1172,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         let current_actor = api.kernel_get_system_state().current_call_frame;
         let is_to_barrier = current_actor.is_barrier();
@@ -1173,15 +1192,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_execution_start(api)
     }
 
     fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_execution_finish(api, message)?;
 
@@ -1189,8 +1208,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
@@ -1203,8 +1222,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelApi<System<C>>,
+        where
+            Y: KernelApi<System<C>>,
     {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
@@ -1299,8 +1318,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id, hook, ..
-            }) => {
+                                     blueprint_id, hook, ..
+                                 }) => {
                 // Find the export
                 let definition = system.load_blueprint_definition(
                     blueprint_id.package_address,
@@ -1336,9 +1355,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                         scrypto_decode::<OnMoveOutput>(output.as_slice()).map(|_| ())
                     }
                 }
-                .map_err(|e| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
-                })?;
+                    .map_err(|e| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
+                    })?;
 
                 Ok(output)
             }
@@ -1347,8 +1366,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
     // Note: we check dangling nodes, in kernel, after auto-drop
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         // Round 1 - drop all proofs
         for node_id in nodes {
@@ -1356,9 +1375,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_info: BlueprintInfo { blueprint_id, .. },
-                    ..
-                }) => {
+                                             blueprint_info: BlueprintInfo { blueprint_id, .. },
+                                             ..
+                                         }) => {
                     match (
                         blueprint_id.package_address,
                         blueprint_id.blueprint_name.as_str(),
@@ -1372,7 +1391,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                                 scrypto_encode(&ProofDropInput {
                                     proof: Proof(Own(node_id)),
                                 })
-                                .unwrap(),
+                                    .unwrap(),
                             )?;
                         }
                         (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
@@ -1384,7 +1403,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                                 scrypto_encode(&ProofDropInput {
                                     proof: Proof(Own(node_id)),
                                 })
-                                .unwrap(),
+                                    .unwrap(),
                             )?;
                         }
                         _ => {
@@ -1419,8 +1438,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         // As currently implemented, this should always be called with partition_num=0 and offset=0
         // since all nodes are access by accessing their type info first
@@ -1487,8 +1506,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
@@ -1515,7 +1534,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                         }),
                         args: IndexedScryptoValue::from_typed(&OnDropInput {}),
                     }))
-                    .map(|_| ())
+                        .map(|_| ())
                 } else {
                     Ok(())
                 }
@@ -1536,8 +1555,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+        where
+            Y: KernelApi<Self>,
     {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
@@ -1568,7 +1587,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                             destination_blueprint_id,
                         }),
                     }))
-                    .map(|_| ())
+                        .map(|_| ())
                 } else {
                     Ok(())
                 }

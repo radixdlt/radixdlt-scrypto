@@ -5,7 +5,6 @@ use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::define_composite_checker;
 use radix_engine::object_modules::metadata::{MetadataCollection, MetadataEntryEntryPayload};
 use radix_engine::system::checkers::*;
-use radix_engine::system::system_callback::System;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
@@ -14,7 +13,6 @@ use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction_with_configuration, BalanceChange, CommitResult,
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
-    WrappedSystem,
 };
 use radix_engine::updates::{ProtocolUpdate, ProtocolUpdates};
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};

@@ -17,7 +17,7 @@ use radix_engine::kernel::kernel_callback_api::{
     WriteSubstateEvent,
 };
 use radix_engine::track::{BootStore, StoreCommitInfo, Track};
-use radix_engine::transaction::{CostingParameters, TransactionFeeDetails, TransactionFeeSummary, TransactionResult};
+use radix_engine::transaction::{CostingParameters, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -88,6 +88,10 @@ impl KernelCallbackObject for TestCallbackObject {
     }
 
     fn on_teardown3<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> (CostingParameters, TransactionFeeSummary, Option<TransactionFeeDetails>, TransactionResult) {
+        unreachable!()
+    }
+
+    fn finalize_receipt(executable: &Executable, costing_parameters: CostingParameters, fee_summary: TransactionFeeSummary, fee_details: Option<TransactionFeeDetails>, transaction_result: TransactionResult, resources_usage: Option<ResourcesUsage>) -> TransactionReceipt {
         unreachable!()
     }
 

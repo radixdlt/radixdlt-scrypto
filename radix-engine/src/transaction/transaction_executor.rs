@@ -259,22 +259,6 @@ impl ExecutionConfig {
     }
 }
 
-impl<C: SystemCallbackObject> WrappedSystem<C> for System<C> {
-    type Init = ();
-
-    fn create(config: System<C>, _: ()) -> Self {
-        config
-    }
-
-    fn system_mut(&mut self) -> &mut System<C> {
-        self
-    }
-
-    fn to_system(self) -> System<C> {
-        self
-    }
-}
-
 pub struct SubstateBootStore<'a, S: SubstateDatabase> {
     boot_store: &'a S,
 }
@@ -295,8 +279,8 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
 }
 
 pub struct TransactionExecutor<'s, S, V: KernelCallbackObject>
-where
-    S: SubstateDatabase,
+    where
+        S: SubstateDatabase,
 {
     substate_db: &'s S,
     system_init: V::InitInput,
@@ -304,9 +288,9 @@ where
 }
 
 impl<'s, S, V> TransactionExecutor<'s, S, V>
-where
-    S: SubstateDatabase,
-    V: KernelCallbackObject,
+    where
+        S: SubstateDatabase,
+        V: KernelCallbackObject,
 {
     pub fn new(substate_db: &'s S, system_init: V::InitInput) -> Self {
         Self {
@@ -322,7 +306,7 @@ where
     ) -> TransactionReceipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        let mut resources_tracker =
+            let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         let system_boot_result = {
@@ -367,14 +351,7 @@ where
         };
 
         // Produce final receipt
-        let receipt = TransactionReceipt {
-            costing_parameters,
-            transaction_costing_parameters: executable.costing_parameters().clone(),
-            fee_summary,
-            fee_details,
-            result,
-            resources_usage,
-        };
+        V::finalize_receipt(executable, costing_parameters, fee_summary, fee_details, result, resources_usage)
 
         // Dump summary
         /*
@@ -383,8 +360,6 @@ where
             Self::print_execution_summary(&receipt);
         }
          */
-
-        receipt
     }
 
 
@@ -547,12 +522,4 @@ pub enum TransactionResultType {
     Commit(Result<Vec<InstructionOutput>, RuntimeError>),
     Reject(RejectionReason),
     Abort(AbortReason),
-}
-
-pub trait WrappedSystem<C: SystemCallbackObject>: KernelCallbackObject {
-    type Init;
-
-    fn create(config: System<C>, init: Self::Init) -> Self;
-    fn system_mut(&mut self) -> &mut System<C>;
-    fn to_system(self) -> System<C>;
 }
