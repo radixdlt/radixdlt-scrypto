@@ -16,7 +16,7 @@ use radix_engine::kernel::kernel_callback_api::{
     RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
     WriteSubstateEvent,
 };
-use radix_engine::track::{BootStore, StoreCommitInfo, Track};
+use radix_engine::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
 use radix_engine::transaction::{CostingParameters, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::*;
@@ -55,12 +55,8 @@ impl KernelCallbackObject for TestCallbackObject {
     type CallFrameData = TestCallFrameData;
     type InitInput = ();
 
-    fn init<S: BootStore>(_store: &S, _executable: &Executable, _init_input: Self::InitInput) -> Result<Self, BootloadingError> {
+    fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::InitInput) -> Result<Self, RejectionReason> {
         Ok(Self)
-    }
-
-    fn init2<S: SubstateDatabase>(&self, _track: &mut Track<S, SpreadPrefixKeyMapper>, _executable: &Executable) -> Result<(), RejectionReason> {
-        Ok(())
     }
 
     fn start<Y>(

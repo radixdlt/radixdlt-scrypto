@@ -16,7 +16,7 @@ use radix_engine::system::system_callback::{System, SystemInit, SystemLockData};
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use radix_engine::track::{BootStore, NodeSubstates, StoreCommitInfo, Track};
+use radix_engine::track::{BootStore, CommitableSubstateStore, NodeSubstates, StoreCommitInfo, Track};
 use radix_engine::transaction::{CostingParameters, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult};
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{NativeVmExtension, Vm, VmInit};
@@ -87,26 +87,22 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
 
     type InitInput = InjectCostingErrorInput<SystemInit<K::InitInput>>;
 
-    fn init<S: BootStore>(
-        store: &S,
+    fn init<S: BootStore + CommitableSubstateStore>(
+        store: &mut S,
         executable: &Executable,
-        bootstrap_input: Self::InitInput,
-    ) -> Result<Self, BootloadingError> {
-        let mut system = System::<K>::init(store, executable, bootstrap_input.system_input)?;
+        init_input: Self::InitInput,
+    ) -> Result<Self, RejectionReason> {
+        let mut system = System::<K>::init(store, executable, init_input.system_input)?;
 
-        let fail_after = Rc::new(RefCell::new(bootstrap_input.error_after_count));
+        let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
         system.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
             fail_after: fail_after.clone(),
         };
 
         Ok(Self {
             fail_after,
-            system: system,
+            system,
         })
-    }
-
-    fn init2<S: SubstateDatabase>(&self, track: &mut Track<S, SpreadPrefixKeyMapper>, executable: &Executable) -> Result<(), RejectionReason> {
-        self.system.init2(track, executable)
     }
 
     fn start<Y>(

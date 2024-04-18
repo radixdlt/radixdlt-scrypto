@@ -157,10 +157,10 @@ impl<C: SystemCallbackObject> System<C> {
         println!("References: {:?}", executable.references());
     }
 
-    pub fn read_epoch<S: SubstateDatabase>(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
+    pub fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
-        match track.read_substate(
+        match store.read_substate(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::State.into(),
@@ -195,8 +195,8 @@ impl<C: SystemCallbackObject> System<C> {
         Ok(())
     }
 
-    pub fn validate_intent_hash<S: SubstateDatabase>(
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
+    pub fn validate_intent_hash<S: CommitableSubstateStore>(
+        track: &mut S,
         intent_hash: Hash,
         expiry_epoch: Epoch,
     ) -> Result<(), RejectionReason> {
@@ -619,17 +619,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type CallFrameData = Actor;
     type InitInput = SystemInit<C::InitInput>;
 
-    fn init<S: BootStore>(
-        store: &S,
+    fn init<S: BootStore + CommitableSubstateStore>(
+        store: &mut S,
         executable: &Executable,
         init_input: SystemInit<C::InitInput>,
-    ) -> Result<Self, BootloadingError> {
+    ) -> Result<Self, RejectionReason> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.enable_kernel_trace {
             Self::print_executable(&executable);
         }
-
 
         let mut system_parameters = {
             let system_boot = store
@@ -654,7 +653,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             }
         };
 
-        let callback = C::init(store, init_input.callback_init)?;
+        let callback = C::init(store, init_input.callback_init).map_err(RejectionReason::BootloadingError)?;
 
         let mut enabled_modules = {
             let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
@@ -735,22 +734,20 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(0)),
         );
 
-        modules.init()?;
+        modules.init().map_err(RejectionReason::BootloadingError)?;
 
-        Ok(System {
+        let system = System {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
             callback,
             modules,
-        })
-    }
+        };
 
-    fn init2<S: SubstateDatabase>(&self, track: &mut Track<S, SpreadPrefixKeyMapper>, executable: &Executable) -> Result<(), RejectionReason> {
         // Perform runtime validation.
         // TODO: the following assumptions can be removed with better interface.
         // We are assuming that intent hash store is ready when epoch manager is ready.
-        let current_epoch = Self::read_epoch(track);
+        let current_epoch = Self::read_epoch(store);
         if let Some(current_epoch) = current_epoch {
             if let Some(range) = executable.epoch_range() {
                 Self::validate_epoch_range(
@@ -760,17 +757,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 )
                     .and_then(|_| {
                         Self::validate_intent_hash(
-                            track,
+                            store,
                             executable.intent_hash().to_hash(),
                             range.end_epoch_exclusive,
                         )
                     })
-                    .and_then(|_| Ok(()))
+                    .and_then(|_| Ok(system))
             } else {
-                Ok(())
+                Ok(system)
             }
         } else {
-            Ok(())
+            Ok(system)
         }
     }
 

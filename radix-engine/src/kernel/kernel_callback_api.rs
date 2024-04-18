@@ -5,13 +5,14 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
-use crate::track::{BootStore, StoreCommitInfo, Track};
+use crate::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
+use crate::system::system_callback::SystemInit;
 use crate::transaction::{CostingParameters, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult};
 
 pub trait CallFrameReferences {
@@ -137,19 +138,14 @@ pub trait KernelCallbackObject: Sized {
     type CallFrameData: CallFrameReferences;
     type InitInput: Clone;
 
-    /// Initialize the system layer with data loaded from the substate store
-    fn init<S: BootStore>(
-        store: &S,
+    /// Create the system layer object data loaded from the substate store
+    fn init<S: BootStore + CommitableSubstateStore>(
+        store: &mut S,
         executable: &Executable,
         init_input: Self::InitInput,
-    ) -> Result<Self, BootloadingError>;
+    ) -> Result<Self, RejectionReason>;
 
-    fn init2<S: SubstateDatabase>(
-        &self,
-        track: &mut Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
-    ) -> Result<(), RejectionReason>;
-
+    /// Start execution
     fn start<Y>(
         api: &mut Y,
         manifest_encoded_instructions: &[u8],

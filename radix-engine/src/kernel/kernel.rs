@@ -143,9 +143,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         TransactionResult,
     ), RejectionReason> {
 
-        let mut callback = M::init(&self.store, executable, self.init.clone())
-            .map_err(RejectionReason::BootloadingError)?;
-        callback.init2(&mut self.store, executable)?;
+        let mut callback = M::init(&mut self.store, executable, self.init.clone())?;
 
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
