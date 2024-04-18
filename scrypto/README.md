@@ -1,3 +1,3 @@
 # `scrypto`
 
-The Scrypto standard library.
+The Scrypto standard library, from the Radix DLT project.

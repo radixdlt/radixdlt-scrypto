@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use super::*;
 use crate::internal_prelude::*;
 use radix_engine_interface::blueprints::account::*;
@@ -28,9 +30,7 @@ impl AccountLockerBlueprint {
                 instantiate: None,
                 instantiate_simple: None,
                 store: Some(ReceiverInfo::normal_ref_mut()),
-                store_batch: Some(ReceiverInfo::normal_ref_mut()),
-                send_or_store: Some(ReceiverInfo::normal_ref_mut()),
-                send_or_store_batch: Some(ReceiverInfo::normal_ref_mut()),
+                airdrop: Some(ReceiverInfo::normal_ref_mut()),
                 recover: Some(ReceiverInfo::normal_ref_mut()),
                 recover_non_fungibles: Some(ReceiverInfo::normal_ref_mut()),
                 claim: Some(ReceiverInfo::normal_ref_mut()),
@@ -44,7 +44,6 @@ impl AccountLockerBlueprint {
             aggregator,
             [
                 StoreEvent,
-                BatchStoreEvent,
                 RecoverEvent,
                 ClaimEvent,
             ]
@@ -79,9 +78,7 @@ impl AccountLockerBlueprint {
                     },
                     methods {
                         ACCOUNT_LOCKER_STORE_IDENT => [STORER_ROLE];
-                        ACCOUNT_LOCKER_STORE_BATCH_IDENT => [STORER_ROLE];
-                        ACCOUNT_LOCKER_SEND_OR_STORE_IDENT => [STORER_ROLE];
-                        ACCOUNT_LOCKER_SEND_OR_STORE_BATCH_IDENT => [STORER_ROLE];
+                        ACCOUNT_LOCKER_AIRDROP_IDENT => [STORER_ROLE];
 
                         ACCOUNT_LOCKER_RECOVER_IDENT => [RECOVERER_ROLE];
                         ACCOUNT_LOCKER_RECOVER_NON_FUNGIBLES_IDENT => [RECOVERER_ROLE];
@@ -113,9 +110,7 @@ impl AccountLockerBlueprint {
                 instantiate,
                 instantiate_simple,
                 store,
-                store_batch,
-                send_or_store,
-                send_or_store_batch,
+                airdrop,
                 recover,
                 recover_non_fungibles,
                 claim,
@@ -140,35 +135,18 @@ impl AccountLockerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Main module
-        let object_id = api.new_simple_object(ACCOUNT_LOCKER_BLUEPRINT, indexmap! {})?;
-
-        // Role Assignment Module
-        let roles = indexmap! {
-            ModuleId::Main => roles2! {
-                STORER_ROLE => storer_role, updatable;
-                STORER_UPDATER_ROLE => storer_updater_role, updatable;
-                RECOVERER_ROLE => recoverer_role, updatable;
-                RECOVERER_UPDATER_ROLE => recoverer_updater_role, updatable;
-            }
-        };
-        let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
-
-        // Metadata Module
-        let metadata = Metadata::create(api)?;
-
-        // Globalize
-        let address = api.globalize(
-            object_id,
-            indexmap!(
-                AttachedModuleId::RoleAssignment => role_assignment.0,
-                AttachedModuleId::Metadata => metadata.0,
-            ),
+        Self::instantiate_internal(
+            owner_role,
+            storer_role,
+            storer_updater_role,
+            recoverer_role,
+            recoverer_updater_role,
+            metadata_init! {
+                "admin_badge" => EMPTY, locked;
+            },
             address_reservation,
-        )?;
-        let component_address = ComponentAddress::new_or_panic(address.as_node_id().0);
-
-        Ok(Global::new(component_address))
+            api,
+        )
     }
 
     fn instantiate_simple<Y>(
@@ -178,16 +156,19 @@ impl AccountLockerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Creating a new resource for the admin badge. We will first allocate a new address for it
-        // and then instantiate it to its own address. The admin badge that we create will be its
-        // own owner.
+        // Two address reservations are needed. One for the badge and another for the account locker
+        // that we're instantiating.
+        let (locker_reservation, locker_address) = api.allocate_global_address(BlueprintId {
+            package_address: LOCKER_PACKAGE,
+            blueprint_name: ACCOUNT_LOCKER_BLUEPRINT.into(),
+        })?;
         let (badge_reservation, badge_address) = api.allocate_global_address(BlueprintId {
             package_address: RESOURCE_PACKAGE,
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.into(),
         })?;
         let badge_address = ResourceAddress::new_or_panic(badge_address.as_node_id().0);
 
-        let (_, badge) = api
+        let (badge_address, badge) = api
             .call_function(
                 RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -199,7 +180,7 @@ impl AccountLockerBlueprint {
                     resource_roles: Default::default(),
                     metadata: metadata! {
                         init {
-                            "name" => "Account Locker Admin Badge".to_owned(), locked;
+                            "account_locker" => locker_address, locked;
                         }
                     },
                     address_reservation: Some(badge_reservation),
@@ -219,27 +200,106 @@ impl AccountLockerBlueprint {
             false => rule!(deny_all),
         };
 
-        Self::instantiate(
-            AccountLockerInstantiateInput {
-                owner_role: OwnerRole::Updatable(rule.clone()),
-                storer_role: rule.clone(),
-                storer_updater_role: rule.clone(),
-                recoverer_role: recoverer_rule.clone(),
-                recoverer_updater_role: recoverer_rule,
-                address_reservation: None,
+        Self::instantiate_internal(
+            OwnerRole::Updatable(rule.clone()),
+            rule.clone(),
+            rule.clone(),
+            recoverer_rule.clone(),
+            recoverer_rule,
+            metadata_init! {
+                "admin_badge" => badge_address, locked;
             },
+            Some(locker_reservation),
             api,
         )
         .map(|rtn| (rtn, badge))
     }
 
+    fn instantiate_internal<Y>(
+        owner_role: OwnerRole,
+        storer_role: AccessRule,
+        storer_updater_role: AccessRule,
+        recoverer_role: AccessRule,
+        recoverer_updater_role: AccessRule,
+        metadata_init: MetadataInit,
+        address_reservation: Option<GlobalAddressReservation>,
+        api: &mut Y,
+    ) -> Result<Global<AccountLockerMarker>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Main module
+        let object_id = api.new_simple_object(ACCOUNT_LOCKER_BLUEPRINT, indexmap! {})?;
+
+        // Role Assignment Module
+        let roles = indexmap! {
+            ModuleId::Main => roles2! {
+                STORER_ROLE => storer_role, updatable;
+                STORER_UPDATER_ROLE => storer_updater_role, updatable;
+                RECOVERER_ROLE => recoverer_role, updatable;
+                RECOVERER_UPDATER_ROLE => recoverer_updater_role, updatable;
+            }
+        };
+        let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
+
+        // Metadata Module
+        let metadata = Metadata::create_with_data(metadata_init, api)?;
+
+        // Globalize
+        let address = api.globalize(
+            object_id,
+            indexmap!(
+                AttachedModuleId::RoleAssignment => role_assignment.0,
+                AttachedModuleId::Metadata => metadata.0,
+            ),
+            address_reservation,
+        )?;
+        let component_address = ComponentAddress::new_or_panic(address.as_node_id().0);
+
+        Ok(Global::new(component_address))
+    }
+
     fn store<Y>(
-        AccountLockerStoreInput { claimant, bucket }: AccountLockerStoreInput,
+        AccountLockerStoreInput {
+            claimant,
+            bucket,
+            try_direct_send,
+        }: AccountLockerStoreInput,
         api: &mut Y,
     ) -> Result<AccountLockerStoreOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        // If we should try to send first then attempt the deposit into the account
+        let bucket = if try_direct_send {
+            // Getting the node-id of the actor and constructing the non-fungible global id of the
+            // global caller.
+            let actor_node_id = api.actor_get_node_id(ACTOR_STATE_SELF)?;
+            let global_caller_non_fungible_global_id =
+                global_caller(GlobalAddress::new_or_panic(actor_node_id.0));
+
+            let bucket = api
+                .call_method(
+                    claimant.0.as_node_id(),
+                    ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
+                    scrypto_encode(&AccountTryDepositOrRefundInput {
+                        bucket,
+                        authorized_depositor_badge: Some(global_caller_non_fungible_global_id),
+                    })
+                    .unwrap(),
+                )
+                .map(|rtn| scrypto_decode::<AccountTryDepositOrRefundOutput>(&rtn).unwrap())?;
+            match bucket {
+                Some(bucket) => bucket,
+                None => return Ok(()),
+            }
+        } else {
+            bucket
+        };
+
+        // Deposit into the account either was not requested or failed. Store the resources into the
+        // account locker.
+
         // Bucket info.
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
 
@@ -264,14 +324,18 @@ impl AccountLockerBlueprint {
         Ok(())
     }
 
-    fn store_batch<Y>(
-        AccountLockerStoreBatchInput { claimants, bucket }: AccountLockerStoreBatchInput,
+    fn airdrop<Y>(
+        AccountLockerAirdropInput {
+            claimants,
+            bucket,
+            try_direct_send,
+        }: AccountLockerAirdropInput,
         api: &mut Y,
-    ) -> Result<AccountLockerStoreBatchOutput, RuntimeError>
+    ) -> Result<AccountLockerAirdropOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Store in the vaults
+        // Distribute and call `store`
         let resource_address = bucket.resource_address(api)?;
         for (account_address, specifier) in claimants.iter() {
             let claim_bucket = match specifier {
@@ -281,127 +345,15 @@ impl AccountLockerBlueprint {
                 }
             };
 
-            Self::with_vault_create_on_traversal(
-                account_address.0,
-                resource_address,
+            Self::store(
+                AccountLockerStoreInput {
+                    claimant: *account_address,
+                    bucket: claim_bucket,
+                    try_direct_send,
+                },
                 api,
-                |mut vault, api| vault.put(claim_bucket, api),
-            )??;
+            )?;
         }
-
-        // Emit an event
-        Runtime::emit_event(
-            api,
-            BatchStoreEvent {
-                claimants,
-                resource_address,
-            },
-        )?;
-
-        // Return the change
-        if bucket.is_empty(api)? {
-            bucket.drop_empty(api)?;
-            Ok(None)
-        } else {
-            Ok(Some(bucket))
-        }
-    }
-
-    fn send_or_store<Y>(
-        AccountLockerSendOrStoreInput { claimant, bucket }: AccountLockerSendOrStoreInput,
-        api: &mut Y,
-    ) -> Result<AccountLockerSendOrStoreOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Getting the node-id of the actor and constructing the non-fungible global id of the
-        // global caller.
-        let actor_node_id = api.actor_get_node_id(ACTOR_STATE_SELF)?;
-        let global_caller_non_fungible_global_id =
-            global_caller(GlobalAddress::new_or_panic(actor_node_id.0));
-
-        // Attempting to deposit the resources into the account.
-        let bucket = api
-            .call_method(
-                claimant.0.as_node_id(),
-                ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-                scrypto_encode(&AccountTryDepositOrRefundInput {
-                    bucket,
-                    authorized_depositor_badge: Some(global_caller_non_fungible_global_id),
-                })
-                .unwrap(),
-            )
-            .map(|rtn| scrypto_decode::<AccountTryDepositOrRefundOutput>(&rtn).unwrap())?;
-
-        // If we got a bucket back then we need to store it.
-        if let Some(bucket) = bucket {
-            Self::store(AccountLockerStoreInput { claimant, bucket }, api)?;
-        }
-
-        Ok(())
-    }
-
-    fn send_or_store_batch<Y>(
-        AccountLockerSendOrStoreBatchInput { claimants, bucket  }: AccountLockerSendOrStoreBatchInput,
-        api: &mut Y,
-    ) -> Result<AccountLockerSendOrStoreBatchOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        // Getting the node-id of the actor and constructing the non-fungible global id of the
-        // global caller.
-        let actor_node_id = api.actor_get_node_id(ACTOR_STATE_SELF)?;
-        let global_caller_non_fungible_global_id =
-            global_caller(GlobalAddress::new_or_panic(actor_node_id.0));
-
-        // First attempt to deposit the resources into their accounts
-        let resource_address = bucket.resource_address(api)?;
-        let mut failed_deposits = indexmap! {};
-        for (account_address, specifier) in claimants.into_iter() {
-            let claim_bucket = match specifier {
-                ResourceSpecifier::Fungible(amount) => bucket.take(amount, api)?,
-                ResourceSpecifier::NonFungible(ref ids) => {
-                    bucket.take_non_fungibles(ids.clone(), api)?
-                }
-            };
-
-            let bucket = api
-                .call_method(
-                    account_address.0.as_node_id(),
-                    ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
-                    scrypto_encode(&AccountTryDepositOrRefundInput {
-                        bucket: claim_bucket,
-                        authorized_depositor_badge: Some(
-                            global_caller_non_fungible_global_id.clone(),
-                        ),
-                    })
-                    .unwrap(),
-                )
-                .map(|rtn| scrypto_decode::<AccountTryDepositOrRefundOutput>(&rtn).unwrap())?;
-
-            // If the deposit failed then insert it into the failed deposits map and store it.
-            if let Some(bucket) = bucket {
-                // Store in the vault.
-                Self::with_vault_create_on_traversal(
-                    account_address.0,
-                    resource_address,
-                    api,
-                    |mut vault, api| vault.put(bucket, api),
-                )??;
-
-                // Insert in map
-                failed_deposits.insert(account_address, specifier);
-            }
-        }
-
-        // Emit a batch store event with the ones that we failed to deposit.
-        Runtime::emit_event(
-            api,
-            BatchStoreEvent {
-                claimants: failed_deposits,
-                resource_address,
-            },
-        )?;
 
         if bucket.is_empty(api)? {
             bucket.drop_empty(api)?;
@@ -650,8 +602,7 @@ impl AccountLockerBlueprint {
             }
         };
 
-        // Lock the entry in the key-value store which contains the vault and attempt to get it. If
-        // we're allowed to create the vault.
+        // Lock the entry in the key-value store which contains the vault and attempt to get it.
         let vault_entry_handle = api.key_value_store_open_entry(
             account_claims_kv_store.as_node_id(),
             &scrypto_encode(&resource_address).unwrap(),

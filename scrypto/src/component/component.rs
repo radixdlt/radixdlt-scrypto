@@ -16,7 +16,7 @@ use radix_common::ScryptoSbor;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{AttachedModuleId, FieldValue};
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, Bucket, MethodAccessibility, OwnerRole, RoleAssignmentInit,
+    AccessRule, Bucket, MethodAccessibility, OwnerRole, OwnerRoleEntry, RoleAssignmentInit,
 };
 use radix_engine_interface::object_modules::metadata::{
     MetadataConversionError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
@@ -342,8 +342,14 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Global<O: HasStub>(pub O::Stub);
+
+impl<O: HasStub> core::hash::Hash for Global<O> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.handle().as_node_id().hash(state);
+    }
+}
 
 impl<O: HasStub> Copy for Global<O> {}
 
@@ -427,6 +433,10 @@ impl<O: HasStub> HasMetadata for Global<O> {
 impl<O: HasStub> HasRoleAssignment for Global<O> {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
         self.role_assignment().set_owner_role(rule)
+    }
+
+    fn get_owner_role(&self) -> OwnerRoleEntry {
+        self.role_assignment().get_owner_role()
     }
 
     fn lock_owner_role(&self) {

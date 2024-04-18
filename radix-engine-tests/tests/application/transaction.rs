@@ -220,12 +220,12 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
             auth_zone_params: Default::default(),
             costing_parameters: Default::default(),
         },
+        false,
     );
 
     // Act
     let receipt = ledger.execute_transaction(
         executable,
-        Default::default(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
 

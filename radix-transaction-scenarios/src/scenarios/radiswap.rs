@@ -1,9 +1,11 @@
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::*;
 
 use crate::internal_prelude::*;
 
+#[allow(deprecated)]
 pub struct RadiswapScenarioConfig {
     pub radiswap_dapp_definition_account: VirtualAccount,
     pub storing_account: VirtualAccount,
@@ -15,7 +17,7 @@ pub struct RadiswapScenarioConfig {
 impl Default for RadiswapScenarioConfig {
     fn default() -> Self {
         Self {
-            radiswap_dapp_definition_account: ed25519_account_for_private_key(891231),
+            radiswap_dapp_definition_account: ed25519_account_from_u64(891231),
             storing_account: secp256k1_account_2(),
             user_account_1: secp256k1_account_3(),
             user_account_2: ed25519_account_1(),
@@ -46,12 +48,15 @@ pub struct RadiswapScenarioCreator;
 impl ScenarioCreator for RadiswapScenarioCreator {
     type Config = RadiswapScenarioConfig;
     type State = RadiswapScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
+    #[allow(deprecated)]
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "radiswap",
         };
@@ -231,8 +236,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 owner_role.clone(),
                             ).call_function(
                                 lookup.named_address("radiswap_package"),
-                                "Radiswap", 
-                                "new", 
+                                "Radiswap",
+                                "new",
                                 manifest_args!(
                                     owner_role.clone(),
                                     state.pool_1.resource_1.get()?,
@@ -241,8 +246,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                             )
                             .call_function(
                                 lookup.named_address("radiswap_package"),
-                                "Radiswap", 
-                                "new", 
+                                "Radiswap",
+                                "new",
                                 manifest_args!(
                                     owner_role.clone(),
                                     state.pool_2.resource_1.get()?,

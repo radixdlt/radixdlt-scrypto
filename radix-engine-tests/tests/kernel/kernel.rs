@@ -1,26 +1,23 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RuntimeError};
+use radix_engine::errors::{CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
 use radix_engine::kernel::call_frame::{
     CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
     PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::BootLoader;
+use radix_engine::kernel::kernel::{Kernel};
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
 };
-use radix_engine::kernel::kernel_callback_api::{
-    CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
-    KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
-    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
-    WriteSubstateEvent,
-};
-use radix_engine::track::{BootStore, Track};
+use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
+use radix_engine::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
+use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_transactions::model::PreAllocatedAddress;
+use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::{Executable, PreAllocatedAddress};
 
 struct TestCallFrameData;
 
@@ -46,14 +43,27 @@ impl CallFrameReferences for TestCallFrameData {
     }
 }
 
+struct TestReceipt;
+
+impl ExecutionReceipt for TestReceipt {
+    fn from_rejection(_executable: &Executable, _reason: RejectionReason) -> Self {
+        Self
+    }
+
+    fn set_resource_usage(&mut self, _resources_usage: ResourcesUsage) {
+    }
+}
+
 struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
-    type CallbackState = ();
+    type Init = ();
+    type ExecutionOutput = ();
+    type Receipt = TestReceipt;
 
-    fn init<S: BootStore>(&mut self, _store: &S) -> Result<(), BootloadingError> {
-        Ok(())
+    fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::Init) -> Result<Self, RejectionReason> {
+        Ok(Self)
     }
 
     fn start<Y>(
@@ -62,18 +72,19 @@ impl KernelCallbackObject for TestCallbackObject {
         _pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         _references: &IndexSet<Reference>,
         _blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
         unreachable!()
     }
 
-    fn on_teardown<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn finish(&mut self, _store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
         Ok(())
+    }
+
+    fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _executable: &Executable, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
+        TestReceipt
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
@@ -259,16 +270,11 @@ enum MoveVariation {
 fn kernel_move_node_via_create_with_opened_substate(
     variation: MoveVariation,
 ) -> Result<(), RuntimeError> {
-    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
+    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
-    let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
-        callback: &mut callback,
-        store: &mut track,
-    };
-    let mut kernel = boot_loader.boot().unwrap();
+    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut callback);
 
     let child_id = {
         let child_id = kernel
@@ -401,16 +407,11 @@ fn test_kernel_move_node_via_invoke_with_opened_substate() {
 #[test]
 fn kernel_close_substate_should_fail_if_opened_child_exists() {
     // Arrange
-    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let database = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
+    let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
-    let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
-        callback: &mut callback,
-        store: &mut track,
-    };
-    let mut kernel = boot_loader.boot().unwrap();
+    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut callback);
     let mut create_node = || {
         let id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)

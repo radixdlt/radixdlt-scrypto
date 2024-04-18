@@ -7,9 +7,10 @@ use crate::kernel::kernel_callback_api::{
 };
 use crate::system::actor::Actor;
 use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::System;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::IOAccess;
+use crate::transaction::LimitParameters;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -28,6 +29,7 @@ pub enum TransactionLimitsError {
 }
 
 pub struct TransactionLimitsConfig {
+    pub max_call_depth: usize,
     pub max_heap_substate_total_bytes: usize,
     pub max_track_substate_total_bytes: usize,
     pub max_substate_key_size: usize,
@@ -51,9 +53,35 @@ pub struct LimitsModule {
 }
 
 impl LimitsModule {
+    pub fn babylon_genesis() -> Self {
+        Self::from_params(LimitParameters::babylon_genesis())
+    }
+
     pub fn new(limits_config: TransactionLimitsConfig) -> Self {
         LimitsModule {
             config: limits_config,
+            heap_substate_total_bytes: 0,
+            track_substate_total_bytes: 0,
+        }
+    }
+
+    pub fn from_params(limit_parameters: LimitParameters) -> Self {
+        let config = TransactionLimitsConfig {
+            max_call_depth: limit_parameters.max_call_depth,
+            max_heap_substate_total_bytes: limit_parameters.max_heap_substate_total_bytes,
+            max_track_substate_total_bytes: limit_parameters.max_track_substate_total_bytes,
+            max_substate_key_size: limit_parameters.max_substate_key_size,
+            max_substate_value_size: limit_parameters.max_substate_value_size,
+            max_invoke_payload_size: limit_parameters.max_invoke_input_size,
+            max_number_of_logs: limit_parameters.max_number_of_logs,
+            max_number_of_events: limit_parameters.max_number_of_events,
+            max_event_size: limit_parameters.max_event_size,
+            max_log_size: limit_parameters.max_log_size,
+            max_panic_message_size: limit_parameters.max_panic_message_size,
+        };
+
+        LimitsModule {
+            config,
             heap_substate_total_bytes: 0,
             track_substate_total_bytes: 0,
         }
@@ -157,14 +185,15 @@ impl LimitsModule {
 
 impl InitSystemModule for LimitsModule {}
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
-    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
+impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
+    fn before_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         // Check depth
         let current_depth = api.kernel_get_current_depth();
-        if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
+        let limits = &mut api.kernel_get_system().modules.limits.config;
+        if current_depth == limits.max_call_depth {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxCallDepthLimitReached,
@@ -173,8 +202,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         }
 
         // Check input size
-        let limits = &mut api.kernel_get_system().modules.limits.config;
         let input_size = invocation.len();
+        let limits = &mut api.kernel_get_system().modules.limits.config;
         if input_size > limits.max_invoke_payload_size {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
@@ -186,7 +215,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -210,7 +239,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -226,7 +255,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_move_module<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_move_module<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
@@ -242,7 +271,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_open_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -265,7 +294,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_read_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -282,7 +311,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_write_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -304,7 +333,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     }
 
     fn on_set_substate(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -324,7 +353,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     }
 
     fn on_remove_substate(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -339,10 +368,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_scan_keys(
-        system: &mut SystemConfig<V>,
-        event: &ScanKeysEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_keys(system: &mut System<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
         match event {
             ScanKeysEvent::IOAccess(io_access) => {
                 system.modules.limits.process_io_access(io_access)?;
@@ -354,7 +380,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     }
 
     fn on_drain_substates(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -368,7 +394,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     }
 
     fn on_scan_sorted_substates(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         match event {

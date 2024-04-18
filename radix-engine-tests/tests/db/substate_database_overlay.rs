@@ -1,11 +1,11 @@
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
+use radix_engine::updates::*;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_impls::substate_database_overlay::*;
 use radix_substate_store_interface::db_key_mapper::*;
 use radix_substate_store_interface::interface::*;
-use radix_transaction_scenarios::scenario::*;
-use radix_transaction_scenarios::scenarios::*;
+use radix_transaction_scenarios::executor::*;
 use radix_transactions::builder::*;
 use scrypto::prelude::*;
 use scrypto_test::ledger_simulator::*;
@@ -467,49 +467,52 @@ fn run_scenarios(
         ),
     ),
 ) {
-    let network = NetworkDefinition::simulator();
+    let overlay_root = InMemorySubstateDatabase::standard();
+    let overlay = SubstateDatabaseOverlay::new_unmergeable(&overlay_root);
+    let ledger_with_overlay = Rc::new(RefCell::new(
+        LedgerSimulatorBuilder::new()
+            .with_custom_database(overlay)
+            .with_custom_protocol_updates(ProtocolUpdates::none())
+            .without_kernel_trace()
+            .build(),
+    ));
 
-    let db1 = InMemorySubstateDatabase::standard();
+    DefaultTransactionScenarioExecutor::new(
+        InMemorySubstateDatabase::standard(),
+        NetworkDefinition::simulator(),
+    )
+    .bootstrap(true)
+    .on_new_protocol_requirement_encountered(|network, protocol_update, db| {
+        if let ProtocolVersion::ProtocolUpdate(protocol_update) = protocol_update {
+            // Apply to the executor's DB.
+            protocol_update
+                .generate_state_updates(db, network)
+                .into_iter()
+                .for_each(|state_updates| {
+                    db.commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
+                });
 
-    let db2_root = InMemorySubstateDatabase::standard();
-    let db2 = SubstateDatabaseOverlay::new_unmergeable(&db2_root);
-
-    let mut ledger1 = LedgerSimulatorBuilder::new()
-        .with_custom_database(db1)
-        .without_kernel_trace()
-        .build();
-    let mut ledger2 = LedgerSimulatorBuilder::new()
-        .with_custom_database(db2)
-        .without_kernel_trace()
-        .build();
-
-    let mut next_nonce: u32 = 0;
-    for scenario_builder in get_builder_for_every_scenario() {
-        let epoch = ledger1.get_current_epoch();
-        let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
-        let mut previous = None;
-        loop {
-            let next = scenario
-                .next(previous.as_ref())
-                .map_err(|err| err.into_full(&scenario))
-                .unwrap();
-            match next {
-                NextAction::Transaction(next) => {
-                    let receipt1 = ledger1.execute_notarized_transaction(&next.raw_transaction);
-                    let receipt2 = ledger2.execute_notarized_transaction(&next.raw_transaction);
-
-                    check_callback(
-                        (ledger1.substate_db(), &receipt1),
-                        (ledger2.substate_db(), &receipt2),
-                    );
-
-                    previous = Some(receipt1);
-                }
-                NextAction::Completed(end_state) => {
-                    next_nonce = end_state.next_unused_nonce;
-                    break;
-                }
-            }
+            // Apply to the ledger's DB.
+            ledger_with_overlay
+                .borrow_mut()
+                .apply_protocol_updates(&[protocol_update]);
         }
-    }
+    })
+    .on_transaction_executed(|_, transaction, receipt, db| {
+        // Execute the same transaction on the ledger simulator.
+        let receipt_from_overlay = ledger_with_overlay
+            .borrow_mut()
+            .execute_notarized_transaction(&transaction.raw_transaction);
+
+        // Check that everything matches.
+        check_callback(
+            (db, &receipt),
+            (
+                ledger_with_overlay.borrow().substate_db(),
+                &receipt_from_overlay,
+            ),
+        );
+    })
+    .execute_all()
+    .expect("Must succeed!");
 }

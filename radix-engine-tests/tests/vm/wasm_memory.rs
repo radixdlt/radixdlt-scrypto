@@ -71,9 +71,8 @@ fn test_wasm_memory_grow_read_write() {
     let mut instance = wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &code);
 
     let fee_reserve = SystemLoanFeeReserve::new(
-        &CostingParameters::default(),
+        &CostingParameters::babylon_genesis(),
         &TransactionCostingParameters::default(),
-        false,
     );
     let mut wasm_execution_units_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
@@ -164,9 +163,8 @@ fn test_wasm_memory_is_clean() {
     let mut instance = wasm_engine.instantiate(CodeHash(Hash([0u8; 32])), &code);
 
     let fee_reserve = SystemLoanFeeReserve::new(
-        &CostingParameters::default(),
+        &CostingParameters::babylon_genesis(),
         &TransactionCostingParameters::default(),
-        false,
     );
     let mut wasm_execution_units_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(

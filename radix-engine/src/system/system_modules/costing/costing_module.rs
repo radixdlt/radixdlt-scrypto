@@ -11,7 +11,7 @@ use crate::kernel::kernel_callback_api::{
 use crate::object_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::System;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
@@ -69,28 +69,29 @@ impl OnApplyCost {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct CostBreakdown {
+    pub execution_cost_breakdown: IndexMap<String, u32>,
+    pub finalization_cost_breakdown: IndexMap<String, u32>,
+    pub storage_cost_breakdown: IndexMap<StorageType, usize>,
+}
+
 #[derive(Debug, Clone)]
 pub struct CostingModule {
     pub fee_reserve: SystemLoanFeeReserve,
+
     pub fee_table: FeeTable,
-    pub max_call_depth: usize,
     pub tx_payload_len: usize,
     pub tx_num_of_signature_validations: usize,
     /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
     pub max_per_function_royalty_in_xrd: Decimal,
-    pub enable_cost_breakdown: bool,
-    pub execution_cost_breakdown: IndexMap<String, u32>,
-    pub finalization_cost_breakdown: IndexMap<String, u32>,
-    pub storage_cost_breakdown: IndexMap<StorageType, usize>,
+
+    pub cost_breakdown: Option<CostBreakdown>,
 
     pub on_apply_cost: OnApplyCost,
 }
 
 impl CostingModule {
-    pub fn fee_reserve(self) -> SystemLoanFeeReserve {
-        self.fee_reserve
-    }
-
     pub fn apply_execution_cost(
         &mut self,
         costing_entry: ExecutionCostingEntry,
@@ -103,9 +104,10 @@ impl CostingModule {
             .consume_execution(cost_units)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.execution_cost_breakdown
+            cost_breakdown
+                .execution_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -126,9 +128,10 @@ impl CostingModule {
             .consume_deferred_execution(cost_units)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.execution_cost_breakdown
+            cost_breakdown
+                .execution_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -148,8 +151,9 @@ impl CostingModule {
             .consume_deferred_storage(storage_type, size_increase)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
-            self.storage_cost_breakdown
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
+            cost_breakdown
+                .storage_cost_breakdown
                 .entry(storage_type)
                 .or_default()
                 .add_assign(size_increase);
@@ -170,9 +174,10 @@ impl CostingModule {
             .consume_finalization(cost_units)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.finalization_cost_breakdown
+            cost_breakdown
+                .finalization_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -192,8 +197,9 @@ impl CostingModule {
             .consume_storage(storage_type, size_increase)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
-            self.storage_cost_breakdown
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
+            cost_breakdown
+                .storage_cost_breakdown
                 .entry(storage_type)
                 .or_default()
                 .add_assign(size_increase);
@@ -212,7 +218,7 @@ impl CostingModule {
     }
 }
 
-pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+pub fn apply_royalty_cost<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
     api: &mut Y,
     royalty_amount: RoyaltyAmount,
     recipient: RoyaltyRecipient,
@@ -237,7 +243,7 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
 }
 
 impl InitSystemModule for CostingModule {
-    fn on_init(&mut self) -> Result<(), BootloadingError> {
+    fn init(&mut self) -> Result<(), BootloadingError> {
         self.apply_deferred_execution_cost(ExecutionCostingEntry::ValidateTxPayload {
             size: self.tx_payload_len,
         })
@@ -255,8 +261,8 @@ impl InitSystemModule for CostingModule {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
-    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
+impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
+    fn before_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -337,7 +343,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     #[inline(always)]
-    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
+    fn after_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -357,7 +363,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -370,7 +376,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_pin_node(system: &mut SystemConfig<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn on_pin_node(system: &mut System<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
         system
             .modules
             .costing
@@ -380,7 +386,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -393,7 +399,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_move_module<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_move_module<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
@@ -406,7 +412,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_open_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -420,7 +426,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_mark_substate_as_transient(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -438,7 +444,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_read_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -451,7 +457,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_write_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -464,7 +470,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_close_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -478,7 +484,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_set_substate(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -491,7 +497,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_remove_substate(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -503,10 +509,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_scan_keys(
-        system: &mut SystemConfig<V>,
-        event: &ScanKeysEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_keys(system: &mut System<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
         system
             .modules
             .costing
@@ -517,7 +520,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_drain_substates(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -530,7 +533,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     }
 
     fn on_scan_sorted_substates(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -542,7 +545,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
+    fn on_allocate_node_id<Y: KernelApi<System<V>>>(
         api: &mut Y,
         _entity_type: EntityType,
     ) -> Result<(), RuntimeError> {

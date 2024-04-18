@@ -13,23 +13,20 @@ use crate::kernel::kernel_callback_api::{
 use crate::system::actor::Actor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::System;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
-use crate::system::system_modules::costing::FeeTable;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
-use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
+use crate::system::system_modules::limits::LimitsModule;
 use crate::system::system_modules::transaction_runtime::{Event, TransactionRuntimeModule};
-use crate::transaction::ExecutionConfig;
 use bitflags::bitflags;
 use paste::paste;
 use radix_common::crypto::Hash;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_profiling_derive::trace_resources;
-use radix_transactions::model::AuthZoneParams;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -40,8 +37,6 @@ bitflags! {
         const LIMITS = 0x01 << 1;
         const COSTING = 0x01 << 2;
         const AUTH = 0x01 << 3;
-
-        // Transaction runtime data
         const TRANSACTION_RUNTIME = 0x01 << 5;
 
         // Execution trace, for preview only
@@ -126,55 +121,21 @@ macro_rules! internal_call_dispatch {
 impl SystemModuleMixer {
     pub fn new(
         enabled_modules: EnabledModules,
-        network_definition: NetworkDefinition,
-        tx_hash: Hash,
-        auth_zone_params: AuthZoneParams,
-        fee_reserve: SystemLoanFeeReserve,
-        fee_table: FeeTable,
-        payload_len: usize,
-        num_of_signature_validations: usize,
-        execution_config: &ExecutionConfig,
+        kernel_trace: KernelTraceModule,
+        transaction_runtime: TransactionRuntimeModule,
+        auth: AuthModule,
+        limits: LimitsModule,
+        costing: CostingModule,
+        execution_trace: ExecutionTraceModule,
     ) -> Self {
         Self {
             enabled_modules,
-            kernel_trace: KernelTraceModule {},
-            costing: CostingModule {
-                fee_reserve,
-                fee_table,
-                max_call_depth: execution_config.max_call_depth,
-                tx_payload_len: payload_len,
-                tx_num_of_signature_validations: num_of_signature_validations,
-                max_per_function_royalty_in_xrd: execution_config.max_per_function_royalty_in_xrd,
-                enable_cost_breakdown: execution_config.enable_cost_breakdown,
-                execution_cost_breakdown: index_map_new(),
-                finalization_cost_breakdown: index_map_new(),
-                storage_cost_breakdown: index_map_new(),
-                on_apply_cost: Default::default(),
-            },
-            auth: AuthModule {
-                params: auth_zone_params.clone(),
-            },
-            limits: LimitsModule::new(TransactionLimitsConfig {
-                max_heap_substate_total_bytes: execution_config.max_heap_substate_total_bytes,
-                max_track_substate_total_bytes: execution_config.max_track_substate_total_bytes,
-                max_substate_key_size: execution_config.max_substate_key_size,
-                max_substate_value_size: execution_config.max_substate_value_size,
-                max_invoke_payload_size: execution_config.max_invoke_input_size,
-                max_number_of_logs: execution_config.max_number_of_logs,
-                max_number_of_events: execution_config.max_number_of_events,
-                max_event_size: execution_config.max_event_size,
-                max_log_size: execution_config.max_log_size,
-                max_panic_message_size: execution_config.max_panic_message_size,
-            }),
-            execution_trace: ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
-            transaction_runtime: TransactionRuntimeModule {
-                network_definition,
-                tx_hash,
-                next_id: 0,
-                logs: Vec::new(),
-                events: Vec::new(),
-                replacements: index_map_new(),
-            },
+            kernel_trace,
+            transaction_runtime,
+            auth,
+            costing,
+            limits,
+            execution_trace,
         }
     }
 
@@ -196,51 +157,71 @@ impl SystemModuleMixer {
 
 impl InitSystemModule for SystemModuleMixer {
     #[trace_resources]
-    fn on_init(&mut self) -> Result<(), BootloadingError> {
+    fn init(&mut self) -> Result<(), BootloadingError> {
         let modules: EnabledModules = self.enabled_modules;
 
         // Enable execution trace
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            self.execution_trace.on_init()?;
+            self.execution_trace.init()?;
         }
 
         // Enable transaction runtime
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            self.transaction_runtime.on_init()?;
+            self.transaction_runtime.init()?;
         }
 
         // Enable auth
         if modules.contains(EnabledModules::AUTH) {
-            self.auth.on_init()?;
+            self.auth.init()?;
         }
 
         // Enable costing
         if modules.contains(EnabledModules::COSTING) {
-            self.costing.on_init()?;
+            self.costing.init()?;
         }
 
         // Enable transaction limits
         if modules.contains(EnabledModules::LIMITS) {
-            self.limits.on_init()?;
+            self.limits.init()?;
         }
 
         // Enable kernel trace
         if modules.contains(EnabledModules::KERNEL_TRACE) {
-            self.kernel_trace.on_init()?;
+            self.kernel_trace.init()?;
+        }
+
+        Ok(())
+    }
+
+    #[trace_resources]
+    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
+        let modules: EnabledModules = self.enabled_modules;
+        if modules.contains(EnabledModules::KERNEL_TRACE) {
+            self.kernel_trace.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::LIMITS) {
+            self.limits.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::COSTING) {
+            self.costing.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::AUTH) {
+            self.auth.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
+            self.transaction_runtime.on_teardown()?;
+        }
+        if modules.contains(EnabledModules::EXECUTION_TRACE) {
+            self.execution_trace.on_teardown()?;
         }
 
         Ok(())
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
-    #[trace_resources]
-    fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_teardown(api))
-    }
-
+impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
     #[trace_resources(log=invocation.len())]
-    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
+    fn before_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -248,12 +229,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_execution_start<Y: KernelApi<System<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api.kernel_get_system(), on_execution_start(api))
     }
 
     #[trace_resources]
-    fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
+    fn on_execution_finish<Y: KernelApi<System<V>>>(
         api: &mut Y,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
@@ -261,15 +242,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
+    fn after_invoke<Y: KernelApi<System<V>>>(
         api: &mut Y,
         output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api.kernel_get_system(), after_invoke(api, output))
     }
 
+    #[trace_resources]
+    fn on_pin_node(system: &mut System<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(system, on_pin_node(system, node_id))
+    }
+
     #[trace_resources(log=entity_type)]
-    fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
+    fn on_allocate_node_id<Y: KernelApi<System<V>>>(
         api: &mut Y,
         entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
@@ -280,7 +266,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -288,20 +274,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_pin_node(system: &mut SystemConfig<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_pin_node(system, node_id))
-    }
-
-    #[trace_resources]
-    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
-        api: &mut Y,
-        event: &DropNodeEvent,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_drop_node(api, event))
-    }
-
-    #[trace_resources]
-    fn on_move_module<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_move_module<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
@@ -309,16 +282,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
-        event: &OpenSubstateEvent,
+        event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
+        internal_call_dispatch!(api.kernel_get_system(), on_drop_node(api, event))
     }
 
     #[trace_resources]
     fn on_mark_substate_as_transient(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -329,8 +302,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         )
     }
 
+    #[trace_resources]
+    fn on_open_substate<Y: KernelInternalApi<System<V>>>(
+        api: &mut Y,
+        event: &OpenSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
+    }
+
     #[trace_resources(log=event.is_about_heap())]
-    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_read_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -338,7 +319,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_write_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -346,7 +327,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_close_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelInternalApi<System<V>>>(
         api: &mut Y,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -355,7 +336,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
 
     #[trace_resources]
     fn on_set_substate(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_set_substate(system, event))
@@ -363,23 +344,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
 
     #[trace_resources]
     fn on_remove_substate(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_remove_substate(system, event))
     }
 
     #[trace_resources]
-    fn on_scan_keys(
-        system: &mut SystemConfig<V>,
-        event: &ScanKeysEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_keys(system: &mut System<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_scan_keys(system, event))
     }
 
     #[trace_resources]
     fn on_drain_substates(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_drain_substates(system, event))
@@ -387,7 +365,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
 
     #[trace_resources]
     fn on_scan_sorted_substates(
-        system: &mut SystemConfig<V>,
+        system: &mut System<V>,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_scan_sorted_substates(system, event))
@@ -409,7 +387,7 @@ impl SystemModuleMixer {
     ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         let auth_zone = if api
             .kernel_get_system_state()
@@ -437,7 +415,7 @@ impl SystemModuleMixer {
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         AuthModule::on_call_method_finish(api, auth_zone)
     }
@@ -449,7 +427,7 @@ impl SystemModuleMixer {
     ) -> Result<NodeId, RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         let auth_zone = if api
             .kernel_get_system_state()
@@ -472,7 +450,7 @@ impl SystemModuleMixer {
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        Y: KernelApi<System<V>>,
     {
         AuthModule::on_call_function_finish(api, auth_zone)
     }
@@ -584,7 +562,7 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn costing(&mut self) -> Option<&CostingModule> {
+    pub fn costing(&self) -> Option<&CostingModule> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             Some(&self.costing)
         } else {

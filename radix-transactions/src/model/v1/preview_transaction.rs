@@ -42,6 +42,7 @@ impl ValidatedPreviewIntent {
             } else {
                 Decimal::ZERO
             },
+            abort_when_loan_repaid: false,
         };
         let initial_proofs = AuthAddresses::signer_set(&self.signer_public_keys);
 
@@ -79,6 +80,7 @@ impl ValidatedPreviewIntent {
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],
             },
+            false,
         )
     }
 }

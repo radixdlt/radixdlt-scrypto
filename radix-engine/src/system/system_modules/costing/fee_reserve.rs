@@ -107,16 +107,16 @@ pub struct SystemLoanFeeReserve {
     state_storage_price: Decimal,
     archive_storage_price: Decimal,
 
+    /// (Cache) The effective execution cost unit price, with tips considered
+    effective_execution_cost_unit_price: Decimal,
+    /// (Cache) The effective finalization cost unit price, with tips considered
+    effective_finalization_cost_unit_price: Decimal,
+
     tip_percentage: u16,
 
     /// Whether to abort the transaction run when the loan is repaid.
     /// This is used when test-executing pending transactions.
     abort_when_loan_repaid: bool,
-
-    /// (Cache) The effective execution cost unit price, with tips considered
-    effective_execution_cost_unit_price: Decimal,
-    /// (Cache) The effective finalization cost unit price, with tips considered
-    effective_finalization_cost_unit_price: Decimal,
 
     /// The XRD balance
     xrd_balance: Decimal,
@@ -145,9 +145,8 @@ pub struct SystemLoanFeeReserve {
 impl Default for SystemLoanFeeReserve {
     fn default() -> Self {
         Self::new(
-            &CostingParameters::default(),
+            &CostingParameters::babylon_genesis(),
             &TransactionCostingParameters::default(),
-            false,
         )
     }
 }
@@ -167,7 +166,6 @@ impl SystemLoanFeeReserve {
     pub fn new(
         costing_parameters: &CostingParameters,
         transaction_costing_parameters: &TransactionCostingParameters,
-        abort_when_loan_repaid: bool,
     ) -> Self {
         // Sanity checks
         assert!(!costing_parameters.execution_cost_unit_price.is_negative());
@@ -218,15 +216,15 @@ impl SystemLoanFeeReserve {
             state_storage_price: costing_parameters.state_storage_price,
             archive_storage_price: costing_parameters.archive_storage_price,
 
+            // Cache
+            effective_execution_cost_unit_price,
+            effective_finalization_cost_unit_price,
+
             // Tipping percentage
             tip_percentage: transaction_costing_parameters.tip_percentage,
 
             // Aborting support
-            abort_when_loan_repaid,
-
-            // Cache
-            effective_execution_cost_unit_price: effective_execution_cost_unit_price,
-            effective_finalization_cost_unit_price: effective_finalization_cost_unit_price,
+            abort_when_loan_repaid: transaction_costing_parameters.abort_when_loan_repaid,
 
             // Running balance
             xrd_balance: system_loan_in_xrd
@@ -247,6 +245,19 @@ impl SystemLoanFeeReserve {
             storage_cost_deferred: index_map_new(),
 
             locked_fees: Vec::new(),
+        }
+    }
+
+    pub fn costing_parameters(&self) -> CostingParameters {
+        CostingParameters {
+            execution_cost_unit_price: self.execution_cost_unit_price,
+            execution_cost_unit_limit: self.execution_cost_unit_limit,
+            execution_cost_unit_loan: self.execution_cost_unit_loan,
+            finalization_cost_unit_price: self.finalization_cost_unit_price,
+            finalization_cost_unit_limit: self.finalization_cost_unit_limit,
+            usd_price: self.usd_price,
+            state_storage_price: self.state_storage_price,
+            archive_storage_price: self.archive_storage_price,
         }
     }
 
@@ -591,7 +602,7 @@ mod tests {
         execution_cost_unit_loan: u32,
         abort_when_loan_repaid: bool,
     ) -> SystemLoanFeeReserve {
-        let mut costing_parameters = CostingParameters::default();
+        let mut costing_parameters = CostingParameters::babylon_genesis();
         costing_parameters.execution_cost_unit_price = execution_cost_unit_price;
         costing_parameters.execution_cost_unit_limit = execution_cost_unit_limit;
         costing_parameters.execution_cost_unit_loan = execution_cost_unit_loan;
@@ -599,12 +610,9 @@ mod tests {
         costing_parameters.state_storage_price = state_storage_price;
         let mut transaction_costing_parameters = TransactionCostingParameters::default();
         transaction_costing_parameters.tip_percentage = tip_percentage;
+        transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 
-        SystemLoanFeeReserve::new(
-            &costing_parameters,
-            &transaction_costing_parameters,
-            abort_when_loan_repaid,
-        )
+        SystemLoanFeeReserve::new(&costing_parameters, &transaction_costing_parameters)
     }
 
     #[test]

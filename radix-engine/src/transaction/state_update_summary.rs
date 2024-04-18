@@ -258,7 +258,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                         }
                     }
                     PartitionStateUpdates::Batch(_) => {
-                        // Invariant: the vault main partition is never batch removed.
+                        panic!("Invariant: vault partitions are never batch removed")
                     }
                 }
 

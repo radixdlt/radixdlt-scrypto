@@ -13,7 +13,6 @@ pub struct SimulatorEnvironment {
     pub db: RocksdbSubstateStore,
     // VMs
     pub scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    pub native_vm: DefaultNativeVm,
 }
 
 impl SimulatorEnvironment {
@@ -23,13 +22,8 @@ impl SimulatorEnvironment {
 
         // Create the VMs
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let native_vm = DefaultNativeVm::new();
 
-        let mut env = Self {
-            db,
-            scrypto_vm,
-            native_vm,
-        };
+        let mut env = Self { db, scrypto_vm };
         env.bootstrap();
 
         Ok(env)
@@ -45,7 +39,7 @@ impl SimulatorEnvironment {
     }
 
     fn bootstrap(&mut self) {
-        let vm = Vm::new(&self.scrypto_vm, self.native_vm.clone());
+        let vm = VmInit::new(&self.scrypto_vm, NoExtension);
 
         // Bootstrap
         Bootstrapper::new(NetworkDefinition::simulator(), &mut self.db, vm, false)

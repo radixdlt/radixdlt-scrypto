@@ -5,8 +5,12 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::substate_io::SubstateDevice;
 use crate::track::interface::{IOAccess, NodeSubstates};
-use crate::track::BootStore;
+use crate::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
+use crate::transaction::ResourcesUsage;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
 
 pub trait CallFrameReferences {
@@ -127,27 +131,48 @@ pub enum ScanSortedSubstatesEvent<'a> {
     IOAccess(&'a IOAccess),
 }
 
+/// A receipt created from executing a transaction
+pub trait ExecutionReceipt {
+    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self;
+
+    fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
+}
+
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
-    type CallbackState;
+    type Init: Clone;
+    type ExecutionOutput;
+    type Receipt: ExecutionReceipt;
 
-    /// Initialize the system layer with data loaded from the substate store
-    fn init<S: BootStore>(&mut self, store: &S) -> Result<Self::CallbackState, BootloadingError>;
+    /// Create the callback object (system layer) with data loaded from the substate store
+    fn init<S: BootStore + CommitableSubstateStore>(
+        store: &mut S,
+        executable: &Executable,
+        init: Self::Init,
+    ) -> Result<Self, RejectionReason>;
 
+    /// Start execution
     fn start<Y>(
         api: &mut Y,
         manifest_encoded_instructions: &[u8],
         pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError>
+    ) -> Result<Self::ExecutionOutput, RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_teardown<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+    /// Finish execution
+    fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
+
+    /// Create final receipt
+    fn create_receipt<S: SubstateDatabase>(
+        self,
+        track: Track<S, SpreadPrefixKeyMapper>,
+        executable: &Executable,
+        result: Result<Self::ExecutionOutput, TransactionExecutionError>,
+    ) -> Self::Receipt;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 

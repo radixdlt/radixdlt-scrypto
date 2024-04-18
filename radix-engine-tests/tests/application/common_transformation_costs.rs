@@ -1,5 +1,4 @@
 use radix_common::prelude::*;
-use radix_engine::transaction::CostingParameters;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use scrypto_test::prelude::*;
@@ -27,8 +26,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx1).get_executable().apply_free_credit(dec!(100)),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -45,8 +43,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx2).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -86,8 +83,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(100)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx1).get_executable().apply_free_credit(dec!(100)),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -111,8 +107,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx2).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -156,8 +151,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx1).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -179,8 +173,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx2).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -229,8 +222,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx1).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -252,8 +244,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx2).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -307,8 +298,7 @@ fn estimate_adding_signature() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx1).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -324,8 +314,7 @@ fn estimate_adding_signature() {
         false,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx2).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -385,8 +374,7 @@ fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
         notary_is_signatory,
     );
     let receipt2 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx2).get_executable_with_free_credit(dec!(0)),
-        CostingParameters::default(),
+        validate_notarized_transaction(&network, &tx2).get_executable(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );

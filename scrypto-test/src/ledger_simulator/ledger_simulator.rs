@@ -5,20 +5,18 @@ use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::define_composite_checker;
 use radix_engine::object_modules::metadata::{MetadataCollection, MetadataEntryEntryPayload};
 use radix_engine::system::checkers::*;
-use radix_engine::system::system_callback::SystemConfig;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
-    execute_preview, execute_transaction_with_system, BalanceChange, CommitResult,
+    execute_preview, execute_transaction_with_configuration, BalanceChange, CommitResult,
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
-    WrappedSystem,
 };
-use radix_engine::updates::ProtocolUpdates;
+use radix_engine::updates::{ProtocolUpdate, ProtocolUpdates};
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
+use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -295,7 +293,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
     ) -> LedgerSimulator<E, InMemorySubstateDatabase> {
         LedgerSimulator {
             scrypto_vm: ScryptoVm::default(),
-            native_vm: NativeVm::new_with_extension(self.custom_extension),
+            native_vm_extension: self.custom_extension,
             database: snapshot.database,
             next_private_key: snapshot.next_private_key,
             next_transaction_nonce: snapshot.next_transaction_nonce,
@@ -320,13 +318,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let native_vm = NativeVm::new_with_extension(self.custom_extension);
-        let vm = Vm::new(&scrypto_vm, native_vm.clone());
+        let vm_init = VmInit::new(&scrypto_vm, self.custom_extension.clone());
         let mut substate_db = self.custom_database;
         let mut bootstrapper = Bootstrapper::new(
             NetworkDefinition::simulator(),
             &mut substate_db,
-            vm,
+            vm_init,
             bootstrap_trace,
         );
         let GenesisReceipts {
@@ -382,7 +379,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
         let runner = LedgerSimulator {
             scrypto_vm,
-            native_vm,
+            native_vm_extension: self.custom_extension.clone(),
             database: substate_db,
             next_private_key,
             next_transaction_nonce,
@@ -406,7 +403,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
 pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    native_vm: NativeVm<E>,
+    native_vm_extension: E,
     database: D,
 
     next_private_key: u64,
@@ -1174,7 +1171,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(btreeset!(AuthAddresses::system_role())),
-            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
 
@@ -1282,10 +1278,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
-        self.execute_manifest_with_costing_params(
-            manifest,
-            initial_proofs,
-            CostingParameters::default(),
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            ExecutionConfig::for_test_transaction(),
         )
     }
 
@@ -1299,35 +1298,71 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
+        let mut config = ExecutionConfig::for_test_transaction();
+        config.system_overrides = Some(SystemOverrides {
+            costing_parameters: Some(costing_parameters),
+            ..Default::default()
+        });
         self.execute_transaction(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
-            costing_parameters,
-            ExecutionConfig::for_test_transaction(),
+            config,
         )
     }
 
-    pub fn execute_manifest_with_system<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+    pub fn execute_manifest_with_injected_error<'a, T>(
         &'a mut self,
         manifest: TransactionManifestV1,
         initial_proofs: T,
-        init: R::Init,
+        error_after_count: u64,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        self.execute_transaction_with_system::<R>(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
-            CostingParameters::default(),
-            ExecutionConfig::for_test_transaction(),
-            init,
-        )
+        let txn = TestTransaction::new_from_nonce(manifest, nonce)
+            .prepare()
+            .expect("expected transaction to be preparable");
+        let executable = txn.get_executable(initial_proofs.into_iter().collect());
+
+        let vm_init = VmInit {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm_extension: self.native_vm_extension.clone(),
+        };
+
+        let execution_config =
+            ExecutionConfig::for_test_transaction().with_kernel_trace(self.with_kernel_trace);
+        let mut executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
+            &self.database,
+            InjectCostingErrorInput {
+                system_input: SystemInit {
+                    enable_kernel_trace: execution_config.enable_kernel_trace,
+                    enable_cost_breakdown: execution_config.enable_cost_breakdown,
+                    execution_trace: execution_config.execution_trace,
+                    callback_init: vm_init,
+                    system_overrides: execution_config.system_overrides.clone(),
+                },
+                error_after_count,
+            },
+        );
+
+        let transaction_receipt = executor.execute(&executable);
+
+        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
+            let database_updates = commit
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>();
+            self.database.commit(&database_updates);
+            self.collected_events
+                .push(commit.application_events.clone());
+
+            if self.with_receipt_substate_check {
+                assert_receipt_substate_changes_can_be_typed(commit);
+            }
+        }
+        transaction_receipt
     }
 
     pub fn execute_notarized_transaction(
@@ -1341,7 +1376,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .expect("Expected raw transaction to be valid");
         self.execute_transaction(
             validated.get_executable(),
-            CostingParameters::default(),
             ExecutionConfig::for_notarized_transaction(network.clone()),
         )
     }
@@ -1364,7 +1398,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .prepare()
             .expect("expected transaction to be preparable")
             .get_executable(proofs),
-            CostingParameters::default(),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
@@ -1372,23 +1405,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        costing_parameters: CostingParameters,
-        execution_config: ExecutionConfig,
-    ) -> TransactionReceipt {
-        self.execute_transaction_with_system::<SystemConfig<Vm<'_, DefaultWasmEngine, E>>>(
-            executable,
-            costing_parameters,
-            execution_config,
-            (),
-        )
-    }
-
-    pub fn execute_transaction_with_system<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
-        &'a mut self,
-        executable: Executable,
-        costing_parameters: CostingParameters,
         mut execution_config: ExecutionConfig,
-        init: T::Init,
     ) -> TransactionReceipt {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
@@ -1401,18 +1418,16 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             self.xrd_free_credits_used = true;
         }
 
-        let vm = Vm {
+        let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_vm: self.native_vm.clone(),
+            native_vm_extension: self.native_vm_extension.clone(),
         };
 
-        let transaction_receipt = execute_transaction_with_system::<_, _, T>(
-            &mut self.database,
-            vm,
-            &costing_parameters,
-            &execution_config,
-            &executable,
-            init,
+        let transaction_receipt = execute_transaction_with_configuration::<
+            _,
+            Vm<'_, DefaultWasmEngine, E>,
+        >(
+            &mut self.database, vm_init, &execution_config, &executable
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit
@@ -1434,14 +1449,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        let vm = Vm {
+        let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_vm: self.native_vm.clone(),
+            native_vm_extension: self.native_vm_extension.clone(),
         };
 
         execute_preview(
             &self.database,
-            vm,
+            vm_init,
             network,
             preview_intent,
             self.with_kernel_trace,
@@ -1456,13 +1471,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
-        let vm = Vm {
+        let vm_init = VmInit {
             scrypto_vm: &self.scrypto_vm,
-            native_vm: self.native_vm.clone(),
+            native_vm_extension: self.native_vm_extension.clone(),
         };
         execute_preview(
             &mut self.database,
-            vm,
+            vm_init,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {
@@ -2321,6 +2336,18 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 .expect("Resource reconciliation failed");
         }
     }
+
+    pub fn apply_protocol_updates(&mut self, protocol_updates: &[ProtocolUpdate]) {
+        protocol_updates.iter().for_each(|protocol_update| {
+            protocol_update
+                .generate_state_updates(&self.database, &NetworkDefinition::simulator())
+                .into_iter()
+                .for_each(|update| {
+                    self.database
+                        .commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
+                })
+        })
+    }
 }
 
 impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, StateTreeUpdatingDatabase<D>> {
@@ -2329,22 +2356,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, StateTreeUpdating
     }
 
     pub fn assert_state_tree_matches_substate_store(&mut self) {
-        let hashes_from_tree = self.database.list_substate_hashes();
-        assert_eq!(
-            hashes_from_tree.keys().cloned().collect::<HashSet<_>>(),
-            self.database.list_partition_keys().collect::<HashSet<_>>(),
-            "partitions captured in the state tree should match those in the substate store"
-        );
-        for (db_partition_key, by_db_sort_key) in hashes_from_tree {
-            assert_eq!(
-                by_db_sort_key.into_iter().collect::<HashMap<_, _>>(),
-                self.database.list_entries(&db_partition_key)
-                    .map(|(db_sort_key, substate_value)| (db_sort_key, hash(substate_value)))
-                    .collect::<HashMap<_, _>>(),
-                "partition's {:?} substates in the state tree should match those in the substate store",
-                db_partition_key,
-            )
-        }
+        self.database
+            .validate_state_tree_matches_substate_store()
+            .unwrap()
     }
 }
 

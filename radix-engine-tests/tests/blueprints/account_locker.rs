@@ -1,6 +1,6 @@
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
-use radix_engine::system::system_modules::*;
+use radix_engine::system::system_type_checker::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
 use radix_substate_store_queries::typed_substate_layout::*;
@@ -197,6 +197,7 @@ fn store_can_only_be_called_by_storer_role() {
                         AccountLockerStoreManifestInput {
                             bucket,
                             claimant: account,
+                            try_direct_send: false,
                         },
                     )
                 })
@@ -222,7 +223,7 @@ fn store_can_only_be_called_by_storer_role() {
 }
 
 #[test]
-fn store_batch_can_only_be_called_by_storer_role() {
+fn airdrop_can_only_be_called_by_storer_role() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
     let (public_key, _, account) = ledger.new_account(false);
@@ -270,164 +271,11 @@ fn store_batch_can_only_be_called_by_storer_role() {
                 .with_bucket("bucket", |builder, bucket| {
                     builder.call_method(
                         account_locker,
-                        ACCOUNT_LOCKER_STORE_BATCH_IDENT,
-                        AccountLockerStoreBatchManifestInput {
+                        ACCOUNT_LOCKER_AIRDROP_IDENT,
+                        AccountLockerAirdropManifestInput {
                             bucket,
                             claimants: indexmap!(),
-                        },
-                    )
-                })
-                .deposit_batch(account)
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
-        );
-
-        // Assert
-        if should_succeed {
-            receipt.expect_commit_success();
-        } else {
-            receipt.expect_specific_failure(|error| {
-                matches!(
-                    error,
-                    RuntimeError::SystemModuleError(SystemModuleError::AuthError(
-                        AuthError::Unauthorized(..)
-                    ))
-                )
-            });
-        }
-    }
-}
-
-#[test]
-fn send_or_store_can_only_be_called_by_storer_role() {
-    // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
-    let (public_key, _, account) = ledger.new_account(false);
-
-    let [owner_badge, storer_badge, recoverer_badge] =
-        std::array::from_fn(|_| ledger.create_fungible_resource(dec!(1), 0, account));
-
-    let account_locker = ledger
-        .execute_manifest(
-            ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .call_function(
-                    LOCKER_PACKAGE,
-                    ACCOUNT_LOCKER_BLUEPRINT,
-                    ACCOUNT_LOCKER_INSTANTIATE_IDENT,
-                    AccountLockerInstantiateManifestInput {
-                        owner_role: OwnerRole::Fixed(rule!(require(owner_badge))),
-                        storer_role: rule!(require(storer_badge)),
-                        storer_updater_role: rule!(require(storer_badge)),
-                        recoverer_role: rule!(require(recoverer_badge)),
-                        recoverer_updater_role: rule!(require(recoverer_badge)),
-                        address_reservation: None,
-                    },
-                )
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
-        )
-        .expect_commit_success()
-        .new_component_addresses()
-        .first()
-        .copied()
-        .unwrap();
-
-    for (badge, should_succeed) in [
-        (owner_badge, false),
-        (storer_badge, true),
-        (recoverer_badge, false),
-    ] {
-        // Act
-        let receipt = ledger.execute_manifest(
-            ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .create_proof_from_account_of_amount(account, badge, dec!(1))
-                .take_from_worktop(XRD, dec!(0), "bucket")
-                .with_bucket("bucket", |builder, bucket| {
-                    builder.call_method(
-                        account_locker,
-                        ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
-                        AccountLockerSendOrStoreManifestInput {
-                            bucket,
-                            claimant: account,
-                        },
-                    )
-                })
-                .deposit_batch(account)
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
-        );
-
-        // Assert
-        if should_succeed {
-            receipt.expect_commit_success();
-        } else {
-            receipt.expect_specific_failure(|error| {
-                matches!(
-                    error,
-                    RuntimeError::SystemModuleError(SystemModuleError::AuthError(
-                        AuthError::Unauthorized(..)
-                    ))
-                )
-            });
-        }
-    }
-}
-
-#[test]
-fn send_or_store_batch_can_only_be_called_by_storer_role() {
-    // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
-    let (public_key, _, account) = ledger.new_account(false);
-
-    let [owner_badge, storer_badge, recoverer_badge] =
-        std::array::from_fn(|_| ledger.create_fungible_resource(dec!(1), 0, account));
-
-    let account_locker = ledger
-        .execute_manifest(
-            ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .call_function(
-                    LOCKER_PACKAGE,
-                    ACCOUNT_LOCKER_BLUEPRINT,
-                    ACCOUNT_LOCKER_INSTANTIATE_IDENT,
-                    AccountLockerInstantiateManifestInput {
-                        owner_role: OwnerRole::Fixed(rule!(require(owner_badge))),
-                        storer_role: rule!(require(storer_badge)),
-                        storer_updater_role: rule!(require(storer_badge)),
-                        recoverer_role: rule!(require(recoverer_badge)),
-                        recoverer_updater_role: rule!(require(recoverer_badge)),
-                        address_reservation: None,
-                    },
-                )
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&public_key)],
-        )
-        .expect_commit_success()
-        .new_component_addresses()
-        .first()
-        .copied()
-        .unwrap();
-
-    for (badge, should_succeed) in [
-        (owner_badge, false),
-        (storer_badge, true),
-        (recoverer_badge, false),
-    ] {
-        // Act
-        let receipt = ledger.execute_manifest(
-            ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .create_proof_from_account_of_amount(account, badge, dec!(1))
-                .take_from_worktop(XRD, dec!(0), "bucket")
-                .with_bucket("bucket", |builder, bucket| {
-                    builder.call_method(
-                        account_locker,
-                        ACCOUNT_LOCKER_SEND_OR_STORE_BATCH_IDENT,
-                        AccountLockerSendOrStoreBatchManifestInput {
-                            bucket,
-                            claimants: indexmap!(),
+                            try_direct_send: false,
                         },
                     )
                 })
@@ -677,10 +525,11 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account_locker,
-                    ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
-                    AccountLockerSendOrStoreManifestInput {
+                    ACCOUNT_LOCKER_STORE_IDENT,
+                    AccountLockerStoreManifestInput {
                         claimant: user_account,
                         bucket,
+                        try_direct_send: true,
                     },
                 )
             })
@@ -779,10 +628,11 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
             .with_bucket("bucket", |builder, bucket| {
                 builder.call_method(
                     account_locker,
-                    ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
-                    AccountLockerSendOrStoreManifestInput {
+                    ACCOUNT_LOCKER_STORE_IDENT,
+                    AccountLockerStoreManifestInput {
                         claimant: user_account,
                         bucket,
+                        try_direct_send: true,
                     },
                 )
             })
@@ -1009,6 +859,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
                         AccountLockerStoreManifestInput {
                             bucket,
                             claimant: user_account1,
+                            try_direct_send: false,
                         },
                     )
                 })
@@ -1107,6 +958,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
                         AccountLockerStoreManifestInput {
                             bucket,
                             claimant: user_account1,
+                            try_direct_send: false,
                         },
                     )
                 })
@@ -1205,6 +1057,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
                         AccountLockerStoreManifestInput {
                             bucket,
                             claimant: user_account1,
+                            try_direct_send: false,
                         },
                     )
                 })
@@ -1303,6 +1156,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
                         AccountLockerStoreManifestInput {
                             bucket,
                             claimant: user_account1,
+                            try_direct_send: false,
                         },
                     )
                 })
@@ -1404,6 +1258,7 @@ fn get_amount_method_reports_the_correct_amount_in_the_vault() {
                         AccountLockerStoreManifestInput {
                             bucket,
                             claimant: user_account1,
+                            try_direct_send: false,
                         },
                     )
                 })
@@ -1497,6 +1352,7 @@ fn get_non_fungible_local_ids_method_reports_the_correct_ids_in_the_vault() {
                         AccountLockerStoreManifestInput {
                             bucket,
                             claimant: user_account1,
+                            try_direct_send: false,
                         },
                     )
                 })
@@ -1587,9 +1443,8 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 .to_vec(),
                 blobs: Default::default(),
             },
-            EnabledModules::for_notarized_transaction()
-                & !EnabledModules::AUTH
-                & !EnabledModules::COSTING,
+            true,
+            true,
         )
         .expect_commit_success();
 
@@ -1805,7 +1660,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
-                    fungible_resource2 => ResourceSpecifier::Fungible(dec!(1))
+                    fungible_resource2 => ResourceSpecifier::Fungible(dec!(2))
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1))
@@ -1825,7 +1680,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 },
                 user_account2 => btreemap! {
                     fungible_resource1 => ResourceSpecifier::Fungible(dec!(1)),
-                    fungible_resource2 => ResourceSpecifier::Fungible(dec!(1))
+                    fungible_resource2 => ResourceSpecifier::Fungible(dec!(2))
                 },
                 user_account3 => btreemap! {
                     fungible_resource2 => ResourceSpecifier::Fungible(dec!(1))
@@ -2754,7 +2609,11 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         builder.call_method(
                             account_locker,
                             ACCOUNT_LOCKER_STORE_IDENT,
-                            AccountLockerStoreManifestInput { bucket, claimant },
+                            AccountLockerStoreManifestInput {
+                                bucket,
+                                claimant,
+                                try_direct_send: false,
+                            },
                         )
                     })
                     .build(),
@@ -2780,7 +2639,11 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         builder.call_method(
                             account_locker,
                             ACCOUNT_LOCKER_STORE_IDENT,
-                            AccountLockerStoreManifestInput { bucket, claimant },
+                            AccountLockerStoreManifestInput {
+                                bucket,
+                                claimant,
+                                try_direct_send: false,
+                            },
                         )
                     })
                     .build(),
@@ -2805,8 +2668,12 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     .with_bucket("bucket", |builder, bucket| {
                         builder.call_method(
                             account_locker,
-                            ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
-                            AccountLockerSendOrStoreManifestInput { bucket, claimant },
+                            ACCOUNT_LOCKER_STORE_IDENT,
+                            AccountLockerStoreManifestInput {
+                                bucket,
+                                claimant,
+                                try_direct_send: true,
+                            },
                         )
                     })
                     .build(),
@@ -2831,8 +2698,12 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     .with_bucket("bucket", |builder, bucket| {
                         builder.call_method(
                             account_locker,
-                            ACCOUNT_LOCKER_SEND_OR_STORE_IDENT,
-                            AccountLockerSendOrStoreManifestInput { bucket, claimant },
+                            ACCOUNT_LOCKER_STORE_IDENT,
+                            AccountLockerStoreManifestInput {
+                                bucket,
+                                claimant,
+                                try_direct_send: true,
+                            },
                         )
                     })
                     .build(),
@@ -2866,10 +2737,11 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     .with_bucket("bucket", |builder, bucket| {
                         builder.call_method(
                             account_locker,
-                            ACCOUNT_LOCKER_STORE_BATCH_IDENT,
-                            AccountLockerStoreBatchManifestInput {
+                            ACCOUNT_LOCKER_AIRDROP_IDENT,
+                            AccountLockerAirdropManifestInput {
                                 bucket,
                                 claimants: claimants.into_iter().collect(),
+                                try_direct_send: false,
                             },
                         )
                     })
@@ -2904,10 +2776,11 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     .with_bucket("bucket", |builder, bucket| {
                         builder.call_method(
                             account_locker,
-                            ACCOUNT_LOCKER_SEND_OR_STORE_BATCH_IDENT,
-                            AccountLockerSendOrStoreBatchManifestInput {
+                            ACCOUNT_LOCKER_AIRDROP_IDENT,
+                            AccountLockerAirdropManifestInput {
                                 bucket,
                                 claimants: claimants.into_iter().collect(),
+                                try_direct_send: true,
                             },
                         )
                     })
@@ -3047,19 +2920,6 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                         .or_insert(ResourceSpecifier::new_empty(resource_address));
                     *entry = entry.checked_add(&resources).expect("Can't fail!");
                 }
-                AccountLockerEvent::BatchStoreEvent(BatchStoreEvent {
-                    claimants,
-                    resource_address,
-                }) => {
-                    for (claimant, resources) in claimants {
-                        let entry = state_reconciled_from_events
-                            .entry(claimant.0)
-                            .or_default()
-                            .entry(resource_address)
-                            .or_insert(ResourceSpecifier::new_empty(resource_address));
-                        *entry = entry.checked_add(&resources).expect("Can't fail!");
-                    }
-                }
                 AccountLockerEvent::RecoveryEvent(RecoverEvent {
                     claimant,
                     resource_address,
@@ -3078,15 +2938,15 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                     *entry = entry.checked_sub(&resources).expect("Can't fail!");
                 }
             }
-
-            // Assert that the state reconciled from the events is the same as what we expect it to
-            // be.
-            assert_eq!(
-                state_reconciled_from_events, state_after,
-                "Events State: {:#?}\nExpected: {:#?}",
-                state_reconciled_from_events, state_after
-            );
         }
+
+        // Assert that the state reconciled from the events is the same as what we expect it to
+        // be.
+        assert_eq!(
+            state_reconciled_from_events, state_after,
+            "Events State: {:#?}\nExpected: {:#?}",
+            state_reconciled_from_events, state_after
+        );
     }
 }
 
@@ -3095,6 +2955,7 @@ pub struct Item {
     state_after: BTreeMap<ComponentAddress, BTreeMap<ResourceAddress, ResourceSpecifier>>,
 }
 
+#[derive(Clone, Debug)]
 pub enum LockerAction {
     Store {
         claimant: ComponentAddress,
@@ -3129,7 +2990,6 @@ pub enum LockerAction {
 #[derive(Clone, Debug)]
 pub enum AccountLockerEvent {
     StoreEvent(StoreEvent),
-    BatchStoreEvent(BatchStoreEvent),
     RecoveryEvent(RecoverEvent),
     ClaimEvent(ClaimEvent),
 }
@@ -3155,9 +3015,6 @@ impl AccountLockerEvent {
                     RecoverEvent::EVENT_NAME => scrypto_decode(event_data)
                         .map(AccountLockerEvent::RecoveryEvent)
                         .ok(),
-                    BatchStoreEvent::EVENT_NAME => scrypto_decode(event_data)
-                        .map(AccountLockerEvent::BatchStoreEvent)
-                        .ok(),
                     _ => None,
                 }
             } else {
@@ -3177,23 +3034,538 @@ pub impl DefaultLedgerSimulator {
     ) -> TransactionReceiptV1 {
         self.execute_manifest_with_enabled_modules(
             manifest,
-            EnabledModules::for_notarized_transaction() & !EnabledModules::AUTH,
+            true,
+            false,
         )
     }
 
     fn execute_manifest_with_enabled_modules(
         &mut self,
         manifest: TransactionManifestV1,
-        enabled_modules: EnabledModules,
+        disable_auth: bool,
+        disable_costing: bool,
     ) -> TransactionReceiptV1 {
         let mut execution_config =
             ExecutionConfig::for_notarized_transaction(NetworkDefinition::mainnet());
-        execution_config.enabled_modules = enabled_modules;
+        execution_config.system_overrides = Some(SystemOverrides {
+            disable_auth,
+            disable_costing,
+            ..Default::default()
+        });
 
         let nonce = self.next_transaction_nonce();
         let test_transaction = TestTransaction::new_from_nonce(manifest, nonce);
         let prepared_transaction = test_transaction.prepare().unwrap();
         let executable = prepared_transaction.get_executable(Default::default());
-        self.execute_transaction(executable, Default::default(), execution_config)
+        self.execute_transaction(executable, execution_config)
     }
+}
+
+#[test]
+#[ignore = "Not a test, just a quick way to determine how many airdrops we can do in 1 tx."]
+fn airdrops_doable_in_one_transaction_if_all_accounts_accept_deposits() {
+    for airdrops in 1u64.. {
+        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+        let (pk, _, account) = ledger.new_account(false);
+
+        let keys_and_accounts = (1..=airdrops)
+            .map(|num| Secp256k1PrivateKey::from_u64(num).unwrap())
+            .map(|private_key| {
+                let address =
+                    ComponentAddress::virtual_account_from_public_key(&private_key.public_key());
+                (private_key, address)
+            })
+            .collect::<Vec<_>>();
+
+        let (account_locker, account_locker_badge) = {
+            let commit_result = ledger
+                .execute_manifest(
+                    ManifestBuilder::new()
+                        .lock_fee_from_faucet()
+                        .call_function(
+                            LOCKER_PACKAGE,
+                            ACCOUNT_LOCKER_BLUEPRINT,
+                            ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                            AccountLockerInstantiateSimpleManifestInput {
+                                allow_recover: false,
+                            },
+                        )
+                        .try_deposit_entire_worktop_or_abort(account, None)
+                        .build(),
+                    vec![],
+                )
+                .expect_commit_success()
+                .clone();
+
+            let locker = commit_result
+                .new_component_addresses()
+                .first()
+                .copied()
+                .unwrap();
+            let badge = commit_result
+                .new_resource_addresses()
+                .first()
+                .copied()
+                .unwrap();
+
+            (locker, badge)
+        };
+
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .create_proof_from_account_of_amount(account, account_locker_badge, 1)
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_AIRDROP_IDENT,
+                    AccountLockerAirdropManifestInput {
+                        claimants: keys_and_accounts
+                            .iter()
+                            .map(|entry| (entry.1, ResourceSpecifier::Fungible(dec!(1))))
+                            .collect(),
+                        bucket,
+                        try_direct_send: true,
+                    },
+                )
+            })
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build();
+        if ledger
+            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+            .is_commit_failure()
+        {
+            println!("Max airdrops = {airdrops}");
+            break;
+        }
+    }
+}
+
+#[test]
+#[ignore = "Not a test, just a quick way to determine how many airdrops we can do in 1 tx."]
+fn airdrops_doable_in_one_transaction_if_no_accounts_accept_deposits() {
+    for airdrops in 1u64.. {
+        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+        let (pk, _, account) = ledger.new_account(false);
+
+        let keys_and_accounts = (1..=airdrops)
+            .map(|num| Secp256k1PrivateKey::from_u64(num).unwrap())
+            .map(|private_key| {
+                let address =
+                    ComponentAddress::virtual_account_from_public_key(&private_key.public_key());
+                (private_key, address)
+            })
+            .collect::<Vec<_>>();
+
+        let manifest = keys_and_accounts
+            .iter()
+            .map(|(_, account)| account)
+            .copied()
+            .fold(
+                ManifestBuilder::new().lock_fee_from_faucet(),
+                |builder, account| {
+                    builder.call_method(
+                        account,
+                        ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                        AccountSetDefaultDepositRuleInput {
+                            default: DefaultDepositRule::Reject,
+                        },
+                    )
+                },
+            )
+            .build();
+        ledger
+            .execute_manifest_without_auth(manifest)
+            .expect_commit_success();
+
+        let (account_locker, account_locker_badge) = {
+            let commit_result = ledger
+                .execute_manifest(
+                    ManifestBuilder::new()
+                        .lock_fee_from_faucet()
+                        .call_function(
+                            LOCKER_PACKAGE,
+                            ACCOUNT_LOCKER_BLUEPRINT,
+                            ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                            AccountLockerInstantiateSimpleManifestInput {
+                                allow_recover: false,
+                            },
+                        )
+                        .try_deposit_entire_worktop_or_abort(account, None)
+                        .build(),
+                    vec![],
+                )
+                .expect_commit_success()
+                .clone();
+
+            let locker = commit_result
+                .new_component_addresses()
+                .first()
+                .copied()
+                .unwrap();
+            let badge = commit_result
+                .new_resource_addresses()
+                .first()
+                .copied()
+                .unwrap();
+
+            (locker, badge)
+        };
+
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .create_proof_from_account_of_amount(account, account_locker_badge, 1)
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_AIRDROP_IDENT,
+                    AccountLockerAirdropManifestInput {
+                        claimants: keys_and_accounts
+                            .iter()
+                            .map(|entry| (entry.1, ResourceSpecifier::Fungible(dec!(1))))
+                            .collect(),
+                        bucket,
+                        try_direct_send: true,
+                    },
+                )
+            })
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build();
+        if ledger
+            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+            .is_commit_failure()
+        {
+            println!("Max airdrops = {airdrops}");
+            break;
+        }
+    }
+}
+
+#[test]
+fn send_does_not_accept_an_address_that_is_not_an_account() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
+
+    let (account_locker, account_locker_badge) = {
+        let commit_result = ledger
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_function(
+                        LOCKER_PACKAGE,
+                        ACCOUNT_LOCKER_BLUEPRINT,
+                        ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                        AccountLockerInstantiateSimpleManifestInput {
+                            allow_recover: false,
+                        },
+                    )
+                    .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success()
+            .clone();
+
+        let locker = commit_result
+            .new_component_addresses()
+            .first()
+            .copied()
+            .unwrap();
+        let badge = commit_result
+            .new_resource_addresses()
+            .first()
+            .copied()
+            .unwrap();
+
+        (locker, badge)
+    };
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(
+                badge_holder_account,
+                account_locker_badge,
+                dec!(1),
+            )
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_STORE_IDENT,
+                    AccountLockerStoreManifestInput {
+                        bucket,
+                        claimant: FAUCET,
+                        try_direct_send: false,
+                    },
+                )
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(
+            &badge_holder_account_public_key,
+        )],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::BlueprintPayloadValidationError(
+                    _,
+                    BlueprintPayloadIdentifier::Function(func_name, InputOrOutput::Input),
+                    _
+                )
+            )) if func_name == ACCOUNT_LOCKER_STORE_IDENT
+        )
+    });
+}
+
+#[test]
+fn airdrop_does_not_accept_an_address_that_is_not_an_account() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
+
+    let (account_locker, account_locker_badge) = {
+        let commit_result = ledger
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_function(
+                        LOCKER_PACKAGE,
+                        ACCOUNT_LOCKER_BLUEPRINT,
+                        ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                        AccountLockerInstantiateSimpleManifestInput {
+                            allow_recover: false,
+                        },
+                    )
+                    .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success()
+            .clone();
+
+        let locker = commit_result
+            .new_component_addresses()
+            .first()
+            .copied()
+            .unwrap();
+        let badge = commit_result
+            .new_resource_addresses()
+            .first()
+            .copied()
+            .unwrap();
+
+        (locker, badge)
+    };
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(
+                badge_holder_account,
+                account_locker_badge,
+                dec!(1),
+            )
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_AIRDROP_IDENT,
+                    AccountLockerAirdropManifestInput {
+                        bucket,
+                        claimants: indexmap! {
+                            FAUCET => ResourceSpecifier::Fungible(dec!(1))
+                        },
+                        try_direct_send: false,
+                    },
+                )
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(
+            &badge_holder_account_public_key,
+        )],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::BlueprintPayloadValidationError(
+                    _,
+                    BlueprintPayloadIdentifier::Function(func_name, InputOrOutput::Input),
+                    _
+                )
+            )) if func_name == ACCOUNT_LOCKER_AIRDROP_IDENT
+        )
+    });
+}
+
+#[test]
+fn claim_does_not_accept_an_address_that_is_not_an_account() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
+
+    let (account_locker, account_locker_badge) = {
+        let commit_result = ledger
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_function(
+                        LOCKER_PACKAGE,
+                        ACCOUNT_LOCKER_BLUEPRINT,
+                        ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                        AccountLockerInstantiateSimpleManifestInput {
+                            allow_recover: false,
+                        },
+                    )
+                    .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success()
+            .clone();
+
+        let locker = commit_result
+            .new_component_addresses()
+            .first()
+            .copied()
+            .unwrap();
+        let badge = commit_result
+            .new_resource_addresses()
+            .first()
+            .copied()
+            .unwrap();
+
+        (locker, badge)
+    };
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(
+                badge_holder_account,
+                account_locker_badge,
+                dec!(1),
+            )
+            .call_method(
+                account_locker,
+                ACCOUNT_LOCKER_CLAIM_IDENT,
+                AccountLockerClaimManifestInput {
+                    claimant: FAUCET,
+                    resource_address: XRD,
+                    amount: dec!(1),
+                },
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(
+            &badge_holder_account_public_key,
+        )],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::BlueprintPayloadValidationError(
+                    _,
+                    BlueprintPayloadIdentifier::Function(func_name, InputOrOutput::Input),
+                    _
+                )
+            )) if func_name == ACCOUNT_LOCKER_CLAIM_IDENT
+        )
+    });
+}
+
+#[test]
+fn recover_does_not_accept_an_address_that_is_not_an_account() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
+
+    let (account_locker, account_locker_badge) = {
+        let commit_result = ledger
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .call_function(
+                        LOCKER_PACKAGE,
+                        ACCOUNT_LOCKER_BLUEPRINT,
+                        ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                        AccountLockerInstantiateSimpleManifestInput {
+                            allow_recover: true,
+                        },
+                    )
+                    .try_deposit_entire_worktop_or_abort(badge_holder_account, None)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success()
+            .clone();
+
+        let locker = commit_result
+            .new_component_addresses()
+            .first()
+            .copied()
+            .unwrap();
+        let badge = commit_result
+            .new_resource_addresses()
+            .first()
+            .copied()
+            .unwrap();
+
+        (locker, badge)
+    };
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .create_proof_from_account_of_amount(
+                badge_holder_account,
+                account_locker_badge,
+                dec!(1),
+            )
+            .call_method(
+                account_locker,
+                ACCOUNT_LOCKER_RECOVER_IDENT,
+                AccountLockerRecoverManifestInput {
+                    claimant: FAUCET,
+                    resource_address: XRD,
+                    amount: dec!(1),
+                },
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(
+            &badge_holder_account_public_key,
+        )],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::SystemError(SystemError::TypeCheckError(
+                TypeCheckError::BlueprintPayloadValidationError(
+                    _,
+                    BlueprintPayloadIdentifier::Function(func_name, InputOrOutput::Input),
+                    _
+                )
+            )) if func_name == ACCOUNT_LOCKER_RECOVER_IDENT
+        )
+    });
 }

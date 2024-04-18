@@ -38,6 +38,22 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
     phantom_data: PhantomData<M>,
 }
 
+impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Track<'s, S, M> {
+    fn read_boot_substate(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<IndexedScryptoValue> {
+        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
+        let db_sort_key = M::to_db_sort_key(&substate_key);
+
+        self.substate_db
+            .get_substate(&db_partition_key, &db_sort_key)
+            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
+    }
+}
+
 /// Records all the substates that have been read or written into, and all the partitions to delete.
 ///
 /// `NodeId` in this struct isn't always valid.
@@ -187,7 +203,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
-    pub fn finalize(mut self) -> Result<TrackedSubstates, TrackFinalizeError> {
+    pub fn finalize(mut self) -> Result<(TrackedSubstates, &'s S), TrackFinalizeError> {
         for (node_id, transient_substates) in self.transient_substates.transient_substates {
             for (partition, substate_key) in transient_substates {
                 if let Some(tracked_partition) = self
@@ -208,10 +224,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
             }
         }
 
-        Ok(TrackedSubstates {
-            tracked_nodes: self.tracked_nodes,
-            deleted_partitions: self.deleted_partitions,
-        })
+        Ok((
+            TrackedSubstates {
+                tracked_nodes: self.tracked_nodes,
+                deleted_partitions: self.deleted_partitions,
+            },
+            self.substate_db,
+        ))
     }
 
     fn get_tracked_partition(
@@ -316,22 +335,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         }
 
         Ok(&mut partition.get_mut(&db_sort_key).unwrap().substate_value)
-    }
-}
-
-impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Track<'s, S, M> {
-    fn read_substate(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue> {
-        let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let db_sort_key = M::to_db_sort_key(&substate_key);
-
-        self.substate_db
-            .get_substate(&db_partition_key, &db_sort_key)
-            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
     }
 }
 
