@@ -35,31 +35,12 @@ use crate::transaction::{CostingParameters, RejectResult, TransactionFeeDetails,
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
     pub id_allocator: IdAllocator,
-    pub callback: M,
     pub store: Track<'h, S, SpreadPrefixKeyMapper>,
+    pub init: M::InitInput,
+    pub phantom: PhantomData<M>,
 }
 
 impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
-    /// Creates a new kernel with data loaded from the substate store
-    pub fn boot(&mut self) -> Result<Kernel<M, Track<'h, S, SpreadPrefixKeyMapper>>, BootloadingError> {
-        let kernel = Kernel {
-            substate_io: SubstateIO {
-                heap: Heap::new(),
-                store: &mut self.store,
-                non_global_node_refs: NonGlobalNodeRefs::new(),
-                substate_locks: SubstateLocks::new(),
-                heap_transient_substates: TransientSubstates::new(),
-                pinned_to_heap: BTreeSet::new(),
-            },
-            id_allocator: &mut self.id_allocator,
-            current_frame: CallFrame::new_root(M::CallFrameData::root()),
-            prev_frame_stack: vec![],
-            callback: &mut self.callback,
-        };
-
-        Ok(kernel)
-    }
-
     pub fn check_references(
         &mut self,
         references: &IndexSet<Reference>,
@@ -132,7 +113,19 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         Option<TransactionFeeDetails>,
         TransactionResult,
     ) {
-        match self.callback.init2(&mut self.store, executable) {
+        let mut callback = match M::init(&self.store, executable, self.init.clone()) {
+            Ok(callback) => callback,
+            Err(e) => {
+                return (
+                    CostingParameters::babylon_genesis(),
+                    TransactionFeeSummary::default(),
+                    None,
+                    TransactionResult::Reject(RejectResult { reason: RejectionReason::BootloadingError(e) }),
+                );
+            }
+        };
+
+        match callback.init2(&mut self.store, executable) {
             Ok(()) => {}
             Err(reason) => {
                 return (
@@ -159,7 +152,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         let engine_references = match self.check_references(executable.references()) {
             Ok(engine_references) => engine_references,
             Err(e) => {
-                return self.callback.on_teardown3(self.store, executable, Err(TransactionExecutionError::BootloadingError(e)));
+                return callback.on_teardown3(self.store, executable, Err(TransactionExecutionError::BootloadingError(e)));
             }
         };
 
@@ -175,7 +168,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             id_allocator: &mut self.id_allocator,
             current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
-            callback: &mut self.callback,
+            callback: &mut callback,
         };
 
         // Add visibility
@@ -231,7 +224,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             })
             .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
-        self.callback.on_teardown3(self.store, executable, result)
+        callback.on_teardown3(self.store, executable, result)
     }
 }
 
@@ -257,6 +250,25 @@ pub struct Kernel<
 
     /// Upper system layer
     callback: &'g mut M,
+}
+
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
+    pub fn new(store: &'g mut S, id_allocator: &'g mut IdAllocator, callback: &'g mut M) -> Self {
+        Kernel {
+            substate_io: SubstateIO {
+                heap: Heap::new(),
+                store,
+                non_global_node_refs: NonGlobalNodeRefs::new(),
+                substate_locks: SubstateLocks::new(),
+                heap_transient_substates: TransientSubstates::new(),
+                pinned_to_heap: BTreeSet::new(),
+            },
+            id_allocator,
+            current_frame: CallFrame::new_root(M::CallFrameData::root()),
+            prev_frame_stack: vec![],
+            callback,
+        }
+    }
 }
 
 struct KernelHandler<

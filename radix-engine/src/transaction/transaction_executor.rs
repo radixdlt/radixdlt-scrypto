@@ -309,38 +309,18 @@ impl<'s, S, V> TransactionExecutor<'s, S, V>
             let mut resources_tracker =
             crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-        let system_boot_result = {
-            let boot_store = SubstateBootStore {
-                boot_store: self.substate_db,
+        let (costing_parameters, fee_summary, fee_details, result) = {
+            let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
+
+            let kernel_boot = BootLoader {
+                id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
+                store: track,
+                init: self.system_init.clone(),
+                phantom: PhantomData::<V>::default()
             };
-            V::init(&boot_store, executable, self.system_init.clone()).map_err(|e| {
-                RejectionReason::BootloadingError(e)
-            })
+
+            kernel_boot.execute(executable)
         };
-
-        let (costing_parameters, fee_summary, fee_details, result) = match system_boot_result {
-            Ok(system) => {
-                let mut track = Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db);
-
-                let kernel_boot = BootLoader {
-                    id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
-                    callback: system,
-                    store: track,
-                };
-
-                kernel_boot.execute(executable)
-            }
-            Err(reason) => {
-                (
-                    CostingParameters::babylon_genesis(),
-                    TransactionFeeSummary::default(),
-                    None,
-                    TransactionResult::Reject(RejectResult { reason }),
-                )
-            }
-        };
-
-
 
         // Stop hardware resource usage tracker
         let resources_usage = match () {

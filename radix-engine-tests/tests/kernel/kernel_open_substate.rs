@@ -2,7 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::BootLoader;
+use radix_engine::kernel::kernel::{BootLoader, Kernel};
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_callback::{System, SystemLockData};
@@ -76,12 +76,8 @@ pub fn test_open_substate_of_invisible_package_address() {
         ),
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
-    let mut boot_loader = BootLoader {
-        id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
-        callback: system,
-        store: track,
-    };
-    let mut kernel = boot_loader.boot().unwrap();
+    let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
+    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut system);
 
     // Lock package substate
     let result = kernel.kernel_open_substate(
