@@ -60,6 +60,7 @@ impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
     type InitInput = ();
+    type ExecutionOutput = ();
     type Receipt = TestReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::InitInput) -> Result<Self, RejectionReason> {
@@ -72,7 +73,7 @@ impl KernelCallbackObject for TestCallbackObject {
         _pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         _references: &IndexSet<Reference>,
         _blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -83,7 +84,7 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn create_receipt<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> TestReceipt {
+    fn create_receipt<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<(), TransactionExecutionError>) -> TestReceipt {
         TestReceipt
     }
 

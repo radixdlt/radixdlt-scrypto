@@ -612,64 +612,94 @@ impl<C: SystemCallbackObject> System<C> {
             .unwrap();
     }
 
-    fn apply_costing(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
-        // Note that if a transactions fails during this phase, the costing is
-        // done as if it would succeed.
-        for store_commit in &info {
-            self
-                .modules
-                .apply_finalization_cost(FinalizationCostingEntry::CommitStateUpdates {
-                    store_commit,
-                })
-                .map_err(|e| {
-                    RuntimeError::FinalizationCostingError(e)
-                })?;
-        }
-        self
-            .modules
-            .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
-                events: &self.modules.events().clone(),
-            })
-            .map_err(|e| {
-                RuntimeError::FinalizationCostingError(e)
-            })?;
-        self
-            .modules
-            .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
-                logs: &self.modules.logs().clone(),
-            })
-            .map_err(|e| {
-                RuntimeError::FinalizationCostingError(e)
-            })?;
+    #[cfg(not(feature = "alloc"))]
+    fn print_execution_summary(receipt: &TransactionReceipt) {
+        // NB - we use "to_string" to ensure they align correctly
 
-        /* state storage costs */
-        for store_commit in &info {
-            self
-                .modules
-                .apply_storage_cost(StorageType::State, store_commit.len_increase())
-                .map_err(|e| {
-                    RuntimeError::FinalizationCostingError(e)
-                })?;
+        if let Some(fee_details) = &receipt.fee_details {
+            println!("{:-^120}", "Execution Cost Breakdown");
+            for (k, v) in &fee_details.execution_cost_breakdown {
+                println!("{:<75}: {:>25}", k, v.to_string());
+            }
+
+            println!("{:-^120}", "Finalization Cost Breakdown");
+            for (k, v) in &fee_details.finalization_cost_breakdown {
+                println!("{:<75}: {:>25}", k, v.to_string());
+            }
         }
 
-        /* archive storage costs */
-        let total_event_size = self.modules.events().iter().map(|x| x.len()).sum();
-        self
-            .modules
-            .apply_storage_cost(StorageType::Archive, total_event_size)
-            .map_err(|e| {
-                RuntimeError::FinalizationCostingError(e)
-            })?;
+        println!("{:-^120}", "Fee Summary");
+        println!(
+            "{:<40}: {:>25}",
+            "Execution Cost Units Consumed",
+            receipt
+                .fee_summary
+                .total_execution_cost_units_consumed
+                .to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Finalization Cost Units Consumed",
+            receipt
+                .fee_summary
+                .total_finalization_cost_units_consumed
+                .to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Execution Cost in XRD",
+            receipt.fee_summary.total_execution_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Finalization Cost in XRD",
+            receipt
+                .fee_summary
+                .total_finalization_cost_in_xrd
+                .to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Tipping Cost in XRD",
+            receipt.fee_summary.total_tipping_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Storage Cost in XRD",
+            receipt.fee_summary.total_storage_cost_in_xrd.to_string()
+        );
+        println!(
+            "{:<40}: {:>25}",
+            "Royalty Costs in XRD",
+            receipt.fee_summary.total_royalty_cost_in_xrd.to_string()
+        );
 
-        let total_log_size = self.modules.logs().iter().map(|x| x.1.len()).sum();
-        self
-            .modules
-            .apply_storage_cost(StorageType::Archive, total_log_size)
-            .map_err(|e| {
-                RuntimeError::FinalizationCostingError(e)
-            })?;
+        match &receipt.result {
+            TransactionResult::Commit(commit) => {
+                println!("{:-^120}", "Application Logs");
+                for (level, message) in &commit.application_logs {
+                    println!("[{}] {}", level, message);
+                }
 
-        Ok(())
+                println!("{:-^120}", "Outcome");
+                println!(
+                    "{}",
+                    match &commit.outcome {
+                        TransactionOutcome::Success(_) => "Success".to_string(),
+                        TransactionOutcome::Failure(error) => format!("Failure: {:?}", error),
+                    }
+                );
+            }
+            TransactionResult::Reject(e) => {
+                println!("{:-^120}", "Transaction Rejected");
+                println!("{:?}", e.reason);
+            }
+            TransactionResult::Abort(e) => {
+                println!("{:-^120}", "Transaction Aborted");
+                println!("{:?}", e);
+            }
+        }
+        println!("{:-^120}", "Finish");
     }
 
 }
@@ -678,6 +708,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
     type InitInput = SystemInit<C::InitInput>;
+    type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
@@ -838,7 +869,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError>
+    ) -> Result<Vec<InstructionOutput>, RuntimeError>
         where
             Y: KernelApi<Self>,
     {
@@ -870,7 +901,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .unwrap(),
         )?;
 
-        Ok(rtn)
+        let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+
+        Ok(output)
     }
 
     fn finish(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
@@ -958,6 +991,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
 
         let execution_trace_enabled = self.modules.enabled_modules.contains(EnabledModules::EXECUTION_TRACE);
+        let kernel_trace_enabled = self.modules.enabled_modules.contains(EnabledModules::KERNEL_TRACE);
 
         let (mut costing_module, runtime_module, execution_trace_module) = self.modules.unpack();
 
@@ -1105,14 +1139,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             ),
         };
 
-        TransactionReceipt {
+        let receipt = TransactionReceipt {
             costing_parameters,
             transaction_costing_parameters: executable.costing_parameters().clone(),
             fee_summary,
             fee_details,
             result,
             resources_usage: None,
+        };
+
+
+        // Dump summary
+        #[cfg(not(feature = "alloc"))]
+        if kernel_trace_enabled {
+            Self::print_execution_summary(&receipt);
         }
+
+        receipt
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

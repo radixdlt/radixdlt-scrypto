@@ -143,6 +143,7 @@ pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
     type InitInput: Clone;
+    type ExecutionOutput;
     type Receipt: ExecutionReceipt;
 
     /// Create the system layer object with data loaded from the substate store
@@ -159,7 +160,7 @@ pub trait KernelCallbackObject: Sized {
         pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError>
+    ) -> Result<Self::ExecutionOutput, RuntimeError>
         where
             Y: KernelApi<Self>;
 
@@ -171,7 +172,7 @@ pub trait KernelCallbackObject: Sized {
         self,
         track: Track<S, SpreadPrefixKeyMapper>,
         executable: &Executable,
-        result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
+        result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;

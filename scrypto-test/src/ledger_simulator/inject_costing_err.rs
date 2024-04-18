@@ -86,6 +86,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     type CallFrameData = Actor;
 
     type InitInput = InjectCostingErrorInput<SystemInit<K::InitInput>>;
+    type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
@@ -112,7 +113,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError>
+    ) -> Result<Vec<InstructionOutput>, RuntimeError>
     where
         Y: KernelApi<Self>,
     {

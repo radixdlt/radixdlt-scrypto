@@ -133,13 +133,13 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         executable: &Executable,
     ) -> Result<M::Receipt, RejectionReason> {
 
-        // Create System
-        let mut callback = M::init(&mut self.store, executable, self.init.clone())?;
-
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
+
+        // Create System
+        let mut callback = M::init(&mut self.store, executable, self.init.clone())?;
 
         // Create Kernel
         let mut kernel = {
@@ -163,9 +163,9 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         };
 
         // Execution
-        let result = || -> Result<Vec<InstructionOutput>, RuntimeError> {
+        let result = || -> Result<M::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let rtn = M::start(
+            let output = M::start(
                 &mut kernel,
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
@@ -183,7 +183,6 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
 
             kernel.callback.finish(commit_info)?;
 
-            let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
             Ok(output)
         }().map_err(|e| TransactionExecutionError::RuntimeError(e));
 
