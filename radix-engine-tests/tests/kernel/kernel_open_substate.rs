@@ -2,7 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::{BootLoader, Kernel};
+use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_callback::{System, SystemLockData};

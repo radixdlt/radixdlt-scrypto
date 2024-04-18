@@ -1,19 +1,18 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
+use radix_engine::errors::{CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
 use radix_engine::kernel::call_frame::{
     CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
     PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::{BootLoader, Kernel};
+use radix_engine::kernel::kernel::{Kernel};
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
 };
 use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use radix_engine::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
-use radix_engine::transaction::{CostingParameters, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult};
-use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
@@ -47,11 +46,11 @@ impl CallFrameReferences for TestCallFrameData {
 struct TestReceipt;
 
 impl ExecutionReceipt for TestReceipt {
-    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self {
+    fn from_rejection(_executable: &Executable, _reason: RejectionReason) -> Self {
         Self
     }
 
-    fn set_resource_usage(&mut self, resources_usage: ResourcesUsage) {
+    fn set_resource_usage(&mut self, _resources_usage: ResourcesUsage) {
     }
 }
 
@@ -84,7 +83,7 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn create_receipt<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<(), TransactionExecutionError>) -> TestReceipt {
+    fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _executable: &Executable, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
         TestReceipt
     }
 

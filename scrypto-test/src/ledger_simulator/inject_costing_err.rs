@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{BootloadingError, RejectionReason, TransactionExecutionError};
+use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
@@ -16,10 +16,12 @@ use radix_engine::system::system_callback::{System, SystemInit, SystemLockData};
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
 use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use radix_engine::track::{BootStore, CommitableSubstateStore, NodeSubstates, StoreCommitInfo, Track};
-use radix_engine::transaction::{CostingParameters, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult};
+use radix_engine::track::{
+    BootStore, CommitableSubstateStore, NodeSubstates, StoreCommitInfo, Track,
+};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{NativeVmExtension, Vm, VmInit};
+use radix_engine::vm::Vm;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
@@ -101,10 +103,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
             fail_after: fail_after.clone(),
         };
 
-        Ok(Self {
-            fail_after,
-            system,
-        })
+        Ok(Self { fail_after, system })
     }
 
     fn start<Y>(
@@ -132,7 +131,12 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         self.system.finish(store_commit_info)
     }
 
-    fn create_receipt<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> TransactionReceipt {
+    fn create_receipt<S: SubstateDatabase>(
+        self,
+        track: Track<S, SpreadPrefixKeyMapper>,
+        executable: &Executable,
+        result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
+    ) -> TransactionReceipt {
         self.system.create_receipt(track, executable, result)
     }
 
@@ -504,8 +508,8 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
     }
 }
 
-impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>>
-    KernelInvokeApi<Actor> for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> KernelInvokeApi<Actor>
+    for WrappedKernelApi<'a, M, K>
 {
     fn kernel_invoke(
         &mut self,
@@ -558,8 +562,8 @@ pub struct WrappedKernelInternalApi<
     phantom: PhantomData<M>,
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelInternalApi<InjectCostingError<M>>> KernelInternalApi<System<M>>
-    for WrappedKernelInternalApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelInternalApi<InjectCostingError<M>>>
+    KernelInternalApi<System<M>> for WrappedKernelInternalApi<'a, M, K>
 {
     fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M>> {
         let state = self.api.kernel_get_system_state();

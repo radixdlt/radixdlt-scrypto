@@ -1,9 +1,21 @@
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::consensus_manager::{
+    ConsensusManagerField, ConsensusManagerStateFieldPayload,
+    ConsensusManagerValidatorRewardsFieldPayload,
+};
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::resource::fungible_vault::{DepositEvent, PayFeeEvent};
+use crate::blueprints::resource::{
+    BurnFungibleResourceEvent, FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate,
+    FungibleVaultField,
+};
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
+use crate::blueprints::transaction_tracker::{
+    TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
+};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
@@ -21,8 +33,12 @@ use crate::system::actor::MethodActor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::auth::AuthModule;
-use crate::system::system_modules::costing::{CostingModule, FeeReserveFinalizationSummary, FeeTable, FinalizationCostingEntry, FinalizingFeeReserve, StorageType, SystemLoanFeeReserve};
+use crate::system::system_modules::costing::{
+    CostingModule, FeeReserveFinalizationSummary, FeeTable, FinalizationCostingEntry,
+    FinalizingFeeReserve, StorageType, SystemLoanFeeReserve,
+};
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::LimitsModule;
@@ -30,8 +46,16 @@ use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
-use crate::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, to_state_updates, Track, TrackFinalizeError};
-use crate::transaction::{AbortResult, CommitResult, CostingParameters, FeeDestination, FeeSource, LimitParameters, reconcile_resource_state_and_events, RejectResult, ResourcesUsage, StateUpdateSummary, SystemOverrides, SystemStructure, TransactionFeeDetails, TransactionFeeSummary, TransactionOutcome, TransactionReceipt, TransactionResult, TransactionResultType};
+use crate::track::{
+    to_state_updates, BootStore, CommitableSubstateStore, StoreCommitInfo, Track,
+    TrackFinalizeError,
+};
+use crate::transaction::{
+    reconcile_resource_state_and_events, AbortResult, CommitResult, CostingParameters,
+    FeeDestination, FeeSource, LimitParameters, RejectResult, StateUpdateSummary, SystemOverrides,
+    SystemStructure, TransactionFeeDetails, TransactionOutcome, TransactionReceipt,
+    TransactionResult, TransactionResultType,
+};
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -45,14 +69,11 @@ use radix_engine_interface::blueprints::hooks::OnVirtualizeInput;
 use radix_engine_interface::blueprints::hooks::OnVirtualizeOutput;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::transaction_processor::{InstructionOutput, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT};
+use radix_engine_interface::blueprints::transaction_processor::{
+    InstructionOutput, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
+};
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::{Executable, PreAllocatedAddress, TransactionIntentHash};
-use crate::blueprints::consensus_manager::{ConsensusManagerField, ConsensusManagerStateFieldPayload, ConsensusManagerValidatorRewardsFieldPayload};
-use crate::blueprints::resource::{BurnFungibleResourceEvent, FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate, FungibleVaultField};
-use crate::blueprints::resource::fungible_vault::{DepositEvent, PayFeeEvent};
-use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate};
-use crate::system::system_db_reader::SystemDatabaseReader;
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -287,7 +308,6 @@ impl<C: SystemCallbackObject> System<C> {
         }
     }
 
-
     fn finalize_fees<S: SubstateDatabase>(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         fee_reserve: SystemLoanFeeReserve,
@@ -339,7 +359,7 @@ impl<C: SystemCallbackObject> System<C> {
         let mut required = fee_reserve_finalization.total_cost();
         let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
         for (vault_id, mut locked, contingent) in
-        fee_reserve_finalization.locked_fees.iter().cloned().rev()
+            fee_reserve_finalization.locked_fees.iter().cloned().rev()
         {
             let amount = if contingent {
                 if is_success {
@@ -513,7 +533,7 @@ impl<C: SystemCallbackObject> System<C> {
                 scrypto_encode(&DepositEvent {
                     amount: total_amount,
                 })
-                    .unwrap(),
+                .unwrap(),
             ));
         }
 
@@ -701,7 +721,6 @@ impl<C: SystemCallbackObject> System<C> {
         }
         println!("{:-^120}", "Finish");
     }
-
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
@@ -737,7 +756,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     max_per_function_royalty_in_xrd: Decimal::try_from(
                         MAX_PER_FUNCTION_ROYALTY_IN_XRD,
                     )
-                        .unwrap(),
+                    .unwrap(),
                 }));
 
             match system_boot {
@@ -745,7 +764,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             }
         };
 
-        let callback = C::init(store, init_input.callback_init).map_err(RejectionReason::BootloadingError)?;
+        let callback =
+            C::init(store, init_input.callback_init).map_err(RejectionReason::BootloadingError)?;
 
         let mut enabled_modules = {
             let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
@@ -847,14 +867,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     range.start_epoch_inclusive,
                     range.end_epoch_exclusive,
                 )
-                    .and_then(|_| {
-                        Self::validate_intent_hash(
-                            store,
-                            executable.intent_hash().to_hash(),
-                            range.end_epoch_exclusive,
-                        )
-                    })
-                    .and_then(|_| Ok(system))
+                .and_then(|_| {
+                    Self::validate_intent_hash(
+                        store,
+                        executable.intent_hash().to_hash(),
+                        range.end_epoch_exclusive,
+                    )
+                })
+                .and_then(|_| Ok(system))
             } else {
                 Ok(system)
             }
@@ -870,8 +890,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
     ) -> Result<Vec<InstructionOutput>, RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         let mut system = SystemService::new(api);
 
@@ -898,7 +918,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 references,
                 blobs,
             })
-                .unwrap(),
+            .unwrap(),
         )?;
 
         let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
@@ -912,58 +932,40 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         // Note that if a transactions fails during this phase, the costing is
         // done as if it would succeed.
         for store_commit in &info {
-            self
-                .modules
+            self.modules
                 .apply_finalization_cost(FinalizationCostingEntry::CommitStateUpdates {
                     store_commit,
                 })
-                .map_err(|e| {
-                    RuntimeError::FinalizationCostingError(e)
-                })?;
+                .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
         }
-        self
-            .modules
+        self.modules
             .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
                 events: &self.modules.events().clone(),
             })
-            .map_err(|e| {
-                RuntimeError::FinalizationCostingError(e)
-            })?;
-        self
-            .modules
+            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
+        self.modules
             .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
                 logs: &self.modules.logs().clone(),
             })
-            .map_err(|e| {
-                RuntimeError::FinalizationCostingError(e)
-            })?;
+            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
 
         /* state storage costs */
         for store_commit in &info {
-            self
-                .modules
+            self.modules
                 .apply_storage_cost(StorageType::State, store_commit.len_increase())
-                .map_err(|e| {
-                    RuntimeError::FinalizationCostingError(e)
-                })?;
+                .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
         }
 
         /* archive storage costs */
         let total_event_size = self.modules.events().iter().map(|x| x.len()).sum();
-        self
-            .modules
+        self.modules
             .apply_storage_cost(StorageType::Archive, total_event_size)
-            .map_err(|e| {
-                RuntimeError::FinalizationCostingError(e)
-            })?;
+            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
 
         let total_log_size = self.modules.logs().iter().map(|x| x.1.len()).sum();
-        self
-            .modules
+        self.modules
             .apply_storage_cost(StorageType::Archive, total_log_size)
-            .map_err(|e| {
-                RuntimeError::FinalizationCostingError(e)
-            })?;
+            .map_err(|e| RuntimeError::FinalizationCostingError(e))?;
 
         Ok(())
     }
@@ -974,24 +976,35 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         executable: &Executable,
         interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
-
         // Panic if an error is encountered in the system layer or below. The following code
         // is only enabled when compiling with the standard library since the panic catching
         // machinery and `SystemPanic` errors are only implemented in `std`.
         #[cfg(feature = "std")]
-        if let Err(TransactionExecutionError::RuntimeError(RuntimeError::SystemError(SystemError::SystemPanic(..)))) = interpretation_result
+        if let Err(TransactionExecutionError::RuntimeError(RuntimeError::SystemError(
+            SystemError::SystemPanic(..),
+        ))) = interpretation_result
         {
             panic!("An error has occurred in the system layer or below and thus the transaction executor has panicked. Error: \"{interpretation_result:?}\"")
         }
 
         #[cfg(not(feature = "alloc"))]
-        if self.modules.enabled_modules.contains(EnabledModules::KERNEL_TRACE) {
+        if self
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::KERNEL_TRACE)
+        {
             println!("{:-^120}", "Interpretation Results");
             println!("{:?}", interpretation_result);
         }
 
-        let execution_trace_enabled = self.modules.enabled_modules.contains(EnabledModules::EXECUTION_TRACE);
-        let kernel_trace_enabled = self.modules.enabled_modules.contains(EnabledModules::KERNEL_TRACE);
+        let execution_trace_enabled = self
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::EXECUTION_TRACE);
+        let kernel_trace_enabled = self
+            .modules
+            .enabled_modules
+            .contains(EnabledModules::KERNEL_TRACE);
 
         let (mut costing_module, runtime_module, execution_trace_module) = self.modules.unpack();
 
@@ -1017,10 +1030,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             None
         };
 
-        let result_type = Self::determine_result_type(
-            interpretation_result,
-            &mut costing_module.fee_reserve,
-        );
+        let result_type =
+            Self::determine_result_type(interpretation_result, &mut costing_module.fee_reserve);
         let (fee_summary, fee_details, result) = match result_type {
             TransactionResultType::Commit(outcome) => {
                 let is_success = outcome.is_ok();
@@ -1043,9 +1054,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     to_proposer: fee_reserve_finalization.to_proposer_amount(),
                     to_validator_set: fee_reserve_finalization.to_validator_set_amount(),
                     to_burn: fee_reserve_finalization.to_burn_amount(),
-                    to_royalty_recipients: fee_reserve_finalization
-                        .royalty_cost_breakdown
-                        .clone(),
+                    to_royalty_recipients: fee_reserve_finalization.royalty_cost_breakdown.clone(),
                 };
 
                 // Update intent hash status
@@ -1064,8 +1073,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 application_events.extend(finalization_events);
 
                 // Finalize execution trace
-                let execution_trace =
-                    execution_trace_module.finalize(&paying_vaults, is_success);
+                let execution_trace = execution_trace_module.finalize(&paying_vaults, is_success);
 
                 // Finalize track
                 let (tracked_substates, substate_db) = {
@@ -1083,20 +1091,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
 
                 // Summarizes state updates
-                let system_structure = SystemStructure::resolve(
-                    substate_db,
-                    &state_updates,
-                    &application_events,
-                );
+                let system_structure =
+                    SystemStructure::resolve(substate_db, &state_updates, &application_events);
                 let state_update_summary =
                     StateUpdateSummary::new(substate_db, new_node_ids, &state_updates);
 
                 // Resource reconciliation does not currently work in preview mode
                 if executable.costing_parameters().free_credit_in_xrd.is_zero() {
-                    let system_reader = SystemDatabaseReader::new_with_overlay(
-                        substate_db,
-                        &state_updates,
-                    );
+                    let system_reader =
+                        SystemDatabaseReader::new_with_overlay(substate_db, &state_updates);
                     reconcile_resource_state_and_events(
                         &state_update_summary,
                         &application_events,
@@ -1148,7 +1151,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             resources_usage: None,
         };
 
-
         // Dump summary
         #[cfg(not(feature = "alloc"))]
         if kernel_trace_enabled {
@@ -1163,50 +1165,50 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_create_node(api, &event)
     }
 
     fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_drop_node(api, &event)
     }
 
     fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_move_module(api, &event)
     }
 
     fn on_open_substate<Y>(api: &mut Y, event: OpenSubstateEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_open_substate(api, &event)
     }
 
     fn on_close_substate<Y>(api: &mut Y, event: CloseSubstateEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_close_substate(api, &event)
     }
 
     fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_read_substate(api, &event)
     }
 
     fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>,
+    where
+        Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_write_substate(api, &event)
     }
@@ -1238,8 +1240,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         invocation: &KernelInvocation<Actor>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         let is_to_barrier = invocation.call_frame_data.is_barrier();
         let destination_blueprint_id = invocation.call_frame_data.blueprint_id();
@@ -1258,8 +1260,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         let current_actor = api.kernel_get_system_state().current_call_frame;
         let is_to_barrier = current_actor.is_barrier();
@@ -1278,15 +1280,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_execution_start(api)
     }
 
     fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_execution_finish(api, message)?;
 
@@ -1294,8 +1296,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
@@ -1308,8 +1310,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelApi<System<C>>,
+    where
+        Y: KernelApi<System<C>>,
     {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
@@ -1404,8 +1406,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor {
-                                     blueprint_id, hook, ..
-                                 }) => {
+                blueprint_id, hook, ..
+            }) => {
                 // Find the export
                 let definition = system.load_blueprint_definition(
                     blueprint_id.package_address,
@@ -1441,9 +1443,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                         scrypto_decode::<OnMoveOutput>(output.as_slice()).map(|_| ())
                     }
                 }
-                    .map_err(|e| {
-                        RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
-                    })?;
+                .map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
+                })?;
 
                 Ok(output)
             }
@@ -1452,8 +1454,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
     // Note: we check dangling nodes, in kernel, after auto-drop
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         // Round 1 - drop all proofs
         for node_id in nodes {
@@ -1461,9 +1463,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                                             blueprint_info: BlueprintInfo { blueprint_id, .. },
-                                             ..
-                                         }) => {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
+                    ..
+                }) => {
                     match (
                         blueprint_id.package_address,
                         blueprint_id.blueprint_name.as_str(),
@@ -1477,7 +1479,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                                 scrypto_encode(&ProofDropInput {
                                     proof: Proof(Own(node_id)),
                                 })
-                                    .unwrap(),
+                                .unwrap(),
                             )?;
                         }
                         (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
@@ -1489,7 +1491,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                                 scrypto_encode(&ProofDropInput {
                                     proof: Proof(Own(node_id)),
                                 })
-                                    .unwrap(),
+                                .unwrap(),
                             )?;
                         }
                         _ => {
@@ -1524,8 +1526,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         // As currently implemented, this should always be called with partition_num=0 and offset=0
         // since all nodes are access by accessing their type info first
@@ -1592,8 +1594,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
@@ -1620,7 +1622,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                         }),
                         args: IndexedScryptoValue::from_typed(&OnDropInput {}),
                     }))
-                        .map(|_| ())
+                    .map(|_| ())
                 } else {
                     Ok(())
                 }
@@ -1641,8 +1643,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>,
+    where
+        Y: KernelApi<Self>,
     {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
@@ -1673,7 +1675,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                             destination_blueprint_id,
                         }),
                     }))
-                        .map(|_| ())
+                    .map(|_| ())
                 } else {
                     Ok(())
                 }

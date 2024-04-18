@@ -2,6 +2,7 @@ use super::{BalanceChange, CostingParameters, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
 use crate::internal_prelude::*;
+use crate::kernel::kernel_callback_api::ExecutionReceipt;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::*;
 use crate::track::BatchPartitionStateUpdate;
@@ -15,7 +16,6 @@ use radix_substate_store_interface::interface::DatabaseUpdate;
 use radix_transactions::model::Executable;
 use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::representations::*;
-use crate::kernel::kernel_callback_api::ExecutionReceipt;
 
 define_single_versioned! {
     /// We define a versioned transaction receipt for encoding in the preview API.

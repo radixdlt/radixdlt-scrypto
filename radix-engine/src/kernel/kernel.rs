@@ -21,21 +21,19 @@ use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
-use crate::track::{BootStore, Track};
+use crate::track::Track;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::prelude::{Executable, PreAllocatedAddress};
+use radix_transactions::prelude::Executable;
 use sbor::rust::mem;
-use crate::transaction::{CostingParameters, RejectResult, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult, TransactionResultType};
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
     pub id_allocator: IdAllocator,
-    pub store: Track<'h, S, SpreadPrefixKeyMapper>,
+    pub track: Track<'h, S, SpreadPrefixKeyMapper>,
     pub init: M::InitInput,
     pub phantom: PhantomData<M>,
 }
@@ -62,7 +60,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             }
 
             let substate_ref = self
-                .store
+                .track
                 .read_substate(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
@@ -103,22 +101,23 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         Ok((global_addresses, direct_accesses))
     }
 
-    pub fn execute<'a>(
-        mut self,
-        executable: &Executable,
-    ) -> M::Receipt {
+    pub fn execute<'a>(self, executable: &Executable) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-        let mut resources_tracker = crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
+        let mut resources_tracker =
+            crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
         #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
         {
-            self.execute_internal(executable).unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason))
+            self.execute_internal(executable)
+                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason))
         }
 
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         {
-            let mut receipt = self.execute_internal(executable).unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason));
+            let mut receipt = self
+                .execute_internal(executable)
+                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason));
 
             // Stop hardware resource usage tracker
             receipt.set_resource_usage(resources_tracker.end_measurement());
@@ -132,22 +131,22 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         mut self,
         executable: &Executable,
     ) -> Result<M::Receipt, RejectionReason> {
-
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
         });
 
         // Create System
-        let mut callback = M::init(&mut self.store, executable, self.init.clone())?;
+        let mut callback = M::init(&mut self.track, executable, self.init.clone())?;
 
         // Create Kernel
         let mut kernel = {
             // Check references
-            let engine_references = self.check_references(executable.references())
+            let engine_references = self
+                .check_references(executable.references())
                 .map_err(RejectionReason::BootloadingError)?;
 
-            let mut kernel = Kernel::new(&mut self.store, &mut self.id_allocator, &mut callback);
+            let mut kernel = Kernel::new(&mut self.track, &mut self.id_allocator, &mut callback);
 
             // Add visibility
             for global_ref in engine_references.0 {
@@ -184,9 +183,10 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             kernel.callback.finish(commit_info)?;
 
             Ok(output)
-        }().map_err(|e| TransactionExecutionError::RuntimeError(e));
+        }()
+        .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
-        let receipt = M::create_receipt(callback, self.store, executable, result);
+        let receipt = M::create_receipt(callback, self.track, executable, result);
 
         Ok(receipt)
     }

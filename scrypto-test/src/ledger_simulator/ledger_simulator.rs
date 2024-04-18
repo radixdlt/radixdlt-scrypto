@@ -1332,7 +1332,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             native_vm_extension: self.native_vm_extension.clone(),
         };
 
-        let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(self.with_kernel_trace);
+        let execution_config =
+            ExecutionConfig::for_test_transaction().with_kernel_trace(self.with_kernel_trace);
         let mut executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
             &self.database,
             InjectCostingErrorInput {
@@ -1344,7 +1345,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     system_overrides: execution_config.system_overrides.clone(),
                 },
                 error_after_count,
-            }
+            },
         );
 
         let transaction_receipt = executor.execute(&executable);
@@ -1406,10 +1407,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         executable: Executable,
         execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
-        self.execute_transaction_with_system(
-            executable,
-            execution_config,
-        )
+        self.execute_transaction_with_system(executable, execution_config)
     }
 
     pub fn execute_transaction_with_system<'a>(
@@ -1433,11 +1431,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             native_vm_extension: self.native_vm_extension.clone(),
         };
 
-        let transaction_receipt = execute_transaction_with_configuration::<_, Vm<'a, DefaultWasmEngine, E>>(
-            &mut self.database,
-            vm_init,
-            &execution_config,
-            &executable,
+        let transaction_receipt = execute_transaction_with_configuration::<
+            _,
+            Vm<'a, DefaultWasmEngine, E>,
+        >(
+            &mut self.database, vm_init, &execution_config, &executable
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit

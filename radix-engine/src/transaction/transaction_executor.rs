@@ -1,42 +1,19 @@
-use crate::blueprints::consensus_manager::{
-    ConsensusManagerField, ConsensusManagerStateFieldPayload,
-    ConsensusManagerValidatorRewardsFieldPayload,
-};
-use crate::blueprints::models::FieldPayload;
-use crate::blueprints::resource::{
-    fungible_vault::DepositEvent, fungible_vault::PayFeeEvent, BurnFungibleResourceEvent,
-    FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate, FungibleVaultField,
-};
-use crate::blueprints::transaction_tracker::{
-    TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
-};
 use crate::errors::*;
-use crate::internal_prelude::KeyValueEntrySubstateV1;
 use crate::internal_prelude::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::system_callback::{System, SystemInit};
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_db_reader::SystemDatabaseReader;
-use crate::system::system_modules::costing::*;
-use crate::system::system_modules::execution_trace::ExecutionTraceModule;
-use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::system::system_substates::KeyValueEntrySubstate;
-use crate::system::system_substates::{FieldSubstate, LockStatus};
-use crate::track::interface::CommitableSubstateStore;
-use crate::track::{to_state_updates, BootStore, Track, TrackFinalizeError};
+use crate::track::{BootStore, Track};
 use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVmExtension, Vm, VmInit};
 use radix_common::constants::*;
-use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::*;
-use crate::system::system_modules::EnabledModules;
 
 /// Protocol-defined costing parameters
 #[derive(Debug, Copy, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -279,8 +256,8 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
 }
 
 pub struct TransactionExecutor<'s, S, V: KernelCallbackObject>
-    where
-        S: SubstateDatabase,
+where
+    S: SubstateDatabase,
 {
     substate_db: &'s S,
     system_init: V::InitInput,
@@ -288,9 +265,9 @@ pub struct TransactionExecutor<'s, S, V: KernelCallbackObject>
 }
 
 impl<'s, S, V> TransactionExecutor<'s, S, V>
-    where
-        S: SubstateDatabase,
-        V: KernelCallbackObject,
+where
+    S: SubstateDatabase,
+    V: KernelCallbackObject,
 {
     pub fn new(substate_db: &'s S, system_init: V::InitInput) -> Self {
         Self {
@@ -300,26 +277,19 @@ impl<'s, S, V> TransactionExecutor<'s, S, V>
         }
     }
 
-    pub fn execute(
-        &mut self,
-        executable: &Executable,
-    ) -> V::Receipt {
-
+    pub fn execute(&mut self, executable: &Executable) -> V::Receipt {
         let kernel_boot = BootLoader {
             id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
-            store: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
+            track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
             init: self.system_init.clone(),
-            phantom: PhantomData::<V>::default()
+            phantom: PhantomData::<V>::default(),
         };
 
         kernel_boot.execute(executable)
     }
 }
 
-pub fn execute_transaction_with_configuration<
-    S: SubstateDatabase,
-    V: SystemCallbackObject,
->(
+pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCallbackObject>(
     substate_db: &S,
     vms: V::InitInput,
     execution_config: &ExecutionConfig,
