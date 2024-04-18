@@ -133,10 +133,17 @@ pub enum ScanSortedSubstatesEvent<'a> {
     IOAccess(&'a IOAccess),
 }
 
+pub trait ExecutionReceipt {
+    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self;
+
+    fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
+}
+
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
     type InitInput: Clone;
+    type Receipt: ExecutionReceipt;
 
     /// Create the system layer object with data loaded from the substate store
     fn init<S: BootStore + CommitableSubstateStore>(
@@ -157,28 +164,15 @@ pub trait KernelCallbackObject: Sized {
             Y: KernelApi<Self>;
 
     /// Finish execution
-    fn on_teardown(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
+    fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
 
-    fn on_teardown3<S: SubstateDatabase>(
+    /// Create final receipt
+    fn create_receipt<S: SubstateDatabase>(
         self,
         track: Track<S, SpreadPrefixKeyMapper>,
         executable: &Executable,
         result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
-    ) -> (
-        CostingParameters,
-        TransactionFeeSummary,
-        Option<TransactionFeeDetails>,
-        TransactionResult,
-    );
-
-    fn finalize_receipt(
-        executable: &Executable,
-        costing_parameters: CostingParameters,
-        fee_summary: TransactionFeeSummary,
-        fee_details: Option<TransactionFeeDetails>,
-        transaction_result: TransactionResult,
-        resources_usage: Option<ResourcesUsage>,
-    ) -> TransactionReceipt;
+    ) -> Self::Receipt;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 

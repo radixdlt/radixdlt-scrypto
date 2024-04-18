@@ -612,12 +612,73 @@ impl<C: SystemCallbackObject> System<C> {
             .unwrap();
     }
 
+    fn apply_costing(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
+        // Note that if a transactions fails during this phase, the costing is
+        // done as if it would succeed.
+        for store_commit in &info {
+            self
+                .modules
+                .apply_finalization_cost(FinalizationCostingEntry::CommitStateUpdates {
+                    store_commit,
+                })
+                .map_err(|e| {
+                    RuntimeError::FinalizationCostingError(e)
+                })?;
+        }
+        self
+            .modules
+            .apply_finalization_cost(FinalizationCostingEntry::CommitEvents {
+                events: &self.modules.events().clone(),
+            })
+            .map_err(|e| {
+                RuntimeError::FinalizationCostingError(e)
+            })?;
+        self
+            .modules
+            .apply_finalization_cost(FinalizationCostingEntry::CommitLogs {
+                logs: &self.modules.logs().clone(),
+            })
+            .map_err(|e| {
+                RuntimeError::FinalizationCostingError(e)
+            })?;
+
+        /* state storage costs */
+        for store_commit in &info {
+            self
+                .modules
+                .apply_storage_cost(StorageType::State, store_commit.len_increase())
+                .map_err(|e| {
+                    RuntimeError::FinalizationCostingError(e)
+                })?;
+        }
+
+        /* archive storage costs */
+        let total_event_size = self.modules.events().iter().map(|x| x.len()).sum();
+        self
+            .modules
+            .apply_storage_cost(StorageType::Archive, total_event_size)
+            .map_err(|e| {
+                RuntimeError::FinalizationCostingError(e)
+            })?;
+
+        let total_log_size = self.modules.logs().iter().map(|x| x.1.len()).sum();
+        self
+            .modules
+            .apply_storage_cost(StorageType::Archive, total_log_size)
+            .map_err(|e| {
+                RuntimeError::FinalizationCostingError(e)
+            })?;
+
+        Ok(())
+    }
+
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
     type InitInput = SystemInit<C::InitInput>;
+    type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
@@ -812,7 +873,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         Ok(rtn)
     }
 
-    fn on_teardown(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
+    fn finish(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
         self.modules.on_teardown()?;
 
         // Note that if a transactions fails during this phase, the costing is
@@ -874,17 +935,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         Ok(())
     }
 
-    fn on_teardown3<S: SubstateDatabase>(
+    fn create_receipt<S: SubstateDatabase>(
         self,
         mut track: Track<S, SpreadPrefixKeyMapper>,
         executable: &Executable,
         interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
-    )  -> (
-        CostingParameters,
-        TransactionFeeSummary,
-        Option<TransactionFeeDetails>,
-        TransactionResult,
-    ) {
+    ) -> TransactionReceipt {
 
         // Panic if an error is encountered in the system layer or below. The following code
         // is only enabled when compiling with the standard library since the panic catching
@@ -931,7 +987,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             interpretation_result,
             &mut costing_module.fee_reserve,
         );
-        match result_type {
+        let (fee_summary, fee_details, result) = match result_type {
             TransactionResultType::Commit(outcome) => {
                 let is_success = outcome.is_ok();
 
@@ -1015,7 +1071,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 }
 
                 (
-                    costing_parameters,
                     fee_reserve_finalization.into(),
                     fee_details,
                     TransactionResult::Commit(CommitResult {
@@ -1039,39 +1094,26 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 )
             }
             TransactionResultType::Reject(reason) => (
-                costing_parameters,
                 costing_module.fee_reserve.finalize().into(),
                 fee_details,
                 TransactionResult::Reject(RejectResult { reason }),
             ),
             TransactionResultType::Abort(reason) => (
-                costing_parameters,
                 costing_module.fee_reserve.finalize().into(),
                 fee_details,
                 TransactionResult::Abort(AbortResult { reason }),
             ),
-        }
-    }
+        };
 
-
-    fn finalize_receipt(
-        executable: &Executable,
-        costing_parameters: CostingParameters,
-        fee_summary: TransactionFeeSummary,
-        fee_details: Option<TransactionFeeDetails>,
-        result: TransactionResult,
-        resources_usage: Option<ResourcesUsage>,
-    ) -> TransactionReceipt {
         TransactionReceipt {
             costing_parameters,
             transaction_costing_parameters: executable.costing_parameters().clone(),
             fee_summary,
             fee_details,
             result,
-            resources_usage,
+            resources_usage: None,
         }
     }
-
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_pin_node(self, node_id)

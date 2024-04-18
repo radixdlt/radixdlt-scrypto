@@ -303,7 +303,7 @@ impl<'s, S, V> TransactionExecutor<'s, S, V>
     pub fn execute(
         &mut self,
         executable: &Executable,
-    ) -> TransactionReceipt {
+    ) -> V::Receipt {
 
         let kernel_boot = BootLoader {
             id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),

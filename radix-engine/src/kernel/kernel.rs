@@ -10,7 +10,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::CallFrameReferences;
+use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -106,43 +106,34 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     pub fn execute<'a>(
         mut self,
         executable: &Executable,
-    ) -> TransactionReceipt {
+    ) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker = crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
 
-        let (costing_parameters, fee_summary, fee_details, result) = self.execute_internal(executable)
-            .unwrap_or_else(|reason| {
-                (
-                    CostingParameters::babylon_genesis(),
-                    TransactionFeeSummary::default(),
-                    None,
-                    TransactionResult::Reject(RejectResult { reason }),
-                )
-            });
+        #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
+        {
+            self.execute_internal(executable).unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason))
+        }
 
-        // Stop hardware resource usage tracker
-        let resources_usage = match () {
-            #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
-            () => None,
-            #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
-            () => Some(resources_tracker.end_measurement()),
-        };
+        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+        {
+            let mut receipt = self.execute_internal(executable).unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason));
 
-        M::finalize_receipt(executable, costing_parameters, fee_summary, fee_details, result, resources_usage)
+            // Stop hardware resource usage tracker
+            receipt.set_resource_usage(resources_tracker.end_measurement());
+
+            receipt
+        }
     }
 
     /// Executes a transaction
     fn execute_internal<'a>(
         mut self,
         executable: &Executable,
-    ) -> Result<(
-        CostingParameters,
-        TransactionFeeSummary,
-        Option<TransactionFeeDetails>,
-        TransactionResult,
-    ), RejectionReason> {
+    ) -> Result<M::Receipt, RejectionReason> {
 
+        // Create System
         let mut callback = M::init(&mut self.store, executable, self.init.clone())?;
 
         #[cfg(feature = "resource_tracker")]
@@ -150,6 +141,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             v.borrow_mut();
         });
 
+        // Create Kernel
         let mut kernel = {
             // Check references
             let engine_references = self.check_references(executable.references())
@@ -170,6 +162,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             kernel
         };
 
+        // Execution
         let result = || -> Result<Vec<InstructionOutput>, RuntimeError> {
             // Invoke transaction processor
             let rtn = M::start(
@@ -188,13 +181,15 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
 
             let commit_info = kernel.substate_io.store.get_commit_info();
 
-            kernel.callback.on_teardown(commit_info)?;
+            kernel.callback.finish(commit_info)?;
 
             let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
             Ok(output)
         }().map_err(|e| TransactionExecutionError::RuntimeError(e));
 
-        Ok(callback.on_teardown3(self.store, executable, result))
+        let receipt = M::create_receipt(callback, self.store, executable, result);
+
+        Ok(receipt)
     }
 }
 

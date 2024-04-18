@@ -86,6 +86,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     type CallFrameData = Actor;
 
     type InitInput = InjectCostingErrorInput<SystemInit<K::InitInput>>;
+    type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
@@ -125,17 +126,13 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         )
     }
 
-    fn on_teardown(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
+    fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.system.on_teardown(store_commit_info)
+        self.system.finish(store_commit_info)
     }
 
-    fn on_teardown3<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> (CostingParameters, TransactionFeeSummary, Option<TransactionFeeDetails>, TransactionResult) {
-        self.system.on_teardown3(track, executable, result)
-    }
-
-    fn finalize_receipt(executable: &Executable, costing_parameters: CostingParameters, fee_summary: TransactionFeeSummary, fee_details: Option<TransactionFeeDetails>, transaction_result: TransactionResult, resources_usage: Option<ResourcesUsage>) -> TransactionReceipt {
-        System::<K>::finalize_receipt(executable, costing_parameters, fee_summary, fee_details, transaction_result, resources_usage)
+    fn create_receipt<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> TransactionReceipt {
+        self.system.create_receipt(track, executable, result)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

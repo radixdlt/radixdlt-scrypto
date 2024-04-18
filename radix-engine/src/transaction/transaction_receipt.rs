@@ -12,8 +12,10 @@ use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::interface::DatabaseUpdate;
+use radix_transactions::model::Executable;
 use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::representations::*;
+use crate::kernel::kernel_callback_api::ExecutionReceipt;
 
 define_single_versioned! {
     /// We define a versioned transaction receipt for encoding in the preview API.
@@ -40,6 +42,23 @@ pub struct TransactionReceiptV1 {
     /// Hardware resources usage report
     /// Available if `resources_usage` feature flag is enabled
     pub resources_usage: Option<ResourcesUsage>,
+}
+
+impl ExecutionReceipt for TransactionReceipt {
+    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self {
+        TransactionReceipt {
+            costing_parameters: CostingParameters::babylon_genesis(),
+            transaction_costing_parameters: executable.costing_parameters().clone(),
+            fee_summary: TransactionFeeSummary::default(),
+            fee_details: None,
+            result: TransactionResult::Reject(RejectResult { reason }),
+            resources_usage: None,
+        }
+    }
+
+    fn set_resource_usage(&mut self, resources_usage: ResourcesUsage) {
+        self.resources_usage = Some(resources_usage);
+    }
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]

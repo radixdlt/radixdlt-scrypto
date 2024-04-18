@@ -10,12 +10,7 @@ use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
 };
-use radix_engine::kernel::kernel_callback_api::{
-    CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
-    KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
-    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
-    WriteSubstateEvent,
-};
+use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use radix_engine::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
 use radix_engine::transaction::{CostingParameters, ResourcesUsage, TransactionFeeDetails, TransactionFeeSummary, TransactionReceipt, TransactionResult};
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
@@ -49,11 +44,23 @@ impl CallFrameReferences for TestCallFrameData {
     }
 }
 
+struct TestReceipt;
+
+impl ExecutionReceipt for TestReceipt {
+    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self {
+        Self
+    }
+
+    fn set_resource_usage(&mut self, resources_usage: ResourcesUsage) {
+    }
+}
+
 struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
     type InitInput = ();
+    type Receipt = TestReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::InitInput) -> Result<Self, RejectionReason> {
         Ok(Self)
@@ -72,16 +79,12 @@ impl KernelCallbackObject for TestCallbackObject {
         unreachable!()
     }
 
-    fn on_teardown(&mut self, _store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
+    fn finish(&mut self, _store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_teardown3<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> (CostingParameters, TransactionFeeSummary, Option<TransactionFeeDetails>, TransactionResult) {
-        unreachable!()
-    }
-
-    fn finalize_receipt(executable: &Executable, costing_parameters: CostingParameters, fee_summary: TransactionFeeSummary, fee_details: Option<TransactionFeeDetails>, transaction_result: TransactionResult, resources_usage: Option<ResourcesUsage>) -> TransactionReceipt {
-        unreachable!()
+    fn create_receipt<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> TestReceipt {
+        TestReceipt
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
