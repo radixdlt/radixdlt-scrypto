@@ -812,12 +812,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         Ok(rtn)
     }
 
-    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
-        self.modules.on_teardown()
-    }
+    fn on_teardown(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
+        self.modules.on_teardown()?;
 
-    fn on_teardown2(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError>
-    {
         // Note that if a transactions fails during this phase, the costing is
         // done as if it would succeed.
         for store_commit in &info {

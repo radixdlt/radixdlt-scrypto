@@ -186,11 +186,9 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             // Sanity check heap
             assert!(kernel.substate_io.heap.is_empty());
 
-            kernel.callback.on_teardown()?;
-
             let commit_info = kernel.substate_io.store.get_commit_info();
 
-            kernel.callback.on_teardown2(commit_info)?;
+            kernel.callback.on_teardown(commit_info)?;
 
             let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
             Ok(output)

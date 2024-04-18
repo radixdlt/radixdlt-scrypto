@@ -138,7 +138,7 @@ pub trait KernelCallbackObject: Sized {
     type CallFrameData: CallFrameReferences;
     type InitInput: Clone;
 
-    /// Create the system layer object data loaded from the substate store
+    /// Create the system layer object with data loaded from the substate store
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &Executable,
@@ -157,9 +157,7 @@ pub trait KernelCallbackObject: Sized {
             Y: KernelApi<Self>;
 
     /// Finish execution
-    fn on_teardown(&mut self) -> Result<(), RuntimeError>;
-
-    fn on_teardown2(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
+    fn on_teardown(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
 
     fn on_teardown3<S: SubstateDatabase>(
         self,

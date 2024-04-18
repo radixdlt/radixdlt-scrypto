@@ -72,11 +72,7 @@ impl KernelCallbackObject for TestCallbackObject {
         unreachable!()
     }
 
-    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_teardown2(&mut self, _store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
+    fn on_teardown(&mut self, _store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
         Ok(())
     }
 

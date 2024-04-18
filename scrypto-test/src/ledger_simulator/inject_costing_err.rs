@@ -125,13 +125,9 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         )
     }
 
-    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
+    fn on_teardown(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.system.on_teardown()
-    }
-
-    fn on_teardown2(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
-        self.system.on_teardown2(store_commit_info)
+        self.system.on_teardown(store_commit_info)
     }
 
     fn on_teardown3<S: SubstateDatabase>(self, track: Track<S, SpreadPrefixKeyMapper>, executable: &Executable, result: Result<Vec<InstructionOutput>, TransactionExecutionError>) -> (CostingParameters, TransactionFeeSummary, Option<TransactionFeeDetails>, TransactionResult) {
