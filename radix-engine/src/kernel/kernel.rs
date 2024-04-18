@@ -34,7 +34,7 @@ use sbor::rust::mem;
 pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
     pub id_allocator: IdAllocator,
     pub track: Track<'h, S, SpreadPrefixKeyMapper>,
-    pub init: M::InitInput,
+    pub init: M::Init,
     pub phantom: PhantomData<M>,
 }
 
@@ -101,6 +101,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         Ok((global_addresses, direct_accesses))
     }
 
+    /// Executes a transaction
     pub fn execute<'a>(self, executable: &Executable) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
@@ -126,7 +127,6 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
-    /// Executes a transaction
     fn execute_internal<'a>(
         mut self,
         executable: &Executable,

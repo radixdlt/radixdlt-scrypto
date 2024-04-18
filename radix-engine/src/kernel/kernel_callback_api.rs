@@ -131,6 +131,7 @@ pub enum ScanSortedSubstatesEvent<'a> {
     IOAccess(&'a IOAccess),
 }
 
+/// A receipt created from executing a transaction
 pub trait ExecutionReceipt {
     fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self;
 
@@ -140,15 +141,15 @@ pub trait ExecutionReceipt {
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
-    type InitInput: Clone;
+    type Init: Clone;
     type ExecutionOutput;
     type Receipt: ExecutionReceipt;
 
-    /// Create the system layer object with data loaded from the substate store
+    /// Create the callback object (system layer) with data loaded from the substate store
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &Executable,
-        init_input: Self::InitInput,
+        init: Self::Init,
     ) -> Result<Self, RejectionReason>;
 
     /// Start execution

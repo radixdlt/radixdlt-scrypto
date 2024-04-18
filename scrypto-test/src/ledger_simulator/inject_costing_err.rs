@@ -87,14 +87,14 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 
-    type InitInput = InjectCostingErrorInput<SystemInit<K::InitInput>>;
+    type Init = InjectCostingErrorInput<SystemInit<K::InitInput>>;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &Executable,
-        init_input: Self::InitInput,
+        init_input: Self::Init,
     ) -> Result<Self, RejectionReason> {
         let mut system = System::<K>::init(store, executable, init_input.system_input)?;
 

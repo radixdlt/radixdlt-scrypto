@@ -726,7 +726,7 @@ impl<C: SystemCallbackObject> System<C> {
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
-    type InitInput = SystemInit<C::InitInput>;
+    type Init = SystemInit<C::InitInput>;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
@@ -1001,6 +1001,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             .modules
             .enabled_modules
             .contains(EnabledModules::EXECUTION_TRACE);
+
+        #[cfg(not(feature = "alloc"))]
         let kernel_trace_enabled = self
             .modules
             .enabled_modules

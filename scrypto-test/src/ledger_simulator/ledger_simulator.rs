@@ -1303,7 +1303,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             costing_parameters: Some(costing_parameters),
             ..Default::default()
         });
-        self.execute_transaction_with_system(
+        self.execute_transaction(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
@@ -1405,14 +1405,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        execution_config: ExecutionConfig,
-    ) -> TransactionReceipt {
-        self.execute_transaction_with_system(executable, execution_config)
-    }
-
-    pub fn execute_transaction_with_system<'a>(
-        &'a mut self,
-        executable: Executable,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
@@ -1433,7 +1425,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
         let transaction_receipt = execute_transaction_with_configuration::<
             _,
-            Vm<'a, DefaultWasmEngine, E>,
+            Vm<'_, DefaultWasmEngine, E>,
         >(
             &mut self.database, vm_init, &execution_config, &executable
         );

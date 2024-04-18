@@ -58,11 +58,11 @@ struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
-    type InitInput = ();
+    type Init = ();
     type ExecutionOutput = ();
     type Receipt = TestReceipt;
 
-    fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::InitInput) -> Result<Self, RejectionReason> {
+    fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::Init) -> Result<Self, RejectionReason> {
         Ok(Self)
     }
 

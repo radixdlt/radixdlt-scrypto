@@ -279,7 +279,7 @@ where
     S: SubstateDatabase,
 {
     substate_db: &'s S,
-    system_init: V::InitInput,
+    system_init: V::Init,
     phantom: PhantomData<V>,
 }
 
@@ -288,7 +288,7 @@ where
     S: SubstateDatabase,
     V: KernelCallbackObject,
 {
-    pub fn new(substate_db: &'s S, system_init: V::InitInput) -> Self {
+    pub fn new(substate_db: &'s S, system_init: V::Init) -> Self {
         Self {
             substate_db,
             system_init,
