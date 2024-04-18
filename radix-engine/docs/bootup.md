@@ -19,3 +19,8 @@ in preview mode with auth disabled, we may have the auth system module disabled.
 
 The substates read for configuration load are not accessible to any other packages as it is part of the special
 Transaction Processor Component of which there is only one.
+
+## Transaction Processor Invocation
+
+Once the kernel has been initialized the invocation of a function can be made. The system layer then
+makes a function call to a well-known blueprint in our case the TRANSACTION_PROCESSOR run function.
