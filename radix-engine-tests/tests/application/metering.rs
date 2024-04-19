@@ -21,7 +21,7 @@ use scrypto_test::prelude::*;
 fn update_expected_costs() {
     for (name, updates) in [
         (
-            path_local_metering_assets!("genesis"),
+            path_local_metering_assets!("babylon"),
             ProtocolUpdates::none(),
         ),
         (
@@ -68,7 +68,7 @@ fn update_expected_costs() {
 fn run_cost_tests() {
     for (name, updates) in [
         (
-            path_local_metering_assets!("genesis"),
+            path_local_metering_assets!("babylon"),
             ProtocolUpdates::none(),
         ),
         (
