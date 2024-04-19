@@ -35,7 +35,7 @@ pub enum ProtocolUpdateEntry {
     /// Add deferred reference check costs.
     RefCheckCosts,
 
-    /// Add restrictions to reserved role key.
+    /// Add restrictions to use of role key in role list.
     RestrictReservedRoleKey,
 }
 
