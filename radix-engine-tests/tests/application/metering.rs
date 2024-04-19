@@ -168,6 +168,7 @@ pub fn load_cost_breakdown(
 pub fn write_cost_breakdown(
     _fee_summary: &TransactionFeeSummary,
     _fee_details: &TransactionFeeDetails,
+    _folder: &str,
     _file: &str,
 ) {
 }
