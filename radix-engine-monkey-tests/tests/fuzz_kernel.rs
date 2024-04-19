@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{RejectionReason, RuntimeError, TransactionExecutionError};
+use radix_engine::errors::{BootloadingError, RejectionReason, RuntimeError, TransactionExecutionError};
 use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;

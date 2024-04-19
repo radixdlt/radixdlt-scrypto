@@ -52,7 +52,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         callback: Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
-            vm_version: VmBoot::latest(),
+            vm_boot: VmBoot::latest(),
         },
         modules: SystemModuleMixer::new(
             EnabledModules::for_test_transaction(),

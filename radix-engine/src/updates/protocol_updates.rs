@@ -60,7 +60,6 @@ impl ProtocolUpdateEntry {
             ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges => {
                 generate_account_bottlenose_extension_state_updates(db)
             }
-            // TODO implement the following
             ProtocolUpdateEntry::ProtocolParamsToState => {
                 generate_protocol_params_to_state_state_updates(network.clone())
             }
