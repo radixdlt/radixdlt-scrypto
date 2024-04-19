@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use radix_common::prelude::*;
     use radix_engine_interface::types::Level;
     use scrypto_compiler::*;
     use std::{env, path::PathBuf, process::Stdio};

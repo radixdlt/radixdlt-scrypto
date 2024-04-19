@@ -48,6 +48,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
+use radix_rust::rust::rc::*;
 use radix_transactions::model::{Executable, PreAllocatedAddress};
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;

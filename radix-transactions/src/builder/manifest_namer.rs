@@ -1,5 +1,6 @@
 use crate::{internal_prelude::*, manifest::decompiler::ManifestObjectNames};
 use radix_rust::prelude::*;
+use radix_rust::rust::rc::*;
 
 /// This is used by a user to lookup buckets/proofs/reservations/addresses
 /// for working with a manifest builder.

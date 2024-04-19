@@ -7,6 +7,7 @@ use clap::Parser;
 use radix_common::prelude::*;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;
 use radix_rust::prelude::*;
+use radix_rust::rust::rc::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use std::io::Write;
 

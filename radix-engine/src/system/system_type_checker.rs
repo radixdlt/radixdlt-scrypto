@@ -11,6 +11,7 @@ use radix_blueprint_schema_init::KeyValueStoreGenericSubstitutions;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{CollectionIndex, FieldValue, KVEntry};
 use radix_engine_interface::blueprints::package::*;
+use radix_rust::rust::rc::*;
 use radix_rust::rust::vec::Vec;
 
 /// Metadata for schema validation to help with location of certain schemas

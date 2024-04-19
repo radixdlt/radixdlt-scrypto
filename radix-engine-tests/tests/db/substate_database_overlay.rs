@@ -1,6 +1,7 @@
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
+use radix_rust::rust::rc::*;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_impls::substate_database_overlay::*;
 use radix_substate_store_interface::db_key_mapper::*;

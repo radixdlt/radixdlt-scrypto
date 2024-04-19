@@ -4,6 +4,7 @@ use super::tree_store::*;
 use super::types::*;
 use radix_common::crypto::Hash;
 use radix_rust::prelude::*;
+use radix_rust::rust::rc::*;
 use radix_substate_store_interface::interface::NodeDatabaseUpdates;
 use radix_substate_store_interface::interface::*;
 

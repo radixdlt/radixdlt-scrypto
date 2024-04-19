@@ -1,6 +1,7 @@
 use radix_common::prelude::VersionedScryptoSchema;
 use radix_common::types::*;
 use radix_rust::rust::prelude::*;
+use radix_rust::rust::rc::*;
 use radix_rust::rust::vec::Vec;
 
 pub trait ClientBlueprintApi<E> {

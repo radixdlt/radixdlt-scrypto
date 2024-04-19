@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use radix_rust::rust::prelude::*;
+use radix_rust::rust::rc::*;
 use radix_substate_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, SubstateKeyContent,
 };
