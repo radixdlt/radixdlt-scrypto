@@ -38,7 +38,7 @@ pub use radix_engine_derive::{
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
-pub extern crate self as radix_engine_common;
+extern crate self as radix_engine_common;
 
 /// Each module should have its own prelude, which:
 /// * Adds preludes of upstream crates
