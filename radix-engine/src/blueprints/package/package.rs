@@ -490,10 +490,11 @@ fn validate_auth(
                 let check_list = |list: &RoleList| {
                     for role_key in &list.list {
                         if RoleAssignmentNativePackage::is_role_key_reserved(role_key) {
-                            if !RoleAssignmentNativePackage::is_role_key_reserved_and_defined(
-                                role_key,
-                                restrict_reserved_key,
-                            ) {
+                            if restrict_reserved_key
+                                && !RoleAssignmentNativePackage::is_role_key_reserved_and_defined(
+                                    role_key,
+                                )
+                            {
                                 return Err(PackageError::ReservedRoleKeyIsNotDefined(
                                     role_key.key.clone(),
                                 ));

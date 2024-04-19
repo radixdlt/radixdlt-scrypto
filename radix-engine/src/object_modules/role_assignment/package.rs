@@ -268,13 +268,9 @@ impl RoleAssignmentNativePackage {
     /// Checks if a role key is a reserved and has been defined.
     ///
     /// Currently there are only two roles, i.e. `OWNER_ROLE` and `SELF_ROLE`, which can be referenced in role list.
-    pub fn is_role_key_reserved_and_defined(role_key: &RoleKey, restricted: bool) -> bool {
-        if restricted {
-            Self::is_role_key_reserved(role_key)
-                && (role_key.key.eq(OWNER_ROLE) || role_key.key.eq(SELF_ROLE))
-        } else {
-            Self::is_role_key_reserved(role_key)
-        }
+    pub fn is_role_key_reserved_and_defined(role_key: &RoleKey) -> bool {
+        Self::is_role_key_reserved(role_key)
+            && (role_key.key.eq(OWNER_ROLE) || role_key.key.eq(SELF_ROLE))
     }
 
     pub fn verify_access_rule(access_rule: &AccessRule) -> Result<(), RoleAssignmentError> {
