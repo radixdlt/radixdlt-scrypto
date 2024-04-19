@@ -392,6 +392,7 @@ fn build_call_argument<'a>(
 mod test {
     use super::*;
     use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+    use radix_rust::rust::str::*;
     use radix_transactions::model::InstructionV1;
 
     #[test]

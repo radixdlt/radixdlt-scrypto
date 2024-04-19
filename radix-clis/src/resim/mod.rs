@@ -80,6 +80,8 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::str::*;
 use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
 use radix_substate_store_interface::interface::SubstateDatabase;

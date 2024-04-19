@@ -51,4 +51,5 @@ pub mod prelude {
 pub(crate) mod internal_prelude {
     pub use crate::prelude::*;
     pub use radix_common::prelude::*;
+    pub use radix_rust::rust::collections::*;
 }

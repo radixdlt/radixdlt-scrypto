@@ -1,6 +1,7 @@
 use crate::resim::*;
 use clap::Parser;
 use radix_engine::utils::validate_call_arguments_to_native_components;
+use radix_rust::rust::str::*;
 use radix_transactions::manifest::{
     compile, compiler::compile_error_diagnostics, compiler::CompileErrorDiagnosticsStyle,
     BlobProvider,

@@ -77,7 +77,7 @@ fn handle_transparent_describe(
                 type_data_content = quote! {
                     use ::radix_rust::rust::prelude::*;
                     #type_data_content
-                        .with_name(Some(Cow::Borrowed(#type_name)))
+                        .with_name(Some(::radix_rust::rust::borrow::Cow::Borrowed(#type_name)))
                 };
                 type_id = quote! {
                     ::sbor::RustTypeId::novel_with_code(
@@ -275,7 +275,7 @@ fn handle_normal_describe(
                         use ::radix_rust::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             #type_name,
-                            ::radix_rust::rust::prelude::indexmap![
+                            ::radix_rust::rust::collections::indexmap![
                                 #(#variant_discriminators => #variant_type_data,)*
                             ],
                         )
@@ -489,7 +489,7 @@ mod tests {
                         use ::radix_rust::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             "Test",
-                            ::radix_rust::rust::prelude::indexmap![
+                            ::radix_rust::rust::collections::indexmap![
                                 0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
                                 1u8 => ::sbor::TypeData::struct_with_unnamed_fields(
                                     "B",

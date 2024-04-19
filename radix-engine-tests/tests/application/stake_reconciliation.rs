@@ -1,6 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::updates::ProtocolUpdates;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use scrypto_test::prelude::*;
 

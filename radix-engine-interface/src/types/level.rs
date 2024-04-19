@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use core::str::FromStr;
+use radix_rust::rust::fmt;
 use radix_rust::rust::prelude::*;
 
 /// Represents the level of a log message.

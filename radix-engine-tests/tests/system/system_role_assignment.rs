@@ -13,6 +13,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_transactions::builder::ManifestBuilder;
 use radix_transactions::model::{DynamicPackageAddress, InstructionV1};
 use scrypto_test::prelude::*;

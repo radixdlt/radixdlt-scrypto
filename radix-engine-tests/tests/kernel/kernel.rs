@@ -19,6 +19,7 @@ use radix_engine::kernel::kernel_callback_api::{
 use radix_engine::track::{BootStore, Track};
 use radix_engine_interface::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_transactions::model::{Executable, PreAllocatedAddress};

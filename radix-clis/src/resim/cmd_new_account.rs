@@ -6,6 +6,7 @@ use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_interface::{metadata, metadata_init, rule};
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_rust::ContextualDisplay;
 use rand::Rng;
 

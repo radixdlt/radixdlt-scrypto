@@ -28,6 +28,11 @@ pub use num_traits::{
 pub use radix_common::prelude::*;
 pub use radix_engine_interface::prelude::*;
 pub use radix_rust::prelude::*;
+pub use radix_rust::rust::collections::*;
+pub use radix_rust::rust::str::FromStr;
+pub use radix_rust::rust::string::{String, ToString};
+pub use radix_rust::rust::vec;
+pub use radix_rust::rust::vec::*;
 
 //=======
 // SBOR

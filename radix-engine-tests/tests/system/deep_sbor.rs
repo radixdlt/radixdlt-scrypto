@@ -2,6 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use scrypto_test::prelude::*;
 
 #[test]

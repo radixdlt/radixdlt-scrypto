@@ -10,6 +10,8 @@ use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CRE
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::str::FromStr;
 use scrypto::object_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;

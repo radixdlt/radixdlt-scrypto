@@ -6,6 +6,8 @@
 use radix_common::math::ParseDecimalError;
 use radix_common::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::str::*;
 
 #[derive(Debug)]
 pub enum ParseResourceSpecifierError {

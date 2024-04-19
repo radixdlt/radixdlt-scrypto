@@ -29,6 +29,8 @@ use radix_engine_interface::blueprints::pool::{
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::marker::*;
 use radix_rust::rust::ops::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::builder::ManifestBuilder;

@@ -9,6 +9,7 @@ use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
 use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_queries::typed_substate_layout::{FunctionAuth, PackageError};
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;

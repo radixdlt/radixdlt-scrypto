@@ -1,4 +1,5 @@
 use crate::engine::scrypto_env::ScryptoVmV1Api;
+use radix_rust::rust::collections::*;
 
 use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;

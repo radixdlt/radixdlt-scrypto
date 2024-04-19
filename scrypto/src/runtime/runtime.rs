@@ -20,6 +20,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::prelude::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 use radix_engine_interface::*;
+use radix_rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 /// The transaction runtime.

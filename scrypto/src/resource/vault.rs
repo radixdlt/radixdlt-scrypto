@@ -6,6 +6,7 @@ use radix_common::math::Decimal;
 use radix_common::traits::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 use runtime::LocalAuthZone;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;

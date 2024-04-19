@@ -1,6 +1,7 @@
 use super::*;
 use crate::*;
 use radix_rust::rust::prelude::*;
+use radix_rust::rust::vec;
 use radix_rust::*;
 use serde::ser::*;
 

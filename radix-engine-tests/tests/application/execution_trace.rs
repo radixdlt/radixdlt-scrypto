@@ -4,6 +4,7 @@ use radix_engine::system::system_modules::execution_trace::{
 };
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_transactions::model::PreviewFlags;
 use scrypto_test::prelude::*;
 

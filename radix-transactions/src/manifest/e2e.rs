@@ -1685,7 +1685,7 @@ pub fn apply_address_replacements(input: impl ToString) -> String {
     //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     // };
     let package_package_address = PACKAGE_PACKAGE.to_string(&AddressBech32Encoder::for_simulator());
-    let replacement_vectors = radix_rust::prelude::BTreeMap::from([
+    let replacement_vectors = radix_rust::rust::collections::BTreeMap::from([
         (
             "${xrd_resource_address}",
             "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",

@@ -10,6 +10,7 @@ use radix_engine_interface::rule;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_queries::typed_substate_layout::*;
 use scrypto_test::prelude::InvalidNameError;
 use scrypto_test::prelude::*;

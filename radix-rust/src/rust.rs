@@ -23,15 +23,9 @@ pub mod prelude {
     pub use super::iter::FromIterator;
 
     // And some extra useful additions we use a lot:
-    pub use super::borrow;
-    pub use super::borrow::Cow;
-    pub use super::collections::*;
-    pub use super::fmt;
     pub use super::fmt::{Debug, Display};
     pub use super::format;
     pub use super::marker::PhantomData;
-    pub use super::mem;
-    pub use super::str::FromStr;
     pub use super::vec;
 }
 

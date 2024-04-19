@@ -7,6 +7,7 @@ use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::str::FromStr;
 use radix_transactions::prelude::PreviewFlags;
 use scrypto_test::prelude::*;
 

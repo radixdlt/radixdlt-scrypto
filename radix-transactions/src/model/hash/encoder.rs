@@ -1,7 +1,6 @@
+use crate::internal_prelude::*;
 use bech32::{ToBase32, Variant};
 use radix_rust::prelude::*;
-
-use crate::internal_prelude::*;
 
 pub struct TransactionHashBech32Encoder {
     pub hrp_set: HrpSet,

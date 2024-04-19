@@ -23,6 +23,9 @@ pub mod prelude {
 pub(crate) mod internal_prelude {
     pub use radix_common::prelude::*;
     pub use radix_engine_interface::prelude::*;
+    pub use radix_rust::rust::collections::*;
+    pub use radix_rust::rust::fmt;
+    pub use radix_rust::rust::str::FromStr;
 
     pub use crate::prelude::*;
 

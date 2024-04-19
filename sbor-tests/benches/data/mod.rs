@@ -1,3 +1,4 @@
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 use sbor::*;
 use serde::{Deserialize, Serialize};

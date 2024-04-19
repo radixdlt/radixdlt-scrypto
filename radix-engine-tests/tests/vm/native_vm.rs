@@ -22,6 +22,7 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_interface::db_key_mapper::*;
 use radix_transactions::prelude::*;

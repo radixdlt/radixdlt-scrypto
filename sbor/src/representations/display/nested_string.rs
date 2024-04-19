@@ -2,6 +2,7 @@ use super::*;
 use crate::representations::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::fmt;
 use radix_rust::rust::prelude::*;
 use TypedTraversalEvent::*;
 
@@ -509,6 +510,7 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomExtension>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use radix_rust::rust::collections::*;
     use radix_rust::*;
 
     #[derive(Sbor, Hash, Eq, PartialEq)]

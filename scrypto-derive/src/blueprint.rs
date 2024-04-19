@@ -535,8 +535,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     > {
                         fields: store_schema,
                     })),
-                    key: PhantomData,
-                    value: PhantomData,
+                    key: ::radix_rust::rust::marker::PhantomData,
+                    value: ::radix_rust::rust::marker::PhantomData,
                 }
             }
         }
@@ -816,7 +816,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate functions
                     let functions = {
-                        let mut functions: IndexMap<String, FunctionSchemaInit> = index_map_new();
+                        let mut functions: ::radix_rust::rust::collections::IndexMap<String, FunctionSchemaInit> = ::radix_rust::rust::collections::index_map_new();
                         #(
                             functions.insert(#fn_names.to_string(), #fn_schemas);
                         )*
@@ -828,7 +828,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate event schemas
                     let events = {
-                        let mut event_schema = index_map_new();
+                        let mut event_schema = ::radix_rust::rust::collections::index_map_new();
                         #({
                             let local_type_index = aggregator.add_child_type_and_descendents::<#event_type_paths>();
                             event_schema.insert(#event_type_names.to_owned(), TypeRef::Static(local_type_index));
@@ -840,7 +840,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                     // Aggregate registered types
                     let types = {
-                        let mut type_schema = index_map_new();
+                        let mut type_schema = ::radix_rust::rust::collections::index_map_new();
                         #({
                             let local_type_index = aggregator.add_child_type_and_descendents::<#registered_type_paths>();
                             type_schema.insert(#registered_type_names.to_owned(), local_type_index);
@@ -863,7 +863,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                     }
                 };
 
-                let mut dependencies = index_set_new();
+                let mut dependencies = ::radix_rust::rust::collections::index_set_new();
                 #({
                     dependencies.insert(#dependency_exprs.into());
                 })*
@@ -880,7 +880,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                     blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
                     is_transient: false,
-                    feature_set: IndexSet::default(),
+                    feature_set: ::radix_rust::rust::collections::IndexSet::default(),
                     dependencies,
                     schema,
                     auth_config,
@@ -1103,7 +1103,7 @@ fn generate_methods_struct(method_idents: Vec<Ident>) -> TokenStream {
     if method_idents.is_empty() {
         quote! {
             pub struct Methods<T> {
-                t: PhantomData<T>,
+                t: ::radix_rust::rust::marker::PhantomData<T>,
             }
 
             impl<T> MethodMapping<T> for Methods<T> {
@@ -1153,7 +1153,7 @@ fn generate_functions_struct(function_idents: Vec<Ident>) -> TokenStream {
     if function_idents.is_empty() {
         quote! {
             pub struct Functions<T> {
-                t: PhantomData<T>,
+                t: ::radix_rust::rust::marker::PhantomData<T>,
             }
 
             impl<T> FnMapping<T> for Functions<T> {
@@ -1190,7 +1190,7 @@ fn generate_fns_struct(fn_idents: Vec<Ident>) -> TokenStream {
     if fn_idents.is_empty() {
         quote! {
             pub struct Fns<T> {
-                t: PhantomData<T>,
+                t: ::radix_rust::rust::marker::PhantomData<T>,
             }
 
             impl<T> FnMapping<T> for Fns<T> {
@@ -2023,7 +2023,7 @@ mod tests {
                             };
 
                             let functions = {
-                                let mut functions: IndexMap<String, FunctionSchemaInit> = index_map_new();
+                                let mut functions: ::radix_rust::rust::collections::IndexMap<String, FunctionSchemaInit> = ::radix_rust::rust::collections::index_map_new();
                                 functions.insert(
                                     "x".to_string(),
                                     FunctionSchemaInit {
@@ -2049,14 +2049,14 @@ mod tests {
                             };
 
                             let events = {
-                                let mut event_schema = index_map_new();
+                                let mut event_schema = ::radix_rust::rust::collections::index_map_new();
                                 BlueprintEventSchemaInit {
                                     event_schema,
                                 }
                             };
 
                             let types = {
-                                let mut type_schema = index_map_new();
+                                let mut type_schema = ::radix_rust::rust::collections::index_map_new();
                                 {
                                     let local_type_index =
                                         aggregator.add_child_type_and_descendents::<Vec<Bucket> >();
@@ -2099,7 +2099,7 @@ mod tests {
                             }
                         };
 
-                        let mut dependencies = index_set_new();
+                        let mut dependencies = ::radix_rust::rust::collections::index_set_new();
 
                         let auth_config = {
                             scrypto::blueprints::package::AuthConfig {
@@ -2113,7 +2113,7 @@ mod tests {
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                             blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
                             is_transient: false,
-                            feature_set: IndexSet::default(),
+                            feature_set: ::radix_rust::rust::collections::IndexSet::default(),
                             dependencies,
                             schema,
                             auth_config,
@@ -2243,8 +2243,8 @@ mod tests {
                                 > {
                                     fields: store_schema,
                                 })),
-                                key: PhantomData,
-                                value: PhantomData,
+                                key: ::radix_rust::rust::marker::PhantomData,
+                                value: ::radix_rust::rust::marker::PhantomData,
                             }
                         }
                     }

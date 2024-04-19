@@ -14,6 +14,7 @@ use radix_engine_interface::prelude::RoleAssignmentInit;
 use radix_engine_interface::prelude::{FieldValue, MetadataInit};
 use radix_engine_interface::types::NodeId;
 use radix_rust::indexmap;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 use radix_rust::rust::prelude::{Debug, ToOwned};
 

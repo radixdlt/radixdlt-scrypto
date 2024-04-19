@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::{Position, Span, Token, TokenWithSpan};

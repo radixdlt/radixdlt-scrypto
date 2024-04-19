@@ -7,6 +7,7 @@ use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
 

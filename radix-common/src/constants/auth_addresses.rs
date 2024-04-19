@@ -2,6 +2,7 @@ use crate::constants::SYSTEM_TRANSACTION_BADGE;
 use crate::crypto::PublicKey;
 use crate::data::scrypto::model::NonFungibleLocalId;
 use crate::types::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 
 pub struct AuthAddresses;

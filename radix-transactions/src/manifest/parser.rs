@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use crate::manifest::ast::{
     Instruction, InstructionWithSpan, Value, ValueKind, ValueKindWithSpan, ValueWithSpan,
 };

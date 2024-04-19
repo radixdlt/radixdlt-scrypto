@@ -4,6 +4,7 @@ use crate::types::*;
 use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use radix_rust::rust::fmt;
 use radix_rust::rust::prelude::*;
 use radix_rust::ContextualDisplay;
 

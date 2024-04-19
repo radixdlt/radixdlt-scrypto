@@ -2,6 +2,7 @@ use super::*;
 use crate::representations::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::fmt;
 use radix_rust::rust::prelude::*;
 use radix_rust::*;
 

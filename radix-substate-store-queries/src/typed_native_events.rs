@@ -443,7 +443,7 @@ macro_rules! define_structure {
                         )*
                     }
 
-                    impl radix_rust::prelude::FromStr for [< Typed $blueprint_ident BlueprintEventKey >] {
+                    impl ::radix_rust::rust::str::FromStr for [< Typed $blueprint_ident BlueprintEventKey >] {
                         type Err = TypedNativeEventError;
 
                         fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -475,12 +475,12 @@ macro_rules! define_structure {
                         pub fn new(
                             name: &String,
                         ) -> Result<Self, TypedNativeEventError> {
-                            Self::from_str(name)
+                            <Self as ::radix_rust::rust::str::FromStr>::from_str(name)
                         }
 
                         #[allow(unused_mut)]
-                        pub fn registered_events() -> ::radix_rust::prelude::HashSet<String> {
-                            let mut set = ::radix_rust::prelude::HashSet::default();
+                        pub fn registered_events() -> ::radix_rust::rust::collections::HashSet<String> {
+                            let mut set = ::radix_rust::rust::collections::HashSet::default();
                             $(
                                 set.insert(<$event_ty as radix_common::traits::ScryptoEvent>::EVENT_NAME.to_owned());
                             )*
@@ -516,8 +516,8 @@ macro_rules! define_structure {
                         }
                     }
 
-                    pub fn registered_events() -> ::radix_rust::prelude::HashMap<String, ::radix_rust::prelude::HashSet<String>> {
-                        let mut map = ::radix_rust::prelude::HashMap::<String, ::radix_rust::prelude::HashSet<String>>::default();
+                    pub fn registered_events() -> ::radix_rust::rust::collections::HashMap<String, ::radix_rust::rust::collections::HashSet<String>> {
+                        let mut map = ::radix_rust::rust::collections::HashMap::<String, ::radix_rust::rust::collections::HashSet<String>>::default();
                         $(
                             map.insert(
                                 stringify!($blueprint_ident).to_owned(),
@@ -530,8 +530,8 @@ macro_rules! define_structure {
             )*
 
             impl TypedNativeEvent {
-                pub fn registered_events() -> ::radix_rust::prelude::HashMap<String, ::radix_rust::prelude::HashMap<String, ::radix_rust::prelude::HashSet<String>>> {
-                    let mut map = ::radix_rust::prelude::HashMap::<String, ::radix_rust::prelude::HashMap<String, ::radix_rust::prelude::HashSet<String>>>::default();
+                pub fn registered_events() -> ::radix_rust::rust::collections::HashMap<String, ::radix_rust::rust::collections::HashMap<String, ::radix_rust::rust::collections::HashSet<String>>> {
+                    let mut map = ::radix_rust::rust::collections::HashMap::<String, ::radix_rust::rust::collections::HashMap<String, ::radix_rust::rust::collections::HashSet<String>>>::default();
                     $(
                         map.insert(stringify!($package_ident).to_owned(), [< Typed $package_ident PackageEventKey >]::registered_events());
                     )*

@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_common::data::scrypto::{scrypto_encode, ScryptoCustomExtension, ScryptoCustomSchema};
 use radix_common::prelude::SCRYPTO_SBOR_V1_MAX_DEPTH;
 use radix_common::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 use sbor::*;
 

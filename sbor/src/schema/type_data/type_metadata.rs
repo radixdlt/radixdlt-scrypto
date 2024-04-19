@@ -1,4 +1,6 @@
 use crate::*;
+use radix_rust::rust::borrow::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 
 /// This is the struct used in the Schema

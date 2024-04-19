@@ -3,7 +3,6 @@ use crate::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
 use radix_common::types::{NodeId, PartitionNumber, SubstateKey};
-use radix_rust::prelude::{index_map_new, index_set_new, IndexMap, IndexSet};
 use radix_substate_store_interface::interface::DatabaseUpdate;
 
 /// A legacy format capturing the same information as new [`StateUpdates`].

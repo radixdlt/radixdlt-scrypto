@@ -9,6 +9,7 @@ pub mod tier_framework;
 use entity_tier::EntityTier;
 use radix_common::crypto::Hash;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_interface::interface::*;
 use tree_store::*;
 use types::*;

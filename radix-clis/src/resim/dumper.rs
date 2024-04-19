@@ -13,6 +13,7 @@ use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_
 use radix_engine_interface::types::{BlueprintPartitionOffset, CollectionDescriptor};
 use radix_engine_interface::{prelude::MetadataValue, types::PackagePartitionOffset};
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_rust::ContextualDisplay;
 use radix_substate_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},

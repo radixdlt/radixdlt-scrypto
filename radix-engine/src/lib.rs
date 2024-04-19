@@ -49,4 +49,9 @@ pub(crate) mod internal_prelude {
     pub use radix_rust::prelude::*;
     pub use radix_rust::rust::ops::AddAssign;
     pub use radix_rust::rust::ops::SubAssign;
+
+    pub use radix_rust::rust::collections::*;
+    pub use radix_rust::rust::fmt;
+    pub use radix_rust::rust::marker::*;
+    pub use radix_rust::rust::str::FromStr;
 }

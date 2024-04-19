@@ -4,6 +4,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_test::prelude::*;
 

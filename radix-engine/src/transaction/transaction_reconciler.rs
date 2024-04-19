@@ -2,6 +2,7 @@ use crate::blueprints::resource::{
     fungible_vault, non_fungible_vault, BurnFungibleResourceEvent, BurnNonFungibleResourceEvent,
     MintFungibleResourceEvent, MintNonFungibleResourceEvent,
 };
+use crate::internal_prelude::*;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::transaction::{BalanceChange, StateUpdateSummary};
 use radix_common::prelude::scrypto_decode;
@@ -9,8 +10,6 @@ use radix_common::traits::ScryptoEvent;
 use radix_common::types::ResourceAddress;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
-use radix_rust::prelude::IndexMap;
-use radix_rust::rust::ops::AddAssign;
 use radix_rust::rust::ops::Neg;
 use radix_rust::rust::vec::Vec;
 use radix_rust::{btreeset, indexmap};

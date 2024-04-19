@@ -11,6 +11,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 
 /// Represents a resource manager.

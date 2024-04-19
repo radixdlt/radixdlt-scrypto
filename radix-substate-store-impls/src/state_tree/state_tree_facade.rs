@@ -2,6 +2,7 @@ use super::tier_framework::*;
 use super::tree_store::*;
 use super::types::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 
 impl TreeInternalNode {
     fn from(internal_node: &InternalNode) -> Self {

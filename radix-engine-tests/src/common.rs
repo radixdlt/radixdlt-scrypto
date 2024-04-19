@@ -38,6 +38,7 @@ pub mod package_loader {
 pub mod package_loader {
     use radix_common::prelude::*;
     use radix_rust::prelude::*;
+    use radix_rust::rust::str::FromStr;
     use radix_substate_store_queries::typed_substate_layout::*;
     use std::path::PathBuf;
 

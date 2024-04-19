@@ -1,6 +1,7 @@
 use core::marker::PhantomData;
 
 use radix_common::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub trait TypeInfoMarker {
     const PACKAGE_ADDRESS: Option<PackageAddress>;

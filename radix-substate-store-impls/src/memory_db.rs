@@ -1,3 +1,4 @@
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 use radix_substate_store_interface::interface::*;
 

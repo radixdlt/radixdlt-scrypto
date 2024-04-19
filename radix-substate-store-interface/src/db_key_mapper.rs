@@ -7,6 +7,7 @@ use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode,
 use radix_common::types::{FieldKey, MapKey, PartitionNumber, SortedKey};
 use radix_common::types::{NodeId, SubstateKey};
 use radix_rust::copy_u8_array;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 
 /// A mapper between the business ReNode / Partition / Substate IDs and database keys.

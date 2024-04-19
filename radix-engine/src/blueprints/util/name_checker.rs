@@ -1,4 +1,5 @@
 use radix_common::prelude::*;
+use radix_rust::prelude::*;
 
 pub fn check_name(name: &str) -> Result<(), InvalidNameError> {
     let mut iter = name.chars().enumerate();

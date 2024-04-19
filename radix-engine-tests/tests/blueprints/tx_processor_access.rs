@@ -6,6 +6,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 };
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_test::prelude::*;
 

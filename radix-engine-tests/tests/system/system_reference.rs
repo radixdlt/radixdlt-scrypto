@@ -10,6 +10,7 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
 

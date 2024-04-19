@@ -5,7 +5,10 @@ use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
 use radix_rust::copy_u8_array;
+use radix_rust::rust::borrow::*;
+use radix_rust::rust::fmt;
 use radix_rust::rust::prelude::*;
+use radix_rust::rust::str::FromStr;
 use sbor::*;
 
 pub const NON_FUNGIBLE_LOCAL_ID_MAX_LENGTH: usize = 64;

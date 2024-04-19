@@ -1,6 +1,7 @@
 use crate::types::Level;
 use radix_common::crypto::Hash;
 use radix_common::types::GlobalAddress;
+use radix_rust::rust::string::String;
 
 pub trait ClientTransactionRuntimeApi<E> {
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, E>;

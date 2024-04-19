@@ -3,6 +3,7 @@ use radix_engine::transaction::TransactionReceiptV1;
 use radix_engine::vm::NoExtension;
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::str::FromStr;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;

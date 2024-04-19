@@ -5,6 +5,7 @@ use radix_common::data::scrypto::model::*;
 use radix_common::data::scrypto::*;
 use radix_common::math::Decimal;
 use radix_common::types::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 use sbor::*;
 

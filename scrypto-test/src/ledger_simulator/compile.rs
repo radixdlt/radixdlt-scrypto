@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use scrypto_compiler::*;
 use std::path::Path;
 

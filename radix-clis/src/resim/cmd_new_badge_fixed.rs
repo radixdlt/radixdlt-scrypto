@@ -4,6 +4,7 @@ use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedU
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 
 use crate::resim::*;
 

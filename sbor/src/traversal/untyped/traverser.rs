@@ -469,6 +469,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
 #[cfg(test)]
 mod tests {
+    use radix_rust::rust::collections::*;
     use radix_rust::rust::prelude::*;
 
     use super::*;

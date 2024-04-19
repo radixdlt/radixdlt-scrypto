@@ -4,7 +4,7 @@ use radix_engine_interface::{
     blueprints::resource::LiquidFungibleResource,
     types::{NodeId, ResourceAddress},
 };
-use radix_rust::rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::vec::Vec;
 
 pub struct VaultFinder {

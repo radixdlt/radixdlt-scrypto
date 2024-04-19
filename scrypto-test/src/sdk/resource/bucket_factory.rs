@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 
 /// A factory for buckets that can create them (for testing) through multiple creation strategies
 pub struct BucketFactory;

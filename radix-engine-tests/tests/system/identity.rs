@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::identity::{
 };
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use scrypto_test::prelude::*;
 
 #[test]

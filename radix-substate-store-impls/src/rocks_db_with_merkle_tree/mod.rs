@@ -4,6 +4,7 @@ use radix_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_common::prelude::Hash;
 use radix_common::ScryptoSbor;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 use radix_substate_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};

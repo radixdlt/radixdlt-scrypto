@@ -1,5 +1,6 @@
 use crate::value_kind::*;
 use crate::*;
+use radix_rust::rust::marker::*;
 use radix_rust::rust::prelude::*;
 
 /// Represents an error occurred during decoding.
@@ -352,6 +353,7 @@ impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
 mod tests {
     use super::*;
     use radix_rust::rust::cell::RefCell;
+    use radix_rust::rust::collections::*;
     use radix_rust::rust::rc::Rc;
 
     fn encode_decode_size(size: usize) -> Result<(), DecodeError> {

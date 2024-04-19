@@ -1,4 +1,5 @@
 use super::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 
 pub fn generate_full_schema_from_single_type<

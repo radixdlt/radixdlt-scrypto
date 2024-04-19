@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 use crate::types::*;
 use core::fmt::Formatter;
 use radix_common::address::{AddressDisplayContext, NO_NETWORK};
+use radix_rust::rust::fmt;
 use radix_rust::rust::prelude::*;
 use radix_rust::rust::string::String;
 use radix_rust::ContextualDisplay;

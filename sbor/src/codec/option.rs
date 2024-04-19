@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::value_kind::*;
 use crate::*;
-use radix_rust::rust::prelude::indexmap;
+use radix_rust::rust::collections::indexmap;
 
 categorize_generic!(Option<T>, <T>, ValueKind::Enum);
 

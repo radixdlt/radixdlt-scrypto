@@ -9,6 +9,8 @@ use radix_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::str::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;

@@ -4,6 +4,7 @@ use crate::blueprints::resource::*;
 use arbitrary::Arbitrary;
 use radix_common::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::fmt::Debug;
 
 pub const ROLE_ASSIGNMENT_BLUEPRINT: &str = "RoleAssignment";

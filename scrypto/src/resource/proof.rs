@@ -5,6 +5,7 @@ use radix_common::prelude::*;
 use radix_common::traits::NonFungibleData;
 use radix_engine_interface::blueprints::resource::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use runtime::LocalAuthZone;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 

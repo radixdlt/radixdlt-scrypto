@@ -13,7 +13,7 @@ default = ["std"]
 test = []
 
 std = ["sbor/std", "scrypto/std", "radix-rust/std"]
-alloc = ["sbor/alloc", "scrypto/alloc", "radix-rust/std"]
+alloc = ["sbor/alloc", "scrypto/alloc", "radix-rust/alloc"]
 
 [lib]
 bench = false

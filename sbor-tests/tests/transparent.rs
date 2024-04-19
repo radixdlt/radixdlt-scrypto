@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use radix_rust::rust::borrow::*;
 use radix_rust::rust::prelude::*;
 use sbor::*;
 

@@ -1,5 +1,7 @@
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::borrow::*;
+use radix_rust::rust::marker::*;
 use radix_rust::rust::prelude::*;
 
 /// A wrapper for a full encoded SBOR payload, including the prefix byte.

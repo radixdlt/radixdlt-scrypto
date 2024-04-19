@@ -4,7 +4,7 @@ use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_tests::common::*;
-use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use scrypto_test::prelude::*;
 

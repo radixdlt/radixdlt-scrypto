@@ -33,6 +33,7 @@ use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
 use radix_engine::vm::VmBoot;
 pub use radix_engine_interface::object_modules::royalty::*;
+use radix_rust::prelude::*;
 use radix_transactions::prelude::IntentHash;
 
 //=========================================================================

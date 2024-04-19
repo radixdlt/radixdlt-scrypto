@@ -2,6 +2,7 @@ use radix_blueprint_schema_init::*;
 use radix_common::prelude::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::rc::*;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display};

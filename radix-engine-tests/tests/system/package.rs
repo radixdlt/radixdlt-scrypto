@@ -9,6 +9,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine_interface::*;
 use radix_engine_tests::common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use sbor::basic_well_known_types::*;
 use scrypto_test::prelude::*;
 

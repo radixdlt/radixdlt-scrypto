@@ -1,4 +1,5 @@
 use radix_common::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub const TEST_UTILS_BLUEPRINT: &str = "TestUtils";
 

@@ -2,6 +2,7 @@ use proc_macro2::*;
 use quote::*;
 use radix_common::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 
 use crate::token_stream_from_str;
 

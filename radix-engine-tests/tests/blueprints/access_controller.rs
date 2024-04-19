@@ -9,6 +9,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_transactions::prelude::*;
 use scrypto_test::prelude::{CustomGenesis, DefaultLedgerSimulator, LedgerSimulatorBuilder};
 

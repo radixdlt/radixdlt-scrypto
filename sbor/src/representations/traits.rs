@@ -1,5 +1,6 @@
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::fmt;
 use radix_rust::rust::prelude::*;
 
 pub trait CustomDisplayContext<'a>: Default + Copy {

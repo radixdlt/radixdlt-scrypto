@@ -310,6 +310,7 @@ impl<E: CustomExtension> fmt::Display for PayloadValidationError<E> {
 mod tests {
     use super::LocatedValidationError;
     use crate::*;
+    use radix_rust::rust::collections::*;
     use radix_rust::rust::prelude::*;
     use radix_rust::rust::*;
 

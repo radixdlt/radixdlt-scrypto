@@ -3,6 +3,7 @@ use radix_engine::system::system_modules::auth::*;
 use radix_engine::system::system_type_checker::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_queries::typed_substate_layout::*;
 use radix_transactions::prelude::*;
 use scrypto::blueprints::account::*;
@@ -3032,11 +3033,7 @@ pub impl DefaultLedgerSimulator {
         &mut self,
         manifest: TransactionManifestV1,
     ) -> TransactionReceiptV1 {
-        self.execute_manifest_with_enabled_modules(
-            manifest,
-            true,
-            false,
-        )
+        self.execute_manifest_with_enabled_modules(manifest, true, false)
     }
 
     fn execute_manifest_with_enabled_modules(

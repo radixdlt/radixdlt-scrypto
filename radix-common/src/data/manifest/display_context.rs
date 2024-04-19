@@ -1,5 +1,6 @@
 use super::model::*;
 use crate::address::AddressBech32Encoder;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 
 /// Note - this is quite similar to ManifestDecompilationDisplayContext

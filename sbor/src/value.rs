@@ -521,6 +521,7 @@ pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use radix_rust::rust::collections::*;
     use radix_rust::rust::prelude::*;
 
     #[derive(Categorize, Encode)]

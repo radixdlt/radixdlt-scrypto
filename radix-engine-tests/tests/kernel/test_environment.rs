@@ -3,6 +3,7 @@
 use radix_engine_tests::common::*;
 use radix_native_sdk::resource::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_queries::typed_substate_layout::two_resource_pool::*;
 use scrypto_test::prelude::*;
 

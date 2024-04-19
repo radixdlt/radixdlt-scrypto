@@ -5,6 +5,7 @@ use radix_common::math::Decimal;
 use radix_engine_interface::api::{ClientApi, ACTOR_REF_AUTH_ZONE};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 
 pub struct LocalAuthZone {}

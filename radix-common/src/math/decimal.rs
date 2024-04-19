@@ -8,6 +8,7 @@ use radix_rust::rust::fmt;
 use radix_rust::rust::format;
 use radix_rust::rust::ops::*;
 use radix_rust::rust::prelude::*;
+use radix_rust::rust::str::FromStr;
 use sbor::*;
 #[cfg(feature = "fuzzing")]
 use serde::{Deserialize, Serialize};

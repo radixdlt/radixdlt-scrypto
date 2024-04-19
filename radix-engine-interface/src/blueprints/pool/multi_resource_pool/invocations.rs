@@ -6,6 +6,7 @@ use radix_common::math::*;
 use radix_common::prelude::*;
 use radix_common::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 
 define_type_marker!(Some(POOL_PACKAGE), MultiResourcePool);
 

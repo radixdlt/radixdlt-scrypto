@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 use radix_common::data::scrypto::model::*;
 use radix_common::math::*;
 use radix_engine_interface::blueprints::resource::VaultFreezeFlags;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

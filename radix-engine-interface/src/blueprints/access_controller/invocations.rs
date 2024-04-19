@@ -4,8 +4,8 @@ use crate::blueprints::resource::*;
 use radix_common::data::scrypto::model::NonFungibleLocalId;
 use radix_common::prelude::*;
 use radix_common::types::GlobalAddressReservation;
+use radix_rust::rust::collections::IndexSet;
 use radix_rust::rust::fmt::Debug;
-use radix_rust::rust::prelude::IndexSet;
 
 pub const ACCESS_CONTROLLER_BLUEPRINT: &str = "AccessController";
 

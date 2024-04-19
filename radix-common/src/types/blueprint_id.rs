@@ -1,6 +1,7 @@
 use radix_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_common::types::PackageAddress;
 use radix_common::*;
+use radix_rust::rust::fmt;
 use radix_rust::rust::fmt::Formatter;
 use radix_rust::rust::prelude::*;
 use radix_rust::ContextualDisplay;

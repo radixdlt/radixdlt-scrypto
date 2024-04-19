@@ -7,8 +7,8 @@ use crate::state_tree::substate_tier::SubstateSummary;
 use itertools::Itertools;
 use radix_common::crypto::{hash, Hash};
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_rust::prelude::indexmap::indexmap;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_substate_store_interface::interface::*;
 use std::ops::Deref;
 

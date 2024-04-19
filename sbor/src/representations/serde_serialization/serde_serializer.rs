@@ -1,6 +1,7 @@
 use super::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::borrow::*;
 use radix_rust::rust::cell::RefCell;
 use radix_rust::rust::prelude::*;
 use radix_rust::*;
@@ -674,6 +675,7 @@ fn serialize_terminal_value<S: Serializer, E: SerializableCustomExtension>(
 #[cfg(feature = "serde")] // Ensures that VS Code runs this module with the features serde tag!
 mod tests {
     use super::*;
+    use radix_rust::rust::collections::*;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
 
     pub fn assert_json_eq<T: Serialize>(actual: T, expected: JsonValue) {

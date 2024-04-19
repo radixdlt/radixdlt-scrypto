@@ -10,6 +10,7 @@ use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_native_sdk::resource::{NativeFungibleVault, ResourceManager};
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
 

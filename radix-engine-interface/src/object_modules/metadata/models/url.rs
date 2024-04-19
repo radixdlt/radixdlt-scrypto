@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use lazy_static::lazy_static;
+use radix_rust::rust::prelude::*;
 use regex::Regex;
 
 lazy_static! {

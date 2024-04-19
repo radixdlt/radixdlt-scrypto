@@ -75,7 +75,11 @@ pub mod prelude {
 
 pub(crate) mod internal_prelude {
     pub use super::prelude::*;
+    pub use radix_rust::rust::borrow::*;
+    pub use radix_rust::rust::collections::*;
+    pub use radix_rust::rust::fmt;
     pub use radix_rust::rust::prelude::*;
+    pub use radix_rust::rust::str::FromStr;
     pub use radix_rust::*;
     pub use sbor::representations::*;
     pub use sbor::traversal::*;

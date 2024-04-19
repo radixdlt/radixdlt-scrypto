@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 
 /// The creation strategy used in the [`BucketFactory`] and [`ProofFactory`] structs allowing them
 /// to either create them by disabling auth and minting or by mocking the bucket or proof.

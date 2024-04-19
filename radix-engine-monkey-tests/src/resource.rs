@@ -25,6 +25,7 @@ use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_native_sdk::resource::{NativeBucket, NativeVault};
 use radix_rust::indexmap;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_transactions::builder::ManifestBuilder;
 
 pub const BLUEPRINT_NAME: &str = "MyBlueprint";

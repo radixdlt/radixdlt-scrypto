@@ -4,8 +4,8 @@ use crate::blueprints::resource::*;
 use arbitrary::Arbitrary;
 use radix_common::math::Decimal;
 use radix_common::prelude::*;
-use radix_rust::rust::collections::IndexSet;
-use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ScryptoSbor, ManifestSbor)]
 pub enum ResourcePreference {

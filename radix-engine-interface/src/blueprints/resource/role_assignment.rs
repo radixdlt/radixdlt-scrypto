@@ -3,6 +3,7 @@ use crate::object_modules::role_assignment::ToRoleEntry;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 
 use super::AccessRule;
 

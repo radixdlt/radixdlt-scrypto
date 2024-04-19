@@ -12,6 +12,7 @@ use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_interface::prelude::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_transactions::prelude::*;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::{is_auth_error, DefaultLedgerSimulator, LedgerSimulatorBuilder};

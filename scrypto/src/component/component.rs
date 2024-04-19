@@ -24,6 +24,8 @@ use radix_engine_interface::object_modules::metadata::{
 };
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::marker::*;
 use radix_rust::rust::ops::Deref;
 use radix_rust::rust::ops::DerefMut;
 use radix_rust::rust::prelude::*;

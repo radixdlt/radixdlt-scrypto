@@ -309,6 +309,7 @@ checksum = "8452105ba047068f40ff7093dd1d9da90898e63dd61736462e9cdda6a90ad3c3"
 name = "no-std"
 version = "1.2.0-dev"
 dependencies = [
+ "radix-rust",
  "sbor",
  "scrypto",
  "wee_alloc",
@@ -401,6 +402,7 @@ version = "1.2.0-dev"
 dependencies = [
  "bitflags",
  "radix-common",
+ "radix-rust",
  "sbor",
  "serde",
 ]
@@ -427,6 +429,7 @@ dependencies = [
  "serde",
  "sha3",
  "strum",
+ "zeroize",
 ]
 
 [[package]]

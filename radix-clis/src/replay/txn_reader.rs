@@ -3,6 +3,7 @@ use flate2::read::GzDecoder;
 use flume;
 use flume::Sender;
 use radix_rust::prelude::*;
+use radix_rust::rust::str::*;
 use rocksdb::{Direction, IteratorMode, Options, DB};
 use std::fs::File;
 use std::io::Read;

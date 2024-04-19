@@ -9,6 +9,7 @@ use crate::well_known_scrypto_custom_type;
 use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::{Arbitrary, Result, Unstructured};
+use radix_rust::rust::fmt;
 use radix_rust::rust::prelude::*;
 use radix_rust::{copy_u8_array, ContextualDisplay};
 use sbor::*;

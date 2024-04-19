@@ -8,6 +8,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_rust::prelude::*;
+use radix_rust::rust::collections::*;
 use radix_rust::rust::ops::Deref;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
