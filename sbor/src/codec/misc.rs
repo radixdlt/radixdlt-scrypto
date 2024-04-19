@@ -1,10 +1,10 @@
-use crate::rust::borrow::Cow;
-use crate::rust::borrow::ToOwned;
-use crate::rust::boxed::Box;
-use crate::rust::cell::RefCell;
-use crate::rust::rc::Rc;
 use crate::value_kind::*;
 use crate::*;
+use radix_rust::rust::borrow::Cow;
+use radix_rust::rust::borrow::ToOwned;
+use radix_rust::rust::boxed::Box;
+use radix_rust::rust::cell::RefCell;
+use radix_rust::rust::rc::Rc;
 
 impl<'a, X: CustomValueKind, T: ?Sized + Categorize<X>> Categorize<X> for &T {
     #[inline]

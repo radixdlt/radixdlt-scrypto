@@ -21,7 +21,7 @@ use radix_native_sdk::resource::NativeVault;
 use radix_native_sdk::resource::ResourceManager;
 use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use radix_native_sdk::runtime::Runtime;
-use sbor::rust::mem;
+use radix_rust::rust::mem;
 
 use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,

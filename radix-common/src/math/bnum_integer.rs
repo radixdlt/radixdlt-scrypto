@@ -8,16 +8,16 @@ use num_bigint::BigInt;
 use num_integer::Roots;
 use num_traits::{FromPrimitive, One, Pow, ToPrimitive, Zero};
 use paste::paste;
-use sbor::rust::cmp::{Ord, Ordering, PartialEq, PartialOrd};
-use sbor::rust::convert::{From, TryFrom};
-use sbor::rust::fmt;
-use sbor::rust::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
-use sbor::rust::ops::{BitXor, BitXorAssign, Div, DivAssign};
-use sbor::rust::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
-use sbor::rust::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
-use sbor::rust::str::FromStr;
-use sbor::rust::string::*;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::cmp::{Ord, Ordering, PartialEq, PartialOrd};
+use radix_rust::rust::convert::{From, TryFrom};
+use radix_rust::rust::fmt;
+use radix_rust::rust::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
+use radix_rust::rust::ops::{BitXor, BitXorAssign, Div, DivAssign};
+use radix_rust::rust::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
+use radix_rust::rust::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
+use radix_rust::rust::str::FromStr;
+use radix_rust::rust::string::*;
+use radix_rust::rust::vec::Vec;
 #[cfg(feature = "fuzzing")]
 use serde::{Deserialize, Serialize};
 
@@ -124,8 +124,8 @@ macro_rules! types {
                 impl Eq for $t {
                 }
 
-                impl sbor::rust::hash::Hash for $t {
-                    fn hash<H>(&self, state: &mut H) where H: sbor::rust::hash::Hasher {
+                impl radix_rust::rust::hash::Hash for $t {
+                    fn hash<H>(&self, state: &mut H) where H: radix_rust::rust::hash::Hasher {
                         self.0.hash(state)
                     }
                 }

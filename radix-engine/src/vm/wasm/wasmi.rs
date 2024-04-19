@@ -10,10 +10,10 @@ use crate::vm::wasm::traits::*;
 use crate::vm::wasm::WasmEngine;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
-use sbor::rust::mem::transmute;
-use sbor::rust::mem::MaybeUninit;
+use radix_rust::rust::mem::transmute;
+use radix_rust::rust::mem::MaybeUninit;
 #[cfg(not(feature = "fuzzing"))]
-use sbor::rust::sync::Arc;
+use radix_rust::rust::sync::Arc;
 use wasmi::core::Value;
 use wasmi::core::{HostError, Trap};
 use wasmi::errors::InstantiationError;
@@ -1834,7 +1834,7 @@ impl WasmiEngine {
     pub fn new(options: WasmiEngineOptions) -> Self {
         #[cfg(all(not(feature = "fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
-            sbor::rust::num::NonZeroUsize::new(options.max_cache_size).unwrap(),
+            radix_rust::rust::num::NonZeroUsize::new(options.max_cache_size).unwrap(),
         ));
         #[cfg(all(not(feature = "fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()

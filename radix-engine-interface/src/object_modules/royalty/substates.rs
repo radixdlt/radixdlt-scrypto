@@ -1,6 +1,6 @@
 use crate::blueprints::resource::Vault;
 use crate::internal_prelude::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct ComponentRoyaltySubstate {

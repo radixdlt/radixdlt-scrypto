@@ -4,8 +4,8 @@ use crate::vm::wasm::errors::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::ActorRefHandle;
 use radix_engine_interface::blueprints::package::CodeHash;
-use sbor::rust::boxed::Box;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::boxed::Box;
+use radix_rust::rust::vec::Vec;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {

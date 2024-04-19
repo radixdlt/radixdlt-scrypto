@@ -1,6 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 #[test]

@@ -1,8 +1,8 @@
 use super::*;
 use crate::basic_well_known_types::ANY_TYPE;
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 pub fn traverse_payload_with_types<'de, 's, E: CustomExtension>(
     payload: &'de [u8],

@@ -1,10 +1,10 @@
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_rust::copy_u8_array;
-use sbor::rust::convert::TryFrom;
+use radix_rust::rust::convert::TryFrom;
 #[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::fmt;
+use radix_rust::rust::vec::Vec;
 use sbor::*;
 
 use crate::data::manifest::*;

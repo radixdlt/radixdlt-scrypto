@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::package::{
     IndexedStateSchema, PackageExport, VmType, *,
 };
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
 use radix_rust::ContextualDisplay;
 use radix_substate_store_interface::interface::DatabaseUpdates;
 use radix_substate_store_interface::{

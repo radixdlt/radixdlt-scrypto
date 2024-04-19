@@ -50,8 +50,8 @@ mod tests {
     use crate::data::scrypto::{scrypto_encode, ScryptoValue};
     use crate::math::*;
     use crate::types::*;
+    use radix_rust::rust::vec;
     use radix_rust::ContextualSerialize;
-    use sbor::rust::vec;
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
 

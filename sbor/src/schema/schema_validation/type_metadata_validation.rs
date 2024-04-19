@@ -1,6 +1,6 @@
 use super::*;
-use crate::rust::prelude::*;
 use crate::schema::*;
+use radix_rust::rust::prelude::*;
 
 pub fn validate_type_metadata_with_type_kind<'a, S: CustomSchema>(
     context: &SchemaContext,

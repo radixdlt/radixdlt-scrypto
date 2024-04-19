@@ -14,7 +14,7 @@ use num_traits::Zero;
 use radix_engine_interface::api::{ClientObjectApi, LockFlags, ModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::resource::{NativeNonFungibleProof, NativeProof};
-use sbor::rust::ops::Fn;
+use radix_rust::rust::ops::Fn;
 
 pub struct Authorization;
 

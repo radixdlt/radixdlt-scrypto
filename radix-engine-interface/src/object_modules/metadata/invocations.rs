@@ -1,8 +1,8 @@
 use super::*;
 use crate::internal_prelude::*;
 use radix_common::data::scrypto::model::Own;
-use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::*;
+use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::prelude::*;
 
 pub const METADATA_BLUEPRINT: &str = "Metadata";
 

@@ -5,6 +5,7 @@
 
 use radix_common::prelude::*;
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
 use radix_transactions::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
 use radix_transactions::prelude::*;
 

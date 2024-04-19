@@ -1,6 +1,6 @@
-use crate::rust::mem::MaybeUninit;
 use crate::value_kind::*;
 use crate::*;
+use radix_rust::rust::mem::MaybeUninit;
 
 impl<X: CustomValueKind, T> Categorize<X> for [T] {
     #[inline]
@@ -28,7 +28,7 @@ impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>> Encode<
         encoder.write_size(self.len())?;
         if T::value_kind() == ValueKind::U8 || T::value_kind() == ValueKind::I8 {
             let ptr = self.as_ptr().cast::<u8>();
-            let slice = unsafe { sbor::rust::slice::from_raw_parts(ptr, self.len()) };
+            let slice = unsafe { radix_rust::rust::slice::from_raw_parts(ptr, self.len()) };
             encoder.write_slice(slice)?;
         } else {
             for v in self {

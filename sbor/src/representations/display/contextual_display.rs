@@ -1,8 +1,8 @@
 use super::*;
 use crate::representations::*;
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 use radix_rust::*;
 
 #[derive(Debug, Clone, Copy)]

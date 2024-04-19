@@ -7,6 +7,7 @@ use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_rust::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::FungibleResourceManagerError;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::*;

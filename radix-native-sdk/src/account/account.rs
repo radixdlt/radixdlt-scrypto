@@ -3,7 +3,7 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::types::ComponentAddress;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::fmt::Debug;
 
 #[derive(Debug)]
 pub struct Account(pub ComponentAddress);

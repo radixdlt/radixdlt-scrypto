@@ -4,7 +4,7 @@ use crate::runtime::*;
 use crate::*;
 use radix_common::data::scrypto::{scrypto_decode, ScryptoDecode};
 use radix_engine_interface::types::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, ScryptoSbor)]
 pub enum ObjectStubHandle {

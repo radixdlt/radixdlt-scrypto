@@ -3,11 +3,11 @@ use arbitrary::Arbitrary;
 use core::cmp::Ordering;
 use num_bigint::BigInt;
 use num_traits::{Pow, Zero};
-use sbor::rust::convert::TryFrom;
-use sbor::rust::fmt;
-use sbor::rust::format;
-use sbor::rust::ops::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::convert::TryFrom;
+use radix_rust::rust::fmt;
+use radix_rust::rust::format;
+use radix_rust::rust::ops::*;
+use radix_rust::rust::prelude::*;
 use sbor::*;
 #[cfg(feature = "fuzzing")]
 use serde::{Deserialize, Serialize};

@@ -1,7 +1,7 @@
 use crate::*;
 use lazy_static::lazy_static;
 use radix_common::types::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub use radix_common::constants::*;
 

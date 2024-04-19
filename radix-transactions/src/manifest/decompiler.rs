@@ -47,7 +47,7 @@ use radix_engine_interface::object_modules::royalty::{
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 use sbor::*;
 
 #[derive(Debug, Clone)]

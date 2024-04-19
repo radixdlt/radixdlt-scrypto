@@ -6,7 +6,7 @@ use bitflags::bitflags;
 use radix_common::data::scrypto::model::*;
 use radix_common::data::scrypto::ScryptoCustomTypeKind;
 use radix_common::data::scrypto::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 use sbor::*;
 
 pub const VAULT_PUT_IDENT: &str = "put";

@@ -14,6 +14,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::{
     METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
 };
+use radix_rust::prelude::*;
 use scrypto::component::HasStub;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]

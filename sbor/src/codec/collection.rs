@@ -1,9 +1,9 @@
-use crate::rust::collections::*;
-use crate::rust::hash::Hash;
-use crate::rust::ptr::copy;
-use crate::rust::vec::Vec;
 use crate::value_kind::*;
 use crate::*;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::hash::Hash;
+use radix_rust::rust::ptr::copy;
+use radix_rust::rust::vec::Vec;
 
 categorize_generic!(Vec<T>, <T>, ValueKind::Array);
 categorize_generic!(BTreeSet<T>, <T>, ValueKind::Array);

@@ -6,8 +6,8 @@ use radix_common::math::Decimal;
 use radix_engine_interface::api::{ClientApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::IndexSet;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::collections::IndexSet;
+use radix_rust::rust::fmt::Debug;
 
 use super::ResourceManager;
 

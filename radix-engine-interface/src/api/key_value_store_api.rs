@@ -5,7 +5,7 @@ use radix_common::types::*;
 use radix_common::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::LockFlags;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 use sbor::LocalTypeId;
 use sbor::{generate_full_schema, TypeAggregator};
 

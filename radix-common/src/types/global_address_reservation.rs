@@ -5,7 +5,7 @@ use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_common::data::scrypto::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 use sbor::*;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]

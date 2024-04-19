@@ -1,7 +1,7 @@
-use crate::rust::fmt::Debug;
 use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use radix_rust::rust::fmt::Debug;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[cfg_attr(
@@ -30,7 +30,7 @@ pub enum ValueKind<X: CustomValueKind> {
     Custom(X),
 }
 
-impl<X: CustomValueKind> crate::rust::fmt::Display for ValueKind<X> {
+impl<X: CustomValueKind> radix_rust::rust::fmt::Display for ValueKind<X> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Custom(x) => write!(f, "{:?}", x),

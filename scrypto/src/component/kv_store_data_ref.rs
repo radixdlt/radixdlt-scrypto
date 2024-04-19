@@ -2,9 +2,9 @@ use crate::engine::scrypto_env::ScryptoVmV1Api;
 use radix_common::data::scrypto::*;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::types::SubstateHandle;
-use sbor::rust::fmt;
-use sbor::rust::marker::PhantomData;
-use sbor::rust::ops::{Deref, DerefMut};
+use radix_rust::rust::fmt;
+use radix_rust::rust::marker::PhantomData;
+use radix_rust::rust::ops::{Deref, DerefMut};
 
 pub struct KeyValueEntryRef<'a, V: ScryptoEncode> {
     lock_handle: KeyValueEntryHandle,

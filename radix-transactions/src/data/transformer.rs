@@ -10,7 +10,7 @@ use radix_common::data::scrypto::model::{Own, Reference};
 use radix_common::data::scrypto::{
     ScryptoCustomValue, ScryptoCustomValueKind, ScryptoValue, ScryptoValueKind,
 };
-use sbor::rust::vec::Vec;
+use radix_rust::rust::vec::Vec;
 
 pub trait TransformHandler<E> {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, E>;

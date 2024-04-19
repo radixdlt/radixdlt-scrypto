@@ -2,8 +2,8 @@ use crate::api::ActorStateHandle;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_common::types::SortedKey;
 use radix_engine_interface::api::CollectionIndex;
-use sbor::rust::prelude::*;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::prelude::*;
+use radix_rust::rust::vec::Vec;
 
 pub trait SortedIndexKeyPayloadMarker {}
 pub trait SortedIndexEntryPayloadMarker {}

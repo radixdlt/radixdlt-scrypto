@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::vec;
+use radix_rust::rust::vec;
 use sbor::*;
 
 #[derive(Categorize, Decode, Debug, PartialEq)]

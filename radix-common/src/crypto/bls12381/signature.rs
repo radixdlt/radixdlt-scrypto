@@ -4,11 +4,11 @@ use blst::{
     BLST_ERROR,
 };
 use radix_rust::copy_u8_array;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::borrow::ToOwned;
+use radix_rust::rust::fmt;
+use radix_rust::rust::str::FromStr;
+use radix_rust::rust::string::String;
+use radix_rust::rust::vec::Vec;
 use sbor::*;
 
 /// BLS12-381 ciphersuite v1

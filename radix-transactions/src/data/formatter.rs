@@ -5,9 +5,9 @@ use radix_common::data::manifest::{
 };
 use radix_common::types::NonFungibleGlobalId;
 use radix_engine_interface::types::ResourceAddress;
+use radix_rust::rust::collections::NonIterMap;
+use radix_rust::rust::fmt;
 use radix_rust::ContextualDisplay;
-use sbor::rust::collections::NonIterMap;
-use sbor::rust::fmt;
 use sbor::*;
 
 #[derive(Clone, Copy, Debug)]

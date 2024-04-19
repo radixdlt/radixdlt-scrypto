@@ -7,9 +7,9 @@ use radix_common::data::scrypto::*;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::object_modules::metadata::*;
-use sbor::rust::prelude::*;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
+use radix_rust::rust::prelude::*;
+use radix_rust::rust::string::String;
+use radix_rust::rust::string::ToString;
 use sbor::*;
 use scrypto::modules::Attachable;
 

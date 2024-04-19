@@ -8,6 +8,7 @@ use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
 

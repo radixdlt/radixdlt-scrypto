@@ -1,5 +1,5 @@
-use crate::rust::prelude::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 define_versioned!(
     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

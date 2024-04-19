@@ -1,5 +1,5 @@
-use crate::rust::prelude::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 mod type_kind;
 mod type_metadata;
@@ -49,7 +49,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink> TypeData<C, L> {
     pub fn struct_with_unit_fields(name: &'static str) -> Self {
         Self::new(
             TypeKind::Tuple {
-                field_types: crate::rust::vec![],
+                field_types: radix_rust::rust::vec![],
             },
             TypeMetadata::no_child_names(name),
         )

@@ -1,7 +1,7 @@
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
-use sbor::rust::fmt;
+use radix_rust::rust::fmt;
+use radix_rust::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PayloadValidationError<E: CustomExtension> {
@@ -309,7 +309,9 @@ impl<E: CustomExtension> fmt::Display for PayloadValidationError<E> {
 #[cfg(test)]
 mod tests {
     use super::LocatedValidationError;
-    use crate::{rust::prelude::*, *};
+    use crate::*;
+    use radix_rust::rust::prelude::*;
+    use radix_rust::rust::*;
 
     #[derive(Sbor)]
     struct TestStructArray {

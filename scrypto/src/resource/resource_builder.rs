@@ -16,7 +16,7 @@ use radix_engine_interface::object_modules::role_assignment::RoleDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 use sbor::FixedEnumVariant;
 use scrypto::resource::ResourceManager;
 

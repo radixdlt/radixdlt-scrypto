@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::collections::{hash_map_new, hash_set_new};
-use sbor::rust::vec::Vec;
+use radix_rust::rust::collections::{hash_map_new, hash_set_new};
+use radix_rust::rust::vec::Vec;
 use sbor::*;
 
 fn encode_new_hash_set(forward: bool) -> Vec<u8> {

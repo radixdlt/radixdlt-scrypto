@@ -1,6 +1,6 @@
 use crate::network::NetworkDefinition;
 use crate::types::EntityType;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 /// Represents an HRP set (typically corresponds to a network).
 #[derive(Debug, Clone)]

@@ -3,6 +3,7 @@ use radix_engine::system::system_modules::execution_trace::{
     ApplicationFnIdentifier, ExecutionTrace, ResourceSpecifier, TraceOrigin, WorktopChange,
 };
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use radix_transactions::model::PreviewFlags;
 use scrypto_test::prelude::*;
 

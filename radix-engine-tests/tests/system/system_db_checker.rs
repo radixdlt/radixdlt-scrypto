@@ -6,6 +6,7 @@ use radix_engine::system::checkers::{
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use radix_substate_store_interface::interface::{
@@ -18,8 +19,12 @@ fn system_database_checker_should_report_missing_owner_error_on_broken_db() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
+    let mut bootstrapper = Bootstrapper::new(
+        NetworkDefinition::simulator(),
+        &mut substate_db,
+        vm_init,
+        true,
+    );
     bootstrapper.bootstrap_test_default().unwrap();
     let (node_key, partition_num, sort_key, update) = (
         SpreadPrefixKeyMapper::to_db_node_key(PACKAGE_PACKAGE.as_node_id()),

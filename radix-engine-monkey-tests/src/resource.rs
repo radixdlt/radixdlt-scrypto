@@ -1,7 +1,6 @@
 use crate::{ResourceComponentMeta, SystemTestFuzzer};
 use radix_common::data::manifest::ManifestArgs;
 use radix_common::manifest_args;
-use radix_common::prelude::IndexMap;
 use radix_common::prelude::{
     manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ManifestValue,
     NonFungibleLocalId, ScryptoValue,
@@ -25,6 +24,7 @@ use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_native_sdk::resource::{NativeBucket, NativeVault};
 use radix_rust::indexmap;
+use radix_rust::prelude::*;
 use radix_transactions::builder::ManifestBuilder;
 
 pub const BLUEPRINT_NAME: &str = "MyBlueprint";

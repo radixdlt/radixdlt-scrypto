@@ -2,7 +2,7 @@ use cargo_toml::Manifest;
 use radix_common::prelude::*;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
-use radix_rust::prelude::{IndexMap, IndexSet};
+use radix_rust::prelude::*;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};

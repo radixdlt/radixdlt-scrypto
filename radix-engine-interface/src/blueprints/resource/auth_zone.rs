@@ -2,10 +2,10 @@ use crate::blueprints::resource::*;
 use radix_common::data::scrypto::model::*;
 use radix_common::math::Decimal;
 use radix_common::types::*;
-use sbor::rust::collections::IndexSet;
-use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::*;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::collections::IndexSet;
+use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::prelude::*;
+use radix_rust::rust::vec::Vec;
 
 pub const AUTH_ZONE_BLUEPRINT: &str = "AuthZone";
 

@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use radix_rust::prelude::*;
 use scrypto_compiler::*;
 use std::path::Path;
 
@@ -18,7 +19,7 @@ impl Compile {
     // required for compile-blueprints-at-build-time feature in radix-engine-tests
     pub fn compile_with_env_vars<P: AsRef<Path>>(
         package_dir: P,
-        env_vars: sbor::rust::collections::BTreeMap<String, String>,
+        env_vars: radix_rust::rust::collections::BTreeMap<String, String>,
     ) -> (Vec<u8>, PackageDefinition) {
         // Initialize compiler
         let mut compiler_builder = ScryptoCompiler::builder();

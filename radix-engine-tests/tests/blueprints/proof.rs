@@ -3,6 +3,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_test::prelude::*;
 

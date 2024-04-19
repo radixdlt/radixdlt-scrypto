@@ -2,7 +2,7 @@
 macro_rules! event_schema {
     ($aggregator: ident, [$($event_type: ty),* $(,)?]) => {
         {
-            let mut event_schema = sbor::rust::collections::index_map_new();
+            let mut event_schema = radix_rust::rust::collections::index_map_new();
             $(
                 event_schema.insert(
                     <$event_type as radix_common::traits::ScryptoEvent>::EVENT_NAME.to_string(),

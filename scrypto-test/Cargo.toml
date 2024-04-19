@@ -10,6 +10,7 @@ repository = "https://github.com/radixdlt/radixdlt-scrypto"
 [dependencies]
 # The Radix Engine Stack
 sbor = { workspace = true }
+radix-rust = { workspace = true }
 radix-native-sdk = { workspace = true }
 radix-transactions = { workspace = true }
 radix-engine = { workspace = true, features = ["radix_engine_tests", "db_checker"] }
@@ -30,8 +31,8 @@ tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], 
 [features]
 default = ["std"]
 
-std = ["moka", "sbor/std", "radix-native-sdk/std", "scrypto-compiler/std", "radix-transactions/std", "radix-engine/std", "radix-substate-store-queries/std", "radix-substate-store-impls/std", "radix-common/std", "radix-engine-interface/std", "radix-substate-store-interface/std"]
-alloc = ["lru", "sbor/alloc", "radix-native-sdk/alloc", "scrypto-compiler/alloc", "radix-transactions/alloc", "radix-engine/alloc", "radix-substate-store-queries/alloc", "radix-substate-store-impls/alloc", "radix-common/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc"]
+std = ["moka", "sbor/std", "radix-rust/std", "radix-native-sdk/std", "scrypto-compiler/std", "radix-transactions/std", "radix-engine/std", "radix-substate-store-queries/std", "radix-substate-store-impls/std", "radix-common/std", "radix-engine-interface/std", "radix-substate-store-interface/std"]
+alloc = ["lru", "sbor/alloc", "radix-rust/std", "radix-native-sdk/alloc", "scrypto-compiler/alloc", "radix-transactions/alloc", "radix-engine/alloc", "radix-substate-store-queries/alloc", "radix-substate-store-impls/alloc", "radix-common/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc"]
 
 moka = ["radix-engine/moka"]
 lru = ["radix-engine/lru"]

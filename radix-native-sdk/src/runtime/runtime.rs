@@ -10,7 +10,7 @@ use radix_engine_interface::blueprints::resource::{
     AccessRule, AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::types::Epoch;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 #[derive(Debug)]
 pub struct Runtime {}

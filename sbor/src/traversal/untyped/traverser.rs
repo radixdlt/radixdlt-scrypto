@@ -1,8 +1,8 @@
 use super::*;
 use crate::decoder::BorrowingDecoder;
-use crate::rust::prelude::*;
 use crate::value_kind::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 /// Returns the length of the value at the start of the partial payload.
 pub fn calculate_value_tree_body_byte_length<'de, 's, E: CustomExtension>(
@@ -370,7 +370,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     fn decode_string_body(&mut self) -> Result<&'de str, DecodeError> {
         let size = self.decoder.read_size()?;
         let bytes_slices = self.decoder.read_slice_from_payload(size)?;
-        sbor::rust::str::from_utf8(bytes_slices).map_err(|_| DecodeError::InvalidUtf8)
+        radix_rust::rust::str::from_utf8(bytes_slices).map_err(|_| DecodeError::InvalidUtf8)
     }
 
     fn decode_enum_variant_header<'t>(
@@ -469,7 +469,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::rust::prelude::*;
+    use radix_rust::rust::prelude::*;
 
     use super::*;
 

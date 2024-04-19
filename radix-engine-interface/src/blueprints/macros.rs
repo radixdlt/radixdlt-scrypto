@@ -126,11 +126,11 @@ macro_rules! define_invocation {
 
 macro_rules! resolve_struct_definition {
     ($name: ident, $derive: ty$(,)?) => {
-        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq, $derive)]
+        #[derive(radix_rust::rust::fmt::Debug, Eq, PartialEq, $derive)]
         pub struct $name;
     };
     ($name: ident, $derive: ty, $($ident: ident: $type: ty),* $(,)?) => {
-        #[derive(sbor::rust::fmt::Debug, Eq, PartialEq, $derive)]
+        #[derive(radix_rust::rust::fmt::Debug, Eq, PartialEq, $derive)]
         pub struct $name {
             $(
                 pub $ident: $type,

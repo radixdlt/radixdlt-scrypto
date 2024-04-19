@@ -27,6 +27,7 @@ pub use num_traits::{
 };
 pub use radix_common::prelude::*;
 pub use radix_engine_interface::prelude::*;
+pub use radix_rust::prelude::*;
 
 //=======
 // SBOR

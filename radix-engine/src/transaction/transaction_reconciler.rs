@@ -10,11 +10,11 @@ use radix_common::types::ResourceAddress;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::types::{Emitter, EventTypeIdentifier};
 use radix_rust::prelude::IndexMap;
+use radix_rust::rust::ops::AddAssign;
+use radix_rust::rust::ops::Neg;
+use radix_rust::rust::vec::Vec;
 use radix_rust::{btreeset, indexmap};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use sbor::rust::ops::AddAssign;
-use sbor::rust::ops::Neg;
-use sbor::rust::vec::Vec;
 
 pub fn reconcile_resource_state_and_events<'a, S: SubstateDatabase>(
     summary: &StateUpdateSummary,

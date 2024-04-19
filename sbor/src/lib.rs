@@ -32,8 +32,6 @@ pub mod path;
 pub mod payload_validation;
 /// SBOR textual representations
 pub mod representations;
-/// A facade of Rust types.
-pub mod rust;
 /// SBOR Schema
 pub mod schema;
 /// SBOR structured payload traversal.
@@ -86,9 +84,6 @@ pub extern crate paste;
 ///
 /// Feel free to add more types to the prelude
 pub mod prelude {
-    // Upstream preludes
-    pub use radix_rust::prelude::*;
-
     // Exports from current crate
     pub use crate::encoded_wrappers::{RawPayload as SborRawPayload, RawValue as SborRawValue};
     pub use crate::enum_variant::FixedEnumVariant as SborFixedEnumVariant;

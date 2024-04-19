@@ -1,5 +1,6 @@
 use radix_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
+use radix_rust::prelude::*;
 use radix_transactions::define_raw_transaction_payload;
 use radix_transactions::prelude::*;
 use sbor::FixedEnumVariant;

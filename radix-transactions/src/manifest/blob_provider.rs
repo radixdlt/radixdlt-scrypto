@@ -1,5 +1,5 @@
 use radix_common::prelude::{hash, Hash};
-use sbor::prelude::*;
+use radix_rust::prelude::*;
 
 type Blob = Vec<u8>;
 type BlobReference = Hash;

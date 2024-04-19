@@ -1,6 +1,6 @@
-use radix_common::prelude::*;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
+use radix_rust::prelude::*;
+use radix_rust::rust::vec;
+use radix_rust::rust::vec::Vec;
 
 #[test]
 fn overlaying_iterator_overlays_changes() {

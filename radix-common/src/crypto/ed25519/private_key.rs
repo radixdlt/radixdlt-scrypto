@@ -48,7 +48,7 @@ impl Ed25519PrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::rust::str::FromStr;
+    use radix_rust::rust::str::FromStr;
 
     #[test]
     fn sign_and_verify() {

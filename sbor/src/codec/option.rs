@@ -1,7 +1,7 @@
 use crate::constants::*;
-use crate::prelude::indexmap;
 use crate::value_kind::*;
 use crate::*;
+use radix_rust::rust::prelude::indexmap;
 
 categorize_generic!(Option<T>, <T>, ValueKind::Enum);
 
@@ -56,12 +56,12 @@ impl<C: CustomTypeKind<RustTypeId>, T: Describe<C>> Describe<C> for Option<T> {
 
     fn type_data() -> TypeData<C, RustTypeId> {
         #[allow(unused_imports)]
-        use crate::rust::borrow::ToOwned;
+        use radix_rust::rust::borrow::ToOwned;
         TypeData::enum_variants(
             "Option",
             indexmap![
-                OPTION_VARIANT_NONE => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![]}, "None"),
-                OPTION_VARIANT_SOME => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![T::TYPE_ID]}, "Some"),
+                OPTION_VARIANT_NONE => TypeData::no_child_names(TypeKind::Tuple {field_types: radix_rust::rust::vec![]}, "None"),
+                OPTION_VARIANT_SOME => TypeData::no_child_names(TypeKind::Tuple {field_types: radix_rust::rust::vec![T::TYPE_ID]}, "Some"),
             ],
         )
     }

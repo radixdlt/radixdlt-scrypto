@@ -2,10 +2,10 @@ use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode,
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ACTOR_STATE_SELF;
 use radix_engine_interface::types::*;
-use sbor::rust::fmt;
-use sbor::rust::marker::PhantomData;
-use sbor::rust::ops::{Deref, DerefMut};
-use sbor::rust::prelude::*;
+use radix_rust::rust::fmt;
+use radix_rust::rust::marker::PhantomData;
+use radix_rust::rust::ops::{Deref, DerefMut};
+use radix_rust::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 pub struct DataRef<V: ScryptoEncode> {

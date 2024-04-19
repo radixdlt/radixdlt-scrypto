@@ -8,9 +8,9 @@ use radix_common::prelude::ManifestBucket;
 use radix_common::prelude::CONSENSUS_MANAGER_PACKAGE;
 use radix_common::time::{Instant, TimeComparisonOperator};
 use radix_common::types::*;
-use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::string::String;
+use radix_rust::rust::vec::Vec;
 
 pub const CONSENSUS_MANAGER_BLUEPRINT: &str = "ConsensusManager";
 pub const VALIDATOR_BLUEPRINT: &str = "Validator";

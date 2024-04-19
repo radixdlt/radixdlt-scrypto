@@ -1,6 +1,6 @@
-use crate::rust::prelude::*;
 use crate::value_kind::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 /// Represents an error occurred during decoding.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
@@ -351,8 +351,8 @@ impl<'de, X: CustomValueKind> BorrowingDecoder<'de, X> for VecDecoder<'de, X> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::cell::RefCell;
-    use crate::rust::rc::Rc;
+    use radix_rust::rust::cell::RefCell;
+    use radix_rust::rust::rc::Rc;
 
     fn encode_decode_size(size: usize) -> Result<(), DecodeError> {
         // Encode

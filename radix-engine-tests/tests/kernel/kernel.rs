@@ -18,6 +18,7 @@ use radix_engine::kernel::kernel_callback_api::{
 };
 use radix_engine::track::{BootStore, Track};
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_transactions::model::{Executable, PreAllocatedAddress};
@@ -52,7 +53,11 @@ impl KernelCallbackObject for TestCallbackObject {
     type CallFrameData = TestCallFrameData;
     type InitInput = ();
 
-    fn init<S: BootStore>(_store: &S, _executable: &Executable, _init_input: Self::InitInput) -> Result<Self, BootloadingError> {
+    fn init<S: BootStore>(
+        _store: &S,
+        _executable: &Executable,
+        _init_input: Self::InitInput,
+    ) -> Result<Self, BootloadingError> {
         Ok(Self)
     }
 

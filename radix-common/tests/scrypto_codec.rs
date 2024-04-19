@@ -4,16 +4,16 @@
 use radix_common::data::scrypto::model::NonFungibleLocalId;
 use radix_common::data::scrypto::*;
 use radix_common::*;
-use sbor::rust::boxed::Box;
-use sbor::rust::cell::RefCell;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::{hash_map_new, HashMap};
-use sbor::rust::collections::{hash_set_new, HashSet};
-use sbor::rust::hash::Hash;
-use sbor::rust::rc::Rc;
-use sbor::rust::string::String;
-use sbor::rust::vec;
+use radix_rust::rust::boxed::Box;
+use radix_rust::rust::cell::RefCell;
+use radix_rust::rust::collections::BTreeMap;
+use radix_rust::rust::collections::BTreeSet;
+use radix_rust::rust::collections::{hash_map_new, HashMap};
+use radix_rust::rust::collections::{hash_set_new, HashSet};
+use radix_rust::rust::hash::Hash;
+use radix_rust::rust::rc::Rc;
+use radix_rust::rust::string::String;
+use radix_rust::rust::vec;
 use sbor::*;
 
 #[test]

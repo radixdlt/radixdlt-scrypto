@@ -30,7 +30,7 @@ pub use worktop::*;
 use arbitrary::Arbitrary;
 use radix_common::math::*;
 use radix_common::{ManifestSbor, ScryptoSbor};
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
     !amount.is_negative()

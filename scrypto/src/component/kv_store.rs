@@ -10,7 +10,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::prelude::{
     LocalKeyValueStoreDataSchema, KV_STORE_DATA_SCHEMA_VARIANT_LOCAL,
 };
-use sbor::rust::marker::PhantomData;
+use radix_rust::rust::marker::PhantomData;
 use sbor::*;
 
 /// A scalable key-value map which loads entries on demand.

@@ -1,10 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::borrow::Cow;
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::*;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::borrow::Cow;
+use radix_rust::rust::boxed::Box;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::string::String;
+use radix_rust::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Sbor)]

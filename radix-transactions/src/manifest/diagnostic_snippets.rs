@@ -1,7 +1,7 @@
 use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::token::Span;
 use annotate_snippets::{Annotation, AnnotationType, Renderer, Slice, Snippet, SourceAnnotation};
-use sbor::rust::cmp::min;
+use radix_rust::rust::cmp::min;
 
 pub fn create_snippet(
     s: &str,

@@ -1,6 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};

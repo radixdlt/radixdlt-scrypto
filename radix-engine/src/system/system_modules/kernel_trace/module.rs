@@ -12,7 +12,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::types::SubstateKey;
-use sbor::rust::collections::BTreeMap;
+use radix_rust::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule;
@@ -21,7 +21,7 @@ pub struct KernelTraceModule;
 macro_rules! log {
     ( $api: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
-        println!("{}[{}] {}", "    ".repeat($api.kernel_get_current_depth()), $api.kernel_get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
+        println!("{}[{}] {}", "    ".repeat($api.kernel_get_current_depth()), $api.kernel_get_current_depth(), radix_rust::rust::format!($msg, $( $arg ),*));
     };
 }
 

@@ -24,9 +24,9 @@ use radix_engine_interface::object_modules::metadata::{
 };
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
-use sbor::rust::ops::Deref;
-use sbor::rust::ops::DerefMut;
-use sbor::rust::prelude::*;
+use radix_rust::rust::ops::Deref;
+use radix_rust::rust::ops::DerefMut;
+use radix_rust::rust::prelude::*;
 use sbor::*;
 use sbor::{
     Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, RustTypeId,

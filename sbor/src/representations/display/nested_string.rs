@@ -1,8 +1,8 @@
 use super::*;
 use crate::representations::*;
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 use TypedTraversalEvent::*;
 
 // TODO - This file could do with a minor refactor to commonize logic to print fields

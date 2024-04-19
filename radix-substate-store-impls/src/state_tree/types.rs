@@ -82,12 +82,12 @@
 use itertools::Itertools;
 use radix_common::crypto::{hash, Hash};
 use radix_common::Sbor;
-use sbor::rust::collections::hash_map::HashMap;
-use sbor::rust::ops::Range;
-use sbor::rust::string::String;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
-use sbor::rust::{fmt, iter::FromIterator};
+use radix_rust::rust::collections::hash_map::HashMap;
+use radix_rust::rust::ops::Range;
+use radix_rust::rust::string::String;
+use radix_rust::rust::vec;
+use radix_rust::rust::vec::Vec;
+use radix_rust::rust::{fmt, iter::FromIterator};
 
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/types/src/proof/definition.rs#L182
 /// A more detailed version of `SparseMerkleProof` with the only difference that all the leaf

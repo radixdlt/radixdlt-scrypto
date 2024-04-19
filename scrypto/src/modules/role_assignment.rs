@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub trait HasRoleAssignment {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A);

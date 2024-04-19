@@ -9,6 +9,7 @@ repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
 sbor = { workspace = true }
+radix-rust = { workspace = true }
 radix-common = { workspace = true }
 serde = { workspace = true, optional = true }
 bitflags = { workspace = true }
@@ -16,8 +17,8 @@ bitflags = { workspace = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "radix-common/std", "serde?/std"]
-alloc = ["sbor/alloc", "radix-common/alloc", "serde?/alloc"]
+std = ["sbor/std", "radix-common/std", "serde?/std", "radix-rust/std"]
+alloc = ["sbor/alloc", "radix-common/alloc", "serde?/alloc", "radix-rust/std"]
 
 # Enable serde derives
 serde = ["serde/derive", "sbor/serde", "radix-common/serde"]

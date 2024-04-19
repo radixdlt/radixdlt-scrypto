@@ -1,5 +1,5 @@
 use bech32;
-use sbor::rust::fmt;
+use radix_rust::rust::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddressBech32EncodeError {

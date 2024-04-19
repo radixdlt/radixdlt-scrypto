@@ -1,8 +1,8 @@
 use super::*;
-use crate::rust::cell::RefCell;
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::cell::RefCell;
+use radix_rust::rust::prelude::*;
 use radix_rust::*;
 use serde::ser::*;
 use TypedTraversalEvent::*;

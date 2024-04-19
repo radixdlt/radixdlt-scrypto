@@ -797,7 +797,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
                 use ::scrypto::radix_blueprint_schema_init::*;
-                use ::sbor::rust::prelude::*;
+                use ::radix_rust::rust::prelude::*;
                 use ::sbor::schema::*;
                 use ::sbor::*;
 
@@ -1350,7 +1350,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                     quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                            use ::sbor::rust::ops::{Deref, DerefMut};
+                            use ::radix_rust::rust::ops::{Deref, DerefMut};
 
                             // Set up panic hook
                             ::scrypto::set_up_panic_hook();
@@ -1972,7 +1972,7 @@ mod tests {
 
                     #[no_mangle]
                     pub extern "C" fn Test_x(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                        use ::sbor::rust::ops::{Deref, DerefMut};
+                        use ::radix_rust::rust::ops::{Deref, DerefMut};
 
                         // Set up panic hook
                         ::scrypto::set_up_panic_hook();
@@ -1986,7 +1986,7 @@ mod tests {
 
                     #[no_mangle]
                     pub extern "C" fn Test_y(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                        use ::sbor::rust::ops::{Deref, DerefMut};
+                        use ::radix_rust::rust::ops::{Deref, DerefMut};
 
                         // Set up panic hook
                         ::scrypto::set_up_panic_hook();
@@ -2007,7 +2007,7 @@ mod tests {
                     #[no_mangle]
                     pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
                         use ::scrypto::radix_blueprint_schema_init::*;
-                        use ::sbor::rust::prelude::*;
+                        use ::radix_rust::rust::prelude::*;
                         use ::sbor::schema::*;
                         use ::sbor::*;
 

@@ -1,7 +1,7 @@
 use super::model::{ManifestDecimal, ManifestNonFungibleLocalId, ManifestPreciseDecimal};
 use crate::data::scrypto::model::*;
 use crate::math::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 /* Utils for conversion between "trusted" manifest value and rust value */
 

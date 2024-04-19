@@ -7,6 +7,7 @@ use radix_engine::{
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::{
     AccountNativePackage, BlueprintPayloadDef,
 };

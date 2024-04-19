@@ -1,5 +1,5 @@
 use const_sha1::ConstSlice;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::fmt::Debug;
 use sbor::*;
 
 /// Marker trait for a link between [`TypeKind`]s:

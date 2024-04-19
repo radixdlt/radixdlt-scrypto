@@ -1,5 +1,5 @@
 pub mod basic_well_known_types {
-    use sbor::rust::prelude::*;
+    use radix_rust::rust::prelude::*;
     use sbor::*;
 
     pub const BOOL_TYPE: WellKnownTypeId = WellKnownTypeId::of(VALUE_KIND_BOOL);

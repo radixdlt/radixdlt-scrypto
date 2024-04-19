@@ -1,7 +1,7 @@
 use bitflags::bitflags;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
-use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::vec::Vec;
 use sbor::*;
 
 bitflags! {

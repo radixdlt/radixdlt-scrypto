@@ -7,7 +7,7 @@ use radix_common::data::scrypto::ScryptoCustomValueKind;
 use radix_common::data::scrypto::*;
 use radix_common::math::*;
 use radix_common::types::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 use sbor::*;
 
 pub const BUCKET_TAKE_IDENT: &str = "take";

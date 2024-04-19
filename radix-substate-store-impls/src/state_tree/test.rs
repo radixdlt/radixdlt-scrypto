@@ -7,9 +7,9 @@ use crate::state_tree::substate_tier::SubstateSummary;
 use itertools::Itertools;
 use radix_common::crypto::{hash, Hash};
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_rust::prelude::indexmap::indexmap;
 use radix_rust::prelude::*;
 use radix_substate_store_interface::interface::*;
-use sbor::prelude::indexmap::indexmap;
 use std::ops::Deref;
 
 // Note: in some tests, we assert on the low-level DB key encoding, so we need this detail, and

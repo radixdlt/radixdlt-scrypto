@@ -2,6 +2,7 @@ use paste::paste;
 use radix_common::prelude::*;
 use radix_engine::vm::wasm::WasmModule;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 // Verify WASM sign-extensions, which were enabled by default to the wasm32 target

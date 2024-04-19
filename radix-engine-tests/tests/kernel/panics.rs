@@ -11,6 +11,7 @@ use radix_engine::track::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
 use radix_substate_store_interface::db_key_mapper::*;
 
 #[cfg(feature = "std")]

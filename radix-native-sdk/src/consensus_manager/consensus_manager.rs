@@ -8,7 +8,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::types::ComponentAddress;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::fmt::Debug;
 
 #[derive(Debug)]
 pub struct ConsensusManager(pub ComponentAddress);

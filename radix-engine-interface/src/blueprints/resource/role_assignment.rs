@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 use crate::object_modules::role_assignment::ToRoleEntry;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use radix_rust::prelude::*;
 
 use super::AccessRule;
 

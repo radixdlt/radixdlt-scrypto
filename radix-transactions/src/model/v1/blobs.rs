@@ -1,4 +1,5 @@
 use radix_common::constants::MAX_NUMBER_OF_BLOBS;
+use radix_rust::prelude::*;
 
 use super::*;
 use crate::internal_prelude::*;

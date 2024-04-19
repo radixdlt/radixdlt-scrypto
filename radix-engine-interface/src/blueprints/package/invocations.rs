@@ -10,8 +10,8 @@ use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit,
 use radix_common::data::manifest::model::ManifestAddressReservation;
 use radix_common::data::manifest::model::ManifestBlobRef;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
+use radix_rust::rust::prelude::*;
 use sbor::basic_well_known_types::ANY_TYPE;
-use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";

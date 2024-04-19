@@ -2,7 +2,6 @@ use super::*;
 use crate::internal_prelude::*;
 use radix_engine_interface::blueprints::locker::*;
 use radix_engine_interface::blueprints::package::*;
-use sbor::prelude::*;
 
 pub struct LockerNativePackage;
 

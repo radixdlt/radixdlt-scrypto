@@ -4,7 +4,7 @@ use radix_blueprint_schema_init::KeyValueStoreGenericSubstitutions;
 use radix_common::types::BlueprintId;
 use radix_common::types::{GenericSubstitution, GlobalAddress};
 use radix_engine_interface::api::AttachedModuleId;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum OuterObjectInfo {

@@ -4,7 +4,8 @@ version = "1.2.0-dev"
 edition = "2021"
 
 [dev-dependencies]
-scrypto = { workspace = true}
+scrypto = { workspace = true }
+radix-rust = { workspace = true }
 sbor = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -12,5 +13,5 @@ bech32 = { workspace = true }
 
 [features]
 default = ["std"]
-std = ["serde/std", "serde_json/std", "scrypto/std", "scrypto/serde", "sbor/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "scrypto/alloc", "scrypto/serde", "sbor/alloc"]
+std = ["serde/std", "serde_json/std", "scrypto/std", "scrypto/serde", "sbor/std", "radix-rust/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "scrypto/alloc", "scrypto/serde", "sbor/alloc", "radix-rust/std"]

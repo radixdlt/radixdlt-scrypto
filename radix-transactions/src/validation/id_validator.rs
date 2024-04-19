@@ -8,7 +8,7 @@ use radix_common::data::scrypto::model::Own;
 use radix_common::prelude::Reference;
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::*;
-use sbor::rust::collections::*;
+use radix_rust::rust::collections::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofKind {

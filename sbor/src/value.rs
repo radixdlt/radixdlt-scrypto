@@ -3,13 +3,13 @@ use crate::decoder::*;
 use crate::encode::*;
 use crate::encoder::*;
 use crate::path::SborPathBuf;
-use crate::rust::fmt::Debug;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
 use crate::value_kind::*;
 use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::string::String;
+use radix_rust::rust::vec::Vec;
 
 /// Represents any value conforming to the SBOR value model.
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
@@ -521,7 +521,7 @@ pub trait ValueVisitor<X: CustomValueKind, Y: CustomValue<X>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::prelude::*;
+    use radix_rust::rust::prelude::*;
 
     #[derive(Categorize, Encode)]
     struct TestStruct {

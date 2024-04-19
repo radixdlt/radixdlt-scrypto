@@ -126,7 +126,7 @@ mod schema {
                 fn type_data() -> TypeData<C, RustTypeId> {
                     TypeData::unnamed(
                         TypeKind::Tuple {
-                            field_types: crate::rust::vec![
+                            field_types: radix_rust::rust::vec![
                                 $($name::TYPE_ID,)*
                             ]
                         }

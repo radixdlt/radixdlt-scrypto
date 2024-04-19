@@ -39,5 +39,6 @@ pub(crate) mod internal_prelude {
     pub use radix_common::prelude::*;
     pub use radix_engine::transaction::*;
     pub use radix_engine_interface::prelude::*;
+    pub use radix_rust::prelude::*;
     pub use radix_transactions::prelude::*;
 }

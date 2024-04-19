@@ -7,8 +7,8 @@ use radix_engine_interface::{
     blueprints::resource::{require, AccessRule},
     rule,
 };
+use radix_rust::rust::fmt;
 use radix_rust::ContextualDisplay;
-use sbor::rust::fmt;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

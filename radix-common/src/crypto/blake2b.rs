@@ -11,7 +11,7 @@ pub fn blake2b_256_hash<T: AsRef<[u8]>>(data: T) -> Hash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::rust::str::FromStr;
+    use radix_rust::rust::str::FromStr;
 
     #[test]
     fn test_blake2b_hash() {

@@ -12,6 +12,7 @@ use radix_engine_interface::object_modules::metadata::*;
 use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::object_modules::royalty::*;
 use radix_engine_interface::object_modules::ModuleConfig;
+use radix_rust::prelude::*;
 
 /// A manifest builder for use in tests.
 ///

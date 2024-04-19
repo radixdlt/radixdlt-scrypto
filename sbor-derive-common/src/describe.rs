@@ -75,7 +75,7 @@ fn handle_transparent_describe(
                 let type_name = get_sbor_attribute_string_value(&attrs, "type_name")?
                     .unwrap_or(ident.to_string());
                 type_data_content = quote! {
-                    use ::sbor::rust::prelude::*;
+                    use ::radix_rust::rust::prelude::*;
                     #type_data_content
                         .with_name(Some(Cow::Borrowed(#type_name)))
                 };
@@ -165,7 +165,7 @@ fn handle_normal_describe(
                         fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                             ::sbor::TypeData::struct_with_named_fields(
                                 #type_name,
-                                ::sbor::rust::vec![
+                                ::radix_rust::rust::vec![
                                     #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                 ],
                             )
@@ -191,7 +191,7 @@ fn handle_normal_describe(
                         fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
                             ::sbor::TypeData::struct_with_unnamed_fields(
                                 #type_name,
-                                ::sbor::rust::vec![
+                                ::radix_rust::rust::vec![
                                     #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                 ],
                             )
@@ -239,7 +239,7 @@ fn handle_normal_describe(
                                 quote! {
                                     ::sbor::TypeData::struct_with_named_fields(
                                         #variant_name,
-                                        ::sbor::rust::vec![
+                                        ::radix_rust::rust::vec![
                                             #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                         ],
                                     )
@@ -249,7 +249,7 @@ fn handle_normal_describe(
                                 quote! {
                                     ::sbor::TypeData::struct_with_unnamed_fields(
                                         #variant_name,
-                                        ::sbor::rust::vec![
+                                        ::radix_rust::rust::vec![
                                             #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                         ],
                                     )
@@ -272,10 +272,10 @@ fn handle_normal_describe(
                     const TYPE_ID: ::sbor::RustTypeId = #type_id;
 
                     fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
-                        use ::sbor::rust::borrow::ToOwned;
+                        use ::radix_rust::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             #type_name,
-                            ::sbor::rust::prelude::indexmap![
+                            ::radix_rust::rust::prelude::indexmap![
                                 #(#variant_discriminators => #variant_type_data,)*
                             ],
                         )
@@ -325,7 +325,7 @@ mod tests {
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             "Test",
-                            ::sbor::rust::vec![
+                            ::radix_rust::rust::vec![
                                 ("a", <u32 as ::sbor::Describe<C>>::TYPE_ID),
                                 ("b", <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID),
                                 ("c", <u32 as ::sbor::Describe<C>>::TYPE_ID),
@@ -369,7 +369,7 @@ mod tests {
                             ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             "Test",
-                            ::sbor::rust::vec![
+                            ::radix_rust::rust::vec![
                                 (
                                     "a",
                                     <u32 as ::sbor::Describe<
@@ -423,7 +423,7 @@ mod tests {
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_unnamed_fields(
                             "Test",
-                            ::sbor::rust::vec![
+                            ::radix_rust::rust::vec![
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
                                 <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID,
                                 <u32 as ::sbor::Describe<C>>::TYPE_ID,
@@ -486,21 +486,21 @@ mod tests {
                     );
 
                     fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
-                        use ::sbor::rust::borrow::ToOwned;
+                        use ::radix_rust::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             "Test",
-                            ::sbor::rust::prelude::indexmap![
+                            ::radix_rust::rust::prelude::indexmap![
                                 0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
                                 1u8 => ::sbor::TypeData::struct_with_unnamed_fields(
                                     "B",
-                                    ::sbor::rust::vec![
+                                    ::radix_rust::rust::vec![
                                         <T as ::sbor::Describe<C>>::TYPE_ID,
                                         <Vec<T2> as ::sbor::Describe<C>>::TYPE_ID,
                                     ],
                                 ),
                                 2u8 => ::sbor::TypeData::struct_with_named_fields(
                                     "C",
-                                    ::sbor::rust::vec![
+                                    ::radix_rust::rust::vec![
                                         ("x", <[u8; 5] as ::sbor::Describe<C>>::TYPE_ID),
                                     ],
                                 ),

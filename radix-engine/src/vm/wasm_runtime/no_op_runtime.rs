@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 use crate::system::system_modules::costing::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::api::actor_api::EventFlags;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::vec::Vec;
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
 pub struct NoOpWasmRuntime<'a> {

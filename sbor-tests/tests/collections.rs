@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![no_std]
 
-use sbor::rust::collections::*;
+use radix_rust::rust::collections::*;
 
 #[test]
 pub fn btreemap_macros_compile() {

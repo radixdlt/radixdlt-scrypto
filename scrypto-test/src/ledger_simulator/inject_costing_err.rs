@@ -20,6 +20,7 @@ use radix_engine::transaction::WrappedSystem;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;

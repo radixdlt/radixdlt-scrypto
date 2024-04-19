@@ -1,5 +1,5 @@
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub type KeyValueEntryHandle = u32;
 

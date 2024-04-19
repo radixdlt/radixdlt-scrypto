@@ -1,6 +1,7 @@
 use crate::blueprints::package::BlueprintType;
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
+use radix_rust::prelude::*;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;

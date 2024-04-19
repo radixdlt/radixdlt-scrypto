@@ -9,6 +9,7 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::*;
 

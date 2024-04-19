@@ -7,9 +7,9 @@ use radix_common::ScryptoSbor;
 use radix_engine_interface::api::{AttachedModuleId, ACTOR_REF_SELF};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
-use sbor::rust::marker::PhantomData;
-use sbor::rust::ops::Deref;
-use sbor::rust::prelude::*;
+use radix_rust::rust::marker::PhantomData;
+use radix_rust::rust::ops::Deref;
+use radix_rust::rust::prelude::*;
 use scrypto::prelude::ScryptoDecode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor)]

@@ -2,7 +2,7 @@ use super::*;
 use crate::constants::RESOURCE_PACKAGE;
 use crate::internal_prelude::*;
 use basic_well_known_types::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 use sbor::*;
 
 fn unnamed_custom_type_kind<L: SchemaTypeLink>(

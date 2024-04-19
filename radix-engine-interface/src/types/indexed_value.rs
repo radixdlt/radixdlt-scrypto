@@ -1,11 +1,11 @@
 use core::cell::RefCell;
 use radix_common::data::scrypto::*;
 use radix_common::types::*;
+use radix_rust::rust::cell::Ref;
+use radix_rust::rust::fmt;
+use radix_rust::rust::prelude::*;
 use radix_rust::ContextualDisplay;
 use sbor::representations::*;
-use sbor::rust::cell::Ref;
-use sbor::rust::fmt;
-use sbor::rust::prelude::*;
 use sbor::traversal::*;
 use sbor::*;
 

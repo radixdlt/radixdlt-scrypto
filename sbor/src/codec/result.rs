@@ -59,13 +59,13 @@ impl<C: CustomTypeKind<RustTypeId>, T: Describe<C>, E: Describe<C>> Describe<C> 
 
     fn type_data() -> TypeData<C, RustTypeId> {
         #[allow(unused_imports)]
-        use crate::rust::borrow::ToOwned;
-        use crate::rust::collections::*;
+        use radix_rust::rust::borrow::ToOwned;
+        use radix_rust::rust::collections::*;
         TypeData::enum_variants(
             "Result",
             indexmap![
-                RESULT_VARIANT_OK => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![T::TYPE_ID]}, "Ok"),
-                RESULT_VARIANT_ERR => TypeData::no_child_names(TypeKind::Tuple {field_types: crate::rust::vec![E::TYPE_ID]}, "Err"),
+                RESULT_VARIANT_OK => TypeData::no_child_names(TypeKind::Tuple {field_types: radix_rust::rust::vec![T::TYPE_ID]}, "Ok"),
+                RESULT_VARIANT_ERR => TypeData::no_child_names(TypeKind::Tuple {field_types: radix_rust::rust::vec![E::TYPE_ID]}, "Err"),
             ],
         )
     }

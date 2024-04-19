@@ -4,8 +4,8 @@ use radix_engine_interface::{
     blueprints::resource::LiquidFungibleResource,
     types::{NodeId, ResourceAddress},
 };
-use sbor::rust::prelude::*;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::prelude::*;
+use radix_rust::rust::vec::Vec;
 
 pub struct VaultFinder {
     vaults: IndexMap<ResourceAddress, Vec<NodeId>>,

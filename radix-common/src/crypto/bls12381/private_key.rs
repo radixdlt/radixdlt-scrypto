@@ -39,7 +39,7 @@ impl Bls12381G1PrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::rust::str::FromStr;
+    use radix_rust::rust::str::FromStr;
 
     fn get_aggregate_verify_test_data(
         cnt: u32,

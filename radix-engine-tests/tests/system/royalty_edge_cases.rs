@@ -1,6 +1,7 @@
 use radix_engine::errors::*;
 use radix_engine::transaction::*;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::*;
 use scrypto_test::prelude::*;
 

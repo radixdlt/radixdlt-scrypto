@@ -1,5 +1,5 @@
-use crate::rust::string::String;
 use crate::*;
+use radix_rust::rust::string::String;
 
 mod type_kind_validation;
 mod type_metadata_validation;
@@ -68,7 +68,7 @@ pub struct SchemaContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::prelude::*;
+    use radix_rust::rust::prelude::*;
 
     fn create_schema(type_data: Vec<TypeData<NoCustomTypeKind, LocalTypeId>>) -> BasicSchema {
         let mut type_kinds = vec![];

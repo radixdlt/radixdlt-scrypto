@@ -59,6 +59,7 @@ use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::ResourceAddress;
 use radix_engine_interface::*;
+use radix_rust::prelude::*;
 use sbor::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

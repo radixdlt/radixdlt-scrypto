@@ -1,7 +1,7 @@
 use super::RoyaltyRecipient;
 use crate::internal_prelude::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use sbor::rust::collections::*;
+use radix_rust::rust::collections::*;
 
 #[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct FeeReserveFinalizationSummary {

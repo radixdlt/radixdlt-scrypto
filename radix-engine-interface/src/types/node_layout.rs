@@ -1,7 +1,7 @@
 use crate::api::*;
 use crate::internal_prelude::*;
 use crate::types::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!

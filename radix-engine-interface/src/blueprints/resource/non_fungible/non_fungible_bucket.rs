@@ -1,8 +1,8 @@
 use crate::blueprints::resource::{Bucket, Proof};
 use crate::internal_prelude::*;
 use radix_common::data::scrypto::model::*;
-use sbor::rust::collections::IndexSet;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::collections::IndexSet;
+use radix_rust::rust::fmt::Debug;
 
 pub const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str =
     "create_proof_of_non_fungibles";

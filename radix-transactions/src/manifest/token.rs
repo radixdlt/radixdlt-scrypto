@@ -1,5 +1,5 @@
-use sbor::rust::fmt;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::fmt;
+use radix_rust::rust::fmt::Debug;
 
 /// The span of tokens. The `start` and `end` are Unicode code points / UTF-32 - as opposed to a
 /// byte-based / UTF-8 index.

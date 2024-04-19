@@ -25,7 +25,7 @@ use radix_native_sdk::modules::role_assignment::{
 use radix_native_sdk::resource::NativeBucket;
 use radix_native_sdk::resource::NativeVault;
 use radix_native_sdk::runtime::Runtime;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {

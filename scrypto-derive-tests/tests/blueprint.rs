@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(unused_imports)]
 
+use radix_rust::prelude::*;
 use scrypto::prelude::*;
 
 #[blueprint]

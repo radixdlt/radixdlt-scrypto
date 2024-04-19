@@ -14,8 +14,8 @@ use radix_engine_interface::prelude::RoleAssignmentInit;
 use radix_engine_interface::prelude::{FieldValue, MetadataInit};
 use radix_engine_interface::types::NodeId;
 use radix_rust::indexmap;
-use sbor::rust::prelude::*;
-use sbor::rust::prelude::{Debug, ToOwned};
+use radix_rust::rust::prelude::*;
+use radix_rust::rust::prelude::{Debug, ToOwned};
 
 #[derive(Debug)]
 pub struct BorrowedObject(pub NodeId);

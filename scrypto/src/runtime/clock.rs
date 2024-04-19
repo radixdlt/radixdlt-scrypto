@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     TimePrecision, CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
 };
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::fmt::Debug;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 /// The system clock

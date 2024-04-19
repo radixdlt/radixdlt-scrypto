@@ -1,7 +1,7 @@
 use crate::manifest::compiler::CompileErrorDiagnosticsStyle;
 use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::token::{Position, Span, Token, TokenWithSpan};
-use sbor::prelude::*;
+use radix_rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExpectedChar {

@@ -1,6 +1,6 @@
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
     type CustomTypeValidation: CustomTypeValidation;

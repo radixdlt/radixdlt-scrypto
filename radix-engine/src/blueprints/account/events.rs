@@ -2,7 +2,7 @@ use crate::internal_prelude::*;
 use radix_common::math::Decimal;
 use radix_common::{ScryptoEvent, ScryptoSbor};
 use radix_engine_interface::blueprints::account::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]
 pub enum WithdrawEvent {

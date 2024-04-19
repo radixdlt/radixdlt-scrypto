@@ -11,6 +11,7 @@ use radix_engine::transaction::CostingParameters;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use radix_substate_store_queries::typed_substate_layout::{
     ConsensusManagerError, ValidatorRewardAppliedEvent,
 };

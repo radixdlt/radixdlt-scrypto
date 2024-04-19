@@ -18,6 +18,7 @@ use radix_common::math::Decimal;
 use radix_common::time::Instant;
 use radix_common::types::GlobalAddress;
 use radix_common::types::NonFungibleGlobalId;
+use radix_rust::prelude::*;
 use sbor::SborEnum;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]

@@ -17,9 +17,9 @@ use radix_engine_interface::object_modules::royalty::{
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::types::ComponentRoyaltyConfig;
-use sbor::rust::string::ToString;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::string::ToString;
+use radix_rust::rust::vec;
+use radix_rust::rust::vec::Vec;
 use scrypto::modules::Attachable;
 
 pub trait HasComponentRoyalties {

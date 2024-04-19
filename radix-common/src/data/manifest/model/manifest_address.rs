@@ -4,7 +4,7 @@ use crate::types::NodeId;
 use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::rust::fmt;
+use radix_rust::rust::fmt;
 use sbor::*;
 
 /// Any address supported by manifest, both global and local.

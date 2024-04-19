@@ -1,5 +1,5 @@
-use crate::rust::prelude::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 /// This is the struct used in the Schema
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

@@ -14,10 +14,10 @@ use radix_common::types::{SortedKey, SubstateKey};
 use radix_common::ScryptoSbor;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
+use radix_rust::prelude::*;
+use radix_rust::rust::collections::BTreeSet;
+use radix_rust::rust::collections::LinkedList;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
-use sbor::prelude::Vec;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::LinkedList;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SubstateDevice {

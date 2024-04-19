@@ -4,9 +4,9 @@ use crate::internal_prelude::*;
 use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_interface::api::{ActorStateHandle, LockFlags};
-use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::string::String;
+use radix_rust::rust::vec::Vec;
 
 bitflags! {
     #[derive(Sbor)]

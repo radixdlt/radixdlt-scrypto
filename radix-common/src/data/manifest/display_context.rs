@@ -1,6 +1,6 @@
 use super::model::*;
 use crate::address::AddressBech32Encoder;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 /// Note - this is quite similar to ManifestDecompilationDisplayContext
 /// - except this is used with formatting of an encoded payload, rather than a ManifestValue itself

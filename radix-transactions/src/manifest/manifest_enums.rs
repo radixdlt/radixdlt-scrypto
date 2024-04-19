@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use sbor::rust::collections::NonIterMap;
+use radix_rust::rust::collections::NonIterMap;
 
 macro_rules! known_enum {
     ($map: expr, enum $name:ident { $($variant:ident = $id:expr;)* }) => {

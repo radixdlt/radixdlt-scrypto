@@ -2,6 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::blueprints::resource::NonFungibleVaultError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 fn get_non_fungibles_on_vault(vault_size: usize, non_fungibles_size: u32, expected_size: usize) {

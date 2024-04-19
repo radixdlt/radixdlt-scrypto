@@ -5,8 +5,8 @@ use crate::{
     transaction::{AbortReason, CostingParameters},
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_rust::rust::cmp::min;
 use radix_transactions::prelude::TransactionCostingParameters;
-use sbor::rust::cmp::min;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FeeReserveError {

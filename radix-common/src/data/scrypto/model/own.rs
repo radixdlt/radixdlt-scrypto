@@ -5,8 +5,8 @@ use crate::*;
 use arbitrary::Arbitrary;
 use radix_rust::copy_u8_array;
 #[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::prelude::*;
+use radix_rust::rust::fmt;
+use radix_rust::rust::prelude::*;
 use sbor::*;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]

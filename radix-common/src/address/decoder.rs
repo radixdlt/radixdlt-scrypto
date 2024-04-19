@@ -3,7 +3,7 @@ use crate::address::AddressBech32DecodeError;
 use crate::network::NetworkDefinition;
 use crate::types::EntityType;
 use bech32::{self, FromBase32, Variant};
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 /// Represents a decoder which understands how to decode Scrypto addresses in Bech32.
 pub struct AddressBech32Decoder {

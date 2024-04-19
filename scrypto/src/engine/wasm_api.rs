@@ -1,7 +1,7 @@
 // Re-export
 pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
-use sbor::rust::vec::Vec;
+use radix_rust::rust::vec::Vec;
 
 pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
     let len = buffer.len() as usize;
@@ -21,7 +21,7 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
     // Note that the memory used by the Vec is forever leaked.
     // However, it's not an issue since the wasm instance will be destroyed after engine
     // consuming the data.
-    sbor::rust::mem::forget(vec);
+    radix_rust::rust::mem::forget(vec);
 
     Slice::new(ptr as u32, len as u32)
 }

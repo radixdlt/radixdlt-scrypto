@@ -1,6 +1,6 @@
-use crate::rust::marker::PhantomData;
-use crate::rust::vec::Vec;
 use crate::*;
+use radix_rust::rust::marker::PhantomData;
+use radix_rust::rust::vec::Vec;
 
 /// Represents an error occurred during encoding.
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
@@ -178,12 +178,12 @@ impl<'a, X: CustomValueKind> Encoder<X> for VecEncoder<'a, X> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::borrow::ToOwned;
-    use crate::rust::boxed::Box;
-    use crate::rust::collections::*;
-    use crate::rust::string::String;
-    use crate::rust::vec;
     use crate::BasicEncoder;
+    use radix_rust::rust::borrow::ToOwned;
+    use radix_rust::rust::boxed::Box;
+    use radix_rust::rust::collections::*;
+    use radix_rust::rust::string::String;
+    use radix_rust::rust::vec;
 
     fn do_encoding(encoder: &mut BasicEncoder) -> Result<(), EncodeError> {
         encoder.encode(&())?;
@@ -306,7 +306,7 @@ mod tests {
         let mut set = BTreeSet::<u8>::new();
         set.insert(1);
         set.insert(2);
-        let x = crate::rust::borrow::Cow::Borrowed(&set);
+        let x = radix_rust::rust::borrow::Cow::Borrowed(&set);
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&x).unwrap();
@@ -315,7 +315,7 @@ mod tests {
 
     #[test]
     pub fn test_encode_cow_owned() {
-        use crate::rust::borrow::Cow;
+        use radix_rust::rust::borrow::Cow;
         let x: Cow<u8> = Cow::Owned(5u8);
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes, 256);
@@ -334,7 +334,7 @@ mod tests {
 
     #[test]
     pub fn test_encode_rc() {
-        let x = crate::rust::rc::Rc::new(5u8);
+        let x = radix_rust::rust::rc::Rc::new(5u8);
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&x).unwrap();
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     pub fn test_encode_ref_cell() {
-        let x = crate::rust::cell::RefCell::new(5u8);
+        let x = radix_rust::rust::cell::RefCell::new(5u8);
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes, 256);
         encoder.encode(&x).unwrap();

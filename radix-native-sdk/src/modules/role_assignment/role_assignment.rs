@@ -8,8 +8,8 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::types::NodeId;
-use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::*;
+use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::prelude::*;
 
 pub struct RoleAssignment(pub Own);
 

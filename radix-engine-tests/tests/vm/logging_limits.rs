@@ -3,6 +3,7 @@ use radix_engine::{
     system::system_modules::limits::TransactionLimitsError,
 };
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {

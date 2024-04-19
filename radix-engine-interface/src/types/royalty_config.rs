@@ -1,7 +1,7 @@
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_common::types::RoyaltyAmount;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 use crate::internal_prelude::*;
 

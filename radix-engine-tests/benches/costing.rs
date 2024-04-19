@@ -17,9 +17,10 @@ use radix_engine::{
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
+use radix_rust::rust::iter;
 use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
 use radix_transactions::prelude::TransactionCostingParameters;
-use sbor::rust::iter;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
 use wabt::wat2wasm;
 

@@ -10,10 +10,10 @@ use radix_common::prelude::*;
 use radix_common::traits::NonFungibleData;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
-use sbor::rust::collections::{IndexMap, IndexSet};
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::collections::{IndexMap, IndexSet};
+use radix_rust::rust::string::String;
+use radix_rust::rust::string::ToString;
+use radix_rust::rust::vec::Vec;
 use sbor::{generate_full_schema, LocalTypeId, TypeAggregator};
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceManager";

@@ -9,7 +9,7 @@ use radix_native_sdk::resource::NativeFungibleVault;
 use radix_native_sdk::resource::NativeNonFungibleVault;
 use radix_native_sdk::resource::NativeVault;
 use radix_native_sdk::runtime::Runtime;
-use sbor::rust::boxed::Box;
+use radix_rust::rust::boxed::Box;
 
 use super::PrimaryRoleBadgeWithdrawAttemptState;
 use super::RecoveryRoleBadgeWithdrawAttemptState;

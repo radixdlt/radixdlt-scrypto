@@ -151,7 +151,7 @@ macro_rules! count {
 macro_rules! scrypto_args {
     ($($args: expr),*) => {{
         use ::sbor::Encoder;
-        let mut buf = ::sbor::rust::vec::Vec::new();
+        let mut buf = ::radix_rust::rust::vec::Vec::new();
         let mut encoder = $crate::data::scrypto::ScryptoEncoder::new(
             &mut buf,
             $crate::data::scrypto::SCRYPTO_SBOR_V1_MAX_DEPTH,
@@ -176,7 +176,7 @@ macro_rules! scrypto_args {
 macro_rules! manifest_args {
     ($($args: expr),*$(,)?) => {{
         use ::sbor::Encoder;
-        let mut buf = ::sbor::rust::vec::Vec::new();
+        let mut buf = ::radix_rust::rust::vec::Vec::new();
         let mut encoder = $crate::data::manifest::ManifestEncoder::new(&mut buf, $crate::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH);
         encoder.write_payload_prefix($crate::data::manifest::MANIFEST_SBOR_V1_PAYLOAD_PREFIX).unwrap();
         encoder.write_value_kind($crate::data::manifest::ManifestValueKind::Tuple).unwrap();

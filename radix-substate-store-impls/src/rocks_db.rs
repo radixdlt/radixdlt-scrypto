@@ -1,13 +1,13 @@
 use itertools::Itertools;
 use radix_common::constants::MAX_SUBSTATE_KEY_SIZE;
 use radix_rust::copy_u8_array;
+use radix_rust::rust::prelude::*;
 use radix_substate_store_interface::interface::*;
 pub use rocksdb::{BlockBasedOptions, LogLevel, Options};
 use rocksdb::{
     ColumnFamily, ColumnFamilyDescriptor, DBWithThreadMode, Direction, IteratorMode,
     SingleThreaded, DB,
 };
-use sbor::rust::prelude::*;
 use std::path::PathBuf;
 
 pub struct RocksdbSubstateStore {

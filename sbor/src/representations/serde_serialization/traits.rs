@@ -1,8 +1,8 @@
 use super::*;
 use crate::representations::*;
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 pub struct CustomTypeSerialization<'a, 't, 'de, 's1, 's2, E: SerializableCustomExtension> {
     pub include_type_tag_in_simple_mode: bool,

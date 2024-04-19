@@ -1,5 +1,5 @@
 use super::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub fn generate_full_schema_from_single_type<
     T: Describe<S::CustomTypeKind<RustTypeId>>,

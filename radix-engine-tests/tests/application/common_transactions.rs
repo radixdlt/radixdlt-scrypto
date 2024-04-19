@@ -5,6 +5,7 @@ use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::{metadata, metadata_init, mint_roles};
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use radix_rust::ContextualDisplay;
 use radix_transactions::manifest::{compile, BlobProvider};
 use radix_transactions::prelude::*;

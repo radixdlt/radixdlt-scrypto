@@ -5,6 +5,7 @@ use super::{ast, schema};
 use crate::{ident, token_stream_from_str};
 use radix_blueprint_schema_init::*;
 use radix_common::prelude::*;
+use radix_rust::prelude::*;
 
 /// A list of the packages that we generate bindings for. This must match the list in the
 /// update-bindings.sh script.

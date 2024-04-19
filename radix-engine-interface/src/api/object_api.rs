@@ -13,9 +13,9 @@ use radix_common::types::*;
 use radix_common::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::FieldIndex;
 use radix_engine_interface::object_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
-use sbor::rust::collections::*;
-use sbor::rust::prelude::*;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::prelude::*;
+use radix_rust::rust::vec::Vec;
 
 #[repr(u8)]
 #[cfg_attr(

@@ -1,9 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::string::String;
+use radix_rust::rust::string::ToString;
+use radix_rust::rust::vec;
+use radix_rust::rust::vec::Vec;
 use sbor::*;
 use serde::Serialize;
 use serde_json::{json, to_string, to_value, Value};

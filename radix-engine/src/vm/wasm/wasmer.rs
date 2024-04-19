@@ -7,7 +7,7 @@ use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::blueprints::package::CodeHash;
-use sbor::rust::sync::{Arc, Mutex};
+use radix_rust::rust::sync::{Arc, Mutex};
 #[cfg(feature = "radix_engine_tests")]
 use wasmer::ImportObject;
 use wasmer::{

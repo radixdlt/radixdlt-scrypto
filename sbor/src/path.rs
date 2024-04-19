@@ -1,8 +1,8 @@
-use crate::rust::vec;
-use crate::rust::vec::Vec;
 use crate::value::Value;
 use crate::CustomValueKind;
 use crate::*;
+use radix_rust::rust::vec;
+use radix_rust::rust::vec::Vec;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct SborPathBuf(Vec<usize>);

@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::vec;
+use radix_rust::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, PartialEq, Sbor)]

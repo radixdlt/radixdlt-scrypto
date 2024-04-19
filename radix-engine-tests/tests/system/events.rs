@@ -22,6 +22,7 @@ use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use radix_transactions::model::InstructionV1;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;

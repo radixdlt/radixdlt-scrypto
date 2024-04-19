@@ -3,6 +3,7 @@ use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use radix_transactions::model::InstructionV1;
 use scrypto_test::prelude::*;
 

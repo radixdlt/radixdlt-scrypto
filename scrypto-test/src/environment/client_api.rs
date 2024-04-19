@@ -5,6 +5,7 @@
 //! [`TestEnvironment`]: crate::prelude::TestEnvironment
 
 use crate::prelude::*;
+use radix_rust::prelude::*;
 
 /// Implements the [`ClientApi`] for the [`TestEnvironment`] struct.
 ///

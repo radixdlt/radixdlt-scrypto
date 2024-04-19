@@ -2,8 +2,8 @@ use crate::blueprints::resource::Bucket;
 use crate::internal_prelude::*;
 use crate::types::*;
 use radix_common::data::scrypto::model::Own;
-use sbor::rust::fmt::Debug;
-use sbor::rust::prelude::*;
+use radix_rust::rust::fmt::Debug;
+use radix_rust::rust::prelude::*;
 
 pub const COMPONENT_ROYALTY_SETTER_ROLE: &str = "royalty_setter";
 pub const COMPONENT_ROYALTY_SETTER_UPDATER_ROLE: &str = "royalty_setter_updater";

@@ -8,7 +8,8 @@ use radix_engine_interface::object_modules::role_assignment::RoleDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::ClientApi;
 use radix_engine_interface::*;
-use sbor::rust::marker::PhantomData;
+use radix_rust::prelude::*;
+use radix_rust::rust::marker::PhantomData;
 use std::fmt::Debug;
 
 /// Not divisible.

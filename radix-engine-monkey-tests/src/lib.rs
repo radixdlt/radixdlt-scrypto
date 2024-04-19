@@ -15,7 +15,6 @@ use crate::resource::{
 };
 use crate::two_pool::TwoPoolFuzzAction;
 use crate::validator::ValidatorFuzzAction;
-use core::ops::AddAssign;
 use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::v1::constants::*;
@@ -29,6 +28,8 @@ use radix_engine_interface::blueprints::pool::{
 };
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
+use radix_rust::rust::ops::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::builder::ManifestBuilder;
 use rand::distributions::uniform::{SampleRange, SampleUniform};

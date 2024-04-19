@@ -6,7 +6,7 @@ use crate::manifest::diagnostic_snippets::create_snippet;
 use crate::manifest::manifest_enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::token::{Position, Span, Token, TokenWithSpan};
 use radix_common::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH;
-use sbor::prelude::*;
+use radix_rust::prelude::*;
 
 // For values greater than below it is not possible to encode compiled manifest due to
 //   EncodeError::MaxDepthExceeded(MANIFEST_SBOR_V1_MAX_DEPTH)

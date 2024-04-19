@@ -2,8 +2,8 @@ use crate::blueprints::resource::Proof;
 use crate::internal_prelude::*;
 use radix_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::blueprints::resource::Bucket;
-use sbor::rust::collections::IndexSet;
-use sbor::rust::prelude::*;
+use radix_rust::rust::collections::IndexSet;
+use radix_rust::rust::prelude::*;
 
 pub const NON_FUNGIBLE_VAULT_BLUEPRINT: &str = "NonFungibleVault";
 

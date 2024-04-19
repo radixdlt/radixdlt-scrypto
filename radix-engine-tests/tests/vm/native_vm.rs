@@ -8,19 +8,20 @@ use radix_engine::kernel::kernel_api::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
-use radix_engine::system::system_modules::costing::*;
-use radix_engine::system::system_modules::*;
 use radix_engine::system::system_modules::auth::AuthModule;
+use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
 use radix_engine::system::system_modules::kernel_trace::KernelTraceModule;
 use radix_engine::system::system_modules::limits::LimitsModule;
 use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
+use radix_engine::system::system_modules::*;
 use radix_engine::track::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 use radix_engine_interface::prelude::*;
+use radix_rust::prelude::*;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_interface::db_key_mapper::*;
 use radix_transactions::prelude::*;
@@ -85,23 +86,19 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
-            TransactionRuntimeModule::new(
-                NetworkDefinition::simulator(),
-                intent_hash,
-            ),
-            AuthModule::new(
-                AuthZoneParams {
-                    initial_proofs: Default::default(),
-                    virtual_resources: Default::default(),
-                }
-            ),
+            TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
+            AuthModule::new(AuthZoneParams {
+                initial_proofs: Default::default(),
+                virtual_resources: Default::default(),
+            }),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: 0,
                 tx_num_of_signature_validations: 1,
-                max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+                max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                    .unwrap(),
                 cost_breakdown: None,
                 on_apply_cost: Default::default(),
             },
@@ -173,23 +170,19 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
-            TransactionRuntimeModule::new(
-                NetworkDefinition::simulator(),
-                intent_hash,
-            ),
-            AuthModule::new(
-                AuthZoneParams {
-                    initial_proofs: Default::default(),
-                    virtual_resources: Default::default(),
-                }
-            ),
+            TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
+            AuthModule::new(AuthZoneParams {
+                initial_proofs: Default::default(),
+                virtual_resources: Default::default(),
+            }),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: 0,
                 tx_num_of_signature_validations: 1,
-                max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+                max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                    .unwrap(),
                 cost_breakdown: None,
                 on_apply_cost: Default::default(),
             },

@@ -3,7 +3,7 @@ use crate::blueprints::resource::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use radix_common::prelude::*;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::fmt::Debug;
 
 pub const IDENTITY_BLUEPRINT: &str = "Identity";
 

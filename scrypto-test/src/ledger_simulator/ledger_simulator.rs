@@ -32,6 +32,7 @@ use radix_engine_interface::blueprints::pool::{
     OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
 use radix_engine_interface::prelude::{dec, freeze_roles, rule};
+use radix_rust::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;

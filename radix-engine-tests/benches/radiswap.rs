@@ -1,3 +1,4 @@
+use radix_rust::prelude::*;
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_common::prelude::*;
 use radix_engine::vm::NoExtension;

@@ -5,6 +5,7 @@ use radix_engine_interface::object_modules::metadata::{
     MetadataConversionError::UnexpectedType, MetadataValue,
 };
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 #[test]

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 sbor = { workspace = true }
+radix-rust = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 bincode = { workspace = true, features = ["derive"] }
@@ -16,8 +17,8 @@ harness = false
 
 [features]
 default = ["std"]
-std = ["serde/std", "serde_json/std", "bincode/std", "sbor/std", "sbor/std", "sbor/serde"]
-alloc = ["serde/alloc", "serde_json/alloc", "bincode/alloc", "sbor/alloc", "sbor/alloc", "sbor/serde"]
+std = ["serde/std", "serde_json/std", "bincode/std", "sbor/std", "sbor/std", "sbor/serde", "radix-rust/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "bincode/alloc", "sbor/alloc", "sbor/alloc", "sbor/serde", "radix-rust/std"]
 
 [lib]
 doctest = false

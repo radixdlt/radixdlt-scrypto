@@ -1,7 +1,7 @@
 use crate::representations::*;
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 #[cfg_attr(
     feature = "serde",
@@ -328,10 +328,10 @@ mod serde_serialization {
 
 #[cfg(test)]
 mod tests {
-    use crate::rust::prelude::*;
     use crate::{
         basic_decode_with_depth_limit, basic_encode_with_depth_limit, BasicValue, BasicValueKind,
     };
+    use radix_rust::rust::prelude::*;
 
     #[test]
     fn depth_counting() {

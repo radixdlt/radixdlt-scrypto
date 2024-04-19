@@ -1,11 +1,11 @@
 use crate::crypto::blake2b_256_hash;
 use radix_rust::copy_u8_array;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::convert::TryFrom;
-use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::borrow::ToOwned;
+use radix_rust::rust::convert::TryFrom;
+use radix_rust::rust::fmt;
+use radix_rust::rust::str::FromStr;
+use radix_rust::rust::string::String;
+use radix_rust::rust::vec::Vec;
 use sbor::*;
 
 /// Represents a 32-byte hash digest.
@@ -185,7 +185,7 @@ macro_rules! define_wrapped_hash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::rust::string::ToString;
+    use radix_rust::rust::string::ToString;
 
     #[test]
     fn test_from_to_string() {

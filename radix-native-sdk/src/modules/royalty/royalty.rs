@@ -5,7 +5,7 @@ use radix_common::types::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::object_modules::royalty::*;
 use radix_engine_interface::types::*;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub struct ComponentRoyalty(pub Own);
 

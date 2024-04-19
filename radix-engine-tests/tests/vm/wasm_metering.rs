@@ -4,6 +4,7 @@ use radix_engine::{
 };
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 #[test]

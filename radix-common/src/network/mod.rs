@@ -1,5 +1,5 @@
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
+use radix_rust::rust::str::FromStr;
+use radix_rust::rust::string::String;
 use sbor::*;
 
 /// Network Definition is intended to be the actual definition of a network

@@ -15,8 +15,8 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::prelude::{BlueprintInfo, Emitter};
 use radix_engine_interface::types::EventTypeIdentifier;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::collections::BTreeMap;
+use radix_rust::rust::vec::Vec;
 
 #[derive(Debug, Default)]
 pub struct ResourceEventChecker {

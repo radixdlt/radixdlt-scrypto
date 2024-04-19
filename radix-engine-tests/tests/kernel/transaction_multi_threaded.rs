@@ -3,11 +3,12 @@
 mod multi_threaded_test {
     use radix_common::prelude::*;
     use radix_engine::system::bootstrap::Bootstrapper;
-    use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::ExecutionConfig;
+    use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::prelude::*;
     use radix_engine_interface::rule;
+    use radix_rust::prelude::*;
     use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
     use radix_transactions::model::TestTransaction;
     use radix_transactions::prelude::*;

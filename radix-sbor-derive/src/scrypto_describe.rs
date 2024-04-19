@@ -38,7 +38,7 @@ mod tests {
                     fn type_data() -> ::sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             "MyStruct",
-                            ::sbor::rust::vec![],
+                            ::radix_rust::rust::vec![],
                         )
                     }
                     fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<radix_common::data::scrypto::ScryptoCustomTypeKind >) {}
@@ -70,7 +70,7 @@ mod tests {
                     fn type_data() -> ::sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
                         ::sbor::TypeData::struct_with_named_fields(
                             "Thing",
-                            ::sbor::rust::vec![
+                            ::radix_rust::rust::vec![
                                 ("field", <T as ::sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind >>::TYPE_ID),
                             ],
                         )
@@ -104,7 +104,7 @@ mod tests {
                         &#code_hash
                     );
                     fn type_data() -> ::sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
-                        use ::sbor::rust::borrow::ToOwned;
+                        use ::radix_rust::rust::borrow::ToOwned;
                         ::sbor::TypeData::enum_variants(
                             "MyEnum",
                             :: sbor :: rust :: prelude :: indexmap ! [

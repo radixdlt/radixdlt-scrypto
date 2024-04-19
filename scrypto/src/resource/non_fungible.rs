@@ -3,7 +3,7 @@ use radix_common::data::scrypto::model::*;
 use radix_common::traits::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use sbor::rust::marker::PhantomData;
+use radix_rust::rust::marker::PhantomData;
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]

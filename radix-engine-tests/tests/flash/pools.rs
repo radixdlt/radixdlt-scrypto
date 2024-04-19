@@ -5,6 +5,7 @@ use radix_engine::blueprints::pool::v1::errors::{
 };
 use radix_engine::updates::state_updates::generate_pool_math_precision_fix_state_updates;
 use radix_engine::updates::ProtocolUpdates;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 #[test]

@@ -4,8 +4,8 @@ use radix_common::math::Decimal;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::IndexSet;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::collections::IndexSet;
+use radix_rust::rust::fmt::Debug;
 
 // TODO: split impl
 

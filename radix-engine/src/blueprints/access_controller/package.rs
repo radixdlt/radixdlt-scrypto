@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::*;
 use radix_native_sdk::runtime::Runtime;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub struct AccessControllerNativePackage;
 

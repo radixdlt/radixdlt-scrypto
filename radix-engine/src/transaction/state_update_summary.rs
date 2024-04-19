@@ -6,11 +6,11 @@ use radix_common::data::scrypto::model::*;
 use radix_common::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_rust::rust::prelude::*;
 use radix_substate_store_interface::interface::DatabaseUpdate;
 use radix_substate_store_interface::{
     db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
-use sbor::rust::prelude::*;
 
 #[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct StateUpdateSummary {

@@ -1,6 +1,6 @@
-use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use radix_rust::rust::prelude::*;
 
 pub trait CustomDisplayContext<'a>: Default + Copy {
     type CustomExtension: FormattableCustomExtension<CustomDisplayContext<'a> = Self>;

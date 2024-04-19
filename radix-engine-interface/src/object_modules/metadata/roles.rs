@@ -1,5 +1,5 @@
-pub use sbor::rust::vec;
-pub use sbor::rust::vec::Vec;
+pub use radix_rust::rust::vec;
+pub use radix_rust::rust::vec::Vec;
 
 pub const METADATA_SETTER_ROLE: &str = "metadata_setter";
 pub const METADATA_SETTER_UPDATER_ROLE: &str = "metadata_setter_updater";

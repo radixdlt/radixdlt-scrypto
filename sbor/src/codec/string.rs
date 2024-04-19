@@ -1,6 +1,6 @@
-use crate::rust::string::String;
 use crate::value_kind::*;
 use crate::*;
+use radix_rust::rust::string::String;
 
 categorize_simple!(str, ValueKind::String);
 categorize_simple!(String, ValueKind::String);

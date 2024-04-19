@@ -45,7 +45,7 @@ pub type CollectionIndex = u8;
 /// Interface of the system, for blueprints and Node modules.
 ///
 /// For WASM blueprints, only a subset of the API is exposed at the moment.
-pub trait ClientApi<E: sbor::rust::fmt::Debug>:
+pub trait ClientApi<E: radix_rust::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientActorKeyValueEntryApi<E>
     + ClientObjectApi<E>

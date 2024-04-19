@@ -1,7 +1,6 @@
-use crate::internal_prelude::*;
 use radix_common::data::scrypto::model::*;
-use sbor::rust::collections::IndexSet;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::collections::IndexSet;
+use radix_rust::rust::fmt::Debug;
 use sbor::*;
 
 pub const NON_FUNGIBLE_PROOF_BLUEPRINT: &str = "NonFungibleProof";

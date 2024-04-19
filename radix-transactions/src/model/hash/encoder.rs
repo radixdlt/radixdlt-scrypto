@@ -1,4 +1,5 @@
 use bech32::{ToBase32, Variant};
+use radix_rust::prelude::*;
 
 use crate::internal_prelude::*;
 

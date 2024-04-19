@@ -1,5 +1,6 @@
 use super::*;
 use crate::internal_prelude::*;
+use radix_rust::prelude::*;
 
 /// Transaction messages as per REP-70
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]

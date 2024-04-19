@@ -6,7 +6,7 @@ use radix_engine_interface::object_modules::metadata::{
     MetadataCreateInput, MetadataCreateWithDataInput, MetadataInit, MetadataSetInput, MetadataVal,
     METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_CREATE_WITH_DATA_IDENT, METADATA_SET_IDENT,
 };
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 pub struct Metadata(pub Own);
 

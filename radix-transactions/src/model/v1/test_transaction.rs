@@ -4,6 +4,7 @@ use radix_common::crypto::hash;
 use radix_common::data::manifest::*;
 use radix_common::types::NonFungibleGlobalId;
 use radix_engine_interface::*;
+use radix_rust::prelude::*;
 use std::collections::BTreeSet;
 
 #[derive(ManifestSbor)]

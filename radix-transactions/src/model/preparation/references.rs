@@ -1,4 +1,5 @@
 use crate::internal_prelude::*;
+use radix_rust::prelude::*;
 use sbor::traversal::*;
 
 pub fn extract_references(

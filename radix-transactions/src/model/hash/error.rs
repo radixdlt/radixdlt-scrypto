@@ -1,4 +1,4 @@
-use sbor::prelude::fmt;
+use radix_rust::prelude::*;
 
 #[derive(Clone, Debug)]
 pub enum TransactionHashBech32EncodeError {

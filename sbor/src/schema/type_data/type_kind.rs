@@ -1,6 +1,6 @@
 use super::*;
-use crate::rust::collections::IndexMap;
-use crate::rust::vec::Vec;
+use radix_rust::rust::collections::IndexMap;
+use radix_rust::rust::vec::Vec;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]

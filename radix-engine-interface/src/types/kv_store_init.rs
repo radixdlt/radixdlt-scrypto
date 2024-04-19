@@ -2,7 +2,7 @@ use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
 use core::hash::Hash;
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]

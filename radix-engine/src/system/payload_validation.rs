@@ -6,7 +6,7 @@ use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
     NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
-use sbor::rust::prelude::*;
+use radix_rust::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
 
 use super::system::SystemService;

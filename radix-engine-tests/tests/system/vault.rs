@@ -11,6 +11,7 @@ use radix_engine_interface::blueprints::package::KeyOrValue;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::*;

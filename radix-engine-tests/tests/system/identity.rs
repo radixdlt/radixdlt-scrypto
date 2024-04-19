@@ -7,6 +7,7 @@ use radix_engine_interface::blueprints::identity::{
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
 };
 use radix_engine_interface::object_modules::metadata::MetadataValue;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 #[test]

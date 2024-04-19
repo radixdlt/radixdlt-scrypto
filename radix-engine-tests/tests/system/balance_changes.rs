@@ -2,6 +2,7 @@ use radix_engine::transaction::BalanceChange;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 use scrypto_test::prelude::*;
 
 #[test]

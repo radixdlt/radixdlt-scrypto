@@ -19,8 +19,8 @@ use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::collections::BTreeMap;
+use radix_rust::rust::vec::Vec;
 use sbor::HasLatestVersion;
 
 #[derive(Debug, Default)]

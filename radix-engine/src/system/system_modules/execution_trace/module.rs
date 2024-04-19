@@ -11,8 +11,8 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
 use radix_common::math::Decimal;
 use radix_engine_interface::blueprints::resource::*;
-use sbor::rust::collections::*;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::collections::*;
+use radix_rust::rust::fmt::Debug;
 
 //===================================================================================
 // Note: ExecutionTrace must not produce any error or transactional side effect!

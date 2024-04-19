@@ -8,7 +8,7 @@ use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{ActorRefHandle, AttachedModuleId, ClientApi, FieldValue};
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
-use sbor::rust::vec::Vec;
+use radix_rust::rust::vec::Vec;
 
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>

@@ -4,8 +4,8 @@ use crate::types::*;
 use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
+use radix_rust::rust::prelude::*;
 use radix_rust::ContextualDisplay;
-use sbor::rust::prelude::*;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!

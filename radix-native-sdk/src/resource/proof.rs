@@ -7,8 +7,8 @@ use radix_common::math::Decimal;
 use radix_engine_interface::api::{ClientApi, ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
-use sbor::rust::collections::IndexSet;
-use sbor::rust::fmt::Debug;
+use radix_rust::rust::collections::IndexSet;
+use radix_rust::rust::fmt::Debug;
 
 pub trait NativeProof {
     fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
