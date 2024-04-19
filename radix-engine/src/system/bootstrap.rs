@@ -574,7 +574,7 @@ pub fn create_system_bootstrap_flash(
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
-                &VmBoot::default(),
+                &VmBoot::babylon(),
             )
             .unwrap_or_else(|err| {
                 panic!(
