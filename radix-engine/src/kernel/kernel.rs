@@ -31,7 +31,7 @@ use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::prelude::Executable;
 use sbor::rust::mem;
 
-pub const BOOT_LOADER_KERNEL_VERSION_FIELD_KEY: FieldKey = 0u8;
+pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum KernelBoot {
@@ -209,7 +209,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
             .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_KERNEL_VERSION_FIELD_KEY),
+                &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
             .unwrap_or(KernelBoot::babylon());
