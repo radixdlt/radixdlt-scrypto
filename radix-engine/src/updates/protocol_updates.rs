@@ -144,6 +144,7 @@ impl ProtocolUpdate {
                 ProtocolUpdateEntry::ProtocolParamsToState,
                 ProtocolUpdateEntry::TransactionProcessorBlobLimits,
                 ProtocolUpdateEntry::RefCheckCosts,
+                ProtocolUpdateEntry::RestrictReservedRoleKey,
             ],
         }
         .iter()
