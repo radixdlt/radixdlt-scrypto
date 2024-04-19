@@ -274,6 +274,7 @@ where
                         0,
                         &ExecutionConfig::for_test_transaction().with_kernel_trace(false),
                     ),
+                    system_version: SystemVersion::get_latest_version(),
                 }
             },
             |system_config, track, id_allocator| {

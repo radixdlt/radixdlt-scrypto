@@ -92,6 +92,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             1,
             &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
         ),
+        system_version: SystemVersion::get_latest_version(),
     };
 
     let mut boot_loader = BootLoader {
@@ -169,6 +170,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             1,
             &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
         ),
+        system_version: SystemVersion::get_latest_version(),
     };
 
     let mut boot_loader = BootLoader {

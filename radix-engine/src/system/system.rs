@@ -14,7 +14,7 @@ use crate::kernel::kernel_api::*;
 use crate::system::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::system::node_init::type_info_partition;
 use crate::system::system_callback::{
-    FieldLockData, KeyValueEntryLockData, System, SystemLockData,
+    FieldLockData, KeyValueEntryLockData, System, SystemLockData, SystemVersion,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -2375,6 +2375,13 @@ where
     }
 
     fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
+        if self.api.kernel_get_system().system_version > SystemVersion::Anemone {
+            self.api
+                .kernel_get_system()
+                .modules
+                .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+        }
+
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.usd_price())
         } else {

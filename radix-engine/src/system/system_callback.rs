@@ -27,6 +27,8 @@ use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::BootStore;
 use crate::transaction::{CostingParameters, ExecutionConfig};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -46,12 +48,27 @@ use radix_engine_interface::blueprints::transaction_processor::{
 use radix_transactions::model::{Executable, PreAllocatedAddress};
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
+pub const BOOT_LOADER_SYSTEM_VERSION_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1 {
         costing_parameters: CostingParameters,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, FromPrimitive, ScryptoSbor)]
+pub enum SystemVersion {
+    Anemone,
+    Bottlenose,
+    // New system version add here (before Latest)
+    IntenralLatest,
+}
+impl SystemVersion {
+    pub fn get_latest_version() -> Self {
+        SystemVersion::from_usize((SystemVersion::IntenralLatest as usize) - 1)
+            .expect("Cannot get latest System Version")
+    }
 }
 
 #[derive(Clone)]
@@ -108,6 +125,7 @@ pub struct System<C: SystemCallbackObject> {
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
+    pub system_version: SystemVersion,
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
@@ -137,6 +155,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 SystemBoot::V1 { costing_parameters } => costing_parameters,
             }
         };
+
+        let system_version = store
+            .read_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
+                &SubstateKey::Field(BOOT_LOADER_SYSTEM_VERSION_SUBSTATE_FIELD_KEY),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or(SystemVersion::Anemone);
+
         let callback = C::init(store, init_input)?;
 
         let mut modules = SystemModuleMixer::new(
@@ -159,6 +187,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             schema_cache: NonIterMap::new(),
             callback,
             modules,
+            system_version,
         })
     }
 
@@ -735,4 +764,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
+}
+
+#[test]
+fn check_latest_system_version() {
+    assert_eq!(
+        SystemVersion::Bottlenose,
+        SystemVersion::get_latest_version()
+    )
 }

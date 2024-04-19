@@ -5,7 +5,7 @@ use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::BootLoader;
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system_callback::{System, SystemLockData};
+use radix_engine::system::system_callback::{System, SystemLockData, SystemVersion};
 use radix_engine::system::system_modules::costing::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::system::system_modules::SystemModuleMixer;
 use radix_engine::track::Track;
@@ -63,6 +63,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             executable.auth_zone_params().initial_proofs.len(),
             &execution_config,
         ),
+        system_version: SystemVersion::get_latest_version(),
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut boot_loader = BootLoader {
