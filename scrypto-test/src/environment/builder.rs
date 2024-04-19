@@ -245,7 +245,7 @@ where
                 let vm_boot = database
                     .get_substate(&db_partition_key, &db_sort_key)
                     .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                    .unwrap_or_default();
+                    .unwrap_or(VmBoot::babylon());
 
                 let transaction_runtime_module = TransactionRuntimeModule::new(
                     NetworkDefinition::simulator(),
