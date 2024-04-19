@@ -50,3 +50,11 @@ pub type Url = UncheckedUrl;
 /// We should always `UncheckedOrigin` in Scrypto, as the validation logic is heavy.
 /// Thus, this type alias is added.
 pub type Origin = UncheckedOrigin;
+
+//========
+// Crates
+//========
+
+// Re-export the `sbor` and `radix-rust` crates which are required dependencies for any blueprint
+pub extern crate radix_rust;
+pub extern crate sbor;

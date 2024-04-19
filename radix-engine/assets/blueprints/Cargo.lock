@@ -184,8 +184,6 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 name = "faucet"
 version = "1.0.0"
 dependencies = [
- "radix-rust",
- "sbor",
  "scrypto",
 ]
 
@@ -203,8 +201,6 @@ dependencies = [
 name = "genesis-helper"
 version = "1.0.0"
 dependencies = [
- "radix-rust",
- "sbor",
  "scrypto",
 ]
 

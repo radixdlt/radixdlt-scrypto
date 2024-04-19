@@ -1,3 +1,4 @@
+use scrypto::prelude::{sbor, radix_rust};
 use scrypto_test::prelude::*;
 
 use ${wasm_name}::hello_test::*;

@@ -4,9 +4,7 @@ version = "1.0.0-rc1"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../../../../sbor" }
 scrypto = { path = "../../../../scrypto" }
-radix-rust = { path = "../../../../radix-rust" }
 
 [dev-dependencies]
 radix-engine = { path = "../../../../radix-engine" }

@@ -1,3 +1,4 @@
+use scrypto::prelude::{radix_rust, sbor};
 use scrypto_test::prelude::*;
 
 use hello_world::hello_test::*;

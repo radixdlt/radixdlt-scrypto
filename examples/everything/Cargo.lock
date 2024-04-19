@@ -391,8 +391,6 @@ dependencies = [
 name = "everything"
 version = "1.2.0-dev"
 dependencies = [
- "radix-rust",
- "sbor",
  "scrypto",
  "scrypto-test",
 ]

@@ -27,7 +27,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<E: ::sbor::Encoder<radix_common::data::manifest::ManifestCustomValueKind> >
+                impl<E: sbor::Encoder<radix_common::data::manifest::ManifestCustomValueKind> >
                     ::sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E> for MyStruct
                 {
                     #[inline]
@@ -56,7 +56,7 @@ mod tests {
             quote! {
                 impl<
                         T: Bound,
-                        E: ::sbor::Encoder<radix_common::data::manifest::ManifestCustomValueKind>
+                        E: sbor::Encoder<radix_common::data::manifest::ManifestCustomValueKind>
                     > ::sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E> for MyEnum<T>
                 where
                     T: ::sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E>,
