@@ -1,26 +1,29 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{BootloadingError, RuntimeError};
+use radix_engine::errors::{RejectionReason, RuntimeError, TransactionExecutionError};
 use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
-use radix_engine::kernel::kernel::{BootLoader, Kernel};
+use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
 };
 use radix_engine::kernel::kernel_callback_api::{
     CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
-    KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
+    ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
     RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
     WriteSubstateEvent,
 };
 use radix_engine::system::checkers::KernelDatabaseChecker;
-use radix_engine::track::{to_state_updates, BootStore, CommitableSubstateStore, Track};
+use radix_engine::track::{
+    to_state_updates, BootStore, CommitableSubstateStore, StoreCommitInfo, Track,
+};
+use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_rust::prelude::*;
 use radix_rust::rust::collections::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::interface::CommittableSubstateDatabase;
+use radix_substate_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
 use radix_transactions::model::{Executable, PreAllocatedAddress};
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
@@ -52,17 +55,29 @@ impl CallFrameReferences for TestCallFrameData {
     }
 }
 
+struct TestReceipt;
+
+impl ExecutionReceipt for TestReceipt {
+    fn from_rejection(_executable: &Executable, _reason: RejectionReason) -> Self {
+        TestReceipt
+    }
+
+    fn set_resource_usage(&mut self, _resources_usage: ResourcesUsage) {}
+}
+
 struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
-    type InitInput = ();
+    type Init = ();
+    type ExecutionOutput = ();
+    type Receipt = TestReceipt;
 
-    fn init<S: BootStore>(
-        _store: &S,
+    fn init<S: BootStore + CommitableSubstateStore>(
+        _store: &mut S,
         _executable: &Executable,
-        _init_input: Self::InitInput,
-    ) -> Result<Self, BootloadingError> {
+        _init_input: Self::Init,
+    ) -> Result<Self, RejectionReason> {
         Ok(Self)
     }
 
@@ -72,18 +87,24 @@ impl KernelCallbackObject for TestCallbackObject {
         _: &Vec<PreAllocatedAddress>,
         _: &IndexSet<Reference>,
         _: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
         unreachable!()
     }
 
-    fn on_teardown<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn finish(&mut self, _info: StoreCommitInfo) -> Result<(), RuntimeError> {
         Ok(())
+    }
+
+    fn create_receipt<S: SubstateDatabase>(
+        self,
+        _track: Track<S, SpreadPrefixKeyMapper>,
+        _executable: &Executable,
+        _result: Result<(), TransactionExecutionError>,
+    ) -> Self::Receipt {
+        TestReceipt
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
@@ -519,12 +540,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     let mut substate_db = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let mut callback = TestCallbackObject;
-    let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
-        callback: &mut callback,
-        store: &mut track,
-    };
-    let mut kernel = boot_loader.boot().unwrap();
+    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut callback);
 
     let mut fuzzer = KernelFuzzer::new(seed);
 
@@ -540,7 +556,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     }
 
     let result = track.finalize();
-    if let Ok(tracked_substates) = result {
+    if let Ok((tracked_substates, _)) = result {
         let (_, state_updates) = to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
 
         let database_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();

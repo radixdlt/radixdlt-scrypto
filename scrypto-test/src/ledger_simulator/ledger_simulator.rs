@@ -5,7 +5,6 @@ use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::define_composite_checker;
 use radix_engine::object_modules::metadata::{MetadataCollection, MetadataEntryEntryPayload};
 use radix_engine::system::checkers::*;
-use radix_engine::system::system_callback::System;
 use radix_engine::system::system_db_reader::{
     ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
 };
@@ -14,7 +13,6 @@ use radix_engine::system::type_info::TypeInfoSubstate;
 use radix_engine::transaction::{
     execute_preview, execute_transaction_with_configuration, BalanceChange, CommitResult,
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
-    WrappedSystem,
 };
 use radix_engine::updates::{ProtocolUpdate, ProtocolUpdates};
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
@@ -1307,34 +1305,66 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             costing_parameters: Some(costing_parameters),
             ..Default::default()
         });
-        self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
+        self.execute_transaction(
             TestTransaction::new_from_nonce(manifest, nonce)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(initial_proofs.into_iter().collect()),
             config,
-            (),
         )
     }
 
-    pub fn execute_manifest_with_system<'a, T, R: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
+    pub fn execute_manifest_with_injected_error<'a, T>(
         &'a mut self,
         manifest: TransactionManifestV1,
         initial_proofs: T,
-        init: R::Init,
+        error_after_count: u64,
     ) -> TransactionReceipt
     where
         T: IntoIterator<Item = NonFungibleGlobalId>,
     {
         let nonce = self.next_transaction_nonce();
-        self.execute_transaction_with_system::<R>(
-            TestTransaction::new_from_nonce(manifest, nonce)
-                .prepare()
-                .expect("expected transaction to be preparable")
-                .get_executable(initial_proofs.into_iter().collect()),
-            ExecutionConfig::for_test_transaction(),
-            init,
-        )
+        let txn = TestTransaction::new_from_nonce(manifest, nonce)
+            .prepare()
+            .expect("expected transaction to be preparable");
+        let executable = txn.get_executable(initial_proofs.into_iter().collect());
+
+        let vm_init = VmInit {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm_extension: self.native_vm_extension.clone(),
+        };
+
+        let execution_config =
+            ExecutionConfig::for_test_transaction().with_kernel_trace(self.with_kernel_trace);
+        let mut executor = TransactionExecutor::<_, InjectSystemCostingError<'_, E>>::new(
+            &self.database,
+            InjectCostingErrorInput {
+                system_input: SystemInit {
+                    enable_kernel_trace: execution_config.enable_kernel_trace,
+                    enable_cost_breakdown: execution_config.enable_cost_breakdown,
+                    execution_trace: execution_config.execution_trace,
+                    callback_init: vm_init,
+                    system_overrides: execution_config.system_overrides.clone(),
+                },
+                error_after_count,
+            },
+        );
+
+        let transaction_receipt = executor.execute(&executable);
+
+        if let TransactionResult::Commit(commit) = &transaction_receipt.result {
+            let database_updates = commit
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>();
+            self.database.commit(&database_updates);
+            self.collected_events
+                .push(commit.application_events.clone());
+
+            if self.with_receipt_substate_check {
+                assert_receipt_substate_changes_can_be_typed(commit);
+            }
+        }
+        transaction_receipt
     }
 
     pub fn execute_notarized_transaction(
@@ -1377,20 +1407,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     pub fn execute_transaction(
         &mut self,
         executable: Executable,
-        execution_config: ExecutionConfig,
-    ) -> TransactionReceipt {
-        self.execute_transaction_with_system::<System<Vm<'_, DefaultWasmEngine, E>>>(
-            executable,
-            execution_config,
-            (),
-        )
-    }
-
-    pub fn execute_transaction_with_system<'a, T: WrappedSystem<Vm<'a, DefaultWasmEngine, E>>>(
-        &'a mut self,
-        executable: Executable,
         mut execution_config: ExecutionConfig,
-        init: T::Init,
     ) -> TransactionReceipt {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
@@ -1408,12 +1425,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             native_vm_extension: self.native_vm_extension.clone(),
         };
 
-        let transaction_receipt = execute_transaction_with_configuration::<_, _, T>(
-            &mut self.database,
-            vm_init,
-            &execution_config,
-            &executable,
-            init,
+        let transaction_receipt = execute_transaction_with_configuration::<
+            _,
+            Vm<'_, DefaultWasmEngine, E>,
+        >(
+            &mut self.database, vm_init, &execution_config, &executable
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit

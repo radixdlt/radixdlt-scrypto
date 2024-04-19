@@ -30,7 +30,6 @@ use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::*;
 use radix_rust::prelude::*;
 use radix_rust::rust::collections::*;
-use radix_rust::rust::marker::*;
 use radix_rust::rust::ops::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::builder::ManifestBuilder;
@@ -40,7 +39,6 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::{CustomGenesis, LedgerSimulator, LedgerSimulatorBuilder};
 
 pub struct SystemTestFuzzer {
@@ -725,7 +723,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build();
 
                 let receipt = if let Some(error_after_count) = error_after_system_callback_count {
-                    self.ledger.execute_manifest_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
+                    self.ledger.execute_manifest_with_injected_error(
                         manifest,
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,

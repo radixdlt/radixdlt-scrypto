@@ -39,7 +39,7 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> {
 }
 
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Track<'s, S, M> {
-    fn read_substate(
+    fn read_boot_substate(
         &self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -203,7 +203,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
     /// Finalizes changes captured by this substate store.
     ///
     ///  Returns the state changes and dependencies.
-    pub fn finalize(mut self) -> Result<TrackedSubstates, TrackFinalizeError> {
+    pub fn finalize(mut self) -> Result<(TrackedSubstates, &'s S), TrackFinalizeError> {
         for (node_id, transient_substates) in self.transient_substates.transient_substates {
             for (partition, substate_key) in transient_substates {
                 if let Some(tracked_partition) = self
@@ -224,10 +224,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
             }
         }
 
-        Ok(TrackedSubstates {
-            tracked_nodes: self.tracked_nodes,
-            deleted_partitions: self.deleted_partitions,
-        })
+        Ok((
+            TrackedSubstates {
+                tracked_nodes: self.tracked_nodes,
+                deleted_partitions: self.deleted_partitions,
+            },
+            self.substate_db,
+        ))
     }
 
     fn get_tracked_partition(
