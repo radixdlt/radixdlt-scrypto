@@ -1,4 +1,5 @@
 use crate::internal_prelude::*;
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::package::{PackageDefinition, PACKAGE_BLUEPRINT};
 use radix_engine_interface::*;
 
@@ -10,12 +11,14 @@ pub struct GlobalNOwnedScenarioCreator;
 impl ScenarioCreator for GlobalNOwnedScenarioCreator {
     type Config = ();
     type State = GlobalNOwnedScenarioState;
+    type Instance = Scenario<Self::Config, Self::State>;
+    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
-    ) -> Box<dyn ScenarioInstance> {
+    ) -> Self::Instance {
         let metadata = ScenarioMetadata {
             logical_name: "global_n_owned",
         };

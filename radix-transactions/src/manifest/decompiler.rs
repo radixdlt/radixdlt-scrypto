@@ -90,7 +90,7 @@ pub struct DecompilationContext<'a> {
     pub object_names: ManifestObjectNames,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct ManifestObjectNames {
     pub bucket_names: NonIterMap<ManifestBucket, String>,
     pub proof_names: NonIterMap<ManifestProof, String>,

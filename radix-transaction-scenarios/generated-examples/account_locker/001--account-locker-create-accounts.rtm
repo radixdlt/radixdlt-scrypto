@@ -1,0 +1,75 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CREATE_ACCOUNT_ADVANCED
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[a0c2219f58abcbc2ebd2da349acb10773ffbc37b6af91fa8df2486c9ea]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<0u8>()
+;
+CREATE_ACCOUNT_ADVANCED
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[3aadfdff1d2bfdcf3cd26c653b87f494bb6a990882b403cf0557293778]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<0u8>()
+;
+CREATE_ACCOUNT_ADVANCED
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[ce4a51a5ca01ea8e0e59b1c8abdb520edfb19a24571b5a747498cad627]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<0u8>()
+;
+CREATE_ACCOUNT_ADVANCED
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[05c46c54fc86e5651ed504d4636e702fa39fbe7fa24d9dbe57212ab073]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<0u8>()
+;
+CREATE_ACCOUNT_ADVANCED
+    Enum<1u8>(
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5:[4b5c3ad95a31b08a959979e64ea43d4b5b04a62f4fe14fcb9bfb27a718]")
+                    )
+                )
+            )
+        )
+    )
+    Enum<0u8>()
+;

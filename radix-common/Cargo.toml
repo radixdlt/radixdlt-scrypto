@@ -31,6 +31,7 @@ ed25519-dalek = { workspace = true, features = ["u64_backend"] }
 secp256k1 = { workspace = true, features = ["recovery"], optional = true }
 blst = { workspace = true, optional = false }
 sha3 = { workspace = true, optional = false }
+zeroize = { workspace = true, optional = false }
 
 [dev-dependencies]
 serde_json = { workspace = true }
