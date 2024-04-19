@@ -1,4 +1,3 @@
-use radix_common::prelude::*;
 use radix_engine_monkey_tests::resource::ResourceFuzzRandomAction;
 use radix_engine_monkey_tests::{FuzzAction, FuzzTest, SystemTestFuzzer, TxnFuzzer};
 

@@ -1,9 +1,9 @@
-use radix_rust::prelude::*;
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_common::prelude::*;
 use radix_engine::vm::NoExtension;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
+use radix_rust::prelude::*;
 #[cfg(not(feature = "rocksdb"))]
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 #[cfg(feature = "rocksdb")]
