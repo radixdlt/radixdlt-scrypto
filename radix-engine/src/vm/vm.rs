@@ -26,10 +26,8 @@ impl VmBoot {
             scrypto_version: ScryptoVmVersion::latest().into(),
         }
     }
-}
 
-impl Default for VmBoot {
-    fn default() -> Self {
+    pub fn babylon() -> Self {
         Self::V1 {
             scrypto_version: ScryptoVmVersion::V1_0.into(),
         }
@@ -89,7 +87,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 &SubstateKey::Field(BOOT_LOADER_VM_BOOT_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or_default();
+            .unwrap_or(VmBoot::babylon());
 
         Ok(Self {
             scrypto_vm: vm_init.scrypto_vm,

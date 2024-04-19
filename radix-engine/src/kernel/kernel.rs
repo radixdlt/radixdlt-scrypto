@@ -44,10 +44,8 @@ impl KernelBoot {
             KernelBoot::V1 { ref_check_costing } => *ref_check_costing,
         }
     }
-}
 
-impl Default for KernelBoot {
-    fn default() -> Self {
+    pub fn babylon() -> Self {
         Self::V1 {
             ref_check_costing: false,
         }
@@ -214,7 +212,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
                 &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or_default();
+            .unwrap_or(KernelBoot::babylon());
 
         for reference in references.iter() {
             let node_id = &reference.0;
