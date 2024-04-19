@@ -66,11 +66,11 @@ pub fn run_all_in_memory_and_dump_examples(
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "e0424eb560f6c7fbb671a7e7e4a273e3ec682b42e8ea2c5afb55be624ada4716",
+        "356cb408d7d64ea20c6915905beb03c4340b6104c9e57def836ac120fa46736b",
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
-        "a1b834e8699d16a03f495f6e98ba603b7157ddf9c71f743c5965a9012d334ad8",
+        "c538d340736218e886cf83694546b0329997092202acbadf60fcd89d7be4138e",
     );
 
     Ok(())
@@ -110,7 +110,7 @@ mod test {
     }
 
     #[test]
-    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_genesis() {
+    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios() {
         assert_event_and_state_hashes(
             "43be4cce2d4f2ed2eb519d77dfa770697244e843b2a0f7fd86bdf773d9b6f278",
             "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc",
@@ -122,34 +122,8 @@ mod test {
         );
     }
 
-    // Running the genesis scenarios against the anemone protocol update. We expect the state root
-    // hash and the event hash to differ since the behavior of some blueprints changed in that
-    // update.
     #[test]
-    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_anemone() {
-        assert_event_and_state_hashes(
-            "dbba9b7154eb40b3978a4d4b7921945178ee93f3bb04aad4ab08db98287a7785",
-            "57e3e4d7a7232612540d949dcea540f7ead064a92d5da50fbe60b5659a2ddd0b",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
-            )),
-            |_, _, _| {},
-            // Update to anemone immediately after bootstrapping.
-            |network, db| {
-                ProtocolUpdate::Anemone
-                    .generate_state_updates(db, network)
-                    .into_iter()
-                    .for_each(|update| {
-                        db.commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
-                    })
-            },
-        );
-    }
-
-    // No scenarios but ends with the protocol update which makes the root hash different but the
-    // event hash the same as genesis.
-    #[test]
-    pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios_on_anemone() {
+    pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios() {
         assert_event_and_state_hashes(
             "17567dbaf89a77a20e837e8d48187585b0547374fac9e19b9acc9d04d630a774",
             "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc",
@@ -173,61 +147,7 @@ mod test {
     }
 
     #[test]
-    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_bottlenose() {
-        assert_event_and_state_hashes(
-            "1806aa0c5d2892f15f81f930811e5fbf2a6acf367490f735c979281f76024c46",
-            "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
-            )),
-            |_, _, _| {},
-            // Update to bottlenose immediately after bootstrapping.
-            |network, db| {
-                [ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose]
-                    .into_iter()
-                    .for_each(|protocol_update| {
-                        protocol_update
-                            .generate_state_updates(db, network)
-                            .into_iter()
-                            .for_each(|update| {
-                                db.commit(
-                                    &update.create_database_updates::<SpreadPrefixKeyMapper>(),
-                                )
-                            })
-                    })
-            },
-        );
-    }
-
-    #[test]
-    pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios_on_bottlenose() {
-        assert_event_and_state_hashes(
-            "1806aa0c5d2892f15f81f930811e5fbf2a6acf367490f735c979281f76024c46",
-            "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
-            )),
-            |_, _, _| {},
-            // Update to bottlenose immediately after bootstrapping.
-            |network, db| {
-                [ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose]
-                    .into_iter()
-                    .for_each(|protocol_update| {
-                        protocol_update
-                            .generate_state_updates(db, network)
-                            .into_iter()
-                            .for_each(|update| {
-                                db.commit(
-                                    &update.create_database_updates::<SpreadPrefixKeyMapper>(),
-                                )
-                            })
-                    })
-            },
-        );
-    }
-
-    #[test]
-    pub fn check_state_and_event_hashes_for_up_to_bottlenose_scenarios_on_bottlenose() {
+    pub fn check_state_and_event_hashes_for_up_to_bottlenose_scenarios() {
         assert_event_and_state_hashes(
             "356cb408d7d64ea20c6915905beb03c4340b6104c9e57def836ac120fa46736b",
             "c538d340736218e886cf83694546b0329997092202acbadf60fcd89d7be4138e",
