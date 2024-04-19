@@ -59,7 +59,7 @@ macro_rules! test_impl {
                 #[test]
                 fn [<test_display_$i:lower>]() {
                     #[cfg(feature = "alloc")]
-                    use sbor::prelude::format;
+                    use radix_rust::rust::prelude::*;
 
                     let x = <$i>::MAX;
                     let _f = format!("{:?}", x);
@@ -906,7 +906,7 @@ macro_rules! test_math {
             #[test]
             fn [<test_try_from_vector_ $i:lower>]() {
                 #[cfg(feature = "alloc")]
-                use sbor::prelude::vec;
+                use radix_rust::rust::prelude::*;
 
                 let mut a: $i;
                 let mut expect: BigInt;
@@ -921,7 +921,7 @@ macro_rules! test_math {
             #[test]
             fn [<test_try_from_slice_ $i:lower>]() {
                 #[cfg(feature = "alloc")]
-                use sbor::prelude::vec;
+                use radix_rust::rust::prelude::*;
 
                 let mut a: $i;
                 let mut expect: BigInt;

@@ -168,8 +168,7 @@ pub(crate) use define_type_marker;
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "alloc")]
-    use sbor::prelude::Vec;
+    use radix_rust::rust::prelude::Vec;
 
     pub const SOME_ADDRESS: PackageAddress =
         PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]);

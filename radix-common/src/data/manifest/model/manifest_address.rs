@@ -99,8 +99,7 @@ impl fmt::Debug for ManifestAddress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "alloc")]
-    use sbor::prelude::Vec;
+    use radix_rust::rust::prelude::*;
 
     fn prepare(addr_input: &ManifestAddress) -> Result<ManifestAddress, sbor::DecodeError> {
         #[cfg(not(feature = "alloc"))]

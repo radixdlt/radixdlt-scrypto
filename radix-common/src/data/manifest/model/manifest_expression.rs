@@ -76,8 +76,7 @@ manifest_type!(ManifestExpression, ManifestCustomValueKind::Expression, 1);
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "alloc")]
-    use sbor::prelude::vec;
+    use radix_rust::rust::prelude::*;
 
     #[test]
     fn manifest_expression_parse_fail() {
