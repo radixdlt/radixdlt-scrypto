@@ -8,7 +8,6 @@ use radix_engine_interface::object_modules::role_assignment::{
 use radix_engine_interface::rule;
 use radix_engine_tests::common::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::*;
 
 pub struct AuthScenariosEnv {
@@ -155,7 +154,7 @@ fn scenario_1_with_injected_costing_error() {
             .call_method(env.swappy, "protected_method", manifest_args!())
             .build();
         let receipt = ledger
-            .execute_manifest_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
+            .execute_manifest_with_injected_error(
                 manifest,
                 vec![env.virtua_sig.clone()],
                 inject_err_after_count,
