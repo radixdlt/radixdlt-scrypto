@@ -31,6 +31,12 @@ use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::system::system_type_checker::SystemMapper;
 use crate::vm::{VmApi, VmPackageValidation};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]
+pub enum PackageV1MinorVersion {
+    Zero,
+    One,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
     InvalidWasm(PrepareError),
@@ -137,7 +143,7 @@ pub enum PackageError {
     RoyaltiesNotEnabled,
     RoyaltyAmountIsNegative(RoyaltyAmount),
 
-    InvalidRoleKey(String),
+    ReservedRoleKeyIsNotDefined(String),
 }
 
 impl From<InvalidNameError> for PackageError {
@@ -409,7 +415,10 @@ where
     Ok(())
 }
 
-fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
+fn validate_auth(
+    definition: &PackageDefinition,
+    restrict_reserved_key: bool,
+) -> Result<(), PackageError> {
     for (blueprint, definition_init) in &definition.blueprints {
         match &definition_init.auth_config.function_auth {
             FunctionAuth::AllowAll | FunctionAuth::RootOnly => {}
@@ -480,7 +489,15 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 
                 let check_list = |list: &RoleList| {
                     for role_key in &list.list {
-                        if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
+                        if RoleAssignmentNativePackage::is_role_key_reserved(role_key) {
+                            if !RoleAssignmentNativePackage::is_role_key_reserved_and_defined(
+                                role_key,
+                                restrict_reserved_key,
+                            ) {
+                                return Err(PackageError::ReservedRoleKeyIsNotDefined(
+                                    role_key.key.clone(),
+                                ));
+                            }
                             continue;
                         }
                         if !role_specification.contains_key(role_key) {
@@ -501,7 +518,7 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
 
-                        if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
+                        if RoleAssignmentNativePackage::is_role_key_reserved(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),
                                 role_key.clone(),
@@ -930,6 +947,7 @@ impl PackageNativePackage {
     pub fn invoke_export<Y, V>(
         export_name: &str,
         input: &IndexedScryptoValue,
+        version: PackageV1MinorVersion,
         api: &mut Y,
         vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
@@ -937,6 +955,11 @@ impl PackageNativePackage {
         Y: ClientApi<RuntimeError>,
         V: VmApi,
     {
+        let restrict_reserved_key = match version {
+            PackageV1MinorVersion::Zero => false,
+            PackageV1MinorVersion::One => true,
+        };
+
         match export_name {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
                 let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
@@ -948,6 +971,7 @@ impl PackageNativePackage {
                     input.native_package_code_id,
                     input.definition,
                     input.metadata,
+                    restrict_reserved_key,
                     api,
                     vm_api,
                 )?;
@@ -959,8 +983,14 @@ impl PackageNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn =
-                    Self::publish_wasm(input.code, input.definition, input.metadata, api, vm_api)?;
+                let rtn = Self::publish_wasm(
+                    input.code,
+                    input.definition,
+                    input.metadata,
+                    restrict_reserved_key,
+                    api,
+                    vm_api,
+                )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -975,6 +1005,7 @@ impl PackageNativePackage {
                     input.definition,
                     input.metadata,
                     input.owner_role,
+                    restrict_reserved_key,
                     api,
                     vm_api,
                 )?;
@@ -1143,6 +1174,7 @@ impl PackageNativePackage {
         vm_type: VmType,
         original_code: Vec<u8>,
         system_instructions: BTreeMap<String, Vec<SystemInstruction>>,
+        restrict_reserved_key: bool,
         vm_api: &V,
     ) -> Result<PackageStructure, RuntimeError> {
         // Validate schema
@@ -1152,7 +1184,7 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_type_schemas(definition.blueprints.values())
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_auth(&definition)
+        validate_auth(&definition, restrict_reserved_key)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_names(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -1333,6 +1365,7 @@ impl PackageNativePackage {
         native_package_code_id: u64,
         definition: PackageDefinition,
         metadata_init: MetadataInit,
+        restrict_reserved_key: bool,
         api: &mut Y,
         vm_api: &V,
     ) -> Result<PackageAddress, RuntimeError>
@@ -1346,6 +1379,7 @@ impl PackageNativePackage {
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
             Default::default(),
+            restrict_reserved_key,
             vm_api,
         )?;
         let role_assignment = RoleAssignment::create(OwnerRole::None, indexmap!(), api)?;
@@ -1364,6 +1398,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata_init: MetadataInit,
+        restrict_reserved_key: bool,
         api: &mut Y,
         vm_api: &V,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
@@ -1378,6 +1413,7 @@ impl PackageNativePackage {
             VmType::ScryptoV1,
             code,
             Default::default(),
+            restrict_reserved_key,
             vm_api,
         )?;
 
@@ -1413,6 +1449,7 @@ impl PackageNativePackage {
         definition: PackageDefinition,
         metadata_init: MetadataInit,
         owner_role: OwnerRole,
+        restrict_reserved_key: bool,
         api: &mut Y,
         vm_api: &V,
     ) -> Result<PackageAddress, RuntimeError>
@@ -1426,6 +1463,7 @@ impl PackageNativePackage {
             VmType::ScryptoV1,
             code,
             Default::default(),
+            restrict_reserved_key,
             vm_api,
         )?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;

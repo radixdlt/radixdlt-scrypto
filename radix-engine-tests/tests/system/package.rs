@@ -1563,7 +1563,9 @@ fn test_long_role_key() {
             auth_config: AuthConfig {
                 function_auth: FunctionAuth::AllowAll,
                 method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
-                    roles: RoleSpecification::Normal(indexmap!()),
+                    roles: RoleSpecification::Normal(indexmap!(
+                        RoleKey { key: "abc".to_owned() } => RoleList { list: vec![] }
+                    )),
                     methods: indexmap!(
                         MethodKey { ident: "f".to_owned() } => MethodAccessibility::RoleProtected(
                             RoleList {
@@ -1595,7 +1597,7 @@ fn test_long_role_key() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidRoleKey(_)
+                PackageError::ReservedRoleKeyIsNotDefined(_)
             ))
         )
     });

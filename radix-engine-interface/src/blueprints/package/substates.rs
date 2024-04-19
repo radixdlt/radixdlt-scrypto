@@ -2,26 +2,45 @@ use crate::blueprints::package::BlueprintType;
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
 
-pub const PACKAGE_CODE_ID: u64 = 0u64;
+//============
+// Blueprints
+//============
+pub const PACKAGE_V1_0_CODE_ID: u64 = 0u64;
+pub const PACKAGE_V1_1_CODE_ID: u64 = 22u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;
 pub const IDENTITY_CODE_ID: u64 = 2u64;
 pub const CONSENSUS_MANAGER_CODE_ID: u64 = 3u64;
+// For methods:
+// * CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT
+// * CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT
+pub const CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID: u64 = 16u64;
 pub const ACCOUNT_CODE_ID: u64 = 5u64;
+/// For methods:
+/// - ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
+/// - ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT
+pub const ACCOUNT_TRY_DEPOSIT_CODE_ID: u64 = 20u64;
 pub const ACCESS_CONTROLLER_CODE_ID: u64 = 6u64;
+pub const POOL_V1_0_CODE_ID: u64 = 13u64;
+pub const POOL_V1_1_CODE_ID: u64 = 17u64;
+pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
+pub const TEST_UTILS_CODE_ID: u64 = 15u64;
+pub const LOCKER_CODE_ID: u64 = 19u64;
 pub const TRANSACTION_PROCESSOR_V1_0_CODE_ID: u64 = 7u64;
+pub const TRANSACTION_PROCESSOR_V1_1_CODE_ID: u64 = 21u64;
+
+//================
+// Object modules
+//================
 pub const METADATA_CODE_ID: u64 = 10u64;
 pub const ROYALTY_CODE_ID: u64 = 11u64;
 pub const ROLE_ASSIGNMENT_CODE_ID: u64 = 12u64;
-pub const POOL_V1_0_CODE_ID: u64 = 13u64;
-pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
-pub const TEST_UTILS_CODE_ID: u64 = 15u64;
-pub const CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID: u64 = 16u64;
-pub const POOL_V1_1_CODE_ID: u64 = 17u64;
-pub const ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID: u64 = 18u64;
-pub const LOCKER_CODE_ID: u64 = 19u64;
-pub const ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID: u64 = 20u64;
-pub const TRANSACTION_PROCESSOR_V1_1_CODE_ID: u64 = 21u64;
+/// For methods:
+/// - ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT
+pub const ROLE_ASSIGNMENT_GET_OWNER_ROLE_CODE_ID: u64 = 18u64;
 
+//===================
+// Partition offsets
+//===================
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);

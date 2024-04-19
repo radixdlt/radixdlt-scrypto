@@ -554,7 +554,7 @@ pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     // Creating the original code substates for extension.
     let (code_hash, (code_substate, vm_type_substate)) = {
-        let original_code = ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID
+        let original_code = ROLE_ASSIGNMENT_GET_OWNER_ROLE_CODE_ID
             .to_be_bytes()
             .to_vec();
 
@@ -683,6 +683,7 @@ pub fn generate_locker_package_state_updates() -> StateUpdates {
         VmType::Native,
         LOCKER_CODE_ID.to_be_bytes().to_vec(),
         Default::default(),
+        false,
         &VmBoot::latest(),
     )
     .unwrap_or_else(|err| {
@@ -737,7 +738,7 @@ pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase>(
 
     // Creating the original code substates for extension.
     let (code_hash, (code_substate, vm_type_substate)) = {
-        let original_code = ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID.to_be_bytes().to_vec();
+        let original_code = ACCOUNT_TRY_DEPOSIT_CODE_ID.to_be_bytes().to_vec();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
         let code_substate = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
@@ -848,6 +849,121 @@ pub fn generate_protocol_params_to_state_state_updates(
                                     max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
                                 })).unwrap()
                             )
+                        }
+                    },
+                }
+            }
+        ),
+    }
+}
+
+/// Generates the state updates required for restricting reserved role key.
+pub fn generate_restrict_reserved_role_key_state_updates<S: SubstateDatabase>(
+    db: &S,
+) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
+    let tx_processor_pkg_node_id = PACKAGE_PACKAGE.into_node_id();
+    let bp_version_key = BlueprintVersionKey {
+        blueprint: PACKAGE_BLUEPRINT.to_string(),
+        version: BlueprintVersion::default(),
+    };
+
+    // Generate the new code substates
+    let (new_code_substate, new_vm_type_substate, old_code_hash, new_code_hash) = {
+        let old_code = PACKAGE_V1_0_CODE_ID.to_be_bytes().to_vec();
+        let old_code_hash = CodeHash::from_hash(hash(&old_code));
+
+        let new_code = PACKAGE_V1_1_CODE_ID.to_be_bytes().to_vec();
+        let new_code_hash = CodeHash::from_hash(hash(&new_code));
+
+        let versioned_code =
+            VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 { code: new_code });
+        let code_payload = versioned_code.into_payload();
+        let code_substate = code_payload.into_locked_substate();
+        let vm_type_substate = PackageCodeVmTypeV1 {
+            vm_type: VmType::Native,
+        }
+        .into_versioned()
+        .into_locked_substate();
+        (
+            scrypto_encode(&code_substate).unwrap(),
+            scrypto_encode(&vm_type_substate).unwrap(),
+            old_code_hash,
+            new_code_hash,
+        )
+    };
+
+    // Generate the blueprint definition substate updates
+    let updated_bp_definition_substate = {
+        let versioned_definition: VersionedPackageBlueprintVersionDefinition = reader
+            .read_object_collection_entry(
+                &tx_processor_pkg_node_id,
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                    &bp_version_key,
+                ),
+            )
+            .unwrap()
+            .unwrap();
+
+        let mut definition = versioned_definition.into_latest();
+
+        for (_, export) in definition.function_exports.iter_mut() {
+            export.code_hash = new_code_hash
+        }
+
+        scrypto_encode(
+            &VersionedPackageBlueprintVersionDefinition::V1(definition).into_locked_substate(),
+        )
+        .unwrap()
+    };
+
+    let bp_definition_partition_num = reader
+        .get_partition_of_collection(
+            &tx_processor_pkg_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let vm_type_partition_num = reader
+        .get_partition_of_collection(
+            &tx_processor_pkg_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeVmTypeKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let original_code_partition_num = reader
+        .get_partition_of_collection(
+            &tx_processor_pkg_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeOriginalCodeKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    StateUpdates {
+        by_node: indexmap!(
+            tx_processor_pkg_node_id => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    bp_definition_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()) => DatabaseUpdate::Set(
+                                updated_bp_definition_substate
+                            )
+                        }
+                    },
+                    vm_type_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap()) => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap()) => DatabaseUpdate::Set(new_vm_type_substate)
+                        }
+                    },
+                    original_code_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap()) => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap()) => DatabaseUpdate::Set(new_code_substate)
                         }
                     },
                 }

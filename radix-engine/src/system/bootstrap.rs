@@ -489,7 +489,7 @@ pub fn create_system_bootstrap_flash(
         (
             PACKAGE_PACKAGE,
             PackageNativePackage::definition(),
-            PACKAGE_CODE_ID,
+            PACKAGE_V1_0_CODE_ID,
             metadata_init! {
                 "name" => "Package Package".to_owned(), locked;
                 "description" => "A native package that is called to create a new package on the network.".to_owned(), locked;
@@ -574,6 +574,7 @@ pub fn create_system_bootstrap_flash(
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
+                false,
                 &VmBoot::default(),
             )
             .unwrap_or_else(|err| {

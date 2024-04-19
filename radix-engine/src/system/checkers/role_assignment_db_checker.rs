@@ -188,7 +188,7 @@ impl RoleAssignmentDatabaseChecker {
     where
         F: FnMut(RoleAssignmentDatabaseCheckerError),
     {
-        if RoleAssignmentNativePackage::is_reserved_role_key(&role_key.key) {
+        if RoleAssignmentNativePackage::is_role_key_reserved(&role_key.key) {
             add_error(RoleAssignmentDatabaseCheckerError::ReservedRoleKey(
                 role_key.clone(),
             ))

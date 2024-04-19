@@ -117,9 +117,20 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                 })?;
 
                 match *native_package_code_id {
-                    PACKAGE_CODE_ID => {
-                        PackageNativePackage::invoke_export(export_name, input, api, vm_api)
-                    }
+                    PACKAGE_V1_0_CODE_ID => PackageNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        PackageV1MinorVersion::Zero,
+                        api,
+                        vm_api,
+                    ),
+                    PACKAGE_V1_1_CODE_ID => PackageNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        PackageV1MinorVersion::One,
+                        api,
+                        vm_api,
+                    ),
                     RESOURCE_CODE_ID => {
                         ResourceNativePackage::invoke_export(export_name, input, api)
                     }
@@ -137,7 +148,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         IdentityNativePackage::invoke_export(export_name, input, api)
                     }
                     ACCOUNT_CODE_ID => AccountNativePackage::invoke_export(export_name, input, api),
-                    ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID => {
+                    ACCOUNT_TRY_DEPOSIT_CODE_ID => {
                         AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
                     }
                     ACCESS_CONTROLLER_CODE_ID => {
@@ -166,7 +177,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     ROLE_ASSIGNMENT_CODE_ID => {
                         RoleAssignmentNativePackage::invoke_export(export_name, input, api)
                     }
-                    ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID => {
+                    ROLE_ASSIGNMENT_GET_OWNER_ROLE_CODE_ID => {
                         RoleAssignmentBottlenoseExtension::invoke_export(export_name, input, api)
                     }
                     POOL_V1_0_CODE_ID => PoolNativePackage::invoke_export(
