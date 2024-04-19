@@ -21,13 +21,13 @@ pub struct NewPackage {
 
 impl NewPackage {
     pub fn run(&self) -> Result<(), String> {
-        let wasm_name = self.package_name.replace("-", "_");
+        let wasm_name = self.package_name.replace('-', "_");
         let path = self
             .path
             .clone()
             .unwrap_or(PathBuf::from(&self.package_name));
         let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let (sbor, scrypto, scrypto_test) = if self.local {
+        let (sbor, scrypto, radix_rust, scrypto_test) = if self.local {
             let scrypto_dir = simulator_dir
                 .parent()
                 .unwrap()
@@ -36,11 +36,12 @@ impl NewPackage {
             (
                 format!("{{ path = \"{}/sbor\" }}", scrypto_dir),
                 format!("{{ path = \"{}/scrypto\" }}", scrypto_dir),
+                format!("{{ path = \"{}/radix-rust\" }}", scrypto_dir),
                 format!("{{ path = \"{}/scrypto-test\" }}", scrypto_dir),
             )
         } else {
             let s = format!("{{ version = \"{}\" }}", env!("CARGO_PKG_VERSION"));
-            (s.clone(), s.clone(), s.clone())
+            (s.clone(), s.clone(), s.clone(), s.clone())
         };
 
         if path.exists() {
@@ -55,6 +56,7 @@ impl NewPackage {
                     .replace("${package_name}", &self.package_name)
                     .replace("${sbor}", &sbor)
                     .replace("${scrypto}", &scrypto)
+                    .replace("${radix-rust}", &radix_rust)
                     .replace("${scrypto-test}", &scrypto_test),
             )
             .map_err(Error::IOError)?;

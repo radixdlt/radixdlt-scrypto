@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = ${sbor}
 scrypto = ${scrypto}
+radix-rust = ${radix-rust}
 
 [dev-dependencies]
 scrypto-test = ${scrypto-test}

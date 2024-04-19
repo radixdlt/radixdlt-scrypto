@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
 scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
+radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
 
 [dev-dependencies]
 scrypto-test = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "<replace-it-with-proper-revision>" }
