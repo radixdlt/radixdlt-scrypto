@@ -83,7 +83,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
     fn init<S: BootStore>(store: &S, vm_init: VmInit<'g, W, E>) -> Result<Self, BootloadingError> {
         let vm_boot = store
-            .read_substate(
+            .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 BOOT_LOADER_PARTITION,
                 &SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY),

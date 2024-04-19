@@ -10,8 +10,12 @@ use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::costing::*;
 use radix_engine::system::system_modules::*;
+use radix_engine::system::system_modules::auth::AuthModule;
+use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
+use radix_engine::system::system_modules::kernel_trace::KernelTraceModule;
+use radix_engine::system::system_modules::limits::LimitsModule;
+use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use radix_engine::track::*;
-use radix_engine::transaction::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::account::*;
@@ -68,7 +72,6 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let native_vm = NativeVm::new_with_extension(Extension);
 
     let intent_hash = Hash([0; 32]);
-    let mut id_allocator = IdAllocator::new(intent_hash);
     let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
@@ -80,27 +83,35 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         },
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
-            NetworkDefinition::simulator(),
-            intent_hash,
-            AuthZoneParams {
-                initial_proofs: Default::default(),
-                virtual_resources: Default::default(),
+            KernelTraceModule,
+            TransactionRuntimeModule::new(
+                NetworkDefinition::simulator(),
+                intent_hash,
+            ),
+            AuthModule::new(
+                AuthZoneParams {
+                    initial_proofs: Default::default(),
+                    virtual_resources: Default::default(),
+                }
+            ),
+            LimitsModule::babylon_genesis(),
+            CostingModule {
+                fee_reserve: SystemLoanFeeReserve::default(),
+                fee_table: FeeTable::new(),
+                tx_payload_len: 0,
+                tx_num_of_signature_validations: 1,
+                max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+                cost_breakdown: None,
+                on_apply_cost: Default::default(),
             },
-            SystemLoanFeeReserve::default(),
-            FeeTable::new(),
-            0,
-            1,
-            &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
+            ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
         system_version: SystemVersion::get_latest_version(),
     };
 
-    let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
-        callback: &mut system,
-        store: &mut track,
-    };
-    let mut kernel = boot_loader.boot().unwrap();
+    let mut id_allocator = IdAllocator::new(intent_hash);
+    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut system);
+
     let mut api = SystemService {
         api: &mut kernel,
         phantom: Default::default(),
@@ -146,7 +157,6 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let native_vm = NativeVm::new_with_extension(NonStringPanicExtension);
 
     let intent_hash = Hash([0; 32]);
-    let mut id_allocator = IdAllocator::new(intent_hash);
     let mut system = System {
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
@@ -158,27 +168,34 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         },
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
-            NetworkDefinition::simulator(),
-            intent_hash,
-            AuthZoneParams {
-                initial_proofs: Default::default(),
-                virtual_resources: Default::default(),
+            KernelTraceModule,
+            TransactionRuntimeModule::new(
+                NetworkDefinition::simulator(),
+                intent_hash,
+            ),
+            AuthModule::new(
+                AuthZoneParams {
+                    initial_proofs: Default::default(),
+                    virtual_resources: Default::default(),
+                }
+            ),
+            LimitsModule::babylon_genesis(),
+            CostingModule {
+                fee_reserve: SystemLoanFeeReserve::default(),
+                fee_table: FeeTable::new(),
+                tx_payload_len: 0,
+                tx_num_of_signature_validations: 1,
+                max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+                cost_breakdown: None,
+                on_apply_cost: Default::default(),
             },
-            SystemLoanFeeReserve::default(),
-            FeeTable::new(),
-            0,
-            1,
-            &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
+            ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
         system_version: SystemVersion::get_latest_version(),
     };
 
-    let mut boot_loader = BootLoader {
-        id_allocator: &mut id_allocator,
-        callback: &mut system,
-        store: &mut track,
-    };
-    let mut kernel = boot_loader.boot().unwrap();
+    let mut id_allocator = IdAllocator::new(intent_hash);
+    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut system);
     let mut api = SystemService {
         api: &mut kernel,
         phantom: Default::default(),

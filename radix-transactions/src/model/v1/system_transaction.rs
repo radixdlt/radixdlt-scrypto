@@ -122,6 +122,7 @@ impl PreparedSystemTransactionV1 {
                 },
                 pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
             },
+            true,
         )
     }
 }

@@ -3210,7 +3210,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
         .build();
 
     // Disable fees for easier stake calculation
-    let mut costing_params = CostingParameters::default();
+    let mut costing_params = CostingParameters::babylon_genesis();
     costing_params.execution_cost_unit_price = Decimal::zero();
     costing_params.finalization_cost_unit_price = Decimal::zero();
     costing_params.state_storage_price = Decimal::zero();

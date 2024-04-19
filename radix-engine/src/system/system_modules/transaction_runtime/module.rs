@@ -32,6 +32,17 @@ pub struct TransactionRuntimeModule {
 }
 
 impl TransactionRuntimeModule {
+    pub fn new(network_definition: NetworkDefinition, tx_hash: Hash) -> Self {
+        TransactionRuntimeModule {
+            network_definition,
+            tx_hash,
+            next_id: 0,
+            logs: Vec::new(),
+            events: Vec::new(),
+            replacements: index_map_new(),
+        }
+    }
+
     pub fn generate_ruid(&mut self) -> [u8; 32] {
         let mut bytes = [0u8; 36];
         (&mut bytes[..32]).copy_from_slice(self.tx_hash.as_slice());

@@ -1156,6 +1156,7 @@ dependencies = [
  "secp256k1",
  "sha3",
  "strum",
+ "zeroize",
 ]
 
 [[package]]

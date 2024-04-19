@@ -86,6 +86,7 @@ pub struct Executable<'a> {
     pub(crate) references: IndexSet<Reference>,
     pub(crate) blobs: &'a IndexMap<Hash, Vec<u8>>,
     pub(crate) context: ExecutionContext,
+    pub(crate) system: bool,
 }
 
 impl<'a> Executable<'a> {
@@ -94,6 +95,7 @@ impl<'a> Executable<'a> {
         references: &IndexSet<Reference>,
         blobs: &'a IndexMap<Hash, Vec<u8>>,
         context: ExecutionContext,
+        system: bool,
     ) -> Self {
         let mut references = references.clone();
 
@@ -118,8 +120,42 @@ impl<'a> Executable<'a> {
             references,
             blobs,
             context,
+            system,
         }
     }
+
+    // Consuming builder-like customization methods:
+
+    pub fn is_system(&self) -> bool {
+        self.system
+    }
+
+    pub fn overwrite_intent_hash(mut self, hash: Hash) -> Self {
+        match &mut self.context.intent_hash {
+            TransactionIntentHash::ToCheck { intent_hash, .. }
+            | TransactionIntentHash::NotToCheck { intent_hash } => {
+                *intent_hash = hash;
+            }
+        }
+        self
+    }
+
+    pub fn skip_epoch_range_check(mut self) -> Self {
+        self.context.epoch_range = None;
+        self
+    }
+
+    pub fn apply_free_credit(mut self, free_credit_in_xrd: Decimal) -> Self {
+        self.context.costing_parameters.free_credit_in_xrd = free_credit_in_xrd;
+        self
+    }
+
+    pub fn abort_when_loan_repaid(mut self) -> Self {
+        self.context.costing_parameters.abort_when_loan_repaid = true;
+        self
+    }
+
+    // Getters:
 
     pub fn intent_hash(&self) -> &TransactionIntentHash {
         &self.context.intent_hash
@@ -127,19 +163,6 @@ impl<'a> Executable<'a> {
 
     pub fn epoch_range(&self) -> Option<&EpochRange> {
         self.context.epoch_range.as_ref()
-    }
-
-    pub fn overwrite_intent_hash(&mut self, hash: Hash) {
-        match &mut self.context.intent_hash {
-            TransactionIntentHash::ToCheck { intent_hash, .. }
-            | TransactionIntentHash::NotToCheck { intent_hash } => {
-                *intent_hash = hash;
-            }
-        }
-    }
-
-    pub fn skip_epoch_range_check(&mut self) {
-        self.context.epoch_range = None;
     }
 
     pub fn costing_parameters(&self) -> &TransactionCostingParameters {

@@ -18,14 +18,14 @@ pub trait InitSystemModule {
     fn init(&mut self) -> Result<(), BootloadingError> {
         Ok(())
     }
+
+    #[inline(always)]
+    fn on_teardown(&mut self) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }
 
 pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
-    #[inline(always)]
-    fn on_teardown<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
     //======================
     // Invocation events
     //

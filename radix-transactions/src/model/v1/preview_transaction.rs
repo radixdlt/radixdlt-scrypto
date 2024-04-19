@@ -80,6 +80,7 @@ impl ValidatedPreviewIntent {
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],
             },
+            false,
         )
     }
 }
