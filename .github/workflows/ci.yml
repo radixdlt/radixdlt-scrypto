@@ -345,3 +345,22 @@ jobs:
             --max-version 50000 \
             --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
         working-directory: radix-clis
+
+  benchmark-autocomplete:
+    name: "Run Autocomplete Benchmarks"
+    runs-on: ubuntu-16-cores-selfhosted
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - name: Run Benchmarks
+        run: python3 benchmark_autocomplete.py > results.md
+      - uses: RDXWorks-actions/upload-artifact@main
+        with:
+          name: autocomplete-benchmarks
+          path: results.md
+      - uses: RDXWorks-actions/actions-comment-pull-request@main
+        with:
+          filePath: results.md

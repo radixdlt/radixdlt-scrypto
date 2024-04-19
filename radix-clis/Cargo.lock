@@ -1100,6 +1100,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "radix-blueprint-schema-init",
+ "radix-clis-common",
  "radix-common",
  "radix-engine",
  "radix-engine-interface",
@@ -1123,6 +1124,10 @@ dependencies = [
  "walkdir",
  "wasm-opt",
 ]
+
+[[package]]
+name = "radix-clis-common"
+version = "1.2.0-dev"
 
 [[package]]
 name = "radix-common"

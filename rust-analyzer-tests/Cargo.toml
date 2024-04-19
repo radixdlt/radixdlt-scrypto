@@ -1,0 +1,45 @@
+[package]
+name = "rust-analyzer-tests"
+version = "1.2.0-dev"
+edition = "2021"
+description = "A crate with integration tests and benchmarks for Scrypto and Rust Analyzer."
+readme = "README.md"
+license-file = "../LICENSE"
+repository = "https://github.com/radixdlt/radixdlt-scrypto"
+
+[dependencies]
+radix-clis-common = { workspace = true }
+serde_json = { workspace = true }
+regex = { workspace = true }
+toml = { workspace = true }
+cargo_toml = { workspace = true }
+tempfile = { version = "3.8.0" }
+
+# The following must all match the versions used by Rust Analyzer itself. Otherwise you might run
+# into type errors. Therefore, they're made separate from the workspace dependencies to make it 
+# clear that we can very well have two versions of the below dependncies at any point of time, one 
+# in the workspace manifest and another in here.
+rust-analyzer = { git = "https://github.com/rust-lang/rust-analyzer", tag = "2024-04-01" }
+paths = { git = "https://github.com/rust-lang/rust-analyzer", tag = "2024-04-01" }
+lsp-server = { version = "0.7.6" }
+lsp-types = { version = "=0.95.0", features = ["proposed"] }
+crossbeam-channel = { version = "0.5.5" }
+url = { version = "2.0.0", features = ["serde"] }
+tracing-subscriber = { version = "0.3.18", default-features = false, features = [
+    "registry",
+    "fmt",
+    "tracing-log",
+] }
+
+[dev-dependencies]
+criterion = { workspace = true, features = ["html_reports"] }
+paste = { workspace = true }
+
+[[bench]]
+name = "autocomplete"
+harness = false
+
+# Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
+[lib]
+doctest = false
+bench = false

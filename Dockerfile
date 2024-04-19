@@ -34,6 +34,7 @@ ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
 ADD scrypto-compiler /app/scrypto-compiler
+ADD radix-clis-common /app/radix-clis-common
 
 # Copy radix-clis crate
 ADD radix-clis /app/radix-clis
