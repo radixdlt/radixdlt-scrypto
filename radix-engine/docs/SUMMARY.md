@@ -4,8 +4,14 @@
 
 # Architecture
 
-- [Layered Architecture](architecture/layers)
-- Substates / SBOR
+- [Layered Architecture](architecture/layers.md)
+  - [Application Layer](architecture/layers/application.md)
+  - [VM Layer](architecture/layers/vm.md)
+  - [System Layer](architecture/layers/system.md)
+  - [Kernel Layer](architecture/layers/kernel.md)
+  - [Database Layer](architecture/layers/database.md)
+- Data Architecture
+  - Substates / SBOR
 - System / Object Modules
 - WASM environment
 
