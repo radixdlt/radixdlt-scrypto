@@ -11,6 +11,10 @@ use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::auth::*;
 use radix_engine::system::system_modules::costing::*;
+use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
+use radix_engine::system::system_modules::kernel_trace::KernelTraceModule;
+use radix_engine::system::system_modules::limits::LimitsModule;
+use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use radix_engine::system::system_modules::*;
 use radix_engine::track::*;
 use radix_engine::transaction::*;
@@ -235,13 +239,38 @@ where
                     BOOT_LOADER_PARTITION,
                 );
                 let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(
-                    BOOT_LOADER_VM_VERSION_FIELD_KEY,
+                    BOOT_LOADER_VM_BOOT_FIELD_KEY,
                 ));
 
-                let vm_version = database
+                let vm_boot = database
                     .get_substate(&db_partition_key, &db_sort_key)
                     .map(|v| scrypto_decode(v.as_slice()).unwrap())
                     .unwrap_or_default();
+
+                let transaction_runtime_module = TransactionRuntimeModule::new(
+                    NetworkDefinition::simulator(),
+                    Self::DEFAULT_INTENT_HASH,
+                );
+
+                let auth_module = AuthModule::new(AuthZoneParams {
+                    initial_proofs: Default::default(),
+                    virtual_resources: Default::default(),
+                });
+
+                let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
+
+                let costing_module = CostingModule {
+                    fee_reserve: SystemLoanFeeReserve::default(),
+                    fee_table: FeeTable::new(),
+                    tx_payload_len: 0,
+                    tx_num_of_signature_validations: 0,
+                    max_per_function_royalty_in_xrd: Decimal::try_from(
+                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
+                    )
+                    .unwrap(),
+                    cost_breakdown: Some(Default::default()),
+                    on_apply_cost: Default::default(),
+                };
 
                 System {
                     blueprint_cache: NonIterMap::new(),
@@ -250,23 +279,18 @@ where
                     callback: Vm {
                         scrypto_vm,
                         native_vm: native_vm.clone(),
-                        vm_version,
+                        vm_boot,
                     },
                     modules: SystemModuleMixer::new(
                         EnabledModules::LIMITS
                             | EnabledModules::AUTH
                             | EnabledModules::TRANSACTION_RUNTIME,
-                        NetworkDefinition::simulator(),
-                        Self::DEFAULT_INTENT_HASH,
-                        AuthZoneParams {
-                            initial_proofs: Default::default(),
-                            virtual_resources: Default::default(),
-                        },
-                        SystemLoanFeeReserve::default(),
-                        FeeTable::new(),
-                        0,
-                        0,
-                        &ExecutionConfig::for_test_transaction().with_kernel_trace(false),
+                        KernelTraceModule,
+                        transaction_runtime_module,
+                        auth_module,
+                        limits_module,
+                        costing_module,
+                        ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
                 }
             },

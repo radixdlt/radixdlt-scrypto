@@ -13,22 +13,25 @@ use radix_engine_interface::api::ClientApi;
 
 use crate::vm::ScryptoVmVersion;
 
-pub const BOOT_LOADER_VM_VERSION_FIELD_KEY: FieldKey = 2u8;
+pub const BOOT_LOADER_VM_BOOT_FIELD_KEY: FieldKey = 2u8;
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor, Default)]
-pub enum VmVersion {
-    #[default]
-    V0,
-    // We need to keep the structure, despite seemingly redundant.
-    V1 {
-        scrypto_version: u64,
-    },
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum VmBoot {
+    V1 { scrypto_version: u64 },
 }
 
-impl VmVersion {
+impl VmBoot {
     pub fn latest() -> Self {
         Self::V1 {
             scrypto_version: ScryptoVmVersion::latest().into(),
+        }
+    }
+}
+
+impl Default for VmBoot {
+    fn default() -> Self {
+        Self::V1 {
+            scrypto_version: ScryptoVmVersion::V1_0.into(),
         }
     }
 }
@@ -37,11 +40,10 @@ pub trait VmApi {
     fn get_scrypto_version(&self) -> ScryptoVmVersion;
 }
 
-impl VmApi for VmVersion {
+impl VmApi for VmBoot {
     fn get_scrypto_version(&self) -> ScryptoVmVersion {
         match self {
-            VmVersion::V0 => ScryptoVmVersion::V1_0,
-            VmVersion::V1 { scrypto_version } => ScryptoVmVersion::try_from(*scrypto_version)
+            VmBoot::V1 { scrypto_version } => ScryptoVmVersion::try_from(*scrypto_version)
                 .expect(&format!("Unexpected scrypto version: {}", scrypto_version)),
         }
     }
@@ -73,18 +75,18 @@ impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for VmInit<'g, W, E> {
 pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
     pub native_vm: NativeVm<E>,
-    pub vm_version: VmVersion,
+    pub vm_boot: VmBoot,
 }
 
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
     type InitInput = VmInit<'g, W, E>;
 
     fn init<S: BootStore>(store: &S, vm_init: VmInit<'g, W, E>) -> Result<Self, BootloadingError> {
-        let vm_version = store
-            .read_substate(
+        let vm_boot = store
+            .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_VM_VERSION_FIELD_KEY),
+                &SubstateKey::Field(BOOT_LOADER_VM_BOOT_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
             .unwrap_or_default();
@@ -92,7 +94,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
         Ok(Self {
             scrypto_vm: vm_init.scrypto_vm,
             native_vm: NativeVm::new_with_extension(vm_init.native_vm_extension),
-            vm_version,
+            vm_boot,
         })
     }
 
@@ -135,7 +137,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             .kernel_get_system_state()
             .system
             .callback
-            .vm_version
+            .vm_boot
             .clone();
 
         let output = match vm_type.into_latest().vm_type {

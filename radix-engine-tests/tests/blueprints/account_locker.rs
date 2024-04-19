@@ -1,6 +1,5 @@
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
-use radix_engine::system::system_modules::*;
 use radix_engine::system::system_type_checker::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
@@ -1444,9 +1443,8 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                 .to_vec(),
                 blobs: Default::default(),
             },
-            EnabledModules::for_notarized_transaction()
-                & !EnabledModules::AUTH
-                & !EnabledModules::COSTING,
+            true,
+            true,
         )
         .expect_commit_success();
 
@@ -3036,18 +3034,24 @@ pub impl DefaultLedgerSimulator {
     ) -> TransactionReceiptV1 {
         self.execute_manifest_with_enabled_modules(
             manifest,
-            EnabledModules::for_notarized_transaction() & !EnabledModules::AUTH,
+            true,
+            false,
         )
     }
 
     fn execute_manifest_with_enabled_modules(
         &mut self,
         manifest: TransactionManifestV1,
-        enabled_modules: EnabledModules,
+        disable_auth: bool,
+        disable_costing: bool,
     ) -> TransactionReceiptV1 {
         let mut execution_config =
             ExecutionConfig::for_notarized_transaction(NetworkDefinition::mainnet());
-        execution_config.enabled_modules = enabled_modules;
+        execution_config.system_overrides = Some(SystemOverrides {
+            disable_auth,
+            disable_costing,
+            ..Default::default()
+        });
 
         let nonce = self.next_transaction_nonce();
         let test_transaction = TestTransaction::new_from_nonce(manifest, nonce);

@@ -1,6 +1,7 @@
 use radix_engine::blueprints::transaction_tracker::{
     TransactionStatusSubstateContents, TransactionTrackerSubstate,
 };
+use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::object_modules::metadata::MetadataEntryEntryPayload;
 use radix_engine_interface::prelude::*;
 
@@ -27,10 +28,11 @@ use radix_engine::blueprints::pool::v1::substates::two_resource_pool::{
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::object_modules::role_assignment::*;
 pub use radix_engine::object_modules::royalty::*;
+use radix_engine::system::system_callback::SystemBoot;
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
-use radix_engine::vm::VmVersion;
+use radix_engine::vm::VmBoot;
 pub use radix_engine_interface::object_modules::royalty::*;
 use radix_transactions::prelude::IntentHash;
 
@@ -390,7 +392,9 @@ pub enum TypedSubstateValue {
 
 #[derive(Debug)]
 pub enum BootLoaderSubstateValue {
-    Vm(VmVersion),
+    Kernel(KernelBoot),
+    System(SystemBoot),
+    Vm(VmBoot),
 }
 
 #[derive(Debug)]
@@ -467,10 +471,15 @@ fn to_typed_substate_value_internal(
 ) -> Result<TypedSubstateValue, DecodeError> {
     let substate_value = match substate_key {
         TypedSubstateKey::BootLoader(boot_loader_key) => {
-            TypedSubstateValue::BootLoader(match boot_loader_key {
-                TypedBootLoaderSubstateKey::BootLoaderField(BootLoaderField::Vm) => {
-                    BootLoaderSubstateValue::Vm(scrypto_decode(data)?)
+            let TypedBootLoaderSubstateKey::BootLoaderField(boot_loader_field) = boot_loader_key;
+            TypedSubstateValue::BootLoader(match boot_loader_field {
+                BootLoaderField::KernelBoot => {
+                    BootLoaderSubstateValue::Kernel(scrypto_decode(data)?)
                 }
+                BootLoaderField::SystemBoot => {
+                    BootLoaderSubstateValue::System(scrypto_decode(data)?)
+                }
+                BootLoaderField::VmBoot => BootLoaderSubstateValue::Vm(scrypto_decode(data)?),
             })
         }
         TypedSubstateKey::TypeInfo(type_info_key) => {

@@ -1,9 +1,8 @@
 use radix_common::prelude::*;
-use radix_engine::vm::NoExtension;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::prelude::{FromPublicKey, NonFungibleGlobalId};
 use radix_transactions::builder::ManifestBuilder;
-use scrypto_test::prelude::{InjectSystemCostingError, LedgerSimulatorBuilder};
+use scrypto_test::prelude::LedgerSimulatorBuilder;
 
 #[test]
 fn lock_fee_from_faucet_error_injection() {
@@ -14,7 +13,7 @@ fn lock_fee_from_faucet_error_injection() {
     loop {
         let manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
         let receipt = ledger
-            .execute_manifest_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
+            .execute_manifest_with_injected_error(
                 manifest,
                 vec![],
                 inject_err_after_count,
@@ -39,7 +38,7 @@ fn lock_fee_from_faucet_twice_error_injection() {
     for _ in 0..600 {
         let manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
         let receipt = ledger
-            .execute_manifest_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
+            .execute_manifest_with_injected_error(
                 manifest,
                 vec![],
                 inject_err_after_count,
@@ -66,7 +65,7 @@ fn lock_fee_from_faucet_and_account_error_injection() {
             .lock_fee(account, dec!("500"))
             .build();
         let receipt = ledger
-            .execute_manifest_with_system::<_, InjectSystemCostingError<'_, NoExtension>>(
+            .execute_manifest_with_injected_error(
                 manifest,
                 vec![NonFungibleGlobalId::from_public_key(&pub_key)],
                 inject_err_after_count,

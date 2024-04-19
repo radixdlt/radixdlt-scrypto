@@ -69,20 +69,24 @@ impl OnApplyCost {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct CostBreakdown {
+    pub execution_cost_breakdown: IndexMap<String, u32>,
+    pub finalization_cost_breakdown: IndexMap<String, u32>,
+    pub storage_cost_breakdown: IndexMap<StorageType, usize>,
+}
+
 #[derive(Debug, Clone)]
 pub struct CostingModule {
     pub fee_reserve: SystemLoanFeeReserve,
 
     pub fee_table: FeeTable,
-    pub max_call_depth: usize,
     pub tx_payload_len: usize,
     pub tx_num_of_signature_validations: usize,
     /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
     pub max_per_function_royalty_in_xrd: Decimal,
-    pub enable_cost_breakdown: bool,
-    pub execution_cost_breakdown: IndexMap<String, u32>,
-    pub finalization_cost_breakdown: IndexMap<String, u32>,
-    pub storage_cost_breakdown: IndexMap<StorageType, usize>,
+
+    pub cost_breakdown: Option<CostBreakdown>,
 
     pub on_apply_cost: OnApplyCost,
 }
@@ -100,9 +104,10 @@ impl CostingModule {
             .consume_execution(cost_units)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.execution_cost_breakdown
+            cost_breakdown
+                .execution_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -123,9 +128,10 @@ impl CostingModule {
             .consume_deferred_execution(cost_units)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.execution_cost_breakdown
+            cost_breakdown
+                .execution_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -145,8 +151,9 @@ impl CostingModule {
             .consume_deferred_storage(storage_type, size_increase)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
-            self.storage_cost_breakdown
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
+            cost_breakdown
+                .storage_cost_breakdown
                 .entry(storage_type)
                 .or_default()
                 .add_assign(size_increase);
@@ -167,9 +174,10 @@ impl CostingModule {
             .consume_finalization(cost_units)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
-            self.finalization_cost_breakdown
+            cost_breakdown
+                .finalization_cost_breakdown
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
@@ -189,8 +197,9 @@ impl CostingModule {
             .consume_storage(storage_type, size_increase)
             .map_err(|e| CostingError::FeeReserveError(e))?;
 
-        if self.enable_cost_breakdown {
-            self.storage_cost_breakdown
+        if let Some(cost_breakdown) = &mut self.cost_breakdown {
+            cost_breakdown
+                .storage_cost_breakdown
                 .entry(storage_type)
                 .or_default()
                 .add_assign(size_increase);

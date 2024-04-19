@@ -11,7 +11,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::CallFrameReferences;
+use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -22,70 +22,199 @@ use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
-use crate::track::{BootStore, CanonicalSubstateKey};
+use crate::track::{CanonicalSubstateKey, Track};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
-use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
-use radix_transactions::prelude::PreAllocatedAddress;
+use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
+use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::prelude::Executable;
 use sbor::rust::mem;
 
-// TODO: use this for missing costing for system api
 pub const BOOT_LOADER_KERNEL_VERSION_FIELD_KEY: FieldKey = 0u8;
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor, Default)]
-pub enum KernelVersion {
-    #[default]
-    V0,
-    V1,
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum KernelBoot {
+    V1 { ref_check_costing: bool },
 }
 
-impl KernelVersion {
+impl KernelBoot {
     pub fn is_ref_check_costing_enabled(&self) -> bool {
         match self {
-            KernelVersion::V0 => false,
-            KernelVersion::V1 => true,
+            KernelBoot::V1 { ref_check_costing } => *ref_check_costing,
+        }
+    }
+}
+
+impl Default for KernelBoot {
+    fn default() -> Self {
+        Self::V1 {
+            ref_check_costing: false,
         }
     }
 }
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct BootLoader<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> {
-    pub id_allocator: &'g mut IdAllocator,
-    pub callback: &'g mut M,
-    pub store: &'g mut S,
+pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
+    pub id_allocator: IdAllocator,
+    pub track: Track<'h, S, SpreadPrefixKeyMapper>,
+    pub init: M::Init,
+    pub phantom: PhantomData<M>,
 }
 
-impl<'g, 'h, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
-    /// Creates a new kernel with data loaded from the substate store
-    pub fn boot(&mut self) -> Result<Kernel<M, S>, BootloadingError> {
-        let kernel = Kernel {
+impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
+    /// Executes a transaction
+    pub fn execute<'a>(self, executable: &Executable) -> M::Receipt {
+        // Start hardware resource usage tracker
+        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+        let mut resources_tracker =
+            crate::kernel::resources_tracker::ResourcesTracker::start_measurement();
+
+        #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
+        {
+            self.execute_internal(executable)
+                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason))
+        }
+
+        #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
+        {
+            let mut receipt = self
+                .execute_internal(executable)
+                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason));
+
+            // Stop hardware resource usage tracker
+            receipt.set_resource_usage(resources_tracker.end_measurement());
+
+            receipt
+        }
+    }
+
+    fn execute_internal<'a>(
+        mut self,
+        executable: &Executable,
+    ) -> Result<M::Receipt, RejectionReason> {
+        #[cfg(feature = "resource_tracker")]
+        radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
+            v.borrow_mut();
+        });
+
+        // Create System
+        let mut callback = M::init(&mut self.track, executable, self.init.clone())?;
+
+        // Create Kernel
+        let mut kernel = {
+            let mut kernel = Kernel::new(&mut self.track, &mut self.id_allocator, &mut callback);
+
+            // Check references
+            let engine_references = kernel
+                .check_references(executable.references())
+                .map_err(RejectionReason::BootloadingError)?;
+
+            // Add visibility
+            for global_ref in engine_references.0 {
+                kernel.current_frame.add_global_reference(global_ref);
+            }
+            for direct_access in engine_references.1 {
+                kernel
+                    .current_frame
+                    .add_direct_access_reference(direct_access);
+            }
+
+            kernel
+        };
+
+        // Execution
+        let result = || -> Result<M::ExecutionOutput, RuntimeError> {
+            // Invoke transaction processor
+            let output = M::start(
+                &mut kernel,
+                executable.encoded_instructions(),
+                executable.pre_allocated_addresses(),
+                executable.references(),
+                executable.blobs(),
+            )?;
+
+            // Sanity check call frame
+            assert!(kernel.prev_frame_stack.is_empty());
+
+            // Sanity check heap
+            assert!(kernel.substate_io.heap.is_empty());
+
+            let commit_info = kernel.substate_io.store.get_commit_info();
+
+            kernel.callback.finish(commit_info)?;
+
+            Ok(output)
+        }()
+        .map_err(|e| TransactionExecutionError::RuntimeError(e));
+
+        let receipt = M::create_receipt(callback, self.track, executable, result);
+
+        Ok(receipt)
+    }
+}
+
+pub struct Kernel<
+    'g, // Lifetime of values outliving all frames
+    M,  // Upstream System layer
+    S,  // Substate store
+> where
+    M: KernelCallbackObject,
+    S: CommitableSubstateStore,
+{
+    /// Stack
+    current_frame: CallFrame<M::CallFrameData, M::LockData>,
+    // This stack could potentially be removed and just use the native stack
+    // but keeping this call_frames stack may potentially prove useful if implementing
+    // execution pause and/or for better debuggability
+    prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
+
+    substate_io: SubstateIO<'g, S>,
+
+    /// ID allocator
+    id_allocator: &'g mut IdAllocator,
+
+    /// Upper system layer
+    callback: &'g mut M,
+}
+
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
+    pub fn new(store: &'g mut S, id_allocator: &'g mut IdAllocator, callback: &'g mut M) -> Self {
+        Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
-                store: self.store,
+                store,
                 non_global_node_refs: NonGlobalNodeRefs::new(),
                 substate_locks: SubstateLocks::new(),
                 heap_transient_substates: TransientSubstates::new(),
                 pinned_to_heap: BTreeSet::new(),
             },
-            id_allocator: self.id_allocator,
+            id_allocator,
             current_frame: CallFrame::new_root(M::CallFrameData::root()),
             prev_frame_stack: vec![],
-            callback: self.callback,
-        };
-
-        Ok(kernel)
+            callback,
+        }
     }
-}
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLoader<'g, M, S> {
     pub fn check_references(
-        kernel: &mut Kernel<M, S>,
+        &mut self,
         references: &IndexSet<Reference>,
-        kernel_version: KernelVersion,
     ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
+
+        // Read kernel version
+        // TODO: Can potentially make it an API
+        let kernel_boot: KernelBoot = self
+            .substate_io
+            .store
+            .read_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
+                &SubstateKey::Field(BOOT_LOADER_KERNEL_VERSION_FIELD_KEY),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or_default();
 
         for reference in references.iter() {
             let node_id = &reference.0;
@@ -101,7 +230,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                 continue;
             }
 
-            let substate_ref = kernel
+            let substate_ref = self
                 .substate_io
                 .store
                 .read_substate(
@@ -141,7 +270,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                 }
             }
 
-            if kernel_version.is_ref_check_costing_enabled() {
+            if kernel_boot.is_ref_check_costing_enabled() {
                 let io_access = IOAccess::ReadFromDb(
                     CanonicalSubstateKey {
                         node_id: *node_id,
@@ -150,102 +279,12 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> BootLo
                     },
                     substate_ref.len(),
                 );
-                M::on_ref_check(kernel, RefCheckEvent::IOAccess(&io_access))?;
+                M::on_ref_check(self, RefCheckEvent::IOAccess(&io_access))?;
             }
         }
 
         Ok((global_addresses, direct_accesses))
     }
-
-    /// Executes a transaction
-    pub fn execute<'a>(
-        mut self,
-        manifest_encoded_instructions: &'a [u8],
-        pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
-        manifest_references: &'a IndexSet<Reference>,
-        blobs: &'a IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<u8>, TransactionExecutionError> {
-        #[cfg(feature = "resource_tracker")]
-        radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
-            v.borrow_mut();
-        });
-
-        // Boot kernel
-        let mut kernel = self
-            .boot()
-            .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
-
-        // Read kernel version
-        let kernel_version = kernel
-            .substate_io
-            .store
-            .read_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_KERNEL_VERSION_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or_default();
-
-        // Check reference
-        let engine_references =
-            Self::check_references(&mut kernel, manifest_references, kernel_version)
-                .map_err(|e| TransactionExecutionError::BootloadingError(e))?;
-
-        // Add visibility
-        for global_ref in engine_references.0 {
-            kernel.current_frame.add_global_reference(global_ref);
-        }
-        for direct_access in engine_references.1 {
-            kernel
-                .current_frame
-                .add_direct_access_reference(direct_access);
-        }
-
-        // Invoke transaction processor
-        let rtn = M::start(
-            &mut kernel,
-            manifest_encoded_instructions,
-            pre_allocated_addresses,
-            manifest_references,
-            blobs,
-        )
-        .map_err(|e| TransactionExecutionError::RuntimeError(e))?;
-
-        // Sanity check call frame
-        assert!(kernel.prev_frame_stack.is_empty());
-
-        // Sanity check heap
-        assert!(kernel.substate_io.heap.is_empty());
-
-        M::on_teardown(&mut kernel).map_err(|e| TransactionExecutionError::RuntimeError(e))?;
-
-        Ok(rtn)
-    }
-}
-
-pub struct Kernel<
-    'g, // Lifetime of values outliving all frames
-    M,  // Upstream System layer
-    S,  // Substate store
-> where
-    M: KernelCallbackObject,
-    S: CommitableSubstateStore,
-{
-    /// Stack
-    current_frame: CallFrame<M::CallFrameData, M::LockData>,
-    // This stack could potentially be removed and just use the native stack
-    // but keeping this call_frames stack may potentially prove useful if implementing
-    // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
-
-    substate_io: SubstateIO<'g, S>,
-
-    /// ID allocator
-    id_allocator: &'g mut IdAllocator,
-
-    /// Upper system layer
-    callback: &'g mut M,
 }
 
 struct KernelHandler<

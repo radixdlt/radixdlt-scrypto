@@ -27,8 +27,8 @@ use crate::transaction::{
     execute_transaction, CommitResult, ExecutionConfig, StateUpdateSummary, SubstateSchemaMapper,
     SubstateSystemStructures, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
-use crate::vm::wasm::DefaultWasmEngine;
-use crate::vm::{NativeVmExtension, VmInit, VmVersion};
+use crate::vm::wasm::WasmEngine;
+use crate::vm::{NativeVmExtension, VmBoot, VmInit};
 use lazy_static::lazy_static;
 use radix_common::constants::AuthAddresses;
 use radix_common::crypto::Secp256k1PublicKey;
@@ -281,28 +281,30 @@ fn is_noop_partition_state_updates(opt_updates: &Option<PartitionStateUpdates>) 
     }
 }
 
-pub struct Bootstrapper<'s, S, E>
+pub struct Bootstrapper<'s, S, E, W>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
     E: NativeVmExtension,
+    W: WasmEngine,
 {
     network_definition: NetworkDefinition,
     substate_db: &'s mut S,
-    vm_init: VmInit<'s, DefaultWasmEngine, E>,
+    vm_init: VmInit<'s, W, E>,
     trace: bool,
 }
 
-impl<'s, S, E> Bootstrapper<'s, S, E>
+impl<'s, S, E, W> Bootstrapper<'s, S, E, W>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
     E: NativeVmExtension,
+    W: WasmEngine,
 {
     pub fn new(
         network_definition: NetworkDefinition,
         substate_db: &'s mut S,
-        vm_init: VmInit<'s, DefaultWasmEngine, E>,
+        vm_init: VmInit<'s, W, E>,
         trace: bool,
-    ) -> Bootstrapper<'s, S, E> {
+    ) -> Bootstrapper<'s, S, E, W> {
         Bootstrapper {
             network_definition,
             substate_db,
@@ -572,7 +574,7 @@ pub fn create_system_bootstrap_flash(
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
-                &VmVersion::default(),
+                &VmBoot::default(),
             )
             .unwrap_or_else(|err| {
                 panic!(

@@ -41,8 +41,6 @@ jobs:
       snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: false
     secrets:
-      workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDP }}
-      service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
   build-scrypto:
     permissions:
