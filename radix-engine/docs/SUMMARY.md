@@ -4,21 +4,25 @@
 
 # Architecture
 
-- [Layered Architecture](architecture.md)
+- [Layered Architecture](architecture/layers)
 - Substates / SBOR
 - System / Object Modules
 - WASM environment
 
 # Execution
 
-- [Transaction Bootup](bootup.md)
-- Transaction Shutdown
-- System Calls
-- Invocations
-- Move/Borrow Checking
+- [Transaction Lifecycle](execution/lifecycle.md)
+- [Bootup](execution/bootup.md)
+- Runtime
+  - System Calls
+  - Invocations
+  - Move/Borrow Checking
+- Shutdown
+
  
 # Built-in Systems
 
+- Transaction Manifest
 - Type System
 - Resources
 - Auth
