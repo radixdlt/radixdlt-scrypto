@@ -23,7 +23,6 @@ use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::CollectionDescriptor;
 use radix_rust::indexmap;
 use radix_substate_store_interface::interface::*;
-use sbor::HasLatestVersion;
 use sbor::{generate_full_schema, TypeAggregator};
 
 /// A quick macro for encoding and unwrapping.
@@ -75,11 +74,11 @@ pub fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase>(
             .to_vec();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
-        let versioned_code = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
+        let code_substate = PackageCodeOriginalCodeV1 {
             code: original_code,
-        });
-        let code_payload = versioned_code.into_payload();
-        let code_substate = code_payload.into_locked_substate();
+        }
+        .into_versioned()
+        .into_locked_substate();
         let vm_type_substate = PackageCodeVmTypeV1 {
             vm_type: VmType::Native,
         }
@@ -129,7 +128,7 @@ pub fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase>(
             .unwrap()
             .unwrap();
 
-        let mut definition = versioned_definition.into_latest();
+        let mut definition = versioned_definition.fully_update_into_latest_version();
 
         let export = definition
             .function_exports
@@ -162,7 +161,9 @@ pub fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase>(
         ));
 
         scrypto_encode(
-            &VersionedPackageBlueprintVersionDefinition::V1(definition).into_locked_substate(),
+            &PackageBlueprintVersionDefinitionVersions::V1(definition)
+                .into_versioned()
+                .into_locked_substate(),
         )
         .unwrap()
     };
@@ -256,15 +257,16 @@ pub fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase>(db: &
     let new_code_hash = CodeHash::from_hash(hash(&new_code));
 
     // New code substate created from the new code
-    let new_code_substate =
-        VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 { code: new_code })
-            .into_payload()
-            .into_locked_substate();
+    let new_code_substate = PackageCodeOriginalCodeV1 { code: new_code }
+        .into_versioned()
+        .into_payload()
+        .into_locked_substate();
 
     // New VM substate, which we will map the new code hash to.
-    let new_vm_type_substate = VersionedPackageCodeVmType::V1(PackageCodeVmTypeV1 {
+    let new_vm_type_substate = PackageCodeVmTypeV1 {
         vm_type: VmType::Native,
-    })
+    }
+    .into_versioned()
     .into_payload()
     .into_locked_substate();
 
@@ -292,7 +294,7 @@ pub fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase>(db: &
                 )
                 .unwrap()
                 .unwrap();
-            let mut blueprint_definition = versioned_definition.into_latest();
+            let mut blueprint_definition = versioned_definition.fully_update_into_latest_version();
 
             for (_, export) in blueprint_definition.function_exports.iter_mut() {
                 export.code_hash = new_code_hash
@@ -300,7 +302,8 @@ pub fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase>(db: &
 
             (
                 blueprint_version_key,
-                VersionedPackageBlueprintVersionDefinition::V1(blueprint_definition)
+                PackageBlueprintVersionDefinitionVersions::V1(blueprint_definition)
+                    .into_versioned()
                     .into_payload()
                     .into_locked_substate(),
             )
@@ -380,7 +383,7 @@ pub fn generate_validator_creation_fee_fix_state_updates<S: SubstateDatabase>(
         )
         .unwrap();
 
-    let mut config = versioned_config.into_latest();
+    let mut config = versioned_config.fully_update_into_latest_version();
     config.config.validator_creation_usd_cost = Decimal::from(100);
 
     let updated_substate = config.into_locked_substate();
@@ -417,9 +420,10 @@ pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase>(db: &S) -> 
             .to_vec();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
-        let code_substate = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
+        let code_substate = PackageCodeOriginalCodeV1 {
             code: original_code,
-        })
+        }
+        .into_versioned()
         .into_locked_substate();
         let vm_type_substate = PackageCodeVmTypeV1 {
             vm_type: VmType::Native,
@@ -447,7 +451,7 @@ pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase>(db: &S) -> 
             )
             .unwrap()
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
 
         for (function_name, added_function) in added_functions.into_iter() {
             let TypeRef::Static(input_local_id) = added_function.input else {
@@ -598,9 +602,9 @@ pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase>(
         let original_code = ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID.to_be_bytes().to_vec();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
-        let code_substate = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
+        let code_substate = PackageCodeOriginalCodeV1 {
             code: original_code,
-        })
+        }
         .into_locked_substate();
         let vm_type_substate = PackageCodeVmTypeV1 {
             vm_type: VmType::Native,
@@ -624,7 +628,7 @@ pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase>(
             )
             .unwrap()
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
 
         for function_name in [
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,

@@ -644,7 +644,7 @@ impl ConsensusManagerBlueprint {
 
         let consensus_manager = api
             .field_read_typed::<ConsensusManagerStateFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
 
         Ok(consensus_manager.epoch)
     }
@@ -661,7 +661,7 @@ impl ConsensusManagerBlueprint {
             )?;
             let config_substate = api
                 .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
-                .into_latest();
+                .fully_update_into_latest_version();
             api.field_close(config_handle)?;
             config_substate
         };
@@ -673,7 +673,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let mut manager_substate = api
             .field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
 
         if manager_substate.started {
             return Err(RuntimeError::ApplicationError(
@@ -722,7 +722,7 @@ impl ConsensusManagerBlueprint {
                     .field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
                         handle,
                     )?
-                    .into_latest();
+                    .fully_update_into_latest_version();
                 api.field_close(handle)?;
 
                 Ok(Self::epoch_minute_to_instant(
@@ -750,7 +750,7 @@ impl ConsensusManagerBlueprint {
                     .field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
                         handle,
                     )?
-                    .into_latest();
+                    .fully_update_into_latest_version();
                 api.field_close(handle)?;
 
                 Ok(Self::epoch_minute_to_instant(
@@ -765,7 +765,7 @@ impl ConsensusManagerBlueprint {
                 )?;
                 let proposer_milli_timestamp = api
                     .field_read_typed::<ConsensusManagerProposerMilliTimestampFieldPayload>(handle)?
-                    .into_latest();
+                    .fully_update_into_latest_version();
                 api.field_close(handle)?;
 
                 Ok(Self::epoch_milli_to_instant(
@@ -811,7 +811,7 @@ impl ConsensusManagerBlueprint {
                     .field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
                         handle,
                     )?
-                    .into_latest();
+                    .fully_update_into_latest_version();
                 api.field_close(handle)?;
 
                 // convert back to Instant only for comparison operation
@@ -860,7 +860,7 @@ impl ConsensusManagerBlueprint {
                     .field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
                         handle,
                     )?
-                    .into_latest();
+                    .fully_update_into_latest_version();
                 api.field_close(handle)?;
 
                 // convert back to Instant only for comparison operation
@@ -881,7 +881,7 @@ impl ConsensusManagerBlueprint {
                 )?;
                 let proposer_milli_timestamp = api
                     .field_read_typed::<ConsensusManagerProposerMilliTimestampFieldPayload>(handle)?
-                    .into_latest();
+                    .fully_update_into_latest_version();
                 api.field_close(handle)?;
 
                 // convert back to Instant only for comparison operation
@@ -924,7 +924,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let config_substate = api
             .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
         api.field_close(config_handle)?;
 
         let manager_handle = api.actor_open_field(
@@ -934,7 +934,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let mut manager_substate = api
             .field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
 
         let progressed_rounds = Round::calculate_progress(manager_substate.round, round)
             .ok_or_else(|| {
@@ -1001,7 +1001,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let manager_substate =
             api.field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?;
-        let manager_substate = manager_substate.into_latest();
+        let manager_substate = manager_substate.fully_update_into_latest_version();
 
         let validator_creation_xrd_cost = if manager_substate.started {
             let config_handle = api.actor_open_field(
@@ -1014,7 +1014,7 @@ impl ConsensusManagerBlueprint {
             api.field_close(config_handle)?;
 
             let validator_creation_xrd_cost = manager_config
-                .into_latest()
+                .fully_update_into_latest_version()
                 .config
                 .validator_creation_usd_cost
                 .checked_mul(api.usd_price()?)
@@ -1074,7 +1074,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let exact_time_substate: ConsensusManagerProposerMilliTimestampFieldPayload =
             api.field_read_typed(handle)?;
-        let mut exact_time_substate = exact_time_substate.into_latest();
+        let mut exact_time_substate = exact_time_substate.fully_update_into_latest_version();
         let previous_timestamp = exact_time_substate.epoch_milli;
         if current_time_ms < previous_timestamp {
             return Err(RuntimeError::ApplicationError(
@@ -1108,7 +1108,8 @@ impl ConsensusManagerBlueprint {
         )?;
         let rounded_timestamp_substate: ConsensusManagerProposerMinuteTimestampFieldPayload =
             api.field_read_typed(handle)?;
-        let mut rounded_timestamp_substate = rounded_timestamp_substate.into_latest();
+        let mut rounded_timestamp_substate =
+            rounded_timestamp_substate.fully_update_into_latest_version();
         let previous_rounded_value = rounded_timestamp_substate.epoch_minute;
         if new_rounded_value > previous_rounded_value {
             rounded_timestamp_substate.epoch_minute = new_rounded_value;
@@ -1150,7 +1151,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let statistic: ConsensusManagerCurrentProposalStatisticFieldPayload =
             api.field_read_typed(statistic_handle)?;
-        let mut statistic = statistic.into_latest();
+        let mut statistic = statistic.fully_update_into_latest_version();
         for gap_round_leader in proposal_history.gap_round_leaders {
             let gap_round_statistic = statistic.get_mut_proposal_statistic(gap_round_leader)?;
             gap_round_statistic.missed += 1;
@@ -1187,7 +1188,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let validator_set_substate: ConsensusManagerCurrentValidatorSetFieldPayload =
             api.field_read_typed(validator_set_handle)?;
-        let mut validator_set_substate = validator_set_substate.into_latest();
+        let mut validator_set_substate = validator_set_substate.fully_update_into_latest_version();
         let previous_validator_set = validator_set_substate.validator_set;
 
         // Read previous validator statistics
@@ -1198,7 +1199,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let statistic_substate: ConsensusManagerCurrentProposalStatisticFieldPayload =
             api.field_read_typed(statistic_handle)?;
-        let mut statistic_substate = statistic_substate.into_latest();
+        let mut statistic_substate = statistic_substate.fully_update_into_latest_version();
         let previous_statistics = statistic_substate.validator_statistics;
 
         // Read & write validator rewards
@@ -1209,7 +1210,7 @@ impl ConsensusManagerBlueprint {
         )?;
         let mut rewards_substate = api
             .field_read_typed::<ConsensusManagerValidatorRewardsFieldPayload>(rewards_handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
 
         // Apply emissions
         Self::apply_validator_emissions_and_rewards(
@@ -1247,8 +1248,8 @@ impl ConsensusManagerBlueprint {
         // then let's be even more accurate here. This sort is stable, so if two validators tie, then the resultant order will be
         // decided on sort key DESC.
         top_registered_validators.sort_by(|(_, validator_1), (_, validator_2)| {
-            let validator1 = validator_1.as_unique_latest_ref();
-            let validator2 = validator_2.as_unique_latest_ref();
+            let validator1 = validator_1.as_unique_version_ref();
+            let validator2 = validator_2.as_unique_version_ref();
             validator1.stake.cmp(&validator2.stake).reverse()
         });
 
@@ -1256,7 +1257,12 @@ impl ConsensusManagerBlueprint {
             validators_by_stake_desc: top_registered_validators
                 .into_iter()
                 .take(config.max_validators as usize)
-                .map(|(component_address, validator)| (component_address, validator.into_latest()))
+                .map(|(component_address, validator)| {
+                    (
+                        component_address,
+                        validator.fully_update_into_latest_version(),
+                    )
+                })
                 .collect(),
         };
 

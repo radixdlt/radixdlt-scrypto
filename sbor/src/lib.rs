@@ -66,8 +66,8 @@ pub use versioned::*;
 // Re-export derives
 extern crate sbor_derive;
 pub use sbor_derive::{
-    BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor, Categorize, Decode,
-    Describe, Encode, PermitSborAttributes, Sbor,
+    enable_eager_stringify, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor,
+    Categorize, Decode, Describe, Encode, PermitSborAttributes, Sbor,
 };
 
 // This is to make derives work within this crate.
@@ -90,6 +90,7 @@ pub mod prelude {
     pub use radix_rust::prelude::*;
 
     // Exports from current crate
+    pub use crate::enable_eager_stringify;
     pub use crate::encoded_wrappers::{RawPayload as SborRawPayload, RawValue as SborRawValue};
     pub use crate::enum_variant::FixedEnumVariant as SborFixedEnumVariant;
     pub use crate::path::{SborPath, SborPathBuf};
@@ -97,11 +98,16 @@ pub mod prelude {
     pub use crate::schema::prelude::*;
     pub use crate::value::{CustomValue as SborCustomValue, Value as SborValue};
     pub use crate::value_kind::*;
-    pub use crate::versioned::{CloneIntoLatest, HasLatestVersion, UpdateResult};
+    pub use crate::versioned::*;
     pub use crate::{
         basic_decode, basic_encode, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode,
         BasicSbor,
     };
+    pub use crate::{define_single_versioned, define_versioned};
     pub use crate::{Categorize, Decode, Encode, Sbor, SborEnum, SborTuple};
     pub use crate::{DecodeError, EncodeError};
+}
+
+pub(crate) mod internal_prelude {
+    pub use crate::prelude::*;
 }

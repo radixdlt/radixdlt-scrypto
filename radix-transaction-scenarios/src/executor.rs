@@ -308,7 +308,7 @@ where
                     .map_err(|_| ScenarioExecutorError::FailedToGetEpoch)?
                     .as_typed::<VersionedConsensusManagerState>()
                     .unwrap()
-                    .into_latest()
+                    .fully_update_into_latest_version()
                     .epoch;
                 let mut scenario = scenario_builder(ScenarioCore::new(
                     self.network_definition.clone(),

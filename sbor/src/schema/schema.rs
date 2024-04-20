@@ -4,16 +4,16 @@ use crate::*;
 define_single_versioned!(
     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
     #[sbor(child_types = "S::CustomTypeKind<LocalTypeId>, S::CustomTypeValidation")]
-    pub enum VersionedSchema<S: CustomSchema> => Schema<S> = SchemaV1::<S>
+    pub VersionedSchema(SchemaVersions)<S: CustomSchema> => Schema<S> = SchemaV1::<S>
 );
 
 impl<S: CustomSchema> VersionedSchema<S> {
     pub fn v1(&self) -> &SchemaV1<S> {
-        self.as_unique_latest_ref()
+        self.as_unique_version_ref()
     }
 
     pub fn v1_mut(&mut self) -> &mut SchemaV1<S> {
-        self.as_unique_latest_mut()
+        self.as_unique_version_mut()
     }
 }
 

@@ -141,7 +141,10 @@ impl RoleAssignmentDatabaseChecker {
     ) where
         F: FnMut(RoleAssignmentDatabaseCheckerError),
     {
-        let owner_rule = owner_role_entry.into_latest().owner_role_entry.rule;
+        let owner_rule = owner_role_entry
+            .fully_update_into_latest_version()
+            .owner_role_entry
+            .rule;
         Self::check_access_rule_limits(owner_rule, add_error)
     }
 
@@ -154,7 +157,7 @@ impl RoleAssignmentDatabaseChecker {
         F: FnMut(RoleAssignmentDatabaseCheckerError),
     {
         let key = key.content;
-        let value = value.into_latest();
+        let value = value.fully_update_into_latest_version();
 
         Self::check_access_rule_limits(value, add_error);
         Self::check_is_role_key_reserved(&key, add_error);

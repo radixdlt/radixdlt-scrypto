@@ -1,6 +1,6 @@
-use std::str::FromStr;
-
 use proc_macro::TokenStream;
+use std::str::FromStr;
+mod eager_stringify;
 
 /// Derive code that returns the value kind.
 #[proc_macro_derive(Categorize, attributes(sbor))]
@@ -62,6 +62,12 @@ pub fn sbor(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(PermitSborAttributes, attributes(sbor))]
 pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
     TokenStream::from_str(&"// Empty PermitSborAttributes expansion").unwrap()
+}
+
+/// Allows the `eager_stringify!` macro to stringify its contents immediately.
+#[proc_macro]
+pub fn enable_eager_stringify(token_stream: TokenStream) -> TokenStream {
+    eager_stringify::replace_recursive(token_stream)
 }
 
 const BASIC_CUSTOM_VALUE_KIND: &str = "sbor::NoCustomValueKind";

@@ -580,7 +580,12 @@ where
             Some(x) => {
                 let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
                     x.as_typed().unwrap();
-                Some(substate.into_payload().into_latest().epoch)
+                Some(
+                    substate
+                        .into_payload()
+                        .fully_update_into_latest_version()
+                        .epoch,
+                )
             }
             None => None,
         }
@@ -851,7 +856,7 @@ where
                 .as_typed::<FungibleVaultBalanceFieldSubstate>()
                 .unwrap()
                 .into_payload()
-                .into_latest();
+                .fully_update_into_latest_version();
             vault_balance.put(LiquidFungibleResource::new(amount));
             let updated_substate_content =
                 FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
@@ -910,7 +915,7 @@ where
                 .as_typed::<FungibleVaultBalanceFieldSubstate>()
                 .unwrap()
                 .into_payload()
-                .into_latest();
+                .fully_update_into_latest_version();
             vault_balance.put(locked);
             let updated_substate_content =
                 FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)
@@ -984,7 +989,10 @@ where
                 .unwrap()
                 .as_typed()
                 .unwrap();
-            let current_leader = substate.into_payload().into_latest().current_leader;
+            let current_leader = substate
+                .into_payload()
+                .fully_update_into_latest_version()
+                .current_leader;
 
             // Update validator rewards
             let substate: FieldSubstate<ConsensusManagerValidatorRewardsFieldPayload> = track
@@ -997,7 +1005,7 @@ where
                 .as_typed()
                 .unwrap();
 
-            let mut rewards = substate.into_payload().into_latest();
+            let mut rewards = substate.into_payload().fully_update_into_latest_version();
 
             if let Some(current_leader) = current_leader {
                 let entry = rewards.proposer_rewards.entry(current_leader).or_default();
@@ -1031,7 +1039,7 @@ where
                 .as_typed::<FungibleVaultBalanceFieldSubstate>()
                 .unwrap()
                 .into_payload()
-                .into_latest();
+                .fully_update_into_latest_version();
             vault_balance.put(collected_fees.take_by_amount(total_amount).unwrap());
             let updated_substate_content =
                 FungibleVaultBalanceFieldPayload::from_content_source(vault_balance)

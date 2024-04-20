@@ -17,7 +17,7 @@ use sbor::*;
 
 define_single_versioned! {
     #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
-    pub enum VersionedTreeNode => TreeNode = TreeNodeV1
+    pub VersionedTreeNode(TreeNodeVersions) => TreeNode = TreeNodeV1
 }
 
 /// A physical tree node, to be used in the storage.

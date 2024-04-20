@@ -48,22 +48,22 @@ pub enum AttributeValue {
 }
 
 impl AttributeValue {
-    fn as_string(&self) -> Option<String> {
+    fn as_string(&self) -> Option<LitStr> {
         match self {
-            AttributeValue::Lit(Lit::Str(str)) => Some(str.value()),
+            AttributeValue::Lit(Lit::Str(str)) => Some(str.clone()),
             _ => None,
         }
     }
 
-    fn as_bool(&self) -> Option<bool> {
+    fn as_bool(&self) -> Option<LitBool> {
         match self {
-            AttributeValue::None(_) => Some(true),
+            AttributeValue::None(_) => Some(LitBool::new(true, self.span())),
             AttributeValue::Lit(Lit::Str(str)) => match str.value().as_str() {
-                "true" => Some(true),
-                "false" => Some(false),
+                "true" => Some(LitBool::new(true, self.span())),
+                "false" => Some(LitBool::new(false, self.span())),
                 _ => None,
             },
-            AttributeValue::Lit(Lit::Bool(bool)) => Some(bool.value()),
+            AttributeValue::Lit(Lit::Bool(bool)) => Some(bool.clone()),
             _ => None,
         }
     }
@@ -78,21 +78,21 @@ impl AttributeValue {
 }
 
 trait AttributeMap {
-    fn get_bool_value(&self, name: &str) -> Result<bool>;
-    fn get_string_value(&self, name: &str) -> Result<Option<String>>;
+    fn get_bool_value(&self, name: &str) -> Result<LitBool>;
+    fn get_string_value(&self, name: &str) -> Result<Option<LitStr>>;
 }
 
 impl AttributeMap for BTreeMap<String, AttributeValue> {
-    fn get_bool_value(&self, name: &str) -> Result<bool> {
+    fn get_bool_value(&self, name: &str) -> Result<LitBool> {
         let Some(value) = self.get(name) else {
-            return Ok(false);
+            return Ok(LitBool::new(false, Span::call_site()));
         };
         value
             .as_bool()
             .ok_or_else(|| Error::new(value.span(), format!("Expected bool attribute")))
     }
 
-    fn get_string_value(&self, name: &str) -> Result<Option<String>> {
+    fn get_string_value(&self, name: &str) -> Result<Option<LitStr>> {
         let Some(value) = self.get(name) else {
             return Ok(None);
         };
@@ -219,11 +219,11 @@ pub fn get_variant_discriminator_mapping(
     }
 
     let use_repr_discriminators =
-        get_sbor_attribute_bool_value(enum_attributes, "use_repr_discriminators")?;
+        get_sbor_attribute_bool_value(enum_attributes, "use_repr_discriminators")?.value();
     let variant_ids: Vec<VariantValue> = variants.iter()
         .map(|variant| -> Result<VariantValue> {
             let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
-            if let Some(_) = variant_attributes.remove("ignore_as_unreachable") {
+            if let Some(_) = variant_attributes.remove("unreachable") {
                 return Ok(VariantValue::IgnoreAsUnreachable);
             }
             if let Some(attribute) = variant_attributes.remove("discriminator") {
@@ -330,43 +330,104 @@ fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {
 pub fn get_sbor_attribute_string_value(
     attributes: &[Attribute],
     attribute_name: &str,
-) -> Result<Option<String>> {
+) -> Result<Option<LitStr>> {
     extract_sbor_typed_attributes(attributes)?.get_string_value(attribute_name)
 }
 
 pub fn get_sbor_attribute_bool_value(
     attributes: &[Attribute],
     attribute_name: &str,
-) -> Result<bool> {
+) -> Result<LitBool> {
     extract_sbor_typed_attributes(attributes)?.get_bool_value(attribute_name)
 }
 
-pub fn is_categorize_skipped(f: &Field) -> Result<bool> {
+pub fn is_skipped(f: &Field) -> Result<bool> {
     let attributes = extract_sbor_typed_attributes(&f.attrs)?;
-    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_categorize")?)
+    Ok(attributes.get_bool_value("skip")?.value())
 }
 
-pub fn is_decoding_skipped(f: &Field) -> Result<bool> {
-    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
-    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_decode")?)
+pub enum DeriveStrategy {
+    Normal,
+    Transparent,
+    DeriveAs {
+        as_type: Type,
+        as_ref: TokenStream,
+        from_value: TokenStream,
+    },
 }
 
-pub fn is_encoding_skipped(f: &Field) -> Result<bool> {
-    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
-    Ok(attributes.get_bool_value("skip")? || attributes.get_bool_value("skip_encode")?)
+pub fn get_derive_strategy(attributes: &[Attribute]) -> Result<DeriveStrategy> {
+    let attributes = extract_sbor_typed_attributes(attributes)?;
+    let transparent_flag = attributes.get_bool_value("transparent")?;
+    let as_type = attributes.get_string_value("as_type")?;
+    let as_ref = attributes.get_string_value("as_ref")?;
+    let from_value = attributes.get_string_value("from_value")?;
+    match (transparent_flag.value(), as_type, as_ref, from_value) {
+        (true, None, None, None) => Ok(DeriveStrategy::Transparent),
+        (true, _, _, _) => Err(Error::new(
+            transparent_flag.span,
+            "The `transparent` option cannot be used with `as_type` / `as_ref` / `from_value`",
+        )),
+        (false, Some(as_type), as_ref, from_value) => {
+            let as_type_str = as_type.value();
+            let as_type: Type = as_type.parse()?;
+            Ok(DeriveStrategy::DeriveAs {
+                as_ref: match as_ref {
+                    Some(v) => {
+                        if v.value().contains("self") {
+                            v.parse()?
+                        } else {
+                            return Err(Error::new(v.span(), format!("The `as_ref` value should be code mapping `self` into a &{as_type_str}")));
+                        }
+                    }
+                    None => quote! { <Self as core::convert::AsRef<#as_type>>::as_ref(self) },
+                },
+                from_value: match from_value {
+                    Some(v) => {
+                        if v.value().contains("value") {
+                            v.parse()?
+                        } else {
+                            return Err(Error::new(v.span(), format!("The `from_value` value should be code mapping `value` (of type {as_type_str}) into `Self`")));
+                        }
+                    }
+                    None => quote! { <Self as core::convert::From<#as_type>>::from(value) },
+                },
+                as_type,
+            })
+        }
+        (false, None, Some(_), Some(_)) => Err(Error::new(
+            transparent_flag.span,
+            "The `as_ref` or `from_value` options cannot be used without `as_type`",
+        )),
+        (false, None, Some(_), None) => Err(Error::new(
+            transparent_flag.span,
+            "The `as_ref` option cannot be used without `as_type`",
+        )),
+        (false, None, None, Some(_)) => Err(Error::new(
+            transparent_flag.span,
+            "The `from_value` option cannot be used without `as_type`",
+        )),
+        (false, None, None, None) => Ok(DeriveStrategy::Normal),
+    }
 }
 
 pub fn is_transparent(attributes: &[Attribute]) -> Result<bool> {
     let attributes = extract_sbor_typed_attributes(attributes)?;
-    Ok(attributes.get_bool_value("transparent")?)
+    Ok(attributes.get_bool_value("transparent")?.value())
 }
 
-pub fn get_custom_value_kind(attributes: &[Attribute]) -> Result<Option<String>> {
-    extract_sbor_typed_attributes(attributes)?.get_string_value("custom_value_kind")
+pub fn get_custom_value_kind(attributes: &[Attribute]) -> Result<Option<LitStr>> {
+    get_sbor_attribute_string_value(attributes, "custom_value_kind")
 }
 
-pub fn get_custom_type_kind(attributes: &[Attribute]) -> Result<Option<String>> {
-    extract_sbor_typed_attributes(attributes)?.get_string_value("custom_type_kind")
+pub fn get_custom_type_kind(attributes: &[Attribute]) -> Result<Option<LitStr>> {
+    get_sbor_attribute_string_value(attributes, "custom_type_kind")
+}
+
+pub fn resolve_type_name(ident: &Ident, attributes: &[Attribute]) -> Result<LitStr> {
+    let type_name = get_sbor_attribute_string_value(attributes, "type_name")?
+        .unwrap_or(LitStr::new(&ident.to_string(), ident.span()));
+    Ok(type_name)
 }
 
 pub fn get_generic_types(generics: &Generics) -> Vec<Type> {
@@ -379,15 +440,30 @@ pub fn get_generic_types(generics: &Generics) -> Vec<Type> {
         .collect()
 }
 
-pub fn parse_comma_separated_types(source_string: &str) -> syn::Result<Vec<Type>> {
+pub fn parse_single_type(source_string: &LitStr) -> syn::Result<Type> {
+    source_string.parse()
+}
+
+pub fn parse_comma_separated_types(source_string: &LitStr) -> syn::Result<Vec<Type>> {
+    let span = source_string.span();
     source_string
+        .value()
         .split(',')
         .map(|s| s.trim().to_owned())
         .filter(|f| f.len() > 0)
-        .map(|s| parse_str(&s))
+        .map(|s| LitStr::new(&s, span).parse())
         .collect()
 }
 
+/// Child types are intended to capture what non-concrete types are embedded in the
+/// given type as descendents in the SBOR value model - these types will require explicit bounds for
+/// `Encode` / `Decode` / `Describe`.
+///
+/// By default, like e.g. the default `Clone` impl, we assume that all generic types are
+/// child types. But a user can override this with the `#[sbor(child_types = "A,B")]` attribute.
+///
+/// One of the prime use cases for this is where associated types are used, for example
+/// a type `<T> MyStruct(T::MyAssociatedType)` should use `#[sbor(child_types = "T::MyAssociatedType")]`.
 fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Result<Vec<Type>> {
     let Some(comma_separated_types) = get_sbor_attribute_string_value(attributes, "child_types")?
     else {
@@ -403,23 +479,81 @@ fn get_child_types(attributes: &[Attribute], existing_generics: &Generics) -> Re
 
 fn get_types_requiring_categorize_bound_for_encode_and_decode(
     attributes: &[Attribute],
-    child_types: &[Type],
 ) -> Result<Vec<Type>> {
-    let Some(comma_separated_types) =
-        get_sbor_attribute_string_value(attributes, "categorize_types")?
-    else {
-        // A categorize bound is only needed for child types when you have a collection, eg Vec<T>
-        // But if no explicit "categorize_types" is set, we assume all are needed.
-        // > Note as of Aug 2023:
-        //   This is perhaps the wrong call.
-        //   In future, I'd suggest:
-        //   - Change this to assume none, and add categorize_child_types_for_encode if needed.
-        //   - Add separate categorize_child_types_for_categorize - and also default to not needed.
-        // These can be removed / overridden with the "categorize_types" field
-        return Ok(child_types.to_owned());
-    };
+    let comma_separated_types = get_sbor_attribute_string_value(attributes, "categorize_types")?;
+    // We need to work out what the default behaviour is if no `categorize_types` are provided.
+    //
+    // Now, for a given generic parameter T, we have a few cases how it appears in the type:
+    // 1. It's embedded as a T into the type, e.g. MyNewType(T)
+    // 2. It's wrapped in a collection like a Vec<T> or Map<..>
+    //
+    // Note that only in case 2 (the rarer case) do we require that T implements Categorize.
+    //
+    // We can do one of the following options:
+    // (A) Assume none
+    // (B) Use child_types if they exist
+    // (C) Use child_types if they exist, else use the existing generic parameters
+    // (D) Use the existing generic parameters
+    //
+    // - The issue with (C/D) is that generic types such as <T>MyStruct(T) require you to know to include
+    //   #[sbor(categorize_types = "")] otherwise they cryptically don't get an Encode/Decode implementation
+    //   for something like T = sbor::Value, which is subtle, easy to miss, and perplexing when it happens.
+    // - The issue with (B) is the same as (C) - the error is too cryptic. Let's say we define
+    //   #[sbor(child_types = "T::MyAssociatedValue")] and the type is <T>MyStruct(T::MyAssociatedValue),
+    //   then we lose an encode implementation if T::MyAssociatedValue = sbor::Value.
+    // - The issue with (A) is that generic types such as <T>MyStruct(Vec<T>) require you to know to include
+    //   #[sbor(categorize_types = "T")] else the implementation doesn't compile. This I think is a slightly
+    //   clearer error than (C).
+    //
+    // We used to use (C), but we have now switched to (A) because we believe it to be clearer, on balance.
+    // Also, providing #[sbor(categorize_types = "T")] feels more explicit sometimes than confusingly having
+    // to add #[sbor(categorize_types = "")] sometimes.
+    if let Some(comma_separated_types) = comma_separated_types {
+        parse_comma_separated_types(&comma_separated_types)
+    } else {
+        Ok(vec![])
+    }
+}
 
-    parse_comma_separated_types(&comma_separated_types)
+/// Note - this is only needed for implementing an inherited categorize.
+pub fn get_type_requiring_categorize_bound_for_categorize_as(
+    as_type: &Type,
+    attributes: &[Attribute],
+    existing_generics: &Generics,
+) -> Result<Option<Type>> {
+    let explicit_type = get_sbor_attribute_string_value(attributes, "categorize_as")?;
+
+    if let Some(explicit_type) = explicit_type {
+        Ok(Some(parse_single_type(&explicit_type)?))
+    } else {
+        // We need to work out what the default behaviour is if no `categorize_as` are provided.
+        //
+        // Thankfully we have a 99% strategy:
+        // - If `as_type` _IS_ a child type, then it must be generic, not concrete.
+        // - If `as_type` _IS NOT_ a child type, then it's probably a concrete type...
+        //
+        // Hypothetically we could have <T>OuterWrapper(InnerWrapper(T)) where `as_type = InnerWrapper(T)` but `child_types = T`
+        // And we should have a constraint on InnerWrapper(T): Categorize. But that's what the `categorize_as` fallback is for.
+        //
+        // Or the more likely case might be that the two types are the same type, but syn doesn't match them because of formatting
+        // issues of different paths or something, there's not much we can do there.
+        //
+        // If we miss the constraint then the user will get a compiler error and go digging and find `categorize_as`.
+
+        // IMPORTANT:
+        // We convert to string here because type equality is too strict and relies on span equality which won't exist
+        // in many cases. But by converting to string we have a looser/better equality check.
+        let child_type_strs = get_child_types(attributes, existing_generics)?
+            .iter()
+            .map(|t| quote!(#t).to_string())
+            .collect_vec();
+        let as_type_str = quote!(#as_type).to_string();
+        if child_type_strs.contains(&as_type_str) {
+            Ok(Some(as_type.clone()))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 pub fn get_code_hash_const_array_token_stream(input: &TokenStream) -> TokenStream {
@@ -449,27 +583,7 @@ pub(crate) struct FieldsData {
     pub unskipped_field_count: Index,
 }
 
-pub(crate) fn process_fields_for_categorize(fields: &syn::Fields) -> Result<FieldsData> {
-    process_fields(fields, is_categorize_skipped)
-}
-
-pub(crate) fn process_fields_for_encode(fields: &syn::Fields) -> Result<FieldsData> {
-    process_fields(fields, is_encoding_skipped)
-}
-
-pub(crate) fn process_fields_for_decode(fields: &syn::Fields) -> Result<FieldsData> {
-    process_fields(fields, is_decoding_skipped)
-}
-
-pub(crate) fn process_fields_for_describe(fields: &syn::Fields) -> Result<FieldsData> {
-    // Note - describe has to agree with decoding / encoding
-    process_fields(fields, is_decoding_skipped)
-}
-
-fn process_fields(
-    fields: &syn::Fields,
-    is_skipped: impl Fn(&Field) -> Result<bool>,
-) -> Result<FieldsData> {
+pub(crate) fn process_fields(fields: &syn::Fields) -> Result<FieldsData> {
     Ok(match fields {
         Fields::Named(fields) => {
             let mut unskipped_field_names = Vec::new();
@@ -597,7 +711,7 @@ pub fn build_decode_generics<'a>(
 
     let (custom_value_kind_generic, need_to_add_cvk_generic): (Path, bool) =
         if let Some(path) = custom_value_kind {
-            (parse_str(path.as_str())?, false)
+            (path.parse()?, false)
         } else if let Some(path) = context_custom_value_kind {
             (parse_str(path)?, false)
         } else {
@@ -609,8 +723,7 @@ pub fn build_decode_generics<'a>(
     let decoder_generic: Path = parse_str(&decoder_label)?;
 
     let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types =
-        get_types_requiring_categorize_bound_for_encode_and_decode(&attributes, &child_types)?;
+    let categorize_types = get_types_requiring_categorize_bound_for_encode_and_decode(&attributes)?;
 
     let mut where_clause = where_clause.cloned();
     if child_types.len() > 0 || categorize_types.len() > 0 {
@@ -663,7 +776,7 @@ pub fn build_encode_generics<'a>(
 
     let (custom_value_kind_generic, need_to_add_cvk_generic): (Path, bool) =
         if let Some(path) = custom_value_kind {
-            (parse_str(path.as_str())?, false)
+            (path.parse()?, false)
         } else if let Some(path) = context_custom_value_kind {
             (parse_str(path)?, false)
         } else {
@@ -675,8 +788,7 @@ pub fn build_encode_generics<'a>(
     let encoder_generic: Path = parse_str(&encoder_label)?;
 
     let child_types = get_child_types(&attributes, &impl_generics)?;
-    let categorize_types =
-        get_types_requiring_categorize_bound_for_encode_and_decode(&attributes, &child_types)?;
+    let categorize_types = get_types_requiring_categorize_bound_for_encode_and_decode(&attributes)?;
 
     let mut where_clause = where_clause.cloned();
     if child_types.len() > 0 || categorize_types.len() > 0 {
@@ -730,7 +842,7 @@ pub fn build_describe_generics<'a>(
 
     let (custom_type_kind_generic, need_to_add_ctk_generic): (Path, bool) =
         if let Some(path) = custom_type_kind {
-            (parse_str(path.as_str())?, false)
+            (path.parse()?, false)
         } else if let Some(path) = context_custom_type_kind {
             (parse_str(&path)?, false)
         } else {
@@ -771,11 +883,10 @@ pub fn build_describe_generics<'a>(
     ))
 }
 
-pub fn build_custom_categorize_generic<'a>(
+pub fn build_categorize_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
     context_custom_value_kind: Option<&'static str>,
-    require_categorize_on_generic_params: bool,
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<&'a WhereClause>, Path)> {
     let custom_value_kind = get_custom_value_kind(&attributes)?;
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
@@ -785,30 +896,13 @@ pub fn build_custom_categorize_generic<'a>(
 
     let (custom_value_kind_generic, need_to_add_cvk_generic): (Path, bool) =
         if let Some(path) = custom_value_kind {
-            (parse_str(path.as_str())?, false)
+            (path.parse()?, false)
         } else if let Some(path) = context_custom_value_kind {
             (parse_str(path)?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "X")?;
             (parse_str(&custom_type_label)?, true)
         };
-
-    if require_categorize_on_generic_params {
-        // In order to implement transparent Categorize, we need to pass through Categorize to the child field.
-        // To do this, we need to ensure that type is Categorize.
-        // So we add a bound that all pre-existing type parameters have to implement Categorize<X>
-        // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
-        // It's not perfect - but it's typically good enough!
-
-        for param in impl_generics.params.iter_mut() {
-            let GenericParam::Type(type_param) = param else {
-                continue;
-            };
-            type_param
-                .bounds
-                .push(parse_quote!(::sbor::Categorize<#custom_value_kind_generic>));
-        }
-    }
 
     if need_to_add_cvk_generic {
         impl_generics
@@ -869,16 +963,20 @@ mod tests {
             #[sbor(skip3)]
         };
         let extracted = extract_typed_attributes(&[attr, attr2], "sbor").unwrap();
-        assert_eq!(extracted.get_bool_value("skip").unwrap(), true);
-        assert_eq!(extracted.get_bool_value("skip2").unwrap(), false);
-        assert_eq!(extracted.get_bool_value("skip3").unwrap(), true);
+        assert_eq!(extracted.get_bool_value("skip").unwrap().value(), true);
+        assert_eq!(extracted.get_bool_value("skip2").unwrap().value(), false);
+        assert_eq!(extracted.get_bool_value("skip3").unwrap().value(), true);
         assert!(matches!(
             extracted.get_bool_value("custom_value_kind"),
             Err(_)
         ));
         assert_eq!(
-            extracted.get_string_value("custom_value_kind").unwrap(),
-            Some("NoCustomValueKind".to_string())
+            extracted
+                .get_string_value("custom_value_kind")
+                .unwrap()
+                .unwrap()
+                .value(),
+            "NoCustomValueKind".to_string()
         );
         assert_eq!(
             extracted.get_string_value("custom_value_kind_2").unwrap(),

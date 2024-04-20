@@ -21,12 +21,17 @@ pub fn handle_describe(
     let code_hash = get_code_hash_const_array_token_stream(&input);
 
     let parsed: DeriveInput = parse2(input)?;
-    let is_transparent = is_transparent(&parsed.attrs)?;
 
-    let output = if is_transparent {
-        handle_transparent_describe(parsed, code_hash, context_custom_type_kind)?
-    } else {
-        handle_normal_describe(parsed, code_hash, context_custom_type_kind)?
+    let output = match get_derive_strategy(&parsed.attrs)? {
+        DeriveStrategy::Normal => {
+            handle_normal_describe(parsed, code_hash, context_custom_type_kind)?
+        }
+        DeriveStrategy::Transparent => {
+            handle_transparent_describe(parsed, code_hash, context_custom_type_kind)?
+        }
+        DeriveStrategy::DeriveAs { as_type, .. } => {
+            handle_describe_as(parsed, context_custom_type_kind, &as_type, code_hash)?
+        }
     };
 
     #[cfg(feature = "trace")]
@@ -41,22 +46,13 @@ fn handle_transparent_describe(
     code_hash: TokenStream,
     context_custom_type_kind: Option<&'static str>,
 ) -> Result<TokenStream> {
-    let DeriveInput {
-        attrs,
-        ident,
-        data,
-        generics,
-        ..
-    } = parsed;
-    let (impl_generics, ty_generics, where_clause, _, custom_type_kind_generic) =
-        build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
-
-    let output = match data {
+    let DeriveInput { data, .. } = &parsed;
+    match &data {
         Data::Struct(s) => {
             let FieldsData {
                 unskipped_field_types,
                 ..
-            } = process_fields_for_describe(&s.fields)?;
+            } = process_fields(&s.fields)?;
 
             if unskipped_field_types.len() != 1 {
                 return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
@@ -64,50 +60,89 @@ fn handle_transparent_describe(
 
             let field_type = &unskipped_field_types[0];
 
-            let mut type_data_content = quote! {
-                <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::type_data()
-            };
-            let mut type_id = quote! {
-                <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::TYPE_ID
-            };
-
-            // Replace the type name, unless opted out using the "transparent_name" tag
-            if !get_sbor_attribute_bool_value(&attrs, "transparent_name")? {
-                let type_name = get_sbor_attribute_string_value(&attrs, "type_name")?
-                    .unwrap_or(ident.to_string());
-                type_data_content = quote! {
-                    use ::sbor::rust::prelude::*;
-                    #type_data_content
-                        .with_name(Some(Cow::Borrowed(#type_name)))
-                };
-                type_id = quote! {
-                    ::sbor::RustTypeId::novel_with_code(
-                        #type_name,
-                        &[#type_id],
-                        &#code_hash
-                    )
-                };
-            };
-
-            quote! {
-                impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::RustTypeId = #type_id;
-
-                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
-                        #type_data_content
-                    }
-
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
-                        <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::add_all_dependencies(aggregator)
-                    }
-                }
-            }
+            handle_describe_as(
+                parsed,
+                context_custom_type_kind,
+                field_type,
+                code_hash,
+            )
         }
         Data::Enum(_) => {
-            return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
+            Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."))
         }
         Data::Union(_) => {
-            return Err(Error::new(Span::call_site(), "Union is not supported!"));
+            Err(Error::new(Span::call_site(), "Union is not supported!"))
+        }
+    }
+}
+
+fn handle_describe_as(
+    parsed: DeriveInput,
+    context_custom_type_kind: Option<&'static str>,
+    as_type: &Type,
+    code_hash: TokenStream,
+) -> Result<TokenStream> {
+    let DeriveInput {
+        attrs,
+        ident,
+        generics,
+        ..
+    } = &parsed;
+    let (impl_generics, ty_generics, where_clause, _, custom_type_kind_generic) =
+        build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
+
+    // Prepare base conditions before any overrides
+    let mut is_fully_transparent = true;
+    let mut type_data_content = quote! {
+        <#as_type as ::sbor::Describe <#custom_type_kind_generic>>::type_data()
+    };
+
+    // Perform each override (currently there's just one, this could be expanded in future)
+    let override_type_name = if get_sbor_attribute_bool_value(attrs, "transparent_name")?.value() {
+        None
+    } else {
+        Some(resolve_type_name(ident, attrs)?)
+    };
+    if let Some(new_type_name) = &override_type_name {
+        validate_type_name(new_type_name)?;
+        is_fully_transparent = false;
+        type_data_content = quote! {
+            #type_data_content
+                .with_name(Some(Cow::Borrowed(#new_type_name)))
+        }
+    }
+
+    // Calculate the type id to use
+    let transparent_type_id = quote! {
+        <#as_type as ::sbor::Describe <#custom_type_kind_generic>>::TYPE_ID
+    };
+
+    let type_id = if is_fully_transparent {
+        transparent_type_id
+    } else {
+        let novel_type_name =
+            override_type_name.unwrap_or(LitStr::new(&ident.to_string(), ident.span()));
+        quote! {
+            ::sbor::RustTypeId::novel_with_code(
+                #novel_type_name,
+                &[#transparent_type_id],
+                &#code_hash
+            )
+        }
+    };
+
+    let output = quote! {
+        impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
+            const TYPE_ID: ::sbor::RustTypeId = #type_id;
+
+            fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
+                use ::sbor::rust::prelude::*;
+                #type_data_content
+            }
+
+            fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
+                <#as_type as ::sbor::Describe <#custom_type_kind_generic>>::add_all_dependencies(aggregator)
+            }
         }
     };
 
@@ -125,12 +160,11 @@ fn handle_normal_describe(
         data,
         generics,
         ..
-    } = parsed;
+    } = &parsed;
     let (impl_generics, ty_generics, where_clause, child_types, custom_type_kind_generic) =
-        build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
+        build_describe_generics(generics, attrs, context_custom_type_kind)?;
 
-    let type_name =
-        get_sbor_attribute_string_value(&attrs, "type_name")?.unwrap_or(ident.to_string());
+    let type_name = resolve_type_name(ident, attrs)?;
 
     let type_id = quote! {
         ::sbor::RustTypeId::novel_with_code(
@@ -157,7 +191,7 @@ fn handle_normal_describe(
                     unskipped_field_types,
                     unskipped_field_name_strings,
                     ..
-                } = process_fields_for_describe(&s.fields)?;
+                } = process_fields(&s.fields)?;
                 let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
@@ -182,7 +216,7 @@ fn handle_normal_describe(
                 let FieldsData {
                     unskipped_field_types,
                     ..
-                } = process_fields_for_describe(&s.fields)?;
+                } = process_fields(&s.fields)?;
                 let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
 
                 quote! {
@@ -236,7 +270,7 @@ fn handle_normal_describe(
                         unskipped_field_types,
                         unskipped_field_name_strings,
                         ..
-                    } = process_fields_for_describe(&v.fields)?;
+                    } = process_fields(&v.fields)?;
 
                     all_field_types.extend_from_slice(&unskipped_field_types);
 
@@ -302,6 +336,45 @@ fn handle_normal_describe(
     };
 
     Ok(output)
+}
+
+pub fn validate_type_name(type_name: &LitStr) -> Result<()> {
+    validate_schema_ident("Sbor type names", &type_name.value())
+        .map_err(|error_message| Error::new(type_name.span(), error_message))
+}
+
+// IMPORTANT:
+// For crate dependency regions, this is duplicated from `sbor`
+// If you change it here, please change it there as well
+fn validate_schema_ident(
+    ident_category_name: &str,
+    name: &str,
+) -> core::result::Result<(), String> {
+    if name.len() == 0 {
+        return Err(format!("{ident_category_name} cannot be empty"));
+    }
+
+    if name.len() > 100 {
+        return Err(format!(
+            "{ident_category_name} cannot be more than 100 characters"
+        ));
+    }
+
+    let first_char = name.chars().next().unwrap();
+    if !matches!(first_char, 'A'..='Z' | 'a'..='z') {
+        return Err(format!(
+            "{ident_category_name} must match [A-Za-z][0-9A-Za-z_]{{0,99}}"
+        ));
+    }
+
+    for char in name.chars() {
+        if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
+            return Err(format!(
+                "{ident_category_name} must match [A-Za-z][0-9A-Za-z_]{{0,99}}"
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

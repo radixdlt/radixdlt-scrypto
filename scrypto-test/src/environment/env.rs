@@ -715,7 +715,7 @@ where
                 let mut manager_substate =
                     env.field_read_typed::<VersionedConsensusManagerState>(manager_handle)?;
 
-                manager_substate.to_latest_mut().epoch = epoch;
+                manager_substate.as_unique_version_mut().epoch = epoch;
 
                 env.field_write_typed(manager_handle, &manager_substate)?;
                 env.field_close(manager_handle)?;
@@ -746,8 +746,9 @@ where
                     env.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
                         handle,
                     )?;
-                proposer_minute_timestamp.to_latest_mut().epoch_minute =
-                    (instant.seconds_since_unix_epoch / 60) as i32;
+                proposer_minute_timestamp
+                    .as_unique_version_mut()
+                    .epoch_minute = (instant.seconds_since_unix_epoch / 60) as i32;
                 env.field_write_typed(handle, &proposer_minute_timestamp)?;
                 env.field_close(handle)?;
                 Ok(())

@@ -548,7 +548,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ),
             )
             .unwrap()
-            .map(|v| v.into_latest())
+            .map(|v| v.fully_update_into_latest_version())
     }
 
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
@@ -560,7 +560,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ComponentRoyaltyField::Accumulator.field_index(),
             )
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
 
         let balance = reader
             .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
@@ -569,7 +569,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 FungibleVaultField::Balance.field_index(),
             )
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
 
         balance.amount()
     }
@@ -583,7 +583,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 PackageField::RoyaltyAccumulator.field_index(),
             )
             .ok()?
-            .into_latest();
+            .fully_update_into_latest_version();
 
         let balance = reader
             .read_typed_object_field::<FungibleVaultBalanceFieldPayload>(
@@ -592,7 +592,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 FungibleVaultField::Balance.field_index(),
             )
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
 
         Some(balance.amount())
     }
@@ -674,7 +674,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 let key: BlueprintVersionKey = scrypto_decode(&map_key).unwrap();
                 let definition: PackageBlueprintVersionDefinitionEntryPayload =
                     scrypto_decode(&value).unwrap();
-                (key, definition.into_latest())
+                (key, definition.fully_update_into_latest_version())
             })
             .collect()
     }
@@ -733,7 +733,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             )
             .ok();
 
-        vault.map(|v| v.into_latest().amount())
+        vault.map(|v| v.fully_update_into_latest_version().amount())
     }
 
     pub fn inspect_non_fungible_vault(
@@ -748,7 +748,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 NonFungibleVaultField::Balance.into(),
             )
             .ok()?;
-        let amount = vault_balance.into_latest().amount;
+        let amount = vault_balance.fully_update_into_latest_version().amount;
 
         // TODO: Remove .collect() by using SystemDatabaseReader in ledger
         let iter: Vec<NonFungibleLocalId> = reader
@@ -830,7 +830,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             )
             .unwrap()
             .into_payload()
-            .into_latest();
+            .fully_update_into_latest_version();
         total_supply
     }
 
@@ -902,7 +902,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ValidatorField::State.field_index(),
             )
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
 
         substate
     }
@@ -916,7 +916,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ConsensusManagerField::CurrentValidatorSet.field_index(),
             )
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
         substate
             .validator_set
             .get_by_public_key(key)
@@ -2068,7 +2068,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ConsensusManagerField::State.field_index(),
             )
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
 
         substate.epoch = epoch;
 
@@ -2143,7 +2143,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ConsensusManagerField::ProposerMilliTimestamp.field_index(),
             )
             .unwrap()
-            .into_latest()
+            .fully_update_into_latest_version()
             .epoch_milli
     }
 
@@ -2156,7 +2156,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 ConsensusManagerField::State.field_index(),
             )
             .unwrap()
-            .into_latest()
+            .fully_update_into_latest_version()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {

@@ -597,7 +597,7 @@ impl TwoResourcePoolBlueprint {
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let two_resource_pool_substate = api
             .field_read_typed::<VersionedTwoResourcePoolState>(handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
 
         Ok((two_resource_pool_substate, handle))
     }

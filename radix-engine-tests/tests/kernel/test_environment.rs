@@ -232,7 +232,7 @@ fn references_read_from_state_are_visible_in_tests1() {
         .with_component_state::<VersionedTwoResourcePoolState, _, _, _>(
             radiswap_pool_component,
             |state, env| {
-                let [(_, vault1), (_, _)] = &mut state.to_latest_mut().vaults;
+                let [(_, vault1), (_, _)] = &mut state.as_unique_version_mut().vaults;
                 vault1.amount(env)
             },
         )

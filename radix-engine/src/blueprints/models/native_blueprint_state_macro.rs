@@ -579,7 +579,7 @@ mod helper_macros {
             paste::paste! {
                 sbor::define_single_versioned!(
                     $(#[$attributes])*
-                    pub enum [<Versioned $ident_core>] => $ident_core = [<$ident_core V1>]
+                    pub [<Versioned $ident_core>]([<$ident_core Versions>]) => $ident_core = [<$ident_core V1>]
                 );
                 declare_payload_new_type!(
                     content_trait: $content_trait,
@@ -589,44 +589,26 @@ mod helper_macros {
                     pub struct $payload_type_name([<Versioned $ident_core>]);
                 );
 
-                impl HasLatestVersion for $payload_type_name
+                impl $payload_type_name
                 {
-                    type Latest = <[<Versioned $ident_core>] as HasLatestVersion>::Latest;
-
-                    fn is_latest(&self) -> bool {
-                        self.as_ref().is_latest()
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update_into_latest_version`]."]
+                    pub fn fully_update_into_latest_version(self) -> $ident_core {
+                        self.content.fully_update_into_latest_version()
                     }
 
-                    fn into_latest(self) -> Self::Latest {
-                        self.into_content().into_latest()
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::from_latest_version`]."]
+                    pub fn from_latest_version(latest_version: $ident_core) -> Self {
+                        [<Versioned $ident_core>]::from_latest_version(latest_version).into()
                     }
 
-                    fn to_latest_mut(&mut self) -> &mut Self::Latest {
-                        self.as_mut().to_latest_mut()
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::into_unique_version`]."]
+                    pub fn into_unique_version(self) -> $ident_core {
+                        self.content.into_unique_version()
                     }
 
-                    fn from_latest(latest: Self::Latest) -> Self {
-                        Self {
-                            content: <[<Versioned $ident_core>] as HasLatestVersion>::from_latest(latest),
-                        }
-                    }
-
-                    fn as_latest_ref(&self) -> Option<&Self::Latest> {
-                        self.as_ref().as_latest_ref()
-                    }
-
-                    fn as_latest_mut(&mut self) -> Option<&mut Self::Latest> {
-                        self.as_mut().as_latest_mut()
-                    }
-                }
-
-                impl HasUniqueLatestVersion for $payload_type_name {
-                    fn as_unique_latest_ref(&self) -> &Self::Latest {
-                        self.as_ref().as_unique_latest_ref()
-                    }
-
-                    fn as_unique_latest_mut(&mut self) -> &mut Self::Latest {
-                        self.as_mut().as_unique_latest_mut()
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::from_unique_version`]."]
+                    pub fn from_unique_version(unique_version: $ident_core) -> Self {
+                        [<Versioned $ident_core>]::from_unique_version(unique_version).into()
                     }
                 }
 
@@ -635,6 +617,12 @@ mod helper_macros {
                 impl $content_trait<$payload_type_name> for $ident_core {
                     fn into_content(self) -> [<Versioned $ident_core>] {
                         self.into()
+                    }
+                }
+
+                impl $content_trait<$payload_type_name> for [<$ident_core Versions>] {
+                    fn into_content(self) -> [<Versioned $ident_core>] {
+                        [<Versioned $ident_core>]::from(self).into()
                     }
                 }
             }
@@ -1136,9 +1124,9 @@ mod tests {
 
     #[test]
     fn validate_royalty_field_payload_mutability() {
-        let mut content = VersionedTestBlueprintRoyalty::V1(TestBlueprintRoyaltyV1);
+        let mut content = TestBlueprintRoyaltyVersions::V1(TestBlueprintRoyaltyV1).into_versioned();
         let mut payload = TestBlueprintRoyaltyFieldPayload {
-            content: VersionedTestBlueprintRoyalty::V1(TestBlueprintRoyaltyV1),
+            content: TestBlueprintRoyaltyVersions::V1(TestBlueprintRoyaltyV1).into_versioned(),
         };
         assert_eq!(&content, payload.as_ref());
         assert_eq!(&mut content, payload.as_mut());
@@ -1163,9 +1151,10 @@ mod tests {
     fn validate_key_value_store_entry_payload_mutability() {
         fn create_payload() -> TestBlueprintMyCoolKeyValueStoreEntryPayload {
             TestBlueprintMyCoolKeyValueStoreEntryPayload {
-                content: VersionedTestBlueprintMyCoolKeyValueStore::V1(
+                content: TestBlueprintMyCoolKeyValueStoreVersions::V1(
                     TestBlueprintMyCoolKeyValueStoreV1,
-                ),
+                )
+                .into_versioned(),
             }
         }
 
@@ -1193,22 +1182,24 @@ mod tests {
                 .lock_status()
         );
 
-        assert!(create_payload().as_latest_ref().is_some());
+        assert!(create_payload().as_latest_version_ref().is_some());
     }
 
     #[test]
     fn validate_index_entry_payload() {
         let payload = TestBlueprintMyCoolIndexEntryPayload {
-            content: VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1),
+            content: TestBlueprintMyCoolIndexVersions::V1(TestBlueprintMyCoolIndexV1)
+                .into_versioned(),
         };
         assert_eq!(
             payload.into_substate().value().content,
-            VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1)
+            TestBlueprintMyCoolIndexVersions::V1(TestBlueprintMyCoolIndexV1).into_versioned()
         );
 
-        let content = VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1);
+        let content =
+            TestBlueprintMyCoolIndexVersions::V1(TestBlueprintMyCoolIndexV1).into_versioned();
         assert_eq!(
-            VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1),
+            TestBlueprintMyCoolIndexVersions::V1(TestBlueprintMyCoolIndexV1).into_versioned(),
             content.into_substate().value().content
         );
     }
@@ -1216,16 +1207,20 @@ mod tests {
     #[test]
     fn validate_sorted_index_entry_payload() {
         let payload = TestBlueprintMyCoolSortedIndexEntryPayload {
-            content: VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
+            content: TestBlueprintMyCoolSortedIndexVersions::V1(TestBlueprintMyCoolSortedIndexV1)
+                .into_versioned(),
         };
         assert_eq!(
             payload.into_substate().value().content,
-            VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1)
+            TestBlueprintMyCoolSortedIndexVersions::V1(TestBlueprintMyCoolSortedIndexV1)
+                .into_versioned()
         );
 
-        let content = VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1);
+        let content = TestBlueprintMyCoolSortedIndexVersions::V1(TestBlueprintMyCoolSortedIndexV1)
+            .into_versioned();
         assert_eq!(
-            VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
+            TestBlueprintMyCoolSortedIndexVersions::V1(TestBlueprintMyCoolSortedIndexV1)
+                .into_versioned(),
             content.into_substate().value().content
         );
     }

@@ -11,7 +11,7 @@ macro_rules! declare_payload_new_type {
             ($content_type:ty)$(;)?
     ) => {
         $(#[$attributes])*
-        #[sbor(transparent, categorize_types = "")]
+        #[sbor(transparent)]
         /// This new type represents the payload of a particular field or collection.
         /// It is unique to this particular field/collection.
         $vis struct $payload_type_name
@@ -41,10 +41,30 @@ macro_rules! declare_payload_new_type {
         }
 
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            core::ops::Deref
+            for $payload_type_name $(< $( $lt ),+ >)?
+        {
+            type Target = $content_type;
+
+            fn deref(&self) -> &Self::Target {
+                &self.content
+            }
+        }
+
+        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             core::convert::AsMut<$content_type>
             for $payload_type_name $(< $( $lt ),+ >)?
         {
             fn as_mut(&mut self) -> &mut $content_type {
+                &mut self.content
+            }
+        }
+
+        impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+            core::ops::DerefMut
+            for $payload_type_name $(< $( $lt ),+ >)?
+        {
+            fn deref_mut(&mut self) -> &mut Self::Target {
                 &mut self.content
             }
         }

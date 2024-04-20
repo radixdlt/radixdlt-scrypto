@@ -37,47 +37,69 @@ pub fn handle_transparent_encode(
     parsed: DeriveInput,
     context_custom_value_kind: Option<&'static str>,
 ) -> Result<TokenStream> {
-    let DeriveInput {
-        attrs,
-        ident,
-        data,
-        generics,
-        ..
-    } = parsed;
-    let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, encoder_generic) =
-        build_encode_generics(&generics, &attrs, context_custom_value_kind)?;
-
-    let output = match data {
+    let output = match &parsed.data {
         Data::Struct(s) => {
             let FieldsData {
+                unskipped_field_types,
                 unskipped_field_names,
                 ..
-            } = process_fields_for_encode(&s.fields)?;
-            if unskipped_field_names.len() != 1 {
+            } = process_fields(&s.fields)?;
+            if unskipped_field_types.len() != 1 {
                 return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
             }
+            let field_type = &unskipped_field_types[0];
             let field_name = &unskipped_field_names[0];
-            quote! {
-                impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
-                    #[inline]
-                    fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
-                        self.#field_name.encode_value_kind(encoder)
-                    }
-
-                    #[inline]
-                    fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
-                        self.#field_name.encode_body(encoder)
-                    }
-                }
-            }
+            handle_encode_as(
+                parsed,
+                context_custom_value_kind,
+                &field_type,
+                &quote! { &self.#field_name },
+            )?
         }
         Data::Enum(_) => {
             return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
         }
         Data::Union(_) => {
             return Err(Error::new(Span::call_site(), "Union is not supported!"));
+        }
+    };
+
+    Ok(output)
+}
+
+pub fn handle_encode_as(
+    parsed: DeriveInput,
+    context_custom_value_kind: Option<&'static str>,
+    as_type: &Type,
+    as_ref_code: &TokenStream,
+) -> Result<TokenStream> {
+    let DeriveInput {
+        attrs,
+        ident,
+        generics,
+        ..
+    } = parsed;
+    let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, encoder_generic) =
+        build_encode_generics(&generics, &attrs, context_custom_value_kind)?;
+
+    // NOTE: The `: &#as_type` is not strictly needed for the code to compile,
+    // but it is useful to sanity check that the user has provided the correct implementation.
+    // If they have not, they should get a nice and clear error message.
+    let output = quote! {
+        impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
+            #[inline]
+            fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                use ::sbor::{self, Encode};
+                let as_ref: &#as_type = #as_ref_code;
+                as_ref.encode_value_kind(encoder)
+            }
+
+            #[inline]
+            fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                use ::sbor::{self, Encode};
+                let as_ref: &#as_type = #as_ref_code;
+                as_ref.encode_body(encoder)
+            }
         }
     };
 
@@ -104,7 +126,7 @@ pub fn handle_normal_encode(
                 unskipped_field_names,
                 unskipped_field_count,
                 ..
-            } = process_fields_for_encode(&s.fields)?;
+            } = process_fields(&s.fields)?;
             quote! {
                 impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
@@ -136,7 +158,7 @@ pub fn handle_normal_encode(
                         fields_unpacking,
                         unskipped_unpacked_field_names,
                         ..
-                    } = process_fields_for_encode(&v.fields)?;
+                    } = process_fields(&v.fields)?;
 
                     Ok(match discriminator {
                         VariantDiscriminator::Expr(discriminator) => {
@@ -310,9 +332,7 @@ mod tests {
                 impl <T, E: Clashing, E0: ::sbor::Encoder<X>, X: ::sbor::CustomValueKind > ::sbor::Encode<X, E0> for Test<T, E >
                 where
                     T: ::sbor::Encode<X, E0>,
-                    E: ::sbor::Encode<X, E0>,
-                    T: ::sbor::Categorize<X>,
-                    E: ::sbor::Categorize<X>
+                    E: ::sbor::Encode<X, E0>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E0) -> Result<(), ::sbor::EncodeError> {

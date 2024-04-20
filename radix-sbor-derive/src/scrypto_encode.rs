@@ -59,8 +59,7 @@ mod tests {
                         E: ::sbor::Encoder<radix_common::data::scrypto::ScryptoCustomValueKind>
                     > ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E> for MyEnum<T>
                 where
-                    T: ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E>,
-                    T: ::sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind>
+                    T: ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {

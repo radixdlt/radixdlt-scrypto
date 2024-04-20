@@ -19,7 +19,7 @@ pub enum Abc {
 pub enum AbcV2 {
     #[sbor(discriminator(VARIANT_1))]
     Variant1,
-    #[sbor(ignore_as_unreachable)]
+    #[sbor(unreachable)]
     UnreachableVariant,
     #[sbor(discriminator(VARIANT_2))]
     Variant2,
@@ -30,7 +30,7 @@ pub enum AbcV2 {
 pub enum TestThatPermitSborAttributesCanCompile {
     #[sbor(discriminator(VARIANT_1))]
     Variant1,
-    #[sbor(ignore_as_unreachable)]
+    #[sbor(unreachable)]
     UnreachableVariant,
     #[sbor(discriminator(VARIANT_2))]
     Variant2,
