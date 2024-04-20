@@ -12,16 +12,18 @@ pub(crate) fn replace_recursive(token_stream: TokenStream) -> TokenStream {
             is_eager_stringify_followed_by_exclamation_mark(&token_tree, &mut tokens)
         {
             let exclamation_mark = tokens.next().unwrap();
-            let Some(next_token_tree) = tokens.next() else {
-                break;
-            };
-            if let proc_macro::TokenTree::Group(group) = next_token_tree {
+            let next_token_tree = tokens.next();
+            if let Some(proc_macro::TokenTree::Group(group)) = &next_token_tree {
                 expanded.extend(stringify_tokens(eager_stringify_ident_span, group.stream()));
             } else {
                 // If we get eager_stringify! but then it doesn't get followed by a group, then add the token back which we've just consumed
                 expanded.extend(core::iter::once(token_tree));
                 expanded.extend(core::iter::once(exclamation_mark));
-                expanded.extend(core::iter::once(next_token_tree));
+                if let Some(next_token_tree) = next_token_tree {
+                    expanded.extend(core::iter::once(next_token_tree));
+                } else {
+                    break;
+                }
             }
         } else {
             if let proc_macro::TokenTree::Group(group) = token_tree {
@@ -37,6 +39,9 @@ pub(crate) fn replace_recursive(token_stream: TokenStream) -> TokenStream {
     return expanded;
 }
 
+// TODO: Add eager_concat so that this works:
+// `#[doc = eager_concat!("Hello world ", eager_stringify!(Bob), " XYZ")]`
+// NB: Could also support eager_ident and eager_literal
 fn is_eager_stringify_followed_by_exclamation_mark(
     current: &TokenTree,
     tokens: &mut core::iter::Peekable<<TokenStream as IntoIterator>::IntoIter>,

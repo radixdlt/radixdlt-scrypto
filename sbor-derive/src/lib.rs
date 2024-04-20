@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use std::str::FromStr;
-mod eager_stringify;
+mod eager;
 
 /// Derive code that returns the value kind.
 #[proc_macro_derive(Categorize, attributes(sbor))]
@@ -64,10 +64,45 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
     TokenStream::from_str(&"// Empty PermitSborAttributes expansion").unwrap()
 }
 
-/// Allows the `eager_stringify!` macro to stringify its contents immediately.
+/// This macro causes the `eager_stringify!` pseudo-macro to stringify its contents immediately.
+/// Similar to the `paste!` macro, this is intended for use in declarative macros.
+///
+/// It is particularly useful in scenarios where `paste` doesn't work - in particular, to
+/// create non-idents, or to create non-doc attribute string content, which paste cannot do, e.g.:
+/// ```rust
+/// // Inside a macro_rules! expression:
+/// evaluate_eager_macros!{
+///     #[sbor(as_type = eager_stringify!($my_inner_type))]
+///     $vis struct $my_type($my_inner_type)
+/// }
+/// ```
+///
+/// ## Use with docs
+///
+/// You can combine `eager_stringify!` with the `paste` macro's ability to concat doc string literals together,
+/// as follows. In some cases, `paste` can be used without `eager_stringify!` for the same effect.
+/// ```rust
+/// // Inside a macro_rules! expression:
+/// evaluate_eager_macros!{paste!{
+///     #[doc = "This is the [`" eager_stringify!($my_type $(< $( $generic_type ),+ >)?) "`] type."]
+///     $vis struct $my_type $(< $( $generic_type ),+ >)?(
+///         $my_inner_type $(< $( $generic_type ),+ >)?
+///     )
+/// }}
+/// ```
+///
+/// ## Future extensions
+/// In future, we could add further eager utilities:
+/// * Enable recursion, e.g. `eager_stringify!(Hello eager_stringify!($my_world))` gives `"Hello \"World\""`
+/// * An `eager_concat!` which converts its immediate children to strings and concats them without spaces, e.g. `eager_concat!("Hello " eager_stringify!($my_world) ". My " $world " is cool!")` gives `"Hello World. My World is cool!"`
+/// * An `eager_format!` where `eager_format!(lowercase, X Y Z)` gives `"x y z"`.
+/// * An `eager_ident!` which is like `eager_concat!` but converts to an ident.
+/// * An `eager_literal!` which is like `eager_concat!` but converts to a literal.
+/// * An `eager_tokens!` which is like `eager_concat!` but converts to a token stream. This would be the most general/powerful.
+/// ```
 #[proc_macro]
-pub fn enable_eager_stringify(token_stream: TokenStream) -> TokenStream {
-    eager_stringify::replace_recursive(token_stream)
+pub fn evaluate_eager_macros(token_stream: TokenStream) -> TokenStream {
+    eager::replace_recursive(token_stream)
 }
 
 const BASIC_CUSTOM_VALUE_KIND: &str = "sbor::NoCustomValueKind";

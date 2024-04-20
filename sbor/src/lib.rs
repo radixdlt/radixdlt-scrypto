@@ -66,7 +66,7 @@ pub use versioned::*;
 // Re-export derives
 extern crate sbor_derive;
 pub use sbor_derive::{
-    enable_eager_stringify, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor,
+    evaluate_eager_macros, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor,
     Categorize, Decode, Describe, Encode, PermitSborAttributes, Sbor,
 };
 
@@ -90,9 +90,9 @@ pub mod prelude {
     pub use radix_rust::prelude::*;
 
     // Exports from current crate
-    pub use crate::enable_eager_stringify;
     pub use crate::encoded_wrappers::{RawPayload as SborRawPayload, RawValue as SborRawValue};
     pub use crate::enum_variant::FixedEnumVariant as SborFixedEnumVariant;
+    pub use crate::evaluate_eager_macros;
     pub use crate::path::{SborPath, SborPathBuf};
     pub use crate::representations;
     pub use crate::schema::prelude::*;

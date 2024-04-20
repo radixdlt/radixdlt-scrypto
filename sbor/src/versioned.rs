@@ -267,7 +267,7 @@ macro_rules! define_versioned {
             $(,)? // Optional trailing comma
         }
     ) => {
-        $crate::enable_eager_stringify! {
+        $crate::evaluate_eager_macros! {
         $crate::paste::paste! {
             // Create inline sub-macros to handle the type generics nested inside
             // iteration over previous_versions
@@ -412,9 +412,8 @@ macro_rules! define_versioned {
                 }
             }
 
-            $(#[$attributes])*
             #[derive([<$versioned_name _PermitSborAttributes>])]
-            #[sbor(type_name = eager_stringify!($versioned_name))]
+            $(#[$attributes])*
             $vis enum $versions_name $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
             {
                 $($(
