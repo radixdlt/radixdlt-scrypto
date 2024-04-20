@@ -82,10 +82,8 @@ fn test_transaction_replay_protection() {
 
     // 5. Run the transaction the 3rd time (with epoch range check disabled)
     // Note that in production, this won't be possible.
-    let mut executable = validated.get_executable();
-    executable.skip_epoch_range_check();
     let receipt = ledger.execute_transaction(
-        executable,
+        validated.get_executable().skip_epoch_range_check(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();

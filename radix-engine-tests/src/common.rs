@@ -3,6 +3,7 @@
 pub mod package_loader {
     use radix_common::prelude::*;
     use radix_substate_store_queries::typed_substate_layout::*;
+    use std::path::PathBuf;
 
     const PACKAGES_BINARY: &[u8] =
         include_bytes!(concat!(env!("OUT_DIR"), "/compiled_packages.bin"));
@@ -16,7 +17,14 @@ pub mod package_loader {
     pub struct PackageLoader;
     impl PackageLoader {
         pub fn get(name: &str) -> (Vec<u8>, PackageDefinition) {
-            if let Some(rtn) = PACKAGES.get(name) {
+            // Extract package file name if specified package name contains also a path.
+            let file_name = PathBuf::from(name)
+                .file_name()
+                .unwrap()
+                .to_os_string()
+                .into_string()
+                .unwrap();
+            if let Some(rtn) = PACKAGES.get(&file_name) {
                 rtn.clone()
             } else {
                 panic!("Package \"{}\" not found. Are you sure that this package is: a) in the blueprints folder, b) that this is the same as the package name in the Cargo.toml file?", name)
@@ -101,13 +109,6 @@ pub mod path_macros {
     }
 
     #[macro_export]
-    macro_rules! include_local_metering_csv_str {
-        ($name: expr) => {
-            include_str!(path_local_metering_csv!($name))
-        };
-    }
-
-    #[macro_export]
     macro_rules! path_local_blueprint {
         ($name: expr) => {
             concat!(env!("CARGO_MANIFEST_DIR"), "/assets/blueprints/", $name)
@@ -115,18 +116,16 @@ pub mod path_macros {
     }
 
     #[macro_export]
-    macro_rules! path_local_metering_csv {
-        ($name: expr) => {
-            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/metering/", $name)
+    macro_rules! path_local_metering_assets {
+        ($folder: expr) => {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/metering/", $folder)
         };
     }
 
-    pub use crate::include_local_metering_csv_str;
     pub use crate::include_local_wasm_str;
     pub use crate::include_workspace_asset_bytes;
     pub use crate::include_workspace_transaction_examples_str;
     pub use crate::path_local_blueprint;
-    pub use crate::path_local_metering_csv;
     pub use crate::path_workspace_blueprint;
     pub use crate::path_workspace_transaction_examples;
 }

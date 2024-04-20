@@ -427,6 +427,7 @@ dependencies = [
  "serde",
  "sha3",
  "strum",
+ "zeroize",
 ]
 
 [[package]]

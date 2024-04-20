@@ -2,6 +2,7 @@ use super::{BalanceChange, CostingParameters, StateUpdateSummary};
 use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
 use crate::internal_prelude::*;
+use crate::kernel::kernel_callback_api::ExecutionReceipt;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::*;
 use crate::track::BatchPartitionStateUpdate;
@@ -12,6 +13,7 @@ use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::interface::DatabaseUpdate;
+use radix_transactions::model::Executable;
 use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::representations::*;
 
@@ -40,6 +42,23 @@ pub struct TransactionReceiptV1 {
     /// Hardware resources usage report
     /// Available if `resources_usage` feature flag is enabled
     pub resources_usage: Option<ResourcesUsage>,
+}
+
+impl ExecutionReceipt for TransactionReceipt {
+    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self {
+        TransactionReceipt {
+            costing_parameters: CostingParameters::babylon_genesis(),
+            transaction_costing_parameters: executable.costing_parameters().clone(),
+            fee_summary: TransactionFeeSummary::default(),
+            fee_details: None,
+            result: TransactionResult::Reject(RejectResult { reason }),
+            resources_usage: None,
+        }
+    }
+
+    fn set_resource_usage(&mut self, resources_usage: ResourcesUsage) {
+        self.resources_usage = Some(resources_usage);
+    }
 }
 
 #[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -358,7 +377,7 @@ impl TransactionReceipt {
     /// An empty receipt for merging changes into.
     pub fn empty_with_commit(commit_result: CommitResult) -> Self {
         Self {
-            costing_parameters: Default::default(),
+            costing_parameters: CostingParameters::babylon_genesis(),
             transaction_costing_parameters: Default::default(),
             fee_summary: Default::default(),
             fee_details: Default::default(),

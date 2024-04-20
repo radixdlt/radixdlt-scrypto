@@ -37,7 +37,6 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use scrypto_test::prelude::InjectSystemCostingError;
 use scrypto_test::prelude::{CustomGenesis, LedgerSimulator, LedgerSimulatorBuilder};
 
 pub struct SystemTestFuzzer {
@@ -722,7 +721,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                     .build();
 
                 let receipt = if let Some(error_after_count) = error_after_system_callback_count {
-                    self.ledger.execute_manifest_with_system::<_, InjectSystemCostingError<'_, OverridePackageCode<ResourceTestInvoke>>>(
+                    self.ledger.execute_manifest_with_injected_error(
                         manifest,
                         vec![NonFungibleGlobalId::from_public_key(
                             &self.account_public_key,

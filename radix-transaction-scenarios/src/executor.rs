@@ -2,6 +2,8 @@
 
 use core::ops::*;
 
+use crate::scenarios::maya_router::MayaRouterScenarioCreator;
+
 use self::internal_prelude::*;
 use super::*;
 use radix_engine::blueprints::consensus_manager::*;
@@ -520,5 +522,6 @@ pub fn scenarios_vector() -> Vec<(
         // Anemone Scenarios - None.
         // Bottlenose Scenarios.
         AccountLockerScenarioCreator,
+        MayaRouterScenarioCreator,
     ]
 }

@@ -17,7 +17,7 @@ pub struct RadiswapScenarioConfig {
 impl Default for RadiswapScenarioConfig {
     fn default() -> Self {
         Self {
-            radiswap_dapp_definition_account: ed25519_account_for_private_key(891231),
+            radiswap_dapp_definition_account: ed25519_account_from_u64(891231),
             storing_account: secp256k1_account_2(),
             user_account_1: secp256k1_account_3(),
             user_account_2: ed25519_account_1(),
@@ -236,8 +236,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 owner_role.clone(),
                             ).call_function(
                                 lookup.named_address("radiswap_package"),
-                                "Radiswap", 
-                                "new", 
+                                "Radiswap",
+                                "new",
                                 manifest_args!(
                                     owner_role.clone(),
                                     state.pool_1.resource_1.get()?,
@@ -246,8 +246,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                             )
                             .call_function(
                                 lookup.named_address("radiswap_package"),
-                                "Radiswap", 
-                                "new", 
+                                "Radiswap",
+                                "new",
                                 manifest_args!(
                                     owner_role.clone(),
                                     state.pool_2.resource_1.get()?,
