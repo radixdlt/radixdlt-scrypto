@@ -61,7 +61,7 @@ pub struct CostingParameters {
 }
 
 impl CostingParameters {
-    #[cfg(not(feature = "coverage"))]
+    #[cfg(all(not(feature = "coverage"), not(feature = "wasm_fuzzing")))]
     pub fn babylon_genesis() -> Self {
         Self {
             execution_cost_unit_price: EXECUTION_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
@@ -74,7 +74,7 @@ impl CostingParameters {
             archive_storage_price: ARCHIVE_STORAGE_PRICE_IN_XRD.try_into().unwrap(),
         }
     }
-    #[cfg(feature = "coverage")]
+    #[cfg(any(feature = "coverage", feature = "wasm_fuzzing"))]
     pub fn babylon_genesis() -> Self {
         Self {
             execution_cost_unit_price: Decimal::zero(),

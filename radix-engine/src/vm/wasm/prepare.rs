@@ -1129,7 +1129,7 @@ impl WasmModule {
         mut self,
         rules: &R,
     ) -> Result<Self, PrepareError> {
-        #[cfg(not(feature = "coverage"))]
+        #[cfg(all(not(feature = "coverage"), not(feature = "wasm_fuzzing")))]
         {
             let backend = gas_metering::host_function::Injector::new(
                 MODULE_ENV_NAME,
