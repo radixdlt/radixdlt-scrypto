@@ -267,7 +267,7 @@ macro_rules! define_versioned {
             $(,)? // Optional trailing comma
         }
     ) => {
-        $crate::evaluate_eager_macros! {
+        $crate::eager_replace! {
         $crate::paste::paste! {
             // Create inline sub-macros to handle the type generics nested inside
             // iteration over previous_versions
@@ -306,8 +306,9 @@ macro_rules! define_versioned {
             use $crate::PermitSborAttributes as [<$versioned_name _PermitSborAttributes>];
 
             #[derive([<$versioned_name _PermitSborAttributes>])]
-            #[sbor(as_type = eager_stringify!($versions_name $(< $( $lt ),+ >)?))]
             $(#[$attributes])*
+            // Needs to go below $attributes so that a #[derive(Sbor)] in the attributes can see it.
+            #[sbor(as_type = eager_stringify!($versions_name $(< $( $lt ),+ >)?))]
             /// If you wish to get access to match on the versions, use `.as_ref()` or `.as_mut()`.
             $vis struct $versioned_name $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
             {
@@ -650,7 +651,7 @@ mod tests {
 
     define_single_versioned!(
         /// This is some rust doc as an example annotation
-        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
         VersionedGenericModel(GenericModelVersions)<T> => GenericModel<T> = GenericModelV1<T>
     );
 
@@ -664,5 +665,18 @@ mod tests {
             v1_model
         );
         assert_eq!(versioned, versioned_2);
+        let encoded = basic_encode(&versioned).unwrap();
+        let expected = basic_encode(&BasicEnumVariantValue {
+            // GenericModelVersions
+            discriminator: 1,
+            fields: vec![
+                // GenericModelV1
+                Value::Tuple {
+                    fields: vec![Value::U64 { value: 51 }],
+                },
+            ],
+        })
+        .unwrap();
+        assert_eq!(encoded, expected);
     }
 }

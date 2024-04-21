@@ -18,12 +18,15 @@ pub fn handle_encode(
     trace!("handle_encode() starts");
 
     let parsed: DeriveInput = parse2(input)?;
-    let is_transparent = is_transparent(&parsed.attrs)?;
 
-    let output = if is_transparent {
-        handle_transparent_encode(parsed, context_custom_value_kind)?
-    } else {
-        handle_normal_encode(parsed, context_custom_value_kind)?
+    let output = match get_derive_strategy(&parsed.attrs)? {
+        DeriveStrategy::Normal => handle_normal_encode(parsed, context_custom_value_kind)?,
+        DeriveStrategy::Transparent => {
+            handle_transparent_encode(parsed, context_custom_value_kind)?
+        }
+        DeriveStrategy::DeriveAs {
+            as_type, as_ref, ..
+        } => handle_encode_as(parsed, context_custom_value_kind, &as_type, &as_ref)?,
     };
 
     #[cfg(feature = "trace")]
