@@ -367,44 +367,6 @@ pub fn encode_key(key: &StoredTreeNodeKey) -> Vec<u8> {
 // structures can simply use SBOR, with only the most efficiency-sensitive parts having custom
 // codecs, implemented below:
 
-impl<X: CustomValueKind> Categorize<X> for Nibble {
-    #[inline]
-    fn value_kind() -> ValueKind<X> {
-        ValueKind::U8
-    }
-}
-
-impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for Nibble {
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        u8::from(*self).encode_body(encoder)
-    }
-}
-
-impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for Nibble {
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<X>,
-    ) -> Result<Self, DecodeError> {
-        Ok(Nibble::from(u8::decode_body_with_value_kind(
-            decoder, value_kind,
-        )?))
-    }
-}
-
-impl<T: CustomTypeKind<RustTypeId>> Describe<T> for Nibble {
-    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(basic_well_known_types::U8_TYPE);
-
-    fn type_data() -> TypeData<T, RustTypeId> {
-        basic_well_known_types::u8_type_data()
-    }
-}
-
 impl<X: CustomValueKind> Categorize<X> for NibblePath {
     #[inline]
     fn value_kind() -> ValueKind<X> {
