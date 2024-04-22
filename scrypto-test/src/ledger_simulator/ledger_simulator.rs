@@ -650,7 +650,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 let key = key.into_map();
                 let hash: SchemaHash = scrypto_decode(&key).unwrap();
                 let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
-                (hash, schema.content)
+                (hash, schema.into_content())
             })
             .collect()
     }
@@ -806,7 +806,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .unwrap()
             .unwrap();
 
-        scrypto_decode(&scrypto_encode(&payload.content).unwrap()).unwrap()
+        scrypto_decode(&scrypto_encode(&payload).unwrap()).unwrap()
     }
 
     pub fn get_kv_store_entry<K: ScryptoEncode, V: ScryptoEncode + ScryptoDecode>(
