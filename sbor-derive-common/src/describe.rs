@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
@@ -251,30 +250,24 @@ fn handle_normal_describe(
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
+            let EnumVariantsData { sbor_variants, .. } = process_enum_variants(&attrs, &variants)?;
 
             let mut all_field_types = Vec::new();
 
-            let match_arms = variants
+            let match_arms = sbor_variants
                 .iter()
-                .enumerate()
-                .map(|(i, v)| {
-                    let variant_name_str = v.ident.to_string();
-
-                    let discriminator = match &discriminator_mapping[&i] {
-                        VariantDiscriminator::Expr(d) => d,
-                        VariantDiscriminator::IgnoreAsUnreachable => return Ok(None),
-                    };
+                .map(|VariantData { discriminator, source_variant, fields_data, .. }| {
+                    let variant_name_str = source_variant.ident.to_string();
 
                     let FieldsData {
                         unskipped_field_types,
                         unskipped_field_name_strings,
                         ..
-                    } = process_fields(&v.fields)?;
+                    } = fields_data;
 
                     all_field_types.extend_from_slice(&unskipped_field_types);
 
-                    let variant_type_data = match &v.fields {
+                    let variant_type_data = match &source_variant.fields {
                         Fields::Named(FieldsNamed { .. }) => {
                             quote! {
                                 ::sbor::TypeData::struct_with_named_fields(
@@ -305,7 +298,6 @@ fn handle_normal_describe(
                         #discriminator => #variant_type_data,
                     }))
                 })
-                .filter_map_ok(|x| x)
                 .collect::<Result<Vec<_>>>()?;
 
             let unique_field_types = get_unique_types(&all_field_types);

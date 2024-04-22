@@ -409,15 +409,19 @@ macro_rules! define_versioned {
                 }
             }
 
+            // TODO:
+            // - Sadly the first version of versioned used 0-indexed discriminators (by mistake, sadly)
+            // - To enforce this, and prevent the API being dependent on version, we should add back
+            //   in explicit discriminators as $version_num - 1 (by using consts)
+            // - This requires extensions to eager_stringify
+
             #[derive([<$versioned_name _PermitSborAttributes>])]
             $(#[$attributes])*
             $vis enum $versions_name $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
             {
                 $($(
-                    #[sbor(discriminator($version_num))]
                     [<V $version_num>]($version_type),
                 )*)?
-                #[sbor(discriminator($latest_version))]
                 [<V $latest_version>]($latest_version_type),
             }
 
@@ -671,7 +675,7 @@ mod tests {
         let versioned = VersionedGenericModel::from(v1_model.clone());
         let expected_sbor_value = BasicEnumVariantValue {
             // GenericModelVersions
-            discriminator: 1,
+            discriminator: 0, // V1 maps to 0 for legacy compatibility
             fields: vec![
                 // GenericModelV1
                 Value::Tuple {

@@ -195,22 +195,34 @@ pub fn extract_typed_attributes(
     Ok(fields)
 }
 
-enum VariantValue {
-    Byte(LitByte),
-    Path(Path), // EG a constant
-    UseDefaultIndex,
-    IgnoreAsUnreachable,
+pub(crate) enum SourceVariantData {
+    Reachable(VariantData),
+    Unreachable(UnreachableVariantData),
 }
 
-pub enum VariantDiscriminator {
-    Expr(Expr),
-    IgnoreAsUnreachable,
+#[derive(Clone)]
+pub(crate) struct UnreachableVariantData {
+    pub source_variant: Variant,
+    pub fields_data: FieldsData,
 }
 
-pub fn get_variant_discriminator_mapping(
+#[derive(Clone)]
+pub(crate) struct VariantData {
+    pub source_variant: Variant,
+    pub discriminator: Expr,
+    pub discriminator_pattern: Pat,
+    pub fields_data: FieldsData,
+}
+
+pub(crate) struct EnumVariantsData {
+    pub source_variants: Vec<SourceVariantData>,
+    pub sbor_variants: Vec<VariantData>,
+}
+
+pub(crate) fn process_enum_variants(
     enum_attributes: &[Attribute],
     variants: &Punctuated<Variant, Comma>,
-) -> Result<BTreeMap<usize, VariantDiscriminator>> {
+) -> Result<EnumVariantsData> {
     if variants.len() > 255 {
         return Err(Error::new(
             Span::call_site(),
@@ -220,109 +232,190 @@ pub fn get_variant_discriminator_mapping(
 
     let use_repr_discriminators =
         get_sbor_attribute_bool_value(enum_attributes, "use_repr_discriminators")?.value();
-    let variant_ids: Vec<VariantValue> = variants.iter()
-        .map(|variant| -> Result<VariantValue> {
+
+    let mut explicit_discriminators_count = 0usize;
+    let mut implicit_discriminators_count = 0usize;
+    let mut reachable_variants_count = 0usize;
+
+    let source_variants: Vec<SourceVariantData> = variants
+        .iter()
+        .enumerate()
+        .map(|(i, variant)| -> Result<_> {
             let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
+            let fields_data = process_fields(&variant.fields)?;
+            let source_variant = variant.clone();
             if let Some(_) = variant_attributes.remove("unreachable") {
-                return Ok(VariantValue::IgnoreAsUnreachable);
+                return Ok(SourceVariantData::Unreachable(UnreachableVariantData {
+                    fields_data,
+                    source_variant,
+                }));
             }
-            if let Some(attribute) = variant_attributes.remove("discriminator") {
-                return Ok(match attribute {
-                    AttributeValue::None(span) => {
-                        return Err(Error::new(span, format!("No discriminator was provided")));
-                    }
-                    AttributeValue::Path(path) => VariantValue::Path(path),
-                    AttributeValue::Lit(literal) => parse_u8_from_literal(&literal)
-                        .map(|b| VariantValue::Byte(LitByte::new(b, literal.span())))
-                        .ok_or_else(|| {
-                            Error::new(
-                                literal.span(),
-                                format!("This discriminator is not a u8-convertible value"),
-                            )
-                        })?,
-                });
-            }
-            if use_repr_discriminators {
-                if let Some(discriminant) = &variant.discriminant {
-                    let expression = &discriminant.1;
-
-                    let id = match expression {
-                        Expr::Lit(literal_expression) => parse_u8_from_literal(&literal_expression.lit)
-                            .map(|b| VariantValue::Byte(LitByte::new(b, literal_expression.span()))),
-                        Expr::Path(path_expression) => {
-                            Some(VariantValue::Path(path_expression.path.clone()))
-                        }
-                        _ => None,
-                    };
-
-                    let Some(id) = id else {
-                        return Err(Error::new(
-                            expression.span(),
-                            format!("This discriminator is not a u8-convertible value or a path. Add an #[sbor(discriminator(X))] annotation with a u8-compatible literal or path to const/static variable to fix."),
-                        ));
-                    };
-                    return Ok(id);
-                }
-            }
-            Ok(VariantValue::UseDefaultIndex)
+            reachable_variants_count += 1;
+            let discriminator =
+                resolve_discriminator(use_repr_discriminators, i, variant, variant_attributes)?;
+            if discriminator.implicit {
+                implicit_discriminators_count += 1;
+            } else {
+                explicit_discriminators_count += 1;
+            };
+            Ok(SourceVariantData::Reachable(VariantData {
+                discriminator: discriminator.expression,
+                discriminator_pattern: discriminator.pattern,
+                source_variant,
+                fields_data,
+            }))
         })
         .collect::<Result<_>>()?;
 
-    let explicit_indices_count = variant_ids
-        .iter()
-        .filter(|v| matches!(v, VariantValue::Byte(_) | VariantValue::Path(_)))
-        .count();
-
-    let default_indices_count = variant_ids
-        .iter()
-        .filter(|v| matches!(v, VariantValue::UseDefaultIndex))
-        .count();
-
-    if explicit_indices_count > 0 {
-        if default_indices_count > 0 {
-            return Err(Error::new(
-                Span::call_site(),
-                format!("Either all or no variants must be assigned an id. Currently {} of {} variants have one.", explicit_indices_count, explicit_indices_count + default_indices_count),
-            ));
-        }
-        let output = variant_ids
-            .into_iter()
-            .map(|id| match id {
-                VariantValue::Byte(id) => VariantDiscriminator::Expr(parse_quote!(#id)),
-                VariantValue::Path(id) => VariantDiscriminator::Expr(parse_quote!(#id)),
-                VariantValue::IgnoreAsUnreachable => VariantDiscriminator::IgnoreAsUnreachable,
-                VariantValue::UseDefaultIndex => unreachable!("default_indices_count was 0"),
-            })
-            .enumerate()
-            .collect();
-
-        return Ok(output);
+    if explicit_discriminators_count > 0 && implicit_discriminators_count > 0 {
+        return Err(Error::new(
+            Span::call_site(),
+            format!("Either all or no variants must be assigned an explicit discriminator. Currently {} of {} variants have one.", explicit_discriminators_count, reachable_variants_count),
+        ));
     }
-    // If no explicit indices, use default indices
-    let output = variant_ids
+
+    let sbor_variants = source_variants
         .iter()
-        .enumerate()
-        .map(|(i, id)| {
-            let discriminator = match id {
-                VariantValue::Byte(_) => unreachable!("explicit_indices_count was 0"),
-                VariantValue::Path(_) => unreachable!("explicit_indices_count was 0"),
-                VariantValue::IgnoreAsUnreachable => VariantDiscriminator::IgnoreAsUnreachable,
-                VariantValue::UseDefaultIndex => {
-                    let i_as_u8 = u8::try_from(i).unwrap();
-                    VariantDiscriminator::Expr(parse_quote!(#i_as_u8))
-                }
-            };
-            (i, discriminator)
+        .filter_map(|source_variant| match source_variant {
+            SourceVariantData::Reachable(variant_data) => Some(variant_data.clone()),
+            SourceVariantData::Unreachable(_) => None,
         })
         .collect();
-    Ok(output)
+
+    Ok(EnumVariantsData {
+        source_variants,
+        sbor_variants,
+    })
 }
 
-fn parse_u8_from_literal(literal: &Lit) -> Option<u8> {
+struct Discriminator {
+    expression: Expr,
+    pattern: Pat,
+    implicit: bool,
+}
+
+impl Discriminator {
+    fn explicit_u8(value: &LitByte) -> Self {
+        Self {
+            expression: parse_quote!(#value),
+            pattern: parse_quote!(#value),
+            implicit: false,
+        }
+    }
+
+    fn explicit_path(value: &Path) -> Self {
+        Self {
+            expression: parse_quote!(#value),
+            pattern: parse_quote!(#value),
+            implicit: false,
+        }
+    }
+
+    fn explicit(expression: Expr, pattern: Pat) -> Self {
+        Self {
+            expression,
+            pattern,
+            implicit: false,
+        }
+    }
+
+    fn implicit_u8(span: Span, index: usize) -> Option<Self> {
+        let value = LitByte::new(u8::try_from(index).ok()?, span);
+        Some(Self {
+            expression: parse_quote!(#value),
+            pattern: parse_quote!(#value),
+            implicit: true,
+        })
+    }
+}
+
+fn resolve_discriminator(
+    use_repr_discriminators: bool,
+    index: usize,
+    variant: &Variant,
+    mut variant_attributes: BTreeMap<String, AttributeValue>,
+) -> Result<Discriminator> {
+    if let Some(attribute) = variant_attributes.remove("discriminator") {
+        match attribute {
+            AttributeValue::None(span) => {
+                return Err(Error::new(span, format!("No discriminator was provided")));
+            }
+            AttributeValue::Path(path) => {
+                return Ok(Discriminator::explicit_path(&path));
+            }
+            AttributeValue::Lit(literal) => {
+                if let Some(b) = parse_u8_from_literal(&literal) {
+                    return Ok(Discriminator::explicit_u8(&b));
+                }
+                let expr = parse_expr_from_literal(&literal);
+                let pattern = parse_pattern_from_literal(&literal);
+                if let Some(expr) = expr {
+                    if let Some(pattern) = pattern {
+                        return Ok(Discriminator::explicit(expr, pattern));
+                    }
+                }
+                return Err(Error::new(
+                    literal.span(),
+                    format!("This discriminator is not convertible into a u8; or convertible into both an expression and a pattern. You may want to try using a path to a constant instead for more power."),
+                ));
+            }
+        }
+    }
+
+    if use_repr_discriminators {
+        if let Some(discriminant) = &variant.discriminant {
+            let expression = &discriminant.1;
+
+            let parsed = match expression {
+                Expr::Lit(literal_expression) => parse_u8_from_literal(&literal_expression.lit)
+                    .map(|b| Discriminator::explicit_u8(&b)),
+                Expr::Path(path_expression) => {
+                    Some(Discriminator::explicit_path(&path_expression.path))
+                }
+                _ => None,
+            };
+
+            let Some(disc) = parsed else {
+                return Err(Error::new(
+                    expression.span(),
+                    format!("This discriminator is not a u8-convertible value or a path. Add an #[sbor(discriminator(X))] annotation with a u8-compatible literal or path to const/static variable to fix."),
+                ));
+            };
+            return Ok(disc);
+        }
+    }
+
+    let implicit = Discriminator::implicit_u8(variant.span(), index)
+        .ok_or_else(|| Error::new(variant.span(), format!("Too many variants")))?;
+
+    Ok(implicit)
+}
+
+fn parse_u8_from_literal(literal: &Lit) -> Option<LitByte> {
     match literal {
-        Lit::Byte(byte_literal) => Some(byte_literal.value()),
-        Lit::Int(int_literal) => int_literal.base10_parse::<u8>().ok(),
-        Lit::Str(str_literal) => str_literal.value().parse::<u8>().ok(),
+        Lit::Byte(byte_literal) => Some(byte_literal.clone()),
+        Lit::Int(int_literal) => Some(LitByte::new(
+            int_literal.base10_parse::<u8>().ok()?,
+            literal.span(),
+        )),
+        Lit::Str(str_literal) => Some(LitByte::new(
+            str_literal.value().parse::<u8>().ok()?,
+            literal.span(),
+        )),
+        _ => None,
+    }
+}
+
+fn parse_expr_from_literal(literal: &Lit) -> Option<Expr> {
+    match literal {
+        Lit::Str(str_literal) => str_literal.parse().ok(),
+        _ => None,
+    }
+}
+
+fn parse_pattern_from_literal(literal: &Lit) -> Option<Pat> {
+    match literal {
+        Lit::Str(str_literal) => str_literal.parse().ok(),
         _ => None,
     }
 }
@@ -571,6 +664,7 @@ pub fn get_unique_types<'a>(types: &[syn::Type]) -> Vec<syn::Type> {
     types.iter().unique().cloned().collect()
 }
 
+#[derive(Clone)]
 pub(crate) struct FieldsData {
     pub unskipped_field_names: Vec<TokenStream>,
     pub unskipped_field_name_strings: Vec<String>,

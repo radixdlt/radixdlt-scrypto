@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
@@ -167,29 +166,26 @@ pub fn handle_normal_decode(
             }
         }
         Data::Enum(DataEnum { variants, .. }) => {
-            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
-            let match_arms = variants
+            let EnumVariantsData { sbor_variants, .. } = process_enum_variants(&attrs, &variants)?;
+            let match_arms = sbor_variants
                 .iter()
-                .enumerate()
-                .map(|(i, v)| {
-                    let v_id = &v.ident;
-                    let discriminator = &discriminator_mapping[&i];
-                    let decode_fields_content =
-                        decode_fields_content(quote! { Self::#v_id }, &v.fields)?;
-
-                    Ok(match discriminator {
-                        VariantDiscriminator::Expr(discriminator) => Some(quote! {
-                            #discriminator => {
+                .map(
+                    |VariantData {
+                         source_variant,
+                         discriminator_pattern,
+                         ..
+                     }|
+                     -> Result<_> {
+                        let v_id = &source_variant.ident;
+                        let decode_fields_content =
+                            decode_fields_content(quote! { Self::#v_id }, &source_variant.fields)?;
+                        Ok(quote! {
+                            #discriminator_pattern => {
                                 #decode_fields_content
                             }
-                        }),
-                        VariantDiscriminator::IgnoreAsUnreachable => {
-                            // Don't output any decoder
-                            None
-                        }
-                    })
-                })
-                .filter_map_ok(|x| x)
+                        })
+                    },
+                )
                 .collect::<Result<Vec<_>>>()?;
 
             // Note: We use #[deny(unreachable_patterns)] to protect against users

@@ -148,23 +148,26 @@ pub fn handle_normal_encode(
             }
         }
         Data::Enum(DataEnum { variants, .. }) => {
-            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
-            let match_arms = variants
+            let EnumVariantsData {
+                source_variants, ..
+            } = process_enum_variants(&attrs, &variants)?;
+            let match_arms = source_variants
                 .iter()
-                .enumerate()
-                .map(|(i, v)| {
-                    let v_id = &v.ident;
-                    let discriminator = &discriminator_mapping[&i];
-
-                    let FieldsData {
-                        unskipped_field_count,
-                        fields_unpacking,
-                        unskipped_unpacked_field_names,
-                        ..
-                    } = process_fields(&v.fields)?;
-
-                    Ok(match discriminator {
-                        VariantDiscriminator::Expr(discriminator) => {
+                .map(|source_variant| {
+                    Ok(match source_variant {
+                        SourceVariantData::Reachable(VariantData {
+                            source_variant,
+                            discriminator,
+                            fields_data,
+                            ..
+                        }) => {
+                            let v_id = &source_variant.ident;
+                            let FieldsData {
+                                unskipped_field_count,
+                                fields_unpacking,
+                                unskipped_unpacked_field_names,
+                                ..
+                            } = fields_data;
                             quote! {
                                 Self::#v_id #fields_unpacking => {
                                     encoder.write_discriminator(#discriminator)?;
@@ -173,11 +176,20 @@ pub fn handle_normal_encode(
                                 }
                             }
                         }
-                        VariantDiscriminator::IgnoreAsUnreachable => {
+                        SourceVariantData::Unreachable(UnreachableVariantData {
+                            source_variant,
+                            fields_data,
+                            ..
+                        }) => {
+                            let v_id = &source_variant.ident;
+                            let FieldsData {
+                                empty_fields_unpacking,
+                                ..
+                            } = &fields_data;
                             let panic_message =
-                                format!("Variant with index {i} ignored as unreachable");
+                                format!("Variant {} ignored as unreachable", v_id.to_string());
                             quote! {
-                                Self::#v_id #fields_unpacking => panic!(#panic_message),
+                                Self::#v_id #empty_fields_unpacking => panic!(#panic_message),
                             }
                         }
                     })
