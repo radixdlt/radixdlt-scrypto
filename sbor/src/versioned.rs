@@ -1,9 +1,5 @@
 use crate::internal_prelude::*;
 
-// !!!!!!! TODO !!!!!!!!!
-// - Add #[sbor(as = '')] in order to encode Versioned as Versions
-// - Add sbor tests to equate the schema
-
 /// A trait implemented by versioned types created via [`define_versioned`] and [`define_single_versioned`].
 ///
 /// A versioned type is a type wrapping an enum, this enum is the associated type [`Versioned::Versions`],
@@ -665,8 +661,15 @@ mod tests {
             v1_model
         );
         assert_eq!(versioned, versioned_2);
-        let encoded = basic_encode(&versioned).unwrap();
-        let expected = basic_encode(&BasicEnumVariantValue {
+    }
+
+    #[test]
+    pub fn verify_sbor_equivalence() {
+        // Value model
+        let v1_model: GenericModel<_> = GenericModelV1(51u64);
+        let versions = GenericModelVersions::V1(v1_model.clone());
+        let versioned = VersionedGenericModel::from(v1_model.clone());
+        let expected_sbor_value = BasicEnumVariantValue {
             // GenericModelVersions
             discriminator: 1,
             fields: vec![
@@ -675,8 +678,45 @@ mod tests {
                     fields: vec![Value::U64 { value: 51 }],
                 },
             ],
-        })
-        .unwrap();
-        assert_eq!(encoded, expected);
+        };
+        let encoded_versioned = basic_encode(&versioned).unwrap();
+        let encoded_versions = basic_encode(&versions).unwrap();
+        let expected = basic_encode(&expected_sbor_value).unwrap();
+        assert_eq!(encoded_versioned, expected);
+        assert_eq!(encoded_versions, expected);
+
+        // Type model
+        check_identical_types::<VersionedGenericModel<u64>, GenericModelVersions<u64>>(Some(
+            "VersionedGenericModel",
+        ));
+    }
+
+    fn check_identical_types<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTypeKind>>(
+        name: Option<&'static str>,
+    ) {
+        let (type_id1, schema1) = generate_full_schema_from_single_type::<T1, NoCustomSchema>();
+        let (type_id2, schema2) = generate_full_schema_from_single_type::<T2, NoCustomSchema>();
+
+        assert_eq!(
+            schema1.v1().resolve_type_kind(type_id1),
+            schema2.v1().resolve_type_kind(type_id2)
+        );
+        assert_eq!(
+            schema1
+                .v1()
+                .resolve_type_metadata(type_id1)
+                .unwrap()
+                .clone(),
+            schema2
+                .v1()
+                .resolve_type_metadata(type_id2)
+                .unwrap()
+                .clone()
+                .with_name(name.map(|name| Cow::Borrowed(name)))
+        );
+        assert_eq!(
+            schema1.v1().resolve_type_validation(type_id1),
+            schema2.v1().resolve_type_validation(type_id2)
+        );
     }
 }
