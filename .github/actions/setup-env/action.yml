@@ -7,10 +7,9 @@ runs:
     - name: Install Rust toolchain
       uses: RDXWorks-actions/toolchain@master
       with:
-        toolchain: 1.70.0
+        toolchain: stable
         default: true
         target: wasm32-unknown-unknown
-        components: rustfmt
 
     - name: Install nextest
       uses: RDXWorks-actions/install-action@nextest
