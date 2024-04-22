@@ -64,10 +64,10 @@ fn handle_transparent_describe(
             let field_type = &unskipped_field_types[0];
 
             let mut type_data_content = quote! {
-                <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::type_data()
+                <#field_type as sbor::Describe <#custom_type_kind_generic>>::type_data()
             };
             let mut type_id = quote! {
-                <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::TYPE_ID
+                <#field_type as sbor::Describe <#custom_type_kind_generic>>::TYPE_ID
             };
 
             // Replace the type name, unless opted out using the "transparent_name" tag
@@ -75,12 +75,12 @@ fn handle_transparent_describe(
                 let type_name = get_sbor_attribute_string_value(&attrs, "type_name")?
                     .unwrap_or(ident.to_string());
                 type_data_content = quote! {
-                    use ::sbor::rust::prelude::*;
+                    use sbor::rust::prelude::*;
                     #type_data_content
                         .with_name(Some(Cow::Borrowed(#type_name)))
                 };
                 type_id = quote! {
-                    ::sbor::RustTypeId::novel_with_code(
+                    sbor::RustTypeId::novel_with_code(
                         #type_name,
                         &[#type_id],
                         &#code_hash
@@ -89,15 +89,15 @@ fn handle_transparent_describe(
             };
 
             quote! {
-                impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::RustTypeId = #type_id;
+                impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
+                    const TYPE_ID: sbor::RustTypeId = #type_id;
 
-                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
+                    fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
                         #type_data_content
                     }
 
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
-                        <#field_type as ::sbor::Describe <#custom_type_kind_generic>>::add_all_dependencies(aggregator)
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<#custom_type_kind_generic>) {
+                        <#field_type as sbor::Describe <#custom_type_kind_generic>>::add_all_dependencies(aggregator)
                     }
                 }
             }
@@ -132,7 +132,7 @@ fn handle_normal_describe(
         get_sbor_attribute_string_value(&attrs, "type_name")?.unwrap_or(ident.to_string());
 
     let type_id = quote! {
-        ::sbor::RustTypeId::novel_with_code(
+        sbor::RustTypeId::novel_with_code(
             #type_name,
             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
             // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
@@ -159,19 +159,19 @@ fn handle_normal_describe(
                 } = process_fields_for_describe(&s.fields)?;
                 let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::RustTypeId = #type_id;
+                    impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
+                        const TYPE_ID: sbor::RustTypeId = #type_id;
 
-                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
-                            ::sbor::TypeData::struct_with_named_fields(
+                        fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
+                            sbor::TypeData::struct_with_named_fields(
                                 #type_name,
-                                ::sbor::rust::vec![
-                                    #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
+                                sbor::rust::vec![
+                                    #((#unskipped_field_name_strings, <#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                 ],
                             )
                         }
 
-                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
+                        fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<#custom_type_kind_generic>) {
                             #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                         }
                     }
@@ -185,19 +185,19 @@ fn handle_normal_describe(
                 let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
 
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::RustTypeId = #type_id;
+                    impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
+                        const TYPE_ID: sbor::RustTypeId = #type_id;
 
-                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
-                            ::sbor::TypeData::struct_with_unnamed_fields(
+                        fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
+                            sbor::TypeData::struct_with_unnamed_fields(
                                 #type_name,
-                                ::sbor::rust::vec![
-                                    #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
+                                sbor::rust::vec![
+                                    #(<#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                 ],
                             )
                         }
 
-                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
+                        fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<#custom_type_kind_generic>) {
                             #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                         }
                     }
@@ -205,11 +205,11 @@ fn handle_normal_describe(
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::RustTypeId = #type_id;
+                    impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
+                        const TYPE_ID: sbor::RustTypeId = #type_id;
 
-                        fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
-                            ::sbor::TypeData::struct_with_unit_fields(#type_name)
+                        fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
+                            sbor::TypeData::struct_with_unit_fields(#type_name)
                         }
                     }
                 }
@@ -237,27 +237,27 @@ fn handle_normal_describe(
                         Ok(match &v.fields {
                             Fields::Named(FieldsNamed { .. }) => {
                                 quote! {
-                                    ::sbor::TypeData::struct_with_named_fields(
+                                    sbor::TypeData::struct_with_named_fields(
                                         #variant_name,
-                                        ::sbor::rust::vec![
-                                            #((#unskipped_field_name_strings, <#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
+                                        sbor::rust::vec![
+                                            #((#unskipped_field_name_strings, <#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                         ],
                                     )
                                 }
                             }
                             Fields::Unnamed(FieldsUnnamed { .. }) => {
                                 quote! {
-                                    ::sbor::TypeData::struct_with_unnamed_fields(
+                                    sbor::TypeData::struct_with_unnamed_fields(
                                         #variant_name,
-                                        ::sbor::rust::vec![
-                                            #(<#unskipped_field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
+                                        sbor::rust::vec![
+                                            #(<#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                         ],
                                     )
                                 }
                             }
                             Fields::Unit => {
                                 quote! {
-                                    ::sbor::TypeData::struct_with_unit_fields(#variant_name)
+                                    sbor::TypeData::struct_with_unit_fields(#variant_name)
                                 }
                             }
                         })
@@ -268,20 +268,20 @@ fn handle_normal_describe(
             let unique_field_types = get_unique_types(&all_field_types);
 
             quote! {
-                impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::RustTypeId = #type_id;
+                impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
+                    const TYPE_ID: sbor::RustTypeId = #type_id;
 
-                    fn type_data() -> ::sbor::TypeData<#custom_type_kind_generic, ::sbor::RustTypeId> {
-                        use ::sbor::rust::borrow::ToOwned;
-                        ::sbor::TypeData::enum_variants(
+                    fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
+                        use sbor::rust::borrow::ToOwned;
+                        sbor::TypeData::enum_variants(
                             #type_name,
-                            ::sbor::rust::prelude::indexmap![
+                            sbor::rust::prelude::indexmap![
                                 #(#variant_discriminators => #variant_type_data,)*
                             ],
                         )
                     }
 
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<#custom_type_kind_generic>) {
                         #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                     }
                 }
@@ -315,25 +315,25 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
+                impl <C: sbor::CustomTypeKind<sbor::RustTypeId> > sbor::Describe<C> for Test {
+                    const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "Test",
                         &[],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
-                        ::sbor::TypeData::struct_with_named_fields(
+                    fn type_data() -> sbor::TypeData <C, sbor::RustTypeId> {
+                        sbor::TypeData::struct_with_named_fields(
                             "Test",
-                            ::sbor::rust::vec![
-                                ("a", <u32 as ::sbor::Describe<C>>::TYPE_ID),
-                                ("b", <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID),
-                                ("c", <u32 as ::sbor::Describe<C>>::TYPE_ID),
+                            sbor::rust::vec![
+                                ("a", <u32 as sbor::Describe<C>>::TYPE_ID),
+                                ("b", <Vec<u8> as sbor::Describe<C>>::TYPE_ID),
+                                ("c", <u32 as sbor::Describe<C>>::TYPE_ID),
                             ],
                         )
                     }
 
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<C>) {
                         aggregator.add_child_type_and_descendents::<u32>();
                         aggregator.add_child_type_and_descendents::<Vec<u8> >();
                     }
@@ -348,52 +348,52 @@ mod tests {
         let code_hash = get_code_hash_const_array_token_stream(&input);
         let output = handle_describe(
             input,
-            Some("radix_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>"),
+            Some("radix_common::data::ScryptoCustomTypeKind<sbor::RustTypeId>"),
         )
         .unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Describe<radix_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId> >
+                impl sbor::Describe<radix_common::data::ScryptoCustomTypeKind<sbor::RustTypeId> >
                     for Test
                 {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
+                    const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "Test",
                         &[],
                         &#code_hash
                     );
                     fn type_data() ->
-                        ::sbor::TypeData<
-                            radix_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>,
-                            ::sbor::RustTypeId> {
-                        ::sbor::TypeData::struct_with_named_fields(
+                        sbor::TypeData<
+                            radix_common::data::ScryptoCustomTypeKind<sbor::RustTypeId>,
+                            sbor::RustTypeId> {
+                        sbor::TypeData::struct_with_named_fields(
                             "Test",
-                            ::sbor::rust::vec![
+                            sbor::rust::vec![
                                 (
                                     "a",
-                                    <u32 as ::sbor::Describe<
-                                        radix_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
+                                    <u32 as sbor::Describe<
+                                        radix_common::data::ScryptoCustomTypeKind<sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                                 (
                                     "b",
-                                    <Vec<u8> as ::sbor::Describe<
-                                        radix_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
+                                    <Vec<u8> as sbor::Describe<
+                                        radix_common::data::ScryptoCustomTypeKind<sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                                 (
                                     "c",
-                                    <u32 as ::sbor::Describe<
-                                        radix_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
+                                    <u32 as sbor::Describe<
+                                        radix_common::data::ScryptoCustomTypeKind<sbor::RustTypeId>
                                     >>::TYPE_ID
                                 ),
                             ],
                         )
                     }
                     fn add_all_dependencies(
-                        aggregator: &mut ::sbor::TypeAggregator<
-                            radix_common::data::ScryptoCustomTypeKind<::sbor::RustTypeId>
+                        aggregator: &mut sbor::TypeAggregator<
+                            radix_common::data::ScryptoCustomTypeKind<sbor::RustTypeId>
                         >
                     ) {
                         aggregator.add_child_type_and_descendents::<u32>();
@@ -413,25 +413,25 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
+                impl <C: sbor::CustomTypeKind<sbor::RustTypeId> > sbor::Describe<C> for Test {
+                    const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "Test",
                         &[],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
-                        ::sbor::TypeData::struct_with_unnamed_fields(
+                    fn type_data() -> sbor::TypeData <C, sbor::RustTypeId> {
+                        sbor::TypeData::struct_with_unnamed_fields(
                             "Test",
-                            ::sbor::rust::vec![
-                                <u32 as ::sbor::Describe<C>>::TYPE_ID,
-                                <Vec<u8> as ::sbor::Describe<C>>::TYPE_ID,
-                                <u32 as ::sbor::Describe<C>>::TYPE_ID,
+                            sbor::rust::vec![
+                                <u32 as sbor::Describe<C>>::TYPE_ID,
+                                <Vec<u8> as sbor::Describe<C>>::TYPE_ID,
+                                <u32 as sbor::Describe<C>>::TYPE_ID,
                             ],
                         )
                     }
 
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<C>) {
                         aggregator.add_child_type_and_descendents::<u32>();
                         aggregator.add_child_type_and_descendents::<Vec<u8> >();
                     }
@@ -449,15 +449,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
+                impl <C: sbor::CustomTypeKind<sbor::RustTypeId> > sbor::Describe<C> for Test {
+                    const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "Test",
                         &[],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
-                        ::sbor::TypeData::struct_with_unit_fields("Test")
+                    fn type_data() -> sbor::TypeData <C, sbor::RustTypeId> {
+                        sbor::TypeData::struct_with_unit_fields("Test")
                     }
                 }
             },
@@ -474,41 +474,41 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait, T2, C: ::sbor::CustomTypeKind<::sbor::RustTypeId> > ::sbor::Describe<C> for Test<T, T2>
+                impl <T: SomeTrait, T2, C: sbor::CustomTypeKind<sbor::RustTypeId> > sbor::Describe<C> for Test<T, T2>
                 where
-                    T: ::sbor::Describe<C>,
-                    T2: ::sbor::Describe<C>
+                    T: sbor::Describe<C>,
+                    T2: sbor::Describe<C>
                 {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
+                    const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "Test",
                         &[<T>::TYPE_ID, <T2>::TYPE_ID,],
                         &#code_hash
                     );
 
-                    fn type_data() -> ::sbor::TypeData <C, ::sbor::RustTypeId> {
-                        use ::sbor::rust::borrow::ToOwned;
-                        ::sbor::TypeData::enum_variants(
+                    fn type_data() -> sbor::TypeData <C, sbor::RustTypeId> {
+                        use sbor::rust::borrow::ToOwned;
+                        sbor::TypeData::enum_variants(
                             "Test",
-                            ::sbor::rust::prelude::indexmap![
-                                0u8 => ::sbor::TypeData::struct_with_unit_fields("A"),
-                                1u8 => ::sbor::TypeData::struct_with_unnamed_fields(
+                            sbor::rust::prelude::indexmap![
+                                0u8 => sbor::TypeData::struct_with_unit_fields("A"),
+                                1u8 => sbor::TypeData::struct_with_unnamed_fields(
                                     "B",
-                                    ::sbor::rust::vec![
-                                        <T as ::sbor::Describe<C>>::TYPE_ID,
-                                        <Vec<T2> as ::sbor::Describe<C>>::TYPE_ID,
+                                    sbor::rust::vec![
+                                        <T as sbor::Describe<C>>::TYPE_ID,
+                                        <Vec<T2> as sbor::Describe<C>>::TYPE_ID,
                                     ],
                                 ),
-                                2u8 => ::sbor::TypeData::struct_with_named_fields(
+                                2u8 => sbor::TypeData::struct_with_named_fields(
                                     "C",
-                                    ::sbor::rust::vec![
-                                        ("x", <[u8; 5] as ::sbor::Describe<C>>::TYPE_ID),
+                                    sbor::rust::vec![
+                                        ("x", <[u8; 5] as sbor::Describe<C>>::TYPE_ID),
                                     ],
                                 ),
                             ],
                         )
                     }
 
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<C>) {
                         aggregator.add_child_type_and_descendents::<T>();
                         aggregator.add_child_type_and_descendents::<Vec<T2> >();
                         aggregator.add_child_type_and_descendents::<[u8; 5]>();

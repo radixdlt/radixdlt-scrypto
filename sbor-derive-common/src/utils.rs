@@ -594,11 +594,11 @@ pub fn build_decode_generics<'a>(
         for child_type in child_types {
             new_where_clause
                 .predicates
-                .push(parse_quote!(#child_type: ::sbor::Decode<#custom_value_kind_generic, #decoder_generic>));
+                .push(parse_quote!(#child_type: sbor::Decode<#custom_value_kind_generic, #decoder_generic>));
         }
         for categorize_type in categorize_types {
             new_where_clause.predicates.push(
-                parse_quote!(#categorize_type: ::sbor::Categorize<#custom_value_kind_generic>),
+                parse_quote!(#categorize_type: sbor::Categorize<#custom_value_kind_generic>),
             );
         }
         where_clause = Some(new_where_clause);
@@ -606,12 +606,12 @@ pub fn build_decode_generics<'a>(
 
     impl_generics
         .params
-        .push(parse_quote!(#decoder_generic: ::sbor::Decoder<#custom_value_kind_generic>));
+        .push(parse_quote!(#decoder_generic: sbor::Decoder<#custom_value_kind_generic>));
 
     if need_to_add_cvk_generic {
         impl_generics
             .params
-            .push(parse_quote!(#custom_value_kind_generic: ::sbor::CustomValueKind));
+            .push(parse_quote!(#custom_value_kind_generic: sbor::CustomValueKind));
     }
 
     Ok((
@@ -660,11 +660,11 @@ pub fn build_encode_generics<'a>(
         for child_type in child_types {
             new_where_clause
                 .predicates
-                .push(parse_quote!(#child_type: ::sbor::Encode<#custom_value_kind_generic, #encoder_generic>));
+                .push(parse_quote!(#child_type: sbor::Encode<#custom_value_kind_generic, #encoder_generic>));
         }
         for categorize_type in categorize_types {
             new_where_clause.predicates.push(
-                parse_quote!(#categorize_type: ::sbor::Categorize<#custom_value_kind_generic>),
+                parse_quote!(#categorize_type: sbor::Categorize<#custom_value_kind_generic>),
             );
         }
         where_clause = Some(new_where_clause);
@@ -672,12 +672,12 @@ pub fn build_encode_generics<'a>(
 
     impl_generics
         .params
-        .push(parse_quote!(#encoder_generic: ::sbor::Encoder<#custom_value_kind_generic>));
+        .push(parse_quote!(#encoder_generic: sbor::Encoder<#custom_value_kind_generic>));
 
     if need_to_add_cvk_generic {
         impl_generics
             .params
-            .push(parse_quote!(#custom_value_kind_generic: ::sbor::CustomValueKind));
+            .push(parse_quote!(#custom_value_kind_generic: sbor::CustomValueKind));
     }
 
     Ok((
@@ -722,14 +722,14 @@ pub fn build_describe_generics<'a>(
         for child_type in child_types.iter() {
             new_where_clause
                 .predicates
-                .push(parse_quote!(#child_type: ::sbor::Describe<#custom_type_kind_generic>));
+                .push(parse_quote!(#child_type: sbor::Describe<#custom_type_kind_generic>));
         }
         where_clause = Some(new_where_clause);
     }
 
     if need_to_add_ctk_generic {
         impl_generics.params.push(
-            parse_quote!(#custom_type_kind_generic: ::sbor::CustomTypeKind<::sbor::RustTypeId>),
+            parse_quote!(#custom_type_kind_generic: sbor::CustomTypeKind<sbor::RustTypeId>),
         );
     }
 
@@ -779,14 +779,14 @@ pub fn build_custom_categorize_generic<'a>(
             };
             type_param
                 .bounds
-                .push(parse_quote!(::sbor::Categorize<#custom_value_kind_generic>));
+                .push(parse_quote!(sbor::Categorize<#custom_value_kind_generic>));
         }
     }
 
     if need_to_add_cvk_generic {
         impl_generics
             .params
-            .push(parse_quote!(#custom_value_kind_generic: ::sbor::CustomValueKind));
+            .push(parse_quote!(#custom_value_kind_generic: sbor::CustomValueKind));
     }
 
     Ok((

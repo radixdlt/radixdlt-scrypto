@@ -11,7 +11,6 @@ use radix_engine_interface::blueprints::resource::{
     AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
 };
 use radix_engine_interface::object_modules::role_assignment::*;
-use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
 pub trait HasRoleAssignment {

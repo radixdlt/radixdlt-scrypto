@@ -58,7 +58,6 @@ use radix_engine_interface::object_modules::royalty::{
 use radix_engine_interface::types::GlobalAddress;
 use radix_engine_interface::types::InternalAddress;
 use radix_engine_interface::types::ResourceAddress;
-use radix_engine_interface::*;
 use sbor::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
