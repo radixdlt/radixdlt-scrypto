@@ -166,8 +166,6 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                                 "MayaRouter",
                                 "instantiate",
                                 manifest_args!(
-                                    admin_rule,
-                                    config.admin_1_account.address,
                                 ),
                             )
                             .done()
