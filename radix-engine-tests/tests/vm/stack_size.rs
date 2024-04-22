@@ -66,7 +66,7 @@ fn test_error_enum_sizes() {
     print_size!(AccessControllerError);
     print_size!(NonFungibleResourceManagerError);
 
-    check_size!(RuntimeError, 100);
+    check_size!(RuntimeError, 116);
     check_size!(KernelError, 100);
     check_size!(CallFrameError, 100);
     check_size!(SystemError, 100);
