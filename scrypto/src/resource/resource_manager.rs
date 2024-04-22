@@ -110,6 +110,10 @@ pub trait ScryptoResourceManagerStub {
 //     );
 // }
 
+//=================
+// ResourceManager
+//=================
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct ResourceManager(Global<ResourceManagerStub>);
@@ -300,7 +304,7 @@ impl ScryptoResourceManagerStub for ResourceManagerStub {
 
 impl ResourceManagerStub {
     /// Mints fungible resources
-    // #[deprecated = "Use an allocated account instead"]
+    #[deprecated = "Use FungibleResourceManagerStub instead"]
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         self.call(
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
@@ -310,6 +314,294 @@ impl ResourceManagerStub {
         )
     }
 
+    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
+        self.call(
+            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
+            &NonFungibleResourceManagerExistsInput { id: id.clone() },
+        )
+    }
+
+    /// Mints non-fungible resources
+    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    pub fn mint_non_fungible<T: NonFungibleData>(
+        &self,
+        id: &NonFungibleLocalId,
+        data: T,
+    ) -> Bucket {
+        let mut entries = index_map_new();
+        entries.insert(id.clone(), (data,));
+        self.call(
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            &NonFungibleResourceManagerMintGenericInput { entries },
+        )
+    }
+
+    /// Mints ruid non-fungible resources
+    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
+        let mut entries = Vec::new();
+        entries.push((data,));
+
+        self.call(
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
+            &NonFungibleResourceManagerMintRuidGenericInput { entries },
+        )
+    }
+
+    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
+        self.call(
+            NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
+            &NonFungibleResourceManagerGetNonFungibleInput { id: id.clone() },
+        )
+    }
+
+    /// Updates the mutable part of a non-fungible unit.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    pub fn update_non_fungible_data<D: ScryptoEncode>(
+        &self,
+        id: &NonFungibleLocalId,
+        field_name: &str,
+        new_data: D,
+    ) {
+        self.call(
+            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT,
+            &NonFungibleResourceManagerUpdateDataInput {
+                id: id.clone(),
+                field_name: field_name.to_string(),
+                data: scrypto_decode(&scrypto_encode(&new_data).unwrap()).unwrap(),
+            },
+        )
+    }
+}
+
+//=========================
+// FungibleResourceManager
+//=========================
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[sbor(transparent)]
+pub struct FungibleResourceManager(Global<FungibleResourceManagerStub>);
+
+impl Describe<ScryptoCustomTypeKind> for FungibleResourceManager {
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(RESOURCE_ADDRESS_TYPE);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
+        resource_address_type_data()
+    }
+}
+
+impl From<FungibleResourceManager> for ResourceManager {
+    fn from(value: FungibleResourceManager) -> Self {
+        let rm: ResourceManagerStub = value.0 .0.into();
+        ResourceManager(Global(rm))
+    }
+}
+
+impl From<ResourceAddress> for FungibleResourceManager {
+    fn from(value: ResourceAddress) -> Self {
+        let stub = FungibleResourceManagerStub::new(ObjectStubHandle::Global(value.into()));
+        Self(Global(stub))
+    }
+}
+
+impl Into<GlobalAddress> for FungibleResourceManager {
+    fn into(self) -> GlobalAddress {
+        GlobalAddress::new_or_panic(self.0 .0 .0 .0.as_node_id().0)
+    }
+}
+
+impl Deref for FungibleResourceManager {
+    type Target = Global<FungibleResourceManagerStub>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl HasStub for FungibleResourceManagerStub {
+    type Stub = Self;
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct FungibleResourceManagerStub(pub ResourceManagerStub);
+
+impl From<FungibleResourceManagerStub> for ResourceManagerStub {
+    fn from(value: FungibleResourceManagerStub) -> Self {
+        value.0
+    }
+}
+
+impl ObjectStub for FungibleResourceManagerStub {
+    type AddressType = ResourceAddress;
+
+    fn new(handle: ObjectStubHandle) -> Self {
+        Self(ResourceManagerStub::new(handle))
+    }
+
+    fn handle(&self) -> &ObjectStubHandle {
+        &self.0 .0
+    }
+}
+
+impl ScryptoResourceManagerStub for FungibleResourceManagerStub {
+    type VaultType = FungibleVault;
+    type BucketType = FungibleBucket;
+
+    fn create_empty_vault(&self) -> Self::VaultType {
+        FungibleVault(self.0.create_empty_vault())
+    }
+
+    fn create_empty_bucket(&self) -> Self::BucketType {
+        FungibleBucket(self.0.create_empty_bucket())
+    }
+
+    fn resource_type(&self) -> ResourceType {
+        self.0.resource_type()
+    }
+
+    fn total_supply(&self) -> Option<Decimal> {
+        self.0.total_supply()
+    }
+
+    fn burn<B: Into<Bucket>>(&self, bucket: B) {
+        self.0.burn(bucket)
+    }
+
+    fn amount_for_withdrawal(
+        &self,
+        request_amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Decimal {
+        self.0
+            .amount_for_withdrawal(request_amount, withdraw_strategy)
+    }
+}
+
+impl FungibleResourceManagerStub {
+    /// Mints fungible resources
+    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
+        self.call(
+            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            &FungibleResourceManagerMintInput {
+                amount: amount.into(),
+            },
+        )
+    }
+}
+
+//============================
+// NonFungibleResourceManager
+//============================
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[sbor(transparent)]
+pub struct NonFungibleResourceManager(Global<NonFungibleResourceManagerStub>);
+
+impl Describe<ScryptoCustomTypeKind> for NonFungibleResourceManager {
+    const TYPE_ID: RustTypeId = RustTypeId::WellKnown(RESOURCE_ADDRESS_TYPE);
+
+    fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
+        resource_address_type_data()
+    }
+}
+
+impl From<NonFungibleResourceManager> for ResourceManager {
+    fn from(value: NonFungibleResourceManager) -> Self {
+        let rm: ResourceManagerStub = value.0 .0.into();
+        ResourceManager(Global(rm))
+    }
+}
+
+impl From<ResourceAddress> for NonFungibleResourceManager {
+    fn from(value: ResourceAddress) -> Self {
+        let stub = NonFungibleResourceManagerStub::new(ObjectStubHandle::Global(value.into()));
+        Self(Global(stub))
+    }
+}
+
+impl Into<GlobalAddress> for NonFungibleResourceManager {
+    fn into(self) -> GlobalAddress {
+        GlobalAddress::new_or_panic(self.0 .0 .0 .0.as_node_id().0)
+    }
+}
+
+impl Deref for NonFungibleResourceManager {
+    type Target = Global<NonFungibleResourceManagerStub>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl HasStub for NonFungibleResourceManagerStub {
+    type Stub = Self;
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct NonFungibleResourceManagerStub(pub ResourceManagerStub);
+
+impl From<NonFungibleResourceManagerStub> for ResourceManagerStub {
+    fn from(value: NonFungibleResourceManagerStub) -> Self {
+        value.0
+    }
+}
+
+impl ObjectStub for NonFungibleResourceManagerStub {
+    type AddressType = ResourceAddress;
+
+    fn new(handle: ObjectStubHandle) -> Self {
+        Self(ResourceManagerStub::new(handle))
+    }
+
+    fn handle(&self) -> &ObjectStubHandle {
+        &self.0 .0
+    }
+}
+
+impl ScryptoResourceManagerStub for NonFungibleResourceManagerStub {
+    type VaultType = NonFungibleVault;
+    type BucketType = NonFungibleBucket;
+
+    fn create_empty_vault(&self) -> Self::VaultType {
+        NonFungibleVault(self.0.create_empty_vault())
+    }
+
+    fn create_empty_bucket(&self) -> Self::BucketType {
+        NonFungibleBucket(self.0.create_empty_bucket())
+    }
+
+    fn resource_type(&self) -> ResourceType {
+        self.0.resource_type()
+    }
+
+    fn total_supply(&self) -> Option<Decimal> {
+        self.0.total_supply()
+    }
+
+    fn burn<B: Into<Bucket>>(&self, bucket: B) {
+        self.0.burn(bucket)
+    }
+
+    fn amount_for_withdrawal(
+        &self,
+        request_amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Decimal {
+        self.0
+            .amount_for_withdrawal(request_amount, withdraw_strategy)
+    }
+}
+
+impl NonFungibleResourceManagerStub {
     pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
@@ -373,67 +665,3 @@ impl ResourceManagerStub {
         )
     }
 }
-
-// #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
-// #[sbor(transparent)]
-// pub struct FungibleResourceManager(Global<FungibleResourceManagerStub>);
-
-// impl Describe<ScryptoCustomTypeKind> for FungibleResourceManager {
-//     const TYPE_ID: RustTypeId = RustTypeId::WellKnown(RESOURCE_ADDRESS_TYPE);
-
-//     fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
-//         resource_address_type_data()
-//     }
-// }
-
-// impl From<ResourceAddress> for FungibleResourceManagerResourceManager {
-//     fn from(value: ResourceAddress) -> Self {
-//         let stub = FungibleResourceManagerStub::new(ObjectStubHandle::Global(value.into()));
-//         Self(Global(stub))
-//     }
-// }
-
-// impl Into<GlobalAddress> for FungibleResourceManager {
-//     fn into(self) -> GlobalAddress {
-//         GlobalAddress::new_or_panic(self.0 .0 .0.as_node_id().0)
-//     }
-// }
-
-// impl Deref for FungibleResourceManager {
-//     type Target = Global<FungibleResourceManagerStub>;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self.0
-//     }
-// }
-
-// impl HasStub for FungibleResourceManagerStub {
-//     type Stub = Self;
-// }
-
-// #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-// pub struct FungibleResourceManagerStub(pub ObjectStubHandle);
-
-// impl ObjectStub for FungibleResourceManagerStub {
-//     type AddressType = ResourceAddress;
-
-//     fn new(handle: ObjectStubHandle) -> Self {
-//         Self(handle)
-//     }
-
-//     fn handle(&self) -> &ObjectStubHandle {
-//         &self.0
-//     }
-// }
-
-// impl FungibleResourceManagerStub {
-//     /// Mints fungible resources
-//     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
-//         self.call(
-//             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
-//             &FungibleResourceManagerMintInput {
-//                 amount: amount.into(),
-//             },
-//         )
-//     }
-// }
