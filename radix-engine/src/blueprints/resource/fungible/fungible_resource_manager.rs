@@ -11,7 +11,6 @@ use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, ACTOR_STAT
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::*;
 use radix_native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
 use radix_native_sdk::runtime::Runtime;
 

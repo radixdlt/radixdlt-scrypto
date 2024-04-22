@@ -70,8 +70,16 @@ pub use sbor_derive::{
     Decode, Describe, Encode, PermitSborAttributes, Sbor,
 };
 
-// This is to make derives work within this crate.
-// See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
+// extern crate self as X; in lib.rs allows ::X and X to resolve to this crate inside this crate.
+// This enables procedural macros which output code involving paths to this crate, to work inside
+// this crate. See this link for details:
+// https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
+//
+// IMPORTANT:
+// This should never be pub, else `X::X::X::X::...` becomes a valid path in downstream crates,
+// which we've discovered can cause really bad autocomplete times (when combined with other
+// specific imports, generic traits, resolution paths which likely trigger edge cases in
+// Rust Analyzer which get stuck on these infinite possible paths)
 extern crate self as sbor;
 
 // For self-contained macros

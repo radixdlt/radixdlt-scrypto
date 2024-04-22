@@ -797,9 +797,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #[no_mangle]
             pub extern "C" fn #schema_ident() -> ::scrypto::engine::wasm_api::Slice {
                 use ::scrypto::radix_blueprint_schema_init::*;
-                use ::sbor::rust::prelude::*;
-                use ::sbor::schema::*;
-                use ::sbor::*;
+                use sbor::rust::prelude::*;
+                use sbor::schema::*;
+                use sbor::*;
 
                 let schema = {
                     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -944,7 +944,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
 
     let output_test_struct_impls = quote! {
-        impl<D: ::sbor::Decoder<::scrypto::prelude::ScryptoCustomValueKind>>
+        impl<D: sbor::Decoder<::scrypto::prelude::ScryptoCustomValueKind>>
             ::scrypto::prelude::Decode<::scrypto::prelude::ScryptoCustomValueKind, D>
             for #bp_ident
         {
@@ -1350,7 +1350,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                     quote! {
                         #[no_mangle]
                         pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                            use ::sbor::rust::ops::{Deref, DerefMut};
+                            use sbor::rust::ops::{Deref, DerefMut};
 
                             // Set up panic hook
                             ::scrypto::set_up_panic_hook();
@@ -1972,7 +1972,7 @@ mod tests {
 
                     #[no_mangle]
                     pub extern "C" fn Test_x(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                        use ::sbor::rust::ops::{Deref, DerefMut};
+                        use sbor::rust::ops::{Deref, DerefMut};
 
                         // Set up panic hook
                         ::scrypto::set_up_panic_hook();
@@ -1986,7 +1986,7 @@ mod tests {
 
                     #[no_mangle]
                     pub extern "C" fn Test_y(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
-                        use ::sbor::rust::ops::{Deref, DerefMut};
+                        use sbor::rust::ops::{Deref, DerefMut};
 
                         // Set up panic hook
                         ::scrypto::set_up_panic_hook();
@@ -2007,9 +2007,9 @@ mod tests {
                     #[no_mangle]
                     pub extern "C" fn Test_schema() -> ::scrypto::engine::wasm_api::Slice {
                         use ::scrypto::radix_blueprint_schema_init::*;
-                        use ::sbor::rust::prelude::*;
-                        use ::sbor::schema::*;
-                        use ::sbor::*;
+                        use sbor::rust::prelude::*;
+                        use sbor::schema::*;
+                        use sbor::*;
 
                         let schema = {
                             let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
@@ -2437,7 +2437,7 @@ mod tests {
                     #[derive(Debug, Clone, Copy)]
                     pub struct Test(pub NodeId);
 
-                    impl<D: ::sbor::Decoder<::scrypto::prelude::ScryptoCustomValueKind>>
+                    impl<D: sbor::Decoder<::scrypto::prelude::ScryptoCustomValueKind>>
                         ::scrypto::prelude::Decode<::scrypto::prelude::ScryptoCustomValueKind, D> for Test
                     {
                         #[inline]

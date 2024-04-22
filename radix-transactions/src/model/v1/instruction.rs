@@ -3,7 +3,6 @@ use radix_common::data::manifest::{model::*, ManifestValue};
 use radix_common::data::scrypto::model::*;
 use radix_common::math::Decimal;
 use radix_engine_interface::types::*;
-use radix_engine_interface::*;
 use sbor::{Decoder, Encoder};
 
 /*

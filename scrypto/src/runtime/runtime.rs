@@ -19,7 +19,6 @@ use radix_engine_interface::blueprints::resource::{
     AccessRule, AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::prelude::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
-use radix_engine_interface::*;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 /// The transaction runtime.

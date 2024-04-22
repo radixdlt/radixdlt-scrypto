@@ -7,7 +7,6 @@ use radix_common::prelude::{
 use radix_engine_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
-use radix_engine_interface::*;
 use radix_substate_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, SubstateKeyContent,
 };

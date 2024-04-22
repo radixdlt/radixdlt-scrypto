@@ -114,7 +114,7 @@ pub trait UniqueVersioned: Versioned {
 ///
 /// Example usage:
 /// ```rust
-/// use ::sbor::prelude::*;
+/// use sbor::prelude::*;
 ///
 /// #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 /// pub struct FooV1 {

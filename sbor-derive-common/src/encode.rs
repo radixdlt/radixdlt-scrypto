@@ -89,17 +89,17 @@ pub fn handle_encode_as(
     // but it is useful to sanity check that the user has provided the correct implementation.
     // If they have not, they should get a nice and clear error message.
     let output = quote! {
-        impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
+        impl #impl_generics sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
             #[inline]
-            fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                use ::sbor::{self, Encode};
+            fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), sbor::EncodeError> {
+                use sbor::{self, Encode};
                 let as_ref: &#as_type = #as_ref_code;
                 as_ref.encode_value_kind(encoder)
             }
 
             #[inline]
-            fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                use ::sbor::{self, Encode};
+            fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), sbor::EncodeError> {
+                use sbor::{self, Encode};
                 let as_ref: &#as_type = #as_ref_code;
                 as_ref.encode_body(encoder)
             }
@@ -131,15 +131,15 @@ pub fn handle_normal_encode(
                 ..
             } = process_fields(&s.fields)?;
             quote! {
-                impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         encoder.write_size(#unskipped_field_count)?;
                         #(encoder.encode(&self.#unskipped_field_names)?;)*
                         Ok(())
@@ -200,7 +200,7 @@ pub fn handle_normal_encode(
                 quote! {}
             } else {
                 quote! {
-                    use ::sbor::{self, Encode};
+                    use sbor::{self, Encode};
 
                     match self {
                         #(#match_arms)*
@@ -208,14 +208,14 @@ pub fn handle_normal_encode(
                 }
             };
             quote! {
-                impl #impl_generics ::sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Enum)
+                    fn encode_value_kind(&self, encoder: &mut #encoder_generic) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Enum)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                    fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), sbor::EncodeError> {
                         #encode_content
                         Ok(())
                     }
@@ -253,15 +253,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <E: ::sbor::Encoder<X>, X: ::sbor::CustomValueKind > ::sbor::Encode<X, E> for Test {
+                impl <E: sbor::Encoder<X>, X: sbor::CustomValueKind > sbor::Encode<X, E> for Test {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         encoder.write_size(1)?;
                         encoder.encode(&self.a)?;
                         Ok(())
@@ -279,15 +279,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <E: ::sbor::Encoder<X>, X: ::sbor::CustomValueKind > ::sbor::Encode<X, E> for Test {
+                impl <E: sbor::Encoder<X>, X: sbor::CustomValueKind > sbor::Encode<X, E> for Test {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Enum)
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Enum)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         match self {
                             Self::A => {
                                 encoder.write_discriminator(0u8)?;
@@ -319,15 +319,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <E: ::sbor::Encoder<X>, X: ::sbor::CustomValueKind > ::sbor::Encode<X, E> for Test {
+                impl <E: sbor::Encoder<X>, X: sbor::CustomValueKind > sbor::Encode<X, E> for Test {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         encoder.write_size(0)?;
                         Ok(())
                     }
@@ -344,19 +344,19 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <T, E: Clashing, E0: ::sbor::Encoder<X>, X: ::sbor::CustomValueKind > ::sbor::Encode<X, E0> for Test<T, E >
+                impl <T, E: Clashing, E0: sbor::Encoder<X>, X: sbor::CustomValueKind > sbor::Encode<X, E0> for Test<T, E >
                 where
-                    T: ::sbor::Encode<X, E0>,
-                    E: ::sbor::Encode<X, E0>
+                    T: sbor::Encode<X, E0>,
+                    E: sbor::Encode<X, E0>
                 {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut E0) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    fn encode_value_kind(&self, encoder: &mut E0) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut E0) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut E0) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         encoder.write_size(2)?;
                         encoder.encode(&self.a)?;
                         encoder.encode(&self.b)?;
@@ -378,15 +378,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <E: ::sbor::Encoder<NoCustomValueKind> > ::sbor::Encode<NoCustomValueKind, E> for Test {
+                impl <E: sbor::Encoder<NoCustomValueKind> > sbor::Encode<NoCustomValueKind, E> for Test {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         encoder.write_size(0)?;
                         Ok(())
                     }
@@ -398,7 +398,7 @@ mod tests {
     #[test]
     fn test_custom_value_kind_canonical_path() {
         let input = TokenStream::from_str(
-            "#[sbor(custom_value_kind = \"::sbor::basic::NoCustomValueKind\")] struct Test {#[sbor(skip)] a: u32}",
+            "#[sbor(custom_value_kind = \"sbor::basic::NoCustomValueKind\")] struct Test {#[sbor(skip)] a: u32}",
         )
         .unwrap();
         let output = handle_encode(input, None).unwrap();
@@ -406,15 +406,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <E: ::sbor::Encoder<::sbor::basic::NoCustomValueKind> > ::sbor::Encode<::sbor::basic::NoCustomValueKind, E> for Test {
+                impl <E: sbor::Encoder<sbor::basic::NoCustomValueKind> > sbor::Encode<sbor::basic::NoCustomValueKind, E> for Test {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         encoder.write_size(0)?;
                         Ok(())
                     }

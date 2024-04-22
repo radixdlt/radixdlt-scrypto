@@ -58,14 +58,14 @@ fn handle_normal_categorize(
             } = process_fields(&s.fields)?;
             let field_count = unskipped_field_names.len();
             quote! {
-                impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
-                        ::sbor::ValueKind::Tuple
+                    fn value_kind() -> sbor::ValueKind <#sbor_cvk> {
+                        sbor::ValueKind::Tuple
                     }
                 }
 
-                impl #impl_generics ::sbor::SborTuple <#sbor_cvk> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::SborTuple <#sbor_cvk> for #ident #ty_generics #where_clause {
                     fn get_length(&self) -> usize {
                         #field_count
                     }
@@ -131,14 +131,14 @@ fn handle_normal_categorize(
             };
 
             quote! {
-                impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
-                        ::sbor::ValueKind::Enum
+                    fn value_kind() -> sbor::ValueKind <#sbor_cvk> {
+                        sbor::ValueKind::Enum
                     }
                 }
 
-                impl #impl_generics ::sbor::SborEnum <#sbor_cvk> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::SborEnum <#sbor_cvk> for #ident #ty_generics #where_clause {
                     fn get_discriminator(&self) -> u8 {
                         #discriminator_match
                     }
@@ -222,17 +222,17 @@ fn handle_categorize_as(
     let categorize_where_clause = if let Some(categorize_bound_type) = categorize_bound_type {
         Some(add_where_predicate(
             where_clause,
-            parse_quote!(#categorize_bound_type: ::sbor::Categorize <#sbor_cvk>),
+            parse_quote!(#categorize_bound_type: sbor::Categorize <#sbor_cvk>),
         ))
     } else {
         where_clause.cloned()
     };
 
     let categorize_impl = quote! {
-        impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #categorize_where_clause {
+        impl #impl_generics sbor::Categorize <#sbor_cvk> for #ident #ty_generics #categorize_where_clause {
             #[inline]
-            fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
-                <#as_type as ::sbor::Categorize::<#sbor_cvk>>::value_kind()
+            fn value_kind() -> sbor::ValueKind <#sbor_cvk> {
+                <#as_type as sbor::Categorize::<#sbor_cvk>>::value_kind()
             }
         }
     };
@@ -255,30 +255,30 @@ fn handle_categorize_as(
 
     let tuple_where_clause = add_where_predicate(
         where_clause,
-        parse_quote!(for<'b_> &'b_ #as_type: ::sbor::SborTuple <#sbor_cvk>),
+        parse_quote!(for<'b_> &'b_ #as_type: sbor::SborTuple <#sbor_cvk>),
     );
 
     let dependent_sbor_tuple_impl = quote! {
-        impl #impl_generics ::sbor::SborTuple <#sbor_cvk> for #ident #ty_generics #tuple_where_clause {
+        impl #impl_generics sbor::SborTuple <#sbor_cvk> for #ident #ty_generics #tuple_where_clause {
             fn get_length(&self) -> usize {
-                <&#as_type as ::sbor::SborTuple <#sbor_cvk>>::get_length(&#as_ref_code)
+                <&#as_type as sbor::SborTuple <#sbor_cvk>>::get_length(&#as_ref_code)
             }
         }
     };
 
     let enum_where_clause = add_where_predicate(
         where_clause,
-        parse_quote!(for<'b_> &'b_ #as_type: ::sbor::SborEnum <#sbor_cvk>),
+        parse_quote!(for<'b_> &'b_ #as_type: sbor::SborEnum <#sbor_cvk>),
     );
 
     let dependent_sbor_enum_impl = quote! {
-        impl #impl_generics ::sbor::SborEnum <#sbor_cvk> for #ident #ty_generics #enum_where_clause {
+        impl #impl_generics sbor::SborEnum <#sbor_cvk> for #ident #ty_generics #enum_where_clause {
             fn get_discriminator(&self) -> u8 {
-                <&#as_type as ::sbor::SborEnum <#sbor_cvk>>::get_discriminator(&#as_ref_code)
+                <&#as_type as sbor::SborEnum <#sbor_cvk>>::get_discriminator(&#as_ref_code)
             }
 
             fn get_length(&self) -> usize {
-                <&#as_type as ::sbor::SborEnum <#sbor_cvk>>::get_length(&#as_ref_code)
+                <&#as_type as sbor::SborEnum <#sbor_cvk>>::get_length(&#as_ref_code)
             }
         }
     };
@@ -311,14 +311,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <X: ::sbor::CustomValueKind> ::sbor::Categorize<X> for Test {
+                impl <X: sbor::CustomValueKind> sbor::Categorize<X> for Test {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<X> {
-                        ::sbor::ValueKind::Tuple
+                    fn value_kind() -> sbor::ValueKind<X> {
+                        sbor::ValueKind::Tuple
                     }
                 }
 
-                impl<X: ::sbor::CustomValueKind> ::sbor::SborTuple<X> for Test {
+                impl<X: sbor::CustomValueKind> sbor::SborTuple<X> for Test {
                     fn get_length(&self) -> usize {
                         1usize
                     }
@@ -337,31 +337,31 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <X: ::sbor::CustomValueKind> ::sbor::Categorize<X> for Test
+                impl <X: sbor::CustomValueKind> sbor::Categorize<X> for Test
                 {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<X> {
-                        <u32 as ::sbor::Categorize::<X>>::value_kind()
+                    fn value_kind() -> sbor::ValueKind<X> {
+                        <u32 as sbor::Categorize::<X>>::value_kind()
                     }
                 }
 
-                impl<X: ::sbor::CustomValueKind> ::sbor::SborTuple<X> for Test
-                    where for <'b_> &'b_ u32: ::sbor::SborTuple<X>
+                impl<X: sbor::CustomValueKind> sbor::SborTuple<X> for Test
+                    where for <'b_> &'b_ u32: sbor::SborTuple<X>
                 {
                     fn get_length(&self) -> usize {
-                        <&u32 as ::sbor::SborTuple<X>>::get_length(& &self.a)
+                        <&u32 as sbor::SborTuple<X>>::get_length(& &self.a)
                     }
                 }
 
-                impl<X: ::sbor::CustomValueKind> ::sbor::SborEnum<X> for Test
-                    where for <'b_> &'b_ u32: ::sbor::SborEnum<X>
+                impl<X: sbor::CustomValueKind> sbor::SborEnum<X> for Test
+                    where for <'b_> &'b_ u32: sbor::SborEnum<X>
                 {
                     fn get_discriminator(&self) -> u8 {
-                        <&u32 as ::sbor::SborEnum<X>>::get_discriminator(& &self.a)
+                        <&u32 as sbor::SborEnum<X>>::get_discriminator(& &self.a)
                     }
 
                     fn get_length(&self) -> usize {
-                        <&u32 as ::sbor::SborEnum<X>>::get_length(& &self.a)
+                        <&u32 as sbor::SborEnum<X>>::get_length(& &self.a)
                     }
                 }
             },
@@ -376,14 +376,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <A, X: ::sbor::CustomValueKind> ::sbor::Categorize<X> for Test<A> {
+                impl <A, X: sbor::CustomValueKind> sbor::Categorize<X> for Test<A> {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<X> {
-                        ::sbor::ValueKind::Tuple
+                    fn value_kind() -> sbor::ValueKind<X> {
+                        sbor::ValueKind::Tuple
                     }
                 }
 
-                impl<A, X: ::sbor::CustomValueKind> ::sbor::SborTuple<X> for Test<A> {
+                impl<A, X: sbor::CustomValueKind> sbor::SborTuple<X> for Test<A> {
                     fn get_length(&self) -> usize {
                         1usize
                     }
@@ -400,32 +400,32 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <A, X: ::sbor::CustomValueKind> ::sbor::Categorize<X> for Test<A>
-                    where A: ::sbor::Categorize<X>
+                impl <A, X: sbor::CustomValueKind> sbor::Categorize<X> for Test<A>
+                    where A: sbor::Categorize<X>
                 {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<X> {
-                        <A as ::sbor::Categorize::<X>>::value_kind()
+                    fn value_kind() -> sbor::ValueKind<X> {
+                        <A as sbor::Categorize::<X>>::value_kind()
                     }
                 }
 
-                impl<A, X: ::sbor::CustomValueKind> ::sbor::SborTuple<X> for Test<A>
-                    where for <'b_> &'b_ A: ::sbor::SborTuple<X>
+                impl<A, X: sbor::CustomValueKind> sbor::SborTuple<X> for Test<A>
+                    where for <'b_> &'b_ A: sbor::SborTuple<X>
                 {
                     fn get_length(&self) -> usize {
-                        <&A as ::sbor::SborTuple<X>>::get_length(& &self.a)
+                        <&A as sbor::SborTuple<X>>::get_length(& &self.a)
                     }
                 }
 
-                impl<A, X: ::sbor::CustomValueKind> ::sbor::SborEnum<X> for Test<A>
-                    where for <'b_> &'b_ A: ::sbor::SborEnum<X>
+                impl<A, X: sbor::CustomValueKind> sbor::SborEnum<X> for Test<A>
+                    where for <'b_> &'b_ A: sbor::SborEnum<X>
                 {
                     fn get_discriminator(&self) -> u8 {
-                        <&A as ::sbor::SborEnum<X>>::get_discriminator(& &self.a)
+                        <&A as sbor::SborEnum<X>>::get_discriminator(& &self.a)
                     }
 
                     fn get_length(&self) -> usize {
-                        <&A as ::sbor::SborEnum<X>>::get_length(& &self.a)
+                        <&A as sbor::SborEnum<X>>::get_length(& &self.a)
                     }
                 }
             },
@@ -440,14 +440,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <X: ::sbor::CustomValueKind> ::sbor::Categorize<X> for Test {
+                impl <X: sbor::CustomValueKind> sbor::Categorize<X> for Test {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<X> {
-                        ::sbor::ValueKind::Enum
+                    fn value_kind() -> sbor::ValueKind<X> {
+                        sbor::ValueKind::Enum
                     }
                 }
 
-                impl <X: ::sbor::CustomValueKind>  ::sbor::SborEnum<X> for Test {
+                impl <X: sbor::CustomValueKind>  sbor::SborEnum<X> for Test {
                     fn get_discriminator(&self) -> u8 {
                         match self {
                             Self::A => 0u8,

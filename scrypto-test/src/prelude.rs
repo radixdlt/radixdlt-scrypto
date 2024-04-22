@@ -79,6 +79,7 @@ pub use radix_native_sdk::resource::*;
 pub use radix_native_sdk::runtime::*;
 
 /* Sbor */
+pub extern crate sbor;
 pub use sbor::prelude::*;
 pub use sbor::*;
 
