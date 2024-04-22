@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::blueprints::access_controller::AccessControllerError;
+use radix_engine::blueprints::access_controller::v1::AccessControllerError;
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;

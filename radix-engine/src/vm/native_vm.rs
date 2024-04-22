@@ -1,4 +1,4 @@
-use crate::blueprints::access_controller::AccessControllerNativePackage;
+use crate::blueprints::access_controller::v1::*;
 use crate::blueprints::account::{AccountBlueprintBottlenoseExtension, AccountNativePackage};
 use crate::blueprints::consensus_manager::{
     ConsensusManagerNativePackage, ConsensusManagerSecondsPrecisionNativeCode,
@@ -138,8 +138,13 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID => {
                         AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
                     }
-                    ACCESS_CONTROLLER_CODE_ID => {
-                        AccessControllerNativePackage::invoke_export(export_name, input, api)
+                    ACCESS_CONTROLLER_V1_0_CODE_ID => {
+                        AccessControllerV1NativePackage::invoke_export(
+                            export_name,
+                            input,
+                            AccessControllerV1MinorVersion::Zero,
+                            api,
+                        )
                     }
                     TRANSACTION_PROCESSOR_CODE_ID => {
                         TransactionProcessorNativePackage::invoke_export(export_name, input, api)

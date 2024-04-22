@@ -33,7 +33,7 @@ pub struct AccessControllerCreateManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-pub type AccessControllerCreateGlobalOutput = Global<AccessControllerMarker>;
+pub type AccessControllerCreateOutput = Global<AccessControllerMarker>;
 
 //================================
 // Access Controller Create Proof

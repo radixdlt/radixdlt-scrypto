@@ -1,4 +1,4 @@
-use crate::blueprints::access_controller::AccessControllerError;
+use crate::blueprints::access_controller::v1::AccessControllerError;
 use crate::blueprints::account::AccountError;
 use crate::blueprints::consensus_manager::{ConsensusManagerError, ValidatorError};
 use crate::blueprints::package::PackageError;

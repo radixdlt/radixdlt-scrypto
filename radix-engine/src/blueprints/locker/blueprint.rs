@@ -102,6 +102,7 @@ impl AccountLockerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         dispatch! {
+            EXPORT_NAME,
             export_name,
             input,
             api,

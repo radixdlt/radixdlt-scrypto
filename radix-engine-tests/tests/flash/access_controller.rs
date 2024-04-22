@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::blueprints::access_controller::*;
+use radix_engine::blueprints::access_controller::v1::*;
 use radix_substate_store_queries::typed_substate_layout::*;
 
 /// The state of the access controller changes with the bottlenose protocol update where we're
@@ -15,7 +15,7 @@ fn access_controller_package_definition_v1_0_matches_expected() {
     .unwrap();
 
     // Act
-    let package_definition = AccessControllerNativePackage::definition();
+    let package_definition = AccessControllerV1NativePackage::definition();
 
     // Assert
     assert_eq!(package_definition, expected_package_definition);

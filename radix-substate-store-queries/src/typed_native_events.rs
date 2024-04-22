@@ -4,6 +4,7 @@
 
 use crate::typed_substate_layout::*;
 use radix_common::prelude::*;
+use radix_engine::blueprints::access_controller::v1::*;
 use radix_engine::blueprints::account;
 use radix_engine::blueprints::locker::*;
 use radix_engine::blueprints::native_schema::*;

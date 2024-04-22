@@ -1,4 +1,4 @@
-use crate::blueprints::access_controller::*;
+use crate::blueprints::access_controller::v1::*;
 use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
@@ -1041,12 +1041,12 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: AccessControllerNativePackage::definition(),
+                definition: AccessControllerV1NativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
                 },
-                native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
+                native_package_code_id: ACCESS_CONTROLLER_V1_0_CODE_ID,
             }),
         });
     }
