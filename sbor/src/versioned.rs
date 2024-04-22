@@ -21,12 +21,18 @@ pub trait Versioned: AsRef<Self::Versions> + AsMut<Self::Versions> + From<Self::
 
     /// Updates the latest version in place, and returns a `&mut` to the latest content
     fn fully_update_to_latest_version_mut(&mut self) -> &mut Self::LatestVersion {
-        self.fully_update();
+        self.fully_update_mut();
         self.as_latest_version_mut().unwrap()
     }
 
     /// Updates to the latest version in place.
-    fn fully_update(&mut self);
+    fn fully_update_mut(&mut self);
+
+    /// Consumes self, updates to the latest version and returns itself.
+    fn fully_update(mut self) -> Self {
+        self.fully_update_mut();
+        self
+    }
 
     /// Updates itself to the latest version, then returns the latest content
     fn fully_update_into_latest_version(self) -> Self::LatestVersion;
@@ -368,7 +374,7 @@ macro_rules! define_versioned {
                     self.as_ref().is_fully_updated()
                 }
 
-                fn fully_update(&mut self) {
+                fn fully_update_mut(&mut self) {
                     if !self.is_fully_updated() {
                         let current = self.inner.take().unwrap();
                         self.inner = Some(current.fully_update());
@@ -634,8 +640,7 @@ mod tests {
         actual: impl Into<VersionedExample>,
         expected: <VersionedExample as Versioned>::LatestVersion,
     ) {
-        let mut versioned_actual = actual.into();
-        versioned_actual.fully_update();
+        let versioned_actual = actual.into().fully_update();
         let versioned_expected = VersionedExample::from(expected.clone());
         // Check fully_update (which returns a VersionedExample)
         assert_eq!(versioned_actual, versioned_expected,);

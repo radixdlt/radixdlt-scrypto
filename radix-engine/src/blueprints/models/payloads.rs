@@ -14,11 +14,26 @@ macro_rules! declare_payload_new_type {
         #[sbor(transparent)]
         /// This new type represents the payload of a particular field or collection.
         /// It is unique to this particular field/collection.
+        ///
+        /// Therefore, it can be used to disambiguate if the same content type is used
+        /// by different blueprints (e.g. two different versions of the same blueprint)
         $vis struct $payload_type_name
-            $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
-            {
-                pub content: $content_type
+        $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
+        {
+            content: $content_type
+        }
+
+        impl
+        $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+        $payload_type_name $(< $( $lt ),+ >)?
+        {
+            pub fn of(content: $content_type) -> Self {
+                Self {
+                    content,
+                }
             }
+        }
+
 
         impl $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
             core::convert::From<$content_type>
