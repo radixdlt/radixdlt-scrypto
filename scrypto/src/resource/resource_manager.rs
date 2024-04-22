@@ -50,11 +50,11 @@ pub trait ScryptoResourceManager {
     fn lock_updatable_metadata(&self);
 }
 
-pub trait ScryptoNonFungibleResourceManager {
-    fn set_updatable_non_fungible_data(&self, access_rule: AccessRule);
+// pub trait ScryptoNonFungibleResourceManager {
+//     fn set_updatable_non_fungible_data(&self, access_rule: AccessRule);
 
-    fn lock_updatable_non_fungible_data(&self);
-}
+//     fn lock_updatable_non_fungible_data(&self);
+// }
 
 pub trait ScryptoResourceManagerStub {
     type VaultType;
@@ -77,45 +77,38 @@ pub trait ScryptoResourceManagerStub {
     ) -> Decimal;
 }
 
-pub trait ScryptoFungibleResourceManagerStub {
-    type BucketType;
+// pub trait ScryptoFungibleResourceManagerStub {
+//     type BucketType;
 
-    /// Mints fungible resources
-    fn mint<T: Into<Decimal>>(&self, amount: T) -> Self::BucketType;
-}
+//     fn mint<T: Into<Decimal>>(&self, amount: T) -> Self::BucketType;
+// }
 
-pub trait ScryptoNonFungibleResourceManagerStub {
-    type BucketType;
+// pub trait ScryptoNonFungibleResourceManagerStub {
+//     type BucketType;
 
-    fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool;
+//     /// Mints non-fungible resources
+//     fn mint_non_fungible<T: NonFungibleData>(
+//         &self,
+//         id: &NonFungibleLocalId,
+//         data: T,
+//     ) -> Self::BucketType;
 
-    /// Mints non-fungible resources
-    fn mint_non_fungible<T: NonFungibleData>(
-        &self,
-        id: &NonFungibleLocalId,
-        data: T,
-    ) -> Self::BucketType;
+//     /// Mints ruid non-fungible resources
+//     fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Self::BucketType;
 
-    /// Mints ruid non-fungible resources
-    fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Self::BucketType;
+//     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
+//     ///
+//     /// # Panics
+//     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+//     fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T;
 
-    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T;
-
-    /// Updates the mutable part of a non-fungible unit.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    fn update_non_fungible_data<D: ScryptoEncode>(
-        &self,
-        id: &NonFungibleLocalId,
-        field_name: &str,
-        new_data: D,
-    );
-}
+//     fn update_non_fungible_data<D: ScryptoEncode>(
+//         &self,
+//         id: &NonFungibleLocalId,
+//         field_name: &str,
+//         new_data: D,
+//     );
+// }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
@@ -219,12 +212,12 @@ impl ScryptoResourceManager for ResourceManager {
     }
 }
 
-impl ScryptoNonFungibleResourceManager for ResourceManager {
-    fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
+impl ResourceManager {
+    pub fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
         self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
     }
 
-    fn lock_updatable_non_fungible_data(&self) {
+    pub fn lock_updatable_non_fungible_data(&self) {
         self.0
             .set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll);
     }
@@ -305,10 +298,10 @@ impl ScryptoResourceManagerStub for ResourceManagerStub {
     }
 }
 
-impl ScryptoFungibleResourceManagerStub for ResourceManagerStub {
-    type BucketType = Bucket;
-
-    fn mint<T: Into<Decimal>>(&self, amount: T) -> Self::BucketType {
+impl ResourceManagerStub {
+    /// Mints fungible resources
+    // #[deprecated = "Use an allocated account instead"]
+    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         self.call(
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             &FungibleResourceManagerMintInput {
@@ -316,23 +309,20 @@ impl ScryptoFungibleResourceManagerStub for ResourceManagerStub {
             },
         )
     }
-}
 
-impl ScryptoNonFungibleResourceManagerStub for ResourceManagerStub {
-    type BucketType = Bucket;
-
-    fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
+    pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
             &NonFungibleResourceManagerExistsInput { id: id.clone() },
         )
     }
 
-    fn mint_non_fungible<T: NonFungibleData>(
+    /// Mints non-fungible resources
+    pub fn mint_non_fungible<T: NonFungibleData>(
         &self,
         id: &NonFungibleLocalId,
         data: T,
-    ) -> Self::BucketType {
+    ) -> Bucket {
         let mut entries = index_map_new();
         entries.insert(id.clone(), (data,));
         self.call(
@@ -341,7 +331,8 @@ impl ScryptoNonFungibleResourceManagerStub for ResourceManagerStub {
         )
     }
 
-    fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Self::BucketType {
+    /// Mints ruid non-fungible resources
+    pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
         let mut entries = Vec::new();
         entries.push((data,));
 
@@ -351,14 +342,22 @@ impl ScryptoNonFungibleResourceManagerStub for ResourceManagerStub {
         )
     }
 
-    fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
+    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
             &NonFungibleResourceManagerGetNonFungibleInput { id: id.clone() },
         )
     }
 
-    fn update_non_fungible_data<D: ScryptoEncode>(
+    /// Updates the mutable part of a non-fungible unit.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    pub fn update_non_fungible_data<D: ScryptoEncode>(
         &self,
         id: &NonFungibleLocalId,
         field_name: &str,
@@ -374,3 +373,67 @@ impl ScryptoNonFungibleResourceManagerStub for ResourceManagerStub {
         )
     }
 }
+
+// #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+// #[sbor(transparent)]
+// pub struct FungibleResourceManager(Global<FungibleResourceManagerStub>);
+
+// impl Describe<ScryptoCustomTypeKind> for FungibleResourceManager {
+//     const TYPE_ID: RustTypeId = RustTypeId::WellKnown(RESOURCE_ADDRESS_TYPE);
+
+//     fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
+//         resource_address_type_data()
+//     }
+// }
+
+// impl From<ResourceAddress> for FungibleResourceManagerResourceManager {
+//     fn from(value: ResourceAddress) -> Self {
+//         let stub = FungibleResourceManagerStub::new(ObjectStubHandle::Global(value.into()));
+//         Self(Global(stub))
+//     }
+// }
+
+// impl Into<GlobalAddress> for FungibleResourceManager {
+//     fn into(self) -> GlobalAddress {
+//         GlobalAddress::new_or_panic(self.0 .0 .0.as_node_id().0)
+//     }
+// }
+
+// impl Deref for FungibleResourceManager {
+//     type Target = Global<FungibleResourceManagerStub>;
+
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
+
+// impl HasStub for FungibleResourceManagerStub {
+//     type Stub = Self;
+// }
+
+// #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+// pub struct FungibleResourceManagerStub(pub ObjectStubHandle);
+
+// impl ObjectStub for FungibleResourceManagerStub {
+//     type AddressType = ResourceAddress;
+
+//     fn new(handle: ObjectStubHandle) -> Self {
+//         Self(handle)
+//     }
+
+//     fn handle(&self) -> &ObjectStubHandle {
+//         &self.0
+//     }
+// }
+
+// impl FungibleResourceManagerStub {
+//     /// Mints fungible resources
+//     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
+//         self.call(
+//             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+//             &FungibleResourceManagerMintInput {
+//                 amount: amount.into(),
+//             },
+//         )
+//     }
+// }

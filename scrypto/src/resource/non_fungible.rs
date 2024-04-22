@@ -1,4 +1,4 @@
-use crate::prelude::{ResourceManager, ScryptoNonFungibleResourceManagerStub};
+use crate::prelude::ResourceManager;
 use radix_common::data::scrypto::model::*;
 use radix_common::traits::NonFungibleData;
 use radix_engine_interface::types::*;
