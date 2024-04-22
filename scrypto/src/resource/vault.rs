@@ -17,6 +17,7 @@ use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 pub trait ScryptoVault {
     type BucketType;
     type ProofType;
+    type ResourceManagerType;
 
     fn with_bucket(bucket: Self::BucketType) -> Self;
 
@@ -28,9 +29,7 @@ pub trait ScryptoVault {
 
     fn resource_address(&self) -> ResourceAddress;
 
-    fn resource_manager(&self) -> ResourceManager {
-        self.resource_address().into()
-    }
+    fn resource_manager(&self) -> Self::ResourceManagerType;
 
     fn is_empty(&self) -> bool;
 
@@ -102,8 +101,8 @@ pub trait ScryptoNonFungibleVault {
 
 impl ScryptoVault for Vault {
     type BucketType = Bucket;
-
     type ProofType = Proof;
+    type ResourceManagerType = ResourceManager;
 
     /// Creates an empty vault and fills it with an initial bucket of resource.
     fn with_bucket(bucket: Bucket) -> Self {
@@ -142,6 +141,10 @@ impl ScryptoVault for Vault {
     fn resource_address(&self) -> ResourceAddress {
         let address = ScryptoVmV1Api::object_get_outer_object(self.0.as_node_id());
         ResourceAddress::try_from(address).unwrap()
+    }
+
+    fn resource_manager(&self) -> Self::ResourceManagerType {
+        self.resource_address().into()
     }
 
     /// Takes some amount of resource from this vault into a bucket.
@@ -219,8 +222,8 @@ impl ScryptoVault for Vault {
 
 impl ScryptoVault for FungibleVault {
     type BucketType = FungibleBucket;
-
     type ProofType = FungibleProof;
+    type ResourceManagerType = FungibleResourceManager;
 
     fn with_bucket(bucket: Self::BucketType) -> Self {
         Self(Vault::with_bucket(bucket.0))
@@ -243,6 +246,10 @@ impl ScryptoVault for FungibleVault {
 
     fn resource_address(&self) -> ResourceAddress {
         self.0.resource_address()
+    }
+
+    fn resource_manager(&self) -> Self::ResourceManagerType {
+        self.resource_address().into()
     }
 
     fn is_empty(&self) -> bool {
@@ -338,8 +345,8 @@ impl ScryptoFungibleVault for FungibleVault {
 
 impl ScryptoVault for NonFungibleVault {
     type BucketType = NonFungibleBucket;
-
     type ProofType = NonFungibleProof;
+    type ResourceManagerType = NonFungibleResourceManager;
 
     fn with_bucket(bucket: Self::BucketType) -> Self {
         Self(Vault::with_bucket(bucket.0))
@@ -362,6 +369,10 @@ impl ScryptoVault for NonFungibleVault {
 
     fn resource_address(&self) -> ResourceAddress {
         self.0.resource_address()
+    }
+
+    fn resource_manager(&self) -> Self::ResourceManagerType {
+        self.resource_address().into()
     }
 
     fn is_empty(&self) -> bool {
@@ -402,7 +413,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         let rtn = ScryptoVmV1Api::object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit: limit }).unwrap(),
+            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit }).unwrap(),
         );
         scrypto_decode(&rtn).unwrap()
     }
