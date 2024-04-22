@@ -1,5 +1,5 @@
 use super::ScryptoUncheckedProof;
-use crate::prelude::ResourceManager;
+use crate::prelude::{ResourceManager, ScryptoResourceManagerStub};
 use crate::resource::NonFungible;
 use crate::runtime::LocalAuthZone;
 use radix_common::data::scrypto::model::*;

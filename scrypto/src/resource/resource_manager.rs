@@ -16,6 +16,107 @@ use radix_engine_interface::object_modules::metadata::{
 };
 use scrypto::component::HasStub;
 
+//=============
+// Traits
+//=============
+
+pub trait ScryptoResourceManager {
+    fn set_mintable(&self, access_rule: AccessRule);
+
+    fn set_burnable(&self, access_rule: AccessRule);
+
+    fn set_withdrawable(&self, access_rule: AccessRule);
+
+    fn set_depositable(&self, access_rule: AccessRule);
+
+    fn set_recallable(&self, access_rule: AccessRule);
+
+    fn set_freezeable(&self, access_rule: AccessRule);
+
+    fn lock_mintable(&self);
+
+    fn lock_burnable(&self);
+
+    fn lock_withdrawable(&self);
+
+    fn lock_depositable(&self);
+
+    fn lock_recallable(&self);
+
+    fn lock_freezeable(&self);
+
+    fn set_updatable_metadata(&self, access_rule: AccessRule);
+
+    fn lock_updatable_metadata(&self);
+}
+
+pub trait ScryptoNonFungibleResourceManager {
+    fn set_updatable_non_fungible_data(&self, access_rule: AccessRule);
+
+    fn lock_updatable_non_fungible_data(&self);
+}
+
+pub trait ScryptoResourceManagerStub {
+    type VaultType;
+    type BucketType;
+
+    fn create_empty_vault(&self) -> Self::VaultType;
+
+    fn create_empty_bucket(&self) -> Self::BucketType;
+
+    fn resource_type(&self) -> ResourceType;
+
+    fn total_supply(&self) -> Option<Decimal>;
+
+    fn burn<B: Into<Bucket>>(&self, bucket: B);
+
+    fn amount_for_withdrawal(
+        &self,
+        request_amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Decimal;
+}
+
+pub trait ScryptoFungibleResourceManagerStub {
+    type BucketType;
+
+    /// Mints fungible resources
+    fn mint<T: Into<Decimal>>(&self, amount: T) -> Self::BucketType;
+}
+
+pub trait ScryptoNonFungibleResourceManagerStub {
+    type BucketType;
+
+    fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool;
+
+    /// Mints non-fungible resources
+    fn mint_non_fungible<T: NonFungibleData>(
+        &self,
+        id: &NonFungibleLocalId,
+        data: T,
+    ) -> Self::BucketType;
+
+    /// Mints ruid non-fungible resources
+    fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Self::BucketType;
+
+    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T;
+
+    /// Updates the mutable part of a non-fungible unit.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    fn update_non_fungible_data<D: ScryptoEncode>(
+        &self,
+        id: &NonFungibleLocalId,
+        field_name: &str,
+        new_data: D,
+    );
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 pub struct ResourceManager(Global<ResourceManagerStub>);
@@ -56,72 +157,76 @@ impl ResourceManager {
         )));
         Self(Global(stub))
     }
+}
 
-    pub fn set_mintable(&self, access_rule: AccessRule) {
+impl ScryptoResourceManager for ResourceManager {
+    fn set_mintable(&self, access_rule: AccessRule) {
         self.0.set_role(MINTER_ROLE, access_rule);
     }
 
-    pub fn set_burnable(&self, access_rule: AccessRule) {
+    fn set_burnable(&self, access_rule: AccessRule) {
         self.0.set_role(RESOURCE_MANAGER_BURN_IDENT, access_rule);
     }
 
-    pub fn set_withdrawable(&self, access_rule: AccessRule) {
+    fn set_withdrawable(&self, access_rule: AccessRule) {
         self.0.set_role(WITHDRAWER_ROLE, access_rule);
     }
 
-    pub fn set_depositable(&self, access_rule: AccessRule) {
+    fn set_depositable(&self, access_rule: AccessRule) {
         self.0.set_role(DEPOSITOR_ROLE, access_rule);
     }
 
-    pub fn set_recallable(&self, access_rule: AccessRule) {
+    fn set_recallable(&self, access_rule: AccessRule) {
         self.0.set_role(RECALLER_ROLE, access_rule);
     }
 
-    pub fn set_freezeable(&self, access_rule: AccessRule) {
+    fn set_freezeable(&self, access_rule: AccessRule) {
         self.0.set_role(FREEZER_ROLE, access_rule);
     }
 
-    pub fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
-        self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
-    }
-
-    pub fn lock_mintable(&self) {
+    fn lock_mintable(&self) {
         self.0.set_role(MINTER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
-    pub fn lock_burnable(&self) {
+    fn lock_burnable(&self) {
         self.0.set_role(BURNER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
-    pub fn lock_updatable_non_fungible_data(&self) {
-        self.0
-            .set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll);
-    }
-
-    pub fn lock_withdrawable(&self) {
+    fn lock_withdrawable(&self) {
         self.0
             .set_role(WITHDRAWER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
-    pub fn lock_depositable(&self) {
+    fn lock_depositable(&self) {
         self.0.set_role(DEPOSITOR_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
-    pub fn lock_recallable(&self) {
+    fn lock_recallable(&self) {
         self.0.set_role(RECALLER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
-    pub fn lock_freezeable(&self) {
+    fn lock_freezeable(&self) {
         self.0.set_role(FREEZER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
-    pub fn set_updatable_metadata(&self, access_rule: AccessRule) {
+    fn set_updatable_metadata(&self, access_rule: AccessRule) {
         self.0.set_metadata_role(METADATA_SETTER_ROLE, access_rule);
     }
 
-    pub fn lock_updatable_metadata(&self) {
+    fn lock_updatable_metadata(&self) {
         self.0
             .set_metadata_role(METADATA_SETTER_UPDATER_ROLE, AccessRule::DenyAll);
+    }
+}
+
+impl ScryptoNonFungibleResourceManager for ResourceManager {
+    fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
+        self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
+    }
+
+    fn lock_updatable_non_fungible_data(&self) {
+        self.0
+            .set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 }
 
@@ -144,43 +249,39 @@ impl ObjectStub for ResourceManagerStub {
     }
 }
 
-impl ResourceManagerStub {
-    pub fn create_empty_vault(&self) -> Vault {
+impl ScryptoResourceManagerStub for ResourceManagerStub {
+    type VaultType = Vault;
+    type BucketType = Bucket;
+
+    fn create_empty_vault(&self) -> Self::VaultType {
         self.call(
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
             &ResourceManagerCreateEmptyVaultInput {},
         )
     }
 
-    pub fn create_empty_bucket(&self) -> Bucket {
+    fn create_empty_bucket(&self) -> Self::BucketType {
         self.call(
             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
             &ResourceManagerCreateEmptyBucketInput {},
         )
     }
 
-    pub fn resource_type(&self) -> ResourceType {
+    fn resource_type(&self) -> ResourceType {
         self.call(
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
             &ResourceManagerGetResourceTypeInput {},
         )
     }
 
-    pub fn total_supply(&self) -> Option<Decimal> {
+    fn total_supply(&self) -> Option<Decimal> {
         self.call(
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
             &ResourceManagerGetTotalSupplyInput {},
         )
     }
 
-    pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
-        self.call(
-            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
-            &NonFungibleResourceManagerExistsInput { id: id.clone() },
-        )
-    }
-
-    pub fn burn<B: Into<Bucket>>(&self, bucket: B) {
+    fn burn<B: Into<Bucket>>(&self, bucket: B) {
         self.call(
             RESOURCE_MANAGER_BURN_IDENT,
             &ResourceManagerBurnInput {
@@ -189,8 +290,25 @@ impl ResourceManagerStub {
         )
     }
 
-    /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
+    fn amount_for_withdrawal(
+        &self,
+        request_amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Decimal {
+        self.call(
+            RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT,
+            &ResourceManagerGetAmountForWithdrawalInput {
+                request_amount,
+                withdraw_strategy,
+            },
+        )
+    }
+}
+
+impl ScryptoFungibleResourceManagerStub for ResourceManagerStub {
+    type BucketType = Bucket;
+
+    fn mint<T: Into<Decimal>>(&self, amount: T) -> Self::BucketType {
         self.call(
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             &FungibleResourceManagerMintInput {
@@ -198,13 +316,23 @@ impl ResourceManagerStub {
             },
         )
     }
+}
 
-    /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(
+impl ScryptoNonFungibleResourceManagerStub for ResourceManagerStub {
+    type BucketType = Bucket;
+
+    fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
+        self.call(
+            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
+            &NonFungibleResourceManagerExistsInput { id: id.clone() },
+        )
+    }
+
+    fn mint_non_fungible<T: NonFungibleData>(
         &self,
         id: &NonFungibleLocalId,
         data: T,
-    ) -> Bucket {
+    ) -> Self::BucketType {
         let mut entries = index_map_new();
         entries.insert(id.clone(), (data,));
         self.call(
@@ -213,8 +341,7 @@ impl ResourceManagerStub {
         )
     }
 
-    /// Mints ruid non-fungible resources
-    pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
+    fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Self::BucketType {
         let mut entries = Vec::new();
         entries.push((data,));
 
@@ -224,22 +351,14 @@ impl ResourceManagerStub {
         )
     }
 
-    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
+    fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
             &NonFungibleResourceManagerGetNonFungibleInput { id: id.clone() },
         )
     }
 
-    /// Updates the mutable part of a non-fungible unit.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<D: ScryptoEncode>(
+    fn update_non_fungible_data<D: ScryptoEncode>(
         &self,
         id: &NonFungibleLocalId,
         field_name: &str,
@@ -251,20 +370,6 @@ impl ResourceManagerStub {
                 id: id.clone(),
                 field_name: field_name.to_string(),
                 data: scrypto_decode(&scrypto_encode(&new_data).unwrap()).unwrap(),
-            },
-        )
-    }
-
-    pub fn amount_for_withdrawal(
-        &self,
-        request_amount: Decimal,
-        withdraw_strategy: WithdrawStrategy,
-    ) -> Decimal {
-        self.call(
-            RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT,
-            &ResourceManagerGetAmountForWithdrawalInput {
-                request_amount,
-                withdraw_strategy,
             },
         )
     }
