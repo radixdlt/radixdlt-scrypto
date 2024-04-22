@@ -46,7 +46,6 @@ use radix_engine_interface::object_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 

@@ -1,7 +1,20 @@
 {
     "rust-analyzer.linkedProjects": [
+        // Root Workspace & CLIs.
         "Cargo.toml",
         "radix-clis/Cargo.toml",
+        // Various blueprints we have.
+        "examples/everything/Cargo.toml",
+        "examples/hello-world/Cargo.toml",
+        "examples/no-std/Cargo.toml",
+        "radix-clis/tests/blueprints/Cargo.toml",
+        "radix-engine-tests/assets/blueprints/Cargo.toml",
+        "radix-engine/assets/blueprints/Cargo.toml",
+        "radix-transaction-scenarios/assets/blueprints/Cargo.toml",
+        "scrypto-compiler/tests/assets/scenario_1/Cargo.toml",
+        "scrypto-compiler/tests/assets/scenario_2/Cargo.toml",
+        "scrypto-test/assets/blueprints/Cargo.toml",
+        "scrypto-test/tests/blueprints/Cargo.toml",
     ],
     "cSpell.words": [
         "accesscontroller",

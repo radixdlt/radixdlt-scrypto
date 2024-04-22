@@ -27,14 +27,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
+                impl sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<radix_common::data::scrypto::ScryptoCustomValueKind> {
-                        ::sbor::ValueKind::Tuple
+                    fn value_kind() -> sbor::ValueKind<radix_common::data::scrypto::ScryptoCustomValueKind> {
+                        sbor::ValueKind::Tuple
                     }
                 }
 
-                impl ::sbor::SborTuple<radix_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
+                impl sbor::SborTuple<radix_common::data::scrypto::ScryptoCustomValueKind> for MyStruct {
                     fn get_length(&self) -> usize {
                         0usize
                     }
@@ -52,16 +52,16 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<T: Bound> ::sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind>
+                impl<T: Bound> sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind>
                     for MyEnum<T>
                 {
                     #[inline]
-                    fn value_kind() -> ::sbor::ValueKind<radix_common::data::scrypto::ScryptoCustomValueKind> {
-                        ::sbor::ValueKind::Enum
+                    fn value_kind() -> sbor::ValueKind<radix_common::data::scrypto::ScryptoCustomValueKind> {
+                        sbor::ValueKind::Enum
                     }
                 }
 
-                impl<T: Bound> ::sbor::SborEnum<radix_common::data::scrypto::ScryptoCustomValueKind> for MyEnum<T> {
+                impl<T: Bound> sbor::SborEnum<radix_common::data::scrypto::ScryptoCustomValueKind> for MyEnum<T> {
                     fn get_discriminator(&self) -> u8 {
                         match self {
                             Self::A { .. } => 0u8,

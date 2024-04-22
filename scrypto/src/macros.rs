@@ -10,7 +10,7 @@
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::error(::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::error(::scrypto::prelude::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -32,7 +32,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::warn(::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::warn(::scrypto::prelude::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -54,7 +54,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::info(::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::info(::scrypto::prelude::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -76,7 +76,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::debug(::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::debug(::scrypto::prelude::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -98,7 +98,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        $crate::runtime::Logger::trace(::sbor::rust::format!($($args),+));
+        $crate::runtime::Logger::trace(::scrypto::prelude::sbor::rust::format!($($args),+));
     }};
 }
 
