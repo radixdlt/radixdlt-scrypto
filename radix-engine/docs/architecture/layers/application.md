@@ -1,7 +1,7 @@
 # Application Layer
 
-The application layer is responsible for defining high level logic. Bytecode that describes this logic,
-along with other static information, is bundled up in an executable format called a Package. Packages
-are then stored on-ledger and available for execution.
+Applications in Radix Engine are responsible for defining two things:
+1. New Blueprint Definitions
+2. Associated Logic with each Blueprint
 
-## Packages
+These are bundled up in a format called a Package.
