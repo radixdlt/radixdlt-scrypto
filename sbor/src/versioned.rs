@@ -270,104 +270,70 @@ macro_rules! define_versioned {
         }
     ) => {
         $crate::eager_replace! {
-        $crate::paste::paste! {
-            // Create inline sub-macros to handle the type generics nested inside
-            // iteration over previous_versions
-            // See eg https://stackoverflow.com/a/73543948
-            macro_rules! [<$versioned_name _versions_trait_impl>] {
-                (
-                    $trait:ty,
-                    $impl_block:tt
-                ) => {
-                    #[allow(dead_code)]
-                    impl
-                    $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-                    $trait
-                    for $versions_name $(< $( $lt ),+ >)?
-                    $impl_block
-                };
-            }
-
-            macro_rules! [<$versioned_name _versioned_trait_impl>] {
-                (
-                    $trait:ty,
-                    $impl_block:tt
-                ) => {
-                    #[allow(dead_code)]
-                    impl
-                    $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-                    $trait
-                    for $versioned_name $(< $( $lt ),+ >)?
-                    $impl_block
-                };
-            }
+            [!EAGER:set! #FullGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?]
+            [!EAGER:set! #ImplGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?]
+            [!EAGER:set! #TypeGenerics = $(< $( $lt ),+ >)?]
+            [!EAGER:set! #VersionedType = $versioned_name $(< $( $lt ),+ >)?]
+            [!EAGER:set! #VersionedTypePath = $versioned_name $(::< $( $lt ),+ >)?]
+            [!EAGER:set! #VersionsType = $versions_name $(< $( $lt ),+ >)?]
+            [!EAGER:set! #VersionsTypePath = $versions_name $(::< $( $lt ),+ >)?]
+            [!EAGER:set:ident! #PermitSborAttributesAlias = $versioned_name _PermitSborAttributes]
 
             #[allow(dead_code)]
             $vis type $latest_version_alias = $latest_version_type;
 
-            use $crate::PermitSborAttributes as [<$versioned_name _PermitSborAttributes>];
+            use $crate::PermitSborAttributes as #PermitSborAttributesAlias;
 
-            #[derive([<$versioned_name _PermitSborAttributes>])]
+            #[derive(#PermitSborAttributesAlias)]
             $(#[$attributes])*
             // Needs to go below $attributes so that a #[derive(Sbor)] in the attributes can see it.
-            #[sbor(as_type = eager_stringify!($versions_name $(< $( $lt ),+ >)?))]
+            #[sbor(as_type = [!EAGER:stringify! #VersionsType])]
             /// If you wish to get access to match on the versions, use `.as_ref()` or `.as_mut()`.
-            $vis struct $versioned_name $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
+            $vis struct $versioned_name #FullGenerics
             {
-                inner: Option<$versions_name $(< $( $lt ),+ >)?>,
+                inner: Option<#VersionsType>,
             }
 
-            impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            $versioned_name $(< $( $lt ),+ >)?
+            impl #ImplGenerics #VersionedType
             {
-                pub fn new(inner: $versions_name $(< $( $lt ),+ >)?) -> Self {
+                pub fn new(inner: #VersionsType) -> Self {
                     Self {
                         inner: Some(inner),
                     }
                 }
             }
 
-            impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            AsRef<$versions_name $(< $( $lt ),+ >)?>
-            for $versioned_name $(< $( $lt ),+ >)?
+            impl #ImplGenerics AsRef<#VersionsType> for #VersionedType
             {
-                fn as_ref(&self) -> &$versions_name $(< $( $lt ),+ >)? {
+                fn as_ref(&self) -> &#VersionsType {
                     self.inner.as_ref().unwrap()
                 }
             }
 
-            impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            AsMut<$versions_name $(< $( $lt ),+ >)?>
-            for $versioned_name $(< $( $lt ),+ >)?
+            impl #ImplGenerics AsMut<#VersionsType> for #VersionedType
             {
-                fn as_mut(&mut self) -> &mut $versions_name $(< $( $lt ),+ >)? {
+                fn as_mut(&mut self) -> &mut #VersionsType {
                     self.inner.as_mut().unwrap()
                 }
             }
 
-            impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            From<$versions_name $(< $( $lt ),+ >)?>
-            for $versioned_name $(< $( $lt ),+ >)?
+            impl #ImplGenerics From<#VersionsType> for #VersionedType
             {
-                fn from(value: $versions_name $(< $( $lt ),+ >)?) -> Self {
+                fn from(value: #VersionsType) -> Self {
                     Self::new(value)
                 }
             }
 
-            impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            From<$versioned_name $(< $( $lt ),+ >)?>
-            for $versions_name $(< $( $lt ),+ >)?
+            impl #ImplGenerics From<#VersionedType> for #VersionsType
             {
-                fn from(value: $versioned_name $(< $( $lt ),+ >)?) -> Self {
+                fn from(value: #VersionedType) -> Self {
                     value.inner.unwrap()
                 }
             }
 
-            impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            Versioned
-            for $versioned_name $(< $( $lt ),+ >)?
+            impl #ImplGenerics Versioned for #VersionedType
             {
-                type Versions = $versions_name $(< $( $lt ),+ >)?;
+                type Versions = #VersionsType;
                 type LatestVersion = $latest_version_type;
 
                 fn is_fully_updated(&self) -> bool {
@@ -415,35 +381,40 @@ macro_rules! define_versioned {
                 }
             }
 
-            // TODO:
-            // - Sadly the first version of versioned used 0-indexed discriminators (by mistake, sadly)
-            // - To enforce this, and prevent the API being dependent on version, we should add back
-            //   in explicit discriminators as $version_num - 1 (by using consts)
-            // - This requires extensions to eager_stringify
+            [!EAGER:set:ident! #discriminators = $versioned_name _discriminators]
+            #[allow(non_snake_case)]
+            mod #discriminators {
+                // The initial version of this tool used 0-indexed/off-by-one discriminators accidentally.
+                // We're stuck with these now unfortunately...
+                // But we make them explicit in case versions are skipped.
+                $($(
+                    pub const [!EAGER:ident! VERSION_ $version_num]: u8 = $version_num - 1;
+                )*)?
+                pub const LATEST_VERSION: u8 = $latest_version - 1;
+            }
 
-            #[derive([<$versioned_name _PermitSborAttributes>])]
+            #[derive(#PermitSborAttributesAlias)]
             $(#[$attributes])*
-            $vis enum $versions_name $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
+            $vis enum $versions_name #FullGenerics
             {
                 $($(
-                    [<V $version_num>]($version_type),
+                    #[sbor(discriminator(#discriminators::[!EAGER:ident! VERSION_ $version_num]))]
+                    [!EAGER:ident! V $version_num]($version_type),
                 )*)?
-                [<V $latest_version>]($latest_version_type),
+                #[sbor(discriminator(#discriminators::LATEST_VERSION))]
+                [!EAGER:ident! V $latest_version]($latest_version_type),
             }
 
             #[allow(dead_code)]
-            impl
-            $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            $versions_name
-            $(< $( $lt ),+ >)?
+            impl #ImplGenerics #VersionsType
             {
                 /// Returns if update happened, and the updated versioned enum.
                 fn attempt_single_update(self) -> (bool, Self) {
                     match self {
                     $($(
-                        Self::[<V $version_num>](value) => (true, Self::[<V $update_to_version_num>](value.into())),
+                        Self::[!EAGER:ident! V $version_num](value) => (true, Self::[!EAGER:ident! V $update_to_version_num](value.into())),
                     )*)?
-                        this @ Self::[<V $latest_version>](_) => (false, this),
+                        this @ Self::[!EAGER:ident! V $latest_version](_) => (false, this),
                     }
                 }
 
@@ -463,27 +434,27 @@ macro_rules! define_versioned {
                 #[allow(unreachable_patterns)]
                 pub fn is_fully_updated(&self) -> bool {
                     match self {
-                        Self::[<V $latest_version>](_) => true,
+                        Self::[!EAGER:ident! V $latest_version](_) => true,
                         _ => false,
                     }
                 }
 
                 #[allow(irrefutable_let_patterns)]
                 fn fully_update_into_latest_version(self) -> $latest_version_type {
-                    let Self::[<V $latest_version>](latest) = self.fully_update() else {
+                    let Self::[!EAGER:ident! V $latest_version](latest) = self.fully_update() else {
                         panic!("Invalid resolved latest version not equal to latest type")
                     };
                     return latest;
                 }
 
                 fn from_latest_version(latest: $latest_version_type) -> Self {
-                    Self::[<V $latest_version>](latest)
+                    Self::[!EAGER:ident! V $latest_version](latest)
                 }
 
                 #[allow(unreachable_patterns)]
                 fn as_latest_version_ref(&self) -> Option<&$latest_version_type> {
                     match self {
-                        Self::[<V $latest_version>](latest) => Some(latest),
+                        Self::[!EAGER:ident! V $latest_version](latest) => Some(latest),
                         _ => None,
                     }
                 }
@@ -491,83 +462,79 @@ macro_rules! define_versioned {
                 #[allow(unreachable_patterns)]
                 fn as_latest_version_mut(&mut self) -> Option<&mut $latest_version_type> {
                     match self {
-                        Self::[<V $latest_version>](latest) => Some(latest),
+                        Self::[!EAGER:ident! V $latest_version](latest) => Some(latest),
                         _ => None,
                     }
                 }
             }
 
-            $($([<$versioned_name _versions_trait_impl>]!(
-                From<$version_type>,
-                {
+            $($(
+                #[allow(dead_code)]
+                impl #ImplGenerics From<$version_type> for #VersionsType {
                     fn from(value: $version_type) -> Self {
-                        Self::[<V $version_num>](value)
+                        Self::[!EAGER:ident! V $version_num](value)
                     }
                 }
-            );)*)?
 
-            $($([<$versioned_name _versioned_trait_impl>]!(
-                From<$version_type>,
-                {
+                #[allow(dead_code)]
+                impl #ImplGenerics From<$version_type> for #VersionedType {
                     fn from(value: $version_type) -> Self {
-                        Self::new($versions_name::[<V $version_num>](value))
+                        Self::new(#VersionsTypePath::[!EAGER:ident! V $version_num](value))
                     }
                 }
-            );)*)?
-
-            [<$versioned_name _versions_trait_impl>]!(
-                From<$latest_version_type>,
-                {
-                    fn from(value: $latest_version_type) -> Self {
-                        Self::[<V $latest_version>](value)
-                    }
-                }
-            );
-
-            [<$versioned_name _versioned_trait_impl>]!(
-                From<$latest_version_type>,
-                {
-                    fn from(value: $latest_version_type) -> Self {
-                        Self::from($versions_name::[<V $latest_version>](value))
-                    }
-                }
-            );
+            )*)?
 
             #[allow(dead_code)]
-            $vis trait [<$versioned_name Version>] {
+            impl #ImplGenerics From<$latest_version_type> for #VersionsType {
+                fn from(value: $latest_version_type) -> Self {
+                    Self::[!EAGER:ident! V $latest_version](value)
+                }
+            }
+
+            #[allow(dead_code)]
+            impl #ImplGenerics From<$latest_version_type> for #VersionedType {
+                fn from(value: $latest_version_type) -> Self {
+                    Self::new($versions_name::[!EAGER:ident! V $latest_version](value))
+                }
+            }
+
+            [!EAGER:set:ident! #VersionTrait = $versioned_name Version]
+            #[allow(dead_code)]
+            $vis trait #VersionTrait {
                 // Note: We need to use an explicit associated type to capture the generics.
                 type Versioned: $crate::Versioned;
 
                 fn into_versioned(self) -> Self::Versioned;
             }
 
-            impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
-            [<$versioned_name Version>]
-            for $versions_name $(< $( $lt ),+ >)?
+            impl #ImplGenerics #VersionTrait for #VersionsType
             {
-                type Versioned = $versioned_name $(< $( $lt ),+ >)?;
+                type Versioned = #VersionedType;
 
                 fn into_versioned(self) -> Self::Versioned {
-                    $versioned_name $(::< $( $lt ),+ >)?::new(self)
+                    #VersionedTypePath::new(self)
                 }
             }
 
-            macro_rules! [<$versioned_name _versionable_impl>] {
-                ($inner_type:ty) => {
-                    impl$(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)? [<$versioned_name Version>] for $inner_type
-                    {
-                        type Versioned = $versioned_name $(< $( $lt ),+ >)?;
+            $($(
+                impl #ImplGenerics #VersionTrait for $version_type
+                {
+                    type Versioned = #VersionedType;
 
-                        fn into_versioned(self) -> Self::Versioned {
-                            $versioned_name $(::< $( $lt ),+ >)?::new(self.into())
-                        }
+                    fn into_versioned(self) -> Self::Versioned {
+                        #VersionedTypePath::new(self.into())
                     }
-                };
-            }
+                }
+            )*)?
 
-            $($([<$versioned_name _versionable_impl>]!($version_type);)*)?
-            [<$versioned_name _versionable_impl>]!($latest_version_type);
-        }
+            impl #ImplGenerics #VersionTrait for $latest_version_type
+            {
+                type Versioned = $versioned_name #TypeGenerics;
+
+                fn into_versioned(self) -> Self::Versioned {
+                    #VersionedTypePath::new(self.into())
+                }
+            }
         }
     };
 }

@@ -66,39 +66,9 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 
 /// NOTE: This should probably be moved out of sbor to its own crate.
 ///
-/// This macro causes the `eager_stringify!` pseudo-macro to stringify its contents immediately.
-/// Similar to the `paste!` macro, this is intended for use in declarative macros.
+/// This macro is a powerful but simple general-purpose tool to ease building declarative macros.
 ///
-/// It is particularly useful in scenarios where `paste` doesn't work - in particular, to
-/// create non-idents, or to create non-doc attribute string content, which paste cannot do, e.g.:
-/// ```rust
-/// // Inside a macro_rules! expression:
-/// eager_replace!{
-///     #[sbor(as_type = eager_stringify!($my_inner_type))]
-///     $vis struct $my_type($my_inner_type)
-/// }
-/// ```
-///
-/// ## Use with docs
-///
-/// You can combine `eager_stringify!` with the `paste` macro's ability to concat doc string literals together,
-/// as follows. In some cases, `paste` can be used without `eager_stringify!` for the same effect.
-/// ```rust
-/// // Inside a macro_rules! expression:
-/// eager_replace!{paste!{
-///     #[doc = "This is the [`" eager_stringify!($my_type $(< $( $generic_type ),+ >)?) "`] type."]
-///     $vis struct $my_type $(< $( $generic_type ),+ >)?(
-///         $my_inner_type $(< $( $generic_type ),+ >)?
-///     )
-/// }}
-/// ```
-///
-/// ## Future vision
-///
-/// The below describes a future vision which would expand this macro into a powerful
-/// but simple general-purpose tool to ease building declarative macros.
-///
-/// Effectively it would be a more powerful version of [paste](https://github.com/dtolnay/paste)
+/// Effectively it functions as a more powerful version of [paste](https://github.com/dtolnay/paste),
 /// whilst bringing the power of [quote](https://docs.rs/quote/latest/quote/)'s variable
 /// substitution to declarative macros.
 ///
@@ -107,47 +77,38 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 /// * Simplify handling sub-repetition which currently needs an internal `macro_rules!` definition [per this stack overflow post](https://stackoverflow.com/a/73543948)
 /// * Improved readability of long procedural macros through substitution of repeated segments
 ///
-/// ### More types
 ///
-/// Output `string`, `ident`, `literal` or just a token stream:
-/// * `[!EAGER!string](X Y " " Z)` gives "XY Z" concats each argument stringified without spaces
-///   (except removing the quotes around string literals). Spaces can be added with " ".
-/// * `[!EAGER!ident]` does the same for idents
-/// * `[!EAGER!literal]` does the same for literals
-/// * `[!EAGER!]` parses and outputs a token stream.
-///     This would be a no-op, except it's not when combined with other features below:
-///     variables, nested calls, etc.
+/// It is particularly useful in scenarios where `paste` doesn't work - in particular, to
+/// create non-idents, or to create non-doc attribute string content, which paste cannot do, e.g.:
+/// ```rust
+/// // Inside a macro_rules! expression:
+/// eager_replace!{
+///     #[sbor(as_type = [!EAGER:stringify! $my_inner_type])]
+///     $vis struct $my_type($my_inner_type)
+/// }
+/// ```
 ///
-/// ### Variables + Cleaner Coding
+/// ## Specific functions
 ///
-/// You can define variables starting with `#` which can be used inside other eager evaluations.
+/// * `[!EAGER:stringify! X Y " " Z]` gives `"XY \" \" Z"`
+/// * `[!EAGER:concat! X Y " " Z]` gives `"XY Z"` by concatenating each argument stringified without spaces. String and Char literals are first unquoted. Spaces can be added with " ".
+/// * `[!EAGER:ident! X Y "Z"]` gives an ident `XYZ`.
+/// * `[!EAGER:literal! 31 u 32]` gives `31u32`.
+/// * `[!EAGER! ...]` outputs the `...` token stream, can be used for outputting `#[!EAGER! ident]` so that `#ident` isn't detected as a variable.
 ///
-/// The command `[!EAGER!define:#MyZ:ident](ZZZ)` doesn't output anything, but sets `#MyZ`
-/// to be the given `Ident`. Then, insides any other eager macro, `#MyZ` outputs the given ident.
+/// ## Variables for cleaner coding
 ///
-/// This would also work for literals, strings and token streams.
+/// You can define variables starting with `#` which can be used outside the set call.
+/// 
+/// * The command `[!EAGER:set! #MyZ = 1 + 2]` doesn't output anything, but sets `#MyZ` to the given token stream.
+/// * Similarly `[!EAGER:set:ident! #MyZ = ZZZ]` sets `#MyZ` as an ident. This also works with `stringify`, `concat` and `literal`.
 ///
-/// ### Nesting
-///
-/// Would add support for nesting [!EAGER!] calls inside eachother - although
-/// using variables might well be cleaner code.
-///
-/// ### String case conversion
-///
-/// Could in future support case conversion like [paste](https://docs.rs/paste/latest/paste/#case-conversion).
-///
-/// ### Alternative EAGER tag
-///
-/// Would allow a user to specify their own tag instead of `EAGER`. This could:
-/// * Facilitate nesting `eager_replace` calls: `eager_replace!{ [!tag = INNER_EAGER] code...}`
-/// * Allow using shorthand e.g. `E` instead
-///
-/// ### Example of future vision
+/// ### Demonstration
 /// ```rust
 /// macro_rules! impl_marker_traits {
 ///     {
 ///         $(#[$attributes:meta])*
-///         $vis:vis $type_name:ident
+///         $vis:vis $type_name_suffix:ident
 ///         // Arbitrary generics
 ///         $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
 ///         [
@@ -155,16 +116,13 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///             $(,) // Optional trailing comma
 ///         ]
 ///     } => {eager_replace!{
-///         [!EAGER!define:#ImplGenerics]($(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?)
-///         [!EAGER!define:#TypeGenerics]($(< $( $lt ),+ >)?)
+///         [!EAGER:set! #ImplGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?]
+///         [!EAGER:set! #TypeGenerics = $(< $( $lt ),+ >)?]
+///         [!EAGER:set:ident! #MyType = Type $type_name_suffix #TypeGenerics]
 ///
 ///         // Output for each marker trait
 ///         $(
-///             // NOTE: [!EAGER] outputs a token stream, not just a token tree
-///             //       so it can be used for outputting things like
-///             //       enum variants and attributes where a declarative macro
-///             //       couldn't be used
-///             [!EAGER!]{ impl #ImplGenerics $trait for Type #TypeGenerics }
+///             impl #ImplGenerics $trait for #MyType
 ///             {
 ///                 // Empty trait body
 ///             }
@@ -172,9 +130,16 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///     }}
 /// }
 /// ```
+/// 
+/// ## Future extensions
+/// ### String case conversion
+///
+/// Could in future support case conversion like [paste](https://docs.rs/paste/latest/paste/#case-conversion).
 #[proc_macro]
 pub fn eager_replace(token_stream: TokenStream) -> TokenStream {
-    eager::replace_recursive(token_stream)
+    eager::replace(proc_macro2::TokenStream::from(token_stream))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
 }
 
 const BASIC_CUSTOM_VALUE_KIND: &str = "sbor::NoCustomValueKind";
