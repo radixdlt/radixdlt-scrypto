@@ -207,7 +207,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
             batch.put_cf(
                 self.cf(MERKLE_NODES_CF),
                 encode_key(&key),
-                scrypto_encode(&VersionedTreeNode::new_latest(node)).unwrap(),
+                scrypto_encode(&VersionedTreeNode::from_latest(node)).unwrap(),
             );
         }
         if !self.pruning_enabled {

@@ -714,12 +714,9 @@ where
                     .unwrap();
                 let mut manager_substate =
                     env.field_read_typed::<VersionedConsensusManagerState>(manager_handle)?;
-                match &mut manager_substate {
-                    VersionedConsensusManagerState::V1(ConsensusManagerSubstate {
-                        epoch: state_epoch,
-                        ..
-                    }) => *state_epoch = epoch,
-                }
+
+                manager_substate.into_latest_mut().epoch = epoch;
+
                 env.field_write_typed(manager_handle, &manager_substate)?;
                 env.field_close(manager_handle)?;
                 Ok(())
@@ -749,11 +746,7 @@ where
                     env.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
                         handle,
                     )?;
-                match &mut proposer_minute_timestamp {
-                    ConsensusManagerProposerMinuteTimestampFieldPayload {
-                        content: VersionedConsensusManagerProposerMinuteTimestamp::V1(timestamp),
-                    } => timestamp.epoch_minute = (instant.seconds_since_unix_epoch / 60) as i32,
-                };
+                proposer_minute_timestamp.into_latest_mut().epoch_minute = (instant.seconds_since_unix_epoch / 60) as i32;
                 env.field_write_typed(handle, &proposer_minute_timestamp)?;
                 env.field_close(handle)?;
                 Ok(())

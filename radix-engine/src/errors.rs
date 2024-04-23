@@ -262,6 +262,7 @@ pub enum SystemError {
     CreateObjectError(Box<CreateObjectError>),
     InvalidGenericArgs,
     InvalidFeature(String),
+    InvalidNativeSubstatesForFeature(String),
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(CanonicalBlueprintId),
     AuthTemplateDoesNotExist(CanonicalBlueprintId),
