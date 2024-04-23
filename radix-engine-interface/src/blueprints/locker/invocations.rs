@@ -4,7 +4,6 @@ use crate::blueprints::macros::*;
 use crate::blueprints::resource::*;
 use radix_common::data::manifest::model::*;
 use radix_common::prelude::*;
-use radix_common::*;
 
 define_type_marker!(Some(LOCKER_PACKAGE), AccountLocker);
 

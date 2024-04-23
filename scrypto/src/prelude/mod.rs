@@ -36,6 +36,7 @@ pub use sbor::{Categorize, Decode, DecodeError, Encode, Sbor};
 
 // Needed for macros
 pub extern crate radix_common;
+pub extern crate sbor;
 
 /// We should always `UncheckedUrl` in Scrypto, as the validation logic is heavy.
 /// Thus, this type alias is added.
