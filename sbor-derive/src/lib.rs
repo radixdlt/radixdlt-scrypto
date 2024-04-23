@@ -99,7 +99,7 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 /// ## Variables for cleaner coding
 ///
 /// You can define variables starting with `#` which can be used outside the set call.
-/// 
+///
 /// * The command `[!EAGER:set! #MyZ = 1 + 2]` doesn't output anything, but sets `#MyZ` to the given token stream.
 /// * Similarly `[!EAGER:set:ident! #MyZ = ZZZ]` sets `#MyZ` as an ident. This also works with `stringify`, `concat` and `literal`.
 ///
@@ -130,7 +130,7 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///     }}
 /// }
 /// ```
-/// 
+///
 /// ## Future extensions
 /// ### String case conversion
 ///
