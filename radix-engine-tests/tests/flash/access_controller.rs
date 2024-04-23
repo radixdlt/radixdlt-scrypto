@@ -15,7 +15,8 @@ fn access_controller_package_definition_v1_0_matches_expected() {
     .unwrap();
 
     // Act
-    let package_definition = AccessControllerV1NativePackage::definition();
+    let package_definition =
+        AccessControllerV1NativePackage::definition(AccessControllerV1MinorVersion::Zero);
 
     // Assert
     assert_eq!(package_definition, expected_package_definition);

@@ -146,6 +146,14 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                             api,
                         )
                     }
+                    ACCESS_CONTROLLER_V1_1_CODE_ID => {
+                        AccessControllerV1NativePackage::invoke_export(
+                            export_name,
+                            input,
+                            AccessControllerV1MinorVersion::One,
+                            api,
+                        )
+                    }
                     TRANSACTION_PROCESSOR_CODE_ID => {
                         TransactionProcessorNativePackage::invoke_export(export_name, input, api)
                     }

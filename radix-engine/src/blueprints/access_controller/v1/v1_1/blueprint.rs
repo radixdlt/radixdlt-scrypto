@@ -34,6 +34,7 @@ impl AccessControllerBlueprint {
             api,
             AccessController,
             [
+                // Original Methods
                 create,
                 create_proof,
                 initiate_recovery_as_primary,
@@ -53,6 +54,10 @@ impl AccessControllerBlueprint {
                 unlock_primary_role,
                 stop_timed_recovery,
                 mint_recovery_badges,
+                // Bottlenose Extension
+                lock_recovery_fee,
+                withdraw_recovery_fee,
+                contribute_recovery_fee,
             ]
         }
     }
@@ -149,15 +154,20 @@ impl AccessControllerBlueprint {
             resource_address
         };
 
-        let substate = AccessControllerV1Substate::new(
+        let substate = AccessControllerV2Substate::new(
             vault,
+            None,
             timed_recovery_delay_in_minutes,
             recovery_badge_resource,
         );
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             indexmap! {
-                AccessControllerField::State.field_index() => FieldValue::new(AccessControllerStateFieldPayload::from_content_source(substate)),
+                AccessControllerField::State.field_index() => FieldValue::new(
+                    AccessControllerStateFieldPayload {
+                        content: VersionedAccessControllerState::V2(substate)
+                    }
+                ),
             },
         )?;
 
@@ -611,45 +621,187 @@ impl AccessControllerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = {
-            let handle = api.actor_open_field(
-                ACTOR_STATE_SELF,
-                AccessControllerField::State.field_index(),
-                LockFlags::read_only(),
-            )?;
-
-            let access_controller = {
-                let access_controller: AccessControllerStateFieldPayload =
-                    api.field_read_typed(handle)?;
-                access_controller.into_latest()
-            };
-            access_controller.recovery_badge
-        };
-
-        let non_fungibles: IndexMap<NonFungibleLocalId, (ScryptoValue,)> = non_fungible_local_ids
-            .into_iter()
-            .map(|local_id| {
-                (
-                    local_id,
-                    (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
-                )
-            })
-            .collect();
-
-        let bucket = api
-            .call_method(
-                resource_address.as_node_id(),
+        Self::with_state(api, |state, api| {
+            api.call_method(
+                state.recovery_badge.as_node_id(),
                 NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerMintInput {
-                    entries: non_fungibles,
+                    entries: non_fungible_local_ids
+                        .into_iter()
+                        .map(|local_id| {
+                            (
+                                local_id,
+                                (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+                            )
+                        })
+                        .collect(),
                 })
                 .unwrap(),
             )
-            .map(|buffer| {
-                scrypto_decode::<NonFungibleResourceManagerMintOutput>(&buffer).unwrap()
-            })?;
+            .map(|buffer| scrypto_decode::<NonFungibleResourceManagerMintOutput>(&buffer).unwrap())
+        })
+    }
 
-        Ok(bucket)
+    pub fn lock_recovery_fee<Y>(
+        AccessControllerLockRecoveryFeeInput { amount }: AccessControllerLockRecoveryFeeInput,
+        api: &mut Y,
+    ) -> Result<AccessControllerLockRecoveryFeeOutput, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::with_state_mut(api, |state, api| {
+            let vault = state
+                .xrd_fee_vault
+                .as_mut()
+                .ok_or(AccessControllerError::NoXrdFeeVault)?;
+            vault.lock_fee(api, amount)
+        })
+    }
+
+    pub fn withdraw_recovery_fee<Y>(
+        AccessControllerWithdrawRecoveryFeeInput { amount }: AccessControllerWithdrawRecoveryFeeInput,
+        api: &mut Y,
+    ) -> Result<AccessControllerWithdrawRecoveryFeeOutput, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::with_state_mut(api, |state, api| {
+            let vault = state
+                .xrd_fee_vault
+                .as_mut()
+                .ok_or(AccessControllerError::NoXrdFeeVault)?;
+            vault.take(amount, api)
+        })
+    }
+
+    pub fn contribute_recovery_fee<Y>(
+        AccessControllerContributeRecoveryFeeInput { bucket }: AccessControllerContributeRecoveryFeeInput,
+        api: &mut Y,
+    ) -> Result<AccessControllerContributeRecoveryFeeOutput, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::with_state_mut(api, |state, api| {
+            let vault = match state.xrd_fee_vault {
+                Some(ref mut vault) => vault,
+                None => {
+                    state.xrd_fee_vault = Some(Vault::create(XRD, api)?);
+                    state.xrd_fee_vault.as_mut().unwrap()
+                }
+            };
+            vault.put(bucket, api)
+        })
+    }
+
+    /// This method is used to read the access controller state and perform any lazy updating
+    /// required.
+    fn with_state<Y, F, O>(api: &mut Y, callback: F) -> Result<O, RuntimeError>
+    where
+        F: FnOnce(&mut AccessControllerV2Substate, &mut Y) -> Result<O, RuntimeError>,
+        Y: ClientApi<RuntimeError>,
+    {
+        // Get a read lock over the access-controller field.
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            AccessControllerField::State.field_index(),
+            LockFlags::read_only(),
+        )?;
+
+        // Read the access controller state.
+        let access_controller_state =
+            api.field_read_typed::<VersionedAccessControllerState>(handle)?;
+
+        // Determine if updating the state is required or not.
+        let (mut access_controller_state, handle) = match access_controller_state {
+            // State update is required. We do not have a write lock so we need to acquire one. Do:
+            // 1. Close the field and reopen for write.
+            // 2. Perform the update.
+            // 3. Write the new field to the substate store.
+            // 4. Return it.
+            VersionedAccessControllerState::V1(_) => {
+                // Close and reopen.
+                api.field_close(handle)?;
+                let handle = api.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    AccessControllerField::State.field_index(),
+                    LockFlags::MUTABLE,
+                )?;
+
+                let access_controller_updated_state = access_controller_state.update_to_latest();
+                api.field_write_typed(handle, &access_controller_updated_state)?;
+                (access_controller_updated_state.into_latest(), handle)
+            }
+            // No update required.
+            VersionedAccessControllerState::V2(access_controller_state) => {
+                (access_controller_state, handle)
+            }
+        };
+
+        // Call the callback with the state.
+        let rtn = callback(&mut access_controller_state, api)?;
+
+        // The callback is allowed to mutate the state of the access controller. Write the changes
+        // to the substate store.
+        api.field_write_typed(
+            handle,
+            &VersionedAccessControllerState::from(access_controller_state),
+        )?;
+
+        // Close the field.
+        api.field_close(handle)?;
+
+        // Return the callback's return
+        Ok(rtn)
+    }
+
+    /// This method is used to read the access controller state and perform any lazy updating
+    /// required.
+    fn with_state_mut<Y, F, O>(api: &mut Y, callback: F) -> Result<O, RuntimeError>
+    where
+        F: FnOnce(&mut AccessControllerV2Substate, &mut Y) -> Result<O, RuntimeError>,
+        Y: ClientApi<RuntimeError>,
+    {
+        // Get a write lock over the access-controller field.
+        let handle = api.actor_open_field(
+            ACTOR_STATE_SELF,
+            AccessControllerField::State.field_index(),
+            LockFlags::MUTABLE,
+        )?;
+
+        // Read the access controller state.
+        let access_controller_state =
+            api.field_read_typed::<VersionedAccessControllerState>(handle)?;
+
+        // Determine if updating the state is required or not.
+        let mut access_controller_state = match access_controller_state {
+            // State update is required. Do:
+            // 1. Perform the update.
+            // 2. Write the new field to the substate store.
+            // 3. Return it.
+            VersionedAccessControllerState::V1(_) => {
+                let access_controller_updated_state = access_controller_state.update_to_latest();
+                api.field_write_typed(handle, &access_controller_updated_state)?;
+                access_controller_updated_state.into_latest()
+            }
+            // No update required.
+            VersionedAccessControllerState::V2(access_controller_state) => access_controller_state,
+        };
+
+        // Call the callback with the state.
+        let rtn = callback(&mut access_controller_state, api)?;
+
+        // The callback is allowed to mutate the state of the access controller. Write the changes
+        // to the substate store.
+        api.field_write_typed(
+            handle,
+            &VersionedAccessControllerState::from(access_controller_state),
+        )?;
+
+        // Close the field.
+        api.field_close(handle)?;
+
+        // Return the callback's return
+        Ok(rtn)
     }
 }
 
@@ -676,60 +828,23 @@ fn init_roles_from_rule_set(rule_set: RuleSet) -> RoleAssignmentInit {
 fn transition<Y, I>(
     api: &mut Y,
     input: I,
-) -> Result<<AccessControllerV1Substate as Transition<I>>::Output, RuntimeError>
+) -> Result<<AccessControllerV2Substate as Transition<I>>::Output, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
-    AccessControllerV1Substate: Transition<I>,
+    AccessControllerV2Substate: Transition<I>,
 {
-    let handle = api.actor_open_field(
-        ACTOR_STATE_SELF,
-        AccessControllerField::State.field_index(),
-        LockFlags::read_only(),
-    )?;
-
-    let access_controller = {
-        let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
-        access_controller.into_latest()
-    };
-
-    let rtn = access_controller.transition(api, input)?;
-
-    api.field_close(handle)?;
-
-    Ok(rtn)
+    AccessControllerBlueprint::with_state(api, |state, api| state.transition(api, input))
 }
 
 fn transition_mut<Y, I>(
     api: &mut Y,
     input: I,
-) -> Result<<AccessControllerV1Substate as TransitionMut<I>>::Output, RuntimeError>
+) -> Result<<AccessControllerV2Substate as TransitionMut<I>>::Output, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
-    AccessControllerV1Substate: TransitionMut<I>,
+    AccessControllerV2Substate: TransitionMut<I>,
 {
-    let handle = api.actor_open_field(
-        ACTOR_STATE_SELF,
-        AccessControllerField::State.field_index(),
-        LockFlags::MUTABLE,
-    )?;
-
-    let mut access_controller = {
-        let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
-        access_controller.into_latest()
-    };
-
-    let rtn = access_controller.transition_mut(api, input)?;
-
-    {
-        api.field_write_typed(
-            handle,
-            &AccessControllerStateFieldPayload::from_content_source(access_controller),
-        )?;
-    }
-
-    api.field_close(handle)?;
-
-    Ok(rtn)
+    AccessControllerBlueprint::with_state_mut(api, |state, api| state.transition_mut(api, input))
 }
 
 fn update_role_assignment<Y>(

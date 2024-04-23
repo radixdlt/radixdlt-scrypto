@@ -1041,7 +1041,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                definition: AccessControllerV1NativePackage::definition(),
+                definition: AccessControllerV1NativePackage::definition(AccessControllerV1MinorVersion::Zero),
                 metadata: metadata_init! {
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;

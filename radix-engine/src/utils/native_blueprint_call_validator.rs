@@ -156,7 +156,7 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ ACCESS_CONTROLLER_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
+                &ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0,
                 package_address,
                 blueprint,
             )
@@ -218,7 +218,7 @@ fn get_arguments_schema<'s>(
                     .blueprints
                     .get(IDENTITY_BLUEPRINT),
 
-                EntityType::GlobalAccessController => ACCESS_CONTROLLER_PACKAGE_DEFINITION
+                EntityType::GlobalAccessController => ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0
                     .blueprints
                     .get(ACCESS_CONTROLLER_BLUEPRINT),
 

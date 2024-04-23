@@ -112,6 +112,15 @@ pub enum TypeRef<T> {
                // TODO: How to represent a structure containing a generic?
 }
 
+impl<T> TypeRef<T> {
+    pub fn into_static(self) -> T {
+        let Self::Static(value) = self else {
+            panic!("Not static!");
+        };
+        value
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintKeyValueSchema<T> {
     pub key: T,

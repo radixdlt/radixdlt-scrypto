@@ -7,14 +7,16 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::*;
 use sbor::rust::prelude::*;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AccessControllerV1MinorVersion {
     Zero,
+    One,
 }
 
 pub struct AccessControllerV1NativePackage;
 
 impl AccessControllerV1NativePackage {
-    pub fn definition() -> PackageDefinition {
+    pub fn definition(minor_version: AccessControllerV1MinorVersion) -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let feature_set = AccessControllerFeatureSet::all_features();
@@ -255,8 +257,61 @@ impl AccessControllerV1NativePackage {
                 export: ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
             },
         );
+        if minor_version >= AccessControllerV1MinorVersion::One {
+            functions.insert(
+                ACCESS_CONTROLLER_LOCK_RECOVERY_FEE_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AccessControllerLockRecoveryFeeInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AccessControllerLockRecoveryFeeOutput>(
+                            ),
+                    ),
+                    export: ACCESS_CONTROLLER_LOCK_RECOVERY_FEE_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                ACCESS_CONTROLLER_WITHDRAW_RECOVERY_FEE_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AccessControllerWithdrawRecoveryFeeInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AccessControllerWithdrawRecoveryFeeOutput>(
+                            ),
+                    ),
+                    export: ACCESS_CONTROLLER_WITHDRAW_RECOVERY_FEE_IDENT.to_string(),
+                },
+            );
+            functions.insert(
+                ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AccessControllerContributeRecoveryFeeInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<AccessControllerContributeRecoveryFeeOutput>(
+                            ),
+                    ),
+                    export: ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT.to_string(),
+                },
+            );
+        }
 
-        let events = event_schema! {
+        let mut events = event_schema! {
             aggregator,
             [
                 InitiateRecoveryEvent,
@@ -270,6 +325,63 @@ impl AccessControllerV1NativePackage {
                 CancelBadgeWithdrawAttemptEvent
             ]
         };
+        if minor_version >= AccessControllerV1MinorVersion::One {
+            let added_events = event_schema! {
+                aggregator,
+                [
+                    DepositRecoveryXrdEvent,
+                    WithdrawRecoveryXrdEvent
+                ]
+            };
+            events.event_schema.extend(added_events.event_schema);
+        }
+
+        let mut roles_template = roles_template!(
+            roles {
+                "primary" => updaters: [SELF_ROLE];
+                "recovery" => updaters: [SELF_ROLE];
+                "confirmation" => updaters: [SELF_ROLE];
+            },
+            methods {
+                ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => MethodAccessibility::Public;
+
+                ACCESS_CONTROLLER_CREATE_PROOF_IDENT => ["primary"];
+
+                ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => ["primary"];
+                ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary"];
+                ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => ["primary"];
+                ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  ["primary"];
+
+                ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => ["recovery"];
+                ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery"];
+                ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => ["recovery"];
+                ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery"];
+
+                ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => ["recovery"];
+                ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => ["recovery"];
+
+                ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery", "confirmation"];
+                ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery", "confirmation"];
+
+                ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary", "confirmation"];
+                ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["primary", "confirmation"];
+
+                ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => ["primary", "recovery"];
+
+                ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
+            }
+        );
+        if minor_version >= AccessControllerV1MinorVersion::One {
+            roles_template.methods.extend(
+                roles_template!(
+                    methods {
+                        ACCESS_CONTROLLER_LOCK_RECOVERY_FEE_IDENT => ["primary", "confirmation", "recovery"];
+                        ACCESS_CONTROLLER_WITHDRAW_RECOVERY_FEE_IDENT => ["primary"];
+                        ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT => MethodAccessibility::Public;
+                    }
+                ).methods
+            )
+        }
 
         let schema = generate_full_schema(aggregator);
         let blueprint_definition = BlueprintDefinitionInit {
@@ -291,41 +403,7 @@ impl AccessControllerV1NativePackage {
             royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig {
                 function_auth: FunctionAuth::AllowAll,
-                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
-                    roles {
-                        "primary" => updaters: [SELF_ROLE];
-                        "recovery" => updaters: [SELF_ROLE];
-                        "confirmation" => updaters: [SELF_ROLE];
-                    },
-                    methods {
-                        ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => MethodAccessibility::Public;
-
-                        ACCESS_CONTROLLER_CREATE_PROOF_IDENT => ["primary"];
-
-                        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => ["primary"];
-                        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary"];
-                        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => ["primary"];
-                        ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  ["primary"];
-
-                        ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => ["recovery"];
-                        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery"];
-                        ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => ["recovery"];
-                        ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery"];
-
-                        ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => ["recovery"];
-                        ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => ["recovery"];
-
-                        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery", "confirmation"];
-                        ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery", "confirmation"];
-
-                        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary", "confirmation"];
-                        ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["primary", "confirmation"];
-
-                        ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => ["primary", "recovery"];
-
-                        ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
-                    }
-                )),
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template),
             },
         };
 
@@ -348,6 +426,9 @@ impl AccessControllerV1NativePackage {
         match minor_version {
             AccessControllerV1MinorVersion::Zero => {
                 v1_0::AccessControllerBlueprint::invoke_export(export_name, input, api)
+            }
+            AccessControllerV1MinorVersion::One => {
+                v1_1::AccessControllerBlueprint::invoke_export(export_name, input, api)
             }
         }
     }

@@ -37,6 +37,9 @@ pub enum AccessControllerError {
         expected: Box<RecoveryProposal>,
         found: Box<RecoveryProposal>,
     },
+
+    /// No XRD fee vault exists, one needs to be created by depositing XRD first.
+    NoXrdFeeVault,
 }
 
 impl From<AccessControllerError> for RuntimeError {

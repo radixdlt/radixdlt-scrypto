@@ -73,7 +73,7 @@ fn resolve_typed_event_key_from_event_type_identifier(
             )
             .map(TypedNativeEventKey::from),
             ACCESS_CONTROLLER_PACKAGE => TypedAccessControllerPackageEventKey::new(
-                &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
+                &ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0,
                 &blueprint_id.blueprint_name,
                 &event_name,
             )

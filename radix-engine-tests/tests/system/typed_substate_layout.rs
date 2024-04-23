@@ -196,7 +196,7 @@ fn typed_native_event_type_contains_all_native_events() {
         "ConsensusManager" => CONSENSUS_MANAGER_PACKAGE_DEFINITION.deref(),
         "Account" => ACCOUNT_PACKAGE_DEFINITION.deref(),
         "Identity" => IDENTITY_PACKAGE_DEFINITION.deref(),
-        "AccessController" => ACCESS_CONTROLLER_PACKAGE_DEFINITION.deref(),
+        "AccessController" => ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0.deref(),
         "Pool" => POOL_PACKAGE_DEFINITION_V1_0.deref(),
         "TransactionTracker" => TRANSACTION_TRACKER_PACKAGE_DEFINITION.deref(),
         "Resource" => RESOURCE_PACKAGE_DEFINITION.deref(),
