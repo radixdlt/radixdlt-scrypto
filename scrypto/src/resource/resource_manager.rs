@@ -178,12 +178,12 @@ impl ScryptoResourceManager for ResourceManager {
 }
 
 impl ResourceManager {
-    #[deprecated = "Use FungibleResourceManager::set_updatable_non_fungible_data instead"]
+    #[deprecated = "Use NonFungibleResourceManager::set_updatable_non_fungible_data instead"]
     pub fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
         self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
     }
 
-    #[deprecated = "Use FungibleResourceManager::lock_updatable_non_fungible_data instead"]
+    #[deprecated = "Use NonFungibleResourceManager::lock_updatable_non_fungible_data instead"]
     pub fn lock_updatable_non_fungible_data(&self) {
         self.0
             .set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll);
