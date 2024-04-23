@@ -193,7 +193,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::Balance.into(),
             )
-            .map(|new_substate| new_substate.into_payload().into_latest().amount())
+            .map(|new_substate| new_substate.into_payload().fully_update_into_latest_version().amount())
             .map(|new_balance| {
                 let old_balance = self
                     .system_reader
@@ -202,7 +202,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                         MAIN_BASE_PARTITION,
                         &FungibleVaultField::Balance.into(),
                     )
-                    .map(|old_balance| old_balance.into_payload().into_latest().amount())
+                    .map(|old_balance| old_balance.into_payload().fully_update_into_latest_version().amount())
                     .unwrap_or(Decimal::ZERO);
 
                 // TODO: Handle potential Decimal arithmetic operation (safe_sub) errors instead of panicking.

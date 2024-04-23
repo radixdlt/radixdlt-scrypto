@@ -51,7 +51,7 @@ impl AccessControllerV1Substate {
 }
 
 declare_native_blueprint_state! {
-    blueprint_ident: AccessController,
+    blueprint_ident: AccessControllerV1,
     blueprint_snake_case: access_controller,
     features: {
     },
@@ -67,4 +67,5 @@ declare_native_blueprint_state! {
     collections: {}
 }
 
-pub type AccessControllerStateV1 = AccessControllerV1Substate;
+pub type AccessControllerV1StateV1 = AccessControllerV1Substate;
+pub type AccessControllerV1PartitionOffset = AccessControllerPartitionOffset;

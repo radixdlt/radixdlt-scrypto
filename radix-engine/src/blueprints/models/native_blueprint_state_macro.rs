@@ -31,25 +31,28 @@ use crate::internal_prelude::*;
 ///         kind: Generic,
 ///         ident: BlueprintGenericParameterIdent,
 ///     },
-///     // In future
 ///     {
 ///         kind: StaticMultiVersioned,
-///         previous_versions: [V1, V2],
-///         latest: V3,
+///         previous_versions: {
+///             1 => { updates_to: 2 },
+///             2 => { updates_to: 3 },
+///         },
+///         latest_version: 3,
 ///     }
 /// ```
 ///
-/// Choosing  `StaticSingleVersioned`, which will create a
-/// forward-compatible enum wrapper with a single version for the content.
+/// Choosing `StaticSingleVersioned`, which will create a forward-compatible enum wrapper with a single version for the content.
+///
 /// For Fields, it will assume the existence of a type called
 /// `<BlueprintIdent><FieldIdent>V1` and will generate the following types:
 /// * `<BlueprintIdent><FieldIdent>` - a type alias for the latest version (V1).
 /// * `Versioned<BlueprintIdent><FieldIdent>` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><FieldIdent>FieldPayload`.
 ///
-/// For collection values, it will assume the existence of `<BlueprintIdent><CollectionIdent>V1`
-/// and generate the following types:
+/// For collection values, it will assume the existence of `<BlueprintIdent><CollectionIdent>V1` and generate the following types:
 /// * `<BlueprintIdent><CollectionIdent>` - a type alias for the latest version (V1).
 /// * `Versioned<BlueprintIdent><CollectionIdent>` - the enum wrapper with a single version. This will be the content of `<BlueprintIdent><CollectionIdent>EntryPayload`.
+///
+/// Choosing `StaticMultiVersioned` will create the same types, but the type alias will be for the latest version.
 #[allow(unused)]
 macro_rules! declare_native_blueprint_state {
     (
@@ -579,7 +582,7 @@ mod helper_macros {
             paste::paste! {
                 sbor::define_single_versioned!(
                     $(#[$attributes])*
-                    pub enum [<Versioned $ident_core>] => $ident_core = [<$ident_core V1>]
+                    pub [<Versioned $ident_core>]([<$ident_core Versions>]) => $ident_core = [<$ident_core V1>]
                 );
                 declare_payload_new_type!(
                     content_trait: $content_trait,
@@ -589,20 +592,122 @@ mod helper_macros {
                     pub struct $payload_type_name([<Versioned $ident_core>]);
                 );
 
-                impl HasLatestVersion for $payload_type_name
+                impl $payload_type_name
                 {
-                    type Latest = <[<Versioned $ident_core>] as HasLatestVersion>::Latest;
-                    fn into_latest(self) -> Self::Latest {
-                        self.into_content().into_latest()
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update`]."]
+                    pub fn fully_update(self) -> Self {
+                        Self::of(self.content.fully_update())
                     }
 
-                    fn as_latest_ref(&self) -> Option<&Self::Latest> {
-                        self.as_ref().as_latest_ref()
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update_into_latest_version`]."]
+                    pub fn fully_update_into_latest_version(self) -> $ident_core {
+                        self.content.fully_update_into_latest_version()
+                    }
+
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::from_latest_version`]."]
+                    pub fn from_latest_version(latest_version: $ident_core) -> Self {
+                        [<Versioned $ident_core>]::from_latest_version(latest_version).into()
+                    }
+
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::into_unique_version`]."]
+                    pub fn into_unique_version(self) -> $ident_core {
+                        self.content.into_unique_version()
+                    }
+
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::from_unique_version`]."]
+                    pub fn from_unique_version(unique_version: $ident_core) -> Self {
+                        [<Versioned $ident_core>]::from_unique_version(unique_version).into()
                     }
                 }
 
-                // Now implement other relevant content traits, for:
-                // > The "latest" type: $ident_core
+                // Now implement the Content trait for other relevant content types that don't already have it:
+                // > The internal enum: [<$ident_core Versions>]
+                // > The latest (and unique) version: $ident_core = [<$ident_core V $latest_version_num>]
+                impl $content_trait<$payload_type_name> for [<$ident_core Versions>] {
+                    fn into_content(self) -> [<Versioned $ident_core>] {
+                        [<Versioned $ident_core>]::from(self).into()
+                    }
+                }
+
+                impl $content_trait<$payload_type_name> for $ident_core {
+                    fn into_content(self) -> [<Versioned $ident_core>] {
+                        self.into()
+                    }
+                }
+            }
+        };
+        (
+            content_trait: $content_trait:ident,
+            payload_trait: $payload_trait:ident,
+            ident_core: $ident_core:ident,
+            $(#[$attributes:meta])*
+            struct $payload_type_name:ident = {
+                kind: StaticMultiVersioned,
+                previous_versions: [
+                    $($version_num:expr => { updates_to: $update_to_version_num:expr }),*
+                    $(,)? // Optional trailing comma
+                ],
+                latest_version: $latest_version_num:expr
+                $(,)?
+            }$(,)?
+        ) => {
+            paste::paste! {
+                sbor::define_versioned!(
+                    $(#[$attributes])*
+                    pub [<Versioned $ident_core>]([<$ident_core Versions>]) {
+                        previous_versions: [
+                            $($version_num => [<$ident_core V $version_num>]: { updates_to: $update_to_version_num }),*
+                        ],
+                        latest_version: {
+                            $latest_version_num => $ident_core = [<$ident_core V $latest_version_num>]
+                        }
+                    }
+                );
+                declare_payload_new_type!(
+                    content_trait: $content_trait,
+                    payload_trait: $payload_trait,
+                    ----
+                    $(#[$attributes])*
+                    pub struct $payload_type_name([<Versioned $ident_core>]);
+                );
+
+                // NOTE: If updating here, also update StaticSingleVersioned
+                impl $payload_type_name
+                {
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update`]."]
+                    pub fn fully_update(self) -> Self {
+                        Self::of(self.content.fully_update())
+                    }
+
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update_into_latest_version`]."]
+                    pub fn fully_update_into_latest_version(self) -> $ident_core {
+                        self.content.fully_update_into_latest_version()
+                    }
+
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::from_latest_version`]."]
+                    pub fn from_latest_version(latest_version: $ident_core) -> Self {
+                        [<Versioned $ident_core>]::from_latest_version(latest_version).into()
+                    }
+                }
+
+                // Now implement the Content trait for other relevant content types that don't already have it:
+                // > The internal enum: [<$ident_core Versions>]
+                // > Each previous version: [<$ident_core V $version_num>]
+                // > The latest version: $ident_core = [<$ident_core V $latest_version_num>]
+                impl $content_trait<$payload_type_name> for [<$ident_core Versions>] {
+                    fn into_content(self) -> [<Versioned $ident_core>] {
+                        [<Versioned $ident_core>]::from(self).into()
+                    }
+                }
+
+                $(
+                    impl $content_trait<$payload_type_name> for [<$ident_core V $version_num>] {
+                        fn into_content(self) -> [<Versioned $ident_core>] {
+                            self.into()
+                        }
+                    }
+                )*
+
                 impl $content_trait<$payload_type_name> for $ident_core {
                     fn into_content(self) -> [<Versioned $ident_core>] {
                         self.into()
@@ -660,7 +765,6 @@ mod helper_macros {
                 impl [<$ident_core ContentMarker>] for RawScryptoValue<'_> {}
             }
         };
-        // TODO - Add support for some kind of StaticMultiVersioned type here
     }
 
     #[allow(unused)]
@@ -821,6 +925,22 @@ mod helper_macros {
             $blueprint_ident:ident,
             $aggregator:ident,
             {
+                kind: StaticMultiVersioned,
+                previous_versions: [
+                    $($version_num:expr => { updates_to: $update_to_version_num:expr }),*
+                    $(,)? // Optional trailing comma
+                ],
+                latest_version: $latest_version_num:expr
+                $(,)?
+            },
+            $payload_alias:ident$(,)?
+        ) => {
+            TypeRef::Static($aggregator.add_child_type_and_descendents::<$payload_alias>())
+        };
+        (
+            $blueprint_ident:ident,
+            $aggregator:ident,
+            {
                 kind: Static,
                 content_type: $static_type:ty
                 $(,)?
@@ -842,7 +962,7 @@ mod helper_macros {
             paste::paste! {
                 TypeRef::Generic([<$blueprint_ident Generic>]::$generic_ident.generic_index())
             }
-        }; // TODO - Add support for some kind of StaticMultiVersioned type here
+        };
     }
 
     #[allow(unused)]
@@ -954,8 +1074,8 @@ mod helper_macros {
 mod tests {
     use super::*;
 
-    // Check that the below compiles
-    #[derive(Debug, PartialEq, Eq, Sbor)]
+    // Types and Impls required by the macro:
+    #[derive(Debug, PartialEq, Eq, Sbor, Copy, Clone)]
     pub struct TestBlueprintRoyaltyV1;
 
     #[derive(Debug, PartialEq, Eq, Sbor)]
@@ -985,9 +1105,34 @@ mod tests {
         }
     }
 
+    pub struct ExampleSortedIndexKey(u16, BlueprintVersion);
+
+    impl SortedIndexKeyFullContent<TestBlueprintMyCoolSortedIndexKeyPayload> for ExampleSortedIndexKey {
+        fn from_sort_key_and_content(sort_key: u16, content: BlueprintVersion) -> Self {
+            ExampleSortedIndexKey(sort_key, content)
+        }
+
+        fn as_content(&self) -> &BlueprintVersion {
+            &self.1
+        }
+    }
+
+    impl SortedIndexKeyContentSource<TestBlueprintMyCoolSortedIndexKeyPayload>
+        for ExampleSortedIndexKey
+    {
+        fn sort_key(&self) -> u16 {
+            self.0
+        }
+
+        fn into_content(self) -> BlueprintVersion {
+            self.1
+        }
+    }
+
+    // Macro itself
     declare_native_blueprint_state! {
         blueprint_ident: TestBlueprint,
-        blueprint_snake_case: package,
+        blueprint_snake_case: test_blueprint_v1,
         generics: {
             abc: {
                 ident: Abc,
@@ -1057,30 +1202,6 @@ mod tests {
         }
     }
 
-    pub struct ExampleSortedIndexKey(u16, BlueprintVersion);
-
-    impl SortedIndexKeyFullContent<TestBlueprintMyCoolSortedIndexKeyPayload> for ExampleSortedIndexKey {
-        fn from_sort_key_and_content(sort_key: u16, content: BlueprintVersion) -> Self {
-            ExampleSortedIndexKey(sort_key, content)
-        }
-
-        fn as_content(&self) -> &BlueprintVersion {
-            &self.1
-        }
-    }
-
-    impl SortedIndexKeyContentSource<TestBlueprintMyCoolSortedIndexKeyPayload>
-        for ExampleSortedIndexKey
-    {
-        fn sort_key(&self) -> u16 {
-            self.0
-        }
-
-        fn into_content(self) -> BlueprintVersion {
-            self.1
-        }
-    }
-
     #[test]
     fn validate_declare_sorted_index_key_new_type_macro() {
         let mut bv = BlueprintVersion::default();
@@ -1099,45 +1220,39 @@ mod tests {
 
         assert_eq!(&bv, payload.as_ref());
         assert_eq!(&mut bv, payload.as_mut());
-        assert_eq!(
-            bv,
-            IndexKeyContentSource::into_content(payload.into_content())
-        );
+        assert_eq!(bv, payload.into_content());
     }
 
     #[test]
     fn validate_royalty_field_payload_mutability() {
-        let mut content = VersionedTestBlueprintRoyalty::V1(TestBlueprintRoyaltyV1);
-        let mut payload = TestBlueprintRoyaltyFieldPayload {
-            content: VersionedTestBlueprintRoyalty::V1(TestBlueprintRoyaltyV1),
-        };
+        let mut content = VersionedTestBlueprintRoyalty::from(TestBlueprintRoyaltyV1);
+        let mut payload = TestBlueprintRoyaltyFieldPayload::from(
+            VersionedTestBlueprintRoyalty::from(TestBlueprintRoyaltyV1),
+        );
         assert_eq!(&content, payload.as_ref());
         assert_eq!(&mut content, payload.as_mut());
+        let payload = TestBlueprintRoyaltyFieldPayload::from(VersionedTestBlueprintRoyalty::from(
+            TestBlueprintRoyaltyV1,
+        ));
         assert_eq!(
             &LockStatus::Locked,
             payload.into_locked_substate().lock_status()
         );
-
-        assert_eq!(
-            &LockStatus::Locked,
-            TestBlueprintRoyaltyV1.into_locked_substate().lock_status()
-        );
+        let payload = TestBlueprintRoyaltyFieldPayload::from(VersionedTestBlueprintRoyalty::from(
+            TestBlueprintRoyaltyV1,
+        ));
         assert_eq!(
             &LockStatus::Unlocked,
-            TestBlueprintRoyaltyV1
-                .into_unlocked_substate()
-                .lock_status()
+            payload.into_unlocked_substate().lock_status()
         );
     }
 
     #[test]
     fn validate_key_value_store_entry_payload_mutability() {
         fn create_payload() -> TestBlueprintMyCoolKeyValueStoreEntryPayload {
-            TestBlueprintMyCoolKeyValueStoreEntryPayload {
-                content: VersionedTestBlueprintMyCoolKeyValueStore::V1(
-                    TestBlueprintMyCoolKeyValueStoreV1,
-                ),
-            }
+            TestBlueprintMyCoolKeyValueStoreEntryPayload::of(
+                TestBlueprintMyCoolKeyValueStoreV1.into(),
+            )
         }
 
         assert_eq!(
@@ -1164,40 +1279,41 @@ mod tests {
                 .lock_status()
         );
 
-        assert!(create_payload().as_latest_ref().is_some());
+        assert!(create_payload().as_latest_version_ref().is_some());
     }
 
     #[test]
     fn validate_index_entry_payload() {
-        let payload = TestBlueprintMyCoolIndexEntryPayload {
-            content: VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1),
-        };
+        let payload = TestBlueprintMyCoolIndexEntryPayload::of(TestBlueprintMyCoolIndexV1.into());
         assert_eq!(
-            payload.into_substate().value().content,
-            VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1)
+            payload.into_substate().into_value().into_content(),
+            VersionedTestBlueprintMyCoolIndex::from(TestBlueprintMyCoolIndexV1)
         );
 
-        let content = VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1);
+        let content =
+            TestBlueprintMyCoolIndexVersions::V1(TestBlueprintMyCoolIndexV1).into_versioned();
         assert_eq!(
-            VersionedTestBlueprintMyCoolIndex::V1(TestBlueprintMyCoolIndexV1),
-            content.into_substate().value().content
+            VersionedTestBlueprintMyCoolIndex::from(TestBlueprintMyCoolIndexV1),
+            content.into_substate().into_value().into_content()
         );
     }
 
     #[test]
     fn validate_sorted_index_entry_payload() {
-        let payload = TestBlueprintMyCoolSortedIndexEntryPayload {
-            content: VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
-        };
+        let payload =
+            TestBlueprintMyCoolSortedIndexEntryPayload::of(TestBlueprintMyCoolSortedIndexV1.into());
         assert_eq!(
-            payload.into_substate().value().content,
-            VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1)
+            payload.into_substate().into_value().into_content(),
+            TestBlueprintMyCoolSortedIndexVersions::V1(TestBlueprintMyCoolSortedIndexV1)
+                .into_versioned()
         );
 
-        let content = VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1);
+        let content = TestBlueprintMyCoolSortedIndexVersions::V1(TestBlueprintMyCoolSortedIndexV1)
+            .into_versioned();
         assert_eq!(
-            VersionedTestBlueprintMyCoolSortedIndex::V1(TestBlueprintMyCoolSortedIndexV1),
-            content.into_substate().value().content
+            TestBlueprintMyCoolSortedIndexVersions::V1(TestBlueprintMyCoolSortedIndexV1)
+                .into_versioned(),
+            content.into_substate().into_value().into_content()
         );
     }
 
@@ -1235,5 +1351,187 @@ mod tests {
             &SubstateKey::Map(vec![92, 0])
         )
         .is_err());
+    }
+
+    // And now imagine we have a V2 blueprint needing types:
+
+    pub type TestBlueprintV2RoyaltyV1 = TestBlueprintRoyaltyV1;
+    pub type TestBlueprintV2MyCoolKeyValueStoreV1 = TestBlueprintMyCoolKeyValueStoreV1;
+    pub type TestBlueprintV2MyCoolIndexV1 = TestBlueprintMyCoolIndexV1;
+    pub type TestBlueprintV2MyCoolSortedIndexV1 = TestBlueprintMyCoolSortedIndexV1;
+
+    pub type TestBlueprintV2PartitionOffset = TestBlueprintPartitionOffset;
+
+    #[derive(Debug, PartialEq, Eq, Sbor, Clone)]
+    pub struct TestBlueprintV2RoyaltyV2 {
+        my_new_value: String,
+    }
+
+    impl From<TestBlueprintV2RoyaltyV1> for TestBlueprintV2RoyaltyV2 {
+        fn from(_value: TestBlueprintV2RoyaltyV1) -> Self {
+            Self {
+                my_new_value: "created during upgrade".to_string(),
+            }
+        }
+    }
+
+    impl SortedIndexKeyFullContent<TestBlueprintV2MyCoolSortedIndexKeyPayload>
+        for ExampleSortedIndexKey
+    {
+        fn from_sort_key_and_content(sort_key: u16, content: BlueprintVersion) -> Self {
+            ExampleSortedIndexKey(sort_key, content)
+        }
+
+        fn as_content(&self) -> &BlueprintVersion {
+            &self.1
+        }
+    }
+
+    impl SortedIndexKeyContentSource<TestBlueprintV2MyCoolSortedIndexKeyPayload>
+        for ExampleSortedIndexKey
+    {
+        fn sort_key(&self) -> u16 {
+            self.0
+        }
+
+        fn into_content(self) -> BlueprintVersion {
+            self.1
+        }
+    }
+
+    declare_native_blueprint_state! {
+        blueprint_ident: TestBlueprintV2,
+        blueprint_snake_case: test_blueprint_v2,
+        generics: {
+            abc: {
+                ident: Abc,
+                description: "Some generic parameter called Abc",
+            }
+        },
+        features: {
+            some_feature: {
+                ident: Feature,
+                description: "Some feature",
+            }
+        },
+        fields: {
+            royalty:  {
+                ident: Royalty,
+                field_type: {
+                    kind: StaticMultiVersioned,
+                    previous_versions: [
+                        1 => { updates_to: 2 }
+                    ],
+                    latest_version: 2,
+                },
+                condition: Condition::Always,
+            },
+            some_generic_field:  {
+                ident: GenericField,
+                field_type: {
+                    kind: Generic,
+                    ident: Abc,
+                },
+            }
+        },
+        collections: {
+            some_key_value_store: KeyValue {
+                entry_ident: MyCoolKeyValueStore,
+                key_type: {
+                    kind: Static,
+                    content_type: BlueprintVersion,
+                },
+                value_type: {
+                    kind: StaticSingleVersioned,
+                },
+                allow_ownership: true,
+            },
+            abc: Index {
+                entry_ident: MyCoolIndex,
+                key_type: {
+                    kind: Static,
+                    content_type: BlueprintVersion,
+                },
+                value_type: {
+                    kind: StaticSingleVersioned,
+                },
+                allow_ownership: true,
+            },
+            def: SortedIndex {
+                entry_ident: MyCoolSortedIndex,
+                key_type: {
+                    kind: Static,
+                    content_type: BlueprintVersion,
+                },
+                full_key_content: {
+                    full_content_type: ExampleSortedIndexKey,
+                    sort_prefix_property_name: sort_prefix,
+                },
+                value_type: {
+                    kind: StaticSingleVersioned,
+                },
+                allow_ownership: true,
+            },
+        }
+    }
+
+    #[test]
+    fn validate_v1_data_can_be_loaded_as_v1_or_v2() {
+        // ----------
+        // V1 Content
+        // ----------
+        // Content v1 is used by both TestBlueprint and TestBlueprintV2 - it's actually the same type
+        let content_v1 = TestBlueprintRoyaltyV1;
+        let v1_versioned_content_v1 = VersionedTestBlueprintRoyalty::from(content_v1.clone());
+        let v1_payload_v1 = TestBlueprintRoyaltyFieldPayload::of(content_v1.clone().into());
+        let v2_versioned_content_v1 = VersionedTestBlueprintV2Royalty::from(content_v1.clone());
+        let v2_payload_v1 = TestBlueprintV2RoyaltyFieldPayload::of(content_v1.clone().into());
+
+        // These should all be the same:
+        let encoded_v1_versioned_content_v1 = scrypto_encode(&v1_versioned_content_v1).unwrap();
+        let encoded_v1_payload_v1 = scrypto_encode(&v1_payload_v1).unwrap();
+        let encoded_v2_versioned_content_v1 = scrypto_encode(&v2_versioned_content_v1).unwrap();
+        let encoded_v2_payload_v1 = scrypto_encode(&v2_payload_v1).unwrap();
+
+        assert_eq!(encoded_v1_versioned_content_v1, encoded_v1_payload_v1);
+        assert_eq!(
+            encoded_v1_versioned_content_v1,
+            encoded_v2_versioned_content_v1
+        );
+        assert_eq!(encoded_v1_versioned_content_v1, encoded_v2_payload_v1);
+
+        let v1_payload_v1_decoded_as_v2 =
+            scrypto_decode::<TestBlueprintV2RoyaltyFieldPayload>(&encoded_v1_payload_v1).unwrap();
+        assert_eq!(&v1_payload_v1_decoded_as_v2, &v2_payload_v1);
+
+        // ----------
+        // V2 Content
+        // ----------
+        // Content v2 is used by only TestBlueprintV2:
+        let content_v2 = TestBlueprintV2RoyaltyV2 {
+            my_new_value: "created during upgrade".to_string(),
+        };
+        let v2_versioned_content_v2 = VersionedTestBlueprintV2Royalty::from(content_v2.clone());
+        let v2_payload_v2 = TestBlueprintV2RoyaltyFieldPayload::of(content_v2.clone().into());
+
+        // These should both be the same:
+        let encoded_v2_versioned_content_v2 = scrypto_encode(&v2_versioned_content_v2).unwrap();
+        let encoded_v2_payload_v2 = scrypto_encode(&v2_payload_v2).unwrap();
+        assert_eq!(encoded_v2_versioned_content_v2, encoded_v2_payload_v2);
+
+        // And we can check that upgrading it works:
+        let v2_payload_v1_updated =
+            TestBlueprintV2RoyaltyFieldPayload::of(content_v1.clone().into()).fully_update();
+        assert_eq!(&v2_payload_v1_updated, &v2_payload_v2);
+
+        // And deserializing into a v2_payload works:
+        let decoded_v2_payload_v2 =
+            scrypto_decode::<TestBlueprintV2RoyaltyFieldPayload>(&encoded_v2_payload_v2).unwrap();
+        assert_eq!(&decoded_v2_payload_v2, &v2_payload_v2);
+
+        // But deserializing as a v1_payload (which doesn't understand v2) breaks:
+        let decode_result_v1_payload_v2 =
+            scrypto_decode::<TestBlueprintRoyaltyFieldPayload>(&encoded_v2_payload_v2);
+        assert!(decode_result_v1_payload_v2.is_err());
     }
 }

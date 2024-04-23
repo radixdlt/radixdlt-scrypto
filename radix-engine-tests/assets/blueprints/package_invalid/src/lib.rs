@@ -1,4 +1,3 @@
-use sbor::*;
 use scrypto::prelude::*;
 use scrypto::radix_blueprint_schema_init::*;
 
@@ -21,11 +20,7 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
     );
 
     // Empty Schema
-    let empty_schema = VersionedScryptoSchema::V1(SchemaV1 {
-        type_kinds: Vec::new(),
-        type_metadata: Vec::new(),
-        type_validations: Vec::new(),
-    });
+    let empty_schema = Schema::empty().into_versioned();
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),

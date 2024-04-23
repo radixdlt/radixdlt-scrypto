@@ -59,8 +59,7 @@ mod tests {
                         D: sbor::Decoder<radix_common::data::scrypto::ScryptoCustomValueKind>
                     > sbor::Decode<radix_common::data::scrypto::ScryptoCustomValueKind, D> for MyEnum<T>
                 where
-                    T: sbor::Decode<radix_common::data::scrypto::ScryptoCustomValueKind, D>,
-                    T: sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind>
+                    T: sbor::Decode<radix_common::data::scrypto::ScryptoCustomValueKind, D>
                 {
                     #[inline]
                     fn decode_body_with_value_kind(

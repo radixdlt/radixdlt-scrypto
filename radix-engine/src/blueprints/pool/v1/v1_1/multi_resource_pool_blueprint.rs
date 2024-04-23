@@ -118,7 +118,7 @@ impl MultiResourcePoolBlueprint {
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                 indexmap! {
-                    MultiResourcePoolField::State.field_index() => FieldValue::new(&VersionedMultiResourcePoolState::V1(substate)),
+                    MultiResourcePoolField::State.field_index() => FieldValue::new(&MultiResourcePoolStateFieldPayload::from_content_source(substate)),
                 },
             )?
         };
@@ -591,7 +591,7 @@ impl MultiResourcePoolBlueprint {
             api.actor_open_field(ACTOR_STATE_SELF, substate_key, LockFlags::read_only())?;
         let substate = api
             .field_read_typed::<VersionedMultiResourcePoolState>(handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
 
         // Op
         let rtn = callback(substate, api);

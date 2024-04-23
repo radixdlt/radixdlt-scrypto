@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
 pub type VersionedScryptoSchema = VersionedSchema<ScryptoCustomSchema>;
+pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 
 /// A schema for the values that a codec can decode / views as valid

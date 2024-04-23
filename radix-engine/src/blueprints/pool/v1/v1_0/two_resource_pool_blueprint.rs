@@ -595,13 +595,9 @@ impl TwoResourcePoolBlueprint {
     {
         let substate_key = TwoResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
-        let two_resource_pool_substate =
-            api.field_read_typed::<VersionedTwoResourcePoolState>(handle)?;
-        let two_resource_pool_substate = match two_resource_pool_substate {
-            VersionedTwoResourcePoolState::V1(two_resource_pool_substate) => {
-                two_resource_pool_substate
-            }
-        };
+        let two_resource_pool_substate = api
+            .field_read_typed::<VersionedTwoResourcePoolState>(handle)?
+            .fully_update_into_latest_version();
 
         Ok((two_resource_pool_substate, handle))
     }

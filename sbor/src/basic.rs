@@ -30,6 +30,7 @@ pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomValueKind>;
 pub type BasicTraverser<'a> = VecTraverser<'a, NoCustomTraversal>;
 pub type BasicValue = Value<NoCustomValueKind, NoCustomValue>;
 pub type BasicValueKind = ValueKind<NoCustomValueKind>;
+pub type BasicEnumVariantValue = EnumVariantValue<NoCustomValueKind, NoCustomValue>;
 
 // 5b for (basic) [5b]or - (90 in decimal)
 pub const BASIC_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5b;

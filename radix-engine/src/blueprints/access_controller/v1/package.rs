@@ -19,8 +19,8 @@ impl AccessControllerV1NativePackage {
     pub fn definition(minor_version: AccessControllerV1MinorVersion) -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let feature_set = AccessControllerFeatureSet::all_features();
-        let state = AccessControllerStateSchemaInit::create_schema_init(&mut aggregator);
+        let feature_set = AccessControllerV1FeatureSet::all_features();
+        let state = AccessControllerV1StateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = index_map_new();
         functions.insert(

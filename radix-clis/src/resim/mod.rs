@@ -409,9 +409,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
         )
         .unwrap()?;
 
-    let bp_interface = match bp_definition {
-        VersionedPackageBlueprintVersionDefinition::V1(blueprint) => blueprint.interface,
-    };
+    let bp_interface = bp_definition.fully_update_into_latest_version().interface;
 
     let event_def = bp_interface.events.get(event_name)?;
     match event_def {
@@ -489,7 +487,7 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
                 started: true,
             })
         })
-        .into_latest();
+        .fully_update_into_latest_version();
 
     consensus_mgr_state.epoch = epoch;
 

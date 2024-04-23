@@ -918,7 +918,7 @@ impl NonFungibleResourceManagerBlueprint {
                 .field_read_typed::<NonFungibleResourceManagerMutableFieldsFieldPayload>(
                     data_schema_handle,
                 )?
-                .into_latest();
+                .fully_update_into_latest_version();
             mutable_fields
                 .mutable_field_index
                 .get(&field_name)
@@ -1167,7 +1167,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         let id_type = api
             .field_read_typed::<NonFungibleResourceManagerIdTypeFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
         let resource_type = ResourceType::NonFungible { id_type };
 
         Ok(resource_type)
@@ -1190,7 +1190,7 @@ impl NonFungibleResourceManagerBlueprint {
                 .field_read_typed::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
                     total_supply_handle,
                 )?
-                .into_latest();
+                .fully_update_into_latest_version();
             Ok(Some(total_supply))
         } else {
             Ok(None)
@@ -1291,7 +1291,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let id_type = api
             .field_read_typed::<NonFungibleResourceManagerIdTypeFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
         api.field_close(handle)?;
         if id_type == NonFungibleIdType::RUID {
             return Err(RuntimeError::ApplicationError(
@@ -1315,7 +1315,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
         let id_type = api
             .field_read_typed::<NonFungibleResourceManagerIdTypeFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
         api.field_close(handle)?;
 
         if id_type != NonFungibleIdType::RUID {
@@ -1390,7 +1390,7 @@ impl NonFungibleResourceManagerBlueprint {
                 .field_read_typed::<NonFungibleResourceManagerTotalSupplyFieldPayload>(
                     total_supply_handle,
                 )?
-                .into_latest();
+                .fully_update_into_latest_version();
             total_supply =
                 total_supply
                     .checked_add(amount)

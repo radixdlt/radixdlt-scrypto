@@ -59,8 +59,7 @@ mod tests {
                         D: sbor::Decoder<radix_common::data::manifest::ManifestCustomValueKind>
                     > sbor::Decode<radix_common::data::manifest::ManifestCustomValueKind, D> for MyEnum<T>
                 where
-                    T: sbor::Decode<radix_common::data::manifest::ManifestCustomValueKind, D>,
-                    T: sbor::Categorize<radix_common::data::manifest::ManifestCustomValueKind>
+                    T: sbor::Decode<radix_common::data::manifest::ManifestCustomValueKind, D>
                 {
                     #[inline]
                     fn decode_body_with_value_kind(

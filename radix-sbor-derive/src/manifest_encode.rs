@@ -59,8 +59,7 @@ mod tests {
                         E: sbor::Encoder<radix_common::data::manifest::ManifestCustomValueKind>
                     > sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E> for MyEnum<T>
                 where
-                    T: sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E>,
-                    T: sbor::Categorize<radix_common::data::manifest::ManifestCustomValueKind>
+                    T: sbor::Encode<radix_common::data::manifest::ManifestCustomValueKind, E>
                 {
                     #[inline]
                     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {

@@ -1605,11 +1605,11 @@ mod tests {
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],
-                    schema: VersionedScryptoSchema::V1(SchemaV1 {
+                    schema: SchemaV1 {
                         type_kinds: vec![],
                         type_metadata: vec![],
                         type_validations: vec![],
-                    }),
+                    }.into_versioned(),
                     state: BlueprintStateSchemaInit {
                         fields: vec![FieldSchema::static_field(LocalTypeId::WellKnown(UNIT_TYPE))],
                         collections: vec![],

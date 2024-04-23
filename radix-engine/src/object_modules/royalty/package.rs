@@ -426,7 +426,7 @@ impl ComponentRoyaltyBlueprint {
 
         let substate = api
             .field_read_typed::<ComponentRoyaltyAccumulatorFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_into_latest_version();
         let mut royalty_vault = substate.royalty_vault;
         let bucket = royalty_vault.take_all(api)?;
         api.field_close(handle)?;
@@ -457,7 +457,9 @@ impl ComponentRoyaltyBlueprint {
             .as_typed()
             .unwrap();
 
-        let component_royalty = component_royalty.into_payload().into_latest();
+        let component_royalty = component_royalty
+            .into_payload()
+            .fully_update_into_latest_version();
 
         let royalty_charge = {
             let handle = api.kernel_open_substate_with_default(
@@ -481,7 +483,7 @@ impl ComponentRoyaltyBlueprint {
             api.kernel_close_substate(handle)?;
             substate
                 .into_value()
-                .map(|v| v.into_latest())
+                .map(|v| v.fully_update_into_latest_version())
                 .unwrap_or(RoyaltyAmount::Free)
         };
 

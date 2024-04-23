@@ -154,6 +154,9 @@ pub fn validate_schema_field_name(name: &str) -> Result<(), SchemaValidationErro
     validate_schema_ident("field name", name)
 }
 
+// IMPORTANT:
+// For crate dependency regions, this is duplicated in `sbor-derive-common`
+// If you change it here, please change it there as well
 fn validate_schema_ident(ident_name: &str, name: &str) -> Result<(), SchemaValidationError> {
     if name.len() == 0 {
         return Err(SchemaValidationError::InvalidIdentName {
