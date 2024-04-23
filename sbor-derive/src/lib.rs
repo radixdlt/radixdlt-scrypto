@@ -91,10 +91,10 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///
 /// ## Specific functions
 ///
-/// * `[!stringify! X Y " " Z]` gives `"X Y \" \" Z"`
-/// * `[!concat! X Y " " Z]` gives `"XY Z"` by concatenating each argument stringified without spaces. String and char literals are first unquoted. Spaces can be added with " ".
-/// * `[!ident! X Y "Z"]` gives an ident `XYZ`.
-/// * `[!literal! 31 u 32]` gives `31u32`.
+/// * `[!stringify! X Y " " Z]` gives `"X Y \" \" Z"` - IMPORTANT: This uses `token_stream.into_string()` which is compiler-version dependent. Do not use if that is important. Instead, the output from `concat` should be independent of compiler version.
+/// * `[!concat! X Y " " Z (Hello World)]` gives `"XY Z(HelloWorld)"` by concatenating each argument without spaces, and recursing inside groups. String and char literals are first unquoted. Spaces can be added with " ".
+/// * `[!ident! X Y "Z"]` gives an ident `XYZ`, using the same algorithm as `concat`.
+/// * `[!literal! 31 u 32]` gives `31u32`, using the same algorithm as `concat`.
 /// * `[!raw! abc #abc [!ident! test]]` outputs its contents without any nested expansion, giving `abc #abc [!ident! test]`.
 ///
 /// Note that all functions except `raw` resolve in a nested manner as you would expected, e.g.
