@@ -1,4 +1,4 @@
-use radix_engine::blueprints::access_controller::v1::AccessControllerError;
+use radix_engine::blueprints::access_controller::AccessControllerError;
 use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::AuthError;

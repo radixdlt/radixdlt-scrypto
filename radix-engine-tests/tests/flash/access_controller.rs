@@ -1,6 +1,6 @@
 use radix_common::prelude::*;
-use radix_engine::blueprints::access_controller::v1::v1_1::*;
-use radix_engine::blueprints::access_controller::v1::*;
+use radix_engine::blueprints::access_controller::v2::*;
+use radix_engine::blueprints::access_controller::*;
 use radix_engine::system::system_db_reader::*;
 use radix_engine::updates::*;
 use radix_substate_store_queries::typed_native_events::*;
@@ -20,8 +20,7 @@ fn access_controller_package_definition_v1_0_matches_expected() {
     .unwrap();
 
     // Act
-    let package_definition =
-        AccessControllerV1NativePackage::definition(AccessControllerV1MinorVersion::Zero);
+    let package_definition = v1::AccessControllerV1NativePackage::definition();
 
     // Assert
     assert_eq!(package_definition, expected_package_definition);
