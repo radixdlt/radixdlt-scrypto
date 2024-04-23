@@ -709,8 +709,9 @@ impl AccessControllerBlueprint {
         )?;
 
         // Read the access controller state.
-        let access_controller_state =
-            api.field_read_typed::<AccessControllerV2StateFieldPayload>(handle)?;
+        let access_controller_state = api
+            .field_read_typed::<AccessControllerV2StateFieldPayload>(handle)?
+            .into_content();
 
         // Determine if updating the state is required or not. If a state update is required then
         // perform it and write it to the state. To do this we do the following:
@@ -718,36 +719,34 @@ impl AccessControllerBlueprint {
         //    reopen the field for write.
         // 2. Perform the update to the state and write it to the field.
         // 3. Return the state and the handle that should be closed later on.
-        let (mut access_controller_state, handle) =
-            if !access_controller_state.into_content().is_fully_updated() {
-                // Update the state to the latest version.
-                let access_controller_fully_updated_state =
-                    access_controller_state.into_content().fully_update();
+        let (mut access_controller_state, handle) = if !access_controller_state.is_fully_updated() {
+            // Update the state to the latest version.
+            let access_controller_fully_updated_state = access_controller_state.fully_update();
 
-                // Close the reopen the field with a write lock.
-                api.field_close(handle)?;
-                let handle = api.actor_open_field(
-                    ACTOR_STATE_SELF,
-                    AccessControllerV2Field::State.field_index(),
-                    LockFlags::MUTABLE,
-                )?;
+            // Close the reopen the field with a write lock.
+            api.field_close(handle)?;
+            let handle = api.actor_open_field(
+                ACTOR_STATE_SELF,
+                AccessControllerV2Field::State.field_index(),
+                LockFlags::MUTABLE,
+            )?;
 
-                // Write to the field.
-                api.field_write_typed(handle, &access_controller_fully_updated_state)?;
+            // Write to the field.
+            api.field_write_typed(handle, &access_controller_fully_updated_state)?;
 
-                // Return the state and the handle
-                (
-                    access_controller_fully_updated_state.fully_update_into_latest_version(),
-                    handle,
-                )
-            }
-            // Already fully updated - just return the state and the handle we already have.
-            else {
-                (
-                    access_controller_state.fully_update_into_latest_version(),
-                    handle,
-                )
-            };
+            // Return the state and the handle
+            (
+                access_controller_fully_updated_state.fully_update_into_latest_version(),
+                handle,
+            )
+        }
+        // Already fully updated - just return the state and the handle we already have.
+        else {
+            (
+                access_controller_state.fully_update_into_latest_version(),
+                handle,
+            )
+        };
 
         // Call the callback with the state.
         let rtn = callback(&mut access_controller_state, api)?;
@@ -774,29 +773,28 @@ impl AccessControllerBlueprint {
         )?;
 
         // Read the access controller state.
-        let access_controller_state =
-            api.field_read_typed::<AccessControllerV2StateFieldPayload>(handle)?;
+        let access_controller_state = api
+            .field_read_typed::<AccessControllerV2StateFieldPayload>(handle)?
+            .into_content();
 
         // Determine if updating the state is required or not. If a state update is required then
         // perform it and write it to the state. To do this we do the following:
         // 1. Perform the update to the state and write it to the field.
         // 2. Return the state and the handle that should be closed later on.
-        let mut access_controller_state =
-            if !access_controller_state.into_content().is_fully_updated() {
-                // Update the state to the latest version.
-                let access_controller_fully_updated_state =
-                    access_controller_state.into_content().fully_update();
+        let mut access_controller_state = if !access_controller_state.is_fully_updated() {
+            // Update the state to the latest version.
+            let access_controller_fully_updated_state = access_controller_state.fully_update();
 
-                // Write to the field.
-                api.field_write_typed(handle, &access_controller_fully_updated_state)?;
+            // Write to the field.
+            api.field_write_typed(handle, &access_controller_fully_updated_state)?;
 
-                // Return the state and the handle
-                access_controller_fully_updated_state.fully_update_into_latest_version()
-            }
-            // Already fully updated - just return the state and the handle we already have.
-            else {
-                access_controller_state.fully_update_into_latest_version()
-            };
+            // Return the state and the handle
+            access_controller_fully_updated_state.fully_update_into_latest_version()
+        }
+        // Already fully updated - just return the state and the handle we already have.
+        else {
+            access_controller_state.fully_update_into_latest_version()
+        };
 
         // Call the callback with the state.
         let rtn = callback(&mut access_controller_state, api)?;

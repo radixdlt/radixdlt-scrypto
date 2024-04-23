@@ -760,9 +760,10 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
         let original_code = ACCESS_CONTROLLER_V1_1_CODE_ID.to_be_bytes().to_vec();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
-        let code_substate = VersionedPackageCodeOriginalCode::V1(PackageCodeOriginalCodeV1 {
+        let code_substate = PackageCodeOriginalCodeV1 {
             code: original_code,
-        })
+        }
+        .into_versioned()
         .into_locked_substate();
         let vm_type_substate = PackageCodeVmTypeV1 {
             vm_type: VmType::Native,
@@ -784,7 +785,7 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
             )
             .unwrap()
             .unwrap()
-            .into_latest();
+            .fully_update_into_latest_version();
 
         blueprint_definition.interface.functions = new_blueprint_definition
             .schema

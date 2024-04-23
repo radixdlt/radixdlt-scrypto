@@ -157,8 +157,8 @@ impl AccessControllerBlueprint {
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
             indexmap! {
-                AccessControllerV1Field::State.field_index() => FieldValue::new(
-                    AccessControllerV1StateFieldPayload::from_content_source(substate)
+                AccessControllerField::State.field_index() => FieldValue::new(
+                    AccessControllerStateFieldPayload::from_content_source(substate)
                 ),
             },
         )?;
@@ -616,12 +616,12 @@ impl AccessControllerBlueprint {
         let resource_address = {
             let handle = api.actor_open_field(
                 ACTOR_STATE_SELF,
-                AccessControllerV1Field::State.field_index(),
+                AccessControllerField::State.field_index(),
                 LockFlags::read_only(),
             )?;
 
             let access_controller = {
-                let access_controller: AccessControllerV1StateFieldPayload =
+                let access_controller: AccessControllerStateFieldPayload =
                     api.field_read_typed(handle)?;
                 access_controller.fully_update_into_latest_version()
             };
@@ -685,13 +685,12 @@ where
 {
     let handle = api.actor_open_field(
         ACTOR_STATE_SELF,
-        AccessControllerV1Field::State.field_index(),
+        AccessControllerField::State.field_index(),
         LockFlags::read_only(),
     )?;
 
     let access_controller = {
-        let access_controller: AccessControllerV1StateFieldPayload =
-            api.field_read_typed(handle)?;
+        let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
         access_controller.fully_update_into_latest_version()
     };
 
@@ -712,13 +711,12 @@ where
 {
     let handle = api.actor_open_field(
         ACTOR_STATE_SELF,
-        AccessControllerV1Field::State.field_index(),
+        AccessControllerField::State.field_index(),
         LockFlags::MUTABLE,
     )?;
 
     let mut access_controller = {
-        let access_controller: AccessControllerV1StateFieldPayload =
-            api.field_read_typed(handle)?;
+        let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
         access_controller.fully_update_into_latest_version()
     };
 
@@ -727,7 +725,7 @@ where
     {
         api.field_write_typed(
             handle,
-            &AccessControllerV1StateFieldPayload::from_content_source(access_controller),
+            &AccessControllerStateFieldPayload::from_content_source(access_controller),
         )?;
     }
 

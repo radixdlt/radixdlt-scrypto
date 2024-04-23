@@ -97,5 +97,5 @@ declare_native_blueprint_state! {
 }
 
 pub type AccessControllerV2PartitionOffset = AccessControllerPartitionOffset;
-pub type AccessControllerV2StateV1 = AccessControllerV1StateV1;
+pub type AccessControllerV2StateV1 = AccessControllerStateV1;
 pub type AccessControllerV2StateV2 = AccessControllerV2Substate;
