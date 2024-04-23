@@ -2,6 +2,129 @@ use crate::blueprints::package::BlueprintType;
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
 
+#[repr(u64)]
+pub enum NativeCodeId {
+    /// * Introduced: Babylon
+    /// * Coverage  : All package blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    PackageCode1 = 0u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : All package blueprints
+    /// * Version   : v1_1
+    /// * Changes   : Add limit to reserved role key
+    PackageCode2 = 22u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All resource blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    ResourceCode1 = 1u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All identity blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    IdentityCode1,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All consensus manager blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    ConsensusManagerCode1,
+
+    /// * Introduced: Anemone
+    /// * Coverage  : `CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT` and `CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT`
+    /// * Version   : v1_1
+    /// * Changes   : Add second precision time
+    ConsensusManagerCode2 = 16u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All account blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    AccountCode1 = 5u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : `ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT` and `ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT`
+    /// * Version   : v1_1
+    /// * Changes   : Update `try_deposit` logic
+    AccountCode2 = 20u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All access controller blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    AccessControllerCode1 = 6u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All pool blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    PoolCode1 = 13u64,
+
+    /// * Introduced: Anemone
+    /// * Coverage  : All pool blueprints
+    /// * Version   : v1_1
+    /// * Changes   : Update pools to use precise decimal
+    PoolCode2 = 17u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All transaction tracker blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    TransactionTrackerCode1 = 14u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All test blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    TestUtilsCode1 = 15u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : All locker blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    LockerCode1 = 19u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All transaction processor blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    TransactionProcessorCode1 = 7u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : All transaction processor blueprints
+    /// * Version   : v1_1
+    /// * Changes   : N/A
+    TransactionProcessorCode2 = 21u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All metadata object module blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    MetadataCode1 = 10u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All royalty object module blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    RoyaltyCode1 = 11u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All role assignment object module blueprints
+    /// * Version   : v1_0
+    /// * Changes   : N/A
+    RoleAssignmentCode1 = 12u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : `ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT`
+    /// * Version   : v1_1
+    /// * Changes   : Add `get_owner_role``
+    RoleAssignmentCode2 = 18u64,
+}
+
 pub const PACKAGE_CODE_ID: u64 = 0u64;
 pub const RESOURCE_CODE_ID: u64 = 1u64;
 pub const IDENTITY_CODE_ID: u64 = 2u64;
