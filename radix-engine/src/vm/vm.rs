@@ -79,7 +79,7 @@ pub enum VmBoot {
 }
 
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
-    type InitInput = VmInit<'g, W, E>;
+    type Init = VmInit<'g, W, E>;
 
     fn init<S: BootStore>(store: &S, vm_init: VmInit<'g, W, E>) -> Result<Self, BootloadingError> {
         let vm_boot = store

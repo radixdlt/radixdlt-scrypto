@@ -1,26 +1,25 @@
 # Transaction Bootup
 
 The initialization of a transaction execution consists of two steps:
-1. Initialization of Kernel/System/VM
-2. Invocation of the Transaction Processor
+1. Initialize Stack
+2. Invoke Transaction Processor
 
 ![](bootup.drawio.png)
 
-## Initialization
+## Initialize Stack
 
-Before a transaction can be executed, initialization of Kernel/System/VM must occur. Several things occur
-at the point:
-1. Kernel creates the initial call frame
-2. Loading of System Layer configuration such as Fee Configuration from Ledger
-3. Loading of VM Configuration from Ledger
+Before a transaction is executed, initialization of the Kernel/System/VM stack occurs. During this
+initialization phase, configuration is loaded from the database and the state of each layer is
+initialized.
 
-This is also the point where the system modules to run are decided on. For example, if we are executing
-in preview mode with auth disabled, we may have the auth system module disabled.
+For example, during System initialization the system modules to run are decided on.
+If we are executing in preview mode with auth disabled, the auth system module may be disabled.
 
-The substates read for configuration load are not accessible to any other packages as it is part of the special
-Transaction Processor Component of which there is only one.
+The code for this can be found in [kernel.rs](../../src/kernel/kernel.rs) in the `Bootloader::execute`
+method.
 
-## Transaction Processor Invocation
+## Invoke Transaction Processor
 
-Once the kernel has been initialized the invocation of a function can be made. The system layer then
-makes a function call to a well-known blueprint in our case the TRANSACTION_PROCESSOR run function.
+Once the entire stack has been initialized along with the initial call frame, an invocation of a 
+well-known blueprint, `TRANSACTION_PROCESSOR`, is made with the arguments specified in the transaction.
+From this point forward, normal transaction execution occurs.

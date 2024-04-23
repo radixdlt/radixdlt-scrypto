@@ -39,7 +39,9 @@ pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
 }
 
 impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
-    pub fn check_references(
+
+    /// Checks that references exist in the store
+    fn check_references(
         &mut self,
         references: &IndexSet<Reference>,
     ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
@@ -136,23 +138,23 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             v.borrow_mut();
         });
 
-        // Create System
+        // System Initialization
         let mut callback = M::init(&mut self.track, executable, self.init.clone())?;
 
-        // Create Kernel
+        // Kernel Initialization
         let mut kernel = {
             // Check references
-            let engine_references = self
+            let (global_refs, direct_access_refs) = self
                 .check_references(executable.references())
                 .map_err(RejectionReason::BootloadingError)?;
 
             let mut kernel = Kernel::new(&mut self.track, &mut self.id_allocator, &mut callback);
 
-            // Add visibility
-            for global_ref in engine_references.0 {
+            // Initialize initial frame
+            for global_ref in global_refs {
                 kernel.current_frame.add_global_reference(global_ref);
             }
-            for direct_access in engine_references.1 {
+            for direct_access in direct_access_refs {
                 kernel
                     .current_frame
                     .add_direct_access_reference(direct_access);
@@ -178,14 +180,15 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             // Sanity check heap
             assert!(kernel.substate_io.heap.is_empty());
 
+            // Finalize state updates based on what has occurred
             let commit_info = kernel.substate_io.store.get_commit_info();
-
             kernel.callback.finish(commit_info)?;
 
             Ok(output)
         }()
         .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
+        // Create receipt representing the result of a transaction
         let receipt = M::create_receipt(callback, self.track, executable, result);
 
         Ok(receipt)

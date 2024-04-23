@@ -87,7 +87,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 
-    type Init = InjectCostingErrorInput<SystemInit<K::InitInput>>;
+    type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 

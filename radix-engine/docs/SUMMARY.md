@@ -11,7 +11,8 @@
     - Blueprint Definition (TODO)
   - [VM Layer](architecture/layers/vm.md)
   - [System Layer](architecture/layers/system.md)
-    - System / Object Modules (TODO)
+    - System Modules (TODO)
+    - Object Modules (TODO)
   - [Kernel Layer](architecture/layers/kernel.md)
   - [Database Layer](architecture/layers/database.md)
 - Data Architecture (TODO)
@@ -25,7 +26,7 @@
     - System Calls (TODO)
     - Invocations (TODO)
     - Move/Borrow Checking (TODO)
-  - Shutdown (TODO)
+  - [Shutdown](execution/shutdown.md)
 - Protocol Updates (TODO)
  
 # Native Systems

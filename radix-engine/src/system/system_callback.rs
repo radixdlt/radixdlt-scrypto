@@ -178,7 +178,7 @@ impl<C: SystemCallbackObject> System<C> {
         println!("References: {:?}", executable.references());
     }
 
-    pub fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
+    fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
         match store.read_substate(
@@ -195,7 +195,7 @@ impl<C: SystemCallbackObject> System<C> {
         }
     }
 
-    pub fn validate_epoch_range(
+    fn validate_epoch_range(
         current_epoch: Epoch,
         start_epoch_inclusive: Epoch,
         end_epoch_exclusive: Epoch,
@@ -216,7 +216,7 @@ impl<C: SystemCallbackObject> System<C> {
         Ok(())
     }
 
-    pub fn validate_intent_hash<S: CommitableSubstateStore>(
+    fn validate_intent_hash<S: CommitableSubstateStore>(
         track: &mut S,
         intent_hash: Hash,
         expiry_epoch: Epoch,
@@ -726,14 +726,14 @@ impl<C: SystemCallbackObject> System<C> {
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
-    type Init = SystemInit<C::InitInput>;
+    type Init = SystemInit<C::Init>;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &Executable,
-        init_input: SystemInit<C::InitInput>,
+        init_input: SystemInit<C::Init>,
     ) -> Result<Self, RejectionReason> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
@@ -848,14 +848,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         modules.init().map_err(RejectionReason::BootloadingError)?;
 
-        let system = System {
-            blueprint_cache: NonIterMap::new(),
-            auth_cache: NonIterMap::new(),
-            schema_cache: NonIterMap::new(),
-            callback,
-            modules,
-        };
-
         // Perform runtime validation.
         // TODO: the following assumptions can be removed with better interface.
         // We are assuming that intent hash store is ready when epoch manager is ready.
@@ -866,21 +858,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     current_epoch,
                     range.start_epoch_inclusive,
                     range.end_epoch_exclusive,
-                )
-                .and_then(|_| {
-                    Self::validate_intent_hash(
-                        store,
-                        executable.intent_hash().to_hash(),
-                        range.end_epoch_exclusive,
-                    )
-                })
-                .and_then(|_| Ok(system))
-            } else {
-                Ok(system)
+                )?;
+                Self::validate_intent_hash(
+                    store,
+                    executable.intent_hash().to_hash(),
+                    range.end_epoch_exclusive,
+                )?;
             }
-        } else {
-            Ok(system)
         }
+
+        let system = System {
+            blueprint_cache: NonIterMap::new(),
+            auth_cache: NonIterMap::new(),
+            schema_cache: NonIterMap::new(),
+            callback,
+            modules,
+        };
+        Ok(system)
     }
 
     fn start<Y>(
