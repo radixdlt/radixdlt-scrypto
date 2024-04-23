@@ -178,10 +178,12 @@ impl ScryptoResourceManager for ResourceManager {
 }
 
 impl ResourceManager {
+    #[deprecated = "Use FungibleResourceManager::set_updatable_non_fungible_data instead"]
     pub fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
         self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
     }
 
+    #[deprecated = "Use FungibleResourceManager::lock_updatable_non_fungible_data instead"]
     pub fn lock_updatable_non_fungible_data(&self) {
         self.0
             .set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll);
@@ -388,6 +390,64 @@ impl Deref for FungibleResourceManager {
     }
 }
 
+impl ScryptoResourceManager for FungibleResourceManager {
+    fn set_mintable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_mintable(access_rule)
+    }
+
+    fn set_burnable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_burnable(access_rule)
+    }
+
+    fn set_withdrawable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_withdrawable(access_rule)
+    }
+
+    fn set_depositable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_depositable(access_rule)
+    }
+
+    fn set_recallable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_recallable(access_rule)
+    }
+
+    fn set_freezeable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_freezeable(access_rule)
+    }
+
+    fn lock_mintable(&self) {
+        ResourceManager::from(*self).lock_mintable()
+    }
+
+    fn lock_burnable(&self) {
+        ResourceManager::from(*self).lock_burnable()
+    }
+
+    fn lock_withdrawable(&self) {
+        ResourceManager::from(*self).lock_withdrawable()
+    }
+
+    fn lock_depositable(&self) {
+        ResourceManager::from(*self).lock_depositable()
+    }
+
+    fn lock_recallable(&self) {
+        ResourceManager::from(*self).lock_recallable()
+    }
+
+    fn lock_freezeable(&self) {
+        ResourceManager::from(*self).lock_freezeable()
+    }
+
+    fn set_updatable_metadata(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_updatable_metadata(access_rule)
+    }
+
+    fn lock_updatable_metadata(&self) {
+        ResourceManager::from(*self).lock_updatable_metadata()
+    }
+}
+
 impl HasStub for FungibleResourceManagerStub {
     type Stub = Self;
 }
@@ -500,6 +560,75 @@ impl Deref for NonFungibleResourceManager {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl ScryptoResourceManager for NonFungibleResourceManager {
+    fn set_mintable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_mintable(access_rule)
+    }
+
+    fn set_burnable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_burnable(access_rule)
+    }
+
+    fn set_withdrawable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_withdrawable(access_rule)
+    }
+
+    fn set_depositable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_depositable(access_rule)
+    }
+
+    fn set_recallable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_recallable(access_rule)
+    }
+
+    fn set_freezeable(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_freezeable(access_rule)
+    }
+
+    fn lock_mintable(&self) {
+        ResourceManager::from(*self).lock_mintable()
+    }
+
+    fn lock_burnable(&self) {
+        ResourceManager::from(*self).lock_burnable()
+    }
+
+    fn lock_withdrawable(&self) {
+        ResourceManager::from(*self).lock_withdrawable()
+    }
+
+    fn lock_depositable(&self) {
+        ResourceManager::from(*self).lock_depositable()
+    }
+
+    fn lock_recallable(&self) {
+        ResourceManager::from(*self).lock_recallable()
+    }
+
+    fn lock_freezeable(&self) {
+        ResourceManager::from(*self).lock_freezeable()
+    }
+
+    fn set_updatable_metadata(&self, access_rule: AccessRule) {
+        ResourceManager::from(*self).set_updatable_metadata(access_rule)
+    }
+
+    fn lock_updatable_metadata(&self) {
+        ResourceManager::from(*self).lock_updatable_metadata()
+    }
+}
+
+impl NonFungibleResourceManager {
+    pub fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
+        self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
+    }
+
+    pub fn lock_updatable_non_fungible_data(&self) {
+        self.0
+            .set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 }
 
