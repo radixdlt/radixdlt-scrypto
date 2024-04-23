@@ -1,4 +1,3 @@
-use self::private::NoNonFungibleDataSchema;
 use crate::engine::scrypto_env::ScryptoVmV1Api;
 use crate::runtime::Runtime;
 use radix_common::constants::RESOURCE_PACKAGE;
@@ -17,7 +16,7 @@ use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 use sbor::FixedEnumVariant;
-use scrypto::resource::ResourceManager;
+use scrypto::resource::{FungibleResourceManager, NonFungibleResourceManager, ResourceManager};
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -29,7 +28,7 @@ pub const DIVISIBILITY_MAXIMUM: u8 = 18;
 /// * You start the building process with one of the methods starting with `new_`.
 /// * The allowed methods change depending on which methods have already been called.
 ///   For example, you can either use `owner_non_fungible_badge` or set access rules individually, but not both.
-/// * You can complete the building process using either `create_with_no_initial_supply()` or `mint_initial_supply(..)`.
+/// * You can complete the building process using either `create_without_initial_supply()` or `mint_initial_supply(..)`.
 ///
 /// ### Example
 /// ```no_run
@@ -132,7 +131,7 @@ impl ResourceBuilder {
 /// * You start the building process with one of the methods starting with `ResourceBuilder::new_`.
 /// * The allowed methods change depending on which methods have already been called.
 ///   For example, you can either use `owner_non_fungible_badge` or set access rules individually, but not both.
-/// * You can complete the building process using either `create_with_no_initial_supply()` or `mint_initial_supply(..)`.
+/// * You can complete the building process using either `create_without_initial_supply()` or `mint_initial_supply(..)`.
 ///
 /// ### Example
 /// ```no_run
@@ -528,68 +527,85 @@ pub trait SetOwnerBuilder: private::CanAddOwner {
 }
 impl<B: private::CanAddOwner> SetOwnerBuilder for B {}
 
-pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
-    /// Creates the resource with no initial supply.
+impl InProgressResourceBuilder<FungibleResourceType> {
+    fn create_without_initial_supply_internal(self) -> FungibleResourceManager {
+        let metadata = self.metadata_config.unwrap_or_else(|| Default::default());
+
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            scrypto_encode(&FungibleResourceManagerCreateInput {
+                owner_role: self.owner_role,
+                track_total_supply: true,
+                divisibility: self.resource_type.divisibility,
+                resource_roles: self.resource_roles,
+                metadata,
+                address_reservation: self.address_reservation,
+            })
+            .unwrap(),
+        );
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    /// Creates the fungible resource with no initial supply.
     ///
-    /// The resource's address is returned.
-    fn create_with_no_initial_supply(self) -> ResourceManager {
-        match self.into_create_with_no_supply_invocation() {
-            private::CreateWithNoSupply::Fungible {
-                owner_role,
-                divisibility,
-                resource_roles,
-                metadata,
-                address_reservation,
-            } => {
-                let metadata = metadata.unwrap_or_else(|| Default::default());
+    /// The resource's manager is returned
+    #[deprecated = "Use create_without_initial_supply() instead"]
+    pub fn create_with_no_initial_supply(self) -> ResourceManager {
+        self.create_without_initial_supply_internal().into()
+    }
 
-                let bytes = ScryptoVmV1Api::blueprint_call(
-                    RESOURCE_PACKAGE,
-                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                    scrypto_encode(&FungibleResourceManagerCreateInput {
-                        owner_role,
-                        divisibility,
-                        track_total_supply: true,
-                        metadata,
-                        resource_roles,
-                        address_reservation,
-                    })
-                    .unwrap(),
-                );
-                scrypto_decode(&bytes).unwrap()
-            }
-            private::CreateWithNoSupply::NonFungible {
-                owner_role,
-                id_type,
-                non_fungible_schema,
-                resource_roles,
-                metadata,
-                address_reservation,
-            } => {
-                let metadata = metadata.unwrap_or_else(|| Default::default());
-
-                let bytes = ScryptoVmV1Api::blueprint_call(
-                    RESOURCE_PACKAGE,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                    scrypto_encode(&NonFungibleResourceManagerCreateGenericInput {
-                        owner_role,
-                        id_type,
-                        track_total_supply: true,
-                        non_fungible_schema,
-                        resource_roles,
-                        metadata,
-                        address_reservation,
-                    })
-                    .unwrap(),
-                );
-                scrypto_decode(&bytes).unwrap()
-            }
-        }
+    /// Creates the fungible resource with no initial supply.
+    ///
+    /// The fungible resource's manager is returned
+    pub fn create_without_initial_supply(self) -> FungibleResourceManager {
+        self.create_without_initial_supply_internal()
     }
 }
-impl<B: private::CanCreateWithNoSupply> CreateWithNoSupplyBuilder for B {}
+
+impl<
+        Y: IsNonFungibleLocalId,
+        D: NonFungibleData,
+        S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
+    > InProgressResourceBuilder<NonFungibleResourceType<Y, D, S>>
+{
+    fn create_without_initial_supply_internal(self) -> NonFungibleResourceManager {
+        let metadata = self.metadata_config.unwrap_or_else(|| Default::default());
+
+        let bytes = ScryptoVmV1Api::blueprint_call(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerCreateGenericInput {
+                owner_role: self.owner_role,
+                id_type: Y::id_type(),
+                track_total_supply: true,
+                non_fungible_schema: self.resource_type.0,
+                resource_roles: self.resource_roles,
+                metadata,
+                address_reservation: self.address_reservation,
+            })
+            .unwrap(),
+        );
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    /// Creates the non-fungible resource with no initial supply.
+    ///
+    /// The resource's address is returned.
+    #[deprecated = "Use create_without_initial_supply() instead"]
+    pub fn create_with_no_initial_supply(self) -> ResourceManager {
+        self.create_without_initial_supply_internal().into()
+    }
+
+    /// Creates the non-fungible resource with no initial supply.
+    ///
+    /// The non-fungible resource's manager is returned
+    pub fn create_without_initial_supply(self) -> NonFungibleResourceManager {
+        self.create_without_initial_supply_internal()
+    }
+}
 
 impl InProgressResourceBuilder<FungibleResourceType> {
     /// Set the resource's divisibility: the number of digits of precision after the decimal point in its balances.
@@ -910,43 +926,6 @@ impl<T: AnyResourceType> private::CanSetAddressReservation for InProgressResourc
     }
 }
 
-impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResourceType> {
-    type NonFungibleDataSchema = NoNonFungibleDataSchema;
-
-    fn into_create_with_no_supply_invocation(
-        self,
-    ) -> private::CreateWithNoSupply<NoNonFungibleDataSchema> {
-        private::CreateWithNoSupply::Fungible {
-            owner_role: self.owner_role,
-            divisibility: self.resource_type.divisibility,
-            resource_roles: self.resource_roles,
-            metadata: self.metadata_config,
-            address_reservation: self.address_reservation,
-        }
-    }
-}
-
-impl<
-        Y: IsNonFungibleLocalId,
-        D: NonFungibleData,
-        S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
-    > private::CanCreateWithNoSupply
-    for InProgressResourceBuilder<NonFungibleResourceType<Y, D, S>>
-{
-    type NonFungibleDataSchema = S;
-
-    fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply<S> {
-        private::CreateWithNoSupply::NonFungible {
-            owner_role: self.owner_role,
-            id_type: Y::id_type(),
-            non_fungible_schema: self.resource_type.0,
-            resource_roles: self.resource_roles,
-            metadata: self.metadata_config,
-            address_reservation: self.address_reservation,
-        }
-    }
-}
-
 /// This file was experiencing combinatorial explosion - as part of the clean-up, we've used private traits to keep things simple.
 ///
 /// Each public method has essentially one implementation, and one Rust doc (where there weren't clashes due to Rust trait issues -
@@ -993,32 +972,4 @@ mod private {
 
         fn set_owner(self, owner_badge: NonFungibleGlobalId) -> Self::OutputBuilder;
     }
-
-    pub trait CanCreateWithNoSupply: Sized {
-        type NonFungibleDataSchema: ScryptoCategorize + ScryptoEncode + ScryptoDecode;
-
-        fn into_create_with_no_supply_invocation(
-            self,
-        ) -> CreateWithNoSupply<Self::NonFungibleDataSchema>;
-    }
-
-    pub enum CreateWithNoSupply<S: ScryptoCategorize + ScryptoEncode + ScryptoDecode> {
-        Fungible {
-            owner_role: OwnerRole,
-            divisibility: u8,
-            resource_roles: FungibleResourceRoles,
-            metadata: Option<ModuleConfig<MetadataInit>>,
-            address_reservation: Option<GlobalAddressReservation>,
-        },
-        NonFungible {
-            owner_role: OwnerRole,
-            id_type: NonFungibleIdType,
-            non_fungible_schema: S,
-            resource_roles: NonFungibleResourceRoles,
-            metadata: Option<ModuleConfig<MetadataInit>>,
-            address_reservation: Option<GlobalAddressReservation>,
-        },
-    }
-
-    pub type NoNonFungibleDataSchema = ();
 }
