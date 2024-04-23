@@ -14,7 +14,7 @@ use crate::kernel::kernel_api::*;
 use crate::system::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::system::node_init::type_info_partition;
 use crate::system::system_callback::{
-    FieldLockData, KeyValueEntryLockData, System, SystemLockData, SystemVersion,
+    FieldLockData, KeyValueEntryLockData, System, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -2375,11 +2375,10 @@ where
     }
 
     fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
-        if self.api.kernel_get_system().system_version > SystemVersion::Anemone {
-            self.api
-                .kernel_get_system()
-                .modules
-                .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+        if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
+            costing
+                .apply_execution_cost_after_update(ExecutionCostingEntry::QueryFeeReserve)
+                .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
         }
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
@@ -2392,14 +2391,10 @@ where
     }
 
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, RuntimeError> {
-        if self.api.kernel_get_system().system_version > SystemVersion::Anemone {
-            self.api
-                .kernel_get_system()
-                .modules
-                .apply_execution_cost(ExecutionCostingEntry::QueryCostingModule)?;
-        }
-
-        if let Some(costing) = self.api.kernel_get_system().modules.costing() {
+        if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
+            costing
+                .apply_execution_cost_after_update(ExecutionCostingEntry::QueryCostingModule)
+                .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
             Ok(costing.max_per_function_royalty_in_xrd)
         } else {
             Err(RuntimeError::SystemError(

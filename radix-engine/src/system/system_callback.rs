@@ -56,8 +56,6 @@ use crate::transaction::{
     SystemStructure, TransactionFeeDetails, TransactionOutcome, TransactionReceipt,
     TransactionResult, TransactionResultType,
 };
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
@@ -78,7 +76,6 @@ use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, inter
 use radix_transactions::model::{Executable, PreAllocatedAddress, TransactionIntentHash};
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
-pub const BOOT_LOADER_SYSTEM_VERSION_SUBSTATE_FIELD_KEY: FieldKey = 2u8;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SystemParameters {
@@ -86,25 +83,12 @@ pub struct SystemParameters {
     pub costing_parameters: CostingParameters,
     pub limit_parameters: LimitParameters,
     pub max_per_function_royalty_in_xrd: Decimal,
+    pub apply_additional_costing: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, FromPrimitive, ScryptoSbor)]
-pub enum SystemVersion {
-    Anemone,
-    Bottlenose,
-    // New system version add here (before Latest)
-    IntenralLatest,
-}
-impl SystemVersion {
-    pub fn get_latest_version() -> Self {
-        SystemVersion::from_usize((SystemVersion::IntenralLatest as usize) - 1)
-            .expect("Cannot get latest System Version")
-    }
 }
 
 #[derive(Clone)]
@@ -175,7 +159,6 @@ pub struct System<C: SystemCallbackObject> {
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
-    pub system_version: SystemVersion,
 }
 
 impl<C: SystemCallbackObject> System<C> {
@@ -775,21 +758,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                         MAX_PER_FUNCTION_ROYALTY_IN_XRD,
                     )
                     .unwrap(),
+                    apply_additional_costing: false,
                 }));
 
             match system_boot {
                 SystemBoot::V1(system_parameters) => system_parameters,
             }
         };
-
-        let system_version = store
-            .read_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_SYSTEM_VERSION_SUBSTATE_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(SystemVersion::Anemone);
 
         let callback =
             C::init(store, init_input.callback_init).map_err(RejectionReason::BootloadingError)?;
@@ -861,6 +836,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 None
             },
             on_apply_cost: Default::default(),
+            apply_additional_costing: system_parameters.apply_additional_costing,
         };
 
         let mut modules = SystemModuleMixer::new(
@@ -881,7 +857,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             schema_cache: NonIterMap::new(),
             callback,
             modules,
-            system_version,
         };
 
         // Perform runtime validation.
@@ -1715,12 +1690,4 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
-}
-
-#[test]
-fn check_latest_system_version() {
-    assert_eq!(
-        SystemVersion::Bottlenose,
-        SystemVersion::get_latest_version()
-    )
 }

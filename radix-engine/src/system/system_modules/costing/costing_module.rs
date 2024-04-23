@@ -89,6 +89,8 @@ pub struct CostingModule {
     pub cost_breakdown: Option<CostBreakdown>,
 
     pub on_apply_cost: OnApplyCost,
+
+    pub apply_additional_costing: bool,
 }
 
 impl CostingModule {
@@ -114,6 +116,16 @@ impl CostingModule {
         }
 
         Ok(())
+    }
+
+    pub fn apply_execution_cost_after_update(
+        &mut self,
+        costing_entry: ExecutionCostingEntry,) -> Result<(), CostingError> {
+        if self.apply_additional_costing {
+            self.apply_execution_cost(costing_entry)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn apply_deferred_execution_cost(

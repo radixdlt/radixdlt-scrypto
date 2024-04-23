@@ -276,6 +276,7 @@ where
                     .unwrap(),
                     cost_breakdown: Some(Default::default()),
                     on_apply_cost: Default::default(),
+                    apply_additional_costing: false,
                 };
 
                 System {
@@ -298,7 +299,6 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
-                    system_version: SystemVersion::get_latest_version(),
                 }
             },
             |system_config, track, id_allocator| {

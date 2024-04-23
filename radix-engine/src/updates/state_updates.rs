@@ -6,8 +6,7 @@ use crate::blueprints::pool::v1::constants::*;
 use crate::internal_prelude::*;
 use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::{
-    SystemBoot, SystemParameters, SystemVersion, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
-    BOOT_LOADER_SYSTEM_VERSION_SUBSTATE_FIELD_KEY,
+    SystemBoot, SystemParameters, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
 };
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
@@ -707,13 +706,9 @@ pub fn generate_protocol_params_to_state_state_updates(
                                     costing_parameters: CostingParameters::babylon_genesis(),
                                     limit_parameters: LimitParameters::babylon_genesis(),
                                     max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+                                    apply_additional_costing: true,
                                 })).unwrap()
                             ),
-                            SubstateKey::Field(BOOT_LOADER_SYSTEM_VERSION_SUBSTATE_FIELD_KEY) => {
-                                DatabaseUpdate::Set(
-                                    scrypto_encode(&SystemVersion::get_latest_version()).unwrap()
-                                )
-                            }
                         }
                     },
                 }
