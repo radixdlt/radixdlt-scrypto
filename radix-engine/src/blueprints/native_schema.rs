@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use radix_engine_interface::blueprints::package::*;
 
 use crate::blueprints::access_controller::v1::*;
+use crate::blueprints::access_controller::v2::*;
 use crate::blueprints::account::*;
 use crate::blueprints::consensus_manager::*;
 use crate::blueprints::identity::*;
@@ -22,11 +23,11 @@ lazy_static! {
         AccountNativePackage::definition();
     pub static ref IDENTITY_PACKAGE_DEFINITION: PackageDefinition =
         IdentityNativePackage::definition();
-    pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0: PackageDefinition =
-        AccessControllerV1NativePackage::definition(AccessControllerV1MinorVersion::Zero);
-    pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_1: PackageDefinition =
-        AccessControllerV1NativePackage::definition(AccessControllerV1MinorVersion::One);
-    pub static ref POOL_PACKAGE_DEFINITION_V1_0: PackageDefinition =
+    pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1: PackageDefinition =
+        AccessControllerV1NativePackage::definition();
+    pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION_V2: PackageDefinition =
+        AccessControllerV2NativePackage::definition();
+    pub static ref POOL_PACKAGE_DEFINITION_V2: PackageDefinition =
         PoolNativePackage::definition(PoolV1MinorVersion::Zero);
     pub static ref POOL_PACKAGE_DEFINITION_V1_1: PackageDefinition =
         PoolNativePackage::definition(PoolV1MinorVersion::One);

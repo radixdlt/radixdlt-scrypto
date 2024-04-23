@@ -1,4 +1,5 @@
 use crate::blueprints::access_controller::v1::*;
+use crate::blueprints::access_controller::v2::*;
 use crate::blueprints::consensus_manager::*;
 use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::models::KeyValueEntryContentSource;
@@ -729,16 +730,14 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
         blueprint: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
         version: Default::default(),
     };
-    let old_blueprint_definition =
-        AccessControllerV1NativePackage::definition(AccessControllerV1MinorVersion::Zero)
-            .blueprints
-            .swap_remove(ACCESS_CONTROLLER_BLUEPRINT)
-            .unwrap();
-    let new_blueprint_definition =
-        AccessControllerV1NativePackage::definition(AccessControllerV1MinorVersion::One)
-            .blueprints
-            .swap_remove(ACCESS_CONTROLLER_BLUEPRINT)
-            .unwrap();
+    let old_blueprint_definition = AccessControllerV1NativePackage::definition()
+        .blueprints
+        .swap_remove(ACCESS_CONTROLLER_BLUEPRINT)
+        .unwrap();
+    let new_blueprint_definition = AccessControllerV2NativePackage::definition()
+        .blueprints
+        .swap_remove(ACCESS_CONTROLLER_BLUEPRINT)
+        .unwrap();
 
     let old_schema_hash = old_blueprint_definition
         .schema

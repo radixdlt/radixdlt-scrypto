@@ -1,7 +1,4 @@
-use super::state_machine::*;
-use super::*;
-use crate::blueprints::access_controller::v1::*;
-use crate::errors::*;
+use super::internal_prelude::*;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::field_api::*;
 use radix_engine_interface::api::object_api::*;
@@ -16,9 +13,9 @@ use radix_native_sdk::resource::*;
 use radix_native_sdk::runtime::*;
 use sbor::rust::prelude::*;
 
-pub struct AccessControllerBlueprint;
+pub struct AccessControllerV1Blueprint;
 
-impl AccessControllerBlueprint {
+impl AccessControllerV1Blueprint {
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,

@@ -156,14 +156,14 @@ fn get_arguments_schema<'s>(
         }
         Invocation::Function(package_address @ ACCESS_CONTROLLER_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(
-                &ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0,
+                &ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1,
                 package_address,
                 blueprint,
             )
             .map(Some)?
         }
         Invocation::Function(package_address @ POOL_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(&POOL_PACKAGE_DEFINITION_V1_0, package_address, blueprint)
+            get_blueprint_schema(&POOL_PACKAGE_DEFINITION_V2, package_address, blueprint)
                 .map(Some)?
         }
         Invocation::Function(package_address @ TRANSACTION_PROCESSOR_PACKAGE, ref blueprint, _) => {
@@ -218,17 +218,17 @@ fn get_arguments_schema<'s>(
                     .blueprints
                     .get(IDENTITY_BLUEPRINT),
 
-                EntityType::GlobalAccessController => ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0
+                EntityType::GlobalAccessController => ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1
                     .blueprints
                     .get(ACCESS_CONTROLLER_BLUEPRINT),
 
-                EntityType::GlobalOneResourcePool => POOL_PACKAGE_DEFINITION_V1_0
+                EntityType::GlobalOneResourcePool => POOL_PACKAGE_DEFINITION_V2
                     .blueprints
                     .get(ONE_RESOURCE_POOL_BLUEPRINT_IDENT),
-                EntityType::GlobalTwoResourcePool => POOL_PACKAGE_DEFINITION_V1_0
+                EntityType::GlobalTwoResourcePool => POOL_PACKAGE_DEFINITION_V2
                     .blueprints
                     .get(TWO_RESOURCE_POOL_BLUEPRINT_IDENT),
-                EntityType::GlobalMultiResourcePool => POOL_PACKAGE_DEFINITION_V1_0
+                EntityType::GlobalMultiResourcePool => POOL_PACKAGE_DEFINITION_V2
                     .blueprints
                     .get(MULTI_RESOURCE_POOL_BLUEPRINT_IDENT),
 

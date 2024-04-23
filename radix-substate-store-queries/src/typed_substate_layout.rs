@@ -6,7 +6,7 @@ use radix_engine_interface::prelude::*;
 
 // Import and re-export these types so they are available easily with a single import
 use radix_common::prelude::*;
-pub use radix_engine::blueprints::access_controller::v1::v1_1::*;
+pub use radix_engine::blueprints::access_controller::latest::*;
 pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, AccountNativePackage};
 use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
 pub use radix_engine::blueprints::consensus_manager::*;

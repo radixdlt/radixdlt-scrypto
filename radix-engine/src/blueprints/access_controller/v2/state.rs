@@ -1,4 +1,7 @@
-use crate::blueprints::access_controller::v1::*;
+use super::internal_prelude::*;
+use crate::blueprints::access_controller::v1::{
+    AccessControllerStateV1, AccessControllerV1Substate,
+};
 use crate::internal_prelude::*;
 use crate::*;
 use radix_blueprint_schema_init::*;
@@ -9,9 +12,12 @@ use sbor::rust::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 #[sbor(type_name = "AccessControllerSubstate")]
-pub struct AccessControllerV1Substate {
+pub struct AccessControllerV2Substate {
     /// A vault where the asset controlled by the access controller lives.
     pub controlled_asset: Vault,
+
+    /// A vault that stores some XRD that can be used by any of the three roles for locking fees.
+    pub xrd_fee_vault: Option<Vault>,
 
     /// The amount of time (in minutes) that it takes for timed recovery to be done. Maximum is
     /// 4,294,967,295 minutes which is 8171.5511700913 years. When this is [`None`], then timed
@@ -35,14 +41,16 @@ pub struct AccessControllerV1Substate {
     ),
 }
 
-impl AccessControllerV1Substate {
+impl AccessControllerV2Substate {
     pub fn new(
         controlled_asset: Vault,
+        xrd_fee_vault: Option<Vault>,
         timed_recovery_delay_in_minutes: Option<u32>,
         recovery_badge: ResourceAddress,
     ) -> Self {
         Self {
             controlled_asset,
+            xrd_fee_vault,
             timed_recovery_delay_in_minutes,
             recovery_badge,
             state: Default::default(),
@@ -50,8 +58,27 @@ impl AccessControllerV1Substate {
     }
 }
 
+impl From<AccessControllerV1Substate> for AccessControllerV2Substate {
+    fn from(
+        AccessControllerV1Substate {
+            controlled_asset,
+            timed_recovery_delay_in_minutes,
+            recovery_badge,
+            state,
+        }: AccessControllerV1Substate,
+    ) -> Self {
+        Self {
+            controlled_asset,
+            xrd_fee_vault: None,
+            timed_recovery_delay_in_minutes,
+            recovery_badge,
+            state,
+        }
+    }
+}
+
 declare_native_blueprint_state! {
-    blueprint_ident: AccessController,
+    blueprint_ident: AccessControllerV2,
     blueprint_snake_case: access_controller,
     features: {
     },
@@ -59,7 +86,11 @@ declare_native_blueprint_state! {
         state:  {
             ident: State,
             field_type: {
-                kind: StaticSingleVersioned,
+                kind: StaticMultiVersioned,
+                previous_versions: [
+                    1 => { updates_to: 2 }
+                ],
+                latest_version: 2,
             },
             condition: Condition::Always,
         }
@@ -67,4 +98,6 @@ declare_native_blueprint_state! {
     collections: {}
 }
 
-pub type AccessControllerStateV1 = AccessControllerV1Substate;
+pub type AccessControllerV2PartitionOffset = AccessControllerPartitionOffset;
+pub type AccessControllerV2StateV1 = AccessControllerStateV1;
+pub type AccessControllerV2StateV2 = AccessControllerV2Substate;

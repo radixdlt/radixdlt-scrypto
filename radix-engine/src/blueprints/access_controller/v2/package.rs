@@ -6,15 +6,15 @@ use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::*;
 use sbor::rust::prelude::*;
 
-pub struct AccessControllerV1NativePackage;
+pub struct AccessControllerV2NativePackage;
 
-impl AccessControllerV1NativePackage {
+impl AccessControllerV2NativePackage {
     pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         // Using the feature set from v1. They should be the same between v1 and v1.1.
-        let feature_set = AccessControllerFeatureSet::all_features();
-        let state = AccessControllerStateSchemaInit::create_schema_init(&mut aggregator);
+        let feature_set = AccessControllerV2FeatureSet::all_features();
+        let state = AccessControllerV2StateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = index_map_new();
         functions.insert(
@@ -251,10 +251,60 @@ impl AccessControllerV1NativePackage {
                 export: ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT.to_string(),
             },
         );
+        functions.insert(
+            ACCESS_CONTROLLER_LOCK_RECOVERY_FEE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerLockRecoveryFeeInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerLockRecoveryFeeOutput>(),
+                ),
+                export: ACCESS_CONTROLLER_LOCK_RECOVERY_FEE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_WITHDRAW_RECOVERY_FEE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerWithdrawRecoveryFeeInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerWithdrawRecoveryFeeOutput>(
+                        ),
+                ),
+                export: ACCESS_CONTROLLER_WITHDRAW_RECOVERY_FEE_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerContributeRecoveryFeeInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccessControllerContributeRecoveryFeeOutput>(
+                        ),
+                ),
+                export: ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT.to_string(),
+            },
+        );
 
         let events = event_schema! {
             aggregator,
             [
+                // Original Events
                 InitiateRecoveryEvent,
                 RuleSetUpdateEvent,
                 CancelRecoveryProposalEvent,
@@ -263,7 +313,10 @@ impl AccessControllerV1NativePackage {
                 StopTimedRecoveryEvent,
                 InitiateBadgeWithdrawAttemptEvent,
                 BadgeWithdrawEvent,
-                CancelBadgeWithdrawAttemptEvent
+                CancelBadgeWithdrawAttemptEvent,
+                // Bottlenose Events
+                DepositRecoveryXrdEvent,
+                WithdrawRecoveryXrdEvent
             ]
         };
 
@@ -320,6 +373,10 @@ impl AccessControllerV1NativePackage {
                         ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => ["primary", "recovery"];
 
                         ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
+
+                        ACCESS_CONTROLLER_LOCK_RECOVERY_FEE_IDENT => ["primary", "confirmation", "recovery"];
+                        ACCESS_CONTROLLER_WITHDRAW_RECOVERY_FEE_IDENT => ["primary"];
+                        ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT => MethodAccessibility::Public;
                     }
                 )),
             },
@@ -340,6 +397,6 @@ impl AccessControllerV1NativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        AccessControllerV1Blueprint::invoke_export(export_name, input, api)
+        AccessControllerV2Blueprint::invoke_export(export_name, input, api)
     }
 }

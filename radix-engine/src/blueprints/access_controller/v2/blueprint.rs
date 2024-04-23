@@ -1,6 +1,4 @@
-use super::state_machine::*;
-use super::*;
-use crate::blueprints::access_controller::v1::*;
+use super::internal_prelude::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::field_api::*;
@@ -16,9 +14,9 @@ use radix_native_sdk::resource::*;
 use radix_native_sdk::runtime::*;
 use sbor::rust::prelude::*;
 
-pub struct AccessControllerBlueprint;
+pub struct AccessControllerV2Blueprint;
 
-impl AccessControllerBlueprint {
+impl AccessControllerV2Blueprint {
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
@@ -848,7 +846,7 @@ where
     Y: ClientApi<RuntimeError>,
     AccessControllerV2Substate: Transition<I>,
 {
-    AccessControllerBlueprint::with_state(api, |state, api| state.transition(api, input))
+    AccessControllerV2Blueprint::with_state(api, |state, api| state.transition(api, input))
 }
 
 fn transition_mut<Y, I>(
@@ -859,7 +857,7 @@ where
     Y: ClientApi<RuntimeError>,
     AccessControllerV2Substate: TransitionMut<I>,
 {
-    AccessControllerBlueprint::with_state_mut(api, |state, api| state.transition_mut(api, input))
+    AccessControllerV2Blueprint::with_state_mut(api, |state, api| state.transition_mut(api, input))
 }
 
 fn update_role_assignment<Y>(

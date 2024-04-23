@@ -41,3 +41,13 @@ pub struct UnlockPrimaryRoleEvent;
 
 #[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]
 pub struct StopTimedRecoveryEvent;
+
+#[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]
+pub struct DepositRecoveryXrdEvent {
+    pub amount: Decimal,
+}
+
+#[derive(ScryptoSbor, ScryptoEvent, Debug, PartialEq, Eq)]
+pub struct WithdrawRecoveryXrdEvent {
+    pub amount: Decimal,
+}
