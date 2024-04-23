@@ -35,9 +35,9 @@ use crate::*;
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct PreciseDecimal(pub PreciseDecimalInternal);
+pub struct PreciseDecimal(pub InnerPreciseDecimal);
 
-pub type PreciseDecimalInternal = I256;
+pub type InnerPreciseDecimal = I256;
 
 impl Default for PreciseDecimal {
     fn default() -> Self {

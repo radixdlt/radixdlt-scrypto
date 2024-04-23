@@ -36,9 +36,9 @@ use super::CheckedTruncate;
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary, Serialize, Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Decimal(pub DecimalInternal);
+pub struct Decimal(pub InnerDecimal);
 
-pub type DecimalInternal = I192;
+pub type InnerDecimal = I192;
 
 impl Default for Decimal {
     fn default() -> Self {
