@@ -27,6 +27,7 @@
     - Invocations (TODO)
     - Move/Borrow Checking (TODO)
   - [Shutdown](execution/shutdown.md)
+- Bootstrapping (TODO)
 - Protocol Updates (TODO)
  
 # Native Systems
@@ -34,6 +35,10 @@
 - Transaction Manifest
 - Type System
 - Resources
-- Access Control
+- [Access Control](native/access_control/README)
+  - [Role Definition](native/access_control/role_definition.md)
+  - [Role Assignment](native/access_control/role_assignment.md)
+  - [Auth Zone](native/access_control/authzone.md)
+  - [Authorization](native/access_control/authorization.md)
 - Royalties
 - Metadata
