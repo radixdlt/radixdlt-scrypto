@@ -1,7 +1,6 @@
 use crate::internal_prelude::*;
 use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::*;
 
 #[allow(deprecated)]
 pub struct AccountAuthorizedDepositorsScenarioConfig {

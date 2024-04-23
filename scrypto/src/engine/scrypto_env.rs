@@ -10,7 +10,6 @@ use radix_engine_interface::api::{AttachedModuleId, FieldIndex, LockFlags};
 use radix_engine_interface::types::PackageAddress;
 use radix_engine_interface::types::{BlueprintId, GlobalAddress};
 use radix_engine_interface::types::{Level, NodeId, SubstateHandle};
-use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
 pub struct ScryptoVmV1Api;

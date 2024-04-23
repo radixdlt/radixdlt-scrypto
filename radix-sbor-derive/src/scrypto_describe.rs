@@ -29,19 +29,19 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind > for MyStruct {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
+                impl sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind > for MyStruct {
+                    const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "MyStruct",
                         &[],
                         &#code_hash
                     );
-                    fn type_data() -> ::sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
-                        ::sbor::TypeData::struct_with_named_fields(
+                    fn type_data() -> sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, sbor::RustTypeId> {
+                        sbor::TypeData::struct_with_named_fields(
                             "MyStruct",
-                            ::sbor::rust::vec![],
+                            sbor::rust::vec![],
                         )
                     }
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<radix_common::data::scrypto::ScryptoCustomTypeKind >) {}
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<radix_common::data::scrypto::ScryptoCustomTypeKind >) {}
                 }
             },
         );
@@ -56,26 +56,26 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<T> ::sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind > for Thing<T>
+                impl<T> sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind > for Thing<T>
                 where
-                    T: ::sbor::Describe<
+                    T: sbor::Describe<
                         radix_common::data::scrypto::ScryptoCustomTypeKind
                     >
                 {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
+                    const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "Thing",
                         &[<T>::TYPE_ID,],
                         &#code_hash
                     );
-                    fn type_data() -> ::sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
-                        ::sbor::TypeData::struct_with_named_fields(
+                    fn type_data() -> sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, sbor::RustTypeId> {
+                        sbor::TypeData::struct_with_named_fields(
                             "Thing",
-                            ::sbor::rust::vec![
-                                ("field", <T as ::sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind >>::TYPE_ID),
+                            sbor::rust::vec![
+                                ("field", <T as sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind >>::TYPE_ID),
                             ],
                         )
                     }
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<radix_common::data::scrypto::ScryptoCustomTypeKind >) {
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<radix_common::data::scrypto::ScryptoCustomTypeKind >) {
                         aggregator.add_child_type_and_descendents::<T>();
                     }
                 }
@@ -94,27 +94,27 @@ mod tests {
             output,
             quote! {
                 impl<T: Bound>
-                    ::sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind > for MyEnum<T>
+                    sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind > for MyEnum<T>
                 where
-                    T: ::sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind >
+                    T: sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind >
                 {
-                    const TYPE_ID: ::sbor::RustTypeId = ::sbor::RustTypeId::novel_with_code(
+                    const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "MyEnum",
                         &[<T>::TYPE_ID,],
                         &#code_hash
                     );
-                    fn type_data() -> ::sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, ::sbor::RustTypeId> {
-                        use ::sbor::rust::borrow::ToOwned;
-                        ::sbor::TypeData::enum_variants(
+                    fn type_data() -> sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, sbor::RustTypeId> {
+                        use sbor::rust::borrow::ToOwned;
+                        sbor::TypeData::enum_variants(
                             "MyEnum",
-                            :: sbor :: rust :: prelude :: indexmap ! [
-                                0u8 => :: sbor :: TypeData :: struct_with_named_fields ("A", :: sbor :: rust :: vec ! [("named", < T as :: sbor :: Describe < radix_common::data::scrypto::ScryptoCustomTypeKind >> :: TYPE_ID) ,] ,) ,
-                                1u8 => :: sbor :: TypeData :: struct_with_unnamed_fields ("B", :: sbor :: rust :: vec ! [< String as :: sbor :: Describe < radix_common::data::scrypto::ScryptoCustomTypeKind >> :: TYPE_ID ,] ,) ,
-                                2u8 => :: sbor :: TypeData :: struct_with_unit_fields ("C") ,
+                            sbor :: rust :: prelude :: indexmap ! [
+                                0u8 => sbor :: TypeData :: struct_with_named_fields ("A", sbor :: rust :: vec ! [("named", < T as sbor :: Describe < radix_common::data::scrypto::ScryptoCustomTypeKind >> :: TYPE_ID) ,] ,) ,
+                                1u8 => sbor :: TypeData :: struct_with_unnamed_fields ("B", sbor :: rust :: vec ! [< String as sbor :: Describe < radix_common::data::scrypto::ScryptoCustomTypeKind >> :: TYPE_ID ,] ,) ,
+                                2u8 => sbor :: TypeData :: struct_with_unit_fields ("C") ,
                             ],
                         )
                     }
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<radix_common::data::scrypto::ScryptoCustomTypeKind >) {
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<radix_common::data::scrypto::ScryptoCustomTypeKind >) {
                         aggregator.add_child_type_and_descendents::<T>();
                         aggregator.add_child_type_and_descendents::<String>();
                     }

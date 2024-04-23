@@ -6,7 +6,6 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::types::*;
-use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
 pub type Package = Global<PackageStub>;
