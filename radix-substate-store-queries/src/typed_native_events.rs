@@ -192,6 +192,7 @@ define_structure! {
     /* Native Packages */
     AccessController => {
         AccessController => [
+            // Original Events
             InitiateRecoveryEvent,
             InitiateBadgeWithdrawAttemptEvent,
             RuleSetUpdateEvent,
@@ -201,6 +202,9 @@ define_structure! {
             LockPrimaryRoleEvent,
             UnlockPrimaryRoleEvent,
             StopTimedRecoveryEvent,
+            // Bottlenose Events
+            DepositRecoveryXrdEvent,
+            WithdrawRecoveryXrdEvent,
         ],
     },
     Account => {

@@ -1,4 +1,5 @@
 use super::v1_0::*;
+use super::v1_1::*;
 use super::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
@@ -19,9 +20,16 @@ impl AccessControllerV1NativePackage {
     pub fn definition(minor_version: AccessControllerV1MinorVersion) -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        // Using the feature set and state from v1. They should be the same between v1 and v1.1.
+        // Using the feature set from v1. They should be the same between v1 and v1.1.
         let feature_set = AccessControllerFeatureSet::all_features();
-        let state = AccessControllerStateSchemaInit::create_schema_init(&mut aggregator);
+        let state = match minor_version {
+            AccessControllerV1MinorVersion::Zero => {
+                AccessControllerStateSchemaInit::create_schema_init(&mut aggregator)
+            }
+            AccessControllerV1MinorVersion::One => {
+                AccessControllerV2StateSchemaInit::create_schema_init(&mut aggregator)
+            }
+        };
 
         let mut functions = index_map_new();
         functions.insert(

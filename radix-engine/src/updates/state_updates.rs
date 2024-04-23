@@ -751,11 +751,12 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
     let new_schema_substate = new_blueprint_definition
         .schema
         .schema
+        .clone()
         .into_locked_substate();
 
     // Creating the original code substates for extension.
     let old_code_hash =
-        CodeHash::from_hash(hash(&ACCESS_CONTROLLER_V1_1_CODE_ID.to_be_bytes().to_vec()));
+        CodeHash::from_hash(hash(ACCESS_CONTROLLER_V1_1_CODE_ID.to_be_bytes().to_vec()));
     let (new_code_hash, (new_code_substate, new_vm_type_substate)) = {
         let original_code = ACCESS_CONTROLLER_V1_1_CODE_ID.to_be_bytes().to_vec();
 
@@ -773,6 +774,8 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
         (code_hash, (code_substate, vm_type_substate))
     };
 
+    let new_blueprint_auth_config = new_blueprint_definition.auth_config.into_locked_substate();
+
     let blueprint_definition_substate = {
         let mut blueprint_definition = reader
             .read_object_collection_entry::<_, VersionedPackageBlueprintVersionDefinition>(
@@ -786,6 +789,15 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
             .unwrap()
             .unwrap()
             .fully_update_into_latest_version();
+
+        blueprint_definition.interface.state = IndexedStateSchema::from_schema(
+            new_blueprint_definition
+                .schema
+                .schema
+                .generate_schema_hash(),
+            new_blueprint_definition.schema.state,
+            Default::default(),
+        );
 
         blueprint_definition.interface.functions = new_blueprint_definition
             .schema
@@ -872,6 +884,14 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
         )
         .unwrap();
 
+    let blueprint_auth_configs = reader
+        .get_partition_of_collection(
+            &node_id,
+            ObjectModuleId::Main,
+            PackageCollection::BlueprintVersionAuthConfigKeyValue.collection_index(),
+        )
+        .unwrap();
+
     let schema_partition_num = reader
         .get_partition_of_collection(
             &node_id,
@@ -888,6 +908,13 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
                         by_substate: indexmap! {
                             SubstateKey::Map(scrypto_encode!(&blueprint_version_key)) => DatabaseUpdate::Set(
                                 scrypto_encode!(&blueprint_definition_substate)
+                            )
+                        }
+                    },
+                    blueprint_auth_configs => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&blueprint_version_key)) => DatabaseUpdate::Set(
+                                scrypto_encode!(&new_blueprint_auth_config)
                             )
                         }
                     },

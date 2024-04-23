@@ -165,9 +165,7 @@ impl AccessControllerBlueprint {
             ACCESS_CONTROLLER_BLUEPRINT,
             indexmap! {
                 AccessControllerV2Field::State.field_index() => FieldValue::new(
-                    AccessControllerV2StateFieldPayload::from(
-                        VersionedAccessControllerV2State::from(substate)
-                    )
+                    AccessControllerV2StateFieldPayload::from_content_source(substate)
                 ),
             },
         )?;
@@ -666,6 +664,8 @@ impl AccessControllerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Runtime::emit_event(api, WithdrawRecoveryXrdEvent { amount })?;
+
         Self::with_state_mut(api, |state, api| {
             let vault = state
                 .xrd_fee_vault
@@ -682,6 +682,10 @@ impl AccessControllerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        bucket
+            .amount(api)
+            .and_then(|amount| Runtime::emit_event(api, DepositRecoveryXrdEvent { amount }))?;
+
         Self::with_state_mut(api, |state, api| {
             let vault = match state.xrd_fee_vault {
                 Some(ref mut vault) => vault,
