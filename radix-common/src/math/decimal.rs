@@ -66,11 +66,11 @@ impl Decimal {
 
     pub const ZERO: Self = Self(I192::ZERO);
 
-    pub const ONE_HUNDREDTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 2), 0, 0]));
-    pub const ONE_TENTH: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE - 1), 0, 0]));
-    pub const ONE: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE), 0, 0]));
-    pub const TEN: Self = Self(I192::from_digits([10_u64.pow(Decimal::SCALE + 1), 0, 0]));
-    pub const ONE_HUNDRED: Self = Self(I192::from_digits([7766279631452241920, 0x5, 0]));
+    pub const ONE_HUNDREDTH: Self = Self::from_digits([10_u64.pow(Decimal::SCALE - 2), 0, 0]);
+    pub const ONE_TENTH: Self = Self::from_digits([10_u64.pow(Decimal::SCALE - 1), 0, 0]);
+    pub const ONE: Self = Self::from_digits([10_u64.pow(Decimal::SCALE), 0, 0]);
+    pub const TEN: Self = Self::from_digits([10_u64.pow(Decimal::SCALE + 1), 0, 0]);
+    pub const ONE_HUNDRED: Self = Self::from_digits([7766279631452241920, 0x5, 0]);
 
     /// Returns `Decimal` of 0.
     pub const fn zero() -> Self {
@@ -80,6 +80,11 @@ impl Decimal {
     /// Returns `Decimal` of 1.
     pub const fn one() -> Self {
         Self::ONE
+    }
+
+    /// Creates Decimal from three 64-bits digits.
+    pub const fn from_digits(digits: [u64; I192::N]) -> Self {
+        Self(I192::from_digits(digits))
     }
 
     /// Whether this decimal is zero.
@@ -1969,6 +1974,12 @@ mod tests {
     fn test_neg_decimal_panic() {
         let d = Decimal::MIN;
         let _ = -d;
+    }
+
+    #[test]
+    fn test_from_digits() {
+        let d = Decimal::from_digits([1, 2, 3]);
+        assert_eq!(d.to_string(), "1020847100762815390427.017310442723737601");
     }
 
     // These tests make sure that any basic arithmetic operation

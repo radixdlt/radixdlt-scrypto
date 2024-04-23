@@ -65,36 +65,12 @@ impl PreciseDecimal {
 
     pub const ZERO: Self = Self(I256::ZERO);
 
-    pub const ONE_HUNDREDTH: Self = Self(I256::from_digits([
-        4003012203950112768,
-        542101086242752,
-        0,
-        0,
-    ]));
-    pub const ONE_TENTH: Self = Self(I256::from_digits([
-        3136633892082024448,
-        5421010862427522,
-        0,
-        0,
-    ]));
-    pub const ONE: Self = Self(I256::from_digits([
-        12919594847110692864,
-        54210108624275221,
-        0,
-        0,
-    ]));
-    pub const TEN: Self = Self(I256::from_digits([
-        68739955140067328,
-        542101086242752217,
-        0,
-        0,
-    ]));
-    pub const ONE_HUNDRED: Self = Self(I256::from_digits([
-        687399551400673280,
-        5421010862427522170,
-        0,
-        0,
-    ]));
+    pub const ONE_HUNDREDTH: Self = Self::from_digits([4003012203950112768, 542101086242752, 0, 0]);
+    pub const ONE_TENTH: Self = Self::from_digits([3136633892082024448, 5421010862427522, 0, 0]);
+    pub const ONE: Self = Self::from_digits([12919594847110692864, 54210108624275221, 0, 0]);
+    pub const TEN: Self = Self::from_digits([68739955140067328, 542101086242752217, 0, 0]);
+    pub const ONE_HUNDRED: Self =
+        Self::from_digits([687399551400673280, 5421010862427522170, 0, 0]);
 
     /// Returns `PreciseDecimal` of 0.
     pub fn zero() -> Self {
@@ -104,6 +80,11 @@ impl PreciseDecimal {
     /// Returns `PreciseDecimal` of 1.
     pub fn one() -> Self {
         Self::ONE
+    }
+
+    /// Creates Decimal from four 64-bits digits.
+    pub const fn from_digits(digits: [u64; I256::N]) -> Self {
+        Self(I256::from_digits(digits))
     }
 
     /// Whether this decimal is zero.
@@ -2167,6 +2148,15 @@ mod tests {
         assert_eq!(-d, test_pdec!("-1"));
         let d = PreciseDecimal::MAX;
         assert_eq!(-d, PreciseDecimal(I256::MIN + I256::ONE));
+    }
+
+    #[test]
+    fn test_from_digits() {
+        let d = PreciseDecimal::from_digits([1, 2, 3, 4]);
+        assert_eq!(
+            d.to_string(),
+            "25108406941546723056364.004793593481054836439088298861789185"
+        );
     }
 
     #[test]
