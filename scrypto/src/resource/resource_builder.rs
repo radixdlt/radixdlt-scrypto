@@ -16,7 +16,7 @@ use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 use sbor::FixedEnumVariant;
-use scrypto::resource::{FungibleResourceManager, NonFungibleResourceManager, ResourceManager};
+use scrypto::resource::{FungibleResourceManager, NonFungibleResourceManager};
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -28,7 +28,7 @@ pub const DIVISIBILITY_MAXIMUM: u8 = 18;
 /// * You start the building process with one of the methods starting with `new_`.
 /// * The allowed methods change depending on which methods have already been called.
 ///   For example, you can either use `owner_non_fungible_badge` or set access rules individually, but not both.
-/// * You can complete the building process using either `create_without_initial_supply()` or `mint_initial_supply(..)`.
+/// * You can complete the building process using either `create_with_no_initial_supply()` or `mint_initial_supply(..)`.
 ///
 /// ### Example
 /// ```no_run
@@ -131,7 +131,7 @@ impl ResourceBuilder {
 /// * You start the building process with one of the methods starting with `ResourceBuilder::new_`.
 /// * The allowed methods change depending on which methods have already been called.
 ///   For example, you can either use `owner_non_fungible_badge` or set access rules individually, but not both.
-/// * You can complete the building process using either `create_without_initial_supply()` or `mint_initial_supply(..)`.
+/// * You can complete the building process using either `create_with_no_initial_supply()` or `mint_initial_supply(..)`.
 ///
 /// ### Example
 /// ```no_run
@@ -528,7 +528,29 @@ pub trait SetOwnerBuilder: private::CanAddOwner {
 impl<B: private::CanAddOwner> SetOwnerBuilder for B {}
 
 impl InProgressResourceBuilder<FungibleResourceType> {
-    fn create_without_initial_supply_internal(self) -> FungibleResourceManager {
+    /// Creates the fungible resource with no initial supply.
+    ///
+    /// The fungible resource's manager is returned.
+    /// It is easily convertible to generic resource manager.
+    /// One just can use `.into()` method.
+    ///
+    /// ### Example
+    ///
+    /// ```
+    /// let resource_manage: ResourceManage = ResourceBuilder::new_fungible(OwnerRole::None)
+    ///     .mint_roles(mint_roles! {
+    ///         minter => rule!(deny_all);
+    ///         minter_updater => rule!(deny_all);
+    ///     })
+    ///     .metadata(ModuleConfig {
+    ///         init: metadata.into(),
+    ///         roles: RoleAssignmentInit::default(),
+    ///     })
+    ///     .with_address(resource.address_reservation)
+    ///     .create_with_no_initial_supply()
+    ///     .into()
+    /// ```
+    pub fn create_with_no_initial_supply(self) -> FungibleResourceManager {
         let metadata = self.metadata_config.unwrap_or_else(|| Default::default());
 
         let bytes = ScryptoVmV1Api::blueprint_call(
@@ -547,21 +569,6 @@ impl InProgressResourceBuilder<FungibleResourceType> {
         );
         scrypto_decode(&bytes).unwrap()
     }
-
-    /// Creates the fungible resource with no initial supply.
-    ///
-    /// The resource's manager is returned
-    #[deprecated = "Use create_without_initial_supply() instead"]
-    pub fn create_with_no_initial_supply(self) -> ResourceManager {
-        self.create_without_initial_supply_internal().into()
-    }
-
-    /// Creates the fungible resource with no initial supply.
-    ///
-    /// The fungible resource's manager is returned
-    pub fn create_without_initial_supply(self) -> FungibleResourceManager {
-        self.create_without_initial_supply_internal()
-    }
 }
 
 impl<
@@ -570,7 +577,25 @@ impl<
         S: ScryptoCategorize + ScryptoEncode + ScryptoDecode,
     > InProgressResourceBuilder<NonFungibleResourceType<Y, D, S>>
 {
-    fn create_without_initial_supply_internal(self) -> NonFungibleResourceManager {
+    /// Creates the non-fungible resource with no initial supply.
+    ///
+    /// The non-fungible resource's manager is returned.
+    /// It is easily convertible to the generic resource manager.
+    /// One just can use `.into()` method.
+    ///
+    /// ### Example
+    ///
+    /// ```no_run
+    /// let resource_manager: ResourceManager =
+    ///     ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
+    ///         .mint_roles(mint_roles! {
+    ///             minter => rule!(allow_all);
+    ///             minter_updater => rule!(deny_all);
+    ///         })
+    ///         .create_with_no_initial_supply()
+    ///         .into();
+    /// ```
+    pub fn create_with_no_initial_supply(self) -> NonFungibleResourceManager {
         let metadata = self.metadata_config.unwrap_or_else(|| Default::default());
 
         let bytes = ScryptoVmV1Api::blueprint_call(
@@ -589,21 +614,6 @@ impl<
             .unwrap(),
         );
         scrypto_decode(&bytes).unwrap()
-    }
-
-    /// Creates the non-fungible resource with no initial supply.
-    ///
-    /// The resource's address is returned.
-    #[deprecated = "Use create_without_initial_supply() instead"]
-    pub fn create_with_no_initial_supply(self) -> ResourceManager {
-        self.create_without_initial_supply_internal().into()
-    }
-
-    /// Creates the non-fungible resource with no initial supply.
-    ///
-    /// The non-fungible resource's manager is returned
-    pub fn create_without_initial_supply(self) -> NonFungibleResourceManager {
-        self.create_without_initial_supply_internal()
     }
 }
 
