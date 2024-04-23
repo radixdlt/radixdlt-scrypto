@@ -7,7 +7,6 @@ use radix_common::data::manifest::*;
 use radix_common::data::scrypto::model::Own;
 use radix_common::prelude::Reference;
 use radix_engine_interface::types::NodeId;
-use radix_engine_interface::*;
 use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -96,11 +96,11 @@ pub fn handle_transparent_decode(
             };
 
             quote! {
-                impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        let inner = <#field_type as ::sbor::Decode<#custom_value_kind_generic, #decoder_generic>>::decode_body_with_value_kind(decoder, value_kind)?;
+                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        let inner = <#field_type as sbor::Decode<#custom_value_kind_generic, #decoder_generic>>::decode_body_with_value_kind(decoder, value_kind)?;
                         #decode_content
                     }
                 }
@@ -136,11 +136,11 @@ pub fn handle_normal_decode(
             let decode_fields_content = decode_fields_content(quote! { Self }, &s.fields)?;
 
             quote! {
-                impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         #decode_fields_content
                     }
                 }
@@ -167,16 +167,16 @@ pub fn handle_normal_decode(
             // Note: We use #[deny(unreachable_patterns)] to protect against users
             // defining overlapping consts in their custom #[sbor(discriminator(X))] definitions
             quote! {
-                impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
+                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
                         #[deny(unreachable_patterns)]
                         match discriminator {
                             #(#match_arms,)*
-                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
+                            _ => Err(sbor::DecodeError::UnknownDiscriminator(discriminator))
                         }
                     }
                 }
@@ -259,11 +259,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test {
+                impl <D: sbor::Decoder<X>, X: sbor::CustomValueKind > sbor::Decode<X, D> for Test {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(1)?;
                         Ok(Self {
                             a: decoder.decode::<u32>()?,
@@ -282,17 +282,17 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <T, D: Clashing, D0: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind> ::sbor::Decode<X, D0> for Test<T, D>
+                impl <T, D: Clashing, D0: sbor::Decoder<X>, X: sbor::CustomValueKind> sbor::Decode<X, D0> for Test<T, D>
                     where
-                        T : ::sbor::Decode<X, D0>,
-                        D : ::sbor::Decode<X, D0>,
-                        T : ::sbor::Categorize<X>,
-                        D : ::sbor::Categorize<X>
+                        T : sbor::Decode<X, D0>,
+                        D : sbor::Decode<X, D0>,
+                        T : sbor::Categorize<X>,
+                        D : sbor::Categorize<X>
                 {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D0, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D0, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(2)?;
                         Ok(Self {
                             a: decoder.decode::<T>()?,
@@ -315,11 +315,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <D: ::sbor::Decoder<NoCustomValueKind> > ::sbor::Decode<NoCustomValueKind, D> for Test {
+                impl <D: sbor::Decoder<NoCustomValueKind> > sbor::Decode<NoCustomValueKind, D> for Test {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<NoCustomValueKind>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<NoCustomValueKind>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(1)?;
                         Ok(Self {
                             a: decoder.decode::<u32>()?,
@@ -338,18 +338,18 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <'a, S, T1, T2, D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test<'a, S, T1, T2>
+                impl <'a, S, T1, T2, D: sbor::Decoder<X>, X: sbor::CustomValueKind > sbor::Decode<X, D> for Test<'a, S, T1, T2>
                 where
-                    S: ::sbor::Decode<X, D>,
-                    T1: ::sbor::Decode<X, D>,
-                    T2: ::sbor::Decode<X, D>,
-                    T1: ::sbor::Categorize<X>,
-                    T2: ::sbor::Categorize<X>
+                    S: sbor::Decode<X, D>,
+                    T1: sbor::Decode<X, D>,
+                    T2: sbor::Decode<X, D>,
+                    T1: sbor::Categorize<X>,
+                    T2: sbor::Categorize<X>
                 {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(4)?;
                         Ok(Self {
                             a: decoder.decode::<&'a u32>()?,
@@ -371,11 +371,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test {
+                impl <D: sbor::Decoder<X>, X: sbor::CustomValueKind > sbor::Decode<X, D> for Test {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
                         #[deny(unreachable_patterns)]
                         match discriminator {
@@ -393,7 +393,7 @@ mod tests {
                                     x: decoder.decode::<u8>()?,
                                 })
                             },
-                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
+                            _ => Err(sbor::DecodeError::UnknownDiscriminator(discriminator))
                         }
                     }
                 }
@@ -409,11 +409,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test {
+                impl <D: sbor::Decoder<X>, X: sbor::CustomValueKind > sbor::Decode<X, D> for Test {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(0)?;
                         Ok(Self {
                             a: <u32>::default(),

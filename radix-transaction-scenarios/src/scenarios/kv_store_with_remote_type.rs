@@ -1,7 +1,6 @@
 use crate::internal_prelude::*;
 use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::package::{PackageDefinition, PACKAGE_BLUEPRINT};
-use radix_engine_interface::*;
 
 #[derive(Default)]
 pub struct KVStoreScenarioState(Option<(PackageAddress, ComponentAddress)>);
