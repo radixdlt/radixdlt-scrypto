@@ -2392,6 +2392,13 @@ where
     }
 
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, RuntimeError> {
+        if self.api.kernel_get_system().system_version > SystemVersion::Anemone {
+            self.api
+                .kernel_get_system()
+                .modules
+                .apply_execution_cost(ExecutionCostingEntry::QueryCostingModule)?;
+        }
+
         if let Some(costing) = self.api.kernel_get_system().modules.costing() {
             Ok(costing.max_per_function_royalty_in_xrd)
         } else {

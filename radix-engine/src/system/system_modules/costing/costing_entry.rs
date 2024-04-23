@@ -98,6 +98,7 @@ pub enum ExecutionCostingEntry<'a> {
     /* system */
     LockFee,
     QueryFeeReserve,
+    QueryCostingModule,
     QueryActor,
     QueryTransactionHash,
     GenerateRuid,
@@ -184,6 +185,7 @@ impl<'a> ExecutionCostingEntry<'a> {
             }
             ExecutionCostingEntry::LockFee => ft.lock_fee_cost(),
             ExecutionCostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
+            ExecutionCostingEntry::QueryCostingModule => ft.query_costing_module(),
             ExecutionCostingEntry::QueryActor => ft.query_actor_cost(),
             ExecutionCostingEntry::QueryTransactionHash => ft.query_transaction_hash_cost(),
             ExecutionCostingEntry::GenerateRuid => ft.generate_ruid_cost(),

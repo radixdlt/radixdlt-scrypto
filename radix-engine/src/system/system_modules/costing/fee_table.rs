@@ -352,6 +352,11 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn query_costing_module(&self) -> u32 {
+        500
+    }
+
+    #[inline]
     pub fn query_actor_cost(&self) -> u32 {
         500
     }

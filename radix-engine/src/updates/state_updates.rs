@@ -5,8 +5,10 @@ use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
 use crate::internal_prelude::*;
 use crate::object_modules::role_assignment::*;
-use crate::system::system_callback::{SystemBoot, SystemParameters, SystemVersion, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
-    BOOT_LOADER_SYSTEM_VERSION_SUBSTATE_FIELD_KEY};
+use crate::system::system_callback::{
+    SystemBoot, SystemParameters, SystemVersion, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
+    BOOT_LOADER_SYSTEM_VERSION_SUBSTATE_FIELD_KEY,
+};
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use crate::transaction::{CostingParameters, LimitParameters};
@@ -647,7 +649,7 @@ pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase>(
             PackageCollection::BlueprintVersionDefinitionKeyValue,
             PackageCollection::CodeVmTypeKeyValue,
             PackageCollection::CodeOriginalCodeKeyValue,
-            ]
+        ]
         .map(|package_collection| {
             reader
                 .get_partition_of_collection(
