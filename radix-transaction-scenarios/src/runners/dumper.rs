@@ -65,12 +65,12 @@ pub fn run_all_in_memory_and_dump_examples(
         .expect("Must succeed");
 
     assert_eq!(
-        substate_db.get_current_root_hash().to_string(),
-        "356cb408d7d64ea20c6915905beb03c4340b6104c9e57def836ac120fa46736b",
-    );
-    assert_eq!(
         event_hasher.finalize().to_string(),
         "c538d340736218e886cf83694546b0329997092202acbadf60fcd89d7be4138e",
+    );
+    assert_eq!(
+        substate_db.get_current_root_hash().to_string(),
+        "356cb408d7d64ea20c6915905beb03c4340b6104c9e57def836ac120fa46736b",
     );
 
     Ok(())

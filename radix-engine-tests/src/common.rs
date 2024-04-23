@@ -126,7 +126,6 @@ pub mod path_macros {
     pub use crate::include_workspace_asset_bytes;
     pub use crate::include_workspace_transaction_examples_str;
     pub use crate::path_local_blueprint;
-    pub use crate::path_local_metering_assets;
     pub use crate::path_workspace_blueprint;
     pub use crate::path_workspace_transaction_examples;
 }
