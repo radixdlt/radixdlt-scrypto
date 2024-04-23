@@ -50,12 +50,6 @@ pub trait ScryptoResourceManager {
     fn lock_updatable_metadata(&self);
 }
 
-// pub trait ScryptoNonFungibleResourceManager {
-//     fn set_updatable_non_fungible_data(&self, access_rule: AccessRule);
-
-//     fn lock_updatable_non_fungible_data(&self);
-// }
-
 pub trait ScryptoResourceManagerStub {
     type VaultType;
     type BucketType;
@@ -76,39 +70,6 @@ pub trait ScryptoResourceManagerStub {
         withdraw_strategy: WithdrawStrategy,
     ) -> Decimal;
 }
-
-// pub trait ScryptoFungibleResourceManagerStub {
-//     type BucketType;
-
-//     fn mint<T: Into<Decimal>>(&self, amount: T) -> Self::BucketType;
-// }
-
-// pub trait ScryptoNonFungibleResourceManagerStub {
-//     type BucketType;
-
-//     /// Mints non-fungible resources
-//     fn mint_non_fungible<T: NonFungibleData>(
-//         &self,
-//         id: &NonFungibleLocalId,
-//         data: T,
-//     ) -> Self::BucketType;
-
-//     /// Mints ruid non-fungible resources
-//     fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Self::BucketType;
-
-//     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
-//     ///
-//     /// # Panics
-//     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-//     fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T;
-
-//     fn update_non_fungible_data<D: ScryptoEncode>(
-//         &self,
-//         id: &NonFungibleLocalId,
-//         field_name: &str,
-//         new_data: D,
-//     );
-// }
 
 //=================
 // ResourceManager
@@ -304,7 +265,7 @@ impl ScryptoResourceManagerStub for ResourceManagerStub {
 
 impl ResourceManagerStub {
     /// Mints fungible resources
-    #[deprecated = "Use FungibleResourceManagerStub instead"]
+    #[deprecated = "Use FungibleResourceManagerStub::mint instead"]
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         self.call(
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
@@ -314,7 +275,7 @@ impl ResourceManagerStub {
         )
     }
 
-    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    #[deprecated = "Use NonFungibleResourceManagerStub::non_fungible_exists instead"]
     pub fn non_fungible_exists(&self, id: &NonFungibleLocalId) -> bool {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT,
@@ -323,7 +284,7 @@ impl ResourceManagerStub {
     }
 
     /// Mints non-fungible resources
-    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    #[deprecated = "Use NonFungibleResourceManagerStub::mint_non_fungible instead"]
     pub fn mint_non_fungible<T: NonFungibleData>(
         &self,
         id: &NonFungibleLocalId,
@@ -338,7 +299,7 @@ impl ResourceManagerStub {
     }
 
     /// Mints ruid non-fungible resources
-    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    #[deprecated = "Use NonFungibleResourceManagerStub::mint_ruid_non_fungible instead"]
     pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
         let mut entries = Vec::new();
         entries.push((data,));
@@ -353,7 +314,7 @@ impl ResourceManagerStub {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    #[deprecated = "Use NonFungibleResourceManagerStub::get_non_fungible_data instead"]
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleLocalId) -> T {
         self.call(
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
@@ -365,7 +326,7 @@ impl ResourceManagerStub {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    #[deprecated = "Use NonFungibleResourceManagerStub instead"]
+    #[deprecated = "Use NonFungibleResourceManagerStub::update_non_fungible_data instead"]
     pub fn update_non_fungible_data<D: ScryptoEncode>(
         &self,
         id: &NonFungibleLocalId,
