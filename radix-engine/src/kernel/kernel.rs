@@ -21,7 +21,9 @@ use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::interface::{CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates};
+use crate::track::interface::{
+    BootStore, CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates,
+};
 use crate::track::{CanonicalSubstateKey, Track};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
@@ -176,7 +178,7 @@ pub struct Kernel<
     callback: &'g mut M,
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel<'g, M, S> {
     pub fn new(store: &'g mut S, id_allocator: &'g mut IdAllocator, callback: &'g mut M) -> Self {
         Kernel {
             substate_io: SubstateIO {
@@ -206,13 +208,14 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
         let kernel_boot: KernelBoot = self
             .substate_io
             .store
-            .read_substate(
+            .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 BOOT_LOADER_PARTITION,
                 &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
             )
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
             .unwrap_or(KernelBoot::babylon());
+        let costing_enabled = kernel_boot.is_ref_check_costing_enabled();
 
         for reference in references.iter() {
             let node_id = &reference.0;
@@ -268,7 +271,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
                 }
             }
 
-            if kernel_boot.is_ref_check_costing_enabled() {
+            if costing_enabled {
                 let io_access = IOAccess::ReadFromDb(
                     CanonicalSubstateKey {
                         node_id: *node_id,
