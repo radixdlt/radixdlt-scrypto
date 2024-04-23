@@ -139,10 +139,10 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID => {
                         AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
                     }
-                    ACCESS_CONTROLLER_V1_0_CODE_ID => {
+                    ACCESS_CONTROLLER_V1_CODE_ID => {
                         AccessControllerV1NativePackage::invoke_export(export_name, input, api)
                     }
-                    ACCESS_CONTROLLER_V1_1_CODE_ID => {
+                    ACCESS_CONTROLLER_V2_CODE_ID => {
                         AccessControllerV2NativePackage::invoke_export(export_name, input, api)
                     }
                     TRANSACTION_PROCESSOR_CODE_ID => {

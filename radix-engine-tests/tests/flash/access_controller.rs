@@ -15,7 +15,7 @@ use scrypto_test::prelude::*;
 fn access_controller_package_definition_v1_0_matches_expected() {
     // Arrange
     let expected_package_definition = manifest_decode::<PackageDefinition>(include_bytes!(
-        "../../assets/access_controller_v1_0_package_definition.rpd"
+        "../../assets/access_controller_v1_package_definition.rpd"
     ))
     .unwrap();
 

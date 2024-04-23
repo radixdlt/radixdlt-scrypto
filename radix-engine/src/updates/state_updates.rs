@@ -755,9 +755,9 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     // Creating the original code substates for extension.
     let old_code_hash =
-        CodeHash::from_hash(hash(ACCESS_CONTROLLER_V1_1_CODE_ID.to_be_bytes().to_vec()));
+        CodeHash::from_hash(hash(ACCESS_CONTROLLER_V2_CODE_ID.to_be_bytes().to_vec()));
     let (new_code_hash, (new_code_substate, new_vm_type_substate)) = {
-        let original_code = ACCESS_CONTROLLER_V1_1_CODE_ID.to_be_bytes().to_vec();
+        let original_code = ACCESS_CONTROLLER_V2_CODE_ID.to_be_bytes().to_vec();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
         let code_substate = PackageCodeOriginalCodeV1 {

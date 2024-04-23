@@ -1046,7 +1046,7 @@ pub fn create_system_bootstrap_transaction(
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
                 },
-                native_package_code_id: ACCESS_CONTROLLER_V1_0_CODE_ID,
+                native_package_code_id: ACCESS_CONTROLLER_V1_CODE_ID,
             }),
         });
     }
