@@ -628,7 +628,7 @@ impl MultiResourcePoolBlueprint {
         let substate_key = MultiResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let multi_resource_pool: VersionedMultiResourcePoolState = api.field_read_typed(handle)?;
-        let multi_resource_pool = multi_resource_pool.fully_update_into_latest_version();
+        let multi_resource_pool = multi_resource_pool.fully_update_and_into_latest_version();
 
         Ok((multi_resource_pool, handle))
     }

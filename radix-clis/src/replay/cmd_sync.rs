@@ -185,7 +185,7 @@ impl CommittedTxnReader {
                         let next_identifiers: VersionedCommittedTransactionIdentifiers =
                             scrypto_decode(next_identifiers_bytes.1.as_ref()).unwrap();
                         let expected_state_root_hash = next_identifiers
-                            .fully_update_into_latest_version()
+                            .fully_update_and_into_latest_version()
                             .resultant_ledger_hashes
                             .state_root
                             .0;

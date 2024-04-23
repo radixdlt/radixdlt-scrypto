@@ -66,44 +66,55 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 
 /// NOTE: This should probably be moved out of sbor to its own crate.
 ///
-/// This macro is a powerful but simple general-purpose tool to ease building declarative macros.
+/// This macro is a powerful but simple general-purpose tool to ease building declarative macros which create
+/// new types.
 ///
-/// Effectively it functions as a more powerful version of [paste](https://github.com/dtolnay/paste),
-/// whilst bringing the power of [quote](https://docs.rs/quote/latest/quote/)'s variable
+/// ## Motivation
+///
+/// Effectively it functions as a more powerful version of [paste!](https://github.com/dtolnay/paste),
+/// whilst bringing the power of [quote!](https://docs.rs/quote/latest/quote/)'s variable
 /// substitution to declarative macros.
 ///
 /// This approach neatly solves the following cases:
-/// * [Pasting into non-doc attributes](https://github.com/dtolnay/paste/issues/40#issuecomment-2062953012)
-/// * Simplify handling sub-repetition which currently needs an internal `macro_rules!` definition [per this stack overflow post](https://stackoverflow.com/a/73543948)
-/// * Improved readability of long procedural macros through substitution of repeated segments
+/// 1. Wanting `paste!` to output strings or work with [attributes other than doc](https://github.com/dtolnay/paste/issues/40#issuecomment-2062953012).
+/// 2. Avoiding defining internal `macro_rules!` to handle instances where you need to do a procedural macro repeat across two conflicting expansions [per this stack overflow post](https://stackoverflow.com/a/73543948).
+/// 3. Improves readability of long procedural macros through substitution of repeated segments.
 ///
-///
-/// It is particularly useful in scenarios where `paste` doesn't work - in particular, to
-/// create non-idents, or to create non-doc attribute string content, which paste cannot do, e.g.:
+/// An example of case 1:
 /// ```rust
 /// // Inside a macro_rules! expression:
 /// eager_replace!{
-///     #[sbor(as_type = [!EAGER:stringify! $my_inner_type])]
+///     #[sbor(as_type = [!stringify! $my_inner_type])]
 ///     $vis struct $my_type($my_inner_type)
 /// }
 /// ```
 ///
 /// ## Specific functions
 ///
-/// * `[!EAGER:stringify! X Y " " Z]` gives `"XY \" \" Z"`
-/// * `[!EAGER:concat! X Y " " Z]` gives `"XY Z"` by concatenating each argument stringified without spaces. String and Char literals are first unquoted. Spaces can be added with " ".
-/// * `[!EAGER:ident! X Y "Z"]` gives an ident `XYZ`.
-/// * `[!EAGER:literal! 31 u 32]` gives `31u32`.
-/// * `[!EAGER! ...]` outputs the `...` token stream, can be used for outputting `#[!EAGER! ident]` so that `#ident` isn't detected as a variable.
+/// * `[!stringify! X Y " " Z]` gives `"X Y \" \" Z"`
+/// * `[!concat! X Y " " Z]` gives `"XY Z"` by concatenating each argument stringified without spaces. String and char literals are first unquoted. Spaces can be added with " ".
+/// * `[!ident! X Y "Z"]` gives an ident `XYZ`.
+/// * `[!literal! 31 u 32]` gives `31u32`.
+/// * `[!raw! abc #abc [!ident! test]]` outputs its contents without any nested expansion, giving `abc #abc [!ident! test]`.
+///
+/// Note that all functions except `raw` resolve in a nested manner as you would expected, e.g.
+/// ```rust
+/// [!concat! X Y [!ident! Hello World] Z] // "XYHelloWorldZ"
+/// ```
 ///
 /// ## Variables for cleaner coding
 ///
 /// You can define variables starting with `#` which can be used outside the set call.
+/// All of the following calls don't return anything, but create a variable, which can be embedded later in the macro.
+/// See the `Demonstration` section for details
 ///
-/// * The command `[!EAGER:set! #MyZ = 1 + 2]` doesn't output anything, but sets `#MyZ` to the given token stream.
-/// * Similarly `[!EAGER:set:ident! #MyZ = ZZZ]` sets `#MyZ` as an ident. This also works with `stringify`, `concat` and `literal`.
+/// * `[!SET! #MyVar = ..]` sets `#MyVar` to the given token stream.
+/// * `[!SET:stringify! #MyVar = ..]` sets `#MyVar` to the result of applying the `stringify` function to the token stream.
+/// * `[!SET:concat! #MyVar = ..]` sets `#MyVar` to the result of applying the `concat` function to the token stream.
+/// * `[!SET:ident! #MyVar = ..]` sets `#MyVar` to the result of applying the `ident` function to the token stream.
+/// * `[!SET:literal! #MyVar = ..]` sets `#MyVar` to the result of applying the `literal` function to the token stream.
 ///
-/// ### Demonstration
+/// ## Demonstration
 /// ```rust
 /// macro_rules! impl_marker_traits {
 ///     {
@@ -116,9 +127,9 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///             $(,) // Optional trailing comma
 ///         ]
 ///     } => {eager_replace!{
-///         [!EAGER:set! #ImplGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?]
-///         [!EAGER:set! #TypeGenerics = $(< $( $lt ),+ >)?]
-///         [!EAGER:set:ident! #MyType = Type $type_name_suffix #TypeGenerics]
+///         [!SET! #ImplGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?]
+///         [!SET! #TypeGenerics = $(< $( $lt ),+ >)?]
+///         [!SET:ident! #MyType = Type $type_name_suffix #TypeGenerics]
 ///
 ///         // Output for each marker trait
 ///         $(

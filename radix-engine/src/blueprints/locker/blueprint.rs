@@ -578,7 +578,7 @@ impl AccountLockerBlueprint {
             .key_value_entry_get_typed::<VersionedAccountLockerAccountClaims>(
                 account_claims_handle,
             )?
-            .map(|entry| entry.fully_update_into_latest_version());
+            .map(|entry| entry.fully_update_and_into_latest_version());
 
         let account_claims_kv_store = match account_claims {
             Some(account_claims_kv_store) => account_claims_kv_store,
@@ -655,7 +655,7 @@ impl AccountLockerBlueprint {
             .key_value_entry_get_typed::<VersionedAccountLockerAccountClaims>(
                 account_claims_handle,
             )?
-            .map(|entry| entry.fully_update_into_latest_version());
+            .map(|entry| entry.fully_update_and_into_latest_version());
 
         let account_claims_kv_store = match account_claims {
             Some(account_claims_kv_store) => account_claims_kv_store,

@@ -7,15 +7,8 @@ type TokenIter = <TokenStream as IntoIterator>::IntoIter;
 type PeekableTokenIter = iter::Peekable<TokenIter>;
 
 pub(crate) fn replace(token_stream: TokenStream) -> Result<TokenStream> {
-    let settings = Settings {
-        tag: "EAGER".to_string(),
-    };
     let mut state = EagerState::new();
-    replace_recursive(&settings, &mut state, token_stream.into_iter())
-}
-
-struct Settings {
-    tag: String,
+    replace_recursive(&mut state, token_stream.into_iter())
 }
 
 struct EagerState {
@@ -38,19 +31,14 @@ impl EagerState {
     }
 }
 
-fn replace_recursive(
-    settings: &Settings,
-    state: &mut EagerState,
-    token_iter: TokenIter,
-) -> Result<TokenStream> {
+fn replace_recursive(state: &mut EagerState, token_iter: TokenIter) -> Result<TokenStream> {
     let mut tokens = token_iter.peekable();
     let mut expanded = TokenStream::new();
-    let tag = &settings.tag;
     loop {
-        match consume_next_meaningful_token_batch(&mut tokens, tag)? {
+        match consume_next_meaningful_token_batch(&mut tokens)? {
             MeaningfulTokenBatch::EagerCallStart(call_kind_group, eager_call_intent) => {
                 let call_output =
-                    execute_eager_call(settings, state, eager_call_intent, call_kind_group.span())?;
+                    execute_eager_call(state, eager_call_intent, call_kind_group.span())?;
                 expanded.extend(call_output);
             }
             MeaningfulTokenBatch::EagerVariable { marker, name } => {
@@ -60,7 +48,7 @@ fn replace_recursive(
                     let name_str = &name_str;
                     return Err(Error::new(
                         name.span(),
-                        format!("The variable {marker}{name_str} wasn't set. If this wasn't intended to be a variable, work around this with {marker}[!{tag}!]({name_str})"),
+                        format!("The variable {marker}{name_str} wasn't set. If this wasn't intended to be a variable, work around this with [!raw! {marker}{name_str}]"),
                     ));
                 };
                 expanded.extend(substituted.clone());
@@ -69,7 +57,7 @@ fn replace_recursive(
                 // If it's a group, run replace on its contents recursively.
                 expanded.extend(iter::once(TokenTree::Group(Group::new(
                     group.delimiter(),
-                    replace_recursive(settings, state, group.stream().into_iter())?,
+                    replace_recursive(state, group.stream().into_iter())?,
                 ))));
             }
             MeaningfulTokenBatch::Leaf(token_tree) => {
@@ -91,12 +79,11 @@ enum MeaningfulTokenBatch {
 
 fn consume_next_meaningful_token_batch(
     tokens: &mut PeekableTokenIter,
-    tag: &str,
 ) -> Result<MeaningfulTokenBatch> {
     Ok(match tokens.next() {
         None => MeaningfulTokenBatch::EndOfStream,
         Some(TokenTree::Group(group)) => {
-            if let Some(eager_call_intent) = denotes_eager_call_intent(tag, &group)? {
+            if let Some(eager_call_intent) = denotes_eager_call_intent(&group)? {
                 MeaningfulTokenBatch::EagerCallStart(group, eager_call_intent)
             } else {
                 MeaningfulTokenBatch::Group(group)
@@ -127,12 +114,14 @@ enum EagerIntentKind {
     Output(EagerFunctionKind),
     Set(EagerFunctionKind),
 }
+
 enum EagerFunctionKind {
     Stringify,
     Concat,
     Ident,
     Literal,
-    Tokens,
+    ProcessedTokens,
+    RawTokens,
 }
 
 struct EagerCallIntent {
@@ -140,60 +129,48 @@ struct EagerCallIntent {
     args: TokenIter,
 }
 
-fn denotes_eager_call_intent<'g>(tag: &str, group: &'g Group) -> Result<Option<EagerCallIntent>> {
-    // Until we see [!EAGER...] we will assume we're not matching an eager call.
+fn denotes_eager_call_intent<'g>(group: &'g Group) -> Result<Option<EagerCallIntent>> {
     if group.delimiter() != Delimiter::Bracket {
         return Ok(None);
     }
+
     let mut tokens = group.stream().into_iter();
     if consume_expected_punct(&mut tokens, '!').is_none() {
         return Ok(None);
     }
-    if consume_expected_ident(&mut tokens, tag).is_none() {
+    let Some(TokenTree::Ident(call_ident)) = tokens.next() else {
         return Ok(None);
-    }
-    // We have now established we're in an eager call intent.
-    // Anything wrong after this point is a compile error.
-
-    let Some(TokenTree::Punct(punct)) = tokens.next() else {
-        return Err(eager_intent_error_for_tag(group.span(), tag));
     };
 
-    let intent_kind = match punct.as_char() {
-        // [!EAGER! ..] is interpreted as a pass-through of tokens, but doing replacements
-        '!' => EagerIntentKind::Output(EagerFunctionKind::Tokens),
-        ':' => {
-            let Some(TokenTree::Ident(call_type)) = tokens.next() else {
-                return Err(eager_intent_error_for_tag(group.span(), tag));
+    // We have now checked enough that we're confident the user is pretty intentionally using
+    // the call convention. Any issues we hit from this point will be a helpful compiler error.
+    let intent_kind = match call_ident.to_string().as_ref() {
+        "SET" => {
+            let Some(TokenTree::Punct(punct)) = tokens.next() else {
+                return Err(eager_call_intent_error(group.span()));
             };
-            if &call_type.to_string() == "set" {
-                let Some(TokenTree::Punct(punct)) = tokens.next() else {
-                    return Err(eager_intent_error_for_tag(group.span(), tag));
-                };
-                match punct.as_char() {
-                    '!' => EagerIntentKind::Set(EagerFunctionKind::Tokens),
-                    ':' => {
-                        let Some(TokenTree::Ident(func_name)) = tokens.next() else {
-                            return Err(eager_intent_error_for_tag(group.span(), tag));
-                        };
-                        let intent_kind =
-                            EagerIntentKind::Set(parse_supported_func_name(&func_name)?);
-                        if consume_expected_punct(&mut tokens, '!').is_none() {
-                            return Err(eager_intent_error_for_tag(group.span(), tag));
-                        }
-                        intent_kind
+            match punct.as_char() {
+                '!' => EagerIntentKind::Set(EagerFunctionKind::ProcessedTokens),
+                ':' => {
+                    let Some(TokenTree::Ident(func_name)) = tokens.next() else {
+                        return Err(eager_call_intent_error(group.span()));
+                    };
+                    let intent_kind = EagerIntentKind::Set(parse_supported_func_name(&func_name)?);
+                    if consume_expected_punct(&mut tokens, '!').is_none() {
+                        return Err(eager_call_intent_error(group.span()));
                     }
-                    _ => return Err(eager_intent_error_for_tag(group.span(), tag)),
+                    intent_kind
                 }
-            } else {
-                let intent_kind = EagerIntentKind::Output(parse_supported_func_name(&call_type)?);
-                if consume_expected_punct(&mut tokens, '!').is_none() {
-                    return Err(eager_intent_error_for_tag(group.span(), tag));
-                }
-                intent_kind
+                _ => return Err(eager_call_intent_error(group.span())),
             }
         }
-        _ => return Err(eager_intent_error_for_tag(group.span(), tag)),
+        _ => {
+            let intent_kind = EagerIntentKind::Output(parse_supported_func_name(&call_ident)?);
+            if consume_expected_punct(&mut tokens, '!').is_none() {
+                return Err(eager_call_intent_error(group.span()));
+            }
+            intent_kind
+        }
     };
 
     Ok(Some(EagerCallIntent {
@@ -202,10 +179,10 @@ fn denotes_eager_call_intent<'g>(tag: &str, group: &'g Group) -> Result<Option<E
     }))
 }
 
-fn eager_intent_error_for_tag(span: Span, tag: &str) -> Error {
+fn eager_call_intent_error(span: Span) -> Error {
     Error::new(
         span,
-        format!("Expected `[!{tag}! ..]`, `[!{tag}:<func>! ..]`, `[!{tag}:set! ..]`, `[!{tag}:set:<func>! #var = ..]` for <func> one of: stringify, concat, ident or literal.")
+        "Expected `[!<func>! ..]`, `[!SET! #var = ..]` or `[!SET:<func>! #var = ..]` for <func> one of: stringify, concat, ident, literal or raw.",
     )
 }
 
@@ -215,24 +192,14 @@ fn parse_supported_func_name(ident: &Ident) -> Result<EagerFunctionKind> {
         "concat" => EagerFunctionKind::Concat,
         "ident" => EagerFunctionKind::Ident,
         "literal" => EagerFunctionKind::Literal,
-        "tokens" => EagerFunctionKind::Tokens,
+        "raw" => EagerFunctionKind::RawTokens,
         func => {
             return Err(Error::new(
                 ident.span(),
-                format!("Unknown EAGER function: {func}"),
+                format!("Unknown function: {func}"),
             ))
         }
     })
-}
-
-fn consume_expected_ident(tokens: &mut TokenIter, ident_str: &str) -> Option<Ident> {
-    let Some(TokenTree::Ident(ident)) = tokens.next() else {
-        return None;
-    };
-    if &ident.to_string() != ident_str {
-        return None;
-    }
-    Some(ident)
 }
 
 fn consume_expected_punct(tokens: &mut TokenIter, char: char) -> Option<Punct> {
@@ -246,14 +213,13 @@ fn consume_expected_punct(tokens: &mut TokenIter, char: char) -> Option<Punct> {
 }
 
 fn execute_eager_call(
-    settings: &Settings,
     state: &mut EagerState,
     call_intent: EagerCallIntent,
     span: Span,
 ) -> Result<TokenStream> {
     match call_intent.intent_kind {
         EagerIntentKind::Output(func) => {
-            execute_eager_function(settings, state, func, span, call_intent.args)
+            execute_eager_function(state, func, span, call_intent.args)
         }
         EagerIntentKind::Set(func) => {
             let mut tokens = call_intent.args;
@@ -271,7 +237,7 @@ fn execute_eager_call(
                 _ => return Err(Error::new(span, SET_ERROR_MESSAGE)),
             }
 
-            let result_tokens = execute_eager_function(settings, state, func, span, tokens)?;
+            let result_tokens = execute_eager_function(state, func, span, tokens)?;
             state.set_variable(ident.to_string(), result_tokens);
 
             return Ok(TokenStream::new());
@@ -280,19 +246,18 @@ fn execute_eager_call(
 }
 
 fn execute_eager_function(
-    settings: &Settings,
     state: &mut EagerState,
     function_kind: EagerFunctionKind,
     span: Span,
     token_iter: TokenIter,
 ) -> Result<TokenStream> {
-    let replaced_arguments = replace_recursive(settings, state, token_iter)?;
     Ok(match function_kind {
-        EagerFunctionKind::Stringify => stringify(span, replaced_arguments)?,
-        EagerFunctionKind::Concat => concat(span, replaced_arguments)?,
-        EagerFunctionKind::Ident => concat_ident(span, replaced_arguments)?,
-        EagerFunctionKind::Literal => concat_literal(span, replaced_arguments)?,
-        EagerFunctionKind::Tokens => replaced_arguments,
+        EagerFunctionKind::Stringify => stringify(span, replace_recursive(state, token_iter)?)?,
+        EagerFunctionKind::Concat => concat(span, replace_recursive(state, token_iter)?)?,
+        EagerFunctionKind::Ident => concat_ident(span, replace_recursive(state, token_iter)?)?,
+        EagerFunctionKind::Literal => concat_literal(span, replace_recursive(state, token_iter)?)?,
+        EagerFunctionKind::ProcessedTokens => replace_recursive(state, token_iter)?,
+        EagerFunctionKind::RawTokens => token_iter.collect(),
     })
 }
 

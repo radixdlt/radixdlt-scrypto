@@ -432,7 +432,7 @@ mod test {
             mutable_fields,
         } = ds
         {
-            let s = schema.fully_update_into_latest_version();
+            let s = schema.fully_update_and_into_latest_version();
             assert_eq!(s.type_kinds.len(), 1);
             assert_eq!(s.type_metadata.len(), 1);
             assert_eq!(s.type_validations.len(), 1);
