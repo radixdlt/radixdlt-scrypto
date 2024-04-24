@@ -489,7 +489,7 @@ pub fn create_system_bootstrap_flash(
         (
             PACKAGE_PACKAGE,
             PackageNativePackage::definition(),
-            NativeCodeId::PackageCode1 as u64 as u64,
+            NativeCodeId::PackageCode1 as u64,
             metadata_init! {
                 "name" => "Package Package".to_owned(), locked;
                 "description" => "A native package that is called to create a new package on the network.".to_owned(), locked;
