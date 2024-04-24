@@ -10,7 +10,7 @@ mod big_fi {
     struct BigFi {
         child: Owned<Subservio>,
         swappy: Global<Swappy>,
-        cerb: ResourceManager,
+        cerb: NonFungibleResourceManager,
         cerb_vault: Vault,
     }
 
@@ -68,6 +68,7 @@ mod big_fi {
         pub fn mint_cerb(&self) -> Bucket {
             self.cerb
                 .mint_non_fungible(&NonFungibleLocalId::Integer(64u64.into()), ())
+                .into()
         }
 
         pub fn recall_cerb(&self, vault_id: InternalAddress) -> Bucket {

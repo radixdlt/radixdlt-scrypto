@@ -30,7 +30,7 @@ mod vault_test {
                         }
                     })
                     .create_with_no_initial_supply();
-            resource_manager.create_empty_vault()
+            resource_manager.create_empty_vault().into()
         }
 
         fn create_non_fungible_vault() -> Vault {
