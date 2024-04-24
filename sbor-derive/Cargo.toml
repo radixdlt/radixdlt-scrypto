@@ -14,6 +14,7 @@ bench = false
 
 [dependencies]
 proc-macro2 = { workspace = true }
+syn = { workspace = true, features = ["full", "extra-traits"] }
 sbor-derive-common = { workspace = true }
 
 [features]

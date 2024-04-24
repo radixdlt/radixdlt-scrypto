@@ -62,13 +62,8 @@ mod max_sbor_depth {
     impl MaxSborDepthTest {
         pub fn write_kv_store_entry_with_depth(buffer: Vec<u8>) {
             // Create KeyValueStore<Any, Any>
-            let schema = VersionedScryptoSchema::V1(SchemaV1 {
-                type_kinds: vec![],
-                type_metadata: vec![],
-                type_validations: vec![],
-            });
             let kv_store = ScryptoVmV1Api::kv_store_new(KeyValueStoreDataSchema::Local {
-                additional_schema: schema,
+                additional_schema: Schema::empty().into(),
                 key_type: LocalTypeId::from(ANY_TYPE),
                 value_type: LocalTypeId::from(ANY_TYPE),
                 allow_ownership: false,
