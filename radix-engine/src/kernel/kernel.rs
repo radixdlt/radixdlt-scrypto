@@ -39,7 +39,6 @@ pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
 }
 
 impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
-
     /// Checks that references exist in the store
     fn check_references(
         &mut self,

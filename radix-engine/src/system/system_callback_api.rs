@@ -12,8 +12,7 @@ pub trait SystemCallbackObject: Sized {
     type Init: Clone;
 
     /// Initialize and create the callback object above the system
-    fn init<S: BootStore>(store: &S, init_input: Self::Init)
-        -> Result<Self, BootloadingError>;
+    fn init<S: BootStore>(store: &S, init_input: Self::Init) -> Result<Self, BootloadingError>;
 
     /// Invoke a function
     fn invoke<Y>(

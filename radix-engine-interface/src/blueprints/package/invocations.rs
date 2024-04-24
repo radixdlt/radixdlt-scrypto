@@ -89,11 +89,15 @@ pub struct PackageClaimRoyaltiesInput {}
 
 pub type PackageClaimRoyaltiesOutput = Bucket;
 
+/// The set of blueprints and their associated definitions for a package
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct PackageDefinition {
     pub blueprints: IndexMap<String, BlueprintDefinitionInit>,
 }
 
+/// A blueprint may be specified as either an Outer or Inner Blueprint. If an inner blueprint, an associated outer
+/// blueprint must be specified and only a component of the outer blueprint may instantiate the inner blueprint.
+/// Inner blueprint components may access the state of its outer blueprint component directly.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum BlueprintType {
     Outer,
@@ -106,14 +110,28 @@ impl Default for BlueprintType {
     }
 }
 
+/// Structure which defines static interface qualities of a Blueprint
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinitionInit {
+    /// Whether the blueprint is an Outer or Inner Blueprint
     pub blueprint_type: BlueprintType,
+
+    /// If true, all components of this blueprint type may not be persisted.
     pub is_transient: bool,
+
+    /// The set of all possible features a component instantiator may specify.
     pub feature_set: IndexSet<String>,
+
+    /// A set of addresses which will always be visible to call frames of this blueprint.
     pub dependencies: IndexSet<GlobalAddress>,
+
+    /// The schema of the blueprint including interface, state, and events
     pub schema: BlueprintSchemaInit,
+
+    /// Blueprint module: Royalty configuration
     pub royalty_config: PackageRoyaltyConfig,
+
+    /// Blueprint module: Auth configuration such as role definitions
     pub auth_config: AuthConfig,
 }
 

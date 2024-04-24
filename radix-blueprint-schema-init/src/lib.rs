@@ -29,13 +29,20 @@ pub enum BlueprintHook {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
+    /// List of generic parameters which must be provided on component instantiation and the bounds of these generics
     pub generics: Vec<GenericBound>,
+    /// Sbor schema which describes types by index
     pub schema: VersionedScryptoSchema,
+    /// Describes schema of state by mapping fields/collection indices as a generic or directly into the Sbor schema
     pub state: BlueprintStateSchemaInit,
+    /// Describes schema of events by mapping event names as a generic or directly into the Sbor schema
     pub events: BlueprintEventSchemaInit,
-    /// Registered types for generic substitution
+    /// Describes schema of types by mapping types names directly into the Sbor schema
+    /// These types are used for external generic substitution
     pub types: BlueprintTypeSchemaInit,
+    /// Describes interface of function by mapping function names to input/output schema and the code exported function name it maps to
     pub functions: BlueprintFunctionsSchemaInit,
+    /// Maps hooks to a code exported function name
     pub hooks: BlueprintHooksInit,
 }
 
