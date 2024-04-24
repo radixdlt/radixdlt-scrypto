@@ -509,7 +509,7 @@ impl ScryptoResourceManagerStub for FungibleResourceManagerStub {
 
 impl FungibleResourceManagerStub {
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
+    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> FungibleBucket {
         self.call(
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
             &FungibleResourceManagerMintInput {
@@ -704,7 +704,7 @@ impl NonFungibleResourceManagerStub {
         &self,
         id: &NonFungibleLocalId,
         data: T,
-    ) -> Bucket {
+    ) -> NonFungibleBucket {
         let mut entries = index_map_new();
         entries.insert(id.clone(), (data,));
         self.call(
@@ -714,7 +714,7 @@ impl NonFungibleResourceManagerStub {
     }
 
     /// Mints ruid non-fungible resources
-    pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> Bucket {
+    pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> NonFungibleBucket {
         let mut entries = Vec::new();
         entries.push((data,));
 
