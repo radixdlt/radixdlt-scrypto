@@ -110,7 +110,7 @@ where
     ) -> Result<SchemaTypeKind<ScryptoCustomSchema>, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
             .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
-            .as_latest_version_ref()
+            .as_latest_version()
             .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
             .resolve_type_kind(type_identifier.1)
             .ok_or(schema::SchemaError::NonExistentLocalTypeIndex(
@@ -125,7 +125,7 @@ where
     ) -> Result<TypeMetadata, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
             .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
-            .as_latest_version_ref()
+            .as_latest_version()
             .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
             .resolve_type_metadata(type_identifier.1)
             .ok_or(schema::SchemaError::NonExistentLocalTypeIndex(
@@ -140,7 +140,7 @@ where
     ) -> Result<TypeValidation<ScryptoCustomTypeValidation>, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
             .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
-            .as_latest_version_ref()
+            .as_latest_version()
             .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
             .resolve_type_validation(type_identifier.1)
             .ok_or(schema::SchemaError::NonExistentLocalTypeIndex(

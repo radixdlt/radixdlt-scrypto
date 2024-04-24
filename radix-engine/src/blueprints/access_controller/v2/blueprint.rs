@@ -738,14 +738,14 @@ impl AccessControllerV2Blueprint {
 
             // Return the state and the handle
             (
-                access_controller_fully_updated_state.fully_update_into_latest_version(),
+                access_controller_fully_updated_state.fully_update_and_into_latest_version(),
                 handle,
             )
         }
         // Already fully updated - just return the state and the handle we already have.
         else {
             (
-                access_controller_state.fully_update_into_latest_version(),
+                access_controller_state.fully_update_and_into_latest_version(),
                 handle,
             )
         };
@@ -791,11 +791,11 @@ impl AccessControllerV2Blueprint {
             api.field_write_typed(handle, &access_controller_fully_updated_state)?;
 
             // Return the state and the handle
-            access_controller_fully_updated_state.fully_update_into_latest_version()
+            access_controller_fully_updated_state.fully_update_and_into_latest_version()
         }
         // Already fully updated - just return the state and the handle we already have.
         else {
-            access_controller_state.fully_update_into_latest_version()
+            access_controller_state.fully_update_and_into_latest_version()
         };
 
         // Call the callback with the state.

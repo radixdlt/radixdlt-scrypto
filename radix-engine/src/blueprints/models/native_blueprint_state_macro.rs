@@ -599,9 +599,9 @@ mod helper_macros {
                         Self::of(self.content.fully_update())
                     }
 
-                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update_into_latest_version`]."]
-                    pub fn fully_update_into_latest_version(self) -> $ident_core {
-                        self.content.fully_update_into_latest_version()
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update_and_into_latest_version`]."]
+                    pub fn fully_update_and_into_latest_version(self) -> $ident_core {
+                        self.content.fully_update_and_into_latest_version()
                     }
 
                     #[doc = "Delegates to [`"[<Versioned $ident_core>]"::from_latest_version`]."]
@@ -679,9 +679,9 @@ mod helper_macros {
                         Self::of(self.content.fully_update())
                     }
 
-                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update_into_latest_version`]."]
-                    pub fn fully_update_into_latest_version(self) -> $ident_core {
-                        self.content.fully_update_into_latest_version()
+                    #[doc = "Delegates to [`"[<Versioned $ident_core>]"::fully_update_and_into_latest_version`]."]
+                    pub fn fully_update_and_into_latest_version(self) -> $ident_core {
+                        self.content.fully_update_and_into_latest_version()
                     }
 
                     #[doc = "Delegates to [`"[<Versioned $ident_core>]"::from_latest_version`]."]
@@ -1279,7 +1279,7 @@ mod tests {
                 .lock_status()
         );
 
-        assert!(create_payload().as_latest_version_ref().is_some());
+        assert!(create_payload().as_latest_version().is_some());
     }
 
     #[test]

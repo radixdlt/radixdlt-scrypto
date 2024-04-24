@@ -133,7 +133,7 @@ pub fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase>(
             .unwrap()
             .unwrap();
 
-        let mut definition = versioned_definition.fully_update_into_latest_version();
+        let mut definition = versioned_definition.fully_update_and_into_latest_version();
 
         let export = definition
             .function_exports
@@ -299,7 +299,8 @@ pub fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase>(db: &
                 )
                 .unwrap()
                 .unwrap();
-            let mut blueprint_definition = versioned_definition.fully_update_into_latest_version();
+            let mut blueprint_definition =
+                versioned_definition.fully_update_and_into_latest_version();
 
             for (_, export) in blueprint_definition.function_exports.iter_mut() {
                 export.code_hash = new_code_hash
@@ -388,7 +389,7 @@ pub fn generate_validator_creation_fee_fix_state_updates<S: SubstateDatabase>(
         )
         .unwrap();
 
-    let mut config = versioned_config.fully_update_into_latest_version();
+    let mut config = versioned_config.fully_update_and_into_latest_version();
     config.config.validator_creation_usd_cost = Decimal::from(100);
 
     let updated_substate = config.into_locked_substate();
@@ -456,7 +457,7 @@ pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase>(db: &S) -> 
             )
             .unwrap()
             .unwrap()
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         for (function_name, added_function) in added_functions.into_iter() {
             let TypeRef::Static(input_local_id) = added_function.input else {
@@ -633,7 +634,7 @@ pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase>(
             )
             .unwrap()
             .unwrap()
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         for function_name in [
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT,
@@ -787,7 +788,7 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
             )
             .unwrap()
             .unwrap()
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         blueprint_definition.interface.state = IndexedStateSchema::from_schema(
             new_blueprint_definition

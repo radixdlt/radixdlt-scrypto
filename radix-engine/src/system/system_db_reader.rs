@@ -162,7 +162,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                 blueprint_definition
                     .into_value()
                     .unwrap()
-                    .fully_update_into_latest_version(),
+                    .fully_update_and_into_latest_version(),
             );
         }
 
@@ -539,7 +539,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
-            ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?.into_value().unwrap().fully_update_into_latest_version());
+            ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?.into_value().unwrap().fully_update_and_into_latest_version());
 
         self.blueprint_cache
             .borrow_mut()
@@ -870,7 +870,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
         Ok(definition
             .into_value()
             .unwrap()
-            .fully_update_into_latest_version())
+            .fully_update_and_into_latest_version())
     }
 
     pub fn validate_payload<'b>(

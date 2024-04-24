@@ -274,7 +274,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         )
         .unwrap()
         .into_payload()
-        .fully_update_into_latest_version();
+        .fully_update_and_into_latest_version();
     assert_eq!(total_supply, allocation_amount);
 
     let reader = SystemDatabaseReader::new(&substate_db);
@@ -288,7 +288,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
             ),
         )
         .unwrap()
-        .map(|v| v.fully_update_into_latest_version());
+        .map(|v| v.fully_update_and_into_latest_version());
 
     if let Some(MetadataValue::String(symbol)) = entry {
         assert_eq!(symbol, "TST");
@@ -491,7 +491,7 @@ fn test_genesis_stake_allocation() {
                     ),
                 )
                 .unwrap()
-                .map(|v| v.fully_update_into_latest_version());
+                .map(|v| v.fully_update_and_into_latest_version());
             if let Some(MetadataValue::Url(url)) = validator_url_entry {
                 assert_eq!(
                     url,
@@ -532,7 +532,7 @@ fn test_genesis_time() {
             ConsensusManagerField::ProposerMinuteTimestamp.field_index(),
         )
         .unwrap()
-        .fully_update_into_latest_version();
+        .fully_update_and_into_latest_version();
 
     assert_eq!(timestamp.epoch_minute, 123);
 }
@@ -758,7 +758,7 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
             ObjectCollectionKey::SortedIndex(0, u16::from_be_bytes(sort_prefix), &address),
         )
         .expect("validator cannot be read")
-        .map(|versioned| versioned.fully_update_into_latest_version())
+        .map(|versioned| versioned.fully_update_and_into_latest_version())
         .expect("validator not found");
 
     assert_eq!(

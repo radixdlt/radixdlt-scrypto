@@ -414,7 +414,7 @@ impl OneResourcePoolBlueprint {
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let substate = api
             .field_read_typed::<VersionedOneResourcePoolState>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         Ok((substate, handle))
     }

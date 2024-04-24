@@ -9,7 +9,7 @@ define_single_versioned!(
 
 impl<S: CustomSchema> VersionedSchema<S> {
     pub fn v1(&self) -> &SchemaV1<S> {
-        self.as_unique_version_ref()
+        self.as_unique_version()
     }
 
     pub fn v1_mut(&mut self) -> &mut SchemaV1<S> {

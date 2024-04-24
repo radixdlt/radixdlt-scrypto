@@ -308,7 +308,7 @@ impl RoleAssignmentNativePackage {
 
         let owner_role = owner_role_substate
             .into_payload()
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         let rule = match owner_role.owner_role_entry.updater {
             OwnerRoleUpdater::None => AccessRule::DenyAll,
@@ -468,7 +468,7 @@ impl RoleAssignmentNativePackage {
 
         let mut owner_role = api
             .field_read_typed::<RoleAssignmentOwnerFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         owner_role.owner_role_entry.rule = rule.clone();
         api.field_write_typed(
             handle,
@@ -488,7 +488,7 @@ impl RoleAssignmentNativePackage {
         let handle = api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE)?;
         let mut owner_role = api
             .field_read_typed::<RoleAssignmentOwnerFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         owner_role.owner_role_entry.updater = OwnerRoleUpdater::None;
         api.field_write_typed(
             handle,
@@ -598,7 +598,7 @@ impl RoleAssignmentNativePackage {
 
         api.key_value_entry_close(handle)?;
 
-        Ok(rule.map(|v| v.fully_update_into_latest_version()))
+        Ok(rule.map(|v| v.fully_update_and_into_latest_version()))
     }
 }
 
@@ -664,7 +664,7 @@ impl RoleAssignmentBottlenoseExtension {
         )?;
         let owner_role_entry = api
             .field_read_typed::<RoleAssignmentOwnerFieldPayload>(handle)?
-            .fully_update_into_latest_version()
+            .fully_update_and_into_latest_version()
             .owner_role_entry;
         api.field_close(handle)?;
 

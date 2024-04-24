@@ -255,7 +255,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
                                     .delete_cf(self.cf(MERKLE_NODES_CF), encode_key(&node_key))
                                     .unwrap();
                                 let value: VersionedTreeNode = scrypto_decode(&bytes).unwrap();
-                                match value.fully_update_into_latest_version() {
+                                match value.fully_update_and_into_latest_version() {
                                     TreeNodeV1::Internal(x) => {
                                         for child in x.children {
                                             queue.push_back(
@@ -301,7 +301,7 @@ impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
             .get_cf(self.cf(MERKLE_NODES_CF), &encode_key(key))
             .unwrap()
             .map(|bytes| scrypto_decode::<VersionedTreeNode>(&bytes).unwrap())
-            .map(|versioned| versioned.fully_update_into_latest_version())
+            .map(|versioned| versioned.fully_update_and_into_latest_version())
     }
 }
 

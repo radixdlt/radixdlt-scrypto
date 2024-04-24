@@ -58,7 +58,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         substate
             .into_value()
             .unwrap()
-            .fully_update_into_latest_version()
+            .fully_update_and_into_latest_version()
             .code
             .len()
     );
@@ -237,7 +237,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                     NonFungibleResourceManagerField::TotalSupply.into(),
                 )
                 .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
-                .fully_update_into_latest_version();
+                .fully_update_and_into_latest_version();
 
             writeln!(
                 output,
@@ -254,7 +254,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                 FungibleResourceManagerField::Divisibility.into(),
             )
             .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
@@ -275,7 +275,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                     FungibleResourceManagerField::TotalSupply.into(),
                 )
                 .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
-                .fully_update_into_latest_version();
+                .fully_update_and_into_latest_version();
 
             writeln!(
                 output,
@@ -311,7 +311,7 @@ fn get_entity_metadata<T: SubstateDatabase>(
             let map_key = key.into_map();
             let key = scrypto_decode::<String>(&map_key).unwrap();
             let value = scrypto_decode::<MetadataEntryEntryPayload>(&value).unwrap();
-            (key, value.fully_update_into_latest_version())
+            (key, value.fully_update_and_into_latest_version())
         })
         .collect()
 }

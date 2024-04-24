@@ -540,7 +540,7 @@ impl NonFungibleVaultBlueprint {
 
         let mut frozen = api
             .field_read_typed::<NonFungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         frozen.frozen.insert(to_freeze);
         api.field_write_typed(
             frozen_flag_handle,
@@ -563,7 +563,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let mut frozen = api
             .field_read_typed::<NonFungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         frozen.frozen.remove(to_unfreeze);
         api.field_write_typed(
             frozen_flag_handle,
@@ -663,7 +663,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let mut locked = api
             .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         // Take from liquid if needed
         let delta: IndexSet<NonFungibleLocalId> = ids
@@ -701,7 +701,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let mut locked = api
             .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         let mut liquid_non_fungibles: IndexSet<NonFungibleLocalId> = index_set_new();
         for id in ids {
@@ -746,7 +746,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let frozen = api
             .field_read_typed::<NonFungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         api.field_close(frozen_flag_handle)?;
 
         if frozen.frozen.intersects(flags) {
@@ -809,7 +809,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let substate_ref = api
             .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let amount = substate_ref.amount;
         api.field_close(handle)?;
         Ok(amount)
@@ -826,7 +826,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let substate_ref = api
             .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let amount = substate_ref.amount();
         api.field_close(handle)?;
         Ok(amount)
@@ -862,7 +862,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let substate_ref = api
             .field_read_typed::<NonFungibleVaultLockedResourceFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let limit: usize = limit.try_into().unwrap();
         let ids = substate_ref.ids().into_iter().take(limit).collect();
         api.field_close(handle)?;
@@ -884,7 +884,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let mut balance = api
             .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         if balance.amount < Decimal::from(n) {
             return Err(RuntimeError::ApplicationError(
@@ -933,7 +933,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let mut substate_ref = api
             .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         substate_ref.amount =
             substate_ref
@@ -987,7 +987,7 @@ impl NonFungibleVaultBlueprint {
         )?;
         let mut vault = api
             .field_read_typed::<NonFungibleVaultBalanceFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         vault.amount =
             vault

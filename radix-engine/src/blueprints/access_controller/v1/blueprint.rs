@@ -620,7 +620,7 @@ impl AccessControllerV1Blueprint {
             let access_controller = {
                 let access_controller: AccessControllerStateFieldPayload =
                     api.field_read_typed(handle)?;
-                access_controller.fully_update_into_latest_version()
+                access_controller.fully_update_and_into_latest_version()
             };
             access_controller.recovery_badge
         };
@@ -688,7 +688,7 @@ where
 
     let access_controller = {
         let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
-        access_controller.fully_update_into_latest_version()
+        access_controller.fully_update_and_into_latest_version()
     };
 
     let rtn = access_controller.transition(api, input)?;
@@ -714,7 +714,7 @@ where
 
     let mut access_controller = {
         let access_controller: AccessControllerStateFieldPayload = api.field_read_typed(handle)?;
-        access_controller.fully_update_into_latest_version()
+        access_controller.fully_update_and_into_latest_version()
     };
 
     let rtn = access_controller.transition_mut(api, input)?;

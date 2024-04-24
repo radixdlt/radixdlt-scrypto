@@ -590,7 +590,7 @@ impl ValidatorBlueprint {
 
         let mut validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         if !is_owner {
             if !validator.accepts_delegated_stake {
@@ -656,7 +656,7 @@ impl ValidatorBlueprint {
         )?;
         let mut validator_substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
@@ -680,7 +680,7 @@ impl ValidatorBlueprint {
             )?;
             let manager_substate = api
                 .field_read_typed::<ConsensusManagerStateFieldPayload>(manager_handle)?
-                .fully_update_into_latest_version();
+                .fully_update_and_into_latest_version();
             let current_epoch = manager_substate.epoch;
             api.field_close(manager_handle)?;
 
@@ -691,7 +691,7 @@ impl ValidatorBlueprint {
             )?;
             let config_substate = api
                 .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
-                .fully_update_into_latest_version();
+                .fully_update_and_into_latest_version();
             api.field_close(config_handle)?;
 
             let claim_epoch = current_epoch
@@ -763,7 +763,7 @@ impl ValidatorBlueprint {
         )?;
         let mut signal = api
             .field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         signal.protocol_version_name = Some(protocol_version_name.clone());
         api.field_write_typed(
             handle,
@@ -792,7 +792,7 @@ impl ValidatorBlueprint {
         )?;
         let signal = api
             .field_read_typed::<ValidatorProtocolUpdateReadinessSignalFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         api.field_close(handle)?;
 
         Ok(signal.protocol_version_name)
@@ -810,7 +810,7 @@ impl ValidatorBlueprint {
 
         let mut validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         // No update
         if validator.is_registered == new_registered {
             return Ok(());
@@ -895,7 +895,7 @@ impl ValidatorBlueprint {
         )?;
         let validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let mut nft_resman = ResourceManager(validator.claim_nft);
         let resource_address = validator.claim_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
@@ -914,7 +914,7 @@ impl ValidatorBlueprint {
             )?;
             let mgr_substate = api
                 .field_read_typed::<ConsensusManagerStateFieldPayload>(mgr_handle)?
-                .fully_update_into_latest_version();
+                .fully_update_and_into_latest_version();
             let epoch = mgr_substate.epoch;
             api.field_close(mgr_handle)?;
             epoch
@@ -961,7 +961,7 @@ impl ValidatorBlueprint {
         )?;
         let mut validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         // Update Consensus Manager
         {
@@ -999,7 +999,7 @@ impl ValidatorBlueprint {
         )?;
         let consensus_manager = api
             .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
@@ -1011,7 +1011,7 @@ impl ValidatorBlueprint {
         )?;
         let config_substate = api
             .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
@@ -1022,7 +1022,7 @@ impl ValidatorBlueprint {
         )?;
         let mut substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         // - promote any currently pending change if it became effective already
         if let Some(previous_request) = substate.validator_fee_change_request {
@@ -1067,7 +1067,7 @@ impl ValidatorBlueprint {
 
         let substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         api.field_close(handle)?;
 
         Ok(substate.accepts_delegated_stake)
@@ -1085,7 +1085,7 @@ impl ValidatorBlueprint {
 
         let substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let stake_vault = Vault(substate.stake_xrd_vault_id);
         let stake_amount = stake_vault.amount(api)?;
         api.field_close(handle)?;
@@ -1105,7 +1105,7 @@ impl ValidatorBlueprint {
 
         let substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let stake_resource = ResourceManager(substate.stake_unit_resource);
         let total_stake_unit_supply = stake_resource.total_supply(api)?.unwrap();
         api.field_close(handle)?;
@@ -1133,7 +1133,7 @@ impl ValidatorBlueprint {
         )?;
         let validator = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         {
             let stake_unit_resman = ResourceManager(validator.stake_unit_resource);
@@ -1166,7 +1166,7 @@ impl ValidatorBlueprint {
         )?;
         let mut substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         substate.accepts_delegated_stake = accept_delegated_stake;
         api.field_write_typed(
             handle,
@@ -1201,7 +1201,7 @@ impl ValidatorBlueprint {
         )?;
         let substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         Vault(substate.locked_owner_stake_unit_vault_id).put(stake_unit_bucket, api)?;
 
@@ -1228,7 +1228,7 @@ impl ValidatorBlueprint {
         )?;
         let consensus_manager = api
             .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
@@ -1240,7 +1240,7 @@ impl ValidatorBlueprint {
         )?;
         let config_substate = api
             .field_read_typed::<ConsensusManagerConfigurationFieldPayload>(config_handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
@@ -1251,7 +1251,7 @@ impl ValidatorBlueprint {
         )?;
         let mut substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         // - move the already-available withdrawals to a dedicated field
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch)?;
@@ -1306,7 +1306,7 @@ impl ValidatorBlueprint {
         )?;
         let consensus_manager = api
             .field_read_typed::<ConsensusManagerStateFieldPayload>(consensus_manager_handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
         let current_epoch = consensus_manager.epoch;
         api.field_close(consensus_manager_handle)?;
 
@@ -1318,7 +1318,7 @@ impl ValidatorBlueprint {
         )?;
         let mut substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch)?;
         let total_already_available_amount = mem::replace(
@@ -1395,7 +1395,7 @@ impl ValidatorBlueprint {
         )?;
         let mut substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         // - resolve the effective validator fee factor
         let effective_validator_fee_factor = match &substate.validator_fee_change_request {
@@ -1490,7 +1490,7 @@ impl ValidatorBlueprint {
         )?;
         let mut substate = api
             .field_read_typed::<ValidatorStateFieldPayload>(handle)?
-            .fully_update_into_latest_version();
+            .fully_update_and_into_latest_version();
 
         // Get the total reward amount
         let total_reward_xrd = xrd_bucket.amount(api)?;
@@ -1581,7 +1581,7 @@ impl ValidatorBlueprint {
                         ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                         &index_key,
                     )?
-                    .unwrap().fully_update_into_latest_version();
+                    .unwrap().fully_update_and_into_latest_version();
                 validator.key = key;
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
@@ -1604,7 +1604,7 @@ impl ValidatorBlueprint {
                         ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
                         &index_key,
                     )?
-                    .unwrap().fully_update_into_latest_version();
+                    .unwrap().fully_update_and_into_latest_version();
                 validator.stake = new_stake_amount;
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
