@@ -17,7 +17,6 @@ macro_rules! declare_key_new_type {
             ($content_type:ty)$(;)?
     ) => {
         $(#[$attributes])*
-        #[sbor(categorize_types = "")]
         /// This type represents the payload of the key of a particular sorted index collection.
         $vis struct $payload_type_name
             $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
@@ -136,7 +135,7 @@ macro_rules! declare_key_new_type {
         ($content_type:ty)$(;)?
     ) => {
         $(#[$attributes])*
-        #[sbor(transparent, categorize_types = "", transparent_name)]
+        #[sbor(transparent, transparent_name)]
         /// This new type represents the payload of the key of a particular collection.
         $vis struct $payload_type_name
             $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?

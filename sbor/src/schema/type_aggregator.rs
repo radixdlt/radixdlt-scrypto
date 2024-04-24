@@ -25,11 +25,12 @@ pub fn generate_full_schema<S: CustomSchema>(
         type_validations.push(type_data.validation);
     }
 
-    VersionedSchema::V1(Schema {
+    Schema {
         type_kinds,
         type_metadata,
         type_validations,
-    })
+    }
+    .into_versioned()
 }
 
 pub fn localize_well_known_type_data<S: CustomSchema>(

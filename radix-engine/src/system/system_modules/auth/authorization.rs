@@ -353,7 +353,7 @@ impl Authorization {
             api.kernel_close_substate(handle)?;
 
             match substate.into_value() {
-                Some(access_rule) => access_rule.content.into_latest(),
+                Some(access_rule) => access_rule.fully_update_and_into_latest_version(),
                 None => {
                     let handle = api.kernel_open_substate(
                         role_assignment_of.as_node_id(),
@@ -370,7 +370,7 @@ impl Authorization {
                     api.kernel_close_substate(handle)?;
                     owner_role_substate
                         .into_payload()
-                        .into_latest()
+                        .fully_update_and_into_latest_version()
                         .owner_role_entry
                         .rule
                 }

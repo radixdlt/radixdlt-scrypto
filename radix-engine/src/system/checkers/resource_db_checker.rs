@@ -21,7 +21,6 @@ use radix_engine_interface::blueprints::resource::{
 };
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::vec::Vec;
-use sbor::HasLatestVersion;
 
 #[derive(Debug, Default)]
 pub struct ResourceCounter {
@@ -67,7 +66,8 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                             scrypto_decode(value).unwrap();
                         let address = ResourceAddress::new_or_panic(node_id.0);
                         let tracker = self.resources.entry(address).or_default();
-                        tracker.expected = Some(total_supply.into_latest());
+                        tracker.expected =
+                            Some(total_supply.fully_update_and_into_latest_version());
                     }
                     _ => {}
                 }
@@ -81,7 +81,9 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                         let address = ResourceAddress::new_or_panic(
                             info.outer_obj_info.expect().into_node_id().0,
                         );
-                        let amount = vault_balance.into_latest().amount();
+                        let amount = vault_balance
+                            .fully_update_and_into_latest_version()
+                            .amount();
 
                         if amount.is_negative() {
                             panic!("Found Fungible Vault negative balance");
@@ -104,7 +106,8 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                             scrypto_decode(value).unwrap();
                         let address = ResourceAddress::new_or_panic(node_id.0);
                         let tracker = self.resources.entry(address).or_default();
-                        tracker.expected = Some(total_supply.into_latest());
+                        tracker.expected =
+                            Some(total_supply.fully_update_and_into_latest_version());
                     }
                     _ => {}
                 }
@@ -119,7 +122,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                             info.outer_obj_info.expect().into_node_id().0,
                         );
                         let tracker = self.resources.entry(address).or_default();
-                        let vault_balance = vault_balance.into_latest();
+                        let vault_balance = vault_balance.fully_update_and_into_latest_version();
                         tracker.tracking_supply = tracker
                             .tracking_supply
                             .checked_add(vault_balance.amount)
@@ -148,7 +151,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
 
                         let mut prev = Decimal::MAX;
                         for validator in validator_set
-                            .into_latest()
+                            .fully_update_and_into_latest_version()
                             .validator_set
                             .validators_by_stake_desc
                         {
@@ -162,7 +165,10 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                     ConsensusManagerField::CurrentProposalStatistic => {
                         let stats: ConsensusManagerCurrentProposalStatisticFieldPayload =
                             scrypto_decode(value).unwrap();
-                        stats_count = stats.into_latest().validator_statistics.len();
+                        stats_count = stats
+                            .fully_update_and_into_latest_version()
+                            .validator_statistics
+                            .len();
                     }
                     _ => {}
                 }
