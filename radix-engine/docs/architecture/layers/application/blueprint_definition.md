@@ -1,6 +1,6 @@
 # Blueprint Definition
 
-A Blueprint Definition defines the static interface qualities of a Blueprint such as function signatures.
+A Blueprint Definition defines everything about a Blueprint outside of the code logic itself.
 
 The structure used to initialize the definition is `BlueprintDefinitionInit` found in [invocations.rs](../../../../../radix-engine-interface/src/blueprints/package/invocations.rs):
 
@@ -16,7 +16,11 @@ pub struct BlueprintDefinitionInit {
 }
 ```
 
-| Name             | Description                                                                                                                                                                                                                                                                                                                |
+## Properties
+
+A description of each property is as follows.
+
+| Property Name    | Description                                                                                                                                                                                                                                                                                                                |
 |------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Blueprint Type   | A blueprint may be specified as either an Outer or Inner Blueprint. If an inner blueprint, an associated outer blueprint must be specified. Inner blueprint components may access the state of its outer blueprint component directly.<br><br> *Inner Blueprints are currently only available for use by native packages.* |
 | Transience       | If a blueprint is specified to be transient, all components of this blueprint type may not be persisted.<br><br>*Transience is currently only available for use by native packages.*                                                                                                                                       |

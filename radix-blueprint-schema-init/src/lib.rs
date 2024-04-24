@@ -27,6 +27,7 @@ pub enum BlueprintHook {
     OnDrop,
 }
 
+/// An initialization object which describes a blueprint's schema including interface, state, and events
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
     /// List of generic parameters which must be provided on component instantiation and the bounds of these generics
@@ -65,6 +66,8 @@ impl Default for BlueprintSchemaInit {
     }
 }
 
+/// Describes the number of fields and collections some Blueprint has as well
+/// as the schema and properties of each field and collection
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintStateSchemaInit {
     pub fields: Vec<FieldSchema<TypeRef<LocalTypeId>>>,
@@ -164,6 +167,7 @@ pub trait BlueprintFeature {
     fn feature_name(&self) -> &'static str;
 }
 
+/// Expresses a condition based on features enabled on a component
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum Condition {
     Always,
@@ -191,10 +195,13 @@ pub enum FieldTransience {
     },
 }
 
+/// Describes a field for a Blueprint
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct FieldSchema<V> {
     pub field: V,
+    /// Condition for this field to exist
     pub condition: Condition,
+    /// Describes if this field should be persisted
     pub transience: FieldTransience,
 }
 
