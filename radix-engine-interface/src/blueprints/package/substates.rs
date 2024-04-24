@@ -1,7 +1,9 @@
 use crate::blueprints::package::BlueprintType;
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
+use strum::FromRepr;
 
+#[derive(FromRepr)]
 #[repr(u64)]
 pub enum NativeCodeId {
     /// * Introduced: Babylon
@@ -97,7 +99,7 @@ pub enum NativeCodeId {
     /// * Introduced: Bottlenose
     /// * Coverage  : All transaction processor blueprints
     /// * Version   : v1_1
-    /// * Changes   : N/A
+    /// * Changes   : Add blob limits
     TransactionProcessorCode2 = 21u64,
 
     /// * Introduced: Babylon
@@ -124,25 +126,6 @@ pub enum NativeCodeId {
     /// * Changes   : Add `get_owner_role``
     RoleAssignmentCode2 = 18u64,
 }
-
-pub const PACKAGE_CODE_ID: u64 = 0u64;
-pub const RESOURCE_CODE_ID: u64 = 1u64;
-pub const IDENTITY_CODE_ID: u64 = 2u64;
-pub const CONSENSUS_MANAGER_CODE_ID: u64 = 3u64;
-pub const ACCOUNT_CODE_ID: u64 = 5u64;
-pub const ACCESS_CONTROLLER_CODE_ID: u64 = 6u64;
-pub const TRANSACTION_PROCESSOR_CODE_ID: u64 = 7u64;
-pub const METADATA_CODE_ID: u64 = 10u64;
-pub const ROYALTY_CODE_ID: u64 = 11u64;
-pub const ROLE_ASSIGNMENT_CODE_ID: u64 = 12u64;
-pub const POOL_V1_0_CODE_ID: u64 = 13u64;
-pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
-pub const TEST_UTILS_CODE_ID: u64 = 15u64;
-pub const CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID: u64 = 16u64;
-pub const POOL_V1_1_CODE_ID: u64 = 17u64;
-pub const ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID: u64 = 18u64;
-pub const LOCKER_CODE_ID: u64 = 19u64;
-pub const ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID: u64 = 20u64;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
