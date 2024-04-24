@@ -28,13 +28,13 @@ pub enum NativeCodeId {
     /// * Coverage  : All identity blueprints
     /// * Version   : v1_0
     /// * Changes   : N/A
-    IdentityCode1,
+    IdentityCode1 = 2u64,
 
     /// * Introduced: Babylon
     /// * Coverage  : All consensus manager blueprints
     /// * Version   : v1_0
     /// * Changes   : N/A
-    ConsensusManagerCode1,
+    ConsensusManagerCode1 = 3u64,
 
     /// * Introduced: Anemone
     /// * Coverage  : `CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT` and `CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT`
