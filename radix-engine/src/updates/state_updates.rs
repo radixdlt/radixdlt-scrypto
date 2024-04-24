@@ -71,7 +71,7 @@ pub fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase>(
 
     // Generate the new code substates
     let (new_code_substate, new_vm_type_substate, code_hash) = {
-        let original_code = CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID
+        let original_code = (NativeCodeId::ConsensusManagerCode2 as u64)
             .to_be_bytes()
             .to_vec();
 
@@ -249,11 +249,11 @@ pub fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase>(db: &
     let pool_package_node_id = POOL_PACKAGE.into_node_id();
 
     // The old and new code hashes
-    let old_code_id = POOL_V1_0_CODE_ID;
-    let new_code_id = POOL_V1_1_CODE_ID;
+    let old_code_id = NativeCodeId::PoolCode1;
+    let new_code_id = NativeCodeId::PoolCode2;
 
-    let old_code = old_code_id.to_be_bytes().to_vec();
-    let new_code = new_code_id.to_be_bytes().to_vec();
+    let old_code = (old_code_id as u64).to_be_bytes().to_vec();
+    let new_code = (new_code_id as u64).to_be_bytes().to_vec();
 
     let old_code_hash = CodeHash::from_hash(hash(&old_code));
     let new_code_hash = CodeHash::from_hash(hash(&new_code));
@@ -418,7 +418,7 @@ pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase>(db: &S) -> 
 
     // Creating the original code substates for extension.
     let (code_hash, (code_substate, vm_type_substate)) = {
-        let original_code = ROLE_ASSIGNMENT_BOTTLENOSE_EXTENSION_CODE_ID
+        let original_code = (NativeCodeId::RoleAssignmentCode2 as u64)
             .to_be_bytes()
             .to_vec();
 
@@ -546,14 +546,15 @@ pub fn generate_locker_package_state_updates() -> StateUpdates {
     let package_structure = PackageNativePackage::validate_and_build_package_structure(
         package_definition,
         VmType::Native,
-        LOCKER_CODE_ID.to_be_bytes().to_vec(),
+        (NativeCodeId::LockerCode1 as u64).to_be_bytes().to_vec(),
         Default::default(),
         &VmVersion::latest(),
     )
     .unwrap_or_else(|err| {
         panic!(
             "Invalid flashed Package definition with native_code_id {}: {:?}",
-            LOCKER_CODE_ID, err
+            NativeCodeId::LockerCode1 as u64,
+            err
         )
     });
 
@@ -602,7 +603,7 @@ pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase>(
 
     // Creating the original code substates for extension.
     let (code_hash, (code_substate, vm_type_substate)) = {
-        let original_code = ACCOUNT_BOTTLENOSE_EXTENSION_CODE_ID.to_be_bytes().to_vec();
+        let original_code = (NativeCodeId::AccountCode2 as u64).to_be_bytes().to_vec();
 
         let code_hash = CodeHash::from_hash(hash(&original_code));
         let code_substate = PackageCodeOriginalCodeV1 {
