@@ -108,6 +108,7 @@ pub enum ExecutionCostingEntry<'a> {
     EmitLog {
         size: usize,
     },
+    EncodeBech32Address,
     Panic {
         size: usize,
     },
@@ -191,6 +192,7 @@ impl<'a> ExecutionCostingEntry<'a> {
             ExecutionCostingEntry::GenerateRuid => ft.generate_ruid_cost(),
             ExecutionCostingEntry::EmitEvent { size } => ft.emit_event_cost(*size),
             ExecutionCostingEntry::EmitLog { size } => ft.emit_log_cost(*size),
+            ExecutionCostingEntry::EncodeBech32Address => ft.encode_bech32_address_cost(),
             ExecutionCostingEntry::Panic { size } => ft.panic_cost(*size),
             ExecutionCostingEntry::Bls12381V1Verify { size } => ft.bls12381_v1_verify_cost(*size),
             ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes } => {

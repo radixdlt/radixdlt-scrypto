@@ -120,7 +120,8 @@ impl CostingModule {
 
     pub fn apply_execution_cost_after_update(
         &mut self,
-        costing_entry: ExecutionCostingEntry,) -> Result<(), CostingError> {
+        costing_entry: ExecutionCostingEntry,
+    ) -> Result<(), CostingError> {
         if self.apply_additional_costing {
             self.apply_execution_cost(costing_entry)
         } else {

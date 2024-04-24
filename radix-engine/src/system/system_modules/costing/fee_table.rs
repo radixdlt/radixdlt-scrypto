@@ -382,6 +382,11 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn encode_bech32_address_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
     pub fn panic_cost(&self, size: usize) -> u32 {
         500 + Self::data_processing_cost(size)
     }

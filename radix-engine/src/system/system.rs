@@ -2811,6 +2811,12 @@ where
 
     #[trace_resources]
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
+        if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
+            costing
+                .apply_execution_cost_after_update(ExecutionCostingEntry::EncodeBech32Address)
+                .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
+        }
+
         let network_definition = &self
             .api
             .kernel_get_system()
