@@ -1,0 +1,6 @@
+[book]
+authors = ["Joshua Primero"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Radix Engine"
