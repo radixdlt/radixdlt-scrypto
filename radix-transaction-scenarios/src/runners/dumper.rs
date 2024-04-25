@@ -66,7 +66,7 @@ pub fn run_all_in_memory_and_dump_examples(
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "e0424eb560f6c7fbb671a7e7e4a273e3ec682b42e8ea2c5afb55be624ada4716",
+        "9324858b0a9fcaa21760c45c8473e6aa85a495f7527d9bfd9fc55133d7d6f757",
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
