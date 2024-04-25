@@ -13,7 +13,7 @@
     - [Generics]()
     - [State](architecture/application/state.md)
     - [Events]()
-    - [Functions](architecture/application/functions.md)
+    - [Functions]()
     - [Types]()
     - [Blueprint Modules]()
   - [WASM Environment](architecture/application/wasm_environment.md)
