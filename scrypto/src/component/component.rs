@@ -16,7 +16,7 @@ use radix_common::ScryptoSbor;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{AttachedModuleId, FieldValue};
 use radix_engine_interface::blueprints::resource::{
-    AccessRule, Bucket, MethodAccessibility, OwnerRole, OwnerRoleEntry, RoleAssignmentInit,
+    AccessRule, FungibleBucket, MethodAccessibility, OwnerRole, OwnerRoleEntry, RoleAssignmentInit,
 };
 use radix_engine_interface::object_modules::metadata::{
     MetadataConversionError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
@@ -474,7 +474,7 @@ where
         self.component_royalties().lock_royalty(method);
     }
 
-    fn claim_component_royalties(&self) -> Bucket {
+    fn claim_component_royalties(&self) -> FungibleBucket {
         self.component_royalties().claim_royalties()
     }
 }
