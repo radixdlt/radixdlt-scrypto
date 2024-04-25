@@ -65,6 +65,12 @@ fn usd_price_costing_after_protocol_update() {
     receipt.expect_commit_success();
 
     // Assert
+    assert!(receipt
+        .fee_details
+        .unwrap()
+        .execution_cost_breakdown
+        .get(&ExecutionCostingEntry::QueryFeeReserve.to_trace_key())
+        .is_some());
     assert_eq!(
         cost_before_update + 500, /* usd_price() call cost */
         receipt.fee_summary.total_execution_cost_units_consumed
