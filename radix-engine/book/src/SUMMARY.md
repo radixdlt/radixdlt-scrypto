@@ -6,15 +6,16 @@
 
 - [Layered Architecture](architecture/layers.md)
 - [Application Layer](architecture/application/README.md)
-  - [Blueprint Definition](architecture/application/blueprint_definition.md)
-    - [Inner vs Outer Blueprints](architecture/application/inner_vs_outer.md)
-    - [Transience]()
-    - [Features]()
+  - [Blueprint](architecture/application/blueprint.md)
+    - [Inner and Outer Blueprints](architecture/application/inner_outer.md)
+    - [Transience](architecture/application/transience.md)
+    - [Features](architecture/application/features.md)
     - [Generics]()
     - [State](architecture/application/state.md)
     - [Events]()
     - [Functions](architecture/application/functions.md)
     - [Types]()
+    - [Blueprint Modules]()
   - [WASM Environment](architecture/application/wasm_environment.md)
   - [Type System]()
 - [VM Layer](architecture/vm.md)
@@ -32,13 +33,13 @@
 - [Transaction Lifecycle](execution/lifecycle.md)
   - [Bootup](execution/bootup.md)
   - [Runtime]()
-    - [System Calls]()
-    - [Invocations]()
   - [Shutdown](execution/shutdown.md)
-- [Substate Flashing]()
-- [Genesis Bootstrap]()
-- [Protocol Updates]()
- 
+- [Object Lifecycle]()
+  - [Instantiation]()
+  - [State Reads/Writes]()
+  - [Destruction]()
+- [Invocations]()
+
 # Native Systems
 
 - [Authorization](native/access_control/README)
@@ -50,3 +51,8 @@
 - [Resources]()
 - [Royalties]()
 - [Metadata]()
+
+# Protocol
+- [Genesis Bootstrap]()
+- [Protocol Updates]()
+ 

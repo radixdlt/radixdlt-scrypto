@@ -1,4 +1,4 @@
-# Inner vs. Outer Blueprints
+# Inner and Outer Blueprints
 
 A blueprint may be specified as either an Outer or Inner Blueprint. If an inner blueprint, an associated outer blueprint
 (from the same package) must be specified.
