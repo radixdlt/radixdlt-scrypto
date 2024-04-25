@@ -1,3 +1,4 @@
+use crate::internal_prelude::*;
 use radix_common::data::scrypto::ScryptoDecode;
 use radix_common::prelude::{
     scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoEncode, ScryptoValue,
@@ -6,7 +7,6 @@ use radix_common::prelude::{
 use radix_engine_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
-use radix_engine_interface::*;
 use radix_substate_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, SubstateKeyContent,
 };
@@ -17,9 +17,7 @@ use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::SubstateDatabase,
 };
-use sbor::rust::prelude::*;
-use sbor::LocalTypeId;
-use sbor::{validate_payload_against_schema, HasLatestVersion, LocatedValidationError};
+use sbor::{validate_payload_against_schema, LocalTypeId, LocatedValidationError};
 
 use crate::blueprints::package::PackageBlueprintVersionDefinitionEntrySubstate;
 use crate::internal_prelude::{IndexEntrySubstate, SortedIndexEntrySubstate};
@@ -161,7 +159,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
 
             blueprints.insert(
                 bp_version_key,
-                blueprint_definition.into_value().unwrap().into_latest(),
+                blueprint_definition
+                    .into_value()
+                    .unwrap()
+                    .fully_update_and_into_latest_version(),
             );
         }
 
@@ -538,7 +539,7 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
                     .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
-            ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?.into_value().unwrap().into_latest());
+            ).ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?.into_value().unwrap().fully_update_and_into_latest_version());
 
         self.blueprint_cache
             .borrow_mut()
@@ -866,7 +867,10 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
             )
             .ok_or_else(|| SystemReaderError::BlueprintDoesNotExist)?;
 
-        Ok(definition.into_value().unwrap().into_latest())
+        Ok(definition
+            .into_value()
+            .unwrap()
+            .fully_update_and_into_latest_version())
     }
 
     pub fn validate_payload<'b>(

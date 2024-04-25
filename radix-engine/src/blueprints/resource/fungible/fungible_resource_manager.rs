@@ -11,7 +11,6 @@ use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, ACTOR_STAT
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::*;
 use radix_native_sdk::component::{globalize_object, globalize_object_with_inner_object_and_event};
 use radix_native_sdk::runtime::Runtime;
 
@@ -566,7 +565,7 @@ impl FungibleResourceManagerBlueprint {
             )?;
             let divisibility: FungibleResourceManagerDivisibilityFieldPayload =
                 api.field_read_typed(divisibility_handle)?;
-            divisibility.into_latest()
+            divisibility.fully_update_and_into_latest_version()
         };
 
         // check amount
@@ -590,7 +589,7 @@ impl FungibleResourceManagerBlueprint {
                 .field_read_typed::<FungibleResourceManagerTotalSupplyFieldPayload>(
                     total_supply_handle,
                 )?
-                .into_latest();
+                .fully_update_and_into_latest_version();
             // This should never overflow due to the 2^152 limit we place on mints.
             // Since Decimal have 2^192 max we would need to mint 2^40 times before
             // an overflow occurs.
@@ -659,7 +658,7 @@ impl FungibleResourceManagerBlueprint {
                 .field_read_typed::<FungibleResourceManagerTotalSupplyFieldPayload>(
                     total_supply_handle,
                 )?
-                .into_latest();
+                .fully_update_and_into_latest_version();
             total_supply = total_supply
                 .checked_sub(other_bucket.liquid.amount())
                 .ok_or(RuntimeError::ApplicationError(
@@ -760,7 +759,7 @@ impl FungibleResourceManagerBlueprint {
             .field_read_typed::<FungibleResourceManagerDivisibilityFieldPayload>(
                 divisibility_handle,
             )?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let resource_type = ResourceType::Fungible { divisibility };
 
         Ok(resource_type)
@@ -783,7 +782,7 @@ impl FungibleResourceManagerBlueprint {
                 .field_read_typed::<FungibleResourceManagerTotalSupplyFieldPayload>(
                     total_supply_handle,
                 )?
-                .into_latest();
+                .fully_update_and_into_latest_version();
             Ok(Some(total_supply))
         } else {
             Ok(None)
@@ -808,7 +807,7 @@ impl FungibleResourceManagerBlueprint {
             .field_read_typed::<FungibleResourceManagerDivisibilityFieldPayload>(
                 divisibility_handle,
             )?
-            .into_latest();
+            .fully_update_and_into_latest_version();
 
         Ok(amount
             .for_withdrawal(divisibility, withdraw_strategy)

@@ -357,7 +357,7 @@ where
         self.api.kernel_close_substate(handle)?;
 
         let definition = Rc::new(match substate.into_value() {
-            Some(definition) => definition.into_latest(),
+            Some(definition) => definition.fully_update_and_into_latest_version(),
             None => {
                 return Err(RuntimeError::SystemError(
                     SystemError::BlueprintDoesNotExist(canonical_bp_id),

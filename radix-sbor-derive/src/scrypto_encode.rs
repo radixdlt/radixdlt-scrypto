@@ -27,16 +27,16 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl<E: ::sbor::Encoder<radix_common::data::scrypto::ScryptoCustomValueKind> >
-                    ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E> for MyStruct
+                impl<E: sbor::Encoder<radix_common::data::scrypto::ScryptoCustomValueKind> >
+                    sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E> for MyStruct
                 {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Tuple)
                     }
                     #[inline]
-                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         encoder.write_size(0)?;
                         Ok(())
                     }
@@ -56,19 +56,18 @@ mod tests {
             quote! {
                 impl<
                         T: Bound,
-                        E: ::sbor::Encoder<radix_common::data::scrypto::ScryptoCustomValueKind>
-                    > ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E> for MyEnum<T>
+                        E: sbor::Encoder<radix_common::data::scrypto::ScryptoCustomValueKind>
+                    > sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E> for MyEnum<T>
                 where
-                    T: ::sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E>,
-                    T: ::sbor::Categorize<radix_common::data::scrypto::ScryptoCustomValueKind>
+                    T: sbor::Encode<radix_common::data::scrypto::ScryptoCustomValueKind, E>
                 {
                     #[inline]
-                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_value_kind(::sbor::ValueKind::Enum)
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        encoder.write_value_kind(sbor::ValueKind::Enum)
                     }
                     #[inline]
-                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
-                        use ::sbor::{self, Encode};
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                        use sbor::{self, Encode};
                         match self {
                             Self::A { named, .. } => {
                                 encoder.write_discriminator(0u8)?;

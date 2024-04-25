@@ -18,12 +18,17 @@ pub fn handle_decode(
     trace!("handle_decode() starts");
 
     let parsed: DeriveInput = parse2(input)?;
-    let is_transparent = is_transparent(&parsed.attrs)?;
 
-    let output = if is_transparent {
-        handle_transparent_decode(parsed, context_custom_value_kind)?
-    } else {
-        handle_normal_decode(parsed, context_custom_value_kind)?
+    let output = match get_derive_strategy(&parsed.attrs)? {
+        DeriveStrategy::Normal => handle_normal_decode(parsed, context_custom_value_kind)?,
+        DeriveStrategy::Transparent => {
+            handle_transparent_decode(parsed, context_custom_value_kind)?
+        }
+        DeriveStrategy::DeriveAs {
+            as_type,
+            from_value,
+            ..
+        } => handle_decode_as(parsed, context_custom_value_kind, &as_type, &from_value)?,
     };
 
     #[cfg(feature = "trace")]
@@ -37,17 +42,9 @@ pub fn handle_transparent_decode(
     parsed: DeriveInput,
     context_custom_value_kind: Option<&'static str>,
 ) -> Result<TokenStream> {
-    let DeriveInput {
-        attrs,
-        ident,
-        data,
-        generics,
-        ..
-    } = parsed;
-    let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, decoder_generic) =
-        build_decode_generics(&generics, &attrs, context_custom_value_kind)?;
+    let DeriveInput { data, .. } = &parsed;
 
-    let output = match data {
+    match data {
         Data::Struct(s) => {
             let FieldsData {
                 unskipped_field_names,
@@ -55,7 +52,7 @@ pub fn handle_transparent_decode(
                 skipped_field_names,
                 skipped_field_types,
                 ..
-            } = process_fields_for_decode(&s.fields)?;
+            } = process_fields(&s.fields)?;
             if unskipped_field_names.len() != 1 {
                 return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
             }
@@ -65,52 +62,74 @@ pub fn handle_transparent_decode(
             let decode_content = match &s.fields {
                 syn::Fields::Named(_) => {
                     quote! {
-                        Ok(Self {
-                            #field_name: inner,
+                        Self {
+                            #field_name: value,
                             #(#skipped_field_names: <#skipped_field_types>::default(),)*
-                        })
+                        }
                     }
                 }
                 syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                    let mut fields = Vec::<Expr>::new();
-                    for f in unnamed {
-                        let ty = &f.ty;
-                        if is_decoding_skipped(f)? {
-                            fields.push(parse_quote! {<#ty>::default()})
+                    let mut field_values = Vec::<Expr>::new();
+                    for field in unnamed {
+                        if is_skipped(field)? {
+                            let field_type = &field.ty;
+                            field_values.push(parse_quote! {<#field_type>::default()})
                         } else {
-                            fields.push(parse_quote! {inner})
+                            field_values.push(parse_quote! {value})
                         }
                     }
                     quote! {
-                        Ok(Self
-                        (
-                            #(#fields,)*
-                        ))
+                        Self(
+                            #(#field_values,)*
+                        )
                     }
                 }
                 syn::Fields::Unit => {
                     quote! {
-                        Ok(Self {})
+                        Self {}
                     }
                 }
             };
 
-            quote! {
-                impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
-                    #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        let inner = <#field_type as ::sbor::Decode<#custom_value_kind_generic, #decoder_generic>>::decode_body_with_value_kind(decoder, value_kind)?;
-                        #decode_content
-                    }
-                }
-            }
+            handle_decode_as(
+                parsed,
+                context_custom_value_kind,
+                field_type,
+                &decode_content,
+            )
         }
         Data::Enum(_) => {
-            return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
+            Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."))
         }
         Data::Union(_) => {
-            return Err(Error::new(Span::call_site(), "Union is not supported!"));
+            Err(Error::new(Span::call_site(), "Union is not supported!"))
+        }
+    }
+}
+
+fn handle_decode_as(
+    parsed: DeriveInput,
+    context_custom_value_kind: Option<&'static str>,
+    as_type: &Type,
+    from_value: &TokenStream,
+) -> Result<TokenStream> {
+    let DeriveInput {
+        attrs,
+        ident,
+        generics,
+        ..
+    } = parsed;
+    let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, decoder_generic) =
+        build_decode_generics(&generics, &attrs, context_custom_value_kind)?;
+
+    let output = quote! {
+        impl #impl_generics sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
+            #[inline]
+            fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, sbor::DecodeError> {
+                use sbor::{self, Decode};
+                let value = <#as_type as sbor::Decode<#custom_value_kind_generic, #decoder_generic>>::decode_body_with_value_kind(decoder, value_kind)?;
+                Ok(#from_value)
+            }
         }
     };
 
@@ -136,47 +155,52 @@ pub fn handle_normal_decode(
             let decode_fields_content = decode_fields_content(quote! { Self }, &s.fields)?;
 
             quote! {
-                impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         #decode_fields_content
                     }
                 }
             }
         }
         Data::Enum(DataEnum { variants, .. }) => {
-            let discriminator_mapping = get_variant_discriminator_mapping(&attrs, &variants)?;
-            let match_arms = variants
+            let EnumVariantsData { sbor_variants, .. } = process_enum_variants(&attrs, &variants)?;
+            let match_arms = sbor_variants
                 .iter()
-                .enumerate()
-                .map(|(i, v)| {
-                    let v_id = &v.ident;
-                    let discriminator = &discriminator_mapping[&i];
-                    let decode_fields_content =
-                        decode_fields_content(quote! { Self::#v_id }, &v.fields)?;
-                    Ok(quote! {
-                        #discriminator => {
-                            #decode_fields_content
-                        }
-                    })
-                })
+                .map(
+                    |VariantData {
+                         source_variant,
+                         discriminator_pattern,
+                         ..
+                     }|
+                     -> Result<_> {
+                        let v_id = &source_variant.ident;
+                        let decode_fields_content =
+                            decode_fields_content(quote! { Self::#v_id }, &source_variant.fields)?;
+                        Ok(quote! {
+                            #discriminator_pattern => {
+                                #decode_fields_content
+                            }
+                        })
+                    },
+                )
                 .collect::<Result<Vec<_>>>()?;
 
             // Note: We use #[deny(unreachable_patterns)] to protect against users
             // defining overlapping consts in their custom #[sbor(discriminator(X))] definitions
             quote! {
-                impl #impl_generics ::sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: ::sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
+                    fn decode_body_with_value_kind(decoder: &mut #decoder_generic, value_kind: sbor::ValueKind<#custom_value_kind_generic>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
                         #[deny(unreachable_patterns)]
                         match discriminator {
                             #(#match_arms,)*
-                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
+                            _ => Err(sbor::DecodeError::UnknownDiscriminator(discriminator))
                         }
                     }
                 }
@@ -201,7 +225,7 @@ pub fn decode_fields_content(
         skipped_field_types,
         unskipped_field_count,
         ..
-    } = process_fields_for_decode(fields)?;
+    } = process_fields(fields)?;
 
     Ok(match fields {
         syn::Fields::Named(_) => {
@@ -217,7 +241,7 @@ pub fn decode_fields_content(
             let mut fields = Vec::<Expr>::new();
             for f in unnamed {
                 let ty = &f.ty;
-                if is_decoding_skipped(f)? {
+                if is_skipped(f)? {
                     fields.push(parse_quote! {<#ty>::default()})
                 } else {
                     fields.push(parse_quote! {decoder.decode::<#ty>()?})
@@ -259,11 +283,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test {
+                impl <D: sbor::Decoder<X>, X: sbor::CustomValueKind > sbor::Decode<X, D> for Test {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(1)?;
                         Ok(Self {
                             a: decoder.decode::<u32>()?,
@@ -282,17 +306,15 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <T, D: Clashing, D0: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind> ::sbor::Decode<X, D0> for Test<T, D>
+                impl <T, D: Clashing, D0: sbor::Decoder<X>, X: sbor::CustomValueKind> sbor::Decode<X, D0> for Test<T, D>
                     where
-                        T : ::sbor::Decode<X, D0>,
-                        D : ::sbor::Decode<X, D0>,
-                        T : ::sbor::Categorize<X>,
-                        D : ::sbor::Categorize<X>
+                        T : sbor::Decode<X, D0>,
+                        D : sbor::Decode<X, D0>
                 {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D0, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D0, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(2)?;
                         Ok(Self {
                             a: decoder.decode::<T>()?,
@@ -315,11 +337,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <D: ::sbor::Decoder<NoCustomValueKind> > ::sbor::Decode<NoCustomValueKind, D> for Test {
+                impl <D: sbor::Decoder<NoCustomValueKind> > sbor::Decode<NoCustomValueKind, D> for Test {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<NoCustomValueKind>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<NoCustomValueKind>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(1)?;
                         Ok(Self {
                             a: decoder.decode::<u32>()?,
@@ -338,18 +360,18 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <'a, S, T1, T2, D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test<'a, S, T1, T2>
+                impl <'a, S, T1, T2, D: sbor::Decoder<X>, X: sbor::CustomValueKind > sbor::Decode<X, D> for Test<'a, S, T1, T2>
                 where
-                    S: ::sbor::Decode<X, D>,
-                    T1: ::sbor::Decode<X, D>,
-                    T2: ::sbor::Decode<X, D>,
-                    T1: ::sbor::Categorize<X>,
-                    T2: ::sbor::Categorize<X>
+                    S: sbor::Decode<X, D>,
+                    T1: sbor::Decode<X, D>,
+                    T2: sbor::Decode<X, D>,
+                    T1: sbor::Categorize<X>,
+                    T2: sbor::Categorize<X>
                 {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(4)?;
                         Ok(Self {
                             a: decoder.decode::<&'a u32>()?,
@@ -371,11 +393,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test {
+                impl <D: sbor::Decoder<X>, X: sbor::CustomValueKind > sbor::Decode<X, D> for Test {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
                         #[deny(unreachable_patterns)]
                         match discriminator {
@@ -393,7 +415,7 @@ mod tests {
                                     x: decoder.decode::<u8>()?,
                                 })
                             },
-                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
+                            _ => Err(sbor::DecodeError::UnknownDiscriminator(discriminator))
                         }
                     }
                 }
@@ -409,11 +431,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <D: ::sbor::Decoder<X>, X: ::sbor::CustomValueKind > ::sbor::Decode<X, D> for Test {
+                impl <D: sbor::Decoder<X>, X: sbor::CustomValueKind > sbor::Decode<X, D> for Test {
                     #[inline]
-                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: ::sbor::ValueKind<X>) -> Result<Self, ::sbor::DecodeError> {
-                        use ::sbor::{self, Decode};
-                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                    fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
+                        use sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
                         decoder.read_and_check_size(0)?;
                         Ok(Self {
                             a: <u32>::default(),

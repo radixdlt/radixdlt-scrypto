@@ -489,7 +489,7 @@ pub fn create_system_bootstrap_flash(
         (
             PACKAGE_PACKAGE,
             PackageNativePackage::definition(),
-            PACKAGE_CODE_ID,
+            NativeCodeId::PackageCode1 as u64,
             metadata_init! {
                 "name" => "Package Package".to_owned(), locked;
                 "description" => "A native package that is called to create a new package on the network.".to_owned(), locked;
@@ -505,7 +505,7 @@ pub fn create_system_bootstrap_flash(
         (
             TRANSACTION_PROCESSOR_PACKAGE,
             TransactionProcessorNativePackage::definition(),
-            TRANSACTION_PROCESSOR_CODE_ID,
+            NativeCodeId::TransactionProcessorCode1 as u64,
             metadata_init! {
                 "name" => "Transaction Processor Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the processing of manifest instructions and transaction runtime.".to_owned(), locked;
@@ -515,7 +515,7 @@ pub fn create_system_bootstrap_flash(
         (
             METADATA_MODULE_PACKAGE,
             MetadataNativePackage::definition(),
-            METADATA_CODE_ID,
+            NativeCodeId::MetadataCode1 as u64,
             metadata_init! {
                 "name" => "Metadata Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the metadata module that is used by resources, components, and packages.".to_owned(), locked;
@@ -525,7 +525,7 @@ pub fn create_system_bootstrap_flash(
         (
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
             RoleAssignmentNativePackage::definition(),
-            ROLE_ASSIGNMENT_CODE_ID,
+            NativeCodeId::RoleAssignmentCode1 as u64,
             metadata_init! {
                 "name" => "Access Rules Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the access rules module that is used by resources, components, and packages.".to_owned(), locked;
@@ -535,7 +535,7 @@ pub fn create_system_bootstrap_flash(
         (
             RESOURCE_PACKAGE,
             ResourceNativePackage::definition(),
-            RESOURCE_CODE_ID,
+            NativeCodeId::ResourceCode1 as u64,
             metadata_init! {
                 "name" => "Resource Package".to_owned(), locked;
                 "description" => "A native package that is called to create a new resource manager on the network.".to_owned(), locked;
@@ -545,7 +545,7 @@ pub fn create_system_bootstrap_flash(
         (
             ROYALTY_MODULE_PACKAGE,
             RoyaltyNativePackage::definition(),
-            ROYALTY_CODE_ID,
+            NativeCodeId::RoyaltyCode1 as u64,
             metadata_init! {
                 "name" => "Royalty Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
@@ -555,7 +555,7 @@ pub fn create_system_bootstrap_flash(
         (
             TEST_UTILS_PACKAGE,
             TestUtilsNativePackage::definition(),
-            TEST_UTILS_CODE_ID,
+            NativeCodeId::TestUtilsCode1 as u64,
             metadata_init! {
                 "name" => "Test Utils Package".to_owned(), locked;
                 "description" => "A native package that contains a set of useful functions to use in testing.".to_owned(), locked;
@@ -939,7 +939,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 definition: IdentityNativePackage::definition(),
-                native_package_code_id: IDENTITY_CODE_ID,
+                native_package_code_id: NativeCodeId::IdentityCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Identity Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of identity components.".to_owned(), locked;
@@ -961,7 +961,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 definition: ConsensusManagerNativePackage::definition(),
-                native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
+                native_package_code_id: NativeCodeId::ConsensusManagerCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Consensus Manager Package".to_owned(), locked;
                     "description" => "A native package that may be used to get network consensus information.".to_owned(), locked;
@@ -1020,7 +1020,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 definition: AccountNativePackage::definition(),
-                native_package_code_id: ACCOUNT_CODE_ID,
+                native_package_code_id: NativeCodeId::AccountCode1 as u64,
                 metadata: metadata_init! {
                     "name" => "Account Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of account components.".to_owned(), locked;
@@ -1046,7 +1046,7 @@ pub fn create_system_bootstrap_transaction(
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
                 },
-                native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
+                native_package_code_id: NativeCodeId::AccessControllerCode1 as u64,
             }),
         });
     }
@@ -1068,7 +1068,7 @@ pub fn create_system_bootstrap_transaction(
                     "name" => "Pool Package".to_owned(), locked;
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
                 },
-                native_package_code_id: POOL_V1_0_CODE_ID,
+                native_package_code_id: NativeCodeId::PoolCode1 as u64,
             }),
         });
     }
@@ -1276,7 +1276,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: TRANSACTION_TRACKER_CODE_ID,
+                native_package_code_id: NativeCodeId::TransactionTrackerCode1 as u64,
                 definition: TransactionTrackerNativePackage::definition(),
                 metadata: metadata_init!(),
             }),

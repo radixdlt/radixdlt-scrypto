@@ -66,12 +66,20 @@ pub use versioned::*;
 // Re-export derives
 extern crate sbor_derive;
 pub use sbor_derive::{
-    BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor, Categorize, Decode,
-    Describe, Encode, Sbor,
+    eager_replace, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor, Categorize,
+    Decode, Describe, Encode, PermitSborAttributes, Sbor,
 };
 
-// This is to make derives work within this crate.
-// See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
+// extern crate self as X; in lib.rs allows ::X and X to resolve to this crate inside this crate.
+// This enables procedural macros which output code involving paths to this crate, to work inside
+// this crate. See this link for details:
+// https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
+//
+// IMPORTANT:
+// This should never be pub, else `X::X::X::X::...` becomes a valid path in downstream crates,
+// which we've discovered can cause really bad autocomplete times (when combined with other
+// specific imports, generic traits, resolution paths which likely trigger edge cases in
+// Rust Analyzer which get stuck on these infinite possible paths)
 extern crate self as sbor;
 
 // For self-contained macros
@@ -90,6 +98,7 @@ pub mod prelude {
     pub use radix_rust::prelude::*;
 
     // Exports from current crate
+    pub use crate::eager_replace;
     pub use crate::encoded_wrappers::{RawPayload as SborRawPayload, RawValue as SborRawValue};
     pub use crate::enum_variant::FixedEnumVariant as SborFixedEnumVariant;
     pub use crate::path::{SborPath, SborPathBuf};
@@ -97,11 +106,16 @@ pub mod prelude {
     pub use crate::schema::prelude::*;
     pub use crate::value::{CustomValue as SborCustomValue, Value as SborValue};
     pub use crate::value_kind::*;
-    pub use crate::versioned::{CloneIntoLatest, HasLatestVersion, UpdateResult};
+    pub use crate::versioned::*;
     pub use crate::{
         basic_decode, basic_encode, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode,
         BasicSbor,
     };
+    pub use crate::{define_single_versioned, define_versioned};
     pub use crate::{Categorize, Decode, Encode, Sbor, SborEnum, SborTuple};
     pub use crate::{DecodeError, EncodeError};
+}
+
+pub(crate) mod internal_prelude {
+    pub use crate::prelude::*;
 }

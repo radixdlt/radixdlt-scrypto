@@ -290,7 +290,7 @@ impl FungibleVaultBlueprint {
         )?;
         let divisibility = api
             .field_read_typed::<FungibleResourceManagerDivisibilityFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         api.field_close(handle)?;
         Ok(divisibility)
     }
@@ -409,7 +409,7 @@ impl FungibleVaultBlueprint {
 
             let mut vault = api
                 .field_read_typed::<FungibleVaultBalanceFieldPayload>(vault_handle)?
-                .into_latest();
+                .fully_update_and_into_latest_version();
             let fee = vault.take_by_amount(amount).map_err(|e| {
                 let vault_error = match e {
                     ResourceError::InsufficientBalance { requested, actual } => {
@@ -475,7 +475,7 @@ impl FungibleVaultBlueprint {
 
         let mut frozen = api
             .field_read_typed::<FungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         frozen.frozen.insert(to_freeze);
         api.field_write_typed(
             frozen_flag_handle,
@@ -498,7 +498,7 @@ impl FungibleVaultBlueprint {
         )?;
         let mut frozen = api
             .field_read_typed::<FungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         frozen.frozen.remove(to_unfreeze);
         api.field_write_typed(
             frozen_flag_handle,
@@ -570,7 +570,7 @@ impl FungibleVaultBlueprint {
         )?;
         let mut locked = api
             .field_read_typed::<FungibleVaultLockedBalanceFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let max_locked = locked.amount();
 
         // Take from liquid if needed
@@ -605,7 +605,7 @@ impl FungibleVaultBlueprint {
         )?;
         let mut locked = api
             .field_read_typed::<FungibleVaultLockedBalanceFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
 
         let max_locked = locked.amount();
         let cnt = locked
@@ -652,7 +652,7 @@ impl FungibleVaultBlueprint {
         )?;
         let frozen = api
             .field_read_typed::<FungibleVaultFreezeStatusFieldPayload>(frozen_flag_handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         api.field_close(frozen_flag_handle)?;
 
         if frozen.frozen.intersects(flags) {
@@ -715,7 +715,7 @@ impl FungibleVaultBlueprint {
         )?;
         let substate_ref = api
             .field_read_typed::<FungibleVaultBalanceFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let amount = substate_ref.amount();
         api.field_close(handle)?;
         Ok(amount)
@@ -732,7 +732,7 @@ impl FungibleVaultBlueprint {
         )?;
         let substate_ref: LockedFungibleResource = api
             .field_read_typed::<FungibleVaultLockedBalanceFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let amount = substate_ref.amount();
         api.field_close(handle)?;
         Ok(amount)
@@ -752,7 +752,7 @@ impl FungibleVaultBlueprint {
         )?;
         let mut substate_ref = api
             .field_read_typed::<FungibleVaultBalanceFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let taken = substate_ref.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ResourceError(
                 e,
@@ -782,7 +782,7 @@ impl FungibleVaultBlueprint {
         )?;
         let mut vault_balance = api
             .field_read_typed::<FungibleVaultBalanceFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         vault_balance.put(resource);
         api.field_write_typed(
             handle,

@@ -85,7 +85,7 @@ mod radiswap {
             let input_amount = input_bucket.amount();
 
             let input_reserves = reserves
-                .remove(&input_bucket.resource_address())
+                .swap_remove(&input_bucket.resource_address())
                 .expect("Resource does not belong to the pool");
             let (output_resource_address, output_reserves) = reserves.into_iter().next().unwrap();
 

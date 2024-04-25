@@ -8,7 +8,6 @@ use crate::kernel::kernel_callback_api::{
 use crate::system::actor::Actor;
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::track::interface::StoreCommit;
-use radix_engine_interface::*;
 
 #[derive(Debug, IntoStaticStr)]
 pub enum ExecutionCostingEntry<'a> {

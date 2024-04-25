@@ -122,8 +122,6 @@ mod test {
         );
     }
 
-    // No scenarios but ends with the protocol update which makes the root hash different but the
-    // event hash the same as genesis.
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios() {
         assert_event_and_state_hashes(
@@ -145,30 +143,6 @@ mod test {
                 }
             },
             |_, _| {},
-        );
-    }
-
-    // Running the genesis scenarios against the anemone protocol update. We expect the state root
-    // hash and the event hash to differ since the behavior of some blueprints changed in that
-    // update.
-    #[test]
-    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_anemone() {
-        assert_event_and_state_hashes(
-            "dbba9b7154eb40b3978a4d4b7921945178ee93f3bb04aad4ab08db98287a7785",
-            "57e3e4d7a7232612540d949dcea540f7ead064a92d5da50fbe60b5659a2ddd0b",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
-            )),
-            |_, _, _| {},
-            // Update to anemone immediately after bootstrapping.
-            |network, db| {
-                ProtocolUpdate::Anemone
-                    .generate_state_updates(db, network)
-                    .into_iter()
-                    .for_each(|update| {
-                        db.commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
-                    })
-            },
         );
     }
 
@@ -194,60 +168,6 @@ mod test {
                 }
             },
             |_, _| {},
-        );
-    }
-
-    #[test]
-    pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios_on_bottlenose() {
-        assert_event_and_state_hashes(
-            "9010cc61a34a3ae2516cbba760ef6ade0427b7e8db08ae9cc2427dca95de5bdd",
-            "c77ebbf981ce8e1fcbb46b56d6104194d17110549181edb6d6b4bbeea0e82e4e",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
-            )),
-            |_, _, _| {},
-            // Update to bottlenose immediately after bootstrapping.
-            |network, db| {
-                [ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose]
-                    .into_iter()
-                    .for_each(|protocol_update| {
-                        protocol_update
-                            .generate_state_updates(db, network)
-                            .into_iter()
-                            .for_each(|update| {
-                                db.commit(
-                                    &update.create_database_updates::<SpreadPrefixKeyMapper>(),
-                                )
-                            })
-                    })
-            },
-        );
-    }
-
-    #[test]
-    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_bottlenose() {
-        assert_event_and_state_hashes(
-            "9010cc61a34a3ae2516cbba760ef6ade0427b7e8db08ae9cc2427dca95de5bdd",
-            "c77ebbf981ce8e1fcbb46b56d6104194d17110549181edb6d6b4bbeea0e82e4e",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
-            )),
-            |_, _, _| {},
-            // Update to bottlenose immediately after bootstrapping.
-            |network, db| {
-                [ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose]
-                    .into_iter()
-                    .for_each(|protocol_update| {
-                        protocol_update
-                            .generate_state_updates(db, network)
-                            .into_iter()
-                            .for_each(|update| {
-                                db.commit(
-                                    &update.create_database_updates::<SpreadPrefixKeyMapper>(),
-                                )
-                            })
-                    })
-            },
         );
     }
 

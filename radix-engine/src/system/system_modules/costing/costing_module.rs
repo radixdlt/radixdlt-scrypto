@@ -20,7 +20,7 @@ use crate::{
 use radix_engine_interface::api::AttachedModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_engine_interface::{types::NodeId, *};
+use radix_engine_interface::types::NodeId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {

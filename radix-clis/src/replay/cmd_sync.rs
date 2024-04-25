@@ -185,7 +185,7 @@ impl CommittedTxnReader {
                         let next_identifiers: VersionedCommittedTransactionIdentifiers =
                             scrypto_decode(next_identifiers_bytes.1.as_ref()).unwrap();
                         let expected_state_root_hash = next_identifiers
-                            .into_latest()
+                            .fully_update_and_into_latest_version()
                             .resultant_ledger_hashes
                             .state_root
                             .0;
@@ -208,7 +208,7 @@ impl CommittedTxnReader {
 
 define_single_versioned! {
     #[derive(Debug, Clone, Sbor)]
-    pub enum VersionedCommittedTransactionIdentifiers => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
+    pub VersionedCommittedTransactionIdentifiers(CommittedTransactionIdentifiersVersions) => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
 }
 
 #[derive(Debug, Clone, Sbor)]
