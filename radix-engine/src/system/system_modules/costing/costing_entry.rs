@@ -97,6 +97,7 @@ pub enum ExecutionCostingEntry<'a> {
     /* system */
     LockFee,
     QueryFeeReserve,
+    QueryCostingModule,
     QueryActor,
     QueryTransactionHash,
     GenerateRuid,
@@ -106,6 +107,7 @@ pub enum ExecutionCostingEntry<'a> {
     EmitLog {
         size: usize,
     },
+    EncodeBech32Address,
     Panic {
         size: usize,
     },
@@ -183,11 +185,13 @@ impl<'a> ExecutionCostingEntry<'a> {
             }
             ExecutionCostingEntry::LockFee => ft.lock_fee_cost(),
             ExecutionCostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
+            ExecutionCostingEntry::QueryCostingModule => ft.query_costing_module(),
             ExecutionCostingEntry::QueryActor => ft.query_actor_cost(),
             ExecutionCostingEntry::QueryTransactionHash => ft.query_transaction_hash_cost(),
             ExecutionCostingEntry::GenerateRuid => ft.generate_ruid_cost(),
             ExecutionCostingEntry::EmitEvent { size } => ft.emit_event_cost(*size),
             ExecutionCostingEntry::EmitLog { size } => ft.emit_log_cost(*size),
+            ExecutionCostingEntry::EncodeBech32Address => ft.encode_bech32_address_cost(),
             ExecutionCostingEntry::Panic { size } => ft.panic_cost(*size),
             ExecutionCostingEntry::Bls12381V1Verify { size } => ft.bls12381_v1_verify_cost(*size),
             ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes } => {
