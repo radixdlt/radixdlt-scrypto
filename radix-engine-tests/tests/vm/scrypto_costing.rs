@@ -23,6 +23,7 @@ fn can_call_usd_price() {
 
     // Assert
     receipt.expect_commit_success();
+}
 
 #[test]
 fn usd_price_costing_after_protocol_update() {
