@@ -66,7 +66,7 @@ pub fn run_all_in_memory_and_dump_examples(
 
     assert_eq!(
         substate_db.get_current_root_hash().to_string(),
-        "e0424eb560f6c7fbb671a7e7e4a273e3ec682b42e8ea2c5afb55be624ada4716",
+        "815d34c688312557a9305910e752504e36f69db7535738b0a70af2514562114f",
     );
     assert_eq!(
         event_hasher.finalize().to_string(),
@@ -175,7 +175,7 @@ mod test {
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_bottlenose_scenarios() {
         assert_event_and_state_hashes(
-            "e0424eb560f6c7fbb671a7e7e4a273e3ec682b42e8ea2c5afb55be624ada4716",
+            "815d34c688312557a9305910e752504e36f69db7535738b0a70af2514562114f",
             "a1b834e8699d16a03f495f6e98ba603b7157ddf9c71f743c5965a9012d334ad8",
             ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
                 ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose),
@@ -200,8 +200,8 @@ mod test {
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios_on_bottlenose() {
         assert_event_and_state_hashes(
-            "3f80c8cdcd6785cb2339792f567258bb1b1ccf00932505b606e2ae1385c4fbb3",
-            "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
+            "9010cc61a34a3ae2516cbba760ef6ade0427b7e8db08ae9cc2427dca95de5bdd",
+            "c77ebbf981ce8e1fcbb46b56d6104194d17110549181edb6d6b4bbeea0e82e4e",
             ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
                 ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
             )),
@@ -227,8 +227,8 @@ mod test {
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios_on_bottlenose() {
         assert_event_and_state_hashes(
-            "3f80c8cdcd6785cb2339792f567258bb1b1ccf00932505b606e2ae1385c4fbb3",
-            "b28281fc7fa97a500aca0e381547697cde840b3e0815f4911f529dec1b8f4f41",
+            "9010cc61a34a3ae2516cbba760ef6ade0427b7e8db08ae9cc2427dca95de5bdd",
+            "c77ebbf981ce8e1fcbb46b56d6104194d17110549181edb6d6b4bbeea0e82e4e",
             ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
                 ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
             )),
