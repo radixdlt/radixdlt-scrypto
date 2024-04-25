@@ -818,11 +818,11 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
                         receiver: func.receiver,
                         input: BlueprintPayloadDef::Static(ScopedTypeId(
                             new_schema_hash,
-                            func.input.into_static(),
+                            func.input.assert_static(),
                         )),
                         output: BlueprintPayloadDef::Static(ScopedTypeId(
                             new_schema_hash,
-                            func.output.into_static(),
+                            func.output.assert_static(),
                         )),
                     },
                 )
@@ -857,7 +857,7 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
                     ident,
                     BlueprintPayloadDef::Static(ScopedTypeId(
                         new_schema_hash,
-                        type_ref.into_static(),
+                        type_ref.assert_static(),
                     )),
                 )
             })

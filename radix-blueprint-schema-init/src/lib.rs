@@ -114,11 +114,15 @@ pub enum TypeRef<T> {
 }
 
 impl<T> TypeRef<T> {
-    pub fn into_static(self) -> T {
+    pub fn into_static(self) -> Option<T> {
         let Self::Static(value) = self else {
-            panic!("Not static!");
+            return None;
         };
-        value
+        Some(value)
+    }
+
+    pub fn assert_static(self) -> T {
+        self.into_static().expect("Must be static")
     }
 }
 
