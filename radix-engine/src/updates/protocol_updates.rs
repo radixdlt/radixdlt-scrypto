@@ -19,9 +19,6 @@ pub enum ProtocolUpdateEntry {
     /// Exposes a getter method for reading owner role rule.
     OwnerRoleGetter,
 
-    /// Various system patches.
-    SystemPatches,
-
     /// Introduces the account locker blueprint.
     LockerPackage,
 
@@ -31,6 +28,9 @@ pub enum ProtocolUpdateEntry {
     /// Makes some behavioral changes to the try_deposit_or_refund (and batch variants too) method
     /// on the account blueprint.
     AccountTryDepositOrRefundBehaviorChanges,
+
+    /// Add blob limits to transaction processor.
+    TransactionProcessorBlobLimits,
 }
 
 impl ProtocolUpdateEntry {
@@ -58,9 +58,11 @@ impl ProtocolUpdateEntry {
                 generate_account_bottlenose_extension_state_updates(db)
             }
             // TODO implement the following
-            ProtocolUpdateEntry::SystemPatches => StateUpdates::default(),
             ProtocolUpdateEntry::ProtocolParamsToState => {
                 generate_protocol_params_to_state_state_updates(network.clone())
+            }
+            ProtocolUpdateEntry::TransactionProcessorBlobLimits => {
+                generate_transaction_processor_blob_limits_state_updates(db)
             }
         }
     }
@@ -128,10 +130,10 @@ impl ProtocolUpdate {
             ],
             ProtocolUpdate::Bottlenose => vec![
                 ProtocolUpdateEntry::OwnerRoleGetter,
-                ProtocolUpdateEntry::SystemPatches,
                 ProtocolUpdateEntry::LockerPackage,
                 ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges,
                 ProtocolUpdateEntry::ProtocolParamsToState,
+                ProtocolUpdateEntry::TransactionProcessorBlobLimits,
             ],
         }
         .iter()
