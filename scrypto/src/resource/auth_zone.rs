@@ -15,13 +15,13 @@ pub trait ScryptoAuthZone {
         &self,
         amount: A,
         resource_address: ResourceAddress,
-    ) -> Proof;
+    ) -> FungibleProof;
 
     fn create_proof_of_non_fungibles(
         &self,
         ids: IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
-    ) -> Proof;
+    ) -> NonFungibleProof;
 
     fn create_proof_of_all(&self, resource_address: ResourceAddress) -> Proof;
 
@@ -55,7 +55,7 @@ impl ScryptoAuthZone for AuthZoneRef {
         &self,
         amount: A,
         resource_address: ResourceAddress,
-    ) -> Proof {
+    ) -> FungibleProof {
         let rtn = ScryptoVmV1Api::object_call(
             &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
@@ -72,7 +72,7 @@ impl ScryptoAuthZone for AuthZoneRef {
         &self,
         ids: IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
-    ) -> Proof {
+    ) -> NonFungibleProof {
         let rtn = ScryptoVmV1Api::object_call(
             &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
