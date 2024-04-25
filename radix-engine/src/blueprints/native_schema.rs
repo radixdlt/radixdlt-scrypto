@@ -23,11 +23,11 @@ lazy_static! {
         AccountNativePackage::definition();
     pub static ref IDENTITY_PACKAGE_DEFINITION: PackageDefinition =
         IdentityNativePackage::definition();
-    pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1: PackageDefinition =
+    pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0: PackageDefinition =
         AccessControllerV1NativePackage::definition();
-    pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION_V2: PackageDefinition =
+    pub static ref ACCESS_CONTROLLER_PACKAGE_DEFINITION_V2_0: PackageDefinition =
         AccessControllerV2NativePackage::definition();
-    pub static ref POOL_PACKAGE_DEFINITION_V2: PackageDefinition =
+    pub static ref POOL_PACKAGE_DEFINITION_V1_0: PackageDefinition =
         PoolNativePackage::definition(PoolV1MinorVersion::Zero);
     pub static ref POOL_PACKAGE_DEFINITION_V1_1: PackageDefinition =
         PoolNativePackage::definition(PoolV1MinorVersion::One);
