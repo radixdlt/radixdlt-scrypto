@@ -578,7 +578,7 @@ impl AccountLockerBlueprint {
             .key_value_entry_get_typed::<VersionedAccountLockerAccountClaims>(
                 account_claims_handle,
             )?
-            .map(|entry| entry.into_latest());
+            .map(|entry| entry.fully_update_and_into_latest_version());
 
         let account_claims_kv_store = match account_claims {
             Some(account_claims_kv_store) => account_claims_kv_store,
@@ -595,7 +595,7 @@ impl AccountLockerBlueprint {
                 // Write the kv-store's node id to the collection entry.
                 api.key_value_entry_set_typed(
                     account_claims_handle,
-                    VersionedAccountLockerAccountClaims::V1(key_value_store),
+                    AccountLockerAccountClaimsVersions::V1(key_value_store).into_versioned(),
                 )?;
                 // Return the NodeId of the kv-store.
                 key_value_store
@@ -655,7 +655,7 @@ impl AccountLockerBlueprint {
             .key_value_entry_get_typed::<VersionedAccountLockerAccountClaims>(
                 account_claims_handle,
             )?
-            .map(|entry| entry.into_latest());
+            .map(|entry| entry.fully_update_and_into_latest_version());
 
         let account_claims_kv_store = match account_claims {
             Some(account_claims_kv_store) => account_claims_kv_store,

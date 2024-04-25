@@ -6,7 +6,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
-use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
+use radix_engine_interface::blueprints::package::{NativeCodeId, PackageDefinition};
 use radix_engine_tests::common::*;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
@@ -118,7 +118,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
     }
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_extension(OverridePackageCode::new(
-            RESOURCE_CODE_ID,
+            NativeCodeId::ResourceCode1 as u64,
             ResourceOverride(resource_direct_access_methods),
         ))
         .build();

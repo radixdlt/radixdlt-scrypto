@@ -412,10 +412,9 @@ impl OneResourcePoolBlueprint {
     {
         let substate_key = OneResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
-        let substate = api.field_read_typed::<VersionedOneResourcePoolState>(handle)?;
-        let substate = match substate {
-            VersionedOneResourcePoolState::V1(state) => state,
-        };
+        let substate = api
+            .field_read_typed::<VersionedOneResourcePoolState>(handle)?
+            .fully_update_and_into_latest_version();
 
         Ok((substate, handle))
     }

@@ -6,7 +6,7 @@ use sbor::rust::prelude::*;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-#[sbor(transparent)]
+#[sbor(transparent, categorize_types = "K")]
 pub struct KeyValueStoreInit<K: Hash + Eq + PartialEq, V> {
     pub data: IndexMap<K, KeyValueStoreInitEntry<V>>,
 }

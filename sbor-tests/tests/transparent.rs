@@ -27,6 +27,12 @@ pub struct TestStruct<T> {
     pub state: T,
 }
 
+#[derive(Sbor, PartialEq, Eq, Debug)]
+#[sbor(transparent, transparent_name)]
+pub struct TestStructTransparentNamed<T> {
+    pub state: T,
+}
+
 #[test]
 fn categorize_is_correct() {
     // With inner u32
@@ -139,20 +145,24 @@ fn decode_is_correct() {
 #[test]
 fn describe_is_correct() {
     // With inner u32
-    check_identical_types::<TestStructNamed, u32>("TestStructNamed");
-    check_identical_types::<TestStructRenamed, u32>("TestStructRenamed2");
-    check_identical_types::<TestStructUnnamed, u32>("TestStructUnnamed");
-    check_identical_types::<TestStruct<u32>, u32>("TestStruct");
+    check_identical_types::<TestStructNamed, u32>(Some("TestStructNamed"));
+    check_identical_types::<TestStructRenamed, u32>(Some("TestStructRenamed2"));
+    check_identical_types::<TestStructUnnamed, u32>(Some("TestStructUnnamed"));
+    check_identical_types::<TestStruct<u32>, u32>(Some("TestStruct"));
+    check_identical_types::<TestStructTransparentNamed<u32>, u32>(None);
 
     // With inner tuple
-    check_identical_types::<TestStruct<()>, ()>("TestStruct");
+    check_identical_types::<TestStruct<()>, ()>(Some("TestStruct"));
 
     // With multiple layers of transparent
-    check_identical_types::<TestStruct<TestStructNamed>, u32>("TestStruct");
+    check_identical_types::<TestStruct<TestStructNamed>, u32>(Some("TestStruct"));
+    check_identical_types::<TestStructTransparentNamed<TestStructRenamed>, u32>(Some(
+        "TestStructRenamed2",
+    ));
 }
 
 fn check_identical_types<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTypeKind>>(
-    rename: &'static str,
+    name: Option<&'static str>,
 ) {
     let (type_id1, schema1) = generate_full_schema_from_single_type::<T1, NoCustomSchema>();
     let (type_id2, schema2) = generate_full_schema_from_single_type::<T2, NoCustomSchema>();
@@ -172,7 +182,7 @@ fn check_identical_types<T1: Describe<NoCustomTypeKind>, T2: Describe<NoCustomTy
             .resolve_type_metadata(type_id2)
             .unwrap()
             .clone()
-            .with_name(Some(Cow::Borrowed(rename)))
+            .with_name(name.map(|name| Cow::Borrowed(name)))
     );
     assert_eq!(
         schema1.v1().resolve_type_validation(type_id1),
