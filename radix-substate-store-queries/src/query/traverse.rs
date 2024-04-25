@@ -135,9 +135,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         )
                         .expect("Broken database");
 
-                    let liquid = match liquid {
-                        VersionedFungibleVaultBalance::V1(liquid) => liquid,
-                    };
+                    let liquid = liquid.fully_update_and_into_latest_version();
 
                     visitor.visit_fungible_vault(
                         node_id,
@@ -156,9 +154,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         )
                         .expect("Broken database");
 
-                    let liquid = match liquid {
-                        VersionedNonFungibleVaultBalance::V1(liquid) => liquid,
-                    };
+                    let liquid = liquid.fully_update_and_into_latest_version();
 
                     visitor.visit_non_fungible_vault(
                         node_id,
@@ -196,7 +192,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                                                 0u8,
                                             )
                                             .expect("Broken database")
-                                            .into_latest();
+                                            .fully_update_and_into_latest_version();
                                         Self::traverse_recursive(
                                             system_db_reader,
                                             visitor,

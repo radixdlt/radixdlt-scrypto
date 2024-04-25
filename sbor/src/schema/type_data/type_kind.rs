@@ -4,7 +4,7 @@ use crate::rust::vec::Vec;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-#[sbor(child_types = "C,L")]
+#[sbor(child_types = "C,L", categorize_types = "L")]
 pub enum TypeKind<C: CustomTypeKind<L>, L: SchemaTypeLink> {
     Any,
 

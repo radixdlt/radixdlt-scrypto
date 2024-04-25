@@ -1,46 +1,112 @@
 use crate::blueprints::package::BlueprintType;
 use crate::internal_prelude::*;
 use radix_blueprint_schema_init::*;
+use strum::FromRepr;
 
-//============
-// Blueprints
-//============
-pub const PACKAGE_V1_0_CODE_ID: u64 = 0u64;
-pub const PACKAGE_V1_1_CODE_ID: u64 = 22u64;
-pub const RESOURCE_CODE_ID: u64 = 1u64;
-pub const IDENTITY_CODE_ID: u64 = 2u64;
-pub const CONSENSUS_MANAGER_CODE_ID: u64 = 3u64;
-// For methods:
-// * CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT
-// * CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT
-pub const CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID: u64 = 16u64;
-pub const ACCOUNT_CODE_ID: u64 = 5u64;
-/// For methods:
-/// - ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT
-/// - ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT
-pub const ACCOUNT_TRY_DEPOSIT_CODE_ID: u64 = 20u64;
-pub const ACCESS_CONTROLLER_CODE_ID: u64 = 6u64;
-pub const POOL_V1_0_CODE_ID: u64 = 13u64;
-pub const POOL_V1_1_CODE_ID: u64 = 17u64;
-pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
-pub const TEST_UTILS_CODE_ID: u64 = 15u64;
-pub const LOCKER_CODE_ID: u64 = 19u64;
-pub const TRANSACTION_PROCESSOR_V1_0_CODE_ID: u64 = 7u64;
-pub const TRANSACTION_PROCESSOR_V1_1_CODE_ID: u64 = 21u64;
+#[derive(FromRepr)]
+#[repr(u64)]
+pub enum NativeCodeId {
+    /// * Introduced: Babylon
+    /// * Coverage  : All package blueprints
+    /// * Changes   : N/A
+    PackageCode1 = 0u64,
 
-//================
-// Object modules
-//================
-pub const METADATA_CODE_ID: u64 = 10u64;
-pub const ROYALTY_CODE_ID: u64 = 11u64;
-pub const ROLE_ASSIGNMENT_CODE_ID: u64 = 12u64;
-/// For methods:
-/// - ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT
-pub const ROLE_ASSIGNMENT_GET_OWNER_ROLE_CODE_ID: u64 = 18u64;
+    /// * Introduced: Bottlenose
+    /// * Coverage  : All package blueprints
+    /// * Changes   : Add limit to reserved role key
+    PackageCode2 = 22u64,
 
-//===================
-// Partition offsets
-//===================
+    /// * Introduced: Babylon
+    /// * Coverage  : All resource blueprints
+    /// * Changes   : N/A
+    ResourceCode1 = 1u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All identity blueprints
+    /// * Changes   : N/A
+    IdentityCode1 = 2u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All consensus manager blueprints
+    /// * Changes   : N/A
+    ConsensusManagerCode1 = 3u64,
+
+    /// * Introduced: Anemone
+    /// * Coverage  : `CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT` and `CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT`
+    /// * Changes   : Add second precision time
+    ConsensusManagerCode2 = 16u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All account blueprints
+    /// * Changes   : N/A
+    AccountCode1 = 5u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : `ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT` and `ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT`
+    /// * Changes   : Update `try_deposit` logic
+    AccountCode2 = 20u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All access controller blueprints
+    /// * Changes   : N/A
+    AccessControllerCode1 = 6u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All pool blueprints
+    /// * Changes   : N/A
+    PoolCode1 = 13u64,
+
+    /// * Introduced: Anemone
+    /// * Coverage  : All pool blueprints
+    /// * Changes   : Update pools to use precise decimal
+    PoolCode2 = 17u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All transaction tracker blueprints
+    /// * Changes   : N/A
+    TransactionTrackerCode1 = 14u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All test blueprints
+    /// * Changes   : N/A
+    TestUtilsCode1 = 15u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : All locker blueprints
+    /// * Changes   : N/A
+    LockerCode1 = 19u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All transaction processor blueprints
+    /// * Changes   : N/A
+    TransactionProcessorCode1 = 7u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : All transaction processor blueprints
+    /// * Changes   : Add blob limits
+    TransactionProcessorCode2 = 21u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All metadata object module blueprints
+    /// * Changes   : N/A
+    MetadataCode1 = 10u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All royalty object module blueprints
+    /// * Changes   : N/A
+    RoyaltyCode1 = 11u64,
+
+    /// * Introduced: Babylon
+    /// * Coverage  : All role assignment object module blueprints
+    /// * Changes   : N/A
+    RoleAssignmentCode1 = 12u64,
+
+    /// * Introduced: Bottlenose
+    /// * Coverage  : `ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT`
+    /// * Changes   : Add `get_owner_role``
+    RoleAssignmentCode2 = 18u64,
+}
+
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);

@@ -1180,7 +1180,7 @@ impl AccountBlueprint {
         )?;
         api.key_value_entry_set_typed(
             kv_store_entry_lock_handle,
-            &VersionedAccountResourcePreference::V1(resource_preference),
+            &AccountResourcePreferenceVersions::V1(resource_preference).into_versioned(),
         )?;
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
@@ -1281,7 +1281,7 @@ impl AccountBlueprint {
         )?;
         let deposit_rule = api
             .field_read_typed::<AccountDepositRuleFieldPayload>(handle)?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         let default = deposit_rule.default_deposit_rule;
         api.field_close(handle)?;
 
@@ -1314,7 +1314,7 @@ impl AccountBlueprint {
                 .key_value_entry_get_typed::<AccountResourceVaultEntryPayload>(
                     kv_store_entry_lock_handle,
                 )?
-                .map(|v| v.into_latest());
+                .map(|v| v.fully_update_and_into_latest_version());
 
             match entry {
                 Some(vault) => Ok(vault),
@@ -1427,7 +1427,7 @@ impl AccountBlueprint {
             .key_value_entry_get_typed::<AccountResourcePreferenceEntryPayload>(
                 kv_store_entry_lock_handle,
             )?
-            .map(|v| v.into_latest());
+            .map(|v| v.fully_update_and_into_latest_version());
         api.key_value_entry_close(kv_store_entry_lock_handle)?;
         Ok(entry)
     }

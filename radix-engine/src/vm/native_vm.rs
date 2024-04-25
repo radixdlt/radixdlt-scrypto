@@ -116,45 +116,51 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     input_size: input.len(),
                 })?;
 
-                match *native_package_code_id {
-                    PACKAGE_V1_0_CODE_ID => PackageNativePackage::invoke_export(
+                let code_id = NativeCodeId::from_repr(*native_package_code_id).ok_or(
+                    RuntimeError::VmError(VmError::Native(NativeRuntimeError::InvalidCodeId)),
+                )?;
+
+                match code_id {
+                    NativeCodeId::PackageCode1 => PackageNativePackage::invoke_export(
                         export_name,
                         input,
                         PackageV1MinorVersion::Zero,
                         api,
                         vm_api,
                     ),
-                    PACKAGE_V1_1_CODE_ID => PackageNativePackage::invoke_export(
+                    NativeCodeId::PackageCode2 => PackageNativePackage::invoke_export(
                         export_name,
                         input,
                         PackageV1MinorVersion::One,
                         api,
                         vm_api,
                     ),
-                    RESOURCE_CODE_ID => {
+                    NativeCodeId::ResourceCode1 => {
                         ResourceNativePackage::invoke_export(export_name, input, api)
                     }
-                    CONSENSUS_MANAGER_CODE_ID => {
+                    NativeCodeId::ConsensusManagerCode1 => {
                         ConsensusManagerNativePackage::invoke_export(export_name, input, api)
                     }
-                    CONSENSUS_MANAGER_SECONDS_PRECISION_CODE_ID => {
+                    NativeCodeId::ConsensusManagerCode2 => {
                         ConsensusManagerSecondsPrecisionNativeCode::invoke_export(
                             export_name,
                             input,
                             api,
                         )
                     }
-                    IDENTITY_CODE_ID => {
+                    NativeCodeId::IdentityCode1 => {
                         IdentityNativePackage::invoke_export(export_name, input, api)
                     }
-                    ACCOUNT_CODE_ID => AccountNativePackage::invoke_export(export_name, input, api),
-                    ACCOUNT_TRY_DEPOSIT_CODE_ID => {
+                    NativeCodeId::AccountCode1 => {
+                        AccountNativePackage::invoke_export(export_name, input, api)
+                    }
+                    NativeCodeId::AccountCode2 => {
                         AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
                     }
-                    ACCESS_CONTROLLER_CODE_ID => {
+                    NativeCodeId::AccessControllerCode1 => {
                         AccessControllerNativePackage::invoke_export(export_name, input, api)
                     }
-                    TRANSACTION_PROCESSOR_V1_0_CODE_ID => {
+                    NativeCodeId::TransactionProcessorCode1 => {
                         TransactionProcessorNativePackage::invoke_export(
                             export_name,
                             input,
@@ -162,7 +168,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                             api,
                         )
                     }
-                    TRANSACTION_PROCESSOR_V1_1_CODE_ID => {
+                    NativeCodeId::TransactionProcessorCode2 => {
                         TransactionProcessorNativePackage::invoke_export(
                             export_name,
                             input,
@@ -170,39 +176,38 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                             api,
                         )
                     }
-                    METADATA_CODE_ID => {
+                    NativeCodeId::MetadataCode1 => {
                         MetadataNativePackage::invoke_export(export_name, input, api)
                     }
-                    ROYALTY_CODE_ID => RoyaltyNativePackage::invoke_export(export_name, input, api),
-                    ROLE_ASSIGNMENT_CODE_ID => {
+                    NativeCodeId::RoyaltyCode1 => {
+                        RoyaltyNativePackage::invoke_export(export_name, input, api)
+                    }
+                    NativeCodeId::RoleAssignmentCode1 => {
                         RoleAssignmentNativePackage::invoke_export(export_name, input, api)
                     }
-                    ROLE_ASSIGNMENT_GET_OWNER_ROLE_CODE_ID => {
+                    NativeCodeId::RoleAssignmentCode2 => {
                         RoleAssignmentBottlenoseExtension::invoke_export(export_name, input, api)
                     }
-                    POOL_V1_0_CODE_ID => PoolNativePackage::invoke_export(
+                    NativeCodeId::PoolCode1 => PoolNativePackage::invoke_export(
                         export_name,
                         input,
                         PoolV1MinorVersion::Zero,
                         api,
                     ),
-                    POOL_V1_1_CODE_ID => PoolNativePackage::invoke_export(
+                    NativeCodeId::PoolCode2 => PoolNativePackage::invoke_export(
                         export_name,
                         input,
                         PoolV1MinorVersion::One,
                         api,
                     ),
-                    TRANSACTION_TRACKER_CODE_ID => {
+                    NativeCodeId::TransactionTrackerCode1 => {
                         TransactionTrackerNativePackage::invoke_export(export_name, input, api)
                     }
-                    TEST_UTILS_CODE_ID => {
+                    NativeCodeId::TestUtilsCode1 => {
                         TestUtilsNativePackage::invoke_export(export_name, input, api)
                     }
-                    LOCKER_CODE_ID => LockerNativePackage::invoke_export(export_name, input, api),
-                    _ => {
-                        return Err(RuntimeError::VmError(VmError::Native(
-                            NativeRuntimeError::InvalidCodeId,
-                        )));
+                    NativeCodeId::LockerCode1 => {
+                        LockerNativePackage::invoke_export(export_name, input, api)
                     }
                 }
             }

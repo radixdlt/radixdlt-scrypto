@@ -138,7 +138,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             .vm_boot
             .clone();
 
-        let output = match vm_type.into_latest().vm_type {
+        let output = match vm_type.fully_update_and_into_latest_version().vm_type {
             VmType::Native => {
                 let original_code = {
                     let handle = api.kernel_open_substate_with_default(
@@ -163,11 +163,10 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         .unwrap_or_else(|| panic!("Original code not found: {:?}", export))
                 };
 
-                let mut vm_instance = api
-                    .kernel_get_system()
-                    .callback
-                    .native_vm
-                    .create_instance(address, &original_code.into_latest().code)?;
+                let mut vm_instance = api.kernel_get_system().callback.native_vm.create_instance(
+                    address,
+                    &original_code.fully_update_and_into_latest_version().code,
+                )?;
                 let output =
                     { vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)? };
 
@@ -195,7 +194,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     instrumented_code
                         .into_value()
                         .unwrap_or_else(|| panic!("Instrumented code not found: {:?}", export))
-                        .into_latest()
+                        .fully_update_and_into_latest_version()
                 };
 
                 let mut scrypto_vm_instance = {

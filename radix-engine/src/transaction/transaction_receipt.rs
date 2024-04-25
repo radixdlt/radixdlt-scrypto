@@ -23,7 +23,7 @@ define_single_versioned! {
     /// receipt versions, allowing us to release a wallet ahead-of-time which is forward
     /// compatible with a new version of the engine (and so a new transaction receipt).
     #[derive(Clone, ScryptoSbor)]
-    pub enum VersionedTransactionReceipt => TransactionReceipt = TransactionReceiptV1
+    pub VersionedTransactionReceipt(TransactionReceiptVersions) => TransactionReceipt = TransactionReceiptV1
 }
 
 #[derive(Clone, ScryptoSbor, PartialEq, Eq)]

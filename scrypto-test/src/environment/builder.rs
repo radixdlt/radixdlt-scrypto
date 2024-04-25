@@ -270,6 +270,7 @@ where
                     .unwrap(),
                     cost_breakdown: Some(Default::default()),
                     on_apply_cost: Default::default(),
+                    apply_additional_costing: false,
                 };
 
                 System {

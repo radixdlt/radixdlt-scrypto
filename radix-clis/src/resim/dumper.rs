@@ -55,7 +55,12 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {} bytes",
         "Code size".green().bold(),
-        substate.into_value().unwrap().into_latest().code.len()
+        substate
+            .into_value()
+            .unwrap()
+            .fully_update_and_into_latest_version()
+            .code
+            .len()
     );
 
     let metadata = get_entity_metadata(package_address.as_node_id(), substate_db);
@@ -232,7 +237,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                     NonFungibleResourceManagerField::TotalSupply.into(),
                 )
                 .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
-                .into_latest();
+                .fully_update_and_into_latest_version();
 
             writeln!(
                 output,
@@ -249,7 +254,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                 FungibleResourceManagerField::Divisibility.into(),
             )
             .map_err(|_| EntityDumpError::InvalidStore("Missing Divisibility".to_string()))?
-            .into_latest();
+            .fully_update_and_into_latest_version();
 
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
@@ -270,7 +275,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
                     FungibleResourceManagerField::TotalSupply.into(),
                 )
                 .map_err(|_| EntityDumpError::InvalidStore("Missing Total Supply".to_string()))?
-                .into_latest();
+                .fully_update_and_into_latest_version();
 
             writeln!(
                 output,
@@ -306,7 +311,7 @@ fn get_entity_metadata<T: SubstateDatabase>(
             let map_key = key.into_map();
             let key = scrypto_decode::<String>(&map_key).unwrap();
             let value = scrypto_decode::<MetadataEntryEntryPayload>(&value).unwrap();
-            (key, value.into_latest())
+            (key, value.fully_update_and_into_latest_version())
         })
         .collect()
 }
