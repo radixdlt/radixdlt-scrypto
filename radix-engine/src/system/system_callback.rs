@@ -1,3 +1,4 @@
+use super::system_modules::costing::ExecutionCostingEntry;
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
@@ -21,6 +22,7 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
+use crate::kernel::kernel_callback_api::RefCheckEvent;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -884,6 +886,19 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         } else {
             Ok(system)
         }
+    }
+
+    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
+    where
+        Y: KernelApi<Self>,
+    {
+        if let Some(costing) = api.kernel_get_system_state().system.modules.costing_mut() {
+            costing
+                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
+                .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+        }
+
+        Ok(())
     }
 
     fn start<Y>(

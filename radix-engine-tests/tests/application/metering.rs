@@ -20,8 +20,6 @@ use scrypto_test::prelude::*;
 #[test]
 #[ignore = "Run this test to update expected costs"]
 fn update_expected_costs() {
-    use radix_engine_tests::path_local_metering_assets;
-
     for (name, updates) in [
         (
             path_local_metering_assets!("babylon"),

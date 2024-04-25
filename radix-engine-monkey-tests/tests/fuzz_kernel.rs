@@ -1,5 +1,7 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{RejectionReason, RuntimeError, TransactionExecutionError};
+use radix_engine::errors::{
+    BootloadingError, RejectionReason, RuntimeError, TransactionExecutionError,
+};
 use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
@@ -271,6 +273,16 @@ impl KernelCallbackObject for TestCallbackObject {
         _destination_blueprint_id: Option<BlueprintId>,
         _api: &mut Y,
     ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        Ok(())
+    }
+
+    fn on_ref_check<Y>(
+        _api: &mut Y,
+        _event: scrypto_test::prelude::RefCheckEvent,
+    ) -> Result<(), BootloadingError>
     where
         Y: KernelApi<Self>,
     {

@@ -1,6 +1,7 @@
 use radix_engine::blueprints::transaction_tracker::{
     TransactionStatusSubstateContents, TransactionTrackerSubstate,
 };
+use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::object_modules::metadata::MetadataEntryEntryPayload;
 use radix_engine_interface::prelude::*;
 
@@ -391,6 +392,7 @@ pub enum TypedSubstateValue {
 
 #[derive(Debug)]
 pub enum BootLoaderSubstateValue {
+    Kernel(KernelBoot),
     System(SystemBoot),
     Vm(VmBoot),
 }
@@ -471,6 +473,9 @@ fn to_typed_substate_value_internal(
         TypedSubstateKey::BootLoader(boot_loader_key) => {
             let TypedBootLoaderSubstateKey::BootLoaderField(boot_loader_field) = boot_loader_key;
             TypedSubstateValue::BootLoader(match boot_loader_field {
+                BootLoaderField::KernelBoot => {
+                    BootLoaderSubstateValue::Kernel(scrypto_decode(data)?)
+                }
                 BootLoaderField::SystemBoot => {
                     BootLoaderSubstateValue::System(scrypto_decode(data)?)
                 }

@@ -79,7 +79,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         callback: Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
-            vm_version: VmVersion::latest(),
+            vm_boot: VmBoot::latest(),
         },
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),
@@ -160,7 +160,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
         callback: Vm {
             scrypto_vm: &scrypto_vm,
             native_vm,
-            vm_version: VmVersion::latest(),
+            vm_boot: VmBoot::latest(),
         },
         modules: SystemModuleMixer::new(
             EnabledModules::for_notarized_transaction(),

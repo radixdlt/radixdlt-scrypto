@@ -31,6 +31,9 @@ pub enum ProtocolUpdateEntry {
 
     /// Add blob limits to transaction processor.
     TransactionProcessorBlobLimits,
+
+    /// Add deferred reference check costs.
+    RefCheckCosts,
 }
 
 impl ProtocolUpdateEntry {
@@ -57,13 +60,13 @@ impl ProtocolUpdateEntry {
             ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges => {
                 generate_account_bottlenose_extension_state_updates(db)
             }
-            // TODO implement the following
             ProtocolUpdateEntry::ProtocolParamsToState => {
                 generate_protocol_params_to_state_state_updates(network.clone())
             }
             ProtocolUpdateEntry::TransactionProcessorBlobLimits => {
                 generate_transaction_processor_blob_limits_state_updates(db)
             }
+            ProtocolUpdateEntry::RefCheckCosts => generate_ref_check_costs_state_updates(),
         }
     }
 }
@@ -134,6 +137,7 @@ impl ProtocolUpdate {
                 ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges,
                 ProtocolUpdateEntry::ProtocolParamsToState,
                 ProtocolUpdateEntry::TransactionProcessorBlobLimits,
+                ProtocolUpdateEntry::RefCheckCosts,
             ],
         }
         .iter()

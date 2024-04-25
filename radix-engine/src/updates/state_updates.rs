@@ -4,6 +4,7 @@ use crate::blueprints::models::KeyValueEntryContentSource;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
 use crate::internal_prelude::*;
+use crate::kernel::kernel::{KernelBoot, BOOT_LOADER_KERNEL_BOOT_FIELD_KEY};
 use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::{
     SystemBoot, SystemParameters, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
@@ -49,7 +50,29 @@ pub fn generate_bls128_and_keccak256_state_updates() -> StateUpdates {
                 by_partition: indexmap! {
                     BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(substate)
+                            SubstateKey::Field(BOOT_LOADER_VM_BOOT_FIELD_KEY) => DatabaseUpdate::Set(substate)
+                        }
+                    },
+                }
+            }
+        ),
+    }
+}
+
+/// Generates the state updates required for introducing deferred reference check costs
+pub fn generate_ref_check_costs_state_updates() -> StateUpdates {
+    let substate = scrypto_encode(&KernelBoot::V1 {
+        ref_check_costing: true,
+    })
+    .unwrap();
+
+    StateUpdates {
+        by_node: indexmap!(
+            TRANSACTION_TRACKER.into_node_id() => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY) => DatabaseUpdate::Set(substate)
                         }
                     },
                 }
@@ -665,7 +688,7 @@ pub fn generate_locker_package_state_updates() -> StateUpdates {
         VmType::Native,
         (NativeCodeId::LockerCode1 as u64).to_be_bytes().to_vec(),
         Default::default(),
-        &VmVersion::latest(),
+        &VmBoot::latest(),
     )
     .unwrap_or_else(|err| {
         panic!(
