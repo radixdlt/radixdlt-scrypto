@@ -356,7 +356,8 @@ impl IteratedLeafKey for LeafKey {
 pub type Version = u64;
 
 // SOURCE: https://github.com/aptos-labs/aptos-core/blob/1.0.4/types/src/nibble/mod.rs#L20
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd, Sbor)]
+#[sbor(transparent, transparent_name)]
 pub struct Nibble(u8);
 
 impl From<u8> for Nibble {

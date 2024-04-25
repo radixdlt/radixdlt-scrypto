@@ -95,7 +95,7 @@ where
         config: PackageBlueprintVersionRoyaltyConfigEntryPayload,
         location: ErrorLocation,
     ) {
-        let royalty_config = config.into_latest();
+        let royalty_config = config.fully_update_and_into_latest_version();
 
         match royalty_config {
             PackageRoyaltyConfig::Disabled => {}

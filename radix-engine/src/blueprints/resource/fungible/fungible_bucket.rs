@@ -26,7 +26,7 @@ impl FungibleBucketBlueprint {
             .field_read_typed::<FungibleResourceManagerDivisibilityFieldPayload>(
                 divisibility_handle,
             )?
-            .into_latest();
+            .fully_update_and_into_latest_version();
         api.field_close(divisibility_handle)?;
         Ok(divisibility)
     }

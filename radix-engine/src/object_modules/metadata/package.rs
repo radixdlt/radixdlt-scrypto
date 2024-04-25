@@ -426,7 +426,7 @@ impl MetadataNativePackage {
         let data = api.key_value_entry_get(handle)?;
         let substate: Option<MetadataEntryEntryPayload> = scrypto_decode(&data).unwrap();
 
-        Ok(substate.map(|v| v.into_latest()))
+        Ok(substate.map(|v: MetadataEntryEntryPayload| v.fully_update_and_into_latest_version()))
     }
 
     pub(crate) fn remove<Y>(key: String, api: &mut Y) -> Result<bool, RuntimeError>
