@@ -712,8 +712,9 @@ pub fn generate_protocol_params_to_state_state_updates(
                                     costing_parameters: CostingParameters::babylon_genesis(),
                                     limit_parameters: LimitParameters::babylon_genesis(),
                                     max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+                                    apply_additional_costing: true,
                                 })).unwrap()
-                            )
+                            ),
                         }
                     },
                 }
