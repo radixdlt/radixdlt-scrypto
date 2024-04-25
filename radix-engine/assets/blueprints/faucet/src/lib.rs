@@ -1,5 +1,7 @@
 use scrypto::prelude::*;
 
+pub const FAUCET_FREE_AMOUNT: u32 = 10000;
+
 // Faucet - TestNet only
 #[blueprint]
 #[types(Hash, Epoch)]
@@ -37,7 +39,7 @@ mod faucet {
             assert!(self.transactions.get(&transaction_hash).is_none());
             self.transactions.insert(transaction_hash, epoch);
 
-            let amount: Decimal = 10000.into();
+            let amount: Decimal = FAUCET_FREE_AMOUNT.into();
 
             if self.vault.amount() < amount {
                 panic!("The faucet doesn't have funds on this environment. You will need to source XRD another way.")
