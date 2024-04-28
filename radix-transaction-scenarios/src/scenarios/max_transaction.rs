@@ -11,19 +11,20 @@ impl ScenarioCreator for MaxTransactionScenarioCreator {
     type Config = MaxTransactionScenarioState;
     type State = MaxTransactionScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
+
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "max_transaction",
+        protocol_min_requirement: ProtocolVersion::Genesis,
+        testnet_run_at: Some(ProtocolVersion::Genesis),
+    };
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "max_transaction",
-        };
-
         #[allow(unused_variables)]
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, state, _| {
                     let code = include_bytes!("../../assets/max_transaction.wasm").to_vec();

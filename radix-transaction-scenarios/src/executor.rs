@@ -2,8 +2,6 @@
 
 use core::ops::*;
 
-use crate::scenarios::maya_router::MayaRouterScenarioCreator;
-
 use self::internal_prelude::*;
 use super::*;
 use radix_engine::blueprints::consensus_manager::*;
@@ -18,18 +16,21 @@ use radix_transactions::errors::*;
 use radix_transactions::validation::*;
 use sbor::prelude::*;
 
-use scenarios::account_authorized_depositors::AccountAuthorizedDepositorsScenarioCreator;
-use scenarios::account_locker::AccountLockerScenarioCreator;
-use scenarios::fungible_resource::FungibleResourceScenarioCreator;
-use scenarios::global_n_owned::GlobalNOwnedScenarioCreator;
-use scenarios::kv_store_with_remote_type::KVStoreScenarioCreator;
-use scenarios::max_transaction::MaxTransactionScenarioCreator;
-use scenarios::metadata::MetadataScenario;
-use scenarios::non_fungible_resource::NonFungibleResourceScenarioCreator;
-use scenarios::non_fungible_resource_with_remote_type::NonFungibleResourceWithRemoteTypeScenarioCreator;
-use scenarios::radiswap::RadiswapScenarioCreator;
-use scenarios::royalties::RoyaltiesScenarioCreator;
-use scenarios::transfer_xrd::TransferXrdScenarioCreator;
+use scenarios::ALL_SCENARIOS;
+
+#[derive(Clone, Debug)]
+pub enum ScenarioTrigger {
+    AtStartOfProtocolVersions(BTreeSet<ProtocolVersion>),
+    AtStartOfEveryProtocolVersion,
+    AfterCompletionOfAllProtocolUpdates,
+}
+
+#[derive(Clone, Debug)]
+pub enum ScenarioFilter {
+    ValidScenariosFrom(BTreeSet<String>),
+    AllScenariosValidAtProtocolVersion,
+    AllScenariosFirstValidAtProtocolVersion,
+}
 
 pub struct TransactionScenarioExecutor<'a, D, W, E>
 where
@@ -46,13 +47,6 @@ where
     native_vm_extension: E,
 
     /* Execution */
-    /// A map of the scenarios registered on the executor. Not all registered scenarios will be
-    /// executed, it merely informs the executor of the existence of these scenarios. Execution of a
-    /// scenario requires that is passes the filter specified by the client.
-    registered_scenarios:
-        BTreeMap<ProtocolVersion, Vec<Box<dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>>>>,
-    /// Controls whether the bootstrap process should be performed or not.
-    bootstrap: bool,
     /// The first nonce to use in the execution of the scenarios.
     starting_nonce: u32,
     /// How the executor should handle nonces and how it should get the next nonce.
@@ -61,17 +55,12 @@ where
     network_definition: NetworkDefinition,
 
     /* Callbacks */
-    /// A callback that is called when a new protocol requirement is encountered. This can be useful
-    /// for clients who wish to apply protocol updates they wish.
-    on_new_protocol_requirement_encountered:
-        Box<dyn FnMut(&NetworkDefinition, ProtocolVersion, &mut D) + 'a>,
     /// A callback that is called when a scenario transaction is executed.
     on_transaction_executed:
         Box<dyn FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D) + 'a>,
     /// A callback that is called when a new scenario is started.
     on_scenario_start: Box<dyn FnMut(&ScenarioMetadata) + 'a>,
-    /// A callback that is called after bootstrapping if bootstrapping is enabled.
-    after_bootstrap: Box<dyn FnMut(&NetworkDefinition, &mut D) + 'a>,
+    on_before_execute_protocol_update: Box<dyn FnMut(&ProtocolUpdateExecutor) + 'a>,
 
     /* Phantom */
     /// The lifetime of the callbacks used in the executor.
@@ -89,7 +78,7 @@ where
 {
     pub fn new(
         database: D,
-        network_definition: NetworkDefinition,
+        network_definition: &NetworkDefinition,
     ) -> DefaultTransactionScenarioExecutor<'a, D> {
         DefaultTransactionScenarioExecutor::<'a, D> {
             /* Environment */
@@ -97,44 +86,14 @@ where
             scrypto_vm: ScryptoVm::default(),
             native_vm_extension: NoExtension,
             /* Execution */
-            registered_scenarios: {
-                let vector = scenarios_vector();
-                let mut map = BTreeMap::<
-                    ProtocolVersion,
-                    Vec<Box<dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>>>,
-                >::new();
-                for (version, func) in vector.into_iter() {
-                    map.entry(version).or_default().push(func);
-                }
-                for version in ProtocolVersion::all_iterator() {
-                    map.entry(version).or_default();
-                }
-                map
-            },
-            bootstrap: true,
             starting_nonce: 0,
             next_scenario_nonce_handling:
                 ScenarioStartNonceHandling::PreviousScenarioEndNoncePlusOne,
-            network_definition,
+            network_definition: network_definition.clone(),
             /* Callbacks */
-            on_new_protocol_requirement_encountered: Box::new(
-                |network_definition, protocol_update, db| {
-                    if let ProtocolVersion::ProtocolUpdate(update) = protocol_update {
-                        update
-                            .generate_state_updates(db, network_definition)
-                            .into_iter()
-                            .for_each(|state_updates| {
-                                db.commit(
-                                    &state_updates
-                                        .create_database_updates::<SpreadPrefixKeyMapper>(),
-                                )
-                            })
-                    }
-                },
-            ),
             on_transaction_executed: Box::new(|_, _, _, _| {}),
             on_scenario_start: Box::new(|_| {}),
-            after_bootstrap: Box::new(|_, _| {}),
+            on_before_execute_protocol_update: Box::new(|_| {}),
             /* Phantom */
             callback_lifetime: Default::default(),
         }
@@ -151,16 +110,13 @@ where
             scrypto_vm,
             native_vm_extension: self.native_vm_extension,
             /* Execution */
-            registered_scenarios: self.registered_scenarios,
-            bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
             next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
-            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
-            after_bootstrap: self.after_bootstrap,
+            on_before_execute_protocol_update: self.on_before_execute_protocol_update,
             /* Phantom */
             callback_lifetime: self.callback_lifetime,
         }
@@ -177,25 +133,16 @@ where
             scrypto_vm: self.scrypto_vm,
             native_vm_extension,
             /* Execution */
-            registered_scenarios: self.registered_scenarios,
-            bootstrap: self.bootstrap,
             starting_nonce: self.starting_nonce,
             next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
-            on_new_protocol_requirement_encountered: self.on_new_protocol_requirement_encountered,
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_start: self.on_scenario_start,
-            after_bootstrap: self.after_bootstrap,
+            on_before_execute_protocol_update: self.on_before_execute_protocol_update,
             /* Phantom */
             callback_lifetime: self.callback_lifetime,
         }
-    }
-
-    /// Controls whether the bootstrap process should be performed or not.
-    pub fn bootstrap(mut self, bootstrap: bool) -> Self {
-        self.bootstrap = bootstrap;
-        self
     }
 
     /// Sets the starting nonce for executing scenarios.
@@ -207,17 +154,6 @@ where
     /// Defines how the executor should handle nonces.
     pub fn nonce_handling(mut self, nonce_handling: ScenarioStartNonceHandling) -> Self {
         self.next_scenario_nonce_handling = nonce_handling;
-        self
-    }
-
-    /// Sets the callback to call when a new protocol requirement is encountered.
-    pub fn on_new_protocol_requirement_encountered<
-        F: FnMut(&NetworkDefinition, ProtocolVersion, &mut D) + 'a,
-    >(
-        mut self,
-        callback: F,
-    ) -> Self {
-        self.on_new_protocol_requirement_encountered = Box::new(callback);
         self
     }
 
@@ -238,163 +174,161 @@ where
         self
     }
 
-    pub fn without_protocol_updates(self) -> Self {
-        self.on_new_protocol_requirement_encountered(|_, _, _| {})
-    }
-
-    /// A callback that is called after bootstrapping if bootstrap is enabled.
-    pub fn after_bootstrap<F: FnMut(&NetworkDefinition, &mut D) + 'a>(
+    /// A callback that is called before a protocol update is executed.
+    pub fn on_before_execute_protocol_update<F: FnMut(&ProtocolUpdateExecutor) + 'a>(
         mut self,
         callback: F,
     ) -> Self {
-        self.after_bootstrap = Box::new(callback);
+        self.on_before_execute_protocol_update = Box::new(callback);
         self
     }
 
-    pub fn execute_all_matching(
-        self,
+    pub fn into_database(self) -> D {
+        self.database
+    }
+
+    /// Each scenario is executed once, when it first becomes valid.
+    pub fn execute_every_protocol_update_and_scenario(
+        &mut self,
+    ) -> Result<(), ScenarioExecutorError> {
+        self.execute_protocol_updates_and_scenarios(
+            ProtocolBuilder::for_network(&self.network_definition).until_latest_protocol_version(),
+            ScenarioTrigger::AtStartOfEveryProtocolVersion,
+            ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
+        )
+    }
+
+    pub fn execute_protocol_updates_and_scenarios(
+        &mut self,
+        protocol_executor: ProtocolExecutor,
+        trigger: ScenarioTrigger,
         filter: ScenarioFilter,
-    ) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
-        self.internal_execute(Some(filter))
-    }
+    ) -> Result<(), ScenarioExecutorError> {
+        Bootstrapper::new(
+            self.network_definition.clone(),
+            &mut self.database,
+            VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
+            false,
+        )
+        .bootstrap_test_default()
+        .ok_or(ScenarioExecutorError::BootstrapFailed)?;
 
-    pub fn execute_all(self) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
-        self.internal_execute(None)
-    }
+        let mut current_protocol_version = ProtocolVersion::Genesis;
 
-    fn internal_execute(
-        mut self,
-        filter: Option<ScenarioFilter>,
-    ) -> Result<ScenarioExecutionReceipt<D>, ScenarioExecutorError> {
-        // Bootstrapping if needed
-        if self.bootstrap {
-            Bootstrapper::new(
-                self.network_definition.clone(),
-                &mut self.database,
-                VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
+        for protocol_update_executor in protocol_executor.each_protocol_update_executor() {
+            self.execute_scenarios_at_new_protocol_version(
+                current_protocol_version,
+                &trigger,
+                &filter,
                 false,
-            )
-            .bootstrap_test_default()
-            .ok_or(ScenarioExecutorError::BootstrapFailed)?;
-            (self.after_bootstrap)(&self.network_definition, &mut self.database);
+            )?;
+            current_protocol_version = protocol_update_executor.protocol_update.into();
+            (self.on_before_execute_protocol_update)(&protocol_update_executor);
+            protocol_update_executor.run_and_commit(&mut self.database);
+        }
+
+        self.execute_scenarios_at_new_protocol_version(
+            current_protocol_version,
+            &trigger,
+            &filter,
+            true,
+        )?;
+
+        Ok(())
+    }
+
+    fn execute_scenarios_at_new_protocol_version(
+        &mut self,
+        at_version: ProtocolVersion,
+        trigger: &ScenarioTrigger,
+        filter: &ScenarioFilter,
+        is_last: bool,
+    ) -> Result<(), ScenarioExecutorError> {
+        let trigger_applies = match trigger {
+            ScenarioTrigger::AtStartOfProtocolVersions(set) => set.contains(&at_version),
+            ScenarioTrigger::AtStartOfEveryProtocolVersion => true,
+            ScenarioTrigger::AfterCompletionOfAllProtocolUpdates => is_last,
         };
 
-        // Getting the scenario builder functions of the scenarios that we will execute. There is a
-        // canonical order to these function batches which is that the genesis functions come first,
-        // then anemone, bottlenose, and so on. This order is enforced by this function and by the
-        // ordering of the `ProtocolUpdate` enum variants. Within a protocol update (or requirement)
-        // the canonical order is as seen in the [`new`] function.
-        for protocol_requirement in ProtocolVersion::all_iterator() {
-            // When a new protocol requirement is encountered the appropriate callback is called to
-            // inform the client of this event.
-            (self.on_new_protocol_requirement_encountered)(
-                &self.network_definition,
-                protocol_requirement,
-                &mut self.database,
-            );
+        if !trigger_applies {
+            return Ok(());
+        }
 
-            // Build each scenario and execute it.
-            let mut next_nonce = self.starting_nonce;
-            for scenario_builder in self
-                .registered_scenarios
-                .remove(&protocol_requirement)
-                .unwrap_or_default()
-                .into_iter()
-            {
-                let epoch = SystemDatabaseReader::new(&self.database)
-                    .read_object_field(
-                        CONSENSUS_MANAGER.as_node_id(),
-                        ModuleId::Main,
-                        ConsensusManagerField::State.field_index(),
-                    )
-                    .map_err(|_| ScenarioExecutorError::FailedToGetEpoch)?
-                    .as_typed::<VersionedConsensusManagerState>()
-                    .unwrap()
-                    .fully_update_and_into_latest_version()
-                    .epoch;
-                let mut scenario = scenario_builder(ScenarioCore::new(
-                    self.network_definition.clone(),
-                    epoch,
-                    next_nonce,
-                ));
-                let metadata = scenario.metadata().clone();
-
-                // Before executing the scenario determine if it's valid for the current filter that
-                // the client specified.
-                let passes_filter = match filter {
-                    // Ensure that the scenario name from the metadata is in the list of exact
-                    // scenarios. Otherwise continue to the next.
-                    Some(ScenarioFilter::ExactScenarios(ref exact_scenarios)) => {
-                        exact_scenarios.contains(metadata.logical_name)
-                    }
-                    // Execute only ones from a particular protocol update.
-                    Some(ScenarioFilter::SpecificProtocolVersion(protocol_version)) => {
-                        protocol_requirement == protocol_version
-                    }
-                    // Execute only scenarios that are valid before a particular protocol update.
-                    Some(ScenarioFilter::AllValidBeforeProtocolVersion(protocol_version)) => {
-                        match protocol_version {
-                            Boundary::Inclusive(protocol_version) => RangeToInclusive {
-                                end: protocol_version,
-                            }
-                            .contains(&protocol_requirement),
-                            Boundary::Exclusive(protocol_version) => RangeTo {
-                                end: protocol_version,
-                            }
-                            .contains(&protocol_requirement),
-                        }
-                    }
-                    // Execute only scenarios that are valid after a particular protocol update.
-                    Some(ScenarioFilter::AllValidAfterProtocolVersion(protocol_version)) => {
-                        RangeFrom {
-                            start: protocol_version,
-                        }
-                        .contains(&protocol_requirement)
-                    }
-                    // No filter is specified, the scenario is valid.
-                    None => true,
-                };
-                if !passes_filter {
-                    continue;
+        let matching_scenarios = ALL_SCENARIOS.iter().filter(|(logical_name, creator)| {
+            let metadata = creator.metadata();
+            let is_valid = metadata.protocol_min_requirement >= at_version;
+            if !is_valid {
+                return false;
+            }
+            match filter {
+                ScenarioFilter::ValidScenariosFrom(scenario_names) => {
+                    scenario_names.contains(&**logical_name)
                 }
+                ScenarioFilter::AllScenariosValidAtProtocolVersion => true,
+                ScenarioFilter::AllScenariosFirstValidAtProtocolVersion => {
+                    metadata.protocol_min_requirement == at_version
+                }
+            }
+        });
 
-                (self.on_scenario_start)(&metadata);
-                let mut previous = None;
-                loop {
-                    let next = scenario
-                        .next(previous.as_ref())
-                        .map_err(|err| err.into_full(&scenario))
-                        .unwrap();
-                    match next {
-                        NextAction::Transaction(next) => {
-                            let receipt = self.execute_transaction(&next.raw_transaction)?;
-                            (self.on_transaction_executed)(
-                                &metadata,
-                                &next,
-                                &receipt,
-                                &self.database,
-                            );
-                            previous = Some(receipt);
+        for (_, scenario_creator) in matching_scenarios {
+            self.execute_scenario(scenario_creator.as_ref())?;
+        }
+
+        Ok(())
+    }
+
+    pub fn execute_scenario(
+        &mut self,
+        scenario_creator: &dyn ScenarioCreatorObjectSafe,
+    ) -> Result<(), ScenarioExecutorError> {
+        let epoch = SystemDatabaseReader::new(&self.database)
+            .read_object_field(
+                CONSENSUS_MANAGER.as_node_id(),
+                ModuleId::Main,
+                ConsensusManagerField::State.field_index(),
+            )
+            .map_err(|_| ScenarioExecutorError::FailedToGetEpoch)?
+            .as_typed::<VersionedConsensusManagerState>()
+            .unwrap()
+            .fully_update_and_into_latest_version()
+            .epoch;
+
+        let mut scenario = scenario_creator.create(ScenarioCore::new(
+            self.network_definition.clone(),
+            epoch,
+            self.starting_nonce,
+        ));
+        let metadata = scenario.metadata().clone();
+
+        (self.on_scenario_start)(&metadata);
+        let mut previous = None;
+        loop {
+            let next = scenario
+                .next(previous.as_ref())
+                .map_err(|err| err.into_full(&scenario))
+                .unwrap();
+            match next {
+                NextAction::Transaction(next) => {
+                    let receipt = self.execute_transaction(&next.raw_transaction)?;
+                    (self.on_transaction_executed)(&metadata, &next, &receipt, &self.database);
+                    previous = Some(receipt);
+                }
+                NextAction::Completed(end_state) => {
+                    match self.next_scenario_nonce_handling {
+                        ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(increment) => {
+                            self.starting_nonce += increment
                         }
-                        NextAction::Completed(end_state) => {
-                            match self.next_scenario_nonce_handling {
-                                ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
-                                    increment,
-                                ) => next_nonce += increment,
-                                ScenarioStartNonceHandling::PreviousScenarioEndNoncePlusOne => {
-                                    next_nonce = end_state.next_unused_nonce
-                                }
-                            }
-                            break;
+                        ScenarioStartNonceHandling::PreviousScenarioEndNoncePlusOne => {
+                            self.starting_nonce = end_state.next_unused_nonce
                         }
                     }
+                    break;
                 }
             }
         }
 
-        Ok(ScenarioExecutionReceipt {
-            database: self.database,
-        })
+        Ok(())
     }
 
     fn execute_transaction(
@@ -437,91 +371,4 @@ pub enum ScenarioExecutorError {
 pub enum ScenarioStartNonceHandling {
     PreviousScenarioStartNoncePlus(u32),
     PreviousScenarioEndNoncePlusOne,
-}
-
-pub struct ScenarioExecutionReceipt<D: SubstateDatabase + CommittableSubstateDatabase> {
-    pub database: D,
-}
-
-#[derive(Clone, Debug)]
-pub enum ScenarioFilter {
-    /// An exact set of scenarios to execute, specified by their scenario name. Before a scenario is
-    /// executed its name is checked against this set. It is executed if it's name is a member of
-    /// this set and ignored otherwise. Note that there is no check to ensure that the names in this
-    /// filter are valid. If an incorrect scenario name is provided in the set then it will simply
-    /// be ignored and wont match against anything.
-    ExactScenarios(BTreeSet<String>),
-    /// Only executes the scenarios of a particular protocol update.
-    SpecificProtocolVersion(ProtocolVersion),
-    /// Filters scenarios based on their protocol version requirements executing all scenarios up
-    /// until the ones that require the specified protocol update. As an example, to execute all
-    /// scenarios from Genesis to Anemone this variant could be used and  specified a protocol
-    /// update of [`ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone)`].
-    AllValidBeforeProtocolVersion(Boundary<ProtocolVersion>),
-    /// Filters scenarios based on their protocol version requirements executing all scenarios from
-    /// the specified protocol update and up until the end. As an example, to execute all scenarios
-    /// from Anemone to the end then this variant could be used specified a protocol update of
-    /// [`ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone)`]. The specified protocol update
-    /// is included.
-    AllValidAfterProtocolVersion(ProtocolVersion),
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Boundary<T> {
-    Inclusive(T),
-    Exclusive(T),
-}
-
-macro_rules! scenarios_vector {
-    (
-        $(
-            $ty: ty
-        ),* $(,)?
-    ) => {
-        {
-            let mut vec = Vec::<(
-                ProtocolVersion,
-                Box<dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>>
-            )>::new();
-
-            $(
-                vec.push(
-                    (
-                        <$ty as crate::scenario::ScenarioCreator>::SCENARIO_PROTOCOL_REQUIREMENT,
-                        Box::new(|core| {
-                            Box::new(<$ty as crate::scenario::ScenarioCreator>::create(core))
-                                as Box<dyn crate::scenario::ScenarioInstance>
-                        })
-                        as Box<dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>>
-                    )
-                );
-            )*
-
-            vec
-        }
-    };
-}
-
-pub fn scenarios_vector() -> Vec<(
-    ProtocolVersion,
-    Box<dyn FnOnce(ScenarioCore) -> Box<dyn ScenarioInstance>>,
-)> {
-    scenarios_vector![
-        // Genesis Scenarios
-        TransferXrdScenarioCreator,
-        RadiswapScenarioCreator,
-        MetadataScenario,
-        FungibleResourceScenarioCreator,
-        NonFungibleResourceScenarioCreator,
-        AccountAuthorizedDepositorsScenarioCreator,
-        GlobalNOwnedScenarioCreator,
-        NonFungibleResourceWithRemoteTypeScenarioCreator,
-        KVStoreScenarioCreator,
-        MaxTransactionScenarioCreator,
-        RoyaltiesScenarioCreator,
-        // Anemone Scenarios - None.
-        // Bottlenose Scenarios.
-        AccountLockerScenarioCreator,
-        MayaRouterScenarioCreator,
-    ]
 }

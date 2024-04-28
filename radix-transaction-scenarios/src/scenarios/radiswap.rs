@@ -49,20 +49,20 @@ impl ScenarioCreator for RadiswapScenarioCreator {
     type Config = RadiswapScenarioConfig;
     type State = RadiswapScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
-    #[allow(deprecated)]
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "radiswap",
+        protocol_min_requirement: ProtocolVersion::Genesis,
+        testnet_run_at: Some(ProtocolVersion::Genesis),
+    };
+
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "radiswap",
-        };
-
         #[allow(unused_variables)]
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_fallible(

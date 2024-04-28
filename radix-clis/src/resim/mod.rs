@@ -169,7 +169,9 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
-    let SimulatorEnvironment { mut db, scrypto_vm } = SimulatorEnvironment::new()?;
+    let SimulatorEnvironment {
+        mut db, scrypto_vm, ..
+    } = SimulatorEnvironment::new()?;
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
     let nonce = get_nonce()?;
@@ -240,7 +242,9 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let SimulatorEnvironment { mut db, scrypto_vm } = SimulatorEnvironment::new()?;
+            let SimulatorEnvironment {
+                mut db, scrypto_vm, ..
+            } = SimulatorEnvironment::new()?;
             let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
             let sks = get_signing_keys(signing_keys)?;

@@ -8,13 +8,6 @@ use radix_engine_interface::*;
 
 use crate::internal_prelude::*;
 
-pub struct MetadataScenario {
-    core: ScenarioCore,
-    metadata: ScenarioMetadata,
-    config: MetadataScenarioConfig,
-    state: MetadataScenarioState,
-}
-
 #[allow(deprecated)]
 pub struct MetadataScenarioConfig {
     pub user_account_1: VirtualAccount,
@@ -40,27 +33,38 @@ pub struct MetadataScenarioState {
     pub resource_with_metadata2: Option<ResourceAddress>,
 }
 
-impl ScenarioCreator for MetadataScenario {
+pub struct MetadataScenarioCreator;
+
+impl ScenarioCreator for MetadataScenarioCreator {
     type Config = MetadataScenarioConfig;
     type State = MetadataScenarioState;
-    type Instance = Self;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
+    type Instance = MetadataScenario;
+
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "metadata",
+        protocol_min_requirement: ProtocolVersion::Genesis,
+        testnet_run_at: Some(ProtocolVersion::Genesis),
+    };
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "metadata",
-        };
-        Self {
+        Self::Instance {
             core,
-            metadata,
+            metadata: Self::METADATA,
             config,
             state: start_state,
         }
     }
+}
+
+pub struct MetadataScenario {
+    core: ScenarioCore,
+    metadata: ScenarioMetadata,
+    config: MetadataScenarioConfig,
+    state: MetadataScenarioState,
 }
 
 impl ScenarioInstance for MetadataScenario {

@@ -46,6 +46,7 @@ pub(crate) mod internal_prelude {
     pub use radix_common::prelude::*;
     pub use radix_engine_interface::blueprints::component::*;
     pub use radix_engine_interface::prelude::*;
+    pub use radix_substate_store_interface::interface::*;
     pub use sbor::rust::ops::AddAssign;
     pub use sbor::rust::ops::SubAssign;
 }

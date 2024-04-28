@@ -375,31 +375,46 @@ pub struct ScenarioMetadata {
     /// - This is used in Node genesis to specify which scenarios should be run
     /// - This should be spaceless as it will be used for a file path
     pub logical_name: &'static str,
+    /// The minimal protocol version required to successfully run this scenario.
+    pub protocol_min_requirement: ProtocolVersion,
+    /// If set, this will run immediately after this protocol update on a testnet.
+    /// Note that setting this will change the definition of the given protocol update,
+    /// so shouldn't be changed once the protocol update is locked in.
+    pub testnet_run_at: Option<ProtocolVersion>,
 }
 
-pub trait ScenarioCreator: Sized {
+pub trait ScenarioCreator: Sized + 'static + Send + Sync {
     type Config: Default;
     type State: Default;
     type Instance: ScenarioInstance + 'static;
 
-    /// The protocol requirement of the scenario. If set to [`None`] then the scenario does not have
-    /// any requirements and can be run against all protocol versions including genesis and all that
-    /// comes after. If [`Some`] protocol update then this is the protocol update required for this
-    /// scenario to be executed, meaning that the scenario could be executed on this protocol update
-    /// and everything that comes after. This is a property of the [`ScenarioCreator`] rather than
-    /// the individual instance since the creator can be thought of the as "class" and the instance
-    /// is the object.
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion;
-
-    fn create(core: ScenarioCore) -> Self::Instance {
-        Self::create_with_config_and_state(core, Default::default(), Default::default())
-    }
+    const METADATA: ScenarioMetadata;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance;
+}
+
+pub trait ScenarioCreatorObjectSafe: Send + Sync + 'static {
+    fn metadata(&self) -> ScenarioMetadata;
+
+    fn create(&self, core: ScenarioCore) -> Box<dyn ScenarioInstance>;
+}
+
+impl<T: ScenarioCreator> ScenarioCreatorObjectSafe for T {
+    fn metadata(&self) -> ScenarioMetadata {
+        Self::METADATA
+    }
+
+    fn create(&self, core: ScenarioCore) -> Box<dyn ScenarioInstance> {
+        Box::new(Self::create_with_config_and_state(
+            core,
+            Default::default(),
+            Default::default(),
+        ))
+    }
 }
 
 pub trait ScenarioInstance {

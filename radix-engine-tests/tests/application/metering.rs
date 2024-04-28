@@ -4,11 +4,10 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionFeeDetails;
 use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::updates::ProtocolUpdates;
+use radix_engine::updates::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
-use radix_engine_tests::path_local_metering_assets;
 use scrypto::object_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
@@ -20,97 +19,37 @@ use scrypto_test::prelude::*;
 #[test]
 #[ignore = "Run this test to update expected costs"]
 fn update_expected_costs() {
-    use radix_engine_tests::path_local_metering_assets;
-
-    for (name, updates) in [
-        (
-            path_local_metering_assets!("babylon"),
-            ProtocolUpdates::none(),
-        ),
-        (
-            path_local_metering_assets!("anemone"),
-            ProtocolUpdates::up_to_anemone(),
-        ),
-        (
-            path_local_metering_assets!("bottlenose"),
-            ProtocolUpdates::up_to_bottlenose(),
-        ),
-    ] {
-        run_basic_transfer(
-            updates.clone(),
-            PostRunTask::OutputCosting(name, "cost_transfer.csv"),
-        );
-        run_basic_transfer_to_virtual_account(
-            updates.clone(),
-            PostRunTask::OutputCosting(name, "cost_transfer_to_virtual_account.csv"),
-        );
-        run_radiswap(
-            updates.clone(),
-            PostRunTask::OutputCosting(name, "cost_radiswap.csv"),
-        );
-        run_flash_loan(
-            updates.clone(),
-            PostRunTask::OutputCosting(name, "cost_flash_loan.csv"),
-        );
-        run_publish_large_package(
-            updates.clone(),
-            PostRunTask::OutputCosting(name, "cost_publish_large_package.csv"),
-        );
-        run_mint_large_size_nfts_from_manifest(
-            updates.clone(),
-            PostRunTask::OutputCosting(name, "cost_mint_large_size_nfts_from_manifest.csv"),
-        );
-        run_mint_small_size_nfts_from_manifest(
-            updates.clone(),
-            PostRunTask::OutputCosting(name, "cost_mint_small_size_nfts_from_manifest.csv"),
-        );
-    }
+    run_all(PostRunMode::OutputCosting);
 }
 
 #[test]
 fn run_cost_tests() {
-    for (name, updates) in [
-        (
-            path_local_metering_assets!("babylon"),
-            ProtocolUpdates::none(),
-        ),
-        (
-            path_local_metering_assets!("anemone"),
-            ProtocolUpdates::up_to_anemone(),
-        ),
-        (
-            path_local_metering_assets!("bottlenose"),
-            ProtocolUpdates::up_to_bottlenose(),
-        ),
-    ] {
-        run_basic_transfer(
-            updates.clone(),
-            PostRunTask::AssertCosting(name, "cost_transfer.csv"),
-        );
-        run_basic_transfer_to_virtual_account(
-            updates.clone(),
-            PostRunTask::AssertCosting(name, "cost_transfer_to_virtual_account.csv"),
-        );
-        run_radiswap(
-            updates.clone(),
-            PostRunTask::AssertCosting(name, "cost_radiswap.csv"),
-        );
-        run_flash_loan(
-            updates.clone(),
-            PostRunTask::AssertCosting(name, "cost_flash_loan.csv"),
-        );
-        run_publish_large_package(
-            updates.clone(),
-            PostRunTask::AssertCosting(name, "cost_publish_large_package.csv"),
-        );
-        run_mint_large_size_nfts_from_manifest(
-            updates.clone(),
-            PostRunTask::AssertCosting(name, "cost_mint_large_size_nfts_from_manifest.csv"),
-        );
-        run_mint_small_size_nfts_from_manifest(
-            updates.clone(),
-            PostRunTask::AssertCosting(name, "cost_mint_small_size_nfts_from_manifest.csv"),
-        );
+    run_all(PostRunMode::AssertCosting);
+}
+
+fn run_all(mode: PostRunMode) {
+    for protocol_version in ProtocolVersion::all_iterator() {
+        let folder = path_local_metering_assets(protocol_version.logical_name());
+
+        let folder = folder.as_str();
+        let execute = move |run: &dyn Fn(ProtocolVersion, PostRunTask), file: &'static str| {
+            run(
+                protocol_version,
+                PostRunTask {
+                    mode,
+                    folder: folder.to_string(),
+                    file: file.to_string(),
+                }
+            )
+        };
+
+        execute(&run_basic_transfer, "cost_transfer.csv");
+        execute(&run_basic_transfer_to_virtual_account, "cost_transfer_to_virtual_account.csv");
+        execute(&run_radiswap, "cost_radiswap.csv");
+        execute(&run_flash_loan, "cost_flash_loan.csv");
+        execute(&run_publish_large_package, "cost_publish_large_package.csv");
+        execute(&run_mint_large_size_nfts_from_manifest, "cost_mint_large_size_nfts_from_manifest.csv");
+        execute(&run_mint_small_size_nfts_from_manifest, "cost_mint_small_size_nfts_from_manifest.csv");
     }
 }
 
@@ -361,18 +300,28 @@ pub fn write_cost_breakdown(
     f.write_all(buffer.as_bytes()).unwrap();
 }
 
-pub enum PostRunTask {
-    OutputCosting(&'static str, &'static str),
-    AssertCosting(&'static str, &'static str),
+struct PostRunTask {
+    mode: PostRunMode,
+    folder: String,
+    file: String,
+}
+
+#[derive(Copy, Clone)]
+enum PostRunMode {
+    OutputCosting,
+    AssertCosting,
 }
 
 impl PostRunTask {
     pub fn run(&self, fee_summary: &TransactionFeeSummary, fee_details: &TransactionFeeDetails) {
-        match self {
-            PostRunTask::OutputCosting(folder, file) => {
+        let Self {
+            folder, file, mode
+        } = self;
+        match mode {
+            PostRunMode::OutputCosting => {
                 write_cost_breakdown(fee_summary, fee_details, folder, file);
             }
-            PostRunTask::AssertCosting(folder, file) => {
+            PostRunMode::AssertCosting => {
                 let expected = load_cost_breakdown(folder, file);
                 assert_eq!(&fee_details.execution_cost_breakdown, &expected.0);
                 assert_eq!(&fee_details.finalization_cost_breakdown, &expected.1);
@@ -381,10 +330,10 @@ impl PostRunTask {
     }
 }
 
-fn run_basic_transfer(protocol_updates: ProtocolUpdates, task: PostRunTask) {
+fn run_basic_transfer(protocol_version: ProtocolVersion, task: PostRunTask) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(protocol_updates)
+        .with_custom_protocol(|builder| builder.until(protocol_version))
         .without_kernel_trace()
         .build();
     let (public_key1, _, account1) = ledger.new_allocated_account();
@@ -407,10 +356,10 @@ fn run_basic_transfer(protocol_updates: ProtocolUpdates, task: PostRunTask) {
     task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
-fn run_basic_transfer_to_virtual_account(protocol_updates: ProtocolUpdates, task: PostRunTask) {
+fn run_basic_transfer_to_virtual_account(protocol_version: ProtocolVersion, task: PostRunTask) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(protocol_updates)
+        .with_custom_protocol(|builder| builder.until(protocol_version))
         .without_kernel_trace()
         .build();
     let (public_key1, _, account1) = ledger.new_allocated_account();
@@ -435,9 +384,9 @@ fn run_basic_transfer_to_virtual_account(protocol_updates: ProtocolUpdates, task
     task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
-fn run_radiswap(protocol_updates: ProtocolUpdates, task: PostRunTask) {
+fn run_radiswap(protocol_version: ProtocolVersion, task: PostRunTask) {
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(protocol_updates)
+        .with_custom_protocol(|builder| builder.until(protocol_version))
         .without_kernel_trace()
         .build();
 
@@ -544,9 +493,9 @@ fn run_radiswap(protocol_updates: ProtocolUpdates, task: PostRunTask) {
     task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
-fn run_flash_loan(protocol_updates: ProtocolUpdates, task: PostRunTask) {
+fn run_flash_loan(protocol_version: ProtocolVersion, task: PostRunTask) {
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(protocol_updates)
+        .with_custom_protocol(|builder| builder.until(protocol_version))
         .without_kernel_trace()
         .build();
 
@@ -635,10 +584,10 @@ fn run_flash_loan(protocol_updates: ProtocolUpdates, task: PostRunTask) {
     task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
-fn run_publish_large_package(protocol_updates: ProtocolUpdates, task: PostRunTask) {
+fn run_publish_large_package(protocol_version: ProtocolVersion, task: PostRunTask) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(protocol_updates)
+        .with_custom_protocol(|builder| builder.until(protocol_version))
         .without_kernel_trace()
         .build();
 
@@ -671,9 +620,9 @@ fn run_publish_large_package(protocol_updates: ProtocolUpdates, task: PostRunTas
     task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
 }
 
-fn run_mint_small_size_nfts_from_manifest(protocol_updates: ProtocolUpdates, task: PostRunTask) {
+fn run_mint_small_size_nfts_from_manifest(protocol_version: ProtocolVersion, task: PostRunTask) {
     run_mint_nfts_from_manifest(
-        protocol_updates,
+        protocol_version,
         task,
         TestNonFungibleData {
             metadata: btreemap!(),
@@ -681,11 +630,11 @@ fn run_mint_small_size_nfts_from_manifest(protocol_updates: ProtocolUpdates, tas
     )
 }
 
-fn run_mint_large_size_nfts_from_manifest(protocol_updates: ProtocolUpdates, task: PostRunTask) {
+fn run_mint_large_size_nfts_from_manifest(protocol_version: ProtocolVersion, task: PostRunTask) {
     const N: usize = 50;
 
     run_mint_nfts_from_manifest(
-        protocol_updates,
+        protocol_version,
         task,
         TestNonFungibleData {
             metadata: btreemap!(
@@ -703,13 +652,13 @@ fn run_mint_large_size_nfts_from_manifest(protocol_updates: ProtocolUpdates, tas
 }
 
 fn run_mint_nfts_from_manifest(
-    protocol_updates: ProtocolUpdates,
+    protocol_version: ProtocolVersion,
     task: PostRunTask,
     nft_data: TestNonFungibleData,
 ) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(protocol_updates)
+        .with_custom_protocol(|builder| builder.until(protocol_version))
         .without_kernel_trace()
         .build();
     let (_, _, account) = ledger.new_allocated_account();

@@ -5,8 +5,7 @@ use radix_common::prelude::{manifest_args, Round};
 use radix_common::types::Epoch;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine::updates::state_updates::generate_seconds_precision_timestamp_state_updates;
-use radix_engine::updates::ProtocolUpdates;
+use radix_engine::updates::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
@@ -29,11 +28,11 @@ fn get_current_time_rounded_to_seconds_with_state_flash_should_succeed() {
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(ProtocolUpdates::none())
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
+        .with_protocol_version(ProtocolVersion::Genesis)
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 
