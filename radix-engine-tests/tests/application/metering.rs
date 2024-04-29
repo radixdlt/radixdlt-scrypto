@@ -1,8 +1,6 @@
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::ExecutionConfig;
-use radix_engine::transaction::TransactionFeeDetails;
-use radix_engine::transaction::TransactionFeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::updates::*;
 use radix_engine_interface::blueprints::access_controller::ACCESS_CONTROLLER_CREATE_PROOF_IDENT;
@@ -12,6 +10,7 @@ use scrypto::object_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
 use scrypto_test::prelude::*;
+use scrypto_test::utils::CostingTaskMode;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 
@@ -19,28 +18,28 @@ use scrypto_test::prelude::*;
 #[test]
 #[ignore = "Run this test to update expected costs"]
 fn update_expected_costs() {
-    run_all(PostRunMode::OutputCosting);
+    run_all(CostingTaskMode::OutputCosting);
 }
 
+#[cfg(not(feature = "alloc"))]
 #[test]
 fn run_cost_tests() {
-    run_all(PostRunMode::AssertCosting);
+    run_all(CostingTaskMode::AssertCosting);
 }
 
-fn run_all(mode: PostRunMode) {
+#[cfg(not(feature = "alloc"))]
+fn run_all(mode: CostingTaskMode) {
     for protocol_version in ProtocolVersion::all_iterator() {
         let folder = path_local_metering_assets(protocol_version.logical_name());
 
         let folder = folder.as_str();
-        let execute = move |run: &dyn Fn(ProtocolVersion, PostRunTask), file: &'static str| {
-            run(
-                protocol_version,
-                PostRunTask {
-                    mode,
-                    folder: folder.to_string(),
-                    file: file.to_string(),
-                }
-            )
+        let execute = move |run: &dyn Fn(DefaultLedgerSimulator) -> TransactionReceipt, file: &'static str| {
+            let ledger = LedgerSimulatorBuilder::new()
+                .with_custom_protocol(|builder| builder.until(protocol_version))
+                .without_kernel_trace()
+                .build();
+            let receipt = run(ledger);
+            mode.run(folder, file, &receipt.fee_summary, &receipt.fee_details.unwrap())
         };
 
         execute(&run_basic_transfer, "cost_transfer.csv");
@@ -79,263 +78,8 @@ fn execute_with_time_logging(
     (receipt, 0)
 }
 
-pub fn load_cost_breakdown(
-    folder: &str,
-    file: &str,
-) -> (BTreeMap<String, u32>, BTreeMap<String, u32>) {
-    let content = std::fs::read_to_string(format!("{folder}/{file}")).unwrap();
-    let mut execution_breakdown = BTreeMap::<String, u32>::new();
-    let mut finalization_breakdown = BTreeMap::<String, u32>::new();
-    let lines: Vec<String> = content.split('\n').map(String::from).collect();
-    let mut is_execution = true;
-    for i in 8..lines.len() {
-        if lines[i].starts_with('-') {
-            let mut tokens = lines[i].split(',');
-            let entry = tokens.next().unwrap().trim()[2..].to_string();
-            let cost = tokens.next().unwrap().trim();
-            if is_execution {
-                &mut execution_breakdown
-            } else {
-                &mut finalization_breakdown
-            }
-            .insert(entry, u32::from_str(cost).unwrap());
-        } else {
-            is_execution = false;
-        }
-    }
-    (execution_breakdown, finalization_breakdown)
-}
-
-#[cfg(feature = "alloc")]
-pub fn write_cost_breakdown(
-    _fee_summary: &TransactionFeeSummary,
-    _fee_details: &TransactionFeeDetails,
-    _folder: &str,
-    _file: &str,
-) {
-}
-
-#[cfg(not(feature = "alloc"))]
-pub fn write_cost_breakdown(
-    fee_summary: &TransactionFeeSummary,
-    fee_details: &TransactionFeeDetails,
-    folder: &str,
-    file: &str,
-) {
-    use std::fs::File;
-    use std::io::Write;
-
-    fn decimal_to_float(d: Decimal) -> f64 {
-        f64::from_str(d.to_string().as_str()).unwrap()
-    }
-
-    let mut buffer = String::new();
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "Total Cost (XRD)",
-            fee_summary.total_cost().to_string(),
-            100.0
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "- Execution Cost (XRD)",
-            fee_summary.total_execution_cost_in_xrd.to_string(),
-            decimal_to_float(
-                fee_summary
-                    .total_execution_cost_in_xrd
-                    .checked_div(fee_summary.total_cost())
-                    .unwrap()
-                    .checked_mul(100)
-                    .unwrap()
-            )
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "- Finalization Cost (XRD)",
-            fee_summary.total_finalization_cost_in_xrd.to_string(),
-            decimal_to_float(
-                fee_summary
-                    .total_finalization_cost_in_xrd
-                    .checked_div(fee_summary.total_cost())
-                    .unwrap()
-                    .checked_mul(100)
-                    .unwrap()
-            )
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "- Tipping Cost (XRD)",
-            fee_summary.total_tipping_cost_in_xrd.to_string(),
-            decimal_to_float(
-                fee_summary
-                    .total_tipping_cost_in_xrd
-                    .checked_mul(fee_summary.total_cost())
-                    .unwrap()
-                    .checked_mul(100)
-                    .unwrap()
-            )
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "- Storage Cost (XRD)",
-            fee_summary.total_storage_cost_in_xrd.to_string(),
-            decimal_to_float(
-                fee_summary
-                    .total_storage_cost_in_xrd
-                    .checked_div(fee_summary.total_cost())
-                    .unwrap()
-                    .checked_mul(100)
-                    .unwrap()
-            )
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "- Tipping Cost (XRD)",
-            fee_summary.total_tipping_cost_in_xrd.to_string(),
-            decimal_to_float(
-                fee_summary
-                    .total_tipping_cost_in_xrd
-                    .checked_div(fee_summary.total_cost())
-                    .unwrap()
-                    .checked_mul(100)
-                    .unwrap()
-            )
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "- Royalty Cost (XRD)",
-            fee_summary.total_royalty_cost_in_xrd.to_string(),
-            decimal_to_float(
-                fee_summary
-                    .total_royalty_cost_in_xrd
-                    .checked_div(fee_summary.total_cost())
-                    .unwrap()
-                    .checked_mul(100)
-                    .unwrap()
-            )
-        )
-        .as_str(),
-    );
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "Execution Cost Breakdown",
-            fee_details.execution_cost_breakdown.values().sum::<u32>(),
-            100.0
-        )
-        .as_str(),
-    );
-    for (k, v) in &fee_details.execution_cost_breakdown {
-        buffer.push_str(
-            format!(
-                "- {:<73},{:>25}, {:8.1}%\n",
-                k,
-                v,
-                decimal_to_float(
-                    Decimal::from(*v)
-                        .checked_div(Decimal::from(
-                            fee_summary.total_execution_cost_units_consumed
-                        ))
-                        .unwrap()
-                        .checked_mul(100)
-                        .unwrap()
-                )
-            )
-            .as_str(),
-        );
-    }
-    buffer.push_str(
-        format!(
-            "{:<75},{:>25}, {:8.1}%\n",
-            "Finalization Cost Breakdown",
-            fee_details
-                .finalization_cost_breakdown
-                .values()
-                .sum::<u32>(),
-            100.0
-        )
-        .as_str(),
-    );
-    for (k, v) in &fee_details.finalization_cost_breakdown {
-        buffer.push_str(
-            format!(
-                "- {:<73},{:>25}, {:8.1}%\n",
-                k,
-                v,
-                decimal_to_float(
-                    Decimal::from(*v)
-                        .checked_div(Decimal::from(
-                            fee_summary.total_finalization_cost_units_consumed
-                        ))
-                        .unwrap()
-                        .checked_mul(100)
-                        .unwrap()
-                )
-            )
-            .as_str(),
-        );
-    }
-
-    let _ = std::fs::create_dir_all(folder);
-    let mut f = File::create(format!("{folder}/{file}")).unwrap();
-    f.write_all(buffer.as_bytes()).unwrap();
-}
-
-struct PostRunTask {
-    mode: PostRunMode,
-    folder: String,
-    file: String,
-}
-
-#[derive(Copy, Clone)]
-enum PostRunMode {
-    OutputCosting,
-    AssertCosting,
-}
-
-impl PostRunTask {
-    pub fn run(&self, fee_summary: &TransactionFeeSummary, fee_details: &TransactionFeeDetails) {
-        let Self {
-            folder, file, mode
-        } = self;
-        match mode {
-            PostRunMode::OutputCosting => {
-                write_cost_breakdown(fee_summary, fee_details, folder, file);
-            }
-            PostRunMode::AssertCosting => {
-                let expected = load_cost_breakdown(folder, file);
-                assert_eq!(&fee_details.execution_cost_breakdown, &expected.0);
-                assert_eq!(&fee_details.finalization_cost_breakdown, &expected.1);
-            }
-        }
-    }
-}
-
-fn run_basic_transfer(protocol_version: ProtocolVersion, task: PostRunTask) {
+fn run_basic_transfer(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until(protocol_version))
-        .without_kernel_trace()
-        .build();
     let (public_key1, _, account1) = ledger.new_allocated_account();
     let (_, _, account2) = ledger.new_allocated_account();
 
@@ -352,16 +96,11 @@ fn run_basic_transfer(protocol_version: ProtocolVersion, task: PostRunTask) {
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
     receipt.expect_commit(true);
-
-    task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
+    receipt
 }
 
-fn run_basic_transfer_to_virtual_account(protocol_version: ProtocolVersion, task: PostRunTask) {
+fn run_basic_transfer_to_virtual_account(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until(protocol_version))
-        .without_kernel_trace()
-        .build();
     let (public_key1, _, account1) = ledger.new_allocated_account();
     let account2 = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PublicKey([123u8; 33]),
@@ -380,16 +119,10 @@ fn run_basic_transfer_to_virtual_account(protocol_version: ProtocolVersion, task
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
     receipt.expect_commit(true);
-
-    task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
+    receipt
 }
 
-fn run_radiswap(protocol_version: ProtocolVersion, task: PostRunTask) {
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until(protocol_version))
-        .without_kernel_trace()
-        .build();
-
+fn run_radiswap(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     // Scrypto developer
     let (pk1, _, _) = ledger.new_allocated_account();
     // Radiswap operator
@@ -490,15 +223,10 @@ fn run_radiswap(protocol_version: ProtocolVersion, task: PostRunTask) {
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     receipt.expect_commit(true);
 
-    task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
+    receipt
 }
 
-fn run_flash_loan(protocol_version: ProtocolVersion, task: PostRunTask) {
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until(protocol_version))
-        .without_kernel_trace()
-        .build();
-
+fn run_flash_loan(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     // Scrypto developer
     let (pk1, _, _) = ledger.new_allocated_account();
     // Flash loan operator
@@ -581,16 +309,10 @@ fn run_flash_loan(protocol_version: ProtocolVersion, task: PostRunTask) {
             .checked_sub(loan_amount)
             .unwrap()
     );
-    task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
+    receipt
 }
 
-fn run_publish_large_package(protocol_version: ProtocolVersion, task: PostRunTask) {
-    // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until(protocol_version))
-        .without_kernel_trace()
-        .build();
-
+fn run_publish_large_package(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     // Act
     let code = wat2wasm(&format!(
         r#"
@@ -617,25 +339,23 @@ fn run_publish_large_package(protocol_version: ProtocolVersion, task: PostRunTas
 
     // Assert
     receipt.expect_commit_success();
-    task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
+    receipt
 }
 
-fn run_mint_small_size_nfts_from_manifest(protocol_version: ProtocolVersion, task: PostRunTask) {
+fn run_mint_small_size_nfts_from_manifest(ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     run_mint_nfts_from_manifest(
-        protocol_version,
-        task,
+        ledger,
         TestNonFungibleData {
             metadata: btreemap!(),
         },
     )
 }
 
-fn run_mint_large_size_nfts_from_manifest(protocol_version: ProtocolVersion, task: PostRunTask) {
+fn run_mint_large_size_nfts_from_manifest(ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     const N: usize = 50;
 
     run_mint_nfts_from_manifest(
-        protocol_version,
-        task,
+        ledger,
         TestNonFungibleData {
             metadata: btreemap!(
                 "Name".to_string() => "Type".repeat(N),
@@ -652,15 +372,10 @@ fn run_mint_large_size_nfts_from_manifest(protocol_version: ProtocolVersion, tas
 }
 
 fn run_mint_nfts_from_manifest(
-    protocol_version: ProtocolVersion,
-    task: PostRunTask,
+    mut ledger: DefaultLedgerSimulator,
     nft_data: TestNonFungibleData,
-) {
+) -> TransactionReceipt {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until(protocol_version))
-        .without_kernel_trace()
-        .build();
     let (_, _, account) = ledger.new_allocated_account();
 
     // Act
@@ -723,7 +438,7 @@ fn run_mint_nfts_from_manifest(
         scrypto_encode(&nft_data).unwrap().len()
     );
     println!("Managed to mint {} NFTs", n);
-    task.run(&receipt.fee_summary, &receipt.fee_details.unwrap());
+    receipt
 }
 
 #[test]
