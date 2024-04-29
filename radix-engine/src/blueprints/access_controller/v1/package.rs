@@ -12,7 +12,6 @@ impl AccessControllerV1NativePackage {
     pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        // Using the feature set from v1. They should be the same between v1 and v1.1.
         let feature_set = AccessControllerFeatureSet::all_features();
         let state = AccessControllerStateSchemaInit::create_schema_init(&mut aggregator);
 
