@@ -23,6 +23,7 @@
         "decompiler",
         "descendents",
         "eddsa",
+        "endregion",
         "flamegraph",
         "Formattable",
         "generification",

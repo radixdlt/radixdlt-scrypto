@@ -1,8 +1,12 @@
-mod blueprint;
-mod events;
-mod package;
-mod state_machine;
+// Versions
+pub mod v1;
+pub mod v2;
 
-pub use blueprint::*;
-pub use events::*;
-pub use package::*;
+pub use v2 as latest;
+
+// Common
+mod error;
+mod types;
+
+pub use error::*;
+pub use types::*;
