@@ -375,15 +375,15 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 .clone(),
         );
 
+        // Protocol Updates
+        self.protocol_executor
+            .commit_each_protocol_update(&mut substate_db);
+
         // Note that 0 is not a valid private key
         let next_private_key = 100;
 
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
-
-        // Protocol Updates
-        self.protocol_executor
-            .commit_each_protocol_update(&mut substate_db);
 
         let runner = LedgerSimulator {
             scrypto_vm,
