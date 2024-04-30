@@ -1,11 +1,9 @@
 // NOTE: This file is only conditionally included in std mode, so std imports are allowed
-use crate::internal_prelude::DefaultTransactionScenarioExecutor;
-use crate::internal_prelude::ALL_SCENARIOS;
-use crate::internal_prelude::*;
-
 #[cfg(test)]
 mod test {
-    use super::*;
+    use crate::executor::*;
+    use crate::internal_prelude::*;
+    use crate::scenarios::ALL_SCENARIOS;
     use fmt::Write;
     use itertools::Itertools;
     use radix_engine::utils::CostingTaskMode;

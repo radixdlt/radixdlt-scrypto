@@ -10,6 +10,8 @@ use scrypto::object_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
 use scrypto_test::prelude::*;
+
+#[cfg(not(feature = "alloc"))]
 use scrypto_test::utils::CostingTaskMode;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
