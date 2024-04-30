@@ -1,5 +1,6 @@
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
+use radix_engine::updates::*;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_impls::substate_database_overlay::*;
 use radix_substate_store_interface::db_key_mapper::*;
@@ -457,7 +458,7 @@ fn run_scenarios(
     let ledger_with_overlay = Rc::new(RefCell::new(
         LedgerSimulatorBuilder::new()
             .with_custom_database(overlay)
-            .with_custom_protocol(|builder| builder.until_genesis())
+            .with_protocol_version(ProtocolVersion::Genesis)
             .without_kernel_trace()
             .build(),
     ));
