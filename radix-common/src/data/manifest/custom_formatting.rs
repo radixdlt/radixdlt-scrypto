@@ -21,10 +21,10 @@ impl FormattableCustomExtension for ManifestCustomExtension {
                         if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
                             write!(f, "\"{}\"", bech32)?;
                         } else {
-                            write!(f, "\"{}\"", hex::encode(node_id.as_ref()))?;
+                            write!(f, "\"{}\"", hex::encode(node_id.as_bytes()))?;
                         }
                     } else {
-                        write!(f, "\"{}\"", hex::encode(node_id.as_ref()))?;
+                        write!(f, "\"{}\"", hex::encode(node_id.as_bytes()))?;
                     }
                 }
                 ManifestAddress::Named(address_id) => {

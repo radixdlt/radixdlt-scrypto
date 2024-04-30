@@ -85,6 +85,8 @@ pub struct SystemParameters {
     pub max_per_function_royalty_in_xrd: Decimal,
 }
 
+pub type SystemBootSubstate = SystemBoot;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),

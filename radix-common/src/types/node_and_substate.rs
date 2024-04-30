@@ -121,6 +121,12 @@ impl NodeId {
     }
 }
 
+impl AsRef<NodeId> for NodeId {
+    fn as_ref(&self) -> &NodeId {
+        self
+    }
+}
+
 impl AsRef<[u8]> for NodeId {
     fn as_ref(&self) -> &[u8] {
         &self.0

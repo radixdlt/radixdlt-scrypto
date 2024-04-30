@@ -467,7 +467,7 @@ fn run_scenarios(
         InMemorySubstateDatabase::standard(),
         &network_definition,
     )
-    .on_before_execute_protocol_update(|executor| {
+    .on_before_protocol_update_executed(|executor| {
         // We copy the protocol updates onto the ledger_with_overlay
         executor.clone()
             .run_and_commit(ledger_with_overlay.borrow_mut().substate_db_mut())

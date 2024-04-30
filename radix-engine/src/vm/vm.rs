@@ -72,7 +72,9 @@ impl VmApi for VmVersion {
     }
 }
 
-/// Boot Loader state for the VM Laye
+/// Boot Loader state for the VM Layer
+pub type VmBootSubstate = VmBoot;
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmBoot {
     V1 { scrypto_version: u64 },

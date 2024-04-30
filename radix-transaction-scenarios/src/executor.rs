@@ -45,6 +45,8 @@ where
     scrypto_vm: ScryptoVm<W>,
     /// The Native VM to use in executing the scenarios.
     native_vm_extension: E,
+    /// The execution config to use when executing scenario transactions
+    scenario_execution_config: ExecutionConfig,
 
     /* Execution */
     /// The first nonce to use in the execution of the scenarios.
@@ -59,8 +61,9 @@ where
     on_transaction_executed:
         Box<dyn FnMut(&ScenarioMetadata, &NextTransaction, &TransactionReceiptV1, &D) + 'a>,
     /// A callback that is called when a new scenario is started.
-    on_scenario_start: Box<dyn FnMut(&ScenarioMetadata) + 'a>,
-    on_before_execute_protocol_update: Box<dyn FnMut(&ProtocolUpdateExecutor) + 'a>,
+    on_scenario_started: Box<dyn FnMut(&ScenarioMetadata) + 'a>,
+    on_scenario_ended: Box<dyn FnMut(&ScenarioMetadata, &EndState, &D) + 'a>,
+    on_before_protocol_update_executed: Box<dyn FnMut(&ProtocolUpdateExecutor) + 'a>,
 
     /* Phantom */
     /// The lifetime of the callbacks used in the executor.
@@ -85,6 +88,9 @@ where
             database,
             scrypto_vm: ScryptoVm::default(),
             native_vm_extension: NoExtension,
+            scenario_execution_config: ExecutionConfig::for_notarized_transaction(
+                network_definition.clone(),
+            ),
             /* Execution */
             starting_nonce: 0,
             next_scenario_nonce_handling:
@@ -92,8 +98,9 @@ where
             network_definition: network_definition.clone(),
             /* Callbacks */
             on_transaction_executed: Box::new(|_, _, _, _| {}),
-            on_scenario_start: Box::new(|_| {}),
-            on_before_execute_protocol_update: Box::new(|_| {}),
+            on_scenario_started: Box::new(|_| {}),
+            on_scenario_ended: Box::new(|_, _, _| {}),
+            on_before_protocol_update_executed: Box::new(|_| {}),
             /* Phantom */
             callback_lifetime: Default::default(),
         }
@@ -109,14 +116,16 @@ where
             database: self.database,
             scrypto_vm,
             native_vm_extension: self.native_vm_extension,
+            scenario_execution_config: self.scenario_execution_config,
             /* Execution */
             starting_nonce: self.starting_nonce,
             next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
             on_transaction_executed: self.on_transaction_executed,
-            on_scenario_start: self.on_scenario_start,
-            on_before_execute_protocol_update: self.on_before_execute_protocol_update,
+            on_scenario_started: self.on_scenario_started,
+            on_scenario_ended: self.on_scenario_ended,
+            on_before_protocol_update_executed: self.on_before_protocol_update_executed,
             /* Phantom */
             callback_lifetime: self.callback_lifetime,
         }
@@ -132,17 +141,25 @@ where
             database: self.database,
             scrypto_vm: self.scrypto_vm,
             native_vm_extension,
+            scenario_execution_config: self.scenario_execution_config,
             /* Execution */
             starting_nonce: self.starting_nonce,
             next_scenario_nonce_handling: self.next_scenario_nonce_handling,
             network_definition: self.network_definition,
             /* Callbacks */
             on_transaction_executed: self.on_transaction_executed,
-            on_scenario_start: self.on_scenario_start,
-            on_before_execute_protocol_update: self.on_before_execute_protocol_update,
+            on_scenario_started: self.on_scenario_started,
+            on_scenario_ended: self.on_scenario_ended,
+            on_before_protocol_update_executed: self.on_before_protocol_update_executed,
             /* Phantom */
             callback_lifetime: self.callback_lifetime,
         }
+    }
+
+    /// Sets the starting nonce for executing scenarios.
+    pub fn scenario_execution_config(mut self, config: ExecutionConfig) -> Self {
+        self.scenario_execution_config = config;
+        self
     }
 
     /// Sets the starting nonce for executing scenarios.
@@ -168,18 +185,27 @@ where
         self
     }
 
-    /// A callback that is called when a new scenario is started.
-    pub fn on_scenario_start<F: FnMut(&ScenarioMetadata) + 'a>(mut self, callback: F) -> Self {
-        self.on_scenario_start = Box::new(callback);
+    /// A callback that is called when a scenario is started.
+    pub fn on_scenario_started<F: FnMut(&ScenarioMetadata) + 'a>(mut self, callback: F) -> Self {
+        self.on_scenario_started = Box::new(callback);
+        self
+    }
+
+    /// A callback that is called when a scenario is ended.
+    pub fn on_scenario_ended<F: FnMut(&ScenarioMetadata, &EndState, &D) + 'a>(
+        mut self,
+        callback: F,
+    ) -> Self {
+        self.on_scenario_ended = Box::new(callback);
         self
     }
 
     /// A callback that is called before a protocol update is executed.
-    pub fn on_before_execute_protocol_update<F: FnMut(&ProtocolUpdateExecutor) + 'a>(
+    pub fn on_before_protocol_update_executed<F: FnMut(&ProtocolUpdateExecutor) + 'a>(
         mut self,
         callback: F,
     ) -> Self {
-        self.on_before_execute_protocol_update = Box::new(callback);
+        self.on_before_protocol_update_executed = Box::new(callback);
         self
     }
 
@@ -223,7 +249,7 @@ where
                 false,
             )?;
             current_protocol_version = protocol_update_executor.protocol_update.into();
-            (self.on_before_execute_protocol_update)(&protocol_update_executor);
+            (self.on_before_protocol_update_executed)(&protocol_update_executor);
             protocol_update_executor.run_and_commit(&mut self.database);
         }
 
@@ -256,7 +282,7 @@ where
 
         let matching_scenarios = ALL_SCENARIOS.iter().filter(|(logical_name, creator)| {
             let metadata = creator.metadata();
-            let is_valid = metadata.protocol_min_requirement >= at_version;
+            let is_valid = at_version >= metadata.protocol_min_requirement;
             if !is_valid {
                 return false;
             }
@@ -301,7 +327,7 @@ where
         ));
         let metadata = scenario.metadata().clone();
 
-        (self.on_scenario_start)(&metadata);
+        (self.on_scenario_started)(&metadata);
         let mut previous = None;
         loop {
             let next = scenario
@@ -315,6 +341,7 @@ where
                     previous = Some(receipt);
                 }
                 NextAction::Completed(end_state) => {
+                    (self.on_scenario_ended)(&metadata, &end_state, &self.database);
                     match self.next_scenario_nonce_handling {
                         ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(increment) => {
                             self.starting_nonce += increment
@@ -345,7 +372,7 @@ where
         let receipt = execute_transaction(
             &self.database,
             VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
-            &ExecutionConfig::for_notarized_transaction(self.network_definition.clone()),
+            &self.scenario_execution_config,
             &validated.get_executable(),
         );
 

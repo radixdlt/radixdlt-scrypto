@@ -44,28 +44,6 @@ impl NextTransaction {
                 ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
             })
     }
-
-    #[cfg(feature = "std")]
-    pub fn dump_manifest(
-        &self,
-        dump_directory: &Option<std::path::PathBuf>,
-        network: &NetworkDefinition,
-    ) {
-        use radix_transactions::manifest::dumper::dump_manifest_to_file_system;
-
-        let Some(directory_path) = dump_directory else {
-            return;
-        };
-        let file_name = format!("{:03}--{}", self.stage_counter, self.logical_name);
-        dump_manifest_to_file_system(
-            self.naming.clone(),
-            &self.manifest,
-            directory_path,
-            Some(&file_name),
-            &network,
-        )
-        .unwrap()
-    }
 }
 
 pub(crate) trait Completeable: Sized {
@@ -311,6 +289,26 @@ pub enum DescribedAddress {
     Global(GlobalAddress),
     Internal(InternalAddress),
     NonFungible(NonFungibleGlobalId),
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for DescribedAddress {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        match self {
+            DescribedAddress::Global(address) => address
+                .contextual_format(f, context)
+                .map_err(|_| fmt::Error),
+            DescribedAddress::Internal(address) => address
+                .contextual_format(f, context)
+                .map_err(|_| fmt::Error),
+            DescribedAddress::NonFungible(global_id) => global_id.contextual_format(f, context),
+        }
+    }
 }
 
 impl From<&VirtualAccount> for DescribedAddress {

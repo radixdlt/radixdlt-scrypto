@@ -1,10 +1,12 @@
 use crate::internal_prelude::*;
+use crate::system::system_callback::BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY;
 use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
+use crate::vm::BOOT_LOADER_VM_SUBSTATE_FIELD_KEY;
 use radix_engine_interface::blueprints::package::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
 
@@ -26,10 +28,21 @@ pub struct SystemFieldStructure {
     pub field_kind: SystemFieldKind,
 }
 
+// NOTE: Adding BootLoader and BootLoader(BootLoaderFieldKind) are both changes to the
+//       TransactionReceiptV1 encoding, BUT we only require the encoding to be consistent
+//       for the toolkit which parses it opaquely at the moment when doing transaction preview
+//       in the wallet. This change doesn't apply because BootLoader substates are only edited
+//       during transaction preview.
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SystemFieldKind {
     TypeInfo,
-    BootLoader,
+    BootLoader(BootLoaderFieldKind),
+}
+
+#[derive(Clone, Debug, ScryptoSbor, PartialEq, Eq)]
+pub enum BootLoaderFieldKind {
+    VmBoot,
+    SystemBoot,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -215,7 +228,19 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
         match &partition_descriptors[0] {
             SystemPartitionDescriptor::BootLoader => {
                 SubstateSystemStructure::SystemField(SystemFieldStructure {
-                    field_kind: SystemFieldKind::BootLoader,
+                    field_kind: {
+                        let field_num = key
+                            .for_field()
+                            .expect("BootLoader substates are expected to be fields");
+                        let kind = match *field_num {
+                            BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY => {
+                                BootLoaderFieldKind::SystemBoot
+                            }
+                            BOOT_LOADER_VM_SUBSTATE_FIELD_KEY => BootLoaderFieldKind::VmBoot,
+                            field_num => panic!("Unknown boot loader field kind: {field_num}"),
+                        };
+                        SystemFieldKind::BootLoader(kind)
+                    },
                 })
             }
             SystemPartitionDescriptor::TypeInfo => {

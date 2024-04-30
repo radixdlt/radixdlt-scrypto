@@ -107,6 +107,15 @@ pub enum DatabaseUpdate {
     Delete,
 }
 
+impl DatabaseUpdate {
+    pub fn as_change(&self) -> SubstateChange<'_> {
+        match self {
+            DatabaseUpdate::Set(update) => SubstateChange::Upsert(update),
+            DatabaseUpdate::Delete => SubstateChange::Delete,
+        }
+    }
+}
+
 impl DatabaseUpdates {
     /// Constructs an instance from the given legacy representation (a map of maps), which is only
     /// capable of specifying "deltas" (i.e. individual substate changes; no partition deletes).
