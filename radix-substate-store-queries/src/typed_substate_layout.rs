@@ -6,7 +6,7 @@ use radix_engine_interface::prelude::*;
 
 // Import and re-export these types so they are available easily with a single import
 use radix_common::prelude::*;
-pub use radix_engine::blueprints::access_controller::*;
+pub use radix_engine::blueprints::access_controller::latest::*;
 pub use radix_engine::blueprints::account::{AccountBlueprint, AccountError, AccountNativePackage};
 use radix_engine::blueprints::account::{AccountTypedSubstateKey, AccountTypedSubstateValue};
 pub use radix_engine::blueprints::consensus_manager::*;
@@ -153,7 +153,7 @@ pub enum TypedMainModuleSubstateKey {
     NonFungibleVault(NonFungibleVaultTypedSubstateKey),
     ConsensusManager(ConsensusManagerTypedSubstateKey),
     ValidatorField(ValidatorTypedSubstateKey),
-    AccessController(AccessControllerTypedSubstateKey),
+    AccessController(AccessControllerV2TypedSubstateKey),
     Account(AccountTypedSubstateKey),
     OneResourcePool(OneResourcePoolTypedSubstateKey),
     TwoResourcePool(TwoResourcePoolTypedSubstateKey),
@@ -302,7 +302,7 @@ fn to_typed_object_substate_key_internal(
             ValidatorTypedSubstateKey::for_key_at_partition_offset(partition_offset, substate_key)?,
         ),
         EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessController(
-            AccessControllerTypedSubstateKey::for_key_in_partition(
+            AccessControllerV2TypedSubstateKey::for_key_in_partition(
                 &AccessControllerPartitionOffset::try_from(partition_offset)?,
                 substate_key,
             )?,
@@ -428,7 +428,7 @@ pub enum TypedMainModuleSubstateValue {
     NonFungibleVault(NonFungibleVaultTypedSubstateValue),
     ConsensusManager(ConsensusManagerTypedSubstateValue),
     Validator(ValidatorTypedSubstateValue),
-    AccessController(AccessControllerTypedSubstateValue),
+    AccessController(AccessControllerV2TypedSubstateValue),
     Account(AccountTypedSubstateValue),
     OneResourcePool(OneResourcePoolTypedSubstateValue),
     TwoResourcePool(TwoResourcePoolTypedSubstateValue),
@@ -562,7 +562,7 @@ fn to_typed_object_substate_value(
         ),
         TypedMainModuleSubstateKey::AccessController(key) => {
             TypedMainModuleSubstateValue::AccessController(
-                AccessControllerTypedSubstateValue::from_key_and_data(key, data)?,
+                AccessControllerV2TypedSubstateValue::from_key_and_data(key, data)?,
             )
         }
         TypedMainModuleSubstateKey::GenericScryptoComponentField(offset) => {

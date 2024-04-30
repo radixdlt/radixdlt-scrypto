@@ -383,6 +383,9 @@ extern_blueprint_internal! {
         fn cancel_primary_role_badge_withdraw_attempt(&mut self);
         fn cancel_recovery_role_badge_withdraw_attempt(&mut self);
         fn mint_recovery_badges(&mut self, non_fungible_local_ids: Vec<NonFungibleLocalId>) -> Bucket;
+        fn lock_recovery_fee(&mut self, amount: Decimal);
+        fn withdraw_recovery_fee(&mut self, amount: Decimal) -> Bucket;
+        fn contribute_recovery_fee(&mut self, bucket: Bucket);
     }
 }
 

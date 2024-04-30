@@ -33,7 +33,7 @@ pub struct AccessControllerCreateManifestInput {
     pub address_reservation: Option<ManifestAddressReservation>,
 }
 
-pub type AccessControllerCreateGlobalOutput = Global<AccessControllerMarker>;
+pub type AccessControllerCreateOutput = Global<AccessControllerMarker>;
 
 //================================
 // Access Controller Create Proof
@@ -264,3 +264,51 @@ pub struct AccessControllerMintRecoveryBadgesInput {
 }
 
 pub type AccessControllerMintRecoveryBadgesOutput = Bucket;
+
+// region:bottlenose
+
+//==================
+// Lock Recovery Fee
+//==================
+
+pub const ACCESS_CONTROLLER_LOCK_RECOVERY_FEE_IDENT: &str = "lock_recovery_fee";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerLockRecoveryFeeInput {
+    pub amount: Decimal,
+}
+
+pub type AccessControllerLockRecoveryFeeOutput = ();
+
+//========================
+// Withdraw Recovery Fee
+//=======================
+
+pub const ACCESS_CONTROLLER_WITHDRAW_RECOVERY_FEE_IDENT: &str = "withdraw_recovery_fee";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccessControllerWithdrawRecoveryFeeInput {
+    pub amount: Decimal,
+}
+
+pub type AccessControllerWithdrawRecoveryFeeOutput = Bucket;
+
+//=========================
+// Contribute Recovery Fee
+//=========================
+
+pub const ACCESS_CONTROLLER_CONTRIBUTE_RECOVERY_FEE_IDENT: &str = "contribute_recovery_fee";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct AccessControllerContributeRecoveryFeeInput {
+    pub bucket: Bucket,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct AccessControllerContributeRecoveryFeeManifestInput {
+    pub bucket: ManifestBucket,
+}
+
+pub type AccessControllerContributeRecoveryFeeOutput = ();
+
+// endregion:bottlenose

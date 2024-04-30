@@ -31,6 +31,9 @@ pub enum ProtocolUpdateEntry {
     /// Makes some behavioral changes to the try_deposit_or_refund (and batch variants too) method
     /// on the account blueprint.
     AccountTryDepositOrRefundBehaviorChanges,
+
+    /// Adds an XRD vault to the access controller for locking fees.
+    AccessControllerFeeVault,
 }
 
 impl ProtocolUpdateEntry {
@@ -61,6 +64,9 @@ impl ProtocolUpdateEntry {
             ProtocolUpdateEntry::SystemPatches => StateUpdates::default(),
             ProtocolUpdateEntry::ProtocolParamsToState => {
                 generate_protocol_params_to_state_state_updates(network.clone())
+            }
+            ProtocolUpdateEntry::AccessControllerFeeVault => {
+                generate_access_controller_state_updates(db)
             }
         }
     }
@@ -132,6 +138,7 @@ impl ProtocolUpdate {
                 ProtocolUpdateEntry::LockerPackage,
                 ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges,
                 ProtocolUpdateEntry::ProtocolParamsToState,
+                ProtocolUpdateEntry::AccessControllerFeeVault,
             ],
         }
         .iter()
