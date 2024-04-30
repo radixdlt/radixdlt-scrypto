@@ -690,6 +690,28 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
             MaybeAnsi::Normal(string)
         }
     }
+
+    fn display_log(&self, level: &Level, message: &str) -> (MaybeAnsi, MaybeAnsi) {
+        let (level, format): (_, fn(&str) -> ColoredString) = match level {
+            Level::Error => ("ERROR", |x| x.red()),
+            Level::Warn => ("WARN", |x| x.yellow()),
+            Level::Info => ("INFO", |x| x.green()),
+            Level::Debug => ("DEBUG", |x| x.cyan()),
+            Level::Trace => ("TRACE", |x| x.normal()),
+        };
+
+        if self.use_ansi_colors {
+            (
+                MaybeAnsi::Ansi(format(level)),
+                MaybeAnsi::Ansi(format(message)),
+            )
+        } else {
+            (
+                MaybeAnsi::Normal(level.to_string()),
+                MaybeAnsi::Normal(message.to_string()),
+            )
+        }
+    }
 }
 
 enum MaybeAnsi {
@@ -815,14 +837,14 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         if let TransactionResult::Commit(c) = &result {
             context.format_top_level_title_with_detail(f, "Logs", c.application_logs.len())?;
             for (i, (level, msg)) in c.application_logs.iter().enumerate() {
-                let (l, m) = match level {
-                    Level::Error => ("ERROR".red(), msg.red()),
-                    Level::Warn => ("WARN".yellow(), msg.yellow()),
-                    Level::Info => ("INFO".green(), msg.green()),
-                    Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-                    Level::Trace => ("TRACE".normal(), msg.normal()),
-                };
-                write!(f, "\n{} [{:5}] {}", prefix!(i, c.application_logs), l, m)?;
+                let (level, msg) = context.display_log(level, msg);
+                write!(
+                    f,
+                    "\n{} [{:5}] {}",
+                    prefix!(i, c.application_logs),
+                    level,
+                    msg
+                )?;
             }
 
             context.format_top_level_title_with_detail(f, "Events", c.application_events.len())?;
@@ -839,7 +861,8 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             }
 
             if context.display_state_updates {
-                // The state updates are bizarrely full of lots of empty bits.
+                // The state updates are bizarrely full of lots of partitions with empty updates,
+                // so we remove them to avoid polluting the output.
                 let state_updates = c.state_updates.rebuild_without_empty_entries();
                 context.format_top_level_title_with_detail(
                     f,
