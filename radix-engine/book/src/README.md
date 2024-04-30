@@ -3,7 +3,7 @@
 Radix Engine is a deterministic, transaction-based state machine that updates ledger state by
 incrementally executing transactions.
 
-Radix Engine is Object-Oriented, enforces ownership/move semantics, and introduces easy pluggability
+Radix Engine is Object-Oriented, enforces move/ownership semantics, and introduces easy pluggability
 of stateful modules within the system.
 
 # Why?
