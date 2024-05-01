@@ -196,7 +196,7 @@ fn typed_native_event_type_contains_all_native_events() {
         "ConsensusManager" => CONSENSUS_MANAGER_PACKAGE_DEFINITION.deref(),
         "Account" => ACCOUNT_PACKAGE_DEFINITION.deref(),
         "Identity" => IDENTITY_PACKAGE_DEFINITION.deref(),
-        "AccessController" => ACCESS_CONTROLLER_PACKAGE_DEFINITION.deref(),
+        "AccessController" => ACCESS_CONTROLLER_PACKAGE_DEFINITION_V2_0.deref(),
         "Pool" => POOL_PACKAGE_DEFINITION_V1_0.deref(),
         "TransactionTracker" => TRANSACTION_TRACKER_PACKAGE_DEFINITION.deref(),
         "Resource" => RESOURCE_PACKAGE_DEFINITION.deref(),
@@ -237,4 +237,35 @@ fn typed_native_event_type_contains_all_native_events() {
             )
         }
     }
+}
+
+#[test]
+fn access_controller_state_v1_can_be_decoded_as_v2() {
+    // Arrange
+    use radix_engine::blueprints::access_controller::v1;
+    use radix_engine::blueprints::access_controller::v2;
+
+    let value = v1::AccessControllerStateFieldSubstate::V1(FieldSubstateV1 {
+        payload: v1::AccessControllerStateFieldPayload::of(
+            v1::VersionedAccessControllerState::new(v1::AccessControllerStateVersions::V1(
+                v1::AccessControllerV1Substate {
+                    controlled_asset: Vault(Own(NodeId(
+                        [EntityType::InternalFungibleVault as u8; 30],
+                    ))),
+                    recovery_badge: ACCOUNT_OWNER_BADGE,
+                    state: Default::default(),
+                    timed_recovery_delay_in_minutes: Default::default(),
+                },
+            )),
+        ),
+        lock_status: LockStatus::Locked,
+    });
+
+    // Act
+    let decoded = scrypto_decode::<v2::AccessControllerV2StateFieldSubstate>(
+        &scrypto_encode(&value).unwrap(),
+    );
+
+    // Assert
+    let _ = decoded.expect("Must succeed!");
 }

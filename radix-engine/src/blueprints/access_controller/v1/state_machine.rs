@@ -1,3 +1,4 @@
+use super::internal_prelude::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use radix_common::time::TimeComparisonOperator;
@@ -10,13 +11,6 @@ use radix_native_sdk::resource::NativeNonFungibleVault;
 use radix_native_sdk::resource::NativeVault;
 use radix_native_sdk::runtime::Runtime;
 use sbor::rust::boxed::Box;
-
-use super::PrimaryRoleBadgeWithdrawAttemptState;
-use super::RecoveryRoleBadgeWithdrawAttemptState;
-use super::{
-    AccessControllerError, AccessControllerSubstate, PrimaryRoleLockingState,
-    PrimaryRoleRecoveryAttemptState, RecoveryRoleRecoveryAttemptState, RecoveryRoleRecoveryState,
-};
 
 /// A trait which defines the interface for an access controller transition for a given trigger or
 /// input and the expected output.
@@ -52,7 +46,7 @@ macro_rules! access_controller_runtime_error {
 
 pub(super) struct AccessControllerCreateProofStateMachineInput;
 
-impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControllerSubstate {
+impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControllerV1Substate {
     type Output = Proof;
 
     fn transition<Y>(
@@ -90,7 +84,7 @@ pub(super) struct AccessControllerInitiateRecoveryAsPrimaryStateMachineInput {
 }
 
 impl TransitionMut<AccessControllerInitiateRecoveryAsPrimaryStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -132,7 +126,7 @@ pub(super) struct AccessControllerInitiateRecoveryAsRecoveryStateMachineInput {
 }
 
 impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -189,7 +183,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
 pub(super) struct AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMachineInput;
 
 impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -228,7 +222,7 @@ impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMac
 pub(super) struct AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMachineInput;
 
 impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -267,7 +261,7 @@ pub(super) struct AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateMa
 }
 
 impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = RecoveryProposal;
 
@@ -306,7 +300,7 @@ pub(super) struct AccessControllerQuickConfirmRecoveryRoleRecoveryProposalStateM
 }
 
 impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = RecoveryProposal;
 
@@ -352,7 +346,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalState
 pub(super) struct AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput;
 
 impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = Bucket;
 
@@ -384,7 +378,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptSt
 pub(super) struct AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput;
 
 impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = Bucket;
 
@@ -418,7 +412,7 @@ pub(super) struct AccessControllerTimedConfirmRecoveryStateMachineInput {
 }
 
 impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = RecoveryProposal;
 
@@ -453,7 +447,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
 
                 let recovery_time_has_elapsed = Runtime::compare_against_current_time(
                     api,
-                    timed_recovery_allowed_after.clone(),
+                    *timed_recovery_allowed_after,
                     TimePrecision::Minute,
                     TimeComparisonOperator::Gte,
                 )?;
@@ -476,7 +470,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
 pub(super) struct AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput;
 
 impl TransitionMut<AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -510,7 +504,7 @@ impl TransitionMut<AccessControllerCancelPrimaryRoleRecoveryProposalStateMachine
 pub(super) struct AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput;
 
 impl TransitionMut<AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -544,7 +538,7 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleRecoveryProposalStateMachin
 pub(super) struct AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMachineInput;
 
 impl TransitionMut<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -578,7 +572,7 @@ impl TransitionMut<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMac
 pub(super) struct AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMachineInput;
 
 impl TransitionMut<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -611,7 +605,9 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMa
 
 pub(super) struct AccessControllerLockPrimaryRoleStateMachineInput;
 
-impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput> for AccessControllerSubstate {
+impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput>
+    for AccessControllerV1Substate
+{
     type Output = ();
 
     fn transition_mut<Y>(
@@ -636,7 +632,7 @@ impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput> for AccessC
 pub(super) struct AccessControllerUnlockPrimaryRoleStateMachineInput;
 
 impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -664,7 +660,7 @@ pub(super) struct AccessControllerStopTimedRecoveryStateMachineInput {
 }
 
 impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
-    for AccessControllerSubstate
+    for AccessControllerV1Substate
 {
     type Output = ();
 
@@ -689,7 +685,7 @@ impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
                 _,
             ) => {
                 // Ensure that the caller has passed in the expected proposal
-                validate_recovery_proposal(&proposal, &input.proposal)?;
+                validate_recovery_proposal(proposal, &input.proposal)?;
 
                 // Transition from timed recovery to untimed recovery
                 self.state.3 = RecoveryRoleRecoveryAttemptState::RecoveryAttempt(

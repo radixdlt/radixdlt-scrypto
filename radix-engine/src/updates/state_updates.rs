@@ -1,3 +1,5 @@
+use crate::blueprints::access_controller::v1::*;
+use crate::blueprints::access_controller::v2::*;
 use crate::blueprints::consensus_manager::*;
 use crate::blueprints::locker::LockerNativePackage;
 use crate::blueprints::models::KeyValueEntryContentSource;
@@ -20,6 +22,7 @@ use radix_common::prelude::ScopedTypeId;
 use radix_common::prelude::{scrypto_encode, ScryptoCustomTypeKind};
 use radix_common::types::SubstateKey;
 use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
@@ -861,6 +864,235 @@ pub fn generate_protocol_params_to_state_state_updates(
                 }
             }
         ),
+    }
+}
+
+pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
+    let node_id = ACCESS_CONTROLLER_PACKAGE.into_node_id();
+    let blueprint_version_key = BlueprintVersionKey {
+        blueprint: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
+        version: Default::default(),
+    };
+    let old_blueprint_definition = AccessControllerV1NativePackage::definition()
+        .blueprints
+        .swap_remove(ACCESS_CONTROLLER_BLUEPRINT)
+        .unwrap();
+    let new_blueprint_definition = AccessControllerV2NativePackage::definition()
+        .blueprints
+        .swap_remove(ACCESS_CONTROLLER_BLUEPRINT)
+        .unwrap();
+
+    let old_schema_hash = old_blueprint_definition
+        .schema
+        .schema
+        .generate_schema_hash();
+    let new_schema_hash = new_blueprint_definition
+        .schema
+        .schema
+        .generate_schema_hash();
+    let new_schema_substate = new_blueprint_definition
+        .schema
+        .schema
+        .clone()
+        .into_locked_substate();
+
+    // Creating the original code substates for extension.
+    let old_code_hash = CodeHash::from_hash(hash(
+        (NativeCodeId::AccessControllerCode1 as u64)
+            .to_be_bytes()
+            .to_vec(),
+    ));
+    let (new_code_hash, (new_code_substate, new_vm_type_substate)) = {
+        let original_code = (NativeCodeId::AccessControllerCode2 as u64)
+            .to_be_bytes()
+            .to_vec();
+
+        let code_hash = CodeHash::from_hash(hash(&original_code));
+        let code_substate = PackageCodeOriginalCodeV1 {
+            code: original_code,
+        }
+        .into_versioned()
+        .into_locked_substate();
+        let vm_type_substate = PackageCodeVmTypeV1 {
+            vm_type: VmType::Native,
+        }
+        .into_locked_substate();
+
+        (code_hash, (code_substate, vm_type_substate))
+    };
+
+    let new_blueprint_auth_config = new_blueprint_definition.auth_config.into_locked_substate();
+
+    let blueprint_definition_substate = {
+        let mut blueprint_definition = reader
+            .read_object_collection_entry::<_, VersionedPackageBlueprintVersionDefinition>(
+                &node_id,
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                    &blueprint_version_key,
+                ),
+            )
+            .unwrap()
+            .unwrap()
+            .fully_update_and_into_latest_version();
+
+        blueprint_definition.interface.state = IndexedStateSchema::from_schema(
+            new_blueprint_definition
+                .schema
+                .schema
+                .generate_schema_hash(),
+            new_blueprint_definition.schema.state,
+            Default::default(),
+        );
+
+        blueprint_definition.interface.functions = new_blueprint_definition
+            .schema
+            .functions
+            .clone()
+            .functions
+            .into_iter()
+            .map(|(ident, func)| {
+                (
+                    ident,
+                    FunctionSchema {
+                        receiver: func.receiver,
+                        input: BlueprintPayloadDef::Static(ScopedTypeId(
+                            new_schema_hash,
+                            func.input.assert_static(),
+                        )),
+                        output: BlueprintPayloadDef::Static(ScopedTypeId(
+                            new_schema_hash,
+                            func.output.assert_static(),
+                        )),
+                    },
+                )
+            })
+            .collect();
+
+        blueprint_definition.function_exports = new_blueprint_definition
+            .schema
+            .functions
+            .clone()
+            .functions
+            .into_iter()
+            .map(|(ident, func)| {
+                (
+                    ident,
+                    PackageExport {
+                        code_hash: new_code_hash,
+                        export_name: func.export,
+                    },
+                )
+            })
+            .collect();
+
+        blueprint_definition.interface.events = new_blueprint_definition
+            .schema
+            .events
+            .clone()
+            .event_schema
+            .into_iter()
+            .map(|(ident, type_ref)| {
+                (
+                    ident,
+                    BlueprintPayloadDef::Static(ScopedTypeId(
+                        new_schema_hash,
+                        type_ref.assert_static(),
+                    )),
+                )
+            })
+            .collect();
+
+        blueprint_definition.into_locked_substate()
+    };
+
+    let original_code_partition_number = reader
+        .get_partition_of_collection(
+            &node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeOriginalCodeKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let code_vm_type_partition_number = reader
+        .get_partition_of_collection(
+            &node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeVmTypeKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let blueprint_definition_partition_number = reader
+        .get_partition_of_collection(
+            &node_id,
+            ObjectModuleId::Main,
+            PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let blueprint_auth_configs = reader
+        .get_partition_of_collection(
+            &node_id,
+            ObjectModuleId::Main,
+            PackageCollection::BlueprintVersionAuthConfigKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let schema_partition_num = reader
+        .get_partition_of_collection(
+            &node_id,
+            ObjectModuleId::Main,
+            PackageCollection::SchemaKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    StateUpdates {
+        by_node: indexmap! {
+            node_id => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    blueprint_definition_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&blueprint_version_key)) => DatabaseUpdate::Set(
+                                scrypto_encode!(&blueprint_definition_substate)
+                            )
+                        }
+                    },
+                    blueprint_auth_configs => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&blueprint_version_key)) => DatabaseUpdate::Set(
+                                scrypto_encode!(&new_blueprint_auth_config)
+                            )
+                        }
+                    },
+                    original_code_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&old_code_hash))
+                                => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode!(&new_code_hash))
+                                => DatabaseUpdate::Set(scrypto_encode!(&new_code_substate)),
+                        }
+                    },
+                    code_vm_type_partition_number => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&old_code_hash))
+                                => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode!(&new_code_hash))
+                                => DatabaseUpdate::Set(scrypto_encode!(&new_vm_type_substate)),
+                        }
+                    },
+                    schema_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode!(&old_schema_hash))
+                                => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode!(&new_schema_hash))
+                                => DatabaseUpdate::Set(scrypto_encode!(&new_schema_substate))
+                        }
+                    }
+                }
+            }
+        },
     }
 }
 

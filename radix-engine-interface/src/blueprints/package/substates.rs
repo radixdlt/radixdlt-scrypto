@@ -52,6 +52,11 @@ pub enum NativeCodeId {
     AccessControllerCode1 = 6u64,
 
     /// * Introduced: Babylon
+    /// * Coverage  : All access controller blueprints
+    /// * Changes   : Introduce fee vault
+    AccessControllerCode2 = 23u64,
+
+    /// * Introduced: Babylon
     /// * Coverage  : All pool blueprints
     /// * Changes   : N/A
     PoolCode1 = 13u64,

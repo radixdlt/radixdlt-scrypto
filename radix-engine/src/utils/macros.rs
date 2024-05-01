@@ -53,6 +53,7 @@ macro_rules! function_schema {
 #[macro_export]
 macro_rules! dispatch {
     (
+        $export_name_const_suffix: ident,
         $export_name: expr,
         $input: expr,
         $api: expr,
@@ -64,7 +65,7 @@ macro_rules! dispatch {
         paste::paste! {
             match $export_name {
                 $(
-                    [< $blueprint_ident:snake:upper _ $function_ident:snake:upper _EXPORT_NAME >] => {
+                    [< $blueprint_ident:snake:upper _ $function_ident:snake:upper _ $export_name_const_suffix >] => {
                         let input: [< $blueprint_ident:camel $function_ident:camel Input >] = $input.as_typed().map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                         })?;
@@ -130,7 +131,7 @@ macro_rules! roles_template {
 
         let mut roles: IndexMap<radix_engine_interface::blueprints::resource::RoleKey, radix_engine_interface::blueprints::resource::RoleList> = index_map_new();
         $(
-            crate::add_role!(roles, $role $( => updaters: $updaters)?);
+            $crate::add_role!(roles, $role $( => updaters: $updaters)?);
         )*
 
         radix_engine_interface::blueprints::package::StaticRoleDefinition {
