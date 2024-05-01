@@ -258,8 +258,19 @@ impl RoleAssignmentNativePackage {
         }
     }
 
-    pub fn is_reserved_role_key(role_key: &RoleKey) -> bool {
+    /// Checks if a role key is a reserved.
+    ///
+    /// The system has reserved all role keys starting with `_`.
+    pub fn is_role_key_reserved(role_key: &RoleKey) -> bool {
         return role_key.key.starts_with("_");
+    }
+
+    /// Checks if a role key is a reserved and has been defined.
+    ///
+    /// Currently there are only two such roles, i.e. `OWNER_ROLE` and `SELF_ROLE`, which can be referenced in role list.
+    pub fn is_role_key_reserved_and_defined(role_key: &RoleKey) -> bool {
+        Self::is_role_key_reserved(role_key)
+            && (role_key.key.eq(OWNER_ROLE) || role_key.key.eq(SELF_ROLE))
     }
 
     pub fn verify_access_rule(access_rule: &AccessRule) -> Result<(), RoleAssignmentError> {
@@ -327,7 +338,7 @@ impl RoleAssignmentNativePackage {
         role_key: &RoleKey,
         api: &mut SystemService<Y, V>,
     ) -> Result<RoleList, RuntimeError> {
-        if Self::is_reserved_role_key(&role_key) || module.eq(&ModuleId::RoleAssignment) {
+        if Self::is_role_key_reserved(&role_key) || module.eq(&ModuleId::RoleAssignment) {
             return Ok(RoleList::none());
         }
 
@@ -391,7 +402,7 @@ impl RoleAssignmentNativePackage {
             }
 
             for (role_key, role_def) in roles.data {
-                if Self::is_reserved_role_key(&role_key) {
+                if Self::is_role_key_reserved(&role_key) {
                     return Err(RoleAssignmentError::UsedReservedRole(
                         role_key.key.to_string(),
                     ));
@@ -516,7 +527,7 @@ impl RoleAssignmentNativePackage {
                 ApplicationError::RoleAssignmentError(RoleAssignmentError::UsedReservedSpace),
             ));
         }
-        if Self::is_reserved_role_key(&role_key) {
+        if Self::is_role_key_reserved(&role_key) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::RoleAssignmentError(RoleAssignmentError::UsedReservedRole(
                     role_key.key.to_string(),

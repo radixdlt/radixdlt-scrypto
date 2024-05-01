@@ -34,6 +34,10 @@ pub enum ProtocolUpdateEntry {
 
     /// Add deferred reference check costs.
     RefCheckCosts,
+
+    /// Add restrictions to use of role key in role list.
+    RestrictReservedRoleKey,
+
     /// Adds an XRD vault to the access controller for locking fees.
     AccessControllerFeeVault,
 }
@@ -69,6 +73,9 @@ impl ProtocolUpdateEntry {
                 generate_transaction_processor_blob_limits_state_updates(db)
             }
             ProtocolUpdateEntry::RefCheckCosts => generate_ref_check_costs_state_updates(),
+            ProtocolUpdateEntry::RestrictReservedRoleKey => {
+                generate_restrict_reserved_role_key_state_updates(db)
+            }
             ProtocolUpdateEntry::AccessControllerFeeVault => {
                 generate_access_controller_state_updates(db)
             }
@@ -143,6 +150,7 @@ impl ProtocolUpdate {
                 ProtocolUpdateEntry::ProtocolParamsToState,
                 ProtocolUpdateEntry::TransactionProcessorBlobLimits,
                 ProtocolUpdateEntry::RefCheckCosts,
+                ProtocolUpdateEntry::RestrictReservedRoleKey,
                 ProtocolUpdateEntry::AccessControllerFeeVault,
             ],
         }

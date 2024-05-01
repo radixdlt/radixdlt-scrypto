@@ -122,12 +122,20 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                 )?;
 
                 match code_id {
-                    NativeCodeId::PackageCode1 => {
-                        PackageNativePackage::invoke_export(export_name, input, api, vm_api)
-                    }
-                    NativeCodeId::PackageCode2 => {
-                        todo!("coming soon")
-                    }
+                    NativeCodeId::PackageCode1 => PackageNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        PackageV1MinorVersion::Zero,
+                        api,
+                        vm_api,
+                    ),
+                    NativeCodeId::PackageCode2 => PackageNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        PackageV1MinorVersion::One,
+                        api,
+                        vm_api,
+                    ),
                     NativeCodeId::ResourceCode1 => {
                         ResourceNativePackage::invoke_export(export_name, input, api)
                     }

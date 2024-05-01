@@ -691,6 +691,7 @@ pub fn generate_locker_package_state_updates() -> StateUpdates {
         VmType::Native,
         (NativeCodeId::LockerCode1 as u64).to_be_bytes().to_vec(),
         Default::default(),
+        false,
         &VmBoot::latest(),
     )
     .unwrap_or_else(|err| {
@@ -1092,5 +1093,116 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase>(db: &S) -> 
                 }
             }
         },
+    }
+}
+
+/// Generates the state updates required for restricting reserved role key.
+pub fn generate_restrict_reserved_role_key_state_updates<S: SubstateDatabase>(
+    db: &S,
+) -> StateUpdates {
+    let reader = SystemDatabaseReader::new(db);
+    let tx_processor_pkg_node_id = PACKAGE_PACKAGE.into_node_id();
+    let bp_version_key = BlueprintVersionKey {
+        blueprint: PACKAGE_BLUEPRINT.to_string(),
+        version: BlueprintVersion::default(),
+    };
+
+    // Generate the new code substates
+    let (new_code_substate, new_vm_type_substate, old_code_hash, new_code_hash) = {
+        let old_code = (NativeCodeId::PackageCode1 as u64).to_be_bytes().to_vec();
+        let old_code_hash = CodeHash::from_hash(hash(&old_code));
+
+        let new_code = (NativeCodeId::PackageCode2 as u64).to_be_bytes().to_vec();
+        let new_code_hash = CodeHash::from_hash(hash(&new_code));
+
+        let versioned_code = PackageCodeOriginalCodeV1 { code: new_code }.into_versioned();
+        let code_payload = versioned_code.into_payload();
+        let code_substate = code_payload.into_locked_substate();
+        let vm_type_substate = PackageCodeVmTypeV1 {
+            vm_type: VmType::Native,
+        }
+        .into_versioned()
+        .into_locked_substate();
+        (
+            scrypto_encode(&code_substate).unwrap(),
+            scrypto_encode(&vm_type_substate).unwrap(),
+            old_code_hash,
+            new_code_hash,
+        )
+    };
+
+    // Generate the blueprint definition substate updates
+    let updated_bp_definition_substate = {
+        let versioned_definition: VersionedPackageBlueprintVersionDefinition = reader
+            .read_object_collection_entry(
+                &tx_processor_pkg_node_id,
+                ObjectModuleId::Main,
+                ObjectCollectionKey::KeyValue(
+                    PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+                    &bp_version_key,
+                ),
+            )
+            .unwrap()
+            .unwrap();
+
+        let mut definition = versioned_definition.fully_update_and_into_latest_version();
+
+        for (_, export) in definition.function_exports.iter_mut() {
+            export.code_hash = new_code_hash
+        }
+
+        scrypto_encode(&definition.into_versioned().into_locked_substate()).unwrap()
+    };
+
+    let bp_definition_partition_num = reader
+        .get_partition_of_collection(
+            &tx_processor_pkg_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let vm_type_partition_num = reader
+        .get_partition_of_collection(
+            &tx_processor_pkg_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeVmTypeKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    let original_code_partition_num = reader
+        .get_partition_of_collection(
+            &tx_processor_pkg_node_id,
+            ObjectModuleId::Main,
+            PackageCollection::CodeOriginalCodeKeyValue.collection_index(),
+        )
+        .unwrap();
+
+    StateUpdates {
+        by_node: indexmap!(
+            tx_processor_pkg_node_id => NodeStateUpdates::Delta {
+                by_partition: indexmap! {
+                    bp_definition_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()) => DatabaseUpdate::Set(
+                                updated_bp_definition_substate
+                            )
+                        }
+                    },
+                    vm_type_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap()) => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap()) => DatabaseUpdate::Set(new_vm_type_substate)
+                        }
+                    },
+                    original_code_partition_num => PartitionStateUpdates::Delta {
+                        by_substate: indexmap! {
+                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap()) => DatabaseUpdate::Delete,
+                            SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap()) => DatabaseUpdate::Set(new_code_substate)
+                        }
+                    },
+                }
+            }
+        ),
     }
 }
