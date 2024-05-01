@@ -34,6 +34,8 @@ pub enum ProtocolUpdateEntry {
 
     /// Add deferred reference check costs.
     RefCheckCosts,
+    /// Adds an XRD vault to the access controller for locking fees.
+    AccessControllerFeeVault,
 }
 
 impl ProtocolUpdateEntry {
@@ -67,6 +69,9 @@ impl ProtocolUpdateEntry {
                 generate_transaction_processor_blob_limits_state_updates(db)
             }
             ProtocolUpdateEntry::RefCheckCosts => generate_ref_check_costs_state_updates(),
+            ProtocolUpdateEntry::AccessControllerFeeVault => {
+                generate_access_controller_state_updates(db)
+            }
         }
     }
 }
@@ -138,10 +143,11 @@ impl ProtocolUpdate {
                 ProtocolUpdateEntry::ProtocolParamsToState,
                 ProtocolUpdateEntry::TransactionProcessorBlobLimits,
                 ProtocolUpdateEntry::RefCheckCosts,
+                ProtocolUpdateEntry::AccessControllerFeeVault,
             ],
         }
         .iter()
-        .map(|update| update.generate_state_updates(db, network))
+        .map(|x| x.generate_state_updates(db, network))
         .collect()
     }
 }

@@ -4,6 +4,7 @@
 
 use crate::typed_substate_layout::*;
 use radix_common::prelude::*;
+use radix_engine::blueprints::access_controller::latest::*;
 use radix_engine::blueprints::account;
 use radix_engine::blueprints::locker::*;
 use radix_engine::blueprints::native_schema::*;
@@ -72,7 +73,7 @@ fn resolve_typed_event_key_from_event_type_identifier(
             )
             .map(TypedNativeEventKey::from),
             ACCESS_CONTROLLER_PACKAGE => TypedAccessControllerPackageEventKey::new(
-                &ACCESS_CONTROLLER_PACKAGE_DEFINITION,
+                &ACCESS_CONTROLLER_PACKAGE_DEFINITION_V1_0,
                 &blueprint_id.blueprint_name,
                 &event_name,
             )
@@ -191,6 +192,7 @@ define_structure! {
     /* Native Packages */
     AccessController => {
         AccessController => [
+            // Original Events
             InitiateRecoveryEvent,
             InitiateBadgeWithdrawAttemptEvent,
             RuleSetUpdateEvent,
@@ -200,6 +202,9 @@ define_structure! {
             LockPrimaryRoleEvent,
             UnlockPrimaryRoleEvent,
             StopTimedRecoveryEvent,
+            // Bottlenose Events
+            DepositRecoveryXrdEvent,
+            WithdrawRecoveryXrdEvent,
         ],
     },
     Account => {

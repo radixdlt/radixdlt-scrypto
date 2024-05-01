@@ -140,7 +140,7 @@ mod test {
     #[test]
     pub fn check_state_and_event_hashes_for_up_to_bottlenose_scenarios() {
         assert_event_and_state_hashes(
-            "581006fd987efb9a2ad4b9f5a2866766b18b9120ac055a771affbaedf317716c",
+            "e5d61b8aec9aa39dbbcbba545810dd55331cc0c71a00bb8f5dd043aae29a9fa8",
             "c538d340736218e886cf83694546b0329997092202acbadf60fcd89d7be4138e",
             ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
                 ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose),
