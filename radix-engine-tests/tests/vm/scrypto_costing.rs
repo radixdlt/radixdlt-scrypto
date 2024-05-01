@@ -45,6 +45,8 @@ fn usd_price_costing_after_protocol_update() {
     let receipt = ledger.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
 
+    println!("DONE");
+
     // Store execution cost
     let cost_before_update = receipt.fee_summary.total_execution_cost_units_consumed;
 
@@ -73,7 +75,9 @@ fn usd_price_costing_after_protocol_update() {
         .get(&ExecutionCostingEntry::QueryFeeReserve.to_trace_key())
         .is_some());
     assert_eq!(
-        cost_before_update + 500, /* usd_price() call cost */
+        cost_before_update + // usd_price() call cost includes also
+            80024 +          // RefCheck
+            500, // QueryFeeReserve
         receipt.fee_summary.total_execution_cost_units_consumed
     );
 }
