@@ -1536,7 +1536,7 @@ fn test_long_role_key() {
 
             schema: BlueprintSchemaInit {
                 generics: vec![],
-                schema: VersionedScryptoSchema::V1(SchemaV1 {
+                schema: VersionedScryptoSchema::from_latest_version(SchemaV1 {
                     type_kinds: vec![],
                     type_metadata: vec![],
                     type_validations: vec![],
