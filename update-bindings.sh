@@ -85,7 +85,7 @@ list=(
 
 for entry in "${list[@]}";
 do
-    read -r address replacement <<< $entry
+    read -r address replacement <<< $(echo $entry)
     file_contents="$file_contents
 
 $($scrypto_bindgen $address --reset-ledger $replacement)"
