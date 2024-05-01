@@ -154,7 +154,7 @@ pub enum TypedMainModuleSubstateKey {
     NonFungibleVault(NonFungibleVaultTypedSubstateKey),
     ConsensusManager(ConsensusManagerTypedSubstateKey),
     ValidatorField(ValidatorTypedSubstateKey),
-    AccessController(AccessControllerV2ypedSubstateKey),
+    AccessController(AccessControllerV2TypedSubstateKey),
     Account(AccountTypedSubstateKey),
     OneResourcePool(OneResourcePoolTypedSubstateKey),
     TwoResourcePool(TwoResourcePoolTypedSubstateKey),
@@ -303,7 +303,7 @@ fn to_typed_object_substate_key_internal(
             ValidatorTypedSubstateKey::for_key_at_partition_offset(partition_offset, substate_key)?,
         ),
         EntityType::GlobalAccessController => TypedMainModuleSubstateKey::AccessController(
-            AccessControllerV2ypedSubstateKey::for_key_in_partition(
+            AccessControllerV2TypedSubstateKey::for_key_in_partition(
                 &AccessControllerPartitionOffset::try_from(partition_offset)?,
                 substate_key,
             )?,
@@ -430,7 +430,7 @@ pub enum TypedMainModuleSubstateValue {
     NonFungibleVault(NonFungibleVaultTypedSubstateValue),
     ConsensusManager(ConsensusManagerTypedSubstateValue),
     Validator(ValidatorTypedSubstateValue),
-    AccessController(AccessControllerV2ypedSubstateValue),
+    AccessController(AccessControllerV2TypedSubstateValue),
     Account(AccountTypedSubstateValue),
     OneResourcePool(OneResourcePoolTypedSubstateValue),
     TwoResourcePool(TwoResourcePoolTypedSubstateValue),
@@ -567,7 +567,7 @@ fn to_typed_object_substate_value(
         ),
         TypedMainModuleSubstateKey::AccessController(key) => {
             TypedMainModuleSubstateValue::AccessController(
-                AccessControllerV2ypedSubstateValue::from_key_and_data(key, data)?,
+                AccessControllerV2TypedSubstateValue::from_key_and_data(key, data)?,
             )
         }
         TypedMainModuleSubstateKey::GenericScryptoComponentField(offset) => {
