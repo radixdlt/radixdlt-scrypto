@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
-use radix_engine::updates::{ProtocolUpdate, ProtocolVersion};
+use crate::utils::*;
+use radix_engine::updates::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::*;
 
@@ -33,9 +34,9 @@ pub struct AccessControllerV2ScenarioState {
 impl Default for AccessControllerV2ScenarioConfig {
     fn default() -> Self {
         Self {
-            primary_role_private_key: Ed25519PrivateKey::from_u64(1).unwrap().into(),
-            recovery_role_private_key: Ed25519PrivateKey::from_u64(2).unwrap().into(),
-            confirmation_role_private_key: Ed25519PrivateKey::from_u64(3).unwrap().into(),
+            primary_role_private_key: new_ed25519_private_key(1).into(),
+            recovery_role_private_key: new_ed25519_private_key(2).into(),
+            confirmation_role_private_key: new_ed25519_private_key(3).into(),
         }
     }
 }
