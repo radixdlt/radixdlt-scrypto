@@ -6,7 +6,7 @@ fn get_owner_role_method_call_fails_without_the_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_kernel_trace()
-        .with_protocol_version(ProtocolVersion::Genesis)
+        .with_protocol_version(ProtocolVersion::Babylon)
         .build();
 
     // Act

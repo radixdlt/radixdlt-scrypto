@@ -28,7 +28,7 @@ fn can_call_usd_price() {
 fn usd_price_costing_after_protocol_update() {
     // Call usd_price() function before protocol update
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until_genesis())
+        .with_custom_protocol(|builder| builder.until_babylon())
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("costing"));
 
@@ -51,7 +51,7 @@ fn usd_price_costing_after_protocol_update() {
 
     // Call usd_price() function after Bottlenose protocol update
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until_genesis())
+        .with_custom_protocol(|builder| builder.until_babylon())
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("costing"));
     let manifest = ManifestBuilder::new()

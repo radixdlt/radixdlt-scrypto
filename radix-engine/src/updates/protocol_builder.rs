@@ -68,8 +68,8 @@ impl ProtocolBuilder {
         self
     }
 
-    pub fn until_genesis(self) -> ProtocolExecutor {
-        self.until(ProtocolVersion::Genesis)
+    pub fn until_babylon(self) -> ProtocolExecutor {
+        self.until(ProtocolVersion::Babylon)
     }
 
     pub fn until_latest_protocol_version(self) -> ProtocolExecutor {

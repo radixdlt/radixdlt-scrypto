@@ -20,9 +20,6 @@ pub struct BottlenoseSettings {
     /// Exposes a getter method for reading owner role rule.
     pub add_owner_role_getter: UpdateSetting<NoSettings>,
 
-    /// Various system patches.
-    pub add_system_patches: UpdateSetting<NoSettings>,
-
     /// Introduces the account locker blueprint.
     pub add_locker_package: UpdateSetting<NoSettings>,
 
@@ -40,7 +37,7 @@ pub struct BottlenoseSettings {
     pub impose_a_limit_on_transaction_processor_blobs: UpdateSetting<NoSettings>,
 
     /// Adds differed reference cost checks.    
-    pub ref_cost_checks: UpdateSetting<NoSettings>,
+    pub apply_costing_for_ref_checks: UpdateSetting<NoSettings>,
 
     /// Add restrictions to use of role key in role list.
     pub restrict_reserved_role_key: UpdateSetting<NoSettings>,
@@ -67,7 +64,6 @@ impl UpdateSettings for BottlenoseSettings {
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
         Self {
             add_owner_role_getter: UpdateSetting::enabled_as_default_for_network(network),
-            add_system_patches: UpdateSetting::enabled_as_default_for_network(network),
             add_locker_package: UpdateSetting::enabled_as_default_for_network(network),
             move_protocol_params_to_state: UpdateSetting::enabled_as_default_for_network(network),
             fix_account_try_deposit_or_refund_behaviour:
@@ -76,7 +72,7 @@ impl UpdateSettings for BottlenoseSettings {
                 UpdateSetting::enabled_as_default_for_network(network),
             impose_a_limit_on_transaction_processor_blobs:
                 UpdateSetting::enabled_as_default_for_network(network),
-            ref_cost_checks: UpdateSetting::enabled_as_default_for_network(network),
+            apply_costing_for_ref_checks: UpdateSetting::enabled_as_default_for_network(network),
             restrict_reserved_role_key: UpdateSetting::enabled_as_default_for_network(network),
         }
     }
@@ -84,13 +80,12 @@ impl UpdateSettings for BottlenoseSettings {
     fn all_disabled() -> Self {
         Self {
             add_owner_role_getter: UpdateSetting::Disabled,
-            add_system_patches: UpdateSetting::Disabled,
             add_locker_package: UpdateSetting::Disabled,
             move_protocol_params_to_state: UpdateSetting::Disabled,
             fix_account_try_deposit_or_refund_behaviour: UpdateSetting::Disabled,
             update_access_controller_to_add_xrd_fee_vault: UpdateSetting::Disabled,
             impose_a_limit_on_transaction_processor_blobs: UpdateSetting::Disabled,
-            ref_cost_checks: UpdateSetting::Disabled,
+            apply_costing_for_ref_checks: UpdateSetting::Disabled,
             restrict_reserved_role_key: UpdateSetting::Disabled,
         }
     }
@@ -126,13 +121,12 @@ fn generate_principal_batch(
     store: &dyn SubstateDatabase,
     BottlenoseSettings {
         add_owner_role_getter,
-        add_system_patches,
         add_locker_package,
         fix_account_try_deposit_or_refund_behaviour,
         move_protocol_params_to_state,
         update_access_controller_to_add_xrd_fee_vault,
         impose_a_limit_on_transaction_processor_blobs,
-        ref_cost_checks,
+        apply_costing_for_ref_checks: ref_cost_checks,
         restrict_reserved_role_key,
     }: &BottlenoseSettings,
 ) -> ProtocolUpdateBatch {
@@ -141,12 +135,6 @@ fn generate_principal_batch(
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "bottlenose-owner-role-getter",
             generate_owner_role_getter_state_updates(store),
-        ));
-    }
-    if let UpdateSetting::Enabled(_) = &add_system_patches {
-        transactions.push(ProtocolUpdateTransactionDetails::flash(
-            "bottlenose-system-patches",
-            generate_system_patches(),
         ));
     }
     if let UpdateSetting::Enabled(_) = &add_locker_package {
@@ -181,7 +169,7 @@ fn generate_principal_batch(
     }
     if let UpdateSetting::Enabled(_) = &ref_cost_checks {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
-            "bottlenose-add-deferred-reference-cost-checks",
+            "bottlenose-add-deferred-reference-check-cost",
             generate_ref_check_costs_state_updates(),
         ));
     }
@@ -334,11 +322,6 @@ fn generate_owner_role_getter_state_updates<S: SubstateDatabase + ?Sized>(db: &S
             }
         ),
     }
-}
-
-fn generate_system_patches() -> StateUpdates {
-    // TODO
-    StateUpdates::default()
 }
 
 fn generate_locker_package_state_updates() -> StateUpdates {

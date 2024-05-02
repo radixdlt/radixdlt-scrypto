@@ -25,7 +25,7 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
-        .with_protocol_version(ProtocolVersion::Genesis)
+        .with_protocol_version(ProtocolVersion::Babylon)
         .build();
 
     if flash_substates {

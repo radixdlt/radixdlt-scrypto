@@ -416,7 +416,9 @@ fn database_hashes_are_identical_between_staging_and_non_staging_database_at_eac
     })
 }
 
-fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>(database: &D) -> Hash {
+fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>(
+    database: &D,
+) -> Hash {
     let mut accumulator_hash = Hash([0; 32]);
     let reader = SystemDatabaseReader::new(database);
     for (node_id, partition_number) in reader.partitions_iter() {
@@ -430,8 +432,7 @@ fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>
             SubstateDatabase::list_entries(database, &db_partition_key)
         {
             let entry_hash = hash(
-                scrypto_encode(&(node_id, partition_number, substate_key, substate_value))
-                    .unwrap(),
+                scrypto_encode(&(node_id, partition_number, substate_key, substate_value)).unwrap(),
             );
             let mut data = accumulator_hash.to_vec();
             data.extend(entry_hash.to_vec());
@@ -458,7 +459,7 @@ fn run_scenarios(
     let ledger_with_overlay = Rc::new(RefCell::new(
         LedgerSimulatorBuilder::new()
             .with_custom_database(overlay)
-            .with_protocol_version(ProtocolVersion::Genesis)
+            .with_protocol_version(ProtocolVersion::Babylon)
             .without_kernel_trace()
             .build(),
     ));
@@ -470,7 +471,8 @@ fn run_scenarios(
     )
     .on_before_protocol_update_executed(|executor| {
         // We copy the protocol updates onto the ledger_with_overlay
-        executor.clone()
+        executor
+            .clone()
             .run_and_commit(ledger_with_overlay.borrow_mut().substate_db_mut())
     })
     .on_transaction_executed(|_, transaction, receipt, db| {

@@ -245,7 +245,7 @@ where
             .bootstrap_test_default(),
         );
 
-        let mut current_protocol_version = ProtocolVersion::Genesis;
+        let mut current_protocol_version = ProtocolVersion::Babylon;
 
         for protocol_update_executor in protocol_executor.each_protocol_update_executor() {
             self.execute_scenarios_at_new_protocol_version(

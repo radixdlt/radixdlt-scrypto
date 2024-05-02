@@ -8,7 +8,7 @@ fn test_stake_reconciliation() {
     // Arrange
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_protocol_version(ProtocolVersion::Genesis)
+        .with_protocol_version(ProtocolVersion::Babylon)
         .build();
     let (account_pk, _, account) = ledger.new_account(false);
 

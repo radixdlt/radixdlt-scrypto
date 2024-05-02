@@ -144,7 +144,7 @@ macro_rules! define_protocol_version_and_updates {
 // is append to this list, never change.
 define_protocol_version_and_updates! {
     genesis: {
-        variant_name: Genesis,
+        variant_name: Babylon,
         logical_name: "babylon",
         display_name: "Babylon",
     },
@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn assert_earliest_protocol_version_is_as_expected() {
-        assert_eq!(ProtocolVersion::EARLIEST, ProtocolVersion::Genesis);
+        assert_eq!(ProtocolVersion::EARLIEST, ProtocolVersion::Babylon);
     }
 
     #[test]
@@ -193,7 +193,7 @@ mod tests {
         assert_eq!(
             variants,
             [
-                ProtocolVersion::Genesis,
+                ProtocolVersion::Babylon,
                 ProtocolVersion::Anemone,
                 ProtocolVersion::Bottlenose
             ]

@@ -14,8 +14,8 @@ impl ScenarioCreator for KVStoreScenarioCreator {
 
     const METADATA: ScenarioMetadata = ScenarioMetadata {
         logical_name: "kv_store_with_remote_type",
-        protocol_min_requirement: ProtocolVersion::Genesis,
-        testnet_run_at: Some(ProtocolVersion::Genesis),
+        protocol_min_requirement: ProtocolVersion::Babylon,
+        testnet_run_at: Some(ProtocolVersion::Babylon),
     };
 
     fn create_with_config_and_state(

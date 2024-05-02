@@ -6,7 +6,7 @@ fn before_protocol_update_try_deposit_or_refund_fails_if_claimed_authorized_depo
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_kernel_trace()
-        .with_protocol_version(ProtocolVersion::Genesis)
+        .with_protocol_version(ProtocolVersion::Babylon)
         .build();
     let (user_public_key, _, user_account) = ledger.new_account(false);
 
