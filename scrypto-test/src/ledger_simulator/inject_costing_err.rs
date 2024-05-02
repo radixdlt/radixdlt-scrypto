@@ -141,6 +141,21 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         self.system.create_receipt(track, executable, result)
     }
 
+    fn boot_ref_type(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        self.system.boot_ref_type(node_id, value)
+    }
+
+    fn on_boot_ref_check(
+        &mut self,
+        event: radix_engine::kernel::kernel_callback_api::RefCheckEvent,
+    ) -> Result<(), BootloadingError> {
+        self.system.on_boot_ref_check(event)
+    }
+
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
         self.maybe_err()?;
         self.system.on_pin_node(node_id)
@@ -359,21 +374,6 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
             destination_blueprint_id,
             &mut api,
         )
-    }
-
-    fn on_boot_ref_check(
-        &mut self,
-        event: radix_engine::kernel::kernel_callback_api::RefCheckEvent,
-    ) -> Result<(), BootloadingError> {
-        self.system.on_boot_ref_check(event)
-    }
-
-    fn check_ref(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        self.system.check_ref(node_id, value)
     }
 }
 

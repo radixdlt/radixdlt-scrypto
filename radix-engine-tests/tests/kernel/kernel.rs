@@ -84,6 +84,17 @@ impl KernelCallbackObject for TestCallbackObject {
         TestReceipt
     }
 
+    fn boot_ref_type(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
+        Ok(StableReferenceType::Global)
+    }
+
+    fn on_boot_ref_check(
+        &mut self,
+        _event: scrypto_test::prelude::RefCheckEvent,
+    ) -> Result<(), BootloadingError> {
+        Ok(())
+    }
+
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -254,17 +265,6 @@ impl KernelCallbackObject for TestCallbackObject {
         Y: KernelApi<Self>,
     {
         Ok(())
-    }
-    
-    fn on_boot_ref_check(
-        &mut self,
-        _event: scrypto_test::prelude::RefCheckEvent,
-    ) -> Result<(), BootloadingError> {
-        Ok(())
-    }
-
-    fn check_ref(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
-        Ok(StableReferenceType::Global)
     }
 }
 

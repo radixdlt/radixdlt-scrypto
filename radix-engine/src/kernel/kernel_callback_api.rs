@@ -179,7 +179,7 @@ pub trait KernelCallbackObject: Sized {
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 
-    fn check_ref(
+    fn boot_ref_type(
         &mut self,
         node_id: &NodeId,
         value: &IndexedScryptoValue,

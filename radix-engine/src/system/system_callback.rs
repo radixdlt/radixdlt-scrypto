@@ -888,7 +888,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
     }
 
-    fn check_ref(
+    fn boot_ref_type(
         &mut self,
         node_id: &NodeId,
         value: &IndexedScryptoValue,
