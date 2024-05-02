@@ -148,7 +148,7 @@ fn generate_validator_creation_fee_fix_state_updates<S: SubstateDatabase + ?Size
 
 /// Generates the state updates required for updating the Consensus Manager blueprint
 /// to use seconds precision
-pub fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase + ?Sized>(
+fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase + ?Sized>(
     db: &S,
 ) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
@@ -323,7 +323,7 @@ pub fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase + 
     }
 }
 
-pub fn generate_vm_boot_for_bls128_and_keccak256_state_updates() -> StateUpdates {
+fn generate_vm_boot_for_bls128_and_keccak256_state_updates() -> StateUpdates {
     let substate = scrypto_encode(&VmBoot::V1 {
         scrypto_version: ScryptoVmVersion::crypto_utils_added().into(),
     })
@@ -353,7 +353,7 @@ pub fn generate_vm_boot_for_bls128_and_keccak256_state_updates() -> StateUpdates
 /// * Removes the old code_hash => original_code substate.
 /// * Adds a new code_hash => original_code substate.
 /// * Updates the function exports in the blueprint definitions to point to the new code hash.
-pub fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase + ?Sized>(
+fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase + ?Sized>(
     db: &S,
 ) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);

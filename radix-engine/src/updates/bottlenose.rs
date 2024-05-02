@@ -201,9 +201,7 @@ macro_rules! scrypto_encode {
     };
 }
 
-pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase + ?Sized>(
-    db: &S,
-) -> StateUpdates {
+fn generate_owner_role_getter_state_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
     let node_id = ROLE_ASSIGNMENT_MODULE_PACKAGE.into_node_id();
     let blueprint_version_key = BlueprintVersionKey {
@@ -336,12 +334,12 @@ pub fn generate_owner_role_getter_state_updates<S: SubstateDatabase + ?Sized>(
     }
 }
 
-pub fn generate_system_patches() -> StateUpdates {
+fn generate_system_patches() -> StateUpdates {
     // TODO
     StateUpdates::default()
 }
 
-pub fn generate_locker_package_state_updates() -> StateUpdates {
+fn generate_locker_package_state_updates() -> StateUpdates {
     let package_definition = LockerNativePackage::definition();
     let package_structure = PackageNativePackage::validate_and_build_package_structure(
         package_definition,
@@ -392,7 +390,7 @@ pub fn generate_locker_package_state_updates() -> StateUpdates {
     }
 }
 
-pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase + ?Sized>(
+fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase + ?Sized>(
     db: &S,
 ) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
@@ -498,7 +496,7 @@ pub fn generate_account_bottlenose_extension_state_updates<S: SubstateDatabase +
     }
 }
 
-pub fn generate_protocol_params_to_state_updates(
+fn generate_protocol_params_to_state_updates(
     network_definition: NetworkDefinition,
 ) -> StateUpdates {
     StateUpdates {
@@ -524,9 +522,7 @@ pub fn generate_protocol_params_to_state_updates(
     }
 }
 
-pub fn generate_access_controller_state_updates<S: SubstateDatabase + ?Sized>(
-    db: &S,
-) -> StateUpdates {
+fn generate_access_controller_state_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
     let node_id = ACCESS_CONTROLLER_PACKAGE.into_node_id();
     let blueprint_version_key = BlueprintVersionKey {
@@ -756,7 +752,7 @@ pub fn generate_access_controller_state_updates<S: SubstateDatabase + ?Sized>(
 }
 
 /// Generates the state updates required for restricting reserved role key.
-pub fn generate_restrict_reserved_role_key_state_updates<S: SubstateDatabase + ?Sized>(
+fn generate_restrict_reserved_role_key_state_updates<S: SubstateDatabase + ?Sized>(
     db: &S,
 ) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
@@ -868,7 +864,7 @@ pub fn generate_restrict_reserved_role_key_state_updates<S: SubstateDatabase + ?
 
 /// Generates the state updates required for updating the TransactionProcessor blueprint
 /// to limit blob memory usage
-pub fn generate_transaction_processor_blob_limits_state_updates<S: SubstateDatabase + ?Sized>(
+fn generate_transaction_processor_blob_limits_state_updates<S: SubstateDatabase + ?Sized>(
     db: &S,
 ) -> StateUpdates {
     let reader = SystemDatabaseReader::new(db);
@@ -983,7 +979,7 @@ pub fn generate_transaction_processor_blob_limits_state_updates<S: SubstateDatab
 }
 
 /// Generates the state updates required for introducing deferred reference check costs
-pub fn generate_ref_check_costs_state_updates() -> StateUpdates {
+fn generate_ref_check_costs_state_updates() -> StateUpdates {
     let substate = scrypto_encode(&KernelBoot::V1 {
         ref_check_costing: true,
     })
