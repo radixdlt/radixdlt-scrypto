@@ -18,6 +18,7 @@ use radix_transactions::errors::*;
 use radix_transactions::validation::*;
 use sbor::prelude::*;
 
+use scenarios::access_controller_v2::AccessControllerV2ScenarioCreator;
 use scenarios::account_authorized_depositors::AccountAuthorizedDepositorsScenarioCreator;
 use scenarios::account_locker::AccountLockerScenarioCreator;
 use scenarios::fungible_resource::FungibleResourceScenarioCreator;
@@ -523,5 +524,6 @@ pub fn scenarios_vector() -> Vec<(
         // Bottlenose Scenarios.
         AccountLockerScenarioCreator,
         MayaRouterScenarioCreator,
+        AccessControllerV2ScenarioCreator
     ]
 }

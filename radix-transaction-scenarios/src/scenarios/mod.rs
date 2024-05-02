@@ -1,3 +1,4 @@
+pub mod access_controller_v2;
 pub mod account_authorized_depositors;
 pub mod account_locker;
 pub mod fungible_resource;
