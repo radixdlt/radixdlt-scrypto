@@ -1172,6 +1172,10 @@ fn format_substate_value<'a, F: fmt::Write>(
                         SYSTEM_BOOT_SUBSTATE_SCHEMA.0,
                         &SYSTEM_BOOT_SUBSTATE_SCHEMA.1,
                     ),
+                    SystemFieldKind::BootLoader(BootLoaderFieldKind::KernelBoot) => (
+                        KERNEL_BOOT_SUBSTATE_SCHEMA.0,
+                        &KERNEL_BOOT_SUBSTATE_SCHEMA.1,
+                    ),
                 };
                 let raw_value = scrypto_decode(substate_value).unwrap();
                 return format_scrypto_value_with_schema(

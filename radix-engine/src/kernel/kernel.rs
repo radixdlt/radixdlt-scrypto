@@ -35,6 +35,8 @@ use sbor::rust::mem;
 
 pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
 
+pub type KernelBootSubstate = KernelBoot;
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum KernelBoot {
     V1 { ref_check_costing: bool },
