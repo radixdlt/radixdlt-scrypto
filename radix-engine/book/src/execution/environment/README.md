@@ -1,19 +1,28 @@
 # Application Environment
 
-## Call Frame
+Every method/function execution has a call frame associated with it.
 
-On function entry a new call frame is created for the execution of the function. The call frame
-contains all owned and referenced objects usable by the running function.
+A call frame contains all owned and referenced objects usable by the running function. These objects
+are referrable by `NodeId`.
 
-The System layer exposes an API which only allows state to be read from and written to by the current
-*actor*, or object which is being called.
+## Invocations
 
+Owned and referenced objects may have methods invoked (creating a new call frame). Owned objects may be
+passed in as arguments and may be received in these invocations.
 
-The application layer
-also accepts an SBOR encoded value representing the argument passed into the function. All owned objects
-and referenced objects in the argument is guaranteed to be valid (i.e. owned/referenced in the current
-call frame).
+## Object Creation/Destruction/Globalization
 
+Objects of the current blueprint may be instantiated, creating a new owned object into the call frame,
+or dropped, in which case the owned object gets removed from the call frame.
 
-All references in the
-frame are 
+## Actor State Read/Write
+
+A call frame also contains a reference to the *actor*, or callee object (i.e. *self* in object-oriented
+languages). This is maintained to allow read/writes of state for the given actor.
+
+## Other System Functions
+
+A set of other system functions are available to the application layer. Currently these include:
+* Costing
+* Transaction Runtime
+* Crypto Utils

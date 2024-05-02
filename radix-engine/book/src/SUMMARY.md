@@ -38,13 +38,9 @@
   - [Runtime](execution/lifecycle/runtime.md)
   - [Shutdown](execution/lifecycle/shutdown.md)
 - [Application Environment](execution/environment/README.md)
-  - [Object Lifecycle]()
-    - [Instantiation]()
-    - [Destruction]()
-  - [Global Address Reservation]()
+  - [Invocations](execution/environment/invocations.md)
+  - [Object Lifecycle](execution/environment/object_lifecycle.md)
   - [State Reads/Writes]()
-  - [Key Value Stores]()
-  - [Invocations]()
 
 # Native Systems
 

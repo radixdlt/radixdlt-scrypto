@@ -42,7 +42,7 @@ pub const ACTOR_REF_AUTH_ZONE: ActorRefHandle = 8u32;
 pub type FieldIndex = u8;
 pub type CollectionIndex = u8;
 
-/// Interface of the system, for blueprints and Node modules.
+/// Interface of the system, for blueprints and system modules.
 ///
 /// For WASM blueprints, only a subset of the API is exposed at the moment.
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
