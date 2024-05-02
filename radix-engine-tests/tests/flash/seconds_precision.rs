@@ -38,10 +38,23 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
 
     // Act
     if flash_substates {
-        let state_updates =
-            generate_seconds_precision_timestamp_state_updates(ledger.substate_db());
-        let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-        ledger.substate_db_mut().commit(&db_updates);
+        let anemone_protocol_update_batch_generator = AnemoneSettings::all_disabled()
+            .enable(|item| &mut item.seconds_precision)
+            .create_batch_generator();
+        let mut i = 0;
+        while let Some(batch) =
+            anemone_protocol_update_batch_generator.generate_batch(ledger.substate_db(), i)
+        {
+            i += 1;
+            for ProtocolUpdateTransactionDetails::FlashV1Transaction(
+                FlashProtocolUpdateTransactionDetails { state_updates, .. },
+            ) in batch.transactions
+            {
+                ledger
+                    .substate_db_mut()
+                    .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
+            }
+        }
     }
 
     let time_to_set_ms = 1669663688996;

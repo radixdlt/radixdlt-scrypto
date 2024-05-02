@@ -18,38 +18,40 @@ use radix_engine_interface::blueprints::transaction_processor::*;
 #[derive(Clone)]
 pub struct BottlenoseSettings {
     /// Exposes a getter method for reading owner role rule.
-    pub add_owner_role_getter: UpdateSetting<()>,
+    pub add_owner_role_getter: UpdateSetting<NoSettings>,
 
     /// Various system patches.
-    pub add_system_patches: UpdateSetting<()>,
+    pub add_system_patches: UpdateSetting<NoSettings>,
 
     /// Introduces the account locker blueprint.
-    pub add_locker_package: UpdateSetting<()>,
+    pub add_locker_package: UpdateSetting<NoSettings>,
 
     /// Makes some behavioral changes to the try_deposit_or_refund (and batch variants too) method
     /// on the account blueprint.
-    pub fix_account_try_deposit_or_refund_behaviour: UpdateSetting<()>,
+    pub fix_account_try_deposit_or_refund_behaviour: UpdateSetting<NoSettings>,
 
     /// Moves various protocol parameters to state.
     pub move_protocol_params_to_state: UpdateSetting<ProtocolParamsSettings>,
 
     /// Adds an XRD vault to the access controller for locking fees.
-    pub update_access_controller_to_add_xrd_fee_vault: UpdateSetting<()>,
+    pub update_access_controller_to_add_xrd_fee_vault: UpdateSetting<NoSettings>,
 
     /// Imposes a limits on the blobs in the transaction processor
-    pub impose_a_limit_on_transaction_processor_blobs: UpdateSetting<()>,
+    pub impose_a_limit_on_transaction_processor_blobs: UpdateSetting<NoSettings>,
 
     /// Adds differed reference cost checks.    
-    pub ref_cost_checks: UpdateSetting<()>,
+    pub ref_cost_checks: UpdateSetting<NoSettings>,
 
     /// Add restrictions to use of role key in role list.
-    pub restrict_reserved_role_key: UpdateSetting<()>,
+    pub restrict_reserved_role_key: UpdateSetting<NoSettings>,
 }
 
 #[derive(Clone)]
 pub struct ProtocolParamsSettings {
     pub network_definition: NetworkDefinition,
 }
+
+impl UpdateSettingMarker for ProtocolParamsSettings {}
 
 impl DefaultForNetwork for ProtocolParamsSettings {
     fn default_for_network(network_definition: &NetworkDefinition) -> Self {

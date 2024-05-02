@@ -11,16 +11,16 @@ use sbor::{generate_full_schema, TypeAggregator};
 #[derive(Clone)]
 pub struct AnemoneSettings {
     /// Changes the cost associated with validator creation.
-    pub validator_fee_fix: UpdateSetting<()>,
+    pub validator_fee_fix: UpdateSetting<NoSettings>,
 
     /// Exposes second-precision timestamp.
-    pub seconds_precision: UpdateSetting<()>,
+    pub seconds_precision: UpdateSetting<NoSettings>,
 
     /// Introduces BLS12-381 and Keccak-256 features.
-    pub vm_boot_to_enable_bls128_and_keccak256: UpdateSetting<()>,
+    pub vm_boot_to_enable_bls128_and_keccak256: UpdateSetting<NoSettings>,
 
     /// Increases the math precision with native pool implementations.
-    pub pools_update: UpdateSetting<()>,
+    pub pools_update: UpdateSetting<NoSettings>,
 }
 
 impl UpdateSettings for AnemoneSettings {

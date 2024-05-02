@@ -44,12 +44,12 @@ pub trait UpdateSettings: Sized {
 
     fn create_batch_generator(&self) -> Self::BatchGenerator;
 
-    fn enable(mut self, prop: impl FnOnce(&mut Self) -> &mut UpdateSetting<()>) -> Self {
-        *prop(&mut self) = UpdateSetting::Enabled(());
+    fn enable(mut self, prop: impl FnOnce(&mut Self) -> &mut UpdateSetting<NoSettings>) -> Self {
+        *prop(&mut self) = UpdateSetting::Enabled(NoSettings);
         self
     }
 
-    fn enable_with<T>(
+    fn enable_with<T: UpdateSettingMarker>(
         mut self,
         prop: impl FnOnce(&mut Self) -> &mut UpdateSetting<T>,
         setting: T,
@@ -58,7 +58,10 @@ pub trait UpdateSettings: Sized {
         self
     }
 
-    fn disable<T>(mut self, prop: impl FnOnce(&mut Self) -> &mut UpdateSetting<T>) -> Self {
+    fn disable<T: UpdateSettingMarker>(
+        mut self,
+        prop: impl FnOnce(&mut Self) -> &mut UpdateSetting<T>,
+    ) -> Self {
         *prop(&mut self) = UpdateSetting::Disabled;
         self
     }
@@ -80,22 +83,29 @@ impl<T: Default> DefaultForNetwork for T {
 }
 
 #[derive(Clone)]
-pub enum UpdateSetting<T> {
+pub enum UpdateSetting<T: UpdateSettingMarker> {
     Enabled(T),
     Disabled,
 }
 
-impl UpdateSetting<()> {
+impl UpdateSetting<NoSettings> {
     pub fn new(is_enabled: bool) -> Self {
         if is_enabled {
-            Self::Enabled(())
+            Self::Enabled(NoSettings)
         } else {
             Self::Disabled
         }
     }
 }
 
-impl<T: DefaultForNetwork> UpdateSetting<T> {
+pub trait UpdateSettingMarker {}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct NoSettings;
+
+impl UpdateSettingMarker for NoSettings {}
+
+impl<T: DefaultForNetwork + UpdateSettingMarker> UpdateSetting<T> {
     pub fn enabled_as_default_for_network(network_definition: &NetworkDefinition) -> Self {
         Self::Enabled(T::default_for_network(network_definition))
     }
