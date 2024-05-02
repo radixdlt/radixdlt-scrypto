@@ -18,7 +18,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-
 jobs:
   snyk-sbom-scan:
     runs-on: macos-latest
