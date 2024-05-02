@@ -89,7 +89,18 @@ impl fmt::Display for DateTimeError {
 /// `UtcDateTime` supports methods for easy conversion to and from the [`Instant`](super::Instant) type, which
 /// can be queried from the Radix Engine.
 #[derive(
-    PartialEq, Eq, Copy, Clone, Debug, Categorize, Encode, Decode, BasicDescribe, Ord, PartialOrd,
+    PartialEq,
+    Eq,
+    Copy,
+    Clone,
+    Debug,
+    Categorize,
+    Encode,
+    Decode,
+    BasicDescribe,
+    PartialOrd,
+    Ord,
+    Hash,
 )]
 pub struct UtcDateTime {
     year: u32,
