@@ -1,0 +1,172 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
+    Enum<1u8>()
+    true
+    Enum<0u8>(
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(
+                    Enum<14u8>(
+                        Array<Enum>(
+                            Enum<0u8>(
+                                12u8
+                            ),
+                            Enum<0u8>(
+                                12u8
+                            ),
+                            Enum<0u8>(
+                                198u8
+                            ),
+                            Enum<0u8>(
+                                10u8
+                            )
+                        )
+                    )
+                ),
+                Array<Tuple>(
+                    Tuple(
+                        Enum<1u8>(
+                            "MetadataStandardNonFungibleData"
+                        ),
+                        Enum<1u8>(
+                            Enum<0u8>(
+                                Array<String>(
+                                    "name",
+                                    "description",
+                                    "key_image_url",
+                                    "arbitrary_coolness_rating"
+                                )
+                            )
+                        )
+                    )
+                ),
+                Array<Enum>(
+                    Enum<0u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            0u64
+        ),
+        Array<String>()
+    )
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("#1#") => Tuple(
+            Tuple(
+                "Decentralized Exchanges",
+                "Decentralized Exchanges, also known as DEXes, allow users to exchange two or more tokens in a single transaction, at a certain price, without the need for another party to facilitate the transaction.\n\nDEXes allow users to trade assets without the need for a trusted third party. They are the first ever examples of a censorship resistant, non-custodial, and permissionless way of exchanging assets electronically.",
+                "https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414d213fd7349b654b9_icon-DEX.svg",
+                45u64
+            )
+        ),
+        NonFungibleLocalId("#2#") => Tuple(
+            Tuple(
+                "Stablecoins",
+                "A stablecoin is a class of cryptocurrencies that attempt to offer price stability and are backed by a reserve asset. Stablecoins have become popular as they provide the instant processing and security or privacy of cryptocurrencies' payments along with the volatility-free stable valuations of fiat currencies.\n\nStablecoins base their market value on an external reference. This could be a currency like the U.S. dollar or a commodity's price such as gold. Stablecoins achieve price stability via collateralization or algorithmic buying and selling of the reference asset or its derivatives.",
+                "https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f419f77f05b9086565e6_icon-stablecoin.svg",
+                5u64
+            )
+        ),
+        NonFungibleLocalId("#3#") => Tuple(
+            Tuple(
+                "Lending",
+                "In lending, borrowers pledge their crypto assets as collateral and avail loans in stablecoins or other crypto assets as a means of financing.\n\nHowever, unlike TradFi, DeFi lending uses algorithmic systems where lending and borrowing rates are determined automatically based on each asset's real-time supply and demand.\n\nThis automated approach means more flexibility and access for anyone looking for financing.",
+                "https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414979a8b045995bf75_ICON-LENDING.svg",
+                30u64
+            )
+        ),
+        NonFungibleLocalId("#4#") => Tuple(
+            Tuple(
+                "Insurance",
+                "Insurance protocols provide cover against smart contract failure & exchange hacks using a decentralized protocol, so people can share risk without needing an insurance company.",
+                "https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f4146c4528458c93da96_ICON-NFTS-1.svg",
+                0u64
+            )
+        ),
+        NonFungibleLocalId("#5#") => Tuple(
+            Tuple(
+                "Futures, Options, & Derivatives",
+                "A futures contract is an arrangement between two users on an exchange to buy and sell an underlying crypto asset at an agreed-upon price on a certain date in the future.\n\nOptions give the holder the right to buy (call) or sell (put) an underlying crypto asset at a set date without being obligated.\n\nSynthetic assets, also known as synths, are an asset class formed by combining cryptocurrencies and traditional derivative assets, making them tokenized derivatives.",
+                "https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f414e8f31b971debfabe_ICON-FUTURES.svg",
+                10u64
+            )
+        ),
+        NonFungibleLocalId("#8#") => Tuple(
+            Tuple(
+                "Gaming",
+                "Since we have so many gamers who spend endless hours and money on gaming platforms, DeFi gaming platforms will enable them to monetize their time and progress. The play-to-earn games offer the best of both worlds - they provide an entertaining experience and make playing games lucrative.",
+                "https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61b8f416931770a50ed4a702_ICON-GAMING.svg",
+                71u64
+            )
+        )
+    )
+    Tuple(
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "Radix - Defi Use-cases"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "[EXAMPLE] An example NF using the metadata standard"
+                    )
+                ),
+                true
+            ),
+            "tags" => Tuple(
+                Enum<1u8>(
+                    Enum<128u8>(
+                        Array<String>(
+                            "collection",
+                            "example-tag"
+                        )
+                    )
+                ),
+                true
+            ),
+            "icon_url" => Tuple(
+                Enum<1u8>(
+                    Enum<13u8>(
+                        "https://assets-global.website-files.com/618962e5f285fb3c879d82ca/61aded05f3208c78b028bf99_Scrypto-Icon-Round%20(1).png"
+                    )
+                ),
+                true
+            ),
+            "info_url" => Tuple(
+                Enum<1u8>(
+                    Enum<13u8>(
+                        "https://developers.radixdlt.com/ecosystem"
+                    )
+                ),
+                true
+            )
+        ),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
