@@ -237,19 +237,13 @@ where
                     BOOT_LOADER_PARTITION,
                 );
                 let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&SubstateKey::Field(
-                    BOOT_LOADER_VM_SUBSTATE_FIELD_KEY,
+                    BOOT_LOADER_VM_BOOT_FIELD_KEY,
                 ));
 
                 let vm_boot = database
                     .get_substate(&db_partition_key, &db_sort_key)
                     .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                    .unwrap_or(VmBoot::V1 {
-                        scrypto_version: 0u64,
-                    });
-
-                let vm_version = match vm_boot {
-                    VmBoot::V1 { scrypto_version } => VmVersion { scrypto_version },
-                };
+                    .unwrap_or(VmBoot::babylon());
 
                 let transaction_runtime_module = TransactionRuntimeModule::new(
                     NetworkDefinition::simulator(),
@@ -274,6 +268,7 @@ where
                     .unwrap(),
                     cost_breakdown: Some(Default::default()),
                     on_apply_cost: Default::default(),
+                    apply_additional_costing: false,
                 };
 
                 System {
@@ -283,7 +278,7 @@ where
                     callback: Vm {
                         scrypto_vm,
                         native_vm: native_vm.clone(),
-                        vm_version,
+                        vm_boot,
                     },
                     modules: SystemModuleMixer::new(
                         EnabledModules::LIMITS

@@ -35,22 +35,37 @@ fn run_all(mode: CostingTaskMode) {
         let folder = path_local_metering_assets(protocol_version.logical_name());
 
         let folder = folder.as_str();
-        let execute = move |run: &dyn Fn(DefaultLedgerSimulator) -> TransactionReceipt, file: &'static str| {
+        let execute = move |run: &dyn Fn(DefaultLedgerSimulator) -> TransactionReceipt,
+                            file: &'static str| {
             let ledger = LedgerSimulatorBuilder::new()
                 .with_custom_protocol(|builder| builder.until(protocol_version))
                 .without_kernel_trace()
                 .build();
             let receipt = run(ledger);
-            mode.run(folder, file, &receipt.fee_summary, &receipt.fee_details.unwrap())
+            mode.run(
+                folder,
+                file,
+                &receipt.fee_summary,
+                &receipt.fee_details.unwrap(),
+            )
         };
 
         execute(&run_basic_transfer, "cost_transfer.csv");
-        execute(&run_basic_transfer_to_virtual_account, "cost_transfer_to_virtual_account.csv");
+        execute(
+            &run_basic_transfer_to_virtual_account,
+            "cost_transfer_to_virtual_account.csv",
+        );
         execute(&run_radiswap, "cost_radiswap.csv");
         execute(&run_flash_loan, "cost_flash_loan.csv");
         execute(&run_publish_large_package, "cost_publish_large_package.csv");
-        execute(&run_mint_large_size_nfts_from_manifest, "cost_mint_large_size_nfts_from_manifest.csv");
-        execute(&run_mint_small_size_nfts_from_manifest, "cost_mint_small_size_nfts_from_manifest.csv");
+        execute(
+            &run_mint_large_size_nfts_from_manifest,
+            "cost_mint_large_size_nfts_from_manifest.csv",
+        );
+        execute(
+            &run_mint_small_size_nfts_from_manifest,
+            "cost_mint_small_size_nfts_from_manifest.csv",
+        );
     }
 }
 

@@ -47,6 +47,8 @@ use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
+pub const BOOT_LOADER_SYSTEM_VERSION_FIELD_KEY: FieldKey = 1u8;
+
 /// Provided to upper layer for invoking lower layer service
 pub struct SystemService<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> {
     pub api: &'a mut Y,
@@ -2375,6 +2377,12 @@ where
     }
 
     fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
+        if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
+            costing
+                .apply_execution_cost_after_update(ExecutionCostingEntry::QueryFeeReserve)
+                .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
+        }
+
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.usd_price())
         } else {
@@ -2385,7 +2393,10 @@ where
     }
 
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, RuntimeError> {
-        if let Some(costing) = self.api.kernel_get_system().modules.costing() {
+        if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
+            costing
+                .apply_execution_cost_after_update(ExecutionCostingEntry::QueryCostingModule)
+                .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
             Ok(costing.max_per_function_royalty_in_xrd)
         } else {
             Err(RuntimeError::SystemError(
@@ -2802,6 +2813,12 @@ where
 
     #[trace_resources]
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
+        if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
+            costing
+                .apply_execution_cost_after_update(ExecutionCostingEntry::EncodeBech32Address)
+                .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
+        }
+
         let network_definition = &self
             .api
             .kernel_get_system()

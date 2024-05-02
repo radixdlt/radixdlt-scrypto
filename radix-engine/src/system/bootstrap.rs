@@ -28,7 +28,7 @@ use crate::transaction::{
     SubstateSystemStructures, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::vm::wasm::WasmEngine;
-use crate::vm::{NativeVmExtension, VmInit, VmVersion};
+use crate::vm::{NativeVmExtension, VmBoot, VmInit};
 use lazy_static::lazy_static;
 use radix_common::constants::AuthAddresses;
 use radix_common::crypto::Secp256k1PublicKey;
@@ -574,7 +574,8 @@ pub fn create_system_bootstrap_flash(
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
                 system_instructions,
-                &VmVersion::default(),
+                false,
+                &VmBoot::babylon(),
             )
             .unwrap_or_else(|err| {
                 panic!(

@@ -6,7 +6,7 @@ use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
-use crate::vm::BOOT_LOADER_VM_SUBSTATE_FIELD_KEY;
+use crate::vm::BOOT_LOADER_VM_BOOT_FIELD_KEY;
 use radix_engine_interface::blueprints::package::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
 
@@ -236,7 +236,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                             BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY => {
                                 BootLoaderFieldKind::SystemBoot
                             }
-                            BOOT_LOADER_VM_SUBSTATE_FIELD_KEY => BootLoaderFieldKind::VmBoot,
+                            BOOT_LOADER_VM_BOOT_FIELD_KEY => BootLoaderFieldKind::VmBoot,
                             field_num => panic!("Unknown boot loader field kind: {field_num}"),
                         };
                         SystemFieldKind::BootLoader(kind)

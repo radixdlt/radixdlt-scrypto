@@ -72,30 +72,36 @@ impl ProtocolUpdateBatchGenerator for AnemoneBatchGenerator {
     }
 }
 
+#[deny(unused_variables)]
 fn generate_principal_batch(
     store: &dyn SubstateDatabase,
-    settings: &AnemoneSettings,
+    AnemoneSettings {
+        validator_fee_fix,
+        seconds_precision,
+        vm_boot_to_enable_bls128_and_keccak256,
+        pools_update,
+    }: &AnemoneSettings,
 ) -> ProtocolUpdateBatch {
     let mut transactions = vec![];
-    if let UpdateSetting::Enabled(_) = &settings.validator_fee_fix {
+    if let UpdateSetting::Enabled(_) = &validator_fee_fix {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "anemone-validator-fee-fix",
             generate_validator_creation_fee_fix_state_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &settings.seconds_precision {
+    if let UpdateSetting::Enabled(_) = &seconds_precision {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "anemone-seconds-precision",
             generate_seconds_precision_timestamp_state_updates(store),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &settings.vm_boot_to_enable_bls128_and_keccak256 {
+    if let UpdateSetting::Enabled(_) = &vm_boot_to_enable_bls128_and_keccak256 {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "anemone-vm-boot",
             generate_vm_boot_for_bls128_and_keccak256_state_updates(),
         ));
     }
-    if let UpdateSetting::Enabled(_) = &settings.pools_update {
+    if let UpdateSetting::Enabled(_) = &pools_update {
         transactions.push(ProtocolUpdateTransactionDetails::flash(
             "anemone-pools",
             generate_pool_math_precision_fix_state_updates(store),
@@ -329,7 +335,7 @@ pub fn generate_vm_boot_for_bls128_and_keccak256_state_updates() -> StateUpdates
                 by_partition: indexmap! {
                     BOOT_LOADER_PARTITION => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Field(BOOT_LOADER_VM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(substate)
+                            SubstateKey::Field(BOOT_LOADER_VM_BOOT_FIELD_KEY) => DatabaseUpdate::Set(substate)
                         }
                     },
                 }

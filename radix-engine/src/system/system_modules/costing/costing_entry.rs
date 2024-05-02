@@ -2,7 +2,7 @@ use super::FeeTable;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
-    OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    OpenSubstateEvent, ReadSubstateEvent, RefCheckEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::system::actor::Actor;
@@ -17,6 +17,9 @@ pub enum ExecutionCostingEntry<'a> {
     },
     ValidateTxPayload {
         size: usize,
+    },
+    RefCheck {
+        event: &'a RefCheckEvent<'a>,
     },
 
     /* run code */
@@ -97,6 +100,7 @@ pub enum ExecutionCostingEntry<'a> {
     /* system */
     LockFee,
     QueryFeeReserve,
+    QueryCostingModule,
     QueryActor,
     QueryTransactionHash,
     GenerateRuid,
@@ -106,6 +110,7 @@ pub enum ExecutionCostingEntry<'a> {
     EmitLog {
         size: usize,
     },
+    EncodeBech32Address,
     Panic {
         size: usize,
     },
@@ -143,6 +148,7 @@ impl<'a> ExecutionCostingEntry<'a> {
                 num_signatures: num_of_signatures,
             } => ft.verify_tx_signatures_cost(*num_of_signatures),
             ExecutionCostingEntry::ValidateTxPayload { size } => ft.validate_tx_payload_cost(*size),
+            ExecutionCostingEntry::RefCheck { event } => ft.ref_check(event),
             ExecutionCostingEntry::RunNativeCode {
                 package_address,
                 export_name,
@@ -183,11 +189,13 @@ impl<'a> ExecutionCostingEntry<'a> {
             }
             ExecutionCostingEntry::LockFee => ft.lock_fee_cost(),
             ExecutionCostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
+            ExecutionCostingEntry::QueryCostingModule => ft.query_costing_module(),
             ExecutionCostingEntry::QueryActor => ft.query_actor_cost(),
             ExecutionCostingEntry::QueryTransactionHash => ft.query_transaction_hash_cost(),
             ExecutionCostingEntry::GenerateRuid => ft.generate_ruid_cost(),
             ExecutionCostingEntry::EmitEvent { size } => ft.emit_event_cost(*size),
             ExecutionCostingEntry::EmitLog { size } => ft.emit_log_cost(*size),
+            ExecutionCostingEntry::EncodeBech32Address => ft.encode_bech32_address_cost(),
             ExecutionCostingEntry::Panic { size } => ft.panic_cost(*size),
             ExecutionCostingEntry::Bls12381V1Verify { size } => ft.bls12381_v1_verify_cost(*size),
             ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes } => {

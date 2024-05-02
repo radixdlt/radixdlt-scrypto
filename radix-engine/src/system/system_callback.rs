@@ -1,3 +1,4 @@
+use super::system_modules::costing::ExecutionCostingEntry;
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
@@ -21,6 +22,7 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
+use crate::kernel::kernel_callback_api::RefCheckEvent;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -83,6 +85,7 @@ pub struct SystemParameters {
     pub costing_parameters: CostingParameters,
     pub limit_parameters: LimitParameters,
     pub max_per_function_royalty_in_xrd: Decimal,
+    pub apply_additional_costing: bool,
 }
 
 pub type SystemBootSubstate = SystemBoot;
@@ -759,6 +762,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                         MAX_PER_FUNCTION_ROYALTY_IN_XRD,
                     )
                     .unwrap(),
+                    apply_additional_costing: false,
                 }));
 
             match system_boot {
@@ -836,6 +840,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 None
             },
             on_apply_cost: Default::default(),
+            apply_additional_costing: system_parameters.apply_additional_costing,
         };
 
         let mut modules = SystemModuleMixer::new(
@@ -883,6 +888,19 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         } else {
             Ok(system)
         }
+    }
+
+    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
+    where
+        Y: KernelApi<Self>,
+    {
+        if let Some(costing) = api.kernel_get_system_state().system.modules.costing_mut() {
+            costing
+                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
+                .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+        }
+
+        Ok(())
     }
 
     fn start<Y>(

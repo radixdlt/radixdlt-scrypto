@@ -1,4 +1,5 @@
 use radix_common::prelude::*;
+use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
@@ -358,6 +359,16 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
             destination_blueprint_id,
             &mut api,
         )
+    }
+
+    fn on_ref_check<Y>(
+        _api: &mut Y,
+        _event: radix_engine::kernel::kernel_callback_api::RefCheckEvent,
+    ) -> Result<(), BootloadingError>
+    where
+        Y: KernelApi<Self>,
+    {
+        Ok(())
     }
 }
 
