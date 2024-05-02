@@ -53,7 +53,7 @@ fn after_protocol_update_try_deposit_or_refund_refunds_resources_if_claimed_auth
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_kernel_trace()
-        .with_protocol_version(ProtocolVersion::latest())
+        .with_protocol_version(ProtocolVersion::LATEST)
         .build();
     let (user_public_key, _, user_account) = ledger.new_account(false);
 

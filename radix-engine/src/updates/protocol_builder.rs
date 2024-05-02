@@ -73,7 +73,7 @@ impl ProtocolBuilder {
     }
 
     pub fn until_latest_protocol_version(self) -> ProtocolExecutor {
-        self.until(ProtocolVersion::latest())
+        self.until(ProtocolVersion::LATEST)
     }
 
     pub fn until(self, protocol_version: ProtocolVersion) -> ProtocolExecutor {

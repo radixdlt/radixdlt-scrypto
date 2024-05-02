@@ -148,7 +148,9 @@ mod test {
         let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");
         for (scenario_logical_name, scenario_creator) in ALL_SCENARIOS.iter() {
             let min_requirement = scenario_creator.metadata().protocol_min_requirement;
-            let valid_versions = ProtocolVersion::all_iterator().filter(|p| *p >= min_requirement);
+            let valid_versions = ProtocolVersion::VARIANTS
+                .into_iter()
+                .filter(|p| *p >= min_requirement);
             for protocol_version in valid_versions {
                 let protocol_version_display_name = protocol_version.display_name();
 
@@ -250,7 +252,7 @@ mod test {
                             .borrow_mut().take().unwrap().finalize().to_string()[0..16].to_string();
 
                         writeln!(&mut summary, "== SUMMARY HASHES ==").unwrap();
-                        if protocol_version == ProtocolVersion::latest() {
+                        if protocol_version == ProtocolVersion::LATEST {
                             writeln!(&mut summary, "These {protocol_version_display_name} hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.").unwrap();
                             writeln!(&mut summary, "State changes: {state_change_digest} (allowed to change if not deployed to any network)").unwrap();
                             writeln!(&mut summary, "Events       : {event_digest} (allowed to change if not deployed to any network)").unwrap();

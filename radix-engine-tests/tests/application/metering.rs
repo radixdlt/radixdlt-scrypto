@@ -31,7 +31,7 @@ fn run_cost_tests() {
 
 #[cfg(not(feature = "alloc"))]
 fn run_all(mode: CostingTaskMode) {
-    for protocol_version in ProtocolVersion::all_iterator() {
+    for protocol_version in ProtocolVersion::VARIANTS.into_iter() {
         let folder = path_local_metering_assets(protocol_version.logical_name());
 
         let folder = folder.as_str();
