@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
+use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, StableReferenceType};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_callback_api::RefCheckEvent;
@@ -112,7 +112,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 continue;
             }
 
-            let substate_ref = self
+            let value_ref = self
                 .track
                 .read_substate(
                     node_id,
@@ -121,33 +121,12 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 )
                 .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
 
-            let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            match &type_substate {
-                TypeInfoSubstate::Object(
-                    info @ ObjectInfo {
-                        blueprint_info: BlueprintInfo { blueprint_id, .. },
-                        ..
-                    },
-                ) => {
-                    if info.is_global() {
-                        global_addresses
-                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                    } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
-                        && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                            || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
-                    {
-                        direct_accesses
-                            .insert(InternalAddress::new_or_panic(node_id.clone().into()));
-                    } else {
-                        return Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
-                            node_id.clone(),
-                        ));
-                    }
+            match callback.check_ref(node_id, value_ref)? {
+                StableReferenceType::Global => {
+                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                 }
-                _ => {
-                    return Err(BootloadingError::ReferencedNodeIsNotAnObject(
-                        node_id.clone(),
-                    ));
+                StableReferenceType::DirectAccess => {
+                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
                 }
             }
 
@@ -158,9 +137,9 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                         partition_number: TYPE_INFO_FIELD_PARTITION,
                         substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
                     },
-                    substate_ref.len(),
+                    value_ref.len(),
                 );
-                callback.on_ref_check(RefCheckEvent::IOAccess(&io_access))?;
+                callback.on_boot_ref_check(RefCheckEvent::IOAccess(&io_access))?;
             }
         }
 

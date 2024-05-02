@@ -1,9 +1,6 @@
 use radix_common::prelude::*;
 use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
-use radix_engine::kernel::call_frame::{
-    CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
-    PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
-};
+use radix_engine::kernel::call_frame::{CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, StableReferenceType, TakeNodeError, WriteSubstateError};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -259,11 +256,15 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
     
-    fn on_ref_check(
+    fn on_boot_ref_check(
         &mut self,
         _event: scrypto_test::prelude::RefCheckEvent,
     ) -> Result<(), BootloadingError> {
         Ok(())
+    }
+
+    fn check_ref(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
+        Ok(StableReferenceType::Global)
     }
 }
 

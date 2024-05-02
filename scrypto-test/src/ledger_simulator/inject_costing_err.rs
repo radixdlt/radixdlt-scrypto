@@ -2,7 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
+use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, StableReferenceType};
 use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi, SystemState,
@@ -361,11 +361,19 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         )
     }
 
-    fn on_ref_check(
+    fn on_boot_ref_check(
         &mut self,
-        _event: radix_engine::kernel::kernel_callback_api::RefCheckEvent,
+        event: radix_engine::kernel::kernel_callback_api::RefCheckEvent,
     ) -> Result<(), BootloadingError> {
-        Ok(())
+        self.system.on_boot_ref_check(event)
+    }
+
+    fn check_ref(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        self.system.check_ref(node_id, value)
     }
 }
 

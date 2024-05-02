@@ -1,4 +1,4 @@
-use super::call_frame::CallFrameMessage;
+use super::call_frame::{CallFrameMessage, StableReferenceType};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -179,7 +179,13 @@ pub trait KernelCallbackObject: Sized {
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 
-    fn on_ref_check(&mut self, event: RefCheckEvent) -> Result<(), BootloadingError>;
+    fn check_ref(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError>;
+
+    fn on_boot_ref_check(&mut self, event: RefCheckEvent) -> Result<(), BootloadingError>;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 
