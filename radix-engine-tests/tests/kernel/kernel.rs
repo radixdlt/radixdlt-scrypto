@@ -259,12 +259,10 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
     
-    fn on_ref_check<Y>(
-        _api: &mut Y,
+    fn on_ref_check(
+        &mut self,
         _event: scrypto_test::prelude::RefCheckEvent,
-    ) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self> {
+    ) -> Result<(), BootloadingError> {
         Ok(())
     }
 }

@@ -89,6 +89,84 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
+    fn check_references(
+        &mut self,
+        callback: &mut M,
+        references: &IndexSet<Reference>,
+        costing_enabled: bool,
+    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
+        let mut global_addresses = indexset!();
+        let mut direct_accesses = indexset!();
+
+        for reference in references.iter() {
+            let node_id = &reference.0;
+
+            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                // Allow always visible node and do not add reference
+                continue;
+            }
+
+            if node_id.is_global_virtual() {
+                // Allow global virtual and add reference
+                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                continue;
+            }
+
+            let substate_ref = self
+                .track
+                .read_substate(
+                    node_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+
+            let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
+            match &type_substate {
+                TypeInfoSubstate::Object(
+                    info @ ObjectInfo {
+                        blueprint_info: BlueprintInfo { blueprint_id, .. },
+                        ..
+                    },
+                ) => {
+                    if info.is_global() {
+                        global_addresses
+                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                    } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                        && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                            || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                    {
+                        direct_accesses
+                            .insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                    } else {
+                        return Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
+                            node_id.clone(),
+                        ));
+                    }
+                }
+                _ => {
+                    return Err(BootloadingError::ReferencedNodeIsNotAnObject(
+                        node_id.clone(),
+                    ));
+                }
+            }
+
+            if costing_enabled {
+                let io_access = IOAccess::ReadFromDb(
+                    CanonicalSubstateKey {
+                        node_id: *node_id,
+                        partition_number: TYPE_INFO_FIELD_PARTITION,
+                        substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
+                    },
+                    substate_ref.len(),
+                );
+                callback.on_ref_check(RefCheckEvent::IOAccess(&io_access))?;
+            }
+        }
+
+        Ok((global_addresses, direct_accesses))
+    }
+
     fn execute_internal<'a>(
         mut self,
         executable: &Executable,
@@ -98,17 +176,29 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             v.borrow_mut();
         });
 
+        // Read kernel boot configuration
+        let kernel_boot: KernelBoot = self
+            .track
+            .read_boot_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
+                &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or(KernelBoot::babylon());
+
         // Create System
         let mut callback = M::init(&mut self.track, executable, self.init.clone())?;
 
         // Create Kernel
         let mut kernel = {
-            let mut kernel = Kernel::new(&mut self.track, &mut self.id_allocator, &mut callback);
-
             // Check references
-            let engine_references = kernel
-                .check_references(executable.references())
+            let costing_enabled = kernel_boot.is_ref_check_costing_enabled();
+            let engine_references = self
+                .check_references(&mut callback, executable.references(), costing_enabled)
                 .map_err(RejectionReason::BootloadingError)?;
+
+            let mut kernel = Kernel::new(&mut self.track, &mut self.id_allocator, &mut callback);
 
             // Add visibility
             for global_ref in engine_references.0 {
@@ -194,97 +284,6 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
             prev_frame_stack: vec![],
             callback,
         }
-    }
-
-    pub fn check_references(
-        &mut self,
-        references: &IndexSet<Reference>,
-    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
-        let mut global_addresses = indexset!();
-        let mut direct_accesses = indexset!();
-
-        // Read kernel version
-        // TODO: Can potentially make it an API
-        let kernel_boot: KernelBoot = self
-            .substate_io
-            .store
-            .read_boot_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(KernelBoot::babylon());
-        let costing_enabled = kernel_boot.is_ref_check_costing_enabled();
-
-        for reference in references.iter() {
-            let node_id = &reference.0;
-
-            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-                // Allow always visible node and do not add reference
-                continue;
-            }
-
-            if node_id.is_global_virtual() {
-                // Allow global virtual and add reference
-                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                continue;
-            }
-
-            let substate_ref = self
-                .substate_io
-                .store
-                .read_substate(
-                    node_id,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
-                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
-
-            let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            match &type_substate {
-                TypeInfoSubstate::Object(
-                    info @ ObjectInfo {
-                        blueprint_info: BlueprintInfo { blueprint_id, .. },
-                        ..
-                    },
-                ) => {
-                    if info.is_global() {
-                        global_addresses
-                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                    } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
-                        && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                            || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
-                    {
-                        direct_accesses
-                            .insert(InternalAddress::new_or_panic(node_id.clone().into()));
-                    } else {
-                        return Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
-                            node_id.clone(),
-                        ));
-                    }
-                }
-                _ => {
-                    return Err(BootloadingError::ReferencedNodeIsNotAnObject(
-                        node_id.clone(),
-                    ));
-                }
-            }
-
-            if costing_enabled {
-                let io_access = IOAccess::ReadFromDb(
-                    CanonicalSubstateKey {
-                        node_id: *node_id,
-                        partition_number: TYPE_INFO_FIELD_PARTITION,
-                        substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
-                    },
-                    substate_ref.len(),
-                );
-                M::on_ref_check(self, RefCheckEvent::IOAccess(&io_access))?;
-            }
-        }
-
-        Ok((global_addresses, direct_accesses))
     }
 }
 

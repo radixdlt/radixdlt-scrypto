@@ -179,9 +179,7 @@ pub trait KernelCallbackObject: Sized {
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 
-    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self>;
+    fn on_ref_check(&mut self, event: RefCheckEvent) -> Result<(), BootloadingError>;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 

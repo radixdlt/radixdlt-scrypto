@@ -888,11 +888,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
     }
 
-    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self>,
-    {
-        if let Some(costing) = api.kernel_get_system_state().system.modules.costing_mut() {
+    fn on_ref_check(&mut self, event: RefCheckEvent) -> Result<(), BootloadingError> {
+        if let Some(costing) = self.modules.costing_mut() {
             costing
                 .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
                 .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
