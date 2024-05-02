@@ -54,7 +54,7 @@ where
     /// How the executor should handle nonces and how it should get the next nonce.
     next_scenario_nonce_handling: ScenarioStartNonceHandling,
     /// The network definition to use in the execution of the scenarios.
-    network_definition: NetworkDefinition,
+    network_definition: &'a NetworkDefinition,
 
     /* Callbacks */
     /// A callback that is called when a scenario transaction is executed.
@@ -81,7 +81,7 @@ where
 {
     pub fn new(
         database: D,
-        network_definition: &NetworkDefinition,
+        network_definition: &'a NetworkDefinition,
     ) -> DefaultTransactionScenarioExecutor<'a, D> {
         DefaultTransactionScenarioExecutor::<'a, D> {
             /* Environment */
@@ -95,7 +95,7 @@ where
             starting_nonce: 0,
             next_scenario_nonce_handling:
                 ScenarioStartNonceHandling::PreviousScenarioEndNoncePlusOne,
-            network_definition: network_definition.clone(),
+            network_definition,
             /* Callbacks */
             on_transaction_executed: Box::new(|_, _, _, _| {}),
             on_scenario_started: Box::new(|_| {}),
@@ -218,7 +218,7 @@ where
         &mut self,
     ) -> Result<(), ScenarioExecutorError> {
         self.execute_protocol_updates_and_scenarios(
-            ProtocolBuilder::for_network(&self.network_definition).until_latest_protocol_version(),
+            ProtocolBuilder::for_network(self.network_definition).until_latest_protocol_version(),
             ScenarioTrigger::AtStartOfEveryProtocolVersion,
             ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
         )
