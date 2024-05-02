@@ -626,7 +626,7 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
         }
     }
 
-    pub fn lookup_schema<T: AsRef<NodeId> + Into<NodeId>>(
+    pub fn lookup_schema<T: AsRef<NodeId>>(
         &self,
         full_type_id: &FullyScopedTypeId<T>,
     ) -> Option<(LocalTypeId, Rc<VersionedScryptoSchema>)> {
@@ -1320,7 +1320,7 @@ fn display_event<'a, F: fmt::Write>(
     Ok(())
 }
 
-fn format_scrypto_value_with_full_type_id<'a, F: fmt::Write, T: Into<NodeId> + AsRef<NodeId>>(
+fn format_scrypto_value_with_full_type_id<'a, F: fmt::Write, T: AsRef<NodeId>>(
     f: &mut F,
     print_mode: PrintMode,
     raw_value: ScryptoRawValue<'_>,
