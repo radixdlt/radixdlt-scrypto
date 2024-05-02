@@ -4,11 +4,11 @@ Radix Engine is organized into 5 layers. Each layer has specific responsibilitie
 provides an API to the layer above. Middle layers also provide a Callback API which the
 layer above must implement.
 
-| Layer Name  | Layer ID | Responsibilities                                                                                                                                                           |
-|-------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Application | 5        | Defines Blueprints and Application Logic                                                                                                                                   |
-| VM          | 4        | Interprets Application Code                                                                                                                                                |
-| System      | 3        | Defines Package, Blueprint, Object abstractions<br>Defines System Standards such as Authorization and Versioning<br>Type Checks during Runtime                             |
-| Kernel      | 2        | Defines Node, Partition, Substate abstractions<br>Maintains Call Frame Stack<br>Manages Ownership/Reference handling invariants<br>Provides State Virtualization Mechanism |
-| Database    | 1        | Defines PartitionKey, SortKey abstractions                                                                                                                                 |
+| Layer Name  | Layer ID | Responsibilities                                                                                                         |
+|-------------|----------|--------------------------------------------------------------------------------------------------------------------------|
+| Application | 5        | Defines Blueprint Application Logic                                                                                      |
+| VM          | 4        | Executes Application Code                                                                                                |
+| System      | 3        | Defines Package, Blueprint, Object abstractions<br>Defines System Standards such as Authorization and Versioning         |
+| Kernel      | 2        | Defines Node, Partition, Substate abstractions<br>Maintains Call Frame Stack<br>Maintains Ownership/Reference invariants |
+| Database    | 1        | Defines PartitionKey, SortKey abstractions                                                                               |
 

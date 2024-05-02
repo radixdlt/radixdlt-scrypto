@@ -6,6 +6,9 @@
 
 - [Layered Architecture](architecture/layers.md)
 - [Application Layer](architecture/application/README.md)
+  - [Object Model](architecture/application/object/README.md)
+    - [Inner and Outer Objects](architecture/application/object/inner_outer_objects.md)
+    - [Object Modules](architecture/application/object/object_modules.md)
   - [Blueprint](architecture/application/blueprint/README.md)
     - [Inner and Outer Blueprints](architecture/application/blueprint/inner_outer.md)
     - [Transience](architecture/application/blueprint/transience.md)
