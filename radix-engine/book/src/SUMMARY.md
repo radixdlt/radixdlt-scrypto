@@ -33,17 +33,18 @@
 
 # Execution
 
-- [Transaction Lifecycle](execution/lifecycle/README.md)
-  - [Bootup](execution/lifecycle/bootup.md)
-  - [Runtime](execution/lifecycle/runtime.md)
-  - [Shutdown](execution/lifecycle/shutdown.md)
+- [Transaction Lifecycle](execution/transaction_lifecycle/README.md)
+  - [Bootup](execution/transaction_lifecycle/bootup.md)
+  - [Runtime](execution/transaction_lifecycle/runtime.md)
+  - [Shutdown](execution/transaction_lifecycle/shutdown.md)
 - [Application Environment](execution/environment/README.md)
+  - [Objects](execution/environment/object_lifecycle.md)
   - [Invocations](execution/environment/invocations.md)
-  - [Object Lifecycle](execution/environment/object_lifecycle.md)
-  - [State Reads/Writes]()
+  - [State Reads/Writes](execution/environment/state_reads_writes.md)
 
 # Native Systems
 
+- [Type Checking]()
 - [Authorization](native/access_control/README)
   - [Role Definition](native/access_control/role_definition.md)
   - [Role Assignment](native/access_control/role_assignment.md)
