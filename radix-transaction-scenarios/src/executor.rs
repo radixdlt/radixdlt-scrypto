@@ -230,14 +230,20 @@ where
         trigger: ScenarioTrigger,
         filter: ScenarioFilter,
     ) -> Result<(), ScenarioExecutorError> {
-        Bootstrapper::new(
-            self.network_definition.clone(),
-            &mut self.database,
-            VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
-            false,
-        )
-        .bootstrap_test_default()
-        .ok_or(ScenarioExecutorError::BootstrapFailed)?;
+        // TODO: Remove me once genesis/babylon is a protocol update.
+        //
+        // Bootstrapping fails if the database has already been bootstrapped, if the error from that
+        // is bubbled up then execution of scenarios on an already bootstrapped database would fail.
+        // Therefore, we attempt to bootstrap and ignore whatever the outcome of the bootstrap is.
+        drop(
+            Bootstrapper::new(
+                self.network_definition.clone(),
+                &mut self.database,
+                VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
+                false,
+            )
+            .bootstrap_test_default(),
+        );
 
         let mut current_protocol_version = ProtocolVersion::Genesis;
 
