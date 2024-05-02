@@ -9,21 +9,30 @@ pub trait ClientCostingApi<E> {
     /// Add cost units to the reserve. This should never fail.
     fn lock_fee(&mut self, locked_fee: LiquidFungibleResource, contingent: bool);
 
+    /// Consume an amount of cost units.
     fn consume_cost_units(&mut self, costing_entry: ClientCostingEntry) -> Result<(), E>;
 
+    /// Retrieve the cost unit limit for the transaction
     fn execution_cost_unit_limit(&mut self) -> Result<u32, E>;
 
+    /// Retrieve the cost unit price in XRD
     fn execution_cost_unit_price(&mut self) -> Result<Decimal, E>;
 
+    /// Retrieve the cost unit limit for finalization
     fn finalization_cost_unit_limit(&mut self) -> Result<u32, E>;
 
+    /// Retrieve the cost unit finalization price in XRD
     fn finalization_cost_unit_price(&mut self) -> Result<Decimal, E>;
 
+    /// Retrieve the usd price of XRD
     fn usd_price(&mut self) -> Result<Decimal, E>;
 
+    /// Retrieve the maximum allowable royalty per function
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, E>;
 
+    /// Retrieve the tip percentage of the transaction
     fn tip_percentage(&mut self) -> Result<u32, E>;
 
+    /// Retrieve the current fee balance in XRD
     fn fee_balance(&mut self) -> Result<Decimal, E>;
 }

@@ -26,22 +26,25 @@
   - [Object Implementation]()
   - [System Module]()
 - [Kernel Layer](architecture/kernel/README.md)
+  - [Call Frame]()
   - [DB Partition Key]()
   - [DB Sort Key]()
 - [Database Layer](architecture/database/README.md)
 
 # Execution
 
-- [Transaction Lifecycle](execution/lifecycle.md)
-  - [Bootup](execution/bootup.md)
-  - [Runtime]()
-  - [Shutdown](execution/shutdown.md)
-- [WASM Environment](execution/wasm_environment.md)
-- [Object Lifecycle]()
-  - [Instantiation]()
-  - [Destruction]()
-- [State Reads/Writes]()
-- [Invocations]()
+- [Transaction Lifecycle](execution/lifecycle/README.md)
+  - [Bootup](execution/lifecycle/bootup.md)
+  - [Runtime](execution/lifecycle/runtime.md)
+  - [Shutdown](execution/lifecycle/shutdown.md)
+- [Application Environment](execution/environment/README.md)
+  - [Object Lifecycle]()
+    - [Instantiation]()
+    - [Destruction]()
+  - [Global Address Reservation]()
+  - [State Reads/Writes]()
+  - [Key Value Stores]()
+  - [Invocations]()
 
 # Native Systems
 

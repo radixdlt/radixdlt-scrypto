@@ -48,12 +48,12 @@ pub type CollectionIndex = u8;
 pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     ClientActorApi<E>
     + ClientActorKeyValueEntryApi<E>
-    + ClientObjectApi<E>
+    + ClientActorIndexApi<E>
+    + ClientActorSortedIndexApi<E>
     + ClientKeyValueStoreApi<E>
     + ClientKeyValueEntryApi<E>
-    + ClientActorSortedIndexApi<E>
-    + ClientActorIndexApi<E>
     + ClientFieldApi<E>
+    + ClientObjectApi<E>
     + ClientBlueprintApi<E>
     + ClientCostingApi<E>
     + ClientTransactionRuntimeApi<E>
