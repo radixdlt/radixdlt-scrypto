@@ -299,4 +299,25 @@ mod test {
     pub fn validate_all_generated_scenarios() {
         run_all(DumperMode::Assert)
     }
+
+    #[test]
+    pub fn validate_the_metadata_of_all_scenarios() {
+        DefaultTransactionScenarioExecutor::new(InMemorySubstateDatabase::standard(), &NetworkDefinition::simulator())
+            .on_scenario_started(|metadata| {
+                if let Some(testnet_run_at) = metadata.testnet_run_at {
+                    assert!(
+                        testnet_run_at >= metadata.protocol_min_requirement,
+                        "Scenario is set to run on a testnet of an earlier version than the scenario's minimum version: {}",
+                        metadata.logical_name
+                    );
+                }
+
+                assert!(
+                    !metadata.logical_name.contains(' '),
+                    "Scenario logical name contains a space: {}",
+                    metadata.logical_name
+                );
+            })
+            .execute_every_protocol_update_and_scenario();
+    }
 }
