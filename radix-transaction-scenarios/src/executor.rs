@@ -156,7 +156,7 @@ where
         }
     }
 
-    /// Sets the starting nonce for executing scenarios.
+    /// Sets the execution config to use when executing scenario transactions.
     pub fn scenario_execution_config(mut self, config: ExecutionConfig) -> Self {
         self.scenario_execution_config = config;
         self
