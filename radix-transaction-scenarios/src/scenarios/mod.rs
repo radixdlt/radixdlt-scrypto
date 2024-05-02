@@ -1,6 +1,7 @@
 use super::*;
 use internal_prelude::*;
 
+mod access_controller_v2;
 mod account_authorized_depositors;
 mod account_locker;
 mod fungible_resource;
@@ -47,6 +48,7 @@ lazy_static::lazy_static! {
         add(&mut map, royalties::RoyaltiesScenarioCreator);
         add(&mut map, account_locker::AccountLockerScenarioCreator);
         add(&mut map, maya_router::MayaRouterScenarioCreator);
+        add(&mut map, access_controller_v2::AccessControllerV2ScenarioCreator);
 
         map
     };
