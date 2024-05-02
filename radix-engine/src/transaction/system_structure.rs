@@ -1,12 +1,13 @@
 use crate::internal_prelude::*;
-use crate::system::system_callback::BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY;
+use crate::kernel::kernel::*;
+use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
 use crate::system::system_type_checker::BlueprintTypeTarget;
 use crate::system::type_info::TypeInfoSubstate;
 use crate::track::{
     BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
 };
-use crate::vm::BOOT_LOADER_VM_BOOT_FIELD_KEY;
+use crate::vm::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_substate_store_interface::interface::SubstateDatabase;
 
@@ -41,8 +42,9 @@ pub enum SystemFieldKind {
 
 #[derive(Clone, Debug, ScryptoSbor, PartialEq, Eq)]
 pub enum BootLoaderFieldKind {
-    VmBoot,
+    KernelBoot,
     SystemBoot,
+    VmBoot,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -233,6 +235,7 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                             .for_field()
                             .expect("BootLoader substates are expected to be fields");
                         let kind = match *field_num {
+                            BOOT_LOADER_KERNEL_BOOT_FIELD_KEY => BootLoaderFieldKind::KernelBoot,
                             BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY => {
                                 BootLoaderFieldKind::SystemBoot
                             }
