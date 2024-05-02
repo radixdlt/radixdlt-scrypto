@@ -18,10 +18,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-
 jobs:
   snyk-sbom-scan:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       pull-requests: read
