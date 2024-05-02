@@ -27,10 +27,6 @@ jobs:
       contents: read
       deployments: write
     steps:
-      - name: Debug
-        run: |
-          ls -a
-          pwd
       - name: Snyk SBOM scan
         uses: radixdlt/public-iac-resuable-artifacts/snyk-sbom-scan@DO-2450-snyk-rust
         with:
