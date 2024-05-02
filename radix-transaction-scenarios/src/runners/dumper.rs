@@ -279,9 +279,9 @@ mod test {
                 executor.execute_protocol_updates_and_scenarios(
                     ProtocolBuilder::for_network(&network_definition).until(protocol_version),
                     ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
-                    ScenarioFilter::ValidScenariosFrom(
-                        btreeset!(scenario_logical_name.to_string()),
-                    ),
+                    ScenarioFilter::SpecificScenariosByName(btreeset!(
+                        scenario_logical_name.to_string()
+                    )),
                 );
 
                 scenario_folder.verify_complete_recursive();

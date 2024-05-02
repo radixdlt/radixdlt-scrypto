@@ -27,7 +27,7 @@ pub enum ScenarioTrigger {
 
 #[derive(Clone, Debug)]
 pub enum ScenarioFilter {
-    ValidScenariosFrom(BTreeSet<String>),
+    SpecificScenariosByName(BTreeSet<String>),
     AllScenariosValidAtProtocolVersion,
     AllScenariosFirstValidAtProtocolVersion,
 }
@@ -287,7 +287,7 @@ where
                 return false;
             }
             match filter {
-                ScenarioFilter::ValidScenariosFrom(scenario_names) => {
+                ScenarioFilter::SpecificScenariosByName(scenario_names) => {
                     scenario_names.contains(&**logical_name)
                 }
                 ScenarioFilter::AllScenariosValidAtProtocolVersion => true,
