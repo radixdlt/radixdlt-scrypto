@@ -20,13 +20,17 @@ concurrency:
 
 jobs:
   snyk-sbom-scan:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       pull-requests: read
       contents: read
       deployments: write
     steps:
+      - name: Debug
+        run: |
+          ls -a
+          pwd
       - name: Snyk SBOM scan
         uses: radixdlt/public-iac-resuable-artifacts/snyk-sbom-scan@DO-2450-snyk-rust
         with:
