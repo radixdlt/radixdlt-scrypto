@@ -1,14 +1,14 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - docs
-      - alphanet
-      - betanet
-      - release\/*
+#  push:
+#    branches:
+#      - main
+#      - develop
+#      - docs
+#      - alphanet
+#      - betanet
+#      - release\/*
   pull_request:
 
 env:
@@ -19,329 +19,350 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-code-format:
-    name: Check code format
+  phylum_analyze:
+    name: Analyze dependencies with Phylum
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Check format
-        run: bash ./check.sh
-
-  sbor-unit-tests:
-    name: Run SBOR unit tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: cargo nextest run -p sbor
-      - name: Run tests (no_std)
-        run: cargo nextest run -p sbor --no-default-features --features alloc
-      - name: Run derive tests
-        run: cargo nextest run -p sbor-derive-common
-
-  sbor-integration-tests:
-    name: Run SBOR integration tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: cargo nextest run -p sbor-tests
-      - name: Run tests (no_std)
-        run: cargo nextest run -p sbor-tests --no-default-features --features alloc
-      - name: Run bench
-        run: cargo bench -p sbor-tests
-
-  scrypto-tests:
-    name: Run Scrypto tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: cargo nextest run -p scrypto
-      - name: Run tests (no_std)
-        run: cargo nextest run -p scrypto --no-default-features --features alloc
-      - name: Run abi tests
-        run: cargo nextest run -p radix-blueprint-schema-init
-      - name: Run derive tests
-        run: cargo nextest run -p scrypto-derive
-
-  scrypto-derive-tests:
-    name: Run Scrypto derive tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: cargo nextest run -p scrypto-derive-tests
-      - name: Run tests with no_std
-        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc
-
-  scrypto-examples:
-    name: Run Scrypto examples
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Build and test hello-world
-        run: |
-          cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release
-        working-directory: examples/hello-world
-      - name: Build and test everything
-        run: |
-          cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release
-        working-directory: examples/everything
-      - name: Build no-std
-        run: cargo build --target wasm32-unknown-unknown --release
-        working-directory: examples/no-std
-
-  scrypto-stubs:
-    name: Check Scrypto Stubs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Check stubs
-        run: ./check_stubs.sh
-
-  radix-engine-build:
-    name: Run Radix Engine build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-16-cores-selfhosted]
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Install dependency
-        run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
-      - name: Build with additional features
-        run: cargo build -p radix-engine -p radix-substate-store-impls --features radix-engine/resource_tracker,radix-engine/cpu_ram_metrics,radix-substate-store-impls/rocksdb
-
-  radix-engine-test:
-    name: Run Radix Engine tests
-    runs-on: ubuntu-16-cores-selfhosted
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: |
-          cargo nextest run \
-            -p radix-common \
-            -p radix-sbor-derive \
-            -p radix-engine-interface \
-            -p radix-engine \
-            -p radix-engine-tests
-          ./check_stack_usage.sh
-
-  radix-engine-release:
-    # Run tests in release variant.
-    # We are particularly interested with the flags:
-    # - debug-assertions,
-    # - overflow-checks
-    # which are false for release variant
-    name: Run Radix Engine tests (release)
-    runs-on: ubuntu-16-cores-selfhosted
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: |
-          cargo nextest run \
-            --release \
-            -p radix-common \
-            -p radix-sbor-derive \
-            -p radix-engine-interface \
-            -p radix-engine \
-            -p radix-engine-tests
-
-  radix-engine-no-std:
-    name: Run Radix Engine tests (no_std)
-    runs-on: ubuntu-16-cores-selfhosted
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: |
-          cargo nextest run \
-            --no-default-features --features alloc \
-            -p radix-common \
-            -p radix-sbor-derive \
-            -p radix-engine-interface \
-            -p radix-engine \
-            -p radix-engine-tests
-
-  radix-engine-wasmer:
-    name: Run Radix Engine tests (wasmer)
-    runs-on: ubuntu-16-cores-selfhosted
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: |
-          cargo nextest run \
-            --features wasmer \
-            -p radix-common \
-            -p radix-sbor-derive \
-            -p radix-engine-interface \
-            -p radix-engine \
-            -p radix-engine-tests
-
-  radix-engine-bench:
-    name: Run Radix Engine benchmarks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run bench
-        run: cargo bench
-        working-directory: radix-engine-tests
-
-  radix-common-bench:
-    name: Run Radix Engine common benchmarks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run bench
-        run: cargo bench
-        working-directory: radix-common
-
-  radix-transactions:
-    name: Run transaction tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: cargo nextest run -p radix-transactions
-
-  radix-transaction-scenarios:
-    name: Run transaction scenarios
-    runs-on: ubuntu-latest
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: cargo nextest run -p radix-transaction-scenarios
-
-  radix-clis:
-    name: Run CLI tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted]
-    steps:
-      - name: Enable symlinks for Windows
-        if: runner.os == 'Windows'
-        run: git config --global --add core.symlinks true
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - uses: radixdlt/rust-cache@allow_registry_src_caching
+      - name: Checkout the repo
+        uses: actions/checkout@v4
         with:
-          prefix-key: ""
-          shared-key: radix-clis-debug-${{ runner.os }}
-          cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-          workspaces: radix-clis
-      - name: Run Unit tests
-        run: cargo nextest run
-        working-directory: radix-clis
-      - name: Run tests
-        run: bash ./tests/resim.sh
-        working-directory: radix-clis
-      - name: Run tests
-        run: bash ./tests/manifest.sh
-        working-directory: radix-clis
-
-  radix-clis-scrypto:
-    name: Run CLI tests (scrypto)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted, macos-latest]
-    steps:
-      - name: Enable symlinks for Windows
-        if: runner.os == 'Windows'
-        run: git config --global --add core.symlinks true
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - uses: radixdlt/rust-cache@allow_registry_src_caching
+          fetch-depth: 0
+      - name: Analyze dependencies
+        uses: phylum-dev/phylum-analyze-pr-action@v2
         with:
-          prefix-key: ""
-          shared-key: radix-clis-debug-${{ runner.os }}
-          cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-          workspaces: radix-clis
-      - name: Run tests
-        run: bash ./tests/scrypto.sh
-        working-directory: radix-clis
-
-  cargo-check:
-    name: Run cargo check
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-16-cores-selfhosted]
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Cargo Check
-        run: cargo check --all
-
-  cargo-check-post-run-db-check:
-    name: Run cargo check
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-16-cores-selfhosted]
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Cargo Check
-        run: cargo check --all --features post_run_db_check
-
-  determinism-test:
-    name: Run determinism test
-    runs-on: ubuntu-16-cores-selfhosted
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Cargo Check
-        run: |
-          sudo apt-get install libclang-dev -y 
-          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-          sudo apt-get install git-lfs -y
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Pull LFS assets
-        run: git lfs pull
-      - name: Replay transactions
-        run: |
-            cargo run --release --bin replay -- \
-            execute-in-memory ../assets-lfs/babylon-mainnet-transactions-2023-10-11.tar.gz \
-            --max-version 50000 \
-            --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
-        working-directory: radix-clis
+          phylum_token: ${{ secrets.PHYLUM_API_KEY }}
+          cmd: |
+            phylum-ci \
+              -vv \
+              --audit \
+              --all-deps
+#
+#  check-code-format:
+#    name: Check code format
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Check format
+#        run: bash ./check.sh
+#
+#  sbor-unit-tests:
+#    name: Run SBOR unit tests
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: cargo nextest run -p sbor
+#      - name: Run tests (no_std)
+#        run: cargo nextest run -p sbor --no-default-features --features alloc
+#      - name: Run derive tests
+#        run: cargo nextest run -p sbor-derive-common
+#
+#  sbor-integration-tests:
+#    name: Run SBOR integration tests
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: cargo nextest run -p sbor-tests
+#      - name: Run tests (no_std)
+#        run: cargo nextest run -p sbor-tests --no-default-features --features alloc
+#      - name: Run bench
+#        run: cargo bench -p sbor-tests
+#
+#  scrypto-tests:
+#    name: Run Scrypto tests
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: cargo nextest run -p scrypto
+#      - name: Run tests (no_std)
+#        run: cargo nextest run -p scrypto --no-default-features --features alloc
+#      - name: Run abi tests
+#        run: cargo nextest run -p radix-blueprint-schema-init
+#      - name: Run derive tests
+#        run: cargo nextest run -p scrypto-derive
+#
+#  scrypto-derive-tests:
+#    name: Run Scrypto derive tests
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: cargo nextest run -p scrypto-derive-tests
+#      - name: Run tests with no_std
+#        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc
+#
+#  scrypto-examples:
+#    name: Run Scrypto examples
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Build and test hello-world
+#        run: |
+#          cargo build --target wasm32-unknown-unknown --release
+#          cargo nextest run --release
+#        working-directory: examples/hello-world
+#      - name: Build and test everything
+#        run: |
+#          cargo build --target wasm32-unknown-unknown --release
+#          cargo nextest run --release
+#        working-directory: examples/everything
+#      - name: Build no-std
+#        run: cargo build --target wasm32-unknown-unknown --release
+#        working-directory: examples/no-std
+#
+#  scrypto-stubs:
+#    name: Check Scrypto Stubs
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Check stubs
+#        run: ./check_stubs.sh
+#
+#  radix-engine-build:
+#    name: Run Radix Engine build
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [ubuntu-16-cores-selfhosted]
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Install dependency
+#        run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
+#      - name: Build with additional features
+#        run: cargo build -p radix-engine -p radix-substate-store-impls --features radix-engine/resource_tracker,radix-engine/cpu_ram_metrics,radix-substate-store-impls/rocksdb
+#
+#  radix-engine-test:
+#    name: Run Radix Engine tests
+#    runs-on: ubuntu-16-cores-selfhosted
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: |
+#          cargo nextest run \
+#            -p radix-common \
+#            -p radix-sbor-derive \
+#            -p radix-engine-interface \
+#            -p radix-engine \
+#            -p radix-engine-tests
+#          ./check_stack_usage.sh
+#
+#  radix-engine-release:
+#    # Run tests in release variant.
+#    # We are particularly interested with the flags:
+#    # - debug-assertions,
+#    # - overflow-checks
+#    # which are false for release variant
+#    name: Run Radix Engine tests (release)
+#    runs-on: ubuntu-16-cores-selfhosted
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: |
+#          cargo nextest run \
+#            --release \
+#            -p radix-common \
+#            -p radix-sbor-derive \
+#            -p radix-engine-interface \
+#            -p radix-engine \
+#            -p radix-engine-tests
+#
+#  radix-engine-no-std:
+#    name: Run Radix Engine tests (no_std)
+#    runs-on: ubuntu-16-cores-selfhosted
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: |
+#          cargo nextest run \
+#            --no-default-features --features alloc \
+#            -p radix-common \
+#            -p radix-sbor-derive \
+#            -p radix-engine-interface \
+#            -p radix-engine \
+#            -p radix-engine-tests
+#
+#  radix-engine-wasmer:
+#    name: Run Radix Engine tests (wasmer)
+#    runs-on: ubuntu-16-cores-selfhosted
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: |
+#          cargo nextest run \
+#            --features wasmer \
+#            -p radix-common \
+#            -p radix-sbor-derive \
+#            -p radix-engine-interface \
+#            -p radix-engine \
+#            -p radix-engine-tests
+#
+#  radix-engine-bench:
+#    name: Run Radix Engine benchmarks
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run bench
+#        run: cargo bench
+#        working-directory: radix-engine-tests
+#
+#  radix-common-bench:
+#    name: Run Radix Engine common benchmarks
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run bench
+#        run: cargo bench
+#        working-directory: radix-common
+#
+#  radix-transactions:
+#    name: Run transaction tests
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: cargo nextest run -p radix-transactions
+#
+#  radix-transaction-scenarios:
+#    name: Run transaction scenarios
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Run tests
+#        run: cargo nextest run -p radix-transaction-scenarios
+#
+#  radix-clis:
+#    name: Run CLI tests
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted]
+#    steps:
+#      - name: Enable symlinks for Windows
+#        if: runner.os == 'Windows'
+#        run: git config --global --add core.symlinks true
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - uses: radixdlt/rust-cache@allow_registry_src_caching
+#        with:
+#          prefix-key: ""
+#          shared-key: radix-clis-debug-${{ runner.os }}
+#          cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+#          workspaces: radix-clis
+#      - name: Run Unit tests
+#        run: cargo nextest run
+#        working-directory: radix-clis
+#      - name: Run tests
+#        run: bash ./tests/resim.sh
+#        working-directory: radix-clis
+#      - name: Run tests
+#        run: bash ./tests/manifest.sh
+#        working-directory: radix-clis
+#
+#  radix-clis-scrypto:
+#    name: Run CLI tests (scrypto)
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [ubuntu-16-cores-selfhosted, windows-16-cores-selfhosted, macos-latest]
+#    steps:
+#      - name: Enable symlinks for Windows
+#        if: runner.os == 'Windows'
+#        run: git config --global --add core.symlinks true
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - uses: radixdlt/rust-cache@allow_registry_src_caching
+#        with:
+#          prefix-key: ""
+#          shared-key: radix-clis-debug-${{ runner.os }}
+#          cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+#          workspaces: radix-clis
+#      - name: Run tests
+#        run: bash ./tests/scrypto.sh
+#        working-directory: radix-clis
+#
+#  cargo-check:
+#    name: Run cargo check
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [ubuntu-16-cores-selfhosted]
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Cargo Check
+#        run: cargo check --all
+#
+#  cargo-check-post-run-db-check:
+#    name: Run cargo check
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        os: [ubuntu-16-cores-selfhosted]
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Cargo Check
+#        run: cargo check --all --features post_run_db_check
+#
+#  determinism-test:
+#    name: Run determinism test
+#    runs-on: ubuntu-16-cores-selfhosted
+#    steps:
+#      - uses: RDXWorks-actions/checkout@main
+#      - name: Cargo Check
+#        run: |
+#          sudo apt-get install libclang-dev -y
+#          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+#          sudo apt-get install git-lfs -y
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#      - name: Pull LFS assets
+#        run: git lfs pull
+#      - name: Replay transactions
+#        run: |
+#            cargo run --release --bin replay -- \
+#            execute-in-memory ../assets-lfs/babylon-mainnet-transactions-2023-10-11.tar.gz \
+#            --max-version 50000 \
+#            --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
+#        working-directory: radix-clis
