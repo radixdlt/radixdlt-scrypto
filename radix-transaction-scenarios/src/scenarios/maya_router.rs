@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 use crate::utils::{new_ed25519_private_key, new_secp256k1_private_key};
-use radix_engine::updates::{ProtocolUpdate, ProtocolVersion};
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::ModuleConfig;
@@ -54,20 +54,20 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
     type Config = MayaRouterScenarioConfig;
     type State = MayaRouterScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion =
-        ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose);
+
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "maya_router",
+        protocol_min_requirement: ProtocolVersion::Bottlenose,
+        testnet_run_at: Some(ProtocolVersion::Bottlenose),
+    };
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "maya_router",
-        };
-
         #[allow(unused_variables)]
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, _| {
                     core.next_transaction_with_faucet_lock_fee(

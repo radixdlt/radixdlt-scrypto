@@ -23,8 +23,8 @@ impl ScryptoVmV1Api {
     ) -> Vec<u8> {
         copy_buffer(unsafe {
             blueprint::blueprint_call(
-                package_address.as_ref().as_ptr(),
-                package_address.as_ref().len(),
+                package_address.as_bytes().as_ptr(),
+                package_address.as_bytes().len(),
                 blueprint_name.as_ptr(),
                 blueprint_name.len(),
                 function_name.as_ptr(),
@@ -62,8 +62,8 @@ impl ScryptoVmV1Api {
 
         let bytes = copy_buffer(unsafe {
             object::object_globalize(
-                object_id.as_ref().as_ptr(),
-                object_id.as_ref().len(),
+                object_id.as_bytes().as_ptr(),
+                object_id.as_bytes().len(),
                 modules.as_ptr(),
                 modules.len(),
                 address_reservation.as_ptr(),
@@ -76,10 +76,10 @@ impl ScryptoVmV1Api {
     pub fn object_instance_of(node_id: &NodeId, blueprint_id: &BlueprintId) -> bool {
         let rtn = unsafe {
             object::object_instance_of(
-                node_id.as_ref().as_ptr(),
-                node_id.as_ref().len(),
-                blueprint_id.package_address.as_ref().as_ptr(),
-                blueprint_id.package_address.as_ref().len(),
+                node_id.as_bytes().as_ptr(),
+                node_id.as_bytes().len(),
+                blueprint_id.package_address.as_bytes().as_ptr(),
+                blueprint_id.package_address.as_bytes().len(),
                 blueprint_id.blueprint_name.as_ptr(),
                 blueprint_id.blueprint_name.len(),
             )
@@ -90,7 +90,7 @@ impl ScryptoVmV1Api {
 
     pub fn object_get_blueprint_id(node_id: &NodeId) -> BlueprintId {
         let bytes = copy_buffer(unsafe {
-            object::object_get_blueprint_id(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            object::object_get_blueprint_id(node_id.as_bytes().as_ptr(), node_id.as_bytes().len())
         });
 
         BlueprintId {
@@ -105,7 +105,7 @@ impl ScryptoVmV1Api {
 
     pub fn object_get_outer_object(node_id: &NodeId) -> GlobalAddress {
         let bytes = copy_buffer(unsafe {
-            object::object_get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            object::object_get_outer_object(node_id.as_bytes().as_ptr(), node_id.as_bytes().len())
         });
 
         GlobalAddress::try_from(bytes.as_slice()).unwrap()
@@ -114,8 +114,8 @@ impl ScryptoVmV1Api {
     pub fn object_call(receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
         copy_buffer(unsafe {
             object::object_call(
-                receiver.as_ref().as_ptr(),
-                receiver.as_ref().len(),
+                receiver.as_bytes().as_ptr(),
+                receiver.as_bytes().len(),
                 method_name.as_ptr(),
                 method_name.len(),
                 args.as_ptr(),
@@ -132,8 +132,8 @@ impl ScryptoVmV1Api {
     ) -> Vec<u8> {
         copy_buffer(unsafe {
             object::object_call_module(
-                receiver.as_ref().as_ptr(),
-                receiver.as_ref().len(),
+                receiver.as_bytes().as_ptr(),
+                receiver.as_bytes().len(),
                 module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),
@@ -146,8 +146,8 @@ impl ScryptoVmV1Api {
     pub fn object_call_direct(receiver: &NodeId, method_name: &str, args: Vec<u8>) -> Vec<u8> {
         copy_buffer(unsafe {
             object::object_call_direct(
-                receiver.as_ref().as_ptr(),
-                receiver.as_ref().len(),
+                receiver.as_bytes().as_ptr(),
+                receiver.as_bytes().len(),
                 method_name.as_ptr(),
                 method_name.len(),
                 args.as_ptr(),
@@ -170,8 +170,8 @@ impl ScryptoVmV1Api {
     ) -> KeyValueEntryHandle {
         let handle = unsafe {
             kv_store::kv_store_open_entry(
-                node_id.as_ref().as_ptr(),
-                node_id.as_ref().len(),
+                node_id.as_bytes().as_ptr(),
+                node_id.as_bytes().len(),
                 key.as_ptr(),
                 key.len(),
                 flags.bits(),
@@ -184,8 +184,8 @@ impl ScryptoVmV1Api {
     pub fn kv_store_remove_entry(node_id: &NodeId, key: &Vec<u8>) -> Vec<u8> {
         let removed = copy_buffer(unsafe {
             kv_store::kv_store_remove_entry(
-                node_id.as_ref().as_ptr(),
-                node_id.as_ref().len(),
+                node_id.as_bytes().as_ptr(),
+                node_id.as_bytes().len(),
                 key.as_ptr(),
                 key.len(),
             )

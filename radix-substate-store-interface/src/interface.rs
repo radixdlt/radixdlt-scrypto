@@ -1,8 +1,4 @@
-use radix_common::Sbor;
-use radix_rust::prelude::index_map_new;
-use radix_rust::rust::boxed::Box;
-use radix_rust::rust::collections::IndexMap;
-use radix_rust::rust::vec::Vec;
+use radix_common::prelude::*;
 
 pub type DbNodeKey = Vec<u8>;
 
@@ -109,6 +105,15 @@ impl Default for PartitionDatabaseUpdates {
 pub enum DatabaseUpdate {
     Set(DbSubstateValue),
     Delete,
+}
+
+impl DatabaseUpdate {
+    pub fn as_change(&self) -> SubstateChange<'_> {
+        match self {
+            DatabaseUpdate::Set(update) => SubstateChange::Upsert(update),
+            DatabaseUpdate::Delete => SubstateChange::Delete,
+        }
+    }
 }
 
 impl DatabaseUpdates {
