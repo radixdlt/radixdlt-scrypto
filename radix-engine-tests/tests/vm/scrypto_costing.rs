@@ -1,4 +1,5 @@
 use radix_common::prelude::*;
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
@@ -51,7 +52,9 @@ fn usd_price_costing_after_protocol_update() {
 
     // Call usd_price() function after Bottlenose protocol update
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.until_babylon())
+        .with_custom_protocol(|builder: radix_engine::updates::ProtocolBuilder| {
+            builder.until(ProtocolVersion::Bottlenose)
+        })
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("costing"));
     let manifest = ManifestBuilder::new()
