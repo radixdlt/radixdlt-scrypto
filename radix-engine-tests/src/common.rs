@@ -78,19 +78,6 @@ pub mod path_macros {
     }
 
     #[macro_export]
-    macro_rules! path_workspace_blueprint {
-        ($package: expr, $name: expr) => {
-            concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../",
-                $package,
-                "/assets/blueprints/",
-                $name
-            )
-        };
-    }
-
-    #[macro_export]
     macro_rules! path_workspace_transaction_examples {
         ($name: expr) => {
             concat!(
@@ -115,18 +102,16 @@ pub mod path_macros {
         };
     }
 
-    #[macro_export]
-    macro_rules! path_local_metering_assets {
-        ($folder: expr) => {
-            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/metering/", $folder)
-        };
+    // Not a macro, because it needs to support a variable folder, but here
+    // for consistency
+    pub fn path_local_metering_assets(folder: &str) -> String {
+        format!("{}/assets/metering/{}", env!("CARGO_MANIFEST_DIR"), folder)
     }
 
     pub use crate::include_local_wasm_str;
     pub use crate::include_workspace_asset_bytes;
     pub use crate::include_workspace_transaction_examples_str;
     pub use crate::path_local_blueprint;
-    pub use crate::path_workspace_blueprint;
     pub use crate::path_workspace_transaction_examples;
 }
 

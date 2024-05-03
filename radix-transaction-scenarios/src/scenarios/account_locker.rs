@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use crate::utils::*;
 use radix_engine::blueprints::account::DepositEvent;
-use radix_engine::updates::{ProtocolUpdate, ProtocolVersion};
+use radix_engine::updates::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::*;
 
@@ -46,19 +46,19 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
     type Config = AccountLockerScenarioConfig;
     type State = AccountLockerScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion =
-        ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose);
+
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "account_locker",
+        protocol_min_requirement: ProtocolVersion::Bottlenose,
+        testnet_run_at: Some(ProtocolVersion::Bottlenose),
+    };
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "account_locker",
-        };
-
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, _| {
                     core.next_transaction_with_faucet_lock_fee(

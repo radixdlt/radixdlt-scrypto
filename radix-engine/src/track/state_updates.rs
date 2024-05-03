@@ -36,6 +36,19 @@ impl StateUpdates {
             })
     }
 
+    pub fn rebuild_without_empty_entries(&self) -> Self {
+        Self {
+            by_node: self
+                .by_node
+                .iter()
+                .filter_map(|(node_id, by_partition)| {
+                    let by_partition = by_partition.without_empty_entries()?;
+                    Some((*node_id, by_partition))
+                })
+                .collect(),
+        }
+    }
+
     pub fn into_legacy(self) -> LegacyStateUpdates {
         self.into()
     }
@@ -68,6 +81,27 @@ impl NodeStateUpdates {
         match self {
             NodeStateUpdates::Delta { by_partition } => {
                 by_partition.entry(partition_num).or_default()
+            }
+        }
+    }
+
+    pub fn without_empty_entries(&self) -> Option<Self> {
+        match self {
+            NodeStateUpdates::Delta { by_partition } => {
+                let replaced = by_partition
+                    .iter()
+                    .filter_map(|(partition_num, partition_state_updates)| {
+                        let new_substate = partition_state_updates.without_empty_entries()?;
+                        Some((*partition_num, new_substate))
+                    })
+                    .collect::<IndexMap<_, _>>();
+                if replaced.len() > 0 {
+                    Some(NodeStateUpdates::Delta {
+                        by_partition: replaced,
+                    })
+                } else {
+                    None
+                }
             }
         }
     }
@@ -125,6 +159,24 @@ impl PartitionStateUpdates {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    pub fn without_empty_entries(&self) -> Option<Self> {
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => {
+                if by_substate.len() > 0 {
+                    Some(PartitionStateUpdates::Delta {
+                        by_substate: by_substate.clone(),
+                    })
+                } else {
+                    None
+                }
+            }
+            PartitionStateUpdates::Batch(x) => {
+                // We shouldn't filter out batch updates like resets, even if they set nothing new
+                Some(PartitionStateUpdates::Batch(x.clone()))
             }
         }
     }

@@ -15,6 +15,8 @@ use crate::vm::ScryptoVmVersion;
 
 pub const BOOT_LOADER_VM_BOOT_FIELD_KEY: FieldKey = 2u8;
 
+pub type VmBootSubstate = VmBoot;
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmBoot {
     V1 { scrypto_version: u64 },

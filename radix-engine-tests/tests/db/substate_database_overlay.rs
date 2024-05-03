@@ -408,51 +408,38 @@ fn transaction_receipts_from_scenarios_are_identical_between_staging_and_non_sta
 #[test]
 #[allow(clippy::redundant_closure_call)]
 fn database_hashes_are_identical_between_staging_and_non_staging_database_at_each_scenario_step() {
-    macro_rules! non_homogenous_array_map {
-        (
-            [
-                $($item: expr),* $(,)?
-            ]
-            .map($func: expr)
-        ) => {
-            [
-                $(
-                    $func($item)
-                ),*
-            ]
-        };
-    }
-
     run_scenarios(|(non_staging_database, _), (staging_database, _)| {
-        let [non_staging_database_hash, staging_database_hash] = non_homogenous_array_map! {
-            [non_staging_database, staging_database].map(|database| {
-                let mut accumulator_hash = Hash([0; 32]);
-                let reader = SystemDatabaseReader::new(database);
-                for (node_id, partition_number) in reader.partitions_iter() {
-                    let db_node_key = SpreadPrefixKeyMapper::to_db_node_key(&node_id);
-                    let db_partition_key = DbPartitionKey {
-                        node_key: db_node_key,
-                        partition_num: partition_number.0,
-                    };
-
-                    for (substate_key, substate_value) in
-                        SubstateDatabase::list_entries(database, &db_partition_key)
-                    {
-                        let entry_hash = hash(
-                            scrypto_encode(&(node_id, partition_number, substate_key, substate_value))
-                                .unwrap(),
-                        );
-                        let mut data = accumulator_hash.to_vec();
-                        data.extend(entry_hash.to_vec());
-                        accumulator_hash = hash(data);
-                    }
-                }
-                accumulator_hash
-            })
-        };
+        let non_staging_database_hash = create_database_contents_hash(non_staging_database);
+        let staging_database_hash = create_database_contents_hash(staging_database);
 
         assert_eq!(non_staging_database_hash, staging_database_hash)
     })
+}
+
+fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>(
+    database: &D,
+) -> Hash {
+    let mut accumulator_hash = Hash([0; 32]);
+    let reader = SystemDatabaseReader::new(database);
+    for (node_id, partition_number) in reader.partitions_iter() {
+        let db_node_key = SpreadPrefixKeyMapper::to_db_node_key(&node_id);
+        let db_partition_key = DbPartitionKey {
+            node_key: db_node_key,
+            partition_num: partition_number.0,
+        };
+
+        for (substate_key, substate_value) in
+            SubstateDatabase::list_entries(database, &db_partition_key)
+        {
+            let entry_hash = hash(
+                scrypto_encode(&(node_id, partition_number, substate_key, substate_value)).unwrap(),
+            );
+            let mut data = accumulator_hash.to_vec();
+            data.extend(entry_hash.to_vec());
+            accumulator_hash = hash(data);
+        }
+    }
+    accumulator_hash
 }
 
 /// Runs the scenarios on an [`InMemorySubstateDatabase`] and a [`SingleSubstateDatabaseOverlay`] wrapping
@@ -472,31 +459,21 @@ fn run_scenarios(
     let ledger_with_overlay = Rc::new(RefCell::new(
         LedgerSimulatorBuilder::new()
             .with_custom_database(overlay)
-            .with_custom_protocol_updates(ProtocolUpdates::none())
+            .with_protocol_version(ProtocolVersion::Babylon)
             .without_kernel_trace()
             .build(),
     ));
+    let network_definition = NetworkDefinition::simulator();
 
     DefaultTransactionScenarioExecutor::new(
         InMemorySubstateDatabase::standard(),
-        NetworkDefinition::simulator(),
+        &network_definition,
     )
-    .bootstrap(true)
-    .on_new_protocol_requirement_encountered(|network, protocol_update, db| {
-        if let ProtocolVersion::ProtocolUpdate(protocol_update) = protocol_update {
-            // Apply to the executor's DB.
-            protocol_update
-                .generate_state_updates(db, network)
-                .into_iter()
-                .for_each(|state_updates| {
-                    db.commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
-                });
-
-            // Apply to the ledger's DB.
-            ledger_with_overlay
-                .borrow_mut()
-                .apply_protocol_updates(&[protocol_update]);
-        }
+    .on_before_protocol_update_executed(|executor| {
+        // We copy the protocol updates onto the ledger_with_overlay
+        executor
+            .clone()
+            .run_and_commit(ledger_with_overlay.borrow_mut().substate_db_mut())
     })
     .on_transaction_executed(|_, transaction, receipt, db| {
         // Execute the same transaction on the ledger simulator.
@@ -513,6 +490,6 @@ fn run_scenarios(
             ),
         );
     })
-    .execute_all()
+    .execute_every_protocol_update_and_scenario()
     .expect("Must succeed!");
 }

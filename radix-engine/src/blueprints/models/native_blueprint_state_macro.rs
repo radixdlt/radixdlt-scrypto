@@ -1235,14 +1235,14 @@ mod tests {
             TestBlueprintRoyaltyV1,
         ));
         assert_eq!(
-            &LockStatus::Locked,
+            LockStatus::Locked,
             payload.into_locked_substate().lock_status()
         );
         let payload = TestBlueprintRoyaltyFieldPayload::from(VersionedTestBlueprintRoyalty::from(
             TestBlueprintRoyaltyV1,
         ));
         assert_eq!(
-            &LockStatus::Unlocked,
+            LockStatus::Unlocked,
             payload.into_unlocked_substate().lock_status()
         );
     }

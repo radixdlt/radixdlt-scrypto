@@ -88,6 +88,8 @@ pub struct SystemParameters {
     pub apply_additional_costing: bool,
 }
 
+pub type SystemBootSubstate = SystemBoot;
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),

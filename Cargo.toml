@@ -133,6 +133,3 @@ zeroize = { version = "1.3.0" }
 # crashing the engine.
 [profile.release]
 panic = "unwind"
-
-[profile.test]
-panic = "unwind"

@@ -1,217 +1,325 @@
-use crate::internal_prelude::*;
-use crate::scenarios::*;
-use radix_engine::system::system_callback_api::SystemCallbackObject;
-use radix_engine::updates::*;
-use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, Vm};
-use radix_engine::{
-    system::bootstrap::Bootstrapper,
-    vm::{
-        wasm::{DefaultWasmEngine, WasmEngine},
-        ScryptoVm,
-    },
-};
-use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
-use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
-use radix_substate_store_interface::db_key_mapper::*;
-use radix_substate_store_interface::interface::*;
-use radix_transactions::validation::{NotarizedTransactionValidator, ValidationConfig};
-
-pub struct RunnerContext {
-    #[cfg(feature = "std")]
-    pub dump_manifest_root: Option<std::path::PathBuf>,
-    pub network: NetworkDefinition,
-}
-
-#[cfg(feature = "std")]
-pub fn run_all_in_memory_and_dump_examples(
-    network: NetworkDefinition,
-    root_path: std::path::PathBuf,
-) -> Result<(), FullScenarioError> {
-    let mut event_hasher = HashAccumulator::new();
-    let mut substate_db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
-
-    let ScenarioExecutionReceipt {
-        database: mut substate_db,
-    } = DefaultTransactionScenarioExecutor::new(substate_db, NetworkDefinition::simulator())
-        .on_scenario_start(|scenario_metadata| {
-            let sub_folder = root_path.join(scenario_metadata.logical_name);
-            if sub_folder.exists() {
-                std::fs::remove_dir_all(&sub_folder).unwrap();
-            }
-        })
-        .on_transaction_executed(|scenario_metadata, transaction, receipt, _| {
-            transaction.dump_manifest(
-                &Some(root_path.join(scenario_metadata.logical_name)),
-                &NetworkDefinition::simulator(),
-            );
-
-            let intent_hash =
-                PreparedNotarizedTransactionV1::prepare_from_raw(&transaction.raw_transaction)
-                    .unwrap()
-                    .intent_hash();
-
-            match &receipt.result {
-                TransactionResult::Commit(c) => {
-                    event_hasher.update_no_chain(intent_hash.as_hash().as_bytes());
-                    event_hasher.update_no_chain(scrypto_encode(&c.application_events).unwrap());
-                }
-                TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
-            }
-        })
-        .nonce_handling(ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
-            1000,
-        ))
-        .execute_all()
-        .expect("Must succeed");
-
-    Ok(())
-}
-
+// NOTE: This file is only conditionally included in std mode, so std imports are allowed
 #[cfg(test)]
-#[allow(irrefutable_let_patterns)]
 mod test {
-    use super::*;
-    use radix_engine::vm::*;
+    use crate::executor::*;
+    use crate::internal_prelude::*;
+    use crate::scenarios::ALL_SCENARIOS;
+    use fmt::Write;
+    use itertools::Itertools;
+    use radix_engine::utils::CostingTaskMode;
+    use radix_engine::{updates::*, utils::*, vm::*};
+    use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+    use radix_transactions::manifest::decompiler::decompile_with_known_naming;
     use radix_transactions::manifest::*;
+    use std::{ffi::OsString, fs, path::*};
 
-    #[test]
-    #[cfg(feature = "std")]
-    pub fn update_expected_scenario_output() {
-        let network_definition = NetworkDefinition::simulator();
-        let scenarios_dir =
-            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");
-        run_all_in_memory_and_dump_examples(network_definition.clone(), scenarios_dir.clone())
-            .unwrap();
+    #[derive(Copy, Clone)]
+    pub enum DumperMode {
+        Write,
+        Assert,
+    }
 
-        // Ensure that they can all be compiled back again
-        for entry in walkdir::WalkDir::new(&scenarios_dir) {
-            let path = entry.unwrap().path().canonicalize().unwrap();
-            if path.extension().and_then(|str| str.to_str()) != Some("rtm") {
-                continue;
+    pub struct FileAligner {
+        folder: PathBuf,
+        mode: DumperMode,
+    }
+
+    #[derive(Clone)]
+    pub struct FolderAligner {
+        folder: PathBuf,
+        mode: DumperMode,
+        files_touched: Rc<RefCell<IndexSet<OsString>>>,
+        folders_touched: Rc<RefCell<IndexMap<OsString, FolderAligner>>>,
+    }
+
+    impl FolderAligner {
+        pub fn new(folder: PathBuf, mode: DumperMode) -> Self {
+            // NOTE: In future, we could improve this behaviour to avoid creating churn if files don't need to change
+            match mode {
+                DumperMode::Write => {
+                    if folder.exists() {
+                        std::fs::remove_dir_all(&folder).unwrap();
+                    }
+                    std::fs::create_dir_all(&folder).unwrap();
+                }
+                DumperMode::Assert => {}
             }
+            Self {
+                folder,
+                mode,
+                files_touched: Rc::new(RefCell::new(indexset!())),
+                folders_touched: Rc::new(RefCell::new(indexmap!())),
+            }
+        }
 
-            let manifest_string = std::fs::read_to_string(path).unwrap();
-            compile(
-                &manifest_string,
-                &network_definition,
-                MockBlobProvider::new(),
-            )
-            .unwrap();
+        pub fn put_file<F: AsRef<str>, C: AsRef<[u8]>>(&self, file: F, contents: C) {
+            let file = file.as_ref();
+            let path = self.folder.join(file);
+            self.files_touched.borrow_mut().insert(file.into());
+            match self.mode {
+                DumperMode::Write => fs::write(path, contents).unwrap(),
+                DumperMode::Assert => {
+                    let actual_contents = fs::read(&path).unwrap_or_else(|err| {
+                        panic!(
+                            "File {} could not be read: {:?}",
+                            path.to_string_lossy(),
+                            err
+                        );
+                    });
+                    if &actual_contents != contents.as_ref() {
+                        panic!(
+                            "File {} did not match the expected contents",
+                            path.to_string_lossy()
+                        )
+                    }
+                }
+            }
+        }
+
+        pub fn register_child_folder<F: AsRef<str>>(&self, child_folder: F) -> FolderAligner {
+            let child_folder = child_folder.as_ref();
+            let path = self.folder.join(child_folder);
+            let folder_aligner = FolderAligner::new(path, self.mode);
+            self.folders_touched
+                .borrow_mut()
+                .insert(child_folder.into(), folder_aligner.clone());
+            folder_aligner
+        }
+
+        pub fn verify_complete_recursive(&self) {
+            match self.mode {
+                DumperMode::Write => {}
+                DumperMode::Assert => {
+                    for entry in walkdir::WalkDir::new(&self.folder)
+                        .min_depth(1)
+                        .max_depth(1)
+                    {
+                        let entry = entry.unwrap();
+                        let file_name = entry.file_name();
+                        let is_file = entry.file_type().is_file();
+                        let is_folder = entry.file_type().is_dir();
+                        match (is_file, is_folder) {
+                            (true, false) => {
+                                if !self.files_touched.borrow().contains(file_name) {
+                                    panic!(
+                                        "File {} should not exist",
+                                        entry.path().to_string_lossy()
+                                    )
+                                }
+                            }
+                            (false, true) => {
+                                if !self.folders_touched.borrow().contains_key(file_name) {
+                                    panic!(
+                                        "Folder {} should not exist",
+                                        entry.path().to_string_lossy()
+                                    )
+                                }
+                            }
+                            (true, true) => {
+                                panic!(
+                                    "Path {} was unexpectedly both a file and a folder",
+                                    entry.path().to_string_lossy()
+                                )
+                            }
+                            (false, false) => {
+                                panic!(
+                                    "Path {} was unexpectedly neither a file nor a folder",
+                                    entry.path().to_string_lossy()
+                                )
+                            }
+                        }
+                    }
+                    for (_, child_folder) in self.folders_touched.borrow().iter() {
+                        child_folder.verify_complete_recursive();
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn run_all(mode: DumperMode) {
+        let network_definition = NetworkDefinition::simulator();
+        let address_encoder = AddressBech32Encoder::new(&network_definition);
+        let execution_config = {
+            let mut config = ExecutionConfig::for_notarized_transaction(network_definition.clone());
+            config.enable_cost_breakdown = true;
+            config
+        };
+        let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");
+        for (scenario_logical_name, scenario_creator) in ALL_SCENARIOS.iter() {
+            let min_requirement = scenario_creator.metadata().protocol_min_requirement;
+            let valid_versions = ProtocolVersion::VARIANTS
+                .into_iter()
+                .filter(|p| *p >= min_requirement);
+            for protocol_version in valid_versions {
+                let protocol_version_display_name = protocol_version.display_name();
+
+                let mut db = InMemorySubstateDatabase::standard();
+                let mut event_hasher = RefCell::new(Some(HashAccumulator::new()));
+                let mut state_change_hasher = RefCell::new(Some(HashAccumulator::new()));
+
+                let mut scenario_folder = FolderAligner::new(
+                    root_path
+                        .join(protocol_version.logical_name())
+                        .join(&*scenario_logical_name),
+                    mode,
+                );
+                let mut manifests_folder = scenario_folder.register_child_folder("manifests");
+                let mut transactions_folder = scenario_folder.register_child_folder("transactions");
+                let mut receipts_folder = scenario_folder.register_child_folder("receipts");
+                let mut costings_folder = scenario_folder.register_child_folder("costings");
+
+                let mut executor = DefaultTransactionScenarioExecutor::new(db, &network_definition)
+                    .scenario_execution_config(execution_config.clone())
+                    .on_transaction_executed(|_, transaction_details, receipt, db| {
+                        match &receipt.result {
+                            TransactionResult::Commit(c) => {
+                                event_hasher
+                                    .borrow_mut()
+                                    .as_mut()
+                                    .unwrap()
+                                    .update_no_chain(scrypto_encode(&c.application_events).unwrap());
+                                state_change_hasher
+                                    .borrow_mut()
+                                    .as_mut()
+                                    .unwrap()
+                                    .update_no_chain(scrypto_encode(&c.state_updates).unwrap())
+                            }
+                            TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
+                        }
+
+                        let transaction_file_prefix = format!(
+                            "{:03}--{}",
+                            transaction_details.stage_counter,
+                            transaction_details.logical_name,
+                        );
+
+                        transactions_folder.put_file(
+                            format!("{transaction_file_prefix}.bin"),
+                            &transaction_details.raw_transaction.0,
+                        );
+
+                        // Write manifest
+                        // NB: We purposefully don't write the blobs as they're contained in the raw transactions
+                        let manifest_string = decompile_with_known_naming(
+                            &transaction_details.manifest.instructions,
+                            &network_definition,
+                            transaction_details.naming.clone()
+                        ).unwrap();
+                        // Whilst we're here, let's validate that the manifest can be recompiled
+                        compile(
+                            &manifest_string,
+                            &network_definition,
+                            BlobProvider::new_with_blobs(
+                                transaction_details.manifest.blobs.values().cloned().collect()
+                            ),
+                        )
+                        .unwrap();
+                        manifests_folder.put_file(
+                            format!("{transaction_file_prefix}.rtm"),
+                            &manifest_string,
+                        );
+
+                        // Write receipt
+                        let receipt_display_context = TransactionReceiptDisplayContextBuilder::new()
+                            .encoder(&address_encoder)
+                            .schema_lookup_from_db(db)
+                            .display_state_updates(true)
+                            .use_ansi_colors(false)
+                            .build();
+                        receipts_folder.put_file(
+                            format!("{transaction_file_prefix}.txt"),
+                            receipt.to_string(receipt_display_context),
+                        );
+
+                        let cost_breakdown = format_cost_breakdown(
+                            &receipt.fee_summary,
+                            receipt.fee_details.as_ref().unwrap(),
+                        );
+                        costings_folder.put_file(
+                            format!("{transaction_file_prefix}.txt"),
+                            cost_breakdown,
+                        );
+                    })
+                    .on_scenario_ended(|_, end_state, _| {
+                        let mut summary = String::new();
+                        writeln!(&mut summary, "Name: {scenario_logical_name}").unwrap();
+                        writeln!(&mut summary).unwrap();
+
+                        let state_change_digest = state_change_hasher
+                            .borrow_mut().take().unwrap().finalize().to_string()[0..16].to_string();
+                        let event_digest = event_hasher
+                            .borrow_mut().take().unwrap().finalize().to_string()[0..16].to_string();
+
+                        writeln!(&mut summary, "== SUMMARY HASHES ==").unwrap();
+                        if protocol_version == ProtocolVersion::LATEST {
+                            writeln!(&mut summary, "These {protocol_version_display_name} hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.").unwrap();
+                            writeln!(&mut summary, "State changes: {state_change_digest} (allowed to change if not deployed to any network)").unwrap();
+                            writeln!(&mut summary, "Events       : {event_digest} (allowed to change if not deployed to any network)").unwrap();
+                        } else {
+                            writeln!(&mut summary, "These {protocol_version_display_name} hashes should NEVER change, else they will cause divergence when run historically.").unwrap();
+                            writeln!(&mut summary, "State changes: {state_change_digest} (should never change)").unwrap();
+                            writeln!(&mut summary, "Events       : {event_digest} (should never change)").unwrap();
+                        };
+
+                        writeln!(&mut summary).unwrap();
+                        writeln!(&mut summary, "== INTERESTING ADDRESSES ==").unwrap();
+
+                        for (name, address) in end_state.output.interesting_addresses.0.iter() {
+                            writeln!(&mut summary, "- {name}: {}", address.display(&address_encoder)).unwrap();
+                        }
+                        writeln!(&mut summary).unwrap();
+
+                        scenario_folder.put_file(
+                            "scenario_summary.txt",
+                            summary
+                        );
+                    });
+
+                // Now execute just the single scenario, after executing protocol updates up to
+                // the given protocol version
+                executor.execute_protocol_updates_and_scenarios(
+                    ProtocolBuilder::for_network(&network_definition).until(protocol_version),
+                    ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
+                    ScenarioFilter::SpecificScenariosByName(btreeset!(
+                        scenario_logical_name.to_string()
+                    )),
+                );
+
+                scenario_folder.verify_complete_recursive();
+            }
         }
     }
 
     #[test]
-    pub fn check_state_and_event_hashes_for_up_to_genesis_scenarios() {
-        assert_event_and_state_hashes(
-            "43be4cce2d4f2ed2eb519d77dfa770697244e843b2a0f7fd86bdf773d9b6f278",
-            "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Exclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
-            )),
-            |_, _, _| {},
-            |_, _| {},
-        );
+    #[ignore = "Run this test to update the generated scenarios"]
+    pub fn update_all_generated_scenarios() {
+        run_all(DumperMode::Write)
     }
 
     #[test]
-    pub fn check_state_and_event_hashes_for_up_to_anemone_scenarios() {
-        assert_event_and_state_hashes(
-            "17567dbaf89a77a20e837e8d48187585b0547374fac9e19b9acc9d04d630a774",
-            "1be7a3d32b165f77a2126e706ed1d79b9198a09a1f08fa8b0f168ed54e8a19cc",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Anemone),
-            )),
-            |network, protocol_update, db| {
-                if let ProtocolVersion::ProtocolUpdate(protocol_update @ ProtocolUpdate::Anemone) =
-                    protocol_update
-                {
-                    protocol_update
-                        .generate_state_updates(db, network)
-                        .into_iter()
-                        .for_each(|update| {
-                            db.commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
-                        });
-                }
-            },
-            |_, _| {},
-        );
+    pub fn validate_all_generated_scenarios() {
+        run_all(DumperMode::Assert)
     }
 
     #[test]
-    pub fn check_state_and_event_hashes_for_up_to_bottlenose_scenarios() {
-        assert_event_and_state_hashes(
-            "8c3cf79c845ecb9962cf9ba7ef4d047071bdb7f1d22990e175acc889079767f9",
-            "34606ced32b7d2216658e2f6aaef3a1f9283e73cdf14d37f825d432880f81581",
-            ScenarioFilter::AllValidBeforeProtocolVersion(Boundary::Inclusive(
-                ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose),
-            )),
-            |network, protocol_update, db| {
-                if let ProtocolVersion::ProtocolUpdate(
-                    protocol_update @ (ProtocolUpdate::Anemone | ProtocolUpdate::Bottlenose),
-                ) = protocol_update
-                {
-                    protocol_update
-                        .generate_state_updates(db, network)
-                        .into_iter()
-                        .for_each(|update| {
-                            db.commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
-                        });
+    pub fn validate_the_metadata_of_all_scenarios() {
+        DefaultTransactionScenarioExecutor::new(InMemorySubstateDatabase::standard(), &NetworkDefinition::simulator())
+            .on_scenario_started(|metadata| {
+                if let Some(testnet_run_at) = metadata.testnet_run_at {
+                    assert!(
+                        testnet_run_at >= metadata.protocol_min_requirement,
+                        "Scenario is set to run on a testnet of an earlier version than the scenario's minimum version: {}",
+                        metadata.logical_name
+                    );
                 }
-            },
-            |_, _| {},
-        );
-    }
 
-    fn assert_event_and_state_hashes<P, B>(
-        expected_state_root_hash: &str,
-        expected_event_hash: &str,
-        filter: ScenarioFilter,
-        protocol_update_handling: P,
-        after_bootstrap: B,
-    ) where
-        P: FnMut(
-            &NetworkDefinition,
-            ProtocolVersion,
-            &mut StateTreeUpdatingDatabase<InMemorySubstateDatabase>,
-        ),
-        B: FnMut(&NetworkDefinition, &mut StateTreeUpdatingDatabase<InMemorySubstateDatabase>),
-    {
-        // Arrange
-        let mut event_hasher = HashAccumulator::new();
-        let mut substate_db = StateTreeUpdatingDatabase::new(InMemorySubstateDatabase::standard());
-
-        // Act
-        let ScenarioExecutionReceipt {
-            database: mut substate_db,
-        } = DefaultTransactionScenarioExecutor::new(substate_db, NetworkDefinition::simulator())
-            .on_transaction_executed(|metadata, transaction, receipt, _| {
-                let intent_hash =
-                    PreparedNotarizedTransactionV1::prepare_from_raw(&transaction.raw_transaction)
-                        .unwrap()
-                        .intent_hash();
-
-                match &receipt.result {
-                    TransactionResult::Commit(c) => {
-                        event_hasher.update_no_chain(intent_hash.as_hash().as_bytes());
-                        event_hasher
-                            .update_no_chain(scrypto_encode(&c.application_events).unwrap());
-                    }
-                    TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
-                }
+                assert!(
+                    !metadata.logical_name.contains(' '),
+                    "Scenario logical name contains a space: {}",
+                    metadata.logical_name
+                );
             })
-            .on_new_protocol_requirement_encountered(protocol_update_handling)
-            .after_bootstrap(after_bootstrap)
-            .nonce_handling(ScenarioStartNonceHandling::PreviousScenarioStartNoncePlus(
-                1000,
-            ))
-            .execute_all_matching(filter)
-            .expect("Must succeed");
-
-        // Assert
-        assert_eq!(
-            substate_db.get_current_root_hash().to_string(),
-            expected_state_root_hash
-        );
-        assert_eq!(event_hasher.finalize().to_string(), expected_event_hash);
+            .execute_every_protocol_update_and_scenario();
     }
 }
