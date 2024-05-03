@@ -1,0 +1,11 @@
+Name: kv_store_with_remote_type
+
+== SUMMARY HASHES ==
+These Babylon hashes should NEVER change, else they will cause divergence when run historically.
+State changes: a946bb50da0c70cb (should never change)
+Events       : b2873f909e179ae4 (should never change)
+
+== INTERESTING ADDRESSES ==
+- kv_store_with_remote_type_package_address: package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt
+- kv_store_with_remote_type_component_address: component_sim1cr4l0atdgwxm65p3m6xexg0vaar75nfhzv8kcxrqwhh7600d6fjdhd
+

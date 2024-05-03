@@ -503,7 +503,6 @@ fn format_terminal_value<F: fmt::Write, E: FormattableCustomExtension>(
             write!(f, "{}(", value_ref.value_kind())?;
             E::display_string_content(f, &context.custom_context, value)?;
             write!(f, ")")?;
-            return Ok(());
         }
     }
     if type_name.is_some() {

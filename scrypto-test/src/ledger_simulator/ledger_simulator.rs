@@ -14,7 +14,7 @@ use radix_engine::transaction::{
     execute_preview, execute_transaction_with_configuration, BalanceChange, CommitResult,
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
 };
-use radix_engine::updates::{ProtocolUpdate, ProtocolUpdates};
+use radix_engine::updates::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
@@ -197,7 +197,7 @@ pub struct LedgerSimulatorBuilder<E, D> {
     custom_genesis: Option<CustomGenesis>,
     custom_extension: E,
     custom_database: D,
-    custom_protocol_updates: ProtocolUpdates,
+    protocol_executor: ProtocolExecutor,
 
     // General options
     with_kernel_trace: bool,
@@ -210,7 +210,8 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
-            custom_protocol_updates: ProtocolUpdates::all(),
+            protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
+                .until_latest_protocol_version(),
             with_kernel_trace: true,
             with_receipt_substate_check: true,
         }
@@ -218,12 +219,16 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
 }
 
 impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
+    pub fn network_definition() -> NetworkDefinition {
+        NetworkDefinition::simulator()
+    }
+
     pub fn with_state_hashing(self) -> LedgerSimulatorBuilder<E, StateTreeUpdatingDatabase<D>> {
         LedgerSimulatorBuilder {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: StateTreeUpdatingDatabase::new(self.custom_database),
-            custom_protocol_updates: self.custom_protocol_updates,
+            protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
@@ -262,7 +267,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: extension,
             custom_database: self.custom_database,
-            custom_protocol_updates: self.custom_protocol_updates,
+            protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
@@ -276,15 +281,23 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: database,
-            custom_protocol_updates: self.custom_protocol_updates,
+            protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
 
-    pub fn with_custom_protocol_updates(mut self, protocol_updates: ProtocolUpdates) -> Self {
-        self.custom_protocol_updates = protocol_updates;
+    pub fn with_custom_protocol(
+        mut self,
+        executor: impl FnOnce(ProtocolBuilder) -> ProtocolExecutor,
+    ) -> Self {
+        self.protocol_executor =
+            executor(ProtocolBuilder::for_network(&Self::network_definition()));
         self
+    }
+
+    pub fn with_protocol_version(self, protocol_version: ProtocolVersion) -> Self {
+        self.with_custom_protocol(|builder| builder.until(protocol_version))
     }
 
     pub fn build_from_snapshot(
@@ -362,20 +375,15 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 .clone(),
         );
 
+        // Protocol Updates
+        self.protocol_executor
+            .commit_each_protocol_update(&mut substate_db);
+
         // Note that 0 is not a valid private key
         let next_private_key = 100;
 
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
-
-        // Protocol Updates
-        for state_updates in self
-            .custom_protocol_updates
-            .generate_state_updates(&substate_db, &NetworkDefinition::simulator())
-        {
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            substate_db.commit(&db_updates);
-        }
 
         let runner = LedgerSimulator {
             scrypto_vm,
@@ -2335,18 +2343,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             ResourceReconciler::reconcile(&db_results.1 .0, &event_results)
                 .expect("Resource reconciliation failed");
         }
-    }
-
-    pub fn apply_protocol_updates(&mut self, protocol_updates: &[ProtocolUpdate]) {
-        protocol_updates.iter().for_each(|protocol_update| {
-            protocol_update
-                .generate_state_updates(&self.database, &NetworkDefinition::simulator())
-                .into_iter()
-                .for_each(|update| {
-                    self.database
-                        .commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
-                })
-        })
     }
 }
 

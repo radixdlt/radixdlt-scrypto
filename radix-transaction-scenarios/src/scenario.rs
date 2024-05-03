@@ -44,28 +44,6 @@ impl NextTransaction {
                 ScenarioError::TransactionValidationFailed(self.logical_name.clone(), err)
             })
     }
-
-    #[cfg(feature = "std")]
-    pub fn dump_manifest(
-        &self,
-        dump_directory: &Option<std::path::PathBuf>,
-        network: &NetworkDefinition,
-    ) {
-        use radix_transactions::manifest::dumper::dump_manifest_to_file_system;
-
-        let Some(directory_path) = dump_directory else {
-            return;
-        };
-        let file_name = format!("{:03}--{}", self.stage_counter, self.logical_name);
-        dump_manifest_to_file_system(
-            self.naming.clone(),
-            &self.manifest,
-            directory_path,
-            Some(&file_name),
-            &network,
-        )
-        .unwrap()
-    }
 }
 
 pub(crate) trait Completeable: Sized {
@@ -313,6 +291,26 @@ pub enum DescribedAddress {
     NonFungible(NonFungibleGlobalId),
 }
 
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for DescribedAddress {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        match self {
+            DescribedAddress::Global(address) => address
+                .contextual_format(f, context)
+                .map_err(|_| fmt::Error),
+            DescribedAddress::Internal(address) => address
+                .contextual_format(f, context)
+                .map_err(|_| fmt::Error),
+            DescribedAddress::NonFungible(global_id) => global_id.contextual_format(f, context),
+        }
+    }
+}
+
 impl From<&VirtualAccount> for DescribedAddress {
     fn from(value: &VirtualAccount) -> Self {
         Self::Global(value.address.clone().into())
@@ -375,31 +373,46 @@ pub struct ScenarioMetadata {
     /// - This is used in Node genesis to specify which scenarios should be run
     /// - This should be spaceless as it will be used for a file path
     pub logical_name: &'static str,
+    /// The minimal protocol version required to successfully run this scenario.
+    pub protocol_min_requirement: ProtocolVersion,
+    /// If set, this will run immediately after this protocol update on a testnet.
+    /// Note that setting this will change the definition of the given protocol update,
+    /// so shouldn't be changed once the protocol update is locked in.
+    pub testnet_run_at: Option<ProtocolVersion>,
 }
 
-pub trait ScenarioCreator: Sized {
+pub trait ScenarioCreator: Sized + 'static + Send + Sync {
     type Config: Default;
     type State: Default;
     type Instance: ScenarioInstance + 'static;
 
-    /// The protocol requirement of the scenario. If set to [`None`] then the scenario does not have
-    /// any requirements and can be run against all protocol versions including genesis and all that
-    /// comes after. If [`Some`] protocol update then this is the protocol update required for this
-    /// scenario to be executed, meaning that the scenario could be executed on this protocol update
-    /// and everything that comes after. This is a property of the [`ScenarioCreator`] rather than
-    /// the individual instance since the creator can be thought of the as "class" and the instance
-    /// is the object.
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion;
-
-    fn create(core: ScenarioCore) -> Self::Instance {
-        Self::create_with_config_and_state(core, Default::default(), Default::default())
-    }
+    const METADATA: ScenarioMetadata;
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance;
+}
+
+pub trait ScenarioCreatorObjectSafe: Send + Sync + 'static {
+    fn metadata(&self) -> ScenarioMetadata;
+
+    fn create(&self, core: ScenarioCore) -> Box<dyn ScenarioInstance>;
+}
+
+impl<T: ScenarioCreator> ScenarioCreatorObjectSafe for T {
+    fn metadata(&self) -> ScenarioMetadata {
+        Self::METADATA
+    }
+
+    fn create(&self, core: ScenarioCore) -> Box<dyn ScenarioInstance> {
+        Box::new(Self::create_with_config_and_state(
+            core,
+            Default::default(),
+            Default::default(),
+        ))
+    }
 }
 
 pub trait ScenarioInstance {

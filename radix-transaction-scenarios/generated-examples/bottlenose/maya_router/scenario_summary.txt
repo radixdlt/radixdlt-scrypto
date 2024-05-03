@@ -1,0 +1,16 @@
+Name: maya_router
+
+== SUMMARY HASHES ==
+These Bottlenose hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
+State changes: 5e3dde32cf53c9bb (allowed to change if not deployed to any network)
+Events       : fb4e40a05d617f61 (allowed to change if not deployed to any network)
+
+== INTERESTING ADDRESSES ==
+- owner_account: account_sim1cy2m8fzpwz7uyvkdlrleay34k94yz63skerrshcrl0d3fpm2cnmlqy
+- swapper_account: account_sim1cyc3r8ntawdamyhh6u0sttq22r036rzjcdpnakzl2c3n4tul2ua5ud
+- maya_router_package: package_sim1pk9jztrwzcl2px0w859fdkxkaygej4m9zryxpau3pqs7vlq9zpyzda
+- maya_router_address: component_sim1cz2n04uz73lt83e2wagw0zveln0u0q24ydup5vspavglyspfqtl2zc
+- XRD: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+- resource_1: resource_sim1tkl8f4ev0djxy2jjy4fpnaexhw0t0t39seqs26u0mfqjzn3e4m80zf
+- resource_2: resource_sim1t5ulpyse43vcfndkelufmzzap46aprkxtkc8hsdydpgfpxytdwq7dj
+

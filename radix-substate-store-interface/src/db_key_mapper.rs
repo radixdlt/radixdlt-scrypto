@@ -186,7 +186,7 @@ pub trait MappedSubstateDatabase {
     ) -> Box<dyn Iterator<Item = (SubstateKey, D)> + '_>;
 }
 
-impl<S: SubstateDatabase> MappedSubstateDatabase for S {
+impl<S: SubstateDatabase + ?Sized> MappedSubstateDatabase for S {
     fn get_mapped<M: DatabaseKeyMapper, D: ScryptoDecode>(
         &self,
         node_id: &NodeId,

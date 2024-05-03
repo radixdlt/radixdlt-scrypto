@@ -1,4 +1,4 @@
-use radix_engine::{system::system_type_checker::TypeCheckError, updates::ProtocolUpdates};
+use radix_engine::{system::system_type_checker::TypeCheckError, updates::*};
 use scrypto_test::prelude::*;
 
 #[test]
@@ -6,7 +6,7 @@ fn get_owner_role_method_call_fails_without_the_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_kernel_trace()
-        .with_custom_protocol_updates(ProtocolUpdates::none())
+        .with_protocol_version(ProtocolVersion::Babylon)
         .build();
 
     // Act

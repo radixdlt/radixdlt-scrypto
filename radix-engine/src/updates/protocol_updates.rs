@@ -1,88 +1,3 @@
-use super::state_updates::*;
-use crate::{internal_prelude::*, track::StateUpdates};
-use radix_substate_store_interface::interface::SubstateDatabase;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProtocolUpdateEntry {
-    /// Introduces BLS12-381 and Keccak-256 features.
-    Bls12381AndKeccak256,
-
-    /// Exposes second-precision timestamp.
-    SecondPrecisionTimestamp,
-
-    /// Increases the math precision with native pool implementations.
-    PoolMathPrecisionFix,
-
-    /// Changes the cost associated with validator creation.
-    ValidatorCreationFeeFix,
-
-    /// Exposes a getter method for reading owner role rule.
-    OwnerRoleGetter,
-
-    /// Introduces the account locker blueprint.
-    LockerPackage,
-
-    /// Moves various protocol parameters to state.
-    ProtocolParamsToState,
-
-    /// Makes some behavioral changes to the try_deposit_or_refund (and batch variants too) method
-    /// on the account blueprint.
-    AccountTryDepositOrRefundBehaviorChanges,
-
-    /// Add blob limits to transaction processor.
-    TransactionProcessorBlobLimits,
-
-    /// Add deferred reference check costs.
-    RefCheckCosts,
-
-    /// Add restrictions to use of role key in role list.
-    RestrictReservedRoleKey,
-
-    /// Adds an XRD vault to the access controller for locking fees.
-    AccessControllerFeeVault,
-}
-
-impl ProtocolUpdateEntry {
-    pub fn generate_state_updates<S: SubstateDatabase>(
-        &self,
-        db: &S,
-        network: &NetworkDefinition,
-    ) -> StateUpdates {
-        match self {
-            ProtocolUpdateEntry::Bls12381AndKeccak256 => {
-                generate_bls128_and_keccak256_state_updates()
-            }
-            ProtocolUpdateEntry::SecondPrecisionTimestamp => {
-                generate_seconds_precision_timestamp_state_updates(db)
-            }
-            ProtocolUpdateEntry::PoolMathPrecisionFix => {
-                generate_pool_math_precision_fix_state_updates(db)
-            }
-            ProtocolUpdateEntry::ValidatorCreationFeeFix => {
-                generate_validator_creation_fee_fix_state_updates(db)
-            }
-            ProtocolUpdateEntry::OwnerRoleGetter => generate_owner_role_getter_state_updates(db),
-            ProtocolUpdateEntry::LockerPackage => generate_locker_package_state_updates(),
-            ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges => {
-                generate_account_bottlenose_extension_state_updates(db)
-            }
-            ProtocolUpdateEntry::ProtocolParamsToState => {
-                generate_protocol_params_to_state_state_updates(network.clone())
-            }
-            ProtocolUpdateEntry::TransactionProcessorBlobLimits => {
-                generate_transaction_processor_blob_limits_state_updates(db)
-            }
-            ProtocolUpdateEntry::RefCheckCosts => generate_ref_check_costs_state_updates(),
-            ProtocolUpdateEntry::RestrictReservedRoleKey => {
-                generate_restrict_reserved_role_key_state_updates(db)
-            }
-            ProtocolUpdateEntry::AccessControllerFeeVault => {
-                generate_access_controller_state_updates(db)
-            }
-        }
-    }
-}
-
 macro_rules! count {
     (
         $ident: ident, $($other_idents: ident),* $(,)?
@@ -96,131 +11,204 @@ macro_rules! count {
     }
 }
 
-macro_rules! enum_const_array {
+macro_rules! latest {
     (
-        $(#[$meta:meta])*
-        $vis: vis enum $ident: ident {
-            $(
-                $variant_ident: ident
-            ),* $(,)?
-        }
+        $enum_ident: ident, $ident: ident, $($other_idents: ident),* $(,)?
     ) => {
-        $(#[$meta])*
-        $vis enum $ident {
-            $(
-                $variant_ident
-            ),*
+        latest!( $enum_ident, $($other_idents),* )
+    };
+    (
+        $enum_ident: ident, $ident: ident $(,)?
+    ) => {
+        $enum_ident :: $ident
+    }
+}
+
+macro_rules! earliest {
+    (
+        $enum_ident: ident, $ident: ident, $($other_idents: ident),* $(,)?
+    ) => {
+        $enum_ident::$ident
+    };
+}
+
+macro_rules! define_enum {
+    (
+        $ident:ident,
+        $(
+            (
+                $variant_name: ident,
+                $logical_name: expr,
+                $display_name: expr
+            )
+        ),* $(,)?
+    ) => {
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+        pub enum $ident {
+            $($variant_name),*
         }
 
         impl $ident {
-            pub const VARIANTS: [Self; count!( $($variant_ident),* )] = [
+            pub const VARIANTS: [Self; count!( $($variant_name),* )] = [
                 $(
-                    Self::$variant_ident
+                    Self::$variant_name
                 ),*
             ];
+
+            pub const EARLIEST: $ident = earliest!( $ident, $($variant_name),* );
+            pub const LATEST: $ident = latest!( $ident, $($variant_name),* );
+
+            pub const fn logical_name(&self) -> &'static str {
+                match self {
+                    $(
+                        Self::$variant_name => $logical_name
+                    ),*
+                }
+            }
+
+            pub const fn display_name(&self) -> &'static str {
+                match self {
+                    $(
+                        Self::$variant_name => $display_name
+                    ),*
+                }
+            }
+
+            pub fn try_from_logical_name(logical_name: &str) -> Option<Self> {
+                match logical_name {
+                    $(
+                        $logical_name => Some(Self::$variant_name)
+                    ),*,
+                    _ => None
+                }
+            }
+
+            pub fn try_from_display_name(display_name: &str) -> Option<Self> {
+                match display_name {
+                    $(
+                        $display_name => Some(Self::$variant_name)
+                    ),*,
+                    _ => None
+                }
+            }
         }
     };
 }
 
-enum_const_array! {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-    pub enum ProtocolUpdate {
-        Anemone,
-        Bottlenose,
-    }
+macro_rules! define_protocol_version_and_updates {
+    (
+        genesis: {
+            variant_name: $variant_name: ident,
+            logical_name: $logical_name: expr,
+            display_name: $display_name: expr $(,)?
+        },
+        protocol_updates: [
+            $(
+                {
+                    variant_name: $protocol_update_variant_name: ident,
+                    logical_name: $protocol_update_logical_name: expr,
+                    display_name: $protocol_update_display_name: expr $(,)?
+                }
+            ),* $(,)*
+        ]
+    ) => {
+        define_enum!(
+            ProtocolVersion,
+            ($variant_name, $logical_name, $display_name)
+            $(, ($protocol_update_variant_name, $protocol_update_logical_name, $protocol_update_display_name))*
+        );
+        define_enum!(
+            ProtocolUpdate,
+            $(($protocol_update_variant_name, $protocol_update_logical_name, $protocol_update_display_name)),*
+        );
+
+        impl From<ProtocolUpdate> for ProtocolVersion {
+            fn from(value: ProtocolUpdate) -> ProtocolVersion {
+                match value {
+                    $(
+                        ProtocolUpdate::$protocol_update_variant_name
+                            => ProtocolVersion::$protocol_update_variant_name
+                    ),*
+                }
+            }
+        }
+    };
 }
 
-impl ProtocolUpdate {
-    pub fn generate_state_updates<S: SubstateDatabase>(
-        &self,
-        db: &S,
-        network: &NetworkDefinition,
-    ) -> Vec<StateUpdates> {
-        match self {
-            ProtocolUpdate::Anemone => vec![
-                ProtocolUpdateEntry::Bls12381AndKeccak256,
-                ProtocolUpdateEntry::SecondPrecisionTimestamp,
-                ProtocolUpdateEntry::PoolMathPrecisionFix,
-                ProtocolUpdateEntry::ValidatorCreationFeeFix,
-            ],
-            ProtocolUpdate::Bottlenose => vec![
-                ProtocolUpdateEntry::OwnerRoleGetter,
-                ProtocolUpdateEntry::LockerPackage,
-                ProtocolUpdateEntry::AccountTryDepositOrRefundBehaviorChanges,
-                ProtocolUpdateEntry::ProtocolParamsToState,
-                ProtocolUpdateEntry::TransactionProcessorBlobLimits,
-                ProtocolUpdateEntry::RefCheckCosts,
-                ProtocolUpdateEntry::RestrictReservedRoleKey,
-                ProtocolUpdateEntry::AccessControllerFeeVault,
-            ],
+// This macro defines the protocol version and the protocol updates enums and all of the methods
+// needed on them.
+//
+// The order in which the protocol updates is defined is very important since many places in our
+// codebase relies on it such as applying the protocol updates in order. If the order is changed
+// then the protocol updates will be applied in a different order. So, only thing we can do to
+// is append to this list, never change.
+define_protocol_version_and_updates! {
+    genesis: {
+        variant_name: Babylon,
+        logical_name: "babylon",
+        display_name: "Babylon",
+    },
+    protocol_updates: [
+        {
+            variant_name: Anemone,
+            logical_name: "anemone",
+            display_name: "Anemone",
+        },
+        {
+            variant_name: Bottlenose,
+            logical_name: "bottlenose",
+            display_name: "Bottlenose",
         }
-        .iter()
-        .map(|x| x.generate_state_updates(db, network))
-        .collect()
-    }
+    ]
 }
 
-#[derive(Debug, Clone)]
-pub struct ProtocolUpdates {
-    protocol_updates: Vec<ProtocolUpdate>,
-    additional_updates: Vec<ProtocolUpdateEntry>,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl ProtocolUpdates {
-    pub fn none() -> Self {
-        Self {
-            protocol_updates: vec![],
-            additional_updates: vec![],
-        }
+    #[test]
+    fn assert_earliest_protocol_update_is_as_expected() {
+        assert_eq!(ProtocolUpdate::EARLIEST, ProtocolUpdate::Anemone);
     }
 
-    pub fn up_to_anemone() -> Self {
-        Self {
-            protocol_updates: vec![ProtocolUpdate::Anemone],
-            additional_updates: vec![],
-        }
+    #[test]
+    fn assert_earliest_protocol_version_is_as_expected() {
+        assert_eq!(ProtocolVersion::EARLIEST, ProtocolVersion::Babylon);
     }
 
-    pub fn up_to_bottlenose() -> Self {
-        Self {
-            protocol_updates: vec![ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose],
-            additional_updates: vec![],
-        }
+    #[test]
+    fn assert_latest_protocol_update_is_as_expected() {
+        assert_eq!(ProtocolUpdate::LATEST, ProtocolUpdate::Bottlenose);
     }
 
-    pub fn all() -> Self {
-        Self::up_to_bottlenose()
+    #[test]
+    fn assert_latest_protocol_version_is_as_expected() {
+        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::Bottlenose);
     }
 
-    pub fn and(mut self, protocol_update: ProtocolUpdateEntry) -> Self {
-        self.additional_updates.push(protocol_update);
-        self
+    #[test]
+    fn assert_protocol_versions_have_the_expected_order() {
+        let variants = ProtocolVersion::VARIANTS;
+
+        assert_eq!(
+            variants,
+            [
+                ProtocolVersion::Babylon,
+                ProtocolVersion::Anemone,
+                ProtocolVersion::Bottlenose
+            ]
+        );
+        assert!(variants.windows(2).all(|item| item[0] < item[1]))
     }
 
-    pub fn generate_state_updates<S: SubstateDatabase>(
-        &self,
-        db: &S,
-        network: &NetworkDefinition,
-    ) -> Vec<StateUpdates> {
-        let mut results = Vec::new();
-        for protocol_update in &self.protocol_updates {
-            results.extend(protocol_update.generate_state_updates(db, network));
-        }
-        for protocol_update in &self.additional_updates {
-            results.push(protocol_update.generate_state_updates(db, network));
-        }
-        results
-    }
-}
+    #[test]
+    fn assert_protocol_updates_have_the_expected_order() {
+        let variants = ProtocolUpdate::VARIANTS;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub enum ProtocolVersion {
-    Genesis,
-    ProtocolUpdate(ProtocolUpdate),
-}
-
-impl ProtocolVersion {
-    pub fn all_iterator() -> impl Iterator<Item = Self> {
-        core::iter::once(Self::Genesis).chain(ProtocolUpdate::VARIANTS.map(Self::ProtocolUpdate))
+        assert_eq!(
+            variants,
+            [ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose]
+        );
+        assert!(variants.windows(2).all(|item| item[0] < item[1]))
     }
 }

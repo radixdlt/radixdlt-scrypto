@@ -17,13 +17,13 @@ impl SerializableCustomExtension for ManifestCustomExtension {
                             (SerializableType::String(bech32), false)
                         } else {
                             (
-                                SerializableType::String(hex::encode(node_id.as_ref())),
+                                SerializableType::String(hex::encode(node_id.as_bytes())),
                                 true,
                             )
                         }
                     } else {
                         (
-                            SerializableType::String(hex::encode(node_id.as_ref())),
+                            SerializableType::String(hex::encode(node_id.as_bytes())),
                             true,
                         )
                     }

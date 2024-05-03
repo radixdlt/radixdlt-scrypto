@@ -8,7 +8,20 @@ use sbor::*;
 ///
 /// See also the [`UtcDateTime`](super::UtcDateTime) type which supports conversion to/from `Instant`.
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Categorize, Encode, Decode, BasicDescribe)]
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    Categorize,
+    Encode,
+    Decode,
+    BasicDescribe,
+    PartialOrd,
+    Ord,
+    Hash,
+)]
 #[sbor(transparent)]
 pub struct Instant {
     pub seconds_since_unix_epoch: i64,

@@ -431,8 +431,8 @@ where
         let blueprint_id = self.api.get_blueprint_id(&object_id)?;
 
         let mut buf = Vec::new();
-        buf.extend(blueprint_id.package_address.as_ref().to_vec());
-        buf.extend(blueprint_id.blueprint_name.as_bytes().to_vec());
+        buf.extend(blueprint_id.package_address.as_bytes());
+        buf.extend(blueprint_id.blueprint_name.as_bytes());
 
         self.allocate_buffer(buf)
     }

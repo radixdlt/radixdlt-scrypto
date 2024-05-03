@@ -31,8 +31,8 @@ impl Runtime {
     ) -> (GlobalAddressReservation, ComponentAddress) {
         let bytes = copy_buffer(unsafe {
             addr::address_allocate(
-                blueprint_id.package_address.as_ref().as_ptr(),
-                blueprint_id.package_address.as_ref().len(),
+                blueprint_id.package_address.as_bytes().as_ptr(),
+                blueprint_id.package_address.as_bytes().len(),
                 blueprint_id.blueprint_name.as_ptr(),
                 blueprint_id.blueprint_name.len(),
             )
@@ -43,8 +43,8 @@ impl Runtime {
     pub fn allocate_non_fungible_address() -> (GlobalAddressReservation, ResourceAddress) {
         let bytes = copy_buffer(unsafe {
             addr::address_allocate(
-                RESOURCE_PACKAGE.as_ref().as_ptr(),
-                RESOURCE_PACKAGE.as_ref().len(),
+                RESOURCE_PACKAGE.as_bytes().as_ptr(),
+                RESOURCE_PACKAGE.as_bytes().len(),
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.as_ptr(),
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.len(),
             )
@@ -56,7 +56,10 @@ impl Runtime {
     pub fn get_reservation_address(reservation: &GlobalAddressReservation) -> GlobalAddress {
         let node_id = reservation.0.as_node_id();
         let bytes = copy_buffer(unsafe {
-            addr::address_get_reservation_address(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+            addr::address_get_reservation_address(
+                node_id.as_bytes().as_ptr(),
+                node_id.as_bytes().len(),
+            )
         });
         scrypto_decode(&bytes).unwrap()
     }
