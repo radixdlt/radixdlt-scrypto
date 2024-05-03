@@ -85,7 +85,10 @@ pub struct SystemParameters {
     pub costing_parameters: CostingParameters,
     pub limit_parameters: LimitParameters,
     pub max_per_function_royalty_in_xrd: Decimal,
+
     pub apply_additional_costing: bool,
+    /// Whether or not to apply costing on reference checks on boot
+    pub apply_boot_ref_check_costing: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -761,6 +764,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     )
                     .unwrap(),
                     apply_additional_costing: false,
+                    apply_boot_ref_check_costing: false,
                 }));
 
             match system_boot {
@@ -839,6 +843,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             },
             on_apply_cost: Default::default(),
             apply_additional_costing: system_parameters.apply_additional_costing,
+
+            apply_boot_ref_check_costing: system_parameters.apply_boot_ref_check_costing,
         };
 
         let mut modules = SystemModuleMixer::new(

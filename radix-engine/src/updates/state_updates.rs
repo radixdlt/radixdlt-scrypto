@@ -64,10 +64,7 @@ pub fn generate_bls128_and_keccak256_state_updates() -> StateUpdates {
 
 /// Generates the state updates required for introducing deferred reference check costs
 pub fn generate_ref_check_costs_state_updates() -> StateUpdates {
-    let substate = scrypto_encode(&KernelBoot::V1 {
-        ref_check_costing: true,
-    })
-    .unwrap();
+    let substate = scrypto_encode(&KernelBoot::V1).unwrap();
 
     StateUpdates {
         by_node: indexmap!(
@@ -857,6 +854,7 @@ pub fn generate_protocol_params_to_state_state_updates(
                                     limit_parameters: LimitParameters::babylon_genesis(),
                                     max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
                                     apply_additional_costing: true,
+                                    apply_boot_ref_check_costing: true,
                                 })).unwrap()
                             ),
                         }

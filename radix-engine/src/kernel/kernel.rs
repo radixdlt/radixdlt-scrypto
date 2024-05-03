@@ -37,20 +37,12 @@ pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum KernelBoot {
-    V1 { ref_check_costing: bool },
+    V1,
 }
 
 impl KernelBoot {
-    pub fn is_ref_check_costing_enabled(&self) -> bool {
-        match self {
-            KernelBoot::V1 { ref_check_costing } => *ref_check_costing,
-        }
-    }
-
     pub fn babylon() -> Self {
-        Self::V1 {
-            ref_check_costing: false,
-        }
+        Self::V1
     }
 }
 
@@ -93,7 +85,6 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         &mut self,
         callback: &mut M,
         references: &IndexSet<Reference>,
-        costing_enabled: bool,
     ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
@@ -130,17 +121,15 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 }
             }
 
-            if costing_enabled {
-                let io_access = IOAccess::ReadFromDb(
-                    CanonicalSubstateKey {
-                        node_id: *node_id,
-                        partition_number: TYPE_INFO_FIELD_PARTITION,
-                        substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
-                    },
-                    value_ref.len(),
-                );
-                callback.on_boot_ref_check(RefCheckEvent::IOAccess(&io_access))?;
-            }
+            let io_access = IOAccess::ReadFromDb(
+                CanonicalSubstateKey {
+                    node_id: *node_id,
+                    partition_number: TYPE_INFO_FIELD_PARTITION,
+                    substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
+                },
+                value_ref.len(),
+            );
+            callback.on_boot_ref_check(RefCheckEvent::IOAccess(&io_access))?;
         }
 
         Ok((global_addresses, direct_accesses))
@@ -156,7 +145,8 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         });
 
         // Read kernel boot configuration
-        let kernel_boot: KernelBoot = self
+        // Unused for now
+        let _kernel_boot: KernelBoot = self
             .track
             .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -172,9 +162,8 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         // Create Kernel
         let mut kernel = {
             // Check references
-            let costing_enabled = kernel_boot.is_ref_check_costing_enabled();
             let (global_addresses, internal_addresses) = self
-                .check_references(&mut callback, executable.references(), costing_enabled)
+                .check_references(&mut callback, executable.references())
                 .map_err(RejectionReason::BootloadingError)?;
 
             Kernel::new(

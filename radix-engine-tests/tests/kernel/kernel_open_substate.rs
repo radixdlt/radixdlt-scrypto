@@ -80,6 +80,7 @@ pub fn test_open_substate_of_invisible_package_address() {
                 cost_breakdown: None,
                 on_apply_cost: Default::default(),
                 apply_additional_costing: false,
+                apply_boot_ref_check_costing: false,
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),

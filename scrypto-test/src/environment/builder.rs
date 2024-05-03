@@ -271,6 +271,7 @@ where
                     cost_breakdown: Some(Default::default()),
                     on_apply_cost: Default::default(),
                     apply_additional_costing: false,
+                    apply_boot_ref_check_costing: false,
                 };
 
                 System {

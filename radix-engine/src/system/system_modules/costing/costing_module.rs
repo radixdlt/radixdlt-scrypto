@@ -91,6 +91,8 @@ pub struct CostingModule {
     pub on_apply_cost: OnApplyCost,
 
     pub apply_additional_costing: bool,
+
+    pub apply_boot_ref_check_costing: bool,
 }
 
 impl CostingModule {
@@ -133,6 +135,12 @@ impl CostingModule {
         &mut self,
         costing_entry: ExecutionCostingEntry,
     ) -> Result<(), CostingError> {
+        if let ExecutionCostingEntry::RefCheck { .. } = &costing_entry {
+            if !self.apply_boot_ref_check_costing {
+                return Ok(());
+            }
+        }
+
         self.on_apply_cost.on_call()?;
 
         let cost_units = costing_entry.to_execution_cost_units(&self.fee_table);
