@@ -7,14 +7,24 @@ use radix_engine_interface::object_modules::metadata::{
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
 
+fn publish_metadata_package(
+    ledger: &mut LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
+) -> PackageAddress {
+    let code =
+        include_workspace_asset_bytes!("radix-transaction-scenarios", "metadata.wasm").to_vec();
+    let package_def = manifest_decode::<PackageDefinition>(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "metadata.rpd"
+    ))
+    .unwrap();
+    ledger.publish_package_simple((code, package_def))
+}
+
 #[test]
 fn can_get_from_scrypto() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
-        "radix-transaction-scenarios",
-        "metadata"
-    ));
+    let package_address = publish_metadata_package(&mut ledger);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -48,10 +58,7 @@ fn can_get_from_scrypto() {
 fn can_set_from_scrypto() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
-        "radix-transaction-scenarios",
-        "metadata"
-    ));
+    let package_address = publish_metadata_package(&mut ledger);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
@@ -78,10 +85,7 @@ fn can_set_from_scrypto() {
 fn cannot_initialize_metadata_if_key_too_long() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
-        "radix-transaction-scenarios",
-        "metadata"
-    ));
+    let package_address = publish_metadata_package(&mut ledger);
 
     // Act
     let key = "a".repeat(MAX_METADATA_KEY_STRING_LEN + 1);
@@ -111,10 +115,7 @@ fn cannot_initialize_metadata_if_key_too_long() {
 fn cannot_set_metadata_if_key_too_long() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
-        "radix-transaction-scenarios",
-        "metadata"
-    ));
+    let package_address = publish_metadata_package(&mut ledger);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
@@ -148,10 +149,7 @@ fn cannot_set_metadata_if_key_too_long() {
 fn cannot_initialize_metadata_if_value_too_long() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
-        "radix-transaction-scenarios",
-        "metadata"
-    ));
+    let package_address = publish_metadata_package(&mut ledger);
 
     // Act
     let value = "a".repeat(MAX_METADATA_VALUE_SBOR_LEN + 1);
@@ -181,10 +179,7 @@ fn cannot_initialize_metadata_if_value_too_long() {
 fn cannot_set_metadata_if_value_too_long() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
-        "radix-transaction-scenarios",
-        "metadata"
-    ));
+    let package_address = publish_metadata_package(&mut ledger);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
@@ -218,10 +213,7 @@ fn cannot_set_metadata_if_value_too_long() {
 fn cannot_set_metadata_if_initialized_empty_locked() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let package_address = ledger.compile_and_publish(path_workspace_blueprint!(
-        "radix-transaction-scenarios",
-        "metadata"
-    ));
+    let package_address = publish_metadata_package(&mut ledger);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
