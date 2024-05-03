@@ -27,11 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v4
+        uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
       - name: Analyze dependencies
-        uses: phylum-dev/phylum-analyze-pr-action@v2
+        uses: RDXWorks-actions/phylum-analyze-pr-action@v2
         with:
           phylum_token: ${{ secrets.PHYLUM_API_KEY }}
           cmd: |
