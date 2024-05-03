@@ -388,10 +388,10 @@ pub fn format_custom_value<F: fmt::Write>(
                         if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
                             bech32
                         } else {
-                            hex::encode(node_id.as_ref())
+                            hex::encode(node_id.as_bytes())
                         }
                     } else {
-                        hex::encode(node_id.as_ref())
+                        hex::encode(node_id.as_bytes())
                     }
                 )?;
             }

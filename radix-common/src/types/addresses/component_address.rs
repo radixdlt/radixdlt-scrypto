@@ -33,6 +33,10 @@ impl ComponentAddress {
         self.0.to_vec()
     }
 
+    pub fn as_bytes(&self) -> &[u8] {
+        self.as_ref()
+    }
+
     pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(
         public_key: &P,
     ) -> ComponentAddress {
@@ -130,6 +134,12 @@ impl<'a> Arbitrary<'a> for ComponentAddress {
 impl AsRef<[u8]> for ComponentAddress {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl AsRef<NodeId> for ComponentAddress {
+    fn as_ref(&self) -> &NodeId {
+        &self.0
     }
 }
 

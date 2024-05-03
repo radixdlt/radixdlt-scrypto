@@ -5,8 +5,7 @@ use radix_common::prelude::{manifest_args, Round};
 use radix_common::types::Epoch;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
-use radix_engine::updates::state_updates::generate_seconds_precision_timestamp_state_updates;
-use radix_engine::updates::ProtocolUpdates;
+use radix_engine::updates::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
@@ -29,20 +28,33 @@ fn get_current_time_rounded_to_seconds_with_state_flash_should_succeed() {
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol_updates(ProtocolUpdates::none())
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
         ))
+        .with_protocol_version(ProtocolVersion::Babylon)
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 
     // Act
     if flash_substates {
-        let state_updates =
-            generate_seconds_precision_timestamp_state_updates(ledger.substate_db());
-        let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-        ledger.substate_db_mut().commit(&db_updates);
+        let anemone_protocol_update_batch_generator = AnemoneSettings::all_disabled()
+            .enable(|item| &mut item.seconds_precision)
+            .create_batch_generator();
+        let mut i = 0;
+        while let Some(batch) =
+            anemone_protocol_update_batch_generator.generate_batch(ledger.substate_db(), i)
+        {
+            i += 1;
+            for ProtocolUpdateTransactionDetails::FlashV1Transaction(
+                FlashProtocolUpdateTransactionDetails { state_updates, .. },
+            ) in batch.transactions
+            {
+                ledger
+                    .substate_db_mut()
+                    .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
+            }
+        }
     }
 
     let time_to_set_ms = 1669663688996;

@@ -1,0 +1,12 @@
+Name: transfer_xrd
+
+== SUMMARY HASHES ==
+These Anemone hashes should NEVER change, else they will cause divergence when run historically.
+State changes: 4075cb6237f0d9b7 (should never change)
+Events       : 2ca9f5aeeedaeaee (should never change)
+
+== INTERESTING ADDRESSES ==
+- from_account: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw
+- to_account_1: account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0
+- to_account_2: account_sim128cqk4tgnu2trlvmpf242a0lsq4062a2c45hhymr3tly0ps3w57yav
+

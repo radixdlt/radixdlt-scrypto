@@ -212,8 +212,8 @@ mod recursive_test {
             ) {
                 unsafe {
                     let handle = kv_store::kv_store_open_entry(
-                        to.as_ref().as_ptr(),
-                        to.as_ref().len(),
+                        to.as_bytes().as_ptr(),
+                        to.as_bytes().len(),
                         key_payload.as_ptr(),
                         key_payload.len(),
                         LockFlags::MUTABLE.bits(),

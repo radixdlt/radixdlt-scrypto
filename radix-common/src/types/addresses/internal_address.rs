@@ -32,6 +32,10 @@ impl InternalAddress {
         self.0.to_vec()
     }
 
+    pub fn as_bytes(&self) -> &[u8] {
+        self.as_ref()
+    }
+
     pub fn as_node_id(&self) -> &NodeId {
         &self.0
     }
@@ -86,6 +90,12 @@ impl<'a> Arbitrary<'a> for InternalAddress {
 impl AsRef<[u8]> for InternalAddress {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl AsRef<NodeId> for InternalAddress {
+    fn as_ref(&self) -> &NodeId {
+        &self.0
     }
 }
 

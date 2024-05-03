@@ -35,6 +35,8 @@ use sbor::rust::mem;
 
 pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
 
+pub type KernelBootSubstate = KernelBoot;
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum KernelBoot {
     V1 { ref_check_costing: bool },
@@ -628,7 +630,7 @@ where
                         .eq(FUNGIBLE_BUCKET_BLUEPRINT);
                     let parent = info.get_outer_object();
                     let resource_address: ResourceAddress =
-                        ResourceAddress::new_or_panic(parent.as_ref().try_into().unwrap());
+                        ResourceAddress::new_or_panic(parent.as_bytes().try_into().unwrap());
                     (is_fungible, resource_address)
                 }
                 _ => {
