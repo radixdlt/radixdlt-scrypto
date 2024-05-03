@@ -78,19 +78,6 @@ pub mod path_macros {
     }
 
     #[macro_export]
-    macro_rules! path_workspace_blueprint {
-        ($package: expr, $name: expr) => {
-            concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../",
-                $package,
-                "/assets/blueprints/",
-                $name
-            )
-        };
-    }
-
-    #[macro_export]
     macro_rules! path_workspace_transaction_examples {
         ($name: expr) => {
             concat!(
@@ -126,7 +113,6 @@ pub mod path_macros {
     pub use crate::include_workspace_asset_bytes;
     pub use crate::include_workspace_transaction_examples_str;
     pub use crate::path_local_blueprint;
-    pub use crate::path_workspace_blueprint;
     pub use crate::path_workspace_transaction_examples;
 }
 
