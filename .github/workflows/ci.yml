@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Analyze dependencies
-        uses: RDXWorks-actions/phylum-analyze-pr-action@v2
+        uses: RDXWorks-actions/phylum-analyze-pr-action@v2.1.1
         with:
           phylum_token: ${{ secrets.PHYLUM_API_KEY }}
           cmd: |
