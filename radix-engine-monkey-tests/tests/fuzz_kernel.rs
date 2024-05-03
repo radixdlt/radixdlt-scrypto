@@ -555,7 +555,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     let mut substate_db = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
 
     let mut fuzzer = KernelFuzzer::new(seed);
 

@@ -173,23 +173,17 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         let mut kernel = {
             // Check references
             let costing_enabled = kernel_boot.is_ref_check_costing_enabled();
-            let engine_references = self
+            let (global_addresses, internal_addresses) = self
                 .check_references(&mut callback, executable.references(), costing_enabled)
                 .map_err(RejectionReason::BootloadingError)?;
 
-            let mut kernel = Kernel::new(&mut self.track, &mut self.id_allocator, &mut callback);
-
-            // Add visibility
-            for global_ref in engine_references.0 {
-                kernel.current_frame.add_global_reference(global_ref);
-            }
-            for direct_access in engine_references.1 {
-                kernel
-                    .current_frame
-                    .add_direct_access_reference(direct_access);
-            }
-
-            kernel
+            Kernel::new(
+                &mut self.track,
+                &mut self.id_allocator,
+                &mut callback,
+                global_addresses,
+                internal_addresses,
+            )
         };
 
         // Execution
@@ -248,7 +242,34 @@ pub struct Kernel<
 }
 
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel<'g, M, S> {
-    pub fn new(store: &'g mut S, id_allocator: &'g mut IdAllocator, callback: &'g mut M) -> Self {
+    pub fn new_no_refs(
+        store: &'g mut S,
+        id_allocator: &'g mut IdAllocator,
+        callback: &'g mut M,
+    ) -> Self {
+        Self::new(store, id_allocator, callback, index_set_new(), index_set_new())
+    }
+
+    pub fn new(
+        store: &'g mut S,
+        id_allocator: &'g mut IdAllocator,
+        callback: &'g mut M,
+        global_addresses: IndexSet<GlobalAddress>,
+        internal_addresses: IndexSet<InternalAddress>,
+    ) -> Self {
+        let call_frame = {
+            let mut call_frame = CallFrame::new_root(M::CallFrameData::root());
+            // Add visibility
+            for global_ref in global_addresses {
+                call_frame.add_global_reference(global_ref);
+            }
+            for direct_access in internal_addresses {
+                call_frame.add_direct_access_reference(direct_access);
+            }
+
+            call_frame
+        };
+
         Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -259,7 +280,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
                 pinned_to_heap: BTreeSet::new(),
             },
             id_allocator,
-            current_frame: CallFrame::new_root(M::CallFrameData::root()),
+            current_frame: call_frame,
             prev_frame_stack: vec![],
             callback,
         }

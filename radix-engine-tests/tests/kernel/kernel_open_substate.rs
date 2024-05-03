@@ -86,7 +86,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
-    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut system);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 
     // Lock package substate
     let result = kernel.kernel_open_substate(
