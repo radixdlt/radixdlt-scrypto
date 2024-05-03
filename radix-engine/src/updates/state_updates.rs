@@ -31,6 +31,7 @@ use radix_engine_interface::types::CollectionDescriptor;
 use radix_rust::indexmap;
 use radix_substate_store_interface::interface::*;
 use sbor::{generate_full_schema, TypeAggregator};
+use crate::system::system_modules::costing::CostingModuleConfig;
 
 /// A quick macro for encoding and unwrapping.
 macro_rules! scrypto_encode {
@@ -851,10 +852,8 @@ pub fn generate_protocol_params_to_state_state_updates(
                                 scrypto_encode(&SystemBoot::V1(SystemParameters {
                                     network_definition,
                                     costing_parameters: CostingParameters::babylon_genesis(),
+                                    costing_module_config: CostingModuleConfig::bottlenose(),
                                     limit_parameters: LimitParameters::babylon_genesis(),
-                                    max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
-                                    apply_additional_costing: true,
-                                    apply_boot_ref_check_costing: true,
                                 })).unwrap()
                             ),
                         }

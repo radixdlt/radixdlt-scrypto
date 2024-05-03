@@ -1,4 +1,4 @@
-use super::system_modules::costing::ExecutionCostingEntry;
+use super::system_modules::costing::{CostingModuleConfig, ExecutionCostingEntry};
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
@@ -82,13 +82,9 @@ pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SystemParameters {
     pub network_definition: NetworkDefinition,
+    pub costing_module_config: CostingModuleConfig,
     pub costing_parameters: CostingParameters,
     pub limit_parameters: LimitParameters,
-    pub max_per_function_royalty_in_xrd: Decimal,
-
-    pub apply_additional_costing: bool,
-    /// Whether or not to apply costing on reference checks on boot
-    pub apply_boot_ref_check_costing: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -758,13 +754,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .unwrap_or(SystemBoot::V1(SystemParameters {
                     network_definition: NetworkDefinition::mainnet(),
                     costing_parameters: CostingParameters::babylon_genesis(),
+                    costing_module_config: CostingModuleConfig::babylon_genesis(),
                     limit_parameters: LimitParameters::babylon_genesis(),
-                    max_per_function_royalty_in_xrd: Decimal::try_from(
-                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-                    )
-                    .unwrap(),
-                    apply_additional_costing: false,
-                    apply_boot_ref_check_costing: false,
                 }));
 
             match system_boot {
@@ -835,16 +826,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             fee_table: FeeTable::new(),
             tx_payload_len: executable.payload_size(),
             tx_num_of_signature_validations: executable.num_of_signature_validations(),
-            max_per_function_royalty_in_xrd: system_parameters.max_per_function_royalty_in_xrd,
+            config: system_parameters.costing_module_config,
             cost_breakdown: if init_input.enable_cost_breakdown {
                 Some(Default::default())
             } else {
                 None
             },
             on_apply_cost: Default::default(),
-            apply_additional_costing: system_parameters.apply_additional_costing,
-
-            apply_boot_ref_check_costing: system_parameters.apply_boot_ref_check_costing,
         };
 
         let mut modules = SystemModuleMixer::new(
