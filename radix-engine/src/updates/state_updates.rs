@@ -12,6 +12,7 @@ use crate::system::system_callback::{
     SystemBoot, SystemParameters, BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY,
 };
 use crate::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
+use crate::system::system_modules::costing::CostingModuleConfig;
 use crate::track::{NodeStateUpdates, PartitionStateUpdates, StateUpdates};
 use crate::transaction::{CostingParameters, LimitParameters};
 use crate::vm::*;
@@ -31,7 +32,6 @@ use radix_engine_interface::types::CollectionDescriptor;
 use radix_rust::indexmap;
 use radix_substate_store_interface::interface::*;
 use sbor::{generate_full_schema, TypeAggregator};
-use crate::system::system_modules::costing::CostingModuleConfig;
 
 /// A quick macro for encoding and unwrapping.
 macro_rules! scrypto_encode {

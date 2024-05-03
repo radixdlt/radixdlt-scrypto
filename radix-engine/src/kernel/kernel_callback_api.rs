@@ -179,13 +179,11 @@ pub trait KernelCallbackObject: Sized {
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 
-    fn boot_ref_type(
+    fn boot_verify_ref_value(
         &mut self,
         node_id: &NodeId,
         value: &IndexedScryptoValue,
     ) -> Result<StableReferenceType, BootloadingError>;
-
-    fn on_boot_ref_check(&mut self, event: RefCheckEvent) -> Result<(), BootloadingError>;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 

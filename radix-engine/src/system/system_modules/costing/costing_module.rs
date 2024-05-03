@@ -82,7 +82,8 @@ pub struct CostingModuleConfig {
 impl CostingModuleConfig {
     pub fn babylon_genesis() -> Self {
         Self {
-            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
             apply_execution_cost_2: false,
             apply_boot_ref_check_costing: false,
         }
@@ -90,7 +91,8 @@ impl CostingModuleConfig {
 
     pub fn bottlenose() -> Self {
         Self {
-            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
             apply_execution_cost_2: true,
             apply_boot_ref_check_costing: true,
         }
@@ -111,7 +113,6 @@ pub struct CostingModule {
     pub fee_table: FeeTable,
     pub tx_payload_len: usize,
     pub tx_num_of_signature_validations: usize,
-
 
     pub cost_breakdown: Option<CostBreakdown>,
 

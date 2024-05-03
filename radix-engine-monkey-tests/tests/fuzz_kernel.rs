@@ -107,19 +107,12 @@ impl KernelCallbackObject for TestCallbackObject {
         TestReceipt
     }
 
-    fn boot_ref_type(
+    fn boot_verify_ref_value(
         &mut self,
         _node_id: &NodeId,
         _value: &IndexedScryptoValue,
     ) -> Result<StableReferenceType, BootloadingError> {
         Ok(StableReferenceType::Global)
-    }
-
-    fn on_boot_ref_check(
-        &mut self,
-        _event: scrypto_test::prelude::RefCheckEvent,
-    ) -> Result<(), BootloadingError> {
-        Ok(())
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {

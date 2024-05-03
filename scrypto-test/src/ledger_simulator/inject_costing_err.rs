@@ -141,19 +141,12 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         self.system.create_receipt(track, executable, result)
     }
 
-    fn boot_ref_type(
+    fn boot_verify_ref_value(
         &mut self,
         node_id: &NodeId,
         value: &IndexedScryptoValue,
     ) -> Result<StableReferenceType, BootloadingError> {
-        self.system.boot_ref_type(node_id, value)
-    }
-
-    fn on_boot_ref_check(
-        &mut self,
-        event: radix_engine::kernel::kernel_callback_api::RefCheckEvent,
-    ) -> Result<(), BootloadingError> {
-        self.system.on_boot_ref_check(event)
+        self.system.boot_verify_ref_value(node_id, value)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

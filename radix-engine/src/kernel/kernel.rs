@@ -1,7 +1,6 @@
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, StableReferenceType};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
-use super::kernel_callback_api::RefCheckEvent;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -24,7 +23,7 @@ use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{
     BootStore, CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates,
 };
-use crate::track::{CanonicalSubstateKey, Track};
+use crate::track::Track;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
@@ -103,7 +102,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 continue;
             }
 
-            let value_ref = self
+            let ref_value = self
                 .track
                 .read_substate(
                     node_id,
@@ -112,7 +111,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 )
                 .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
 
-            match callback.boot_ref_type(node_id, value_ref)? {
+            match callback.boot_verify_ref_value(node_id, ref_value)? {
                 StableReferenceType::Global => {
                     global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                 }
@@ -120,16 +119,6 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                     direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
                 }
             }
-
-            let io_access = IOAccess::ReadFromDb(
-                CanonicalSubstateKey {
-                    node_id: *node_id,
-                    partition_number: TYPE_INFO_FIELD_PARTITION,
-                    substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
-                },
-                value_ref.len(),
-            );
-            callback.on_boot_ref_check(RefCheckEvent::IOAccess(&io_access))?;
         }
 
         Ok((global_addresses, direct_accesses))
@@ -236,7 +225,13 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
     ) -> Self {
-        Self::new(store, id_allocator, callback, index_set_new(), index_set_new())
+        Self::new(
+            store,
+            id_allocator,
+            callback,
+            index_set_new(),
+            index_set_new(),
+        )
     }
 
     pub fn new(
