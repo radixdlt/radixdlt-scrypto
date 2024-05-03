@@ -4,8 +4,8 @@ version = "1.0.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../../../../sbor" }
-scrypto = { path = "../../../../scrypto" }
+sbor = { version = "1.2.0-dev" }
+scrypto = { version = "1.2.0-dev" }
 
 [lib]
 doctest = false

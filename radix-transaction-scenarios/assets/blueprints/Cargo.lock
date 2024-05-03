@@ -61,9 +61,9 @@ dependencies = [
 
 [[package]]
 name = "bnum"
-version = "0.11.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
+checksum = "845141a4fade3f790628b7daaaa298a25b204fb28907eb54febe5142db6ce653"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -407,6 +407,8 @@ dependencies = [
 [[package]]
 name = "radix-blueprint-schema-init"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a9b46bf6bfde5d49dabb2655edcc6b7b26a2b0633f221121885ebef7552e720"
 dependencies = [
  "bitflags",
  "radix-common",
@@ -417,6 +419,8 @@ dependencies = [
 [[package]]
 name = "radix-common"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b90b41bf160049812b3ecdeac39be607bd4d000075238341c5f9b5e3842e1b2"
 dependencies = [
  "bech32",
  "blake2",
@@ -436,12 +440,13 @@ dependencies = [
  "serde",
  "sha3",
  "strum",
- "zeroize",
 ]
 
 [[package]]
 name = "radix-common-derive"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18d71b23d20b6ff694691b3ba2dc1e46119425fe80edc0535a9149f704bac439"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -453,6 +458,8 @@ dependencies = [
 [[package]]
 name = "radix-engine-interface"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "173885174f383f78d423a9530e2cf30d7c3c62fcbff6352b77529360b887807e"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -473,6 +480,8 @@ dependencies = [
 [[package]]
 name = "radix-rust"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d00bad85f4ebff5f26b8eb8d4c5a5ad1f4b8e1b326e0a7870277e8d53b76759f"
 dependencies = [
  "indexmap",
  "serde",
@@ -481,6 +490,8 @@ dependencies = [
 [[package]]
 name = "radix-sbor-derive"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a79b074a0d33fe92ae3d9cee28d05b7a3dbc71c4c59c19c973ef611b9a2b50aa"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -577,6 +588,8 @@ checksum = "e86697c916019a8588c99b5fac3cead74ec0b4b819707a682fd4d23fa0ce1ba1"
 [[package]]
 name = "sbor"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15fa5bf69511a826fa220465fd695735874dfd1d7b99132bba8bc3baed31e8f1"
 dependencies = [
  "const-sha1",
  "hex",
@@ -590,15 +603,18 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b88a716bf94ffb6b848574ad0e83a8668f73ae681155676baac1d941034a201"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
- "syn 1.0.109",
 ]
 
 [[package]]
 name = "sbor-derive-common"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b0595860b42e76ef28a7a62dcea0073e3b86ec8cb0a73535fda5f4cd6aa3d89"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -610,6 +626,8 @@ dependencies = [
 [[package]]
 name = "scrypto"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c48bf261ae5829182bcc8afdab9bd90eb685e6540e9331e4c70998a068cf50e3"
 dependencies = [
  "bech32",
  "const-sha1",
@@ -629,6 +647,8 @@ dependencies = [
 [[package]]
 name = "scrypto-derive"
 version = "1.2.0-dev"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d90777eb33259eb7a675c5fed6f00f50518ff000ac5336c099c0a1aa82a75bd9"
 dependencies = [
  "proc-macro2",
  "quote",
