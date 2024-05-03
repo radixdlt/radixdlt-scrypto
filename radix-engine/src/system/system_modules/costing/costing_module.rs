@@ -73,7 +73,7 @@ impl OnApplyCost {
 pub struct CostingModuleConfig {
     /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
     pub max_per_function_royalty_in_xrd: Decimal,
-    /// If true, fully execution costing will occur
+    /// If true, execution costing for all system calls will occur
     pub apply_execution_cost_2: bool,
     /// If true, costing on reference checks on boot will occur
     pub apply_boot_ref_check_costing: bool,
@@ -108,17 +108,14 @@ pub struct CostBreakdown {
 
 #[derive(Debug, Clone)]
 pub struct CostingModule {
+    pub config: CostingModuleConfig,
     pub fee_reserve: SystemLoanFeeReserve,
-
     pub fee_table: FeeTable,
-    pub tx_payload_len: usize,
-    pub tx_num_of_signature_validations: usize,
-
-    pub cost_breakdown: Option<CostBreakdown>,
-
     pub on_apply_cost: OnApplyCost,
 
-    pub config: CostingModuleConfig,
+    pub tx_payload_len: usize,
+    pub tx_num_of_signature_validations: usize,
+    pub cost_breakdown: Option<CostBreakdown>,
 }
 
 impl CostingModule {

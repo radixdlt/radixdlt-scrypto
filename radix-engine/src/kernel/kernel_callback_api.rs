@@ -157,6 +157,13 @@ pub trait KernelCallbackObject: Sized {
         init: Self::Init,
     ) -> Result<Self, RejectionReason>;
 
+    /// Verifies and returns the type of a given reference used during boot
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError>;
+
     /// Start execution
     fn start<Y>(
         api: &mut Y,
@@ -178,12 +185,6 @@ pub trait KernelCallbackObject: Sized {
         executable: &Executable,
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
-
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError>;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 

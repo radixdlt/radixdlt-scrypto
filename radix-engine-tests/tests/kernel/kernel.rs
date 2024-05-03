@@ -63,6 +63,10 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(Self)
     }
 
+    fn verify_boot_ref_value(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
+        Ok(StableReferenceType::Global)
+    }
+
     fn start<Y>(
         _api: &mut Y,
         _manifest_encoded_instructions: &[u8],
@@ -82,10 +86,6 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _executable: &Executable, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
         TestReceipt
-    }
-
-    fn verify_boot_ref_value(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
-        Ok(StableReferenceType::Global)
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
