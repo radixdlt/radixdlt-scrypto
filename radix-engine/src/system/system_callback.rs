@@ -1163,7 +1163,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         receipt
     }
 
-    fn boot_verify_ref_value(
+    fn verify_boot_ref_value(
         &mut self,
         node_id: &NodeId,
         ref_value: &IndexedScryptoValue,

@@ -113,7 +113,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 )
                 .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
 
-            match callback.boot_verify_ref_value(node_id, ref_value)? {
+            match callback.verify_boot_ref_value(node_id, ref_value)? {
                 StableReferenceType::Global => {
                     global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                 }

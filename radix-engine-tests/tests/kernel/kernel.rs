@@ -84,7 +84,7 @@ impl KernelCallbackObject for TestCallbackObject {
         TestReceipt
     }
 
-    fn boot_verify_ref_value(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
+    fn verify_boot_ref_value(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
         Ok(StableReferenceType::Global)
     }
 
