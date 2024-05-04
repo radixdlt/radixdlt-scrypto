@@ -290,7 +290,7 @@ impl ListableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
                     let (iter_key, _) = decode_from_rocksdb_bytes(iter_key_bytes);
                     iter_key
                 })
-                // Rocksdb iterator returns sorted entries, so ok to to eliminate
+                // Rocksdb iterator returns sorted entries, so ok to eliminate
                 // duplicates with dedup()
                 .dedup(),
         )
