@@ -62,9 +62,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::system::bootstrap::Bootstrapper;
-use radix_engine::system::system_db_reader::{
-    ObjectCollectionKey, SystemDatabaseReader, SystemDatabaseWriter,
-};
+use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionOutcome;
@@ -81,7 +79,6 @@ use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
-use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_substate_store_queries::typed_substate_layout::*;
 use radix_transactions::manifest::decompile;
 use radix_transactions::model::TestTransaction;
@@ -169,7 +166,9 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
-    let SimulatorEnvironment { mut db, scrypto_vm } = SimulatorEnvironment::new()?;
+    let SimulatorEnvironment {
+        mut db, scrypto_vm, ..
+    } = SimulatorEnvironment::new()?;
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
     let nonce = get_nonce()?;
@@ -197,9 +196,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         let encoder = AddressBech32Encoder::for_simulator();
         let display_context = TransactionReceiptDisplayContextBuilder::new()
             .encoder(&encoder)
-            .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                get_event_schema(&db, event_type_identifier)
-            })
+            .schema_lookup_from_db(&db)
             .build();
         writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
     }
@@ -240,7 +237,9 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let SimulatorEnvironment { mut db, scrypto_vm } = SimulatorEnvironment::new()?;
+            let SimulatorEnvironment {
+                mut db, scrypto_vm, ..
+            } = SimulatorEnvironment::new()?;
             let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
             let sks = get_signing_keys(signing_keys)?;
@@ -265,9 +264,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 let encoder = AddressBech32Encoder::for_simulator();
                 let display_context = TransactionReceiptDisplayContextBuilder::new()
                     .encoder(&encoder)
-                    .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
-                        get_event_schema(&db, event_type_identifier)
-                    })
+                    .schema_lookup_from_db(&db)
                     .build();
                 writeln!(out, "{}", receipt.display(display_context)).map_err(Error::IOError)?;
             }
@@ -379,60 +376,6 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
         .get_object_info(component_address)
         .expect("Unexpected");
     Ok(object_info.blueprint_info.blueprint_id)
-}
-
-pub fn get_event_schema<S: SubstateDatabase>(
-    db: &S,
-    event_type_identifier: &EventTypeIdentifier,
-) -> Option<(LocalTypeId, VersionedScryptoSchema)> {
-    let system_reader = SystemDatabaseReader::new(db);
-
-    let (blueprint_id, event_name) = match event_type_identifier {
-        EventTypeIdentifier(Emitter::Method(node_id, node_module), event_name) => {
-            let blueprint_id = system_reader.get_blueprint_id(node_id, *node_module).ok()?;
-            (blueprint_id, event_name)
-        }
-        EventTypeIdentifier(Emitter::Function(blueprint_id), event_name) => {
-            (blueprint_id.clone(), event_name)
-        }
-    };
-
-    let version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str());
-    let bp_definition: VersionedPackageBlueprintVersionDefinition = system_reader
-        .read_object_collection_entry(
-            blueprint_id.package_address.as_node_id(),
-            ModuleId::Main,
-            ObjectCollectionKey::KeyValue(
-                PackageCollection::BlueprintVersionDefinitionKeyValue.collection_index(),
-                &version_key,
-            ),
-        )
-        .unwrap()?;
-
-    let bp_interface = bp_definition
-        .fully_update_and_into_latest_version()
-        .interface;
-
-    let event_def = bp_interface.events.get(event_name)?;
-    match event_def {
-        BlueprintPayloadDef::Static(type_id) => {
-            let schema: VersionedScryptoSchema = system_reader
-                .read_object_collection_entry(
-                    blueprint_id.package_address.as_node_id(),
-                    ModuleId::Main,
-                    ObjectCollectionKey::KeyValue(
-                        PackageCollection::SchemaKeyValue.collection_index(),
-                        &type_id.0,
-                    ),
-                )
-                .unwrap()?;
-
-            Some((type_id.1, schema))
-        }
-        BlueprintPayloadDef::Generic(..) => {
-            panic!("Not expecting any events to use generics")
-        }
-    }
 }
 
 pub fn db_upsert_timestamps(

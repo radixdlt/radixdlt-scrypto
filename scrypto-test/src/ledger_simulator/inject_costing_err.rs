@@ -1,7 +1,8 @@
 use radix_common::prelude::*;
+use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
+use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, StableReferenceType};
 use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi, SystemState,
@@ -138,6 +139,14 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
         self.system.create_receipt(track, executable, result)
+    }
+
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        self.system.verify_boot_ref_value(node_id, value)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

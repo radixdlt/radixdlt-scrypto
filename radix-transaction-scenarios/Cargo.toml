@@ -20,6 +20,7 @@ radix-rust = { workspace = true }
 itertools = { workspace = true }
 hex = { workspace = true }
 walkdir = { workspace = true }
+lazy_static = { workspace = true }
 
 [features]
 # You should enable either `std` or `alloc`

@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
-    OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    OpenSubstateEvent, ReadSubstateEvent, RefCheckEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::kernel::substate_io::SubstateDevice;
@@ -122,6 +122,13 @@ impl FeeTable {
         // The max size of a transaction is 1 MiB, and the cost will be 1,048,576 * 40 = 41,943,040 cost units
         // This is roughly 1/24 of storing data in substate store per current setup.
         mul(cast(size), 40)
+    }
+
+    #[inline]
+    pub fn ref_check(&self, event: &RefCheckEvent) -> u32 {
+        match event {
+            RefCheckEvent::IOAccess(io_access) => self.io_access_cost(io_access),
+        }
     }
 
     #[inline]
@@ -352,6 +359,11 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn query_costing_module(&self) -> u32 {
+        500
+    }
+
+    #[inline]
     pub fn query_actor_cost(&self) -> u32 {
         500
     }
@@ -374,6 +386,11 @@ impl FeeTable {
     #[inline]
     pub fn emit_log_cost(&self, size: usize) -> u32 {
         500 + Self::data_processing_cost(size)
+    }
+
+    #[inline]
+    pub fn encode_bech32_address_cost(&self) -> u32 {
+        500
     }
 
     #[inline]

@@ -962,7 +962,6 @@ impl<
 mod private {
     use super::*;
     use radix_common::types::NonFungibleGlobalId;
-    use radix_engine_interface::blueprints::resource::ResourceFeature;
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;
@@ -974,18 +973,6 @@ mod private {
         type OutputBuilder;
 
         fn set_address(self, address_reservation: GlobalAddressReservation) -> Self::OutputBuilder;
-    }
-
-    pub trait CanAddAuth: Sized {
-        type OutputBuilder;
-
-        fn add_roles(self, role_init: RoleAssignmentInit) -> Self::OutputBuilder;
-
-        fn add_action_and_roles(
-            self,
-            method: ResourceFeature,
-            role_init: RoleAssignmentInit,
-        ) -> Self::OutputBuilder;
     }
 
     pub trait CanAddOwner: Sized {

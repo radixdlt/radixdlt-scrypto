@@ -1,0 +1,15 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+RECALL_FROM_VAULT
+    Address("internal_vault_sim1tpcy68e3056prrst2k9qvk04727s0q9yqwvj63hun7azu7lujcn9ex")
+    Decimal("123.12321")
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "try_deposit_batch_or_abort"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

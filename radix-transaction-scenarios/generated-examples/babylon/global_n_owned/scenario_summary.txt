@@ -1,0 +1,11 @@
+Name: global_n_owned
+
+== SUMMARY HASHES ==
+These Babylon hashes should NEVER change, else they will cause divergence when run historically.
+State changes: eca6661e225d61c8 (should never change)
+Events       : 5defe78e4694e3a5 (should never change)
+
+== INTERESTING ADDRESSES ==
+- global_n_owned_package_address: package_sim1pkaulm4hum34fy2k0tnflzmyh2qvv9vq9kwlpxwrh68k9t36zkng96
+- global_n_owned_component_address: component_sim1cqxyfhy9p9rmw25972hj3grjpenp2ep807zdgska5s74kglakq936r
+

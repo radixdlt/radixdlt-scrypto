@@ -249,7 +249,7 @@ fn test_default_invoke_payload_size_limit() {
     encoder.write_value_kind(ValueKind::U8).unwrap();
     encoder.write_size(MAX_INVOKE_PAYLOAD_SIZE).unwrap();
     let overhead_len = overhead.len();
-    let actor_len = PACKAGE_PACKAGE.as_ref().len() + "InvokeLimitsTest".len() + "callee".len();
+    let actor_len = PACKAGE_PACKAGE.as_bytes().len() + "InvokeLimitsTest".len() + "callee".len();
     println!("{:?}", overhead_len);
     println!("{:?}", actor_len);
 

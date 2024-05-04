@@ -1,4 +1,4 @@
-use super::call_frame::CallFrameMessage;
+use super::call_frame::{CallFrameMessage, StableReferenceType};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -35,6 +35,11 @@ pub enum DropNodeEvent<'a> {
     Start(&'a NodeId),
     IOAccess(&'a IOAccess),
     End(&'a NodeId, &'a NodeSubstates),
+}
+
+#[derive(Debug)]
+pub enum RefCheckEvent<'a> {
+    IOAccess(&'a IOAccess),
 }
 
 #[derive(Debug)]
@@ -151,6 +156,13 @@ pub trait KernelCallbackObject: Sized {
         executable: &Executable,
         init: Self::Init,
     ) -> Result<Self, RejectionReason>;
+
+    /// Verifies and returns the type of a given reference used during boot
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError>;
 
     /// Start execution
     fn start<Y>(

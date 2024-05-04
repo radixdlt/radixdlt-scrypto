@@ -10,7 +10,9 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::test_utils::TestUtilsNativePackage;
-use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
+use crate::blueprints::transaction_processor::{
+    TransactionProcessorNativePackage, TransactionProcessorV1MinorVersion,
+};
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::internal_prelude::*;
@@ -120,12 +122,20 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                 )?;
 
                 match code_id {
-                    NativeCodeId::PackageCode1 => {
-                        PackageNativePackage::invoke_export(export_name, input, api, vm_api)
-                    }
-                    NativeCodeId::PackageCode2 => {
-                        todo!("coming soon")
-                    }
+                    NativeCodeId::PackageCode1 => PackageNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        PackageV1MinorVersion::Zero,
+                        api,
+                        vm_api,
+                    ),
+                    NativeCodeId::PackageCode2 => PackageNativePackage::invoke_export(
+                        export_name,
+                        input,
+                        PackageV1MinorVersion::One,
+                        api,
+                        vm_api,
+                    ),
                     NativeCodeId::ResourceCode1 => {
                         ResourceNativePackage::invoke_export(export_name, input, api)
                     }
@@ -155,10 +165,20 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         AccessControllerV2NativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::TransactionProcessorCode1 => {
-                        TransactionProcessorNativePackage::invoke_export(export_name, input, api)
+                        TransactionProcessorNativePackage::invoke_export(
+                            export_name,
+                            input,
+                            TransactionProcessorV1MinorVersion::Zero,
+                            api,
+                        )
                     }
                     NativeCodeId::TransactionProcessorCode2 => {
-                        todo!("Coming soon")
+                        TransactionProcessorNativePackage::invoke_export(
+                            export_name,
+                            input,
+                            TransactionProcessorV1MinorVersion::One,
+                            api,
+                        )
                     }
                     NativeCodeId::MetadataCode1 => {
                         MetadataNativePackage::invoke_export(export_name, input, api)

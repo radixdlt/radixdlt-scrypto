@@ -16,6 +16,7 @@ pub const BOOT_LOADER_PARTITION: PartitionNumber = PartitionNumber(32u8);
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum BootLoaderField {
+    KernelBoot = 0,
     SystemBoot = 1,
     VmBoot = 2,
 }

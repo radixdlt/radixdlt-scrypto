@@ -1,0 +1,26 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("resource_sim1ngcvdpjg2dg5gjx4sqp9zh88hhvuafu7vw92dfyfrga9u3lnd5vatm")
+    "update_non_fungible_data"
+    NonFungibleLocalId("#1#")
+    "mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces"
+    "This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! This is a long string with repeats of length 50!! "
+;
+CALL_METHOD
+    Address("resource_sim1ngcvdpjg2dg5gjx4sqp9zh88hhvuafu7vw92dfyfrga9u3lnd5vatm")
+    "update_non_fungible_data"
+    NonFungibleLocalId("#1#")
+    "mutable_inner_enum"
+    Enum<1u8>(
+        Enum<2u8>(
+            Tuple(
+                101u8,
+                Enum<0u8>()
+            )
+        )
+    )
+;

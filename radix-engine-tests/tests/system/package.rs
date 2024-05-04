@@ -1520,3 +1520,85 @@ fn test_publishing_of_packages_with_invalid_names(name: &str) {
 fn name(len: usize, chr: char) -> String {
     (0..len).map(|_| chr).collect()
 }
+
+#[test]
+fn test_long_role_key() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let mut blueprints = index_map_new();
+    blueprints.insert(
+        "Test".to_string(),
+        BlueprintDefinitionInit {
+            blueprint_type: BlueprintType::default(),
+            is_transient: false,
+            feature_set: indexset!(),
+            dependencies: indexset!(),
+
+            schema: BlueprintSchemaInit {
+                generics: vec![],
+                schema: VersionedScryptoSchema::from_latest_version(SchemaV1 {
+                    type_kinds: vec![],
+                    type_metadata: vec![],
+                    type_validations: vec![],
+                }),
+                state: BlueprintStateSchemaInit {
+                    fields: vec![FieldSchema::static_field(LocalTypeId::WellKnown(UNIT_TYPE))],
+                    collections: vec![],
+                },
+                events: BlueprintEventSchemaInit::default(),
+                types: BlueprintTypeSchemaInit::default(),
+                functions: BlueprintFunctionsSchemaInit {
+                    functions: indexmap!(
+                        "f".to_string() => FunctionSchemaInit {
+                            receiver: Option::Some(ReceiverInfo { receiver: Receiver::SelfRefMut, ref_types: RefTypes::NORMAL }),
+                            input: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                            output: TypeRef::Static(LocalTypeId::WellKnown(ANY_TYPE)),
+                            export: "Test_f".to_string(),
+                        }
+                    ),
+                },
+                hooks: BlueprintHooksInit::default(),
+            },
+            royalty_config: PackageRoyaltyConfig::default(),
+            auth_config: AuthConfig {
+                function_auth: FunctionAuth::AllowAll,
+                method_auth: MethodAuthTemplate::StaticRoleDefinition(StaticRoleDefinition {
+                    roles: RoleSpecification::Normal(indexmap!(
+                        RoleKey { key: "abc".to_owned() } => RoleList { list: vec![] }
+                    )),
+                    methods: indexmap!(
+                        MethodKey { ident: "f".to_owned() } => MethodAccessibility::RoleProtected(
+                            RoleList {
+                                list: vec![RoleKey { key: format!("_{}", "a".repeat(1024)) }]
+                            }
+                        )
+                    ),
+                }),
+            },
+        },
+    );
+
+    // Act
+    let code = wat2wasm(include_local_wasm_str!("basic_package.wat"));
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(
+            None,
+            code,
+            PackageDefinition { blueprints },
+            BTreeMap::new(),
+            OwnerRole::None,
+        )
+        .build();
+    let receipt = ledger.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::ReservedRoleKeyIsNotDefined(_)
+            ))
+        )
+    });
+}

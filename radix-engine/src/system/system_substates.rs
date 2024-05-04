@@ -43,9 +43,9 @@ impl<V> FieldSubstate<V> {
         }
     }
 
-    pub fn lock_status(&self) -> &LockStatus {
+    pub fn lock_status(&self) -> LockStatus {
         match self {
-            FieldSubstate::V1(FieldSubstateV1 { lock_status, .. }) => lock_status,
+            FieldSubstate::V1(FieldSubstateV1 { lock_status, .. }) => *lock_status,
         }
     }
 

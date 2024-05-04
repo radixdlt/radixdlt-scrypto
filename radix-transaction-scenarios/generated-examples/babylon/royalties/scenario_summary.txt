@@ -1,0 +1,13 @@
+Name: royalties
+
+== SUMMARY HASHES ==
+These Babylon hashes should NEVER change, else they will cause divergence when run historically.
+State changes: 7c2a27e040f8c897 (should never change)
+Events       : 22c5d8a9501d0101 (should never change)
+
+== INTERESTING ADDRESSES ==
+- royalty_package_address: package_sim1p4qz8edl2w0t5mzwt6zcq0nfnc0ax9rkfawnmsg0s974hxcsggr29z
+- no_royalty_component_address: component_sim1cr7guww2kc22r6vnk8ffep9sv2aphp0mg6hdngg8x2shzf2xn90zmw
+- xrd_royalty_component_address: component_sim1cr6wkdave3fx5vkf7lmpmgx3yaucurjup5vlxy625vt8vw05jchx45
+- usd_royalty_component_address: component_sim1cp6hfzrywgcv9ffwtdhs7lczul27vkscacekxdmpm7zjzyrmwlppa3
+
