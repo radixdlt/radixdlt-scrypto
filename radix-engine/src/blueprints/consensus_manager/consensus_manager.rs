@@ -3,7 +3,6 @@ use crate::blueprints::consensus_manager::VALIDATOR_ROLE;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelNodeApi;
 use radix_common::constants::AuthAddresses;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ModuleId;
@@ -992,7 +991,7 @@ impl ConsensusManagerBlueprint {
 
     fn get_validator_xrd_cost<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let manager_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1040,7 +1039,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         if !xrd_payment.resource_address(api)?.eq(&XRD) {
             return Err(RuntimeError::ApplicationError(

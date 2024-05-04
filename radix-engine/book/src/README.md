@@ -7,7 +7,6 @@ Radix Engine was built out of the lack of Blockchain VMs specifically optimized 
 shared computing environment in terms of usability, security, performance, and modularity.
 
 Unlike the EVM and other blockchain VMs, Radix Engine:
-* Is Object-Oriented
-* Is Type-Safe
+* Is Object-Oriented and Type-Safe
 * Enforces move/ownership semantics
 * Has the ability to add system plugins to extend system functionality

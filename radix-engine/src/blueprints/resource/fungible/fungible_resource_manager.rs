@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelNodeApi;
 use lazy_static::lazy_static;
 use num_traits::pow::Pow;
 use radix_common::math::Decimal;
@@ -401,7 +400,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let (object_id, roles) = Self::create_object(
             Decimal::ZERO,
@@ -435,7 +434,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let (object_id, roles) = Self::create_object(
             initial_supply,
@@ -481,7 +480,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<GlobalAddressReservation, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,

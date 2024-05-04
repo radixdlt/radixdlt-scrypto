@@ -141,7 +141,6 @@ pub trait ClientKeyValueStoreApi<E> {
     /// Creates a new key value store with a given schema
     fn key_value_store_new(&mut self, data_schema: KeyValueStoreDataSchema) -> Result<NodeId, E>;
 
-
     /// Open a key value store entry for reading/writing
     fn key_value_store_open_entry(
         &mut self,

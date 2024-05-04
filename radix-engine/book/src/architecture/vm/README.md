@@ -1,7 +1,9 @@
 # VM Layer
 
-The VM Layer is responsible for providing the computing environment to the application layer. This
-includes a Turing-complete VM as well as the interface to access the system layer.
+The VM Layer is responsible for providing a Turing-complete computing environment and the
+system layer interface to the application layer. The VM Layer does this by defining the
+System Callback Object.
 
-Radix Engine currently supports two VMs: a Scrypto WASM VM used to execute Scrypto applications and
-a native VM which executes native packages which are compiled to the host’s environment.
+Radix Engine currently supports two VMs:
+* A Scrypto WASM VM which exposes the system layer interface through WASM extern functions
+* A Native VM which is currently compiled directly in the host's environment with the Radix Engine
