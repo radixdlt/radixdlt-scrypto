@@ -1,7 +1,6 @@
-use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
+use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, StableReferenceType};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
-use super::kernel_callback_api::RefCheckEvent;
 use crate::blueprints::resource::*;
 use crate::errors::RuntimeError;
 use crate::errors::*;
@@ -24,7 +23,7 @@ use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::{
     BootStore, CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates,
 };
-use crate::track::{CanonicalSubstateKey, Track};
+use crate::track::Track;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
@@ -39,20 +38,12 @@ pub type KernelBootSubstate = KernelBoot;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum KernelBoot {
-    V1 { ref_check_costing: bool },
+    V1,
 }
 
 impl KernelBoot {
-    pub fn is_ref_check_costing_enabled(&self) -> bool {
-        match self {
-            KernelBoot::V1 { ref_check_costing } => *ref_check_costing,
-        }
-    }
-
     pub fn babylon() -> Self {
-        Self::V1 {
-            ref_check_costing: false,
-        }
+        Self::V1
     }
 }
 
@@ -91,6 +82,50 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
+    fn check_references(
+        &mut self,
+        callback: &mut M,
+        references: &IndexSet<Reference>,
+    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
+        let mut global_addresses = indexset!();
+        let mut direct_accesses = indexset!();
+
+        for reference in references.iter() {
+            let node_id = &reference.0;
+
+            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                // Allow always visible node and do not add reference
+                continue;
+            }
+
+            if node_id.is_global_virtual() {
+                // Allow global virtual and add reference
+                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                continue;
+            }
+
+            let ref_value = self
+                .track
+                .read_substate(
+                    node_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+
+            match callback.verify_boot_ref_value(node_id, ref_value)? {
+                StableReferenceType::Global => {
+                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                }
+                StableReferenceType::DirectAccess => {
+                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                }
+            }
+        }
+
+        Ok((global_addresses, direct_accesses))
+    }
+
     fn execute_internal<'a>(
         mut self,
         executable: &Executable,
@@ -100,29 +135,35 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             v.borrow_mut();
         });
 
+        // Read kernel boot configuration
+        // Unused for now
+        let _kernel_boot: KernelBoot = self
+            .track
+            .read_boot_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
+                &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or(KernelBoot::babylon());
+
         // Create System
         let mut callback = M::init(&mut self.track, executable, self.init.clone())?;
 
         // Create Kernel
         let mut kernel = {
-            let mut kernel = Kernel::new(&mut self.track, &mut self.id_allocator, &mut callback);
-
             // Check references
-            let engine_references = kernel
-                .check_references(executable.references())
+            let (global_addresses, internal_addresses) = self
+                .check_references(&mut callback, executable.references())
                 .map_err(RejectionReason::BootloadingError)?;
 
-            // Add visibility
-            for global_ref in engine_references.0 {
-                kernel.current_frame.add_global_reference(global_ref);
-            }
-            for direct_access in engine_references.1 {
-                kernel
-                    .current_frame
-                    .add_direct_access_reference(direct_access);
-            }
-
-            kernel
+            Kernel::new(
+                &mut self.track,
+                &mut self.id_allocator,
+                &mut callback,
+                global_addresses,
+                internal_addresses,
+            )
         };
 
         // Execution
@@ -181,7 +222,40 @@ pub struct Kernel<
 }
 
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel<'g, M, S> {
-    pub fn new(store: &'g mut S, id_allocator: &'g mut IdAllocator, callback: &'g mut M) -> Self {
+    pub fn new_no_refs(
+        store: &'g mut S,
+        id_allocator: &'g mut IdAllocator,
+        callback: &'g mut M,
+    ) -> Self {
+        Self::new(
+            store,
+            id_allocator,
+            callback,
+            index_set_new(),
+            index_set_new(),
+        )
+    }
+
+    pub fn new(
+        store: &'g mut S,
+        id_allocator: &'g mut IdAllocator,
+        callback: &'g mut M,
+        global_addresses: IndexSet<GlobalAddress>,
+        internal_addresses: IndexSet<InternalAddress>,
+    ) -> Self {
+        let call_frame = {
+            let mut call_frame = CallFrame::new_root(M::CallFrameData::root());
+            // Add visibility
+            for global_ref in global_addresses {
+                call_frame.add_global_reference(global_ref);
+            }
+            for direct_access in internal_addresses {
+                call_frame.add_direct_access_reference(direct_access);
+            }
+
+            call_frame
+        };
+
         Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -192,101 +266,10 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
                 pinned_to_heap: BTreeSet::new(),
             },
             id_allocator,
-            current_frame: CallFrame::new_root(M::CallFrameData::root()),
+            current_frame: call_frame,
             prev_frame_stack: vec![],
             callback,
         }
-    }
-
-    pub fn check_references(
-        &mut self,
-        references: &IndexSet<Reference>,
-    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
-        let mut global_addresses = indexset!();
-        let mut direct_accesses = indexset!();
-
-        // Read kernel version
-        // TODO: Can potentially make it an API
-        let kernel_boot: KernelBoot = self
-            .substate_io
-            .store
-            .read_boot_substate(
-                TRANSACTION_TRACKER.as_node_id(),
-                BOOT_LOADER_PARTITION,
-                &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
-            )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
-            .unwrap_or(KernelBoot::babylon());
-        let costing_enabled = kernel_boot.is_ref_check_costing_enabled();
-
-        for reference in references.iter() {
-            let node_id = &reference.0;
-
-            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-                // Allow always visible node and do not add reference
-                continue;
-            }
-
-            if node_id.is_global_virtual() {
-                // Allow global virtual and add reference
-                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                continue;
-            }
-
-            let substate_ref = self
-                .substate_io
-                .store
-                .read_substate(
-                    node_id,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
-                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
-
-            let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            match &type_substate {
-                TypeInfoSubstate::Object(
-                    info @ ObjectInfo {
-                        blueprint_info: BlueprintInfo { blueprint_id, .. },
-                        ..
-                    },
-                ) => {
-                    if info.is_global() {
-                        global_addresses
-                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                    } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
-                        && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                            || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
-                    {
-                        direct_accesses
-                            .insert(InternalAddress::new_or_panic(node_id.clone().into()));
-                    } else {
-                        return Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
-                            node_id.clone(),
-                        ));
-                    }
-                }
-                _ => {
-                    return Err(BootloadingError::ReferencedNodeIsNotAnObject(
-                        node_id.clone(),
-                    ));
-                }
-            }
-
-            if costing_enabled {
-                let io_access = IOAccess::ReadFromDb(
-                    CanonicalSubstateKey {
-                        node_id: *node_id,
-                        partition_number: TYPE_INFO_FIELD_PARTITION,
-                        substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
-                    },
-                    substate_ref.len(),
-                );
-                M::on_ref_check(self, RefCheckEvent::IOAccess(&io_access))?;
-            }
-        }
-
-        Ok((global_addresses, direct_accesses))
     }
 }
 

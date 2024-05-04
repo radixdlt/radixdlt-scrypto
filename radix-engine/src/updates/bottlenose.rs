@@ -8,6 +8,7 @@ use crate::kernel::kernel::*;
 use crate::object_modules::role_assignment::*;
 use crate::system::system_callback::*;
 use crate::system::system_db_reader::*;
+use crate::system::system_modules::costing::CostingModuleConfig;
 use crate::track::*;
 use crate::transaction::*;
 use crate::vm::*;
@@ -493,10 +494,9 @@ fn generate_protocol_params_to_state_updates(
                             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
                                 scrypto_encode(&SystemBoot::V1(SystemParameters {
                                     network_definition,
+                                    costing_module_config: CostingModuleConfig::bottlenose(),
                                     costing_parameters: CostingParameters::babylon_genesis(),
                                     limit_parameters: LimitParameters::babylon_genesis(),
-                                    max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
-                                    apply_additional_costing: true,
                                 })).unwrap()
                             ),
                         }
@@ -965,10 +965,7 @@ fn generate_transaction_processor_blob_limits_state_updates<S: SubstateDatabase 
 
 /// Generates the state updates required for introducing deferred reference check costs
 fn generate_ref_check_costs_state_updates() -> StateUpdates {
-    let substate = scrypto_encode(&KernelBoot::V1 {
-        ref_check_costing: true,
-    })
-    .unwrap();
+    let substate = scrypto_encode(&KernelBoot::V1).unwrap();
 
     StateUpdates {
         by_node: indexmap!(

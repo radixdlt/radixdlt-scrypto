@@ -1,4 +1,4 @@
-use super::call_frame::CallFrameMessage;
+use super::call_frame::{CallFrameMessage, StableReferenceType};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -157,6 +157,13 @@ pub trait KernelCallbackObject: Sized {
         init: Self::Init,
     ) -> Result<Self, RejectionReason>;
 
+    /// Verifies and returns the type of a given reference used during boot
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError>;
+
     /// Start execution
     fn start<Y>(
         api: &mut Y,
@@ -178,10 +185,6 @@ pub trait KernelCallbackObject: Sized {
         executable: &Executable,
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
-
-    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self>;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 

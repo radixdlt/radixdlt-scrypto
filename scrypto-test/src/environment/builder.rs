@@ -262,13 +262,9 @@ where
                     fee_table: FeeTable::new(),
                     tx_payload_len: 0,
                     tx_num_of_signature_validations: 0,
-                    max_per_function_royalty_in_xrd: Decimal::try_from(
-                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-                    )
-                    .unwrap(),
+                    config: CostingModuleConfig::babylon_genesis(),
                     cost_breakdown: Some(Default::default()),
                     on_apply_cost: Default::default(),
-                    apply_additional_costing: false,
                 };
 
                 System {
