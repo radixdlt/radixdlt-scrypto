@@ -200,7 +200,7 @@ impl TwoResourcePoolBlueprint {
             )
         };
 
-        // Determine the amount of pool units to mint based on the the current state of the pool.
+        // Determine the amount of pool units to mint based on the current state of the pool.
         let (pool_units_to_mint, amount1, amount2) = {
             let pool_unit_total_supply = substate
                 .pool_unit_resource_manager

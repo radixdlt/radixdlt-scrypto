@@ -141,7 +141,7 @@ impl OneResourcePoolBlueprint {
 
         /*
         There are four states that the pool could be in at this point of time depending on the total
-        supply of the pool units and the the total amount of reserves that the pool unit has. We can
+        supply of the pool units and the total amount of reserves that the pool unit has. We can
         examine each of those states.
 
         Let PU denote the total supply of pool units where 0 means that none exists and 1 means that

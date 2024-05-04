@@ -33,7 +33,7 @@ impl<T: NonFungibleData> NonFungible<T> {
         &self.non_fungible_global_id
     }
 
-    /// Returns a reference to the the non-fungible ID.
+    /// Returns a reference to the non-fungible ID.
     pub fn local_id(&self) -> &NonFungibleLocalId {
         self.non_fungible_global_id.local_id()
     }
