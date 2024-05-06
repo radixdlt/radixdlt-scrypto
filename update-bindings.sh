@@ -32,11 +32,12 @@ list=(
       --func-sig-change blueprint_name=ConsensusManager;func_name=create_validator;2=FungibleBucket;r=(Global<Validator>,NonFungibleBucket,FungibleBucket)
       --func-sig-change blueprint_name=Validator;func_name=stake_as_owner;0=FungibleBucket;r=FungibleBucket
       --func-sig-change blueprint_name=Validator;func_name=stake;0=FungibleBucket;r=FungibleBucket
-      --func-sig-change blueprint_name=Validator;func_name=unstake;0=FungibleBucket;r=FungibleBucket
-      --func-sig-change blueprint_name=Validator;func_name=claim_xrd;0=FungibleBucket;r=FungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=unstake;0=FungibleBucket;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=claim_xrd;0=NonFungibleBucket;r=FungibleBucket
       --func-sig-change blueprint_name=Validator;func_name=lock_owner_stake_units;0=FungibleBucket
       --func-sig-change blueprint_name=Validator;func_name=finish_unlock_owner_stake_units;r=FungibleBucket
       --func-sig-change blueprint_name=Validator;func_name=apply_emission;0=FungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=apply_reward;0=FungibleBucket
     "
     # Identity
     "package_sim1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxnc59k6
@@ -47,31 +48,31 @@ list=(
     "package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6
       --func-sig-change blueprint_name=Account;func_name=create;r=(Global<Account>,NonFungibleBucket)
       --func-sig-change blueprint_name=Account;func_name=securify;r=NonFungibleBucket
-      --func-sig-change blueprint_name=Account;func_name=withdraw_non_fungibles;0=NonFungibleBucket
-      --func-sig-change blueprint_name=Account;func_name=lock_fee_and_withdraw_non_fungibles;0=NonFungibleBucket
-      --func-sig-change blueprint_name=Account;func_name=create_proof_of_amount;0=FungibleProof
-      --func-sig-change blueprint_name=Account;func_name=create_proof_of_non_fungibles;0=NonFungibleProof
+      --func-sig-change blueprint_name=Account;func_name=withdraw_non_fungibles;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Account;func_name=lock_fee_and_withdraw_non_fungibles;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Account;func_name=create_proof_of_amount;r=FungibleProof
+      --func-sig-change blueprint_name=Account;func_name=create_proof_of_non_fungibles;r=NonFungibleProof
     "
     # Pools
     "package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6
       --func-sig-change blueprint_name=OneResourcePool;func_name=contribute;0=FungibleBucket;r=FungibleBucket
-      --func-sig-change blueprint_name=OneResourcePool;func_name=reedem;0=FungibleBucket;r=FungibleBucket
+      --func-sig-change blueprint_name=OneResourcePool;func_name=redeem;0=FungibleBucket;r=FungibleBucket
       --func-sig-change blueprint_name=OneResourcePool;func_name=protected_deposit;0=FungibleBucket
       --func-sig-change blueprint_name=OneResourcePool;func_name=protected_withdraw;r=FungibleBucket
 
       --func-sig-change blueprint_name=TwoResourcePool;func_name=contribute;0=(FungibleBucket,FungibleBucket);r=(FungibleBucket,Option<FungibleBucket>)
-      --func-sig-change blueprint_name=TwoResourcePool;func_name=reedem;0=FungibleBucket;r=(FungibleBucket,FungibleBucket)
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=redeem;0=FungibleBucket;r=(FungibleBucket,FungibleBucket)
       --func-sig-change blueprint_name=TwoResourcePool;func_name=protected_deposit;0=FungibleBucket
       --func-sig-change blueprint_name=TwoResourcePool;func_name=protected_withdraw;r=FungibleBucket
 
       --func-sig-change blueprint_name=MultiResourcePool;func_name=contribute;0=Vec<FungibleBucket>;r=(FungibleBucket,Vec<FungibleBucket>)
-      --func-sig-change blueprint_name=MultiResourcePool;func_name=reedem;0=FungibleBucket;r=Vec<FungibleBucket>
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=redeem;0=FungibleBucket;r=Vec<FungibleBucket>
       --func-sig-change blueprint_name=MultiResourcePool;func_name=protected_deposit;0=FungibleBucket
       --func-sig-change blueprint_name=MultiResourcePool;func_name=protected_withdraw;r=FungibleBucket
     "
     # Access Controller
     "package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l
-      --func-sig-change blueprint_name=AccessController;func_name=mint_recovery_badges;r=FungibleBucket
+      --func-sig-change blueprint_name=AccessController;func_name=mint_recovery_badges;r=NonFungibleBucket
       --func-sig-change blueprint_name=AccessController;func_name=withdraw_recovery_fee;r=FungibleBucket
       --func-sig-change blueprint_name=AccessController;func_name=contribute_recovery_fee;0=FungibleBucket
     "

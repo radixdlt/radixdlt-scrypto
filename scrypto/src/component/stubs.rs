@@ -92,8 +92,8 @@ extern_blueprint_internal! {
         fn unregister(&mut self);
         fn stake_as_owner(&mut self, stake: FungibleBucket) -> FungibleBucket;
         fn stake(&mut self, stake: FungibleBucket) -> FungibleBucket;
-        fn unstake(&mut self, stake_unit_bucket: FungibleBucket) -> FungibleBucket;
-        fn claim_xrd(&mut self, bucket: FungibleBucket) -> FungibleBucket;
+        fn unstake(&mut self, stake_unit_bucket: FungibleBucket) -> NonFungibleBucket;
+        fn claim_xrd(&mut self, bucket: NonFungibleBucket) -> FungibleBucket;
         fn update_key(&mut self, key: Secp256k1PublicKey);
         fn update_fee(&mut self, new_fee_factor: Decimal);
         fn update_accept_delegated_stake(&mut self, accept_delegated_stake: bool);
@@ -113,7 +113,7 @@ extern_blueprint_internal! {
             proposals_made: u64,
             proposals_missed: u64,
         );
-        fn apply_reward(&mut self, xrd_bucket: Bucket, epoch: Epoch);
+        fn apply_reward(&mut self, xrd_bucket: FungibleBucket, epoch: Epoch);
     }
 }
 
@@ -162,9 +162,9 @@ extern_blueprint_internal! {
         fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn withdraw_non_fungibles(
             &mut self,
-            resource_address: NonFungibleBucket,
+            resource_address: ResourceAddress,
             ids: Vec<NonFungibleLocalId>,
-        ) -> Bucket;
+        ) -> NonFungibleBucket;
         fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal);
         fn burn_non_fungibles(
             &mut self,
@@ -179,16 +179,20 @@ extern_blueprint_internal! {
         ) -> Bucket;
         fn lock_fee_and_withdraw_non_fungibles(
             &mut self,
-            amount_to_lock: NonFungibleBucket,
+            amount_to_lock: Decimal,
             resource_address: ResourceAddress,
             ids: Vec<NonFungibleLocalId>,
-        ) -> Bucket;
-        fn create_proof_of_amount(&self, resource_address: FungibleProof, amount: Decimal) -> Proof;
+        ) -> NonFungibleBucket;
+        fn create_proof_of_amount(
+            &self,
+            resource_address: ResourceAddress,
+            amount: Decimal,
+        ) -> FungibleProof;
         fn create_proof_of_non_fungibles(
             &self,
-            resource_address: NonFungibleProof,
+            resource_address: ResourceAddress,
             ids: Vec<NonFungibleLocalId>,
-        ) -> Proof;
+        ) -> NonFungibleProof;
         fn set_default_deposit_rule(&self, default: DefaultDepositRule);
         fn set_resource_preference(
             &self,
@@ -242,7 +246,7 @@ extern_blueprint_internal! {
     {
         fn contribute(&mut self, buckets: Vec<FungibleBucket>)
             -> (FungibleBucket, Vec<FungibleBucket>);
-        fn redeem(&mut self, bucket: Bucket) -> Vec<Bucket>;
+        fn redeem(&mut self, bucket: FungibleBucket) -> Vec<FungibleBucket>;
         fn protected_deposit(&mut self, bucket: FungibleBucket);
         fn protected_withdraw(
             &mut self,
@@ -277,7 +281,7 @@ extern_blueprint_internal! {
     },
     {
         fn contribute(&mut self, bucket: FungibleBucket) -> FungibleBucket;
-        fn redeem(&mut self, bucket: Bucket) -> Bucket;
+        fn redeem(&mut self, bucket: FungibleBucket) -> FungibleBucket;
         fn protected_deposit(&mut self, bucket: FungibleBucket);
         fn protected_withdraw(
             &mut self,
@@ -311,7 +315,7 @@ extern_blueprint_internal! {
             &mut self,
             buckets: (FungibleBucket, FungibleBucket),
         ) -> (FungibleBucket, Option<FungibleBucket>);
-        fn redeem(&mut self, bucket: Bucket) -> (Bucket, Bucket);
+        fn redeem(&mut self, bucket: FungibleBucket) -> (FungibleBucket, FungibleBucket);
         fn protected_deposit(&mut self, bucket: FungibleBucket);
         fn protected_withdraw(
             &mut self,
@@ -390,7 +394,7 @@ extern_blueprint_internal! {
         fn mint_recovery_badges(
             &mut self,
             non_fungible_local_ids: Vec<NonFungibleLocalId>,
-        ) -> FungibleBucket;
+        ) -> NonFungibleBucket;
         fn lock_recovery_fee(&mut self, amount: Decimal);
         fn withdraw_recovery_fee(&mut self, amount: Decimal) -> FungibleBucket;
         fn contribute_recovery_fee(&mut self, bucket: FungibleBucket);
