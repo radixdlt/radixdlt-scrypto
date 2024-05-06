@@ -75,7 +75,9 @@ pub trait ScryptoResourceManagerStub {
 // ResourceManager
 //=================
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize, Hash,
+)]
 #[sbor(transparent)]
 pub struct ResourceManager(Global<ResourceManagerStub>);
 
@@ -350,7 +352,9 @@ impl ResourceManagerStub {
 // FungibleResourceManager
 //=========================
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize, Hash,
+)]
 #[sbor(transparent)]
 pub struct FungibleResourceManager(Global<FungibleResourceManagerStub>);
 
@@ -539,7 +543,9 @@ impl FungibleResourceManagerStub {
 // NonFungibleResourceManager
 //============================
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize, Hash,
+)]
 #[sbor(transparent)]
 pub struct NonFungibleResourceManager(Global<NonFungibleResourceManagerStub>);
 
