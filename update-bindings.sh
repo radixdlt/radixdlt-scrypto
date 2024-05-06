@@ -48,10 +48,16 @@ list=(
     "package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6
       --func-sig-change blueprint_name=Account;func_name=create;r=(Global<Account>,NonFungibleBucket)
       --func-sig-change blueprint_name=Account;func_name=securify;r=NonFungibleBucket
-      --func-sig-change blueprint_name=Account;func_name=withdraw_non_fungibles;r=NonFungibleBucket
-      --func-sig-change blueprint_name=Account;func_name=lock_fee_and_withdraw_non_fungibles;r=NonFungibleBucket
-      --func-sig-change blueprint_name=Account;func_name=create_proof_of_amount;r=FungibleProof
-      --func-sig-change blueprint_name=Account;func_name=create_proof_of_non_fungibles;r=NonFungibleProof
+      --func-sig-change blueprint_name=Account;func_name=withdraw;0=ResourceManager
+      --func-sig-change blueprint_name=Account;func_name=withdraw_non_fungibles;0=NonFungibleResourceManager;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Account;func_name=burn;0=ResourceManager
+      --func-sig-change blueprint_name=Account;func_name=burn_non_fungibles;0=NonFungibleResourceManager;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Account;func_name=lock_fee_and_withdraw;1=ResourceManager
+      --func-sig-change blueprint_name=Account;func_name=lock_fee_and_withdraw_non_fungibles;1=NonFungibleResourceManager;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Account;func_name=create_proof_of_amount;0=FungibleResourceManager;r=FungibleProof
+      --func-sig-change blueprint_name=Account;func_name=create_proof_of_non_fungibles;0=NonFungibleResourceManager;r=NonFungibleProof
+      --func-sig-change blueprint_name=Account;func_name=set_resource_preference;0=ResourceManager
+      --func-sig-change blueprint_name=Account;func_name=remove_resource_preference;0=ResourceManager
     "
     # Pools
     "package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6
@@ -86,8 +92,12 @@ list=(
     # Locker Package
     "package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6
       --func-sig-change blueprint_name=AccountLocker;func_name=instantiate_simple;r=(Global<AccountLocker>,FungibleBucket)
-      --func-sig-change blueprint_name=AccountLocker;func_name=recover_non_fungibles;r=NonFungibleBucket
-      --func-sig-change blueprint_name=AccountLocker;func_name=claim_non_fungibles;r=NonFungibleBucket
+      --func-sig-change blueprint_name=AccountLocker;func_name=recover;1=ResourceManager
+      --func-sig-change blueprint_name=AccountLocker;func_name=recover_non_fungibles;1=NonFungibleResourceManager;r=NonFungibleBucket
+      --func-sig-change blueprint_name=AccountLocker;func_name=claim;1=ResourceManager
+      --func-sig-change blueprint_name=AccountLocker;func_name=claim_non_fungibles;1=NonFungibleResourceManager;r=NonFungibleBucket
+      --func-sig-change blueprint_name=AccountLocker;func_name=get_amount;1=ResourceManager
+      --func-sig-change blueprint_name=AccountLocker;func_name=get_non_fungible_local_ids;1=NonFungibleResourceManager
     "
 );
 

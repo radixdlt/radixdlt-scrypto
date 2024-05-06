@@ -159,47 +159,47 @@ extern_blueprint_internal! {
         fn lock_contingent_fee(&mut self, amount: Decimal);
         fn deposit(&mut self, bucket: Bucket);
         fn deposit_batch(&mut self, buckets: Vec<Bucket>);
-        fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
+        fn withdraw(&mut self, resource_address: ResourceManager, amount: Decimal) -> Bucket;
         fn withdraw_non_fungibles(
             &mut self,
-            resource_address: ResourceAddress,
+            resource_address: NonFungibleResourceManager,
             ids: Vec<NonFungibleLocalId>,
         ) -> NonFungibleBucket;
-        fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal);
+        fn burn(&mut self, resource_address: ResourceManager, amount: Decimal);
         fn burn_non_fungibles(
             &mut self,
-            resource_address: ResourceAddress,
+            resource_address: NonFungibleResourceManager,
             ids: Vec<NonFungibleLocalId>,
-        );
+        ) -> NonFungibleBucket;
         fn lock_fee_and_withdraw(
             &mut self,
             amount_to_lock: Decimal,
-            resource_address: ResourceAddress,
+            resource_address: ResourceManager,
             amount: Decimal,
         ) -> Bucket;
         fn lock_fee_and_withdraw_non_fungibles(
             &mut self,
             amount_to_lock: Decimal,
-            resource_address: ResourceAddress,
+            resource_address: NonFungibleResourceManager,
             ids: Vec<NonFungibleLocalId>,
         ) -> NonFungibleBucket;
         fn create_proof_of_amount(
             &self,
-            resource_address: ResourceAddress,
+            resource_address: FungibleResourceManager,
             amount: Decimal,
         ) -> FungibleProof;
         fn create_proof_of_non_fungibles(
             &self,
-            resource_address: ResourceAddress,
+            resource_address: NonFungibleResourceManager,
             ids: Vec<NonFungibleLocalId>,
         ) -> NonFungibleProof;
         fn set_default_deposit_rule(&self, default: DefaultDepositRule);
         fn set_resource_preference(
             &self,
-            resource_address: ResourceAddress,
+            resource_address: ResourceManager,
             resource_preference: ResourcePreference,
         );
-        fn remove_resource_preference(&self, resource_address: ResourceAddress);
+        fn remove_resource_preference(&self, resource_address: ResourceManager);
         fn try_deposit_or_refund(
             &mut self,
             bucket: Bucket,
@@ -433,32 +433,32 @@ extern_blueprint_internal! {
         fn recover(
             &mut self,
             claimant: Global<Account>,
-            resource_address: ResourceAddress,
+            resource_address: ResourceManager,
             amount: Decimal,
         ) -> Bucket;
         fn recover_non_fungibles(
             &mut self,
             claimant: Global<Account>,
-            resource_address: ResourceAddress,
+            resource_address: NonFungibleResourceManager,
             ids: Vec<NonFungibleLocalId>,
         ) -> NonFungibleBucket;
         fn claim(
             &mut self,
             claimant: Global<Account>,
-            resource_address: ResourceAddress,
+            resource_address: ResourceManager,
             amount: Decimal,
         ) -> Bucket;
         fn claim_non_fungibles(
             &mut self,
             claimant: Global<Account>,
-            resource_address: ResourceAddress,
+            resource_address: NonFungibleResourceManager,
             ids: Vec<NonFungibleLocalId>,
         ) -> NonFungibleBucket;
-        fn get_amount(&self, claimant: Global<Account>, resource_address: ResourceAddress) -> Decimal;
+        fn get_amount(&self, claimant: Global<Account>, resource_address: ResourceManager) -> Decimal;
         fn get_non_fungible_local_ids(
             &self,
             claimant: Global<Account>,
-            resource_address: ResourceAddress,
+            resource_address: NonFungibleResourceManager,
             limit: u32,
         ) -> Vec<NonFungibleLocalId>;
     }
