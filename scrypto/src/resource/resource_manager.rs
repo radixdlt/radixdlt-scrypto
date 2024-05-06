@@ -465,6 +465,11 @@ impl ObjectStub for FungibleResourceManagerStub {
     type AddressType = ResourceAddress;
 
     fn new(handle: ObjectStubHandle) -> Self {
+        assert!(
+            handle.as_node_id().is_global_fungible_resource_manager(),
+            "Expected a fungible resource"
+        );
+
         Self(ResourceManagerStub::new(handle))
     }
 
@@ -660,6 +665,13 @@ impl ObjectStub for NonFungibleResourceManagerStub {
     type AddressType = ResourceAddress;
 
     fn new(handle: ObjectStubHandle) -> Self {
+        assert!(
+            handle
+                .as_node_id()
+                .is_global_non_fungible_resource_manager(),
+            "Expected a non-fungible resource"
+        );
+
         Self(ResourceManagerStub::new(handle))
     }
 
