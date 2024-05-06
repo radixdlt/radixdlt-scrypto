@@ -107,6 +107,14 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         Ok(Self { fail_after, system })
     }
 
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        self.system.verify_boot_ref_value(node_id, value)
+    }
+
     fn start<Y>(
         api: &mut Y,
         manifest_encoded_instructions: &[u8],
@@ -139,14 +147,6 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
         self.system.create_receipt(track, executable, result)
-    }
-
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        self.system.verify_boot_ref_value(node_id, value)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
@@ -257,15 +257,6 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         System::before_invoke(invocation, &mut api)
     }
 
-    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::after_invoke(output, &mut api)
-    }
-
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
@@ -273,24 +264,6 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_execution_start(&mut api)
-    }
-
-    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::on_execution_finish(message, &mut api)
-    }
-
-    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::on_allocate_node_id(entity_type, &mut api)
     }
 
     fn invoke_upstream<Y>(
@@ -312,6 +285,33 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::auto_drop(nodes, &mut api)
+    }
+
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_api!(api);
+        System::on_execution_finish(message, &mut api)
+    }
+
+    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_api!(api);
+        System::after_invoke(output, &mut api)
+    }
+
+    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_api!(api);
+        System::on_allocate_node_id(entity_type, &mut api)
     }
 
     fn on_mark_substate_as_transient(
@@ -346,27 +346,6 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_drop_node_mut(node_id, &mut api)
-    }
-
-    fn on_move_node<Y>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::on_move_node(
-            node_id,
-            is_moving_down,
-            is_to_barrier,
-            destination_blueprint_id,
-            &mut api,
-        )
     }
 }
 

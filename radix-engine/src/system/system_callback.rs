@@ -725,6 +725,56 @@ impl<C: SystemCallbackObject> System<C> {
         }
         println!("{:-^120}", "Finish");
     }
+
+    fn on_move_node<Y>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => {
+                let mut service = SystemService::new(api);
+                let definition = service.load_blueprint_definition(
+                    object_info.blueprint_info.blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: object_info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
+                        version: BlueprintVersion::default(),
+                    },
+                )?;
+                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
+                            receiver: Some(node_id.clone()),
+                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
+                            hook: BlueprintHook::OnMove,
+                        }),
+                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
+                            is_moving_down,
+                            is_to_barrier,
+                            destination_blueprint_id,
+                        }),
+                    }))
+                    .map(|_| ())
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
+        }
+    }
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
@@ -1678,56 +1728,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 // There is no way to drop a non-object through system API, triggering `NotAnObject` error.
                 Ok(())
             }
-        }
-    }
-
-    fn on_move_node<Y>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
-
-        match type_info {
-            TypeInfoSubstate::Object(object_info) => {
-                let mut service = SystemService::new(api);
-                let definition = service.load_blueprint_definition(
-                    object_info.blueprint_info.blueprint_id.package_address,
-                    &BlueprintVersionKey {
-                        blueprint: object_info
-                            .blueprint_info
-                            .blueprint_id
-                            .blueprint_name
-                            .clone(),
-                        version: BlueprintVersion::default(),
-                    },
-                )?;
-                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
-                    api.kernel_invoke(Box::new(KernelInvocation {
-                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
-                            receiver: Some(node_id.clone()),
-                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
-                            hook: BlueprintHook::OnMove,
-                        }),
-                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
-                            is_moving_down,
-                            is_to_barrier,
-                            destination_blueprint_id,
-                        }),
-                    }))
-                    .map(|_| ())
-                } else {
-                    Ok(())
-                }
-            }
-            TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::GlobalAddressReservation(_)
-            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
 }

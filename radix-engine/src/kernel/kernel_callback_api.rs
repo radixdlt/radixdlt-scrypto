@@ -266,14 +266,14 @@ pub trait KernelCallbackObject: Sized {
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    where
+        Y: KernelApi<Self>;
 
     /// Callback after invocation during call frame cleanup and nodes are still owned by the executed
     /// call frame
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    where
+        Y: KernelApi<Self>;
 
     /// Callback right after execution of invocation and where call of execution still exists
     fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
@@ -282,8 +282,8 @@ pub trait KernelCallbackObject: Sized {
 
     /// Callback after an invocation and where invocation's call frame has already been destroyed
     fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    where
+        Y: KernelApi<Self>;
 
     /// Callback before node id allocation
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
@@ -310,17 +310,6 @@ pub trait KernelCallbackObject: Sized {
 
     /// Callback before a node is dropped
     fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    // This is technically not a kernel event, but system event, per current implementation.
-    fn on_move_node<Y>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 }
