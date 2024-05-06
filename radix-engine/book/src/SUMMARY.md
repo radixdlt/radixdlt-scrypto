@@ -39,8 +39,8 @@
 # Native Systems
 
 - [Type Checking]()
-- [Authorization](native/access_control/README)
-  - [Role Definition](native/access_control/role_definition.md)
+- [Access Control](native/access_control/README.md)
+  - [Blueprint Module](native/access_control/blueprint_module.md)
   - [Role Assignment](native/access_control/role_assignment.md)
   - [Auth Zone](native/access_control/authzone.md)
   - [Authorization Flow](native/access_control/authorization.md)

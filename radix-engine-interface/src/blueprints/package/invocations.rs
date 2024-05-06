@@ -190,6 +190,8 @@ impl Default for MethodAuthTemplate {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum RoleSpecification {
     /// Roles are specified in the current blueprint and defined in the instantiated object.
+    /// The map contains keys for all possible roles, mapping to a list of roles which may update
+    /// the access rule for each role.
     Normal(IndexMap<RoleKey, RoleList>),
     /// Roles are specified in the *outer* blueprint and defined in the instantiated *outer* object.
     /// This may only be used by inner blueprints and is currently used by the Vault blueprints
