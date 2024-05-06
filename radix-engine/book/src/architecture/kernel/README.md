@@ -1,5 +1,13 @@
 # Kernel Layer
 
-The kernel layer implements Node/Partition/Substate abstraction on top of a key-value database as well
-as maintains a call frame and transaction state updates, which are to be subsequently committed to the
-database at the end of the transaction.
+The kernel layer is responsible for:
+* Defining the Node/Partition/Substate abstraction
+* Defining the Call Frame abstraction
+* Maintaining Ownership/Reference invariants
+* Managing transaction state updates, which are to be subsequently committed to the
+  database at the end of the transaction
+
+## Implementation
+
+The kernel layer is implemented on top of the database layer's Partition Key and Sort Key
+abstractions.

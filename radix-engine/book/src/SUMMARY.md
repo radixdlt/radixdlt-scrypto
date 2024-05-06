@@ -22,16 +22,7 @@
     - [Blueprint Modules](architecture/application/blueprint/blueprint_modules.md)
 - [VM Layer](architecture/vm/README.md)
 - [System Layer](architecture/system/README.md)
-  - [Nodes]()
-  - [Partitions]()
-  - [Substates]()
-  - [Blueprint Implementation]()
-  - [Object Implementation]()
-  - [System Module]()
 - [Kernel Layer](architecture/kernel/README.md)
-  - [Call Frame]()
-  - [DB Partition Key]()
-  - [DB Sort Key]()
 - [Database Layer](architecture/database/README.md)
 
 # Execution
