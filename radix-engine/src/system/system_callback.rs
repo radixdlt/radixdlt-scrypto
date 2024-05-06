@@ -1,4 +1,4 @@
-use super::system_modules::costing::ExecutionCostingEntry;
+use super::system_modules::costing::{CostingModuleConfig, ExecutionCostingEntry};
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
@@ -19,7 +19,7 @@ use crate::blueprints::transaction_tracker::{
 };
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::call_frame::CallFrameMessage;
+use crate::kernel::call_frame::{CallFrameMessage, StableReferenceType};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::RefCheckEvent;
@@ -49,8 +49,8 @@ use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::{
-    to_state_updates, BootStore, CommitableSubstateStore, StoreCommitInfo, Track,
-    TrackFinalizeError,
+    to_state_updates, BootStore, CanonicalSubstateKey, CommitableSubstateStore, IOAccess,
+    StoreCommitInfo, Track, TrackFinalizeError,
 };
 use crate::transaction::{
     reconcile_resource_state_and_events, AbortResult, CommitResult, CostingParameters,
@@ -82,10 +82,9 @@ pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SystemParameters {
     pub network_definition: NetworkDefinition,
+    pub costing_module_config: CostingModuleConfig,
     pub costing_parameters: CostingParameters,
     pub limit_parameters: LimitParameters,
-    pub max_per_function_royalty_in_xrd: Decimal,
-    pub apply_additional_costing: bool,
 }
 
 pub type SystemBootSubstate = SystemBoot;
@@ -757,12 +756,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .unwrap_or(SystemBoot::V1(SystemParameters {
                     network_definition: NetworkDefinition::mainnet(),
                     costing_parameters: CostingParameters::babylon_genesis(),
+                    costing_module_config: CostingModuleConfig::babylon_genesis(),
                     limit_parameters: LimitParameters::babylon_genesis(),
-                    max_per_function_royalty_in_xrd: Decimal::try_from(
-                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-                    )
-                    .unwrap(),
-                    apply_additional_costing: false,
                 }));
 
             match system_boot {
@@ -833,14 +828,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             fee_table: FeeTable::new(),
             tx_payload_len: executable.payload_size(),
             tx_num_of_signature_validations: executable.num_of_signature_validations(),
-            max_per_function_royalty_in_xrd: system_parameters.max_per_function_royalty_in_xrd,
+            config: system_parameters.costing_module_config,
             cost_breakdown: if init_input.enable_cost_breakdown {
                 Some(Default::default())
             } else {
                 None
             },
             on_apply_cost: Default::default(),
-            apply_additional_costing: system_parameters.apply_additional_costing,
         };
 
         let mut modules = SystemModuleMixer::new(
@@ -890,17 +884,52 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
     }
 
-    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self>,
-    {
-        if let Some(costing) = api.kernel_get_system_state().system.modules.costing_mut() {
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        ref_value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        if let Some(costing) = self.modules.costing_mut() {
+            let io_access = IOAccess::ReadFromDb(
+                CanonicalSubstateKey {
+                    node_id: *node_id,
+                    partition_number: TYPE_INFO_FIELD_PARTITION,
+                    substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
+                },
+                ref_value.len(),
+            );
+            let event = RefCheckEvent::IOAccess(&io_access);
+
             costing
                 .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
                 .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
         }
 
-        Ok(())
+        let type_substate: TypeInfoSubstate = ref_value.as_typed().unwrap();
+        return match &type_substate {
+            TypeInfoSubstate::Object(
+                info @ ObjectInfo {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
+                    ..
+                },
+            ) => {
+                if info.is_global() {
+                    Ok(StableReferenceType::Global)
+                } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                    && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                        || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                {
+                    Ok(StableReferenceType::DirectAccess)
+                } else {
+                    Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
+                        node_id.clone(),
+                    ))
+                }
+            }
+            _ => Err(BootloadingError::ReferencedNodeIsNotAnObject(
+                node_id.clone(),
+            )),
+        };
     }
 
     fn start<Y>(

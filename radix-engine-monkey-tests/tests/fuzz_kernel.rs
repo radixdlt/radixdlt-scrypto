@@ -2,7 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::{
     BootloadingError, RejectionReason, RuntimeError, TransactionExecutionError,
 };
-use radix_engine::kernel::call_frame::CallFrameMessage;
+use radix_engine::kernel::call_frame::{CallFrameMessage, StableReferenceType};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -105,6 +105,14 @@ impl KernelCallbackObject for TestCallbackObject {
         _result: Result<(), TransactionExecutionError>,
     ) -> Self::Receipt {
         TestReceipt
+    }
+
+    fn verify_boot_ref_value(
+        &mut self,
+        _node_id: &NodeId,
+        _value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        Ok(StableReferenceType::Global)
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
@@ -273,16 +281,6 @@ impl KernelCallbackObject for TestCallbackObject {
         _destination_blueprint_id: Option<BlueprintId>,
         _api: &mut Y,
     ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        Ok(())
-    }
-
-    fn on_ref_check<Y>(
-        _api: &mut Y,
-        _event: scrypto_test::prelude::RefCheckEvent,
-    ) -> Result<(), BootloadingError>
     where
         Y: KernelApi<Self>,
     {
@@ -550,7 +548,7 @@ fn kernel_fuzz<F: FnMut(&mut KernelFuzzer) -> Vec<KernelFuzzAction>>(
     let mut substate_db = InMemorySubstateDatabase::standard();
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
 
     let mut fuzzer = KernelFuzzer::new(seed);
 

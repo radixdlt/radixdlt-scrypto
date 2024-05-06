@@ -2379,7 +2379,7 @@ where
     fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_after_update(ExecutionCostingEntry::QueryFeeReserve)
+                .apply_execution_cost_2(ExecutionCostingEntry::QueryFeeReserve)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
         }
 
@@ -2395,9 +2395,9 @@ where
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, RuntimeError> {
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_after_update(ExecutionCostingEntry::QueryCostingModule)
+                .apply_execution_cost_2(ExecutionCostingEntry::QueryCostingModule)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
-            Ok(costing.max_per_function_royalty_in_xrd)
+            Ok(costing.config.max_per_function_royalty_in_xrd)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2815,7 +2815,7 @@ where
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_after_update(ExecutionCostingEntry::EncodeBech32Address)
+                .apply_execution_cost_2(ExecutionCostingEntry::EncodeBech32Address)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
         }
 

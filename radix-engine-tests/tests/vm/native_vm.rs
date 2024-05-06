@@ -95,18 +95,16 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
                 fee_table: FeeTable::new(),
                 tx_payload_len: 0,
                 tx_num_of_signature_validations: 1,
-                max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
-                    .unwrap(),
+                config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
                 on_apply_cost: Default::default(),
-                apply_additional_costing: false,
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
     };
 
     let mut id_allocator = IdAllocator::new(intent_hash);
-    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut system);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 
     let mut api = SystemService {
         api: &mut kernel,
@@ -176,18 +174,16 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
                 fee_table: FeeTable::new(),
                 tx_payload_len: 0,
                 tx_num_of_signature_validations: 1,
-                max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
-                    .unwrap(),
+                config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
                 on_apply_cost: Default::default(),
-                apply_additional_costing: false,
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
     };
 
     let mut id_allocator = IdAllocator::new(intent_hash);
-    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut system);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
     let mut api = SystemService {
         api: &mut kernel,
         phantom: Default::default(),
