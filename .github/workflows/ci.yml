@@ -38,6 +38,7 @@ jobs:
             phylum-ci \
               -vv \
               --audit \
+              --force-analysis \
               --all-deps
 #
 #  check-code-format:
