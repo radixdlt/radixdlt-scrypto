@@ -239,7 +239,7 @@ extern_blueprint_internal! {
         fn instantiate(
             owner_role: OwnerRole,
             pool_manager_rule: AccessRule,
-            resource_addresses: Vec<ResourceAddress>,
+            resource_addresses: Vec<FungibleResourceManager>,
             address_reservation: Option<GlobalAddressReservation>,
         ) -> Global<MultiResourcePool>;
     },
@@ -250,15 +250,15 @@ extern_blueprint_internal! {
         fn protected_deposit(&mut self, bucket: FungibleBucket);
         fn protected_withdraw(
             &mut self,
-            resource_address: ResourceAddress,
+            resource_address: FungibleResourceManager,
             amount: Decimal,
             withdraw_strategy: WithdrawStrategy,
         ) -> FungibleBucket;
         fn get_redemption_value(
             &self,
             amount_of_pool_units: Decimal,
-        ) -> IndexMap<ResourceAddress, Decimal>;
-        fn get_vault_amounts(&self) -> IndexMap<ResourceAddress, Decimal>;
+        ) -> IndexMap<FungibleResourceManager, Decimal>;
+        fn get_vault_amounts(&self) -> IndexMap<FungibleResourceManager, Decimal>;
     }
 }
 extern_blueprint_internal! {
@@ -275,7 +275,7 @@ extern_blueprint_internal! {
         fn instantiate(
             owner_role: OwnerRole,
             pool_manager_rule: AccessRule,
-            resource_address: ResourceAddress,
+            resource_address: FungibleResourceManager,
             address_reservation: Option<GlobalAddressReservation>,
         ) -> Global<OneResourcePool>;
     },
@@ -306,7 +306,7 @@ extern_blueprint_internal! {
         fn instantiate(
             owner_role: OwnerRole,
             pool_manager_rule: AccessRule,
-            resource_addresses: (ResourceAddress, ResourceAddress),
+            resource_addresses: (FungibleResourceManager, FungibleResourceManager),
             address_reservation: Option<GlobalAddressReservation>,
         ) -> Global<TwoResourcePool>;
     },
@@ -319,15 +319,15 @@ extern_blueprint_internal! {
         fn protected_deposit(&mut self, bucket: FungibleBucket);
         fn protected_withdraw(
             &mut self,
-            resource_address: ResourceAddress,
+            resource_address: FungibleResourceManager,
             amount: Decimal,
             withdraw_strategy: WithdrawStrategy,
         ) -> FungibleBucket;
         fn get_redemption_value(
             &self,
             amount_of_pool_units: Decimal,
-        ) -> IndexMap<ResourceAddress, Decimal>;
-        fn get_vault_amounts(&self) -> IndexMap<ResourceAddress, Decimal>;
+        ) -> IndexMap<FungibleResourceManager, Decimal>;
+        fn get_vault_amounts(&self) -> IndexMap<FungibleResourceManager, Decimal>;
     }
 }
 

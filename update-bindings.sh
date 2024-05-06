@@ -55,20 +55,27 @@ list=(
     "
     # Pools
     "package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6
+      --func-sig-change blueprint_name=OneResourcePool;func_name=instantiate;2=FungibleResourceManager
       --func-sig-change blueprint_name=OneResourcePool;func_name=contribute;0=FungibleBucket;r=FungibleBucket
       --func-sig-change blueprint_name=OneResourcePool;func_name=redeem;0=FungibleBucket;r=FungibleBucket
       --func-sig-change blueprint_name=OneResourcePool;func_name=protected_deposit;0=FungibleBucket
       --func-sig-change blueprint_name=OneResourcePool;func_name=protected_withdraw;r=FungibleBucket
 
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=instantiate;2=(FungibleResourceManager,FungibleResourceManager)
       --func-sig-change blueprint_name=TwoResourcePool;func_name=contribute;0=(FungibleBucket,FungibleBucket);r=(FungibleBucket,Option<FungibleBucket>)
       --func-sig-change blueprint_name=TwoResourcePool;func_name=redeem;0=FungibleBucket;r=(FungibleBucket,FungibleBucket)
       --func-sig-change blueprint_name=TwoResourcePool;func_name=protected_deposit;0=FungibleBucket
-      --func-sig-change blueprint_name=TwoResourcePool;func_name=protected_withdraw;r=FungibleBucket
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=protected_withdraw;0=FungibleResourceManager;r=FungibleBucket
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=get_redemption_value;r=IndexMap<FungibleResourceManager,Decimal>
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=get_vault_amounts;r=IndexMap<FungibleResourceManager,Decimal>
 
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=instantiate;2=Vec<FungibleResourceManager>
       --func-sig-change blueprint_name=MultiResourcePool;func_name=contribute;0=Vec<FungibleBucket>;r=(FungibleBucket,Vec<FungibleBucket>)
       --func-sig-change blueprint_name=MultiResourcePool;func_name=redeem;0=FungibleBucket;r=Vec<FungibleBucket>
       --func-sig-change blueprint_name=MultiResourcePool;func_name=protected_deposit;0=FungibleBucket
-      --func-sig-change blueprint_name=MultiResourcePool;func_name=protected_withdraw;r=FungibleBucket
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=protected_withdraw;0=FungibleResourceManager;r=FungibleBucket
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=get_redemption_value;r=IndexMap<FungibleResourceManager,Decimal>
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=get_vault_amounts;r=IndexMap<FungibleResourceManager,Decimal>
     "
     # Access Controller
     "package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l
