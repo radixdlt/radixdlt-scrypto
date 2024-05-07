@@ -38,7 +38,7 @@ jobs:
           for (( i=0; i<$maxi; i++ ))
           do
             value=$(toml get simulator/Cargo.lock "package[$i].name" -r);
-            if [[ "${FILES[@]}" =~ $value ]]; then
+            if [[ "${FILES[@]}" =~ $value && $value != "toml" ]]; then
               toml set "simulator/Cargo.lock" "package[$i].version" "${VERSION}" > "simulator/Cargo.lock.new"
               mv simulator/Cargo.lock.new simulator/Cargo.lock
             fi;
