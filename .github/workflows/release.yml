@@ -35,7 +35,7 @@ jobs:
           done
           
           maxi=$(toml get simulator/Cargo.lock package | jq length)
-          for (( i=0; c<$maxi; i++ ))
+          for (( i=0; i<$maxi; i++ ))
           do
               if [[ "${FILES[@]}" =~ $value ]]; then
                   toml set "simulator/Cargo.lock" "package[$i].version" "${VERSION}" > "simulator/Cargo.lock.new"
