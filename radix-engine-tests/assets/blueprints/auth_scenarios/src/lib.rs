@@ -26,7 +26,7 @@ mod big_fi {
 
             let child = Blueprint::<Subservio>::create(swappy, cerb_resource);
 
-            let cerb_vault = Vault::new(cerb_resource);
+            let cerb_vault = Vault::new(cerb_resource.into());
 
             let global = Self {
                 child,
@@ -161,7 +161,7 @@ mod subservio {
 
     impl Subservio {
         pub fn create(swappy: Global<Swappy>, cerb_resource: ResourceAddress) -> Owned<Subservio> {
-            let cerb_vault = Vault::new(cerb_resource);
+            let cerb_vault = Vault::new(cerb_resource.into());
 
             Self { swappy, cerb_vault }.instantiate()
         }

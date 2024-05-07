@@ -145,7 +145,7 @@ mod component_test3 {
     impl ComponentTest3 {
         pub fn create_component(resource_id: ResourceAddress) -> Global<ComponentTest3> {
             Self {
-                vault: Vault::new(resource_id),
+                vault: Vault::new(resource_id.into()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

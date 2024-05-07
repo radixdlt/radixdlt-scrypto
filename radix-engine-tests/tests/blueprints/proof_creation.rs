@@ -84,7 +84,7 @@ fn can_create_proof_from_fungible_auth_zone() {
     create_proof_internal("create_proof_from_fungible_auth_zone_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_auth_zone_of_non_fungibles",
-        Some("NonFungibleOperationNotSupported"),
+        Some("PanicMessage(\"Expected a non-fungible resource"),
     );
     create_proof_internal("create_proof_from_fungible_auth_zone_of_all", None);
 }
