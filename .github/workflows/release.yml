@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: RDXWorks-actions/checkout@main
-      - name: Check format
+      - name: Update cargo version
         run: |
           set -ex
           export VERSION=0.0.0
@@ -35,7 +35,6 @@ jobs:
           done
           
           maxi=$(toml get simulator/Cargo.lock package | jq length)
-          value=$(toml get simulator/Cargo.lock "package[$i].name" -r);
           for (( i=0; c<$maxi; i++ ))
           do
               if [[ "${FILES[@]}" =~ $value ]]; then
