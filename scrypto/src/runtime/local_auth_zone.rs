@@ -1,8 +1,8 @@
+use crate::prelude::{NonFungibleResourceManager, ResourceManager};
 use radix_common::data::scrypto::model::*;
 use radix_common::math::Decimal;
 use radix_engine_interface::api::ACTOR_REF_AUTH_ZONE;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
@@ -29,24 +29,23 @@ impl LocalAuthZone {
 
     pub fn create_proof_of_amount<A: Into<Decimal>>(
         amount: A,
-        resource_address: ResourceAddress,
-    ) -> FungibleProof {
+        resource_manager: ResourceManager,
     ) -> Proof {
         let node_id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_AUTH_ZONE);
-        AuthZoneRef(node_id).create_proof_of_amount(amount, resource_address)
+        AuthZoneRef(node_id).create_proof_of_amount(amount, resource_manager)
     }
 
     pub fn create_proof_of_non_fungibles(
         ids: IndexSet<NonFungibleLocalId>,
-        resource_address: ResourceAddress,
+        resource_manager: NonFungibleResourceManager,
     ) -> NonFungibleProof {
         let node_id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_AUTH_ZONE);
-        AuthZoneRef(node_id).create_proof_of_non_fungibles(ids, resource_address)
+        AuthZoneRef(node_id).create_proof_of_non_fungibles(ids, resource_manager)
     }
 
-    pub fn create_proof_of_all(resource_address: ResourceAddress) -> Proof {
+    pub fn create_proof_of_all(resource_manager: ResourceManager) -> Proof {
         let node_id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_AUTH_ZONE);
-        AuthZoneRef(node_id).create_proof_of_all(resource_address)
+        AuthZoneRef(node_id).create_proof_of_all(resource_manager)
     }
 
     pub fn drop_proofs() {
