@@ -9,7 +9,11 @@ on:
       - alphanet
       - betanet
       - release\/*
+    paths-ignore:
+      - .github/workflows/release.yml
   pull_request:
+    paths-ignore:
+      - .github/workflows/release.yml
 
 env:
   CARGO_TERM_COLOR: always

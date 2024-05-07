@@ -6,7 +6,11 @@ on:
       - develop
       - main
       - release\/*
+    paths-ignore:
+      - .github/workflows/release.yml
   pull_request:
+    paths-ignore:
+      - .github/workflows/release.yml
 
 jobs:
   tags:

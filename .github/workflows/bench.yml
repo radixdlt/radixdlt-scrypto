@@ -2,6 +2,8 @@ name: Benchmark PR
 
 on:
   pull_request:
+    paths-ignore:
+      - .github/workflows/release.yml
     # Run on PR against any branch
 
 concurrency:
