@@ -36,7 +36,7 @@ jobs:
           
           i=0
           value=$(toml get simulator/Cargo.lock "package[$i].name" -r);
-          while [ $value ]
+          while [[ -n $value  ]]
           do
               if [[ "${FILES[@]}" =~ $value ]]; then
                   toml set "simulator/Cargo.lock" "package[$i].version" "${VERSION}" > "simulator/Cargo.lock.new"
