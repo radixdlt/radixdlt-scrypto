@@ -34,16 +34,14 @@ jobs:
               rm "${FILENAME}.old"
           done
           
-          i=0
+          maxi=$(toml get simulator/Cargo.lock package | jq length)
           value=$(toml get simulator/Cargo.lock "package[$i].name" -r);
-          while [[ -n $value  ]]
+          for (( i=0; c<$maxi; i++ ))
           do
               if [[ "${FILES[@]}" =~ $value ]]; then
                   toml set "simulator/Cargo.lock" "package[$i].version" "${VERSION}" > "simulator/Cargo.lock.new"
                   mv simulator/Cargo.lock.new simulator/Cargo.lock
               fi;
-              i=$(( $i + 1 ));
-              value=$(toml get simulator/Cargo.lock "package[$i].name" -r);
           done
           rm -f simulator/Cargo.lock.new
           git config --global user.name 'DevOps Team'
