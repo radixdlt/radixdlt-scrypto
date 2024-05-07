@@ -7,10 +7,10 @@ on:
       - main
       - release\/*
     paths-ignore:
-      - .github/workflows/release.yml
+      - .github/workflows/*
   pull_request:
     paths-ignore:
-      - .github/workflows/release.yml
+      - .github/workflows/*
 
 jobs:
   tags:

@@ -10,10 +10,10 @@ on:
       - betanet
       - release\/*
     paths-ignore:
-      - .github/workflows/release.yml
+      - .github/workflows/*
   pull_request:
     paths-ignore:
-      - .github/workflows/release.yml
+      - .github/workflows/*
 
 env:
   CARGO_TERM_COLOR: always
