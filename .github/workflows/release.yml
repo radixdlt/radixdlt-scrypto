@@ -22,6 +22,9 @@ jobs:
       - name: Check format
         run: |
           export VERSION=0.0.0
+
+          cargo install toml-cli
+
           FILES=("monkey-tests/Cargo.toml" "native-sdk/Cargo.toml" "radix-engine-common/Cargo.toml" "radix-engine-derive/Cargo.toml" "radix-engine-interface/Cargo.toml" "radix-engine-macros/Cargo.toml" "radix-engine-profiling/Cargo.toml" "radix-engine-queries/Cargo.toml" "radix-engine-store-interface/Cargo.toml" "radix-engine-stores/Cargo.toml" "radix-engine-tests/Cargo.toml" "radix-engine/Cargo.toml" "sbor-derive-common/Cargo.toml" "sbor-derive/Cargo.toml" "sbor-tests/Cargo.toml" "sbor/Cargo.toml" "scrypto-derive-tests/Cargo.toml" "scrypto-derive/Cargo.toml" "scrypto-schema/Cargo.toml" "scrypto-test/Cargo.toml" "scrypto-unit/Cargo.toml" "scrypto/Cargo.toml" "simulator/Cargo.toml" "transaction-scenarios/Cargo.toml" "transaction/Cargo.toml" "utils/Cargo.toml")
           for t in ${FILES[@]}; do
               FILENAME=$t
