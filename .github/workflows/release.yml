@@ -21,8 +21,7 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Update cargo version
         run: |
-          set -ex
-          export VERSION=0.0.1
+          export VERSION=0.0.2
 
           cargo install toml-cli
         
