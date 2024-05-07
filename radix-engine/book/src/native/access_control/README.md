@@ -11,8 +11,8 @@ The Access Control System is composed of four parts:
 which defines function rules and roles available to use for a given blueprint in a package and which roles are able
 to access which methods.
 2. A [Role Assignment Object Module](role_assignment.md),
-which assigns proof rules for each role on object instantiation.
-3. An [AuthZone Blueprint](../../architecture/application/blueprint/README.md), which allows
-a caller to update their current proofs.
-4. An AuthZone System Module, which creates a new AuthZone for every new call frame and verifies
-   that AuthZone proofs match the requirements of accessing an object's function.
+which assigns access rules for each role on object instantiation.
+3. An [AuthZone Blueprint](authzone.md), which allows a caller to update the proofs in their authzone.
+4. An [Access Control System Module](system_module.md), which creates a new AuthZone for every
+new call frame and verifies that AuthZone proofs match the requirements of accessing an
+object's function.

@@ -1,6 +1,7 @@
 # Access Control Blueprint Module
 
-The access control [blueprint module](../../architecture/application/blueprint/blueprint_modules.md) defines three things:
+The access control [blueprint module](../../architecture/application/blueprint/blueprint_modules.md) defines three
+things for every blueprint:
 * Function AccessRules
 * Method accessibility
 * Role Specification
@@ -25,4 +26,4 @@ Each method is assigned an accessibility rule, of which there are four options:
 The roles which must be assigned on object instantiated are defined in role specification.
 Furthermore, roles which may update the rules of other roles must be specified.
 
-For inner objects, it is also possible to defer role specification to the outer object.
+For inner blueprints, it is also possible to defer role specification to the outer blueprint.
