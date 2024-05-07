@@ -16,6 +16,7 @@ pub trait ScryptoAuthZone {
         amount: A,
         resource_address: ResourceAddress,
     ) -> FungibleProof;
+    ) -> Proof;
 
     fn create_proof_of_non_fungibles(
         &self,
@@ -56,6 +57,7 @@ impl ScryptoAuthZone for AuthZoneRef {
         amount: A,
         resource_address: ResourceAddress,
     ) -> FungibleProof {
+    ) -> Proof {
         let rtn = ScryptoVmV1Api::object_call(
             &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,

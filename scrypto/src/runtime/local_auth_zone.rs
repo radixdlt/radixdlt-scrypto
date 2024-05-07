@@ -31,6 +31,7 @@ impl LocalAuthZone {
         amount: A,
         resource_address: ResourceAddress,
     ) -> FungibleProof {
+    ) -> Proof {
         let node_id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_AUTH_ZONE);
         AuthZoneRef(node_id).create_proof_of_amount(amount, resource_address)
     }
