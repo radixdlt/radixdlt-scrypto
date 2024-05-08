@@ -2230,6 +2230,21 @@ where
                 ClientCostingEntry::PrepareWasmCode { size } => {
                     ExecutionCostingEntry::PrepareWasmCode { size }
                 }
+                ClientCostingEntry::Bls12381V1Verify { size } => {
+                    ExecutionCostingEntry::Bls12381V1Verify { size }
+                }
+                ClientCostingEntry::Bls12381V1AggregateVerify { sizes } => {
+                    ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes }
+                }
+                ClientCostingEntry::Bls12381V1FastAggregateVerify { size, keys_cnt } => {
+                    ExecutionCostingEntry::Bls12381V1FastAggregateVerify { size, keys_cnt }
+                }
+                ClientCostingEntry::Bls12381G2SignatureAggregate { signatures_cnt } => {
+                    ExecutionCostingEntry::Bls12381G2SignatureAggregate { signatures_cnt }
+                }
+                ClientCostingEntry::Keccak256Hash { size } => {
+                    ExecutionCostingEntry::Keccak256Hash { size }
+                }
             })
     }
 
