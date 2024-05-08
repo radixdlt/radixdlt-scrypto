@@ -39,7 +39,7 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
      ```
    - Linux:
-     - Make sure a C++ compiler, LLVM and cmake is installed:
+     - Make sure a C++ compiler, LLVM, cmake and clang is installed:
      ```bash
      sudo apt install build-essential llvm cmake clang
      ```
