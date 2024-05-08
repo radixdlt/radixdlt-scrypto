@@ -38,7 +38,7 @@
 
 # Native Systems
 
-- [Type Checking]()
+- [Type Checking](native/type_checking/README.md)
 - [Access Control](native/access_control/README.md)
   - [Access Control Blueprint Module](native/access_control/blueprint_module.md)
   - [Role Assignment Object Module](native/access_control/role_assignment.md)
