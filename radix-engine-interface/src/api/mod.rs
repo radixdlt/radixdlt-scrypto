@@ -4,7 +4,6 @@ pub mod actor_key_value_entry_api;
 pub mod actor_sorted_index_api;
 pub mod blueprint_api;
 pub mod costing_api;
-pub mod crypto_utils_api;
 pub mod execution_trace_api;
 pub mod field_api;
 pub mod key_value_entry_api;
@@ -19,7 +18,6 @@ pub use actor_key_value_entry_api::*;
 pub use actor_sorted_index_api::*;
 pub use blueprint_api::*;
 pub use costing_api::*;
-pub use crypto_utils_api::*;
 pub use execution_trace_api::*;
 pub use field_api::*;
 pub use key_value_entry_api::*;
@@ -58,6 +56,5 @@ pub trait SystemApi<E: sbor::rust::fmt::Debug>:
     + SystemCostingApi<E>
     + SystemTransactionRuntimeApi<E>
     + SystemExecutionTraceApi<E>
-    + SystemCryptoUtilsApi<E>
 {
 }

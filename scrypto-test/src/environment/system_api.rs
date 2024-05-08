@@ -314,32 +314,5 @@ implement_system_api! {
         max_per_function_royalty_in_xrd: (&mut self) -> Result<Decimal, RuntimeError>,
         tip_percentage: (&mut self) -> Result<u32, RuntimeError>,
         fee_balance: (&mut self) -> Result<Decimal, RuntimeError>,
-    },
-    SystemCryptoUtilsApi: {
-        bls12381_v1_verify: (
-            &mut self,
-            message: &[u8],
-            public_key: &Bls12381G1PublicKey,
-            signature: &Bls12381G2Signature
-        ) -> Result<u32, RuntimeError>,
-        bls12381_v1_aggregate_verify: (
-            &mut self,
-            pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
-            signature: &Bls12381G2Signature
-        ) -> Result<u32, RuntimeError>,
-        bls12381_v1_fast_aggregate_verify: (
-            &mut self,
-            message: &[u8],
-            public_keys: &[Bls12381G1PublicKey],
-            signature: &Bls12381G2Signature
-        ) -> Result<u32, RuntimeError>,
-        bls12381_g2_signature_aggregate: (
-            &mut self,
-            signatures: &[Bls12381G2Signature]
-        ) -> Result<Bls12381G2Signature, RuntimeError>,
-        keccak256_hash: (
-            &mut self,
-            data: &[u8]
-        ) -> Result<Hash, RuntimeError>,
-    },
+    }
 }
