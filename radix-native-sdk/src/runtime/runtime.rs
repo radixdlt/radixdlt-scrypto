@@ -48,7 +48,7 @@ impl Runtime {
 
     pub fn current_epoch<Y, E>(api: &mut Y) -> Result<Epoch, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
@@ -62,7 +62,7 @@ impl Runtime {
 
     pub fn current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(
@@ -81,7 +81,7 @@ impl Runtime {
         operator: TimeComparisonOperator,
     ) -> Result<bool, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let rtn = api.call_method(

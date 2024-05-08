@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::{
-    SystemApi, FieldValue, LockFlags, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
+    FieldValue, LockFlags, SystemApi, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;

@@ -4,7 +4,7 @@ use radix_engine_interface::api::{ActorStateHandle, CollectionIndex, LockFlags};
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-pub trait ClientActorKeyValueEntryApi<E: Debug> {
+pub trait SystemActorKeyValueEntryApi<E: Debug> {
     /// If the key value entry doesn't exist, it uses the default "Option::None"
     fn actor_open_key_value_entry(
         &mut self,

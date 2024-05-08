@@ -11,7 +11,7 @@ use crate::system::system_modules::auth::{
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use num_traits::Zero;
-use radix_engine_interface::api::{ClientObjectApi, LockFlags, ModuleId};
+use radix_engine_interface::api::{LockFlags, ModuleId, SystemObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use sbor::rust::ops::Fn;
@@ -19,7 +19,7 @@ use sbor::rust::ops::Fn;
 pub struct Authorization;
 
 impl Authorization {
-    fn proof_matches<L: Default, Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>>(
+    fn proof_matches<L: Default, Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>>(
         resource_rule: &ResourceOrNonFungible,
         proof: &Proof,
         api: &mut Y,
@@ -173,7 +173,7 @@ impl Authorization {
     }
 
     fn auth_zone_stack_has_amount<
-        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
         L: Default,
     >(
         auth_zone: &NodeId,
@@ -196,7 +196,7 @@ impl Authorization {
     }
 
     fn auth_zone_stack_matches_rule<
-        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
         L: Default,
     >(
         auth_zone: &NodeId,
@@ -229,7 +229,7 @@ impl Authorization {
     }
 
     pub fn verify_proof_rule<
-        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
         L: Default,
     >(
         auth_zone: &NodeId,
@@ -288,7 +288,7 @@ impl Authorization {
         }
     }
 
-    pub fn verify_auth_rule<Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>, L: Default>(
+    pub fn verify_auth_rule<Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>, L: Default>(
         auth_zone: &NodeId,
         auth_rule: &AccessRuleNode,
         api: &mut Y,
@@ -324,7 +324,7 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_role_key_internal<
-        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
         L: Default,
     >(
         auth_zone: &NodeId,
@@ -381,7 +381,7 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_access_rule<
-        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
         L: Default,
     >(
         api: &mut Y,
@@ -405,7 +405,7 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_role_list<
-        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
         L: Default,
     >(
         auth_zone: &NodeId,

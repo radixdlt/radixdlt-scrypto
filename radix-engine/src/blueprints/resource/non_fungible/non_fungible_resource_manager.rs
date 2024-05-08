@@ -6,7 +6,7 @@ use core::ops::Neg;
 use radix_common::math::Decimal;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    SystemApi, FieldValue, GenericArgs, KVEntry, ACTOR_REF_GLOBAL, ACTOR_STATE_SELF,
+    FieldValue, GenericArgs, KVEntry, SystemApi, ACTOR_REF_GLOBAL, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;

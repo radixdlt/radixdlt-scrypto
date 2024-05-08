@@ -3,7 +3,7 @@ use crate::modules::role_assignment::RoleAssignment;
 use radix_common::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_common::prelude::ScryptoEncode;
 use radix_common::types::GlobalAddress;
-use radix_engine_interface::api::{AttachedModuleId, SystemApi, FieldIndex, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, FieldIndex, ModuleId, SystemApi};
 use radix_engine_interface::object_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
 };

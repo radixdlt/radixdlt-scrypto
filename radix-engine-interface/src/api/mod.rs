@@ -46,18 +46,18 @@ pub type CollectionIndex = u8;
 ///
 /// For WASM blueprints, only a subset of the API is exposed at the moment.
 pub trait SystemApi<E: sbor::rust::fmt::Debug>:
-    ClientActorApi<E>
-    + ClientActorKeyValueEntryApi<E>
-    + ClientObjectApi<E>
-    + ClientKeyValueStoreApi<E>
-    + ClientKeyValueEntryApi<E>
-    + ClientActorSortedIndexApi<E>
-    + ClientActorIndexApi<E>
-    + ClientFieldApi<E>
-    + ClientBlueprintApi<E>
-    + ClientCostingApi<E>
-    + ClientTransactionRuntimeApi<E>
-    + ClientExecutionTraceApi<E>
-    + ClientCryptoUtilsApi<E>
+    SystemActorApi<E>
+    + SystemActorKeyValueEntryApi<E>
+    + SystemObjectApi<E>
+    + SystemKeyValueStoreApi<E>
+    + SystemKeyValueEntryApi<E>
+    + SystemActorSortedIndexApi<E>
+    + SystemActorIndexApi<E>
+    + SystemFieldApi<E>
+    + SystemBlueprintApi<E>
+    + SystemCostingApi<E>
+    + SystemTransactionRuntimeApi<E>
+    + SystemExecutionTraceApi<E>
+    + SystemCryptoUtilsApi<E>
 {
 }

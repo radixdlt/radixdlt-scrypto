@@ -2,7 +2,7 @@ use crate::blueprints::resource::LiquidFungibleResource;
 use crate::types::*;
 use radix_common::math::Decimal;
 
-pub trait ClientCostingApi<E> {
+pub trait SystemCostingApi<E> {
     /// Check if costing is enabled.
     fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, E>;
 

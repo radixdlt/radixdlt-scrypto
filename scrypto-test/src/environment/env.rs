@@ -180,7 +180,7 @@ where
 
     /// Invokes a function on the provided blueprint and package with the given arguments.
     ///
-    /// This method is a typed version of the [`ClientBlueprintApi::call_function`] which Scrypto
+    /// This method is a typed version of the [`SystemBlueprintApi::call_function`] which Scrypto
     /// encodes the arguments and Scrypto decodes the returns on behalf of the caller. This method
     /// assumes that the caller is correct about the argument and return types and panics if the
     /// encoding or decoding fails.
@@ -227,7 +227,7 @@ where
 
     /// Invokes a method on the main module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.
@@ -273,7 +273,7 @@ where
 
     /// Invokes a method on the main module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.
@@ -319,7 +319,7 @@ where
 
     /// Invokes a method on a module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.

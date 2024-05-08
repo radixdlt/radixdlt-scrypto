@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use radix_engine_interface::api::{SystemApi, ModuleId};
+use radix_engine_interface::api::{ModuleId, SystemApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::modules::role_assignment::{
     AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,

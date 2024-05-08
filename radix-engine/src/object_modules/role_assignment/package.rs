@@ -15,7 +15,7 @@ use radix_blueprint_schema_init::{
 };
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    SystemApi, FieldValue, GenericArgs, KVEntry, ModuleId, ACTOR_STATE_SELF,
+    FieldValue, GenericArgs, KVEntry, ModuleId, SystemApi, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, BlueprintVersionKey, FunctionAuth,

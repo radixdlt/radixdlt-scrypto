@@ -6,7 +6,7 @@ use crate::internal_prelude::*;
 use crate::{event_schema, roles_template};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    AttachedModuleId, SystemApi, FieldValue, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT,
+    AttachedModuleId, FieldValue, SystemApi, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT,
     ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;

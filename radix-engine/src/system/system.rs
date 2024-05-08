@@ -30,13 +30,13 @@ use radix_blueprint_schema_init::{Condition, KeyValueStoreGenericSubstitutions};
 #[cfg(not(feature = "alloc"))]
 use radix_common_derive::*;
 use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
+use radix_engine_interface::api::actor_index_api::SystemActorIndexApi;
 use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
-    ClientKeyValueEntryApi, KeyValueEntryHandle,
+    KeyValueEntryHandle, SystemKeyValueEntryApi,
 };
 use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi, KeyValueStoreDataSchema,
+    KeyValueStoreDataSchema, SystemKeyValueStoreApi,
 };
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::*;
@@ -1113,7 +1113,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientFieldApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemFieldApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -1206,7 +1206,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemObjectApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -1595,7 +1595,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -1734,7 +1734,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -1888,7 +1888,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientActorIndexApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemActorIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2022,7 +2022,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientActorSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemActorSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2142,7 +2142,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2190,7 +2190,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemCostingApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2440,7 +2440,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemActorApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2661,7 +2661,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2754,7 +2754,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2774,7 +2774,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2869,7 +2869,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientCryptoUtilsApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemCryptoUtilsApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,

@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 
-pub trait ClientCryptoUtilsApi<E> {
+pub trait SystemCryptoUtilsApi<E> {
     fn bls12381_v1_verify(
         &mut self,
         message: &[u8],

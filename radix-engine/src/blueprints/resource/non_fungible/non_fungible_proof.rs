@@ -2,7 +2,7 @@ use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{SystemApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{FieldValue, SystemApi, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]

@@ -6,7 +6,7 @@ use radix_blueprint_schema_init::{
 };
 use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use radix_common::constants::AuthAddresses;
-use radix_engine_interface::api::{AttachedModuleId, SystemApi, FieldValue};
+use radix_engine_interface::api::{AttachedModuleId, FieldValue, SystemApi};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,

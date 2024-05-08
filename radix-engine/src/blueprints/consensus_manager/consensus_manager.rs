@@ -7,7 +7,7 @@ use radix_common::constants::AuthAddresses;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{
-    AttachedModuleId, SystemApi, CollectionIndex, FieldValue, ACTOR_STATE_SELF,
+    AttachedModuleId, CollectionIndex, FieldValue, SystemApi, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;

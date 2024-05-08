@@ -5,7 +5,7 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::FieldValue;
-use radix_engine_interface::api::{AttachedModuleId, SystemApi, GenericArgs, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{AttachedModuleId, GenericArgs, SystemApi, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::hooks::OnVirtualizeInput;
 use radix_engine_interface::blueprints::hooks::OnVirtualizeOutput;

@@ -4,8 +4,8 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
-use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::resource::ResourceManager;
 

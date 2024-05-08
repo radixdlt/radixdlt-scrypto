@@ -206,7 +206,7 @@ pub struct KVEntry {
 }
 
 /// A high level interface to manipulate objects in the actor's call frame
-pub trait ClientObjectApi<E> {
+pub trait SystemObjectApi<E> {
     /// Creates a new simple blueprint object of a given blueprint type
     fn new_simple_object(
         &mut self,

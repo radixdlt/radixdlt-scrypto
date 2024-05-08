@@ -6,7 +6,7 @@ use crate::system::node_init::type_info_partition;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResult};
 use crate::system::type_info::TypeInfoSubstate;
-use radix_engine_interface::api::{SystemApi, LockFlags, ACTOR_REF_SELF, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{LockFlags, SystemApi, ACTOR_REF_SELF, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::resource::NativeProof;

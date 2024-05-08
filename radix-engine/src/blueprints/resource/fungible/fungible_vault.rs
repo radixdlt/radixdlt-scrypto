@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    SystemApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
+    FieldValue, SystemApi, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;

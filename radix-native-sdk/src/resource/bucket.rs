@@ -3,7 +3,7 @@ use radix_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_common::math::Decimal;
-use radix_engine_interface::api::{SystemApi, ClientObjectApi};
+use radix_engine_interface::api::{SystemApi, SystemObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
@@ -151,7 +151,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             receiver.as_node_id(),
