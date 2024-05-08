@@ -21,6 +21,7 @@
     - [Hooks](architecture/application/blueprint/hooks.md)
     - [Types](architecture/application/blueprint/types.md)
     - [Blueprint Modules](architecture/application/blueprint/blueprint_modules.md)
+  - [Type Checking](architecture/application/type_checking/README.md)
 - [VM Layer](architecture/vm/README.md)
 - [System Layer](architecture/system/README.md)
 - [Kernel Layer](architecture/kernel/README.md)
@@ -39,14 +40,14 @@
 
 # Native Systems
 
-- [Type Checking](native/type_checking/README.md)
+- [Transaction Manifest]()
+- [Resources](native/resources/README.md)
 - [Access Control](native/access_control/README.md)
   - [Access Control Blueprint Module](native/access_control/blueprint_module.md)
   - [Role Assignment Object Module](native/access_control/role_assignment.md)
   - [Auth Zone Blueprint](native/access_control/authzone.md)
   - [Access Control System Module](native/access_control/system_module.md)
-- [Transaction Manifest]()
-- [Resources]()
+- [Costing/Limits]()
 - [Royalties]()
 - [Metadata]()
 
