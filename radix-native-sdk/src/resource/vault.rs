@@ -1,7 +1,7 @@
 use radix_common::data::scrypto::model::*;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_common::math::Decimal;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
@@ -15,11 +15,11 @@ pub trait NativeVault {
         api: &mut Y,
     ) -> Result<Vault, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn put<Y, E: Debug + ScryptoDecode>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn take<Y, E: Debug + ScryptoDecode>(
         &mut self,
@@ -27,7 +27,7 @@ pub trait NativeVault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn take_advanced<Y, E: Debug + ScryptoDecode>(
         &mut self,
@@ -36,26 +36,26 @@ pub trait NativeVault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn resource_address<Y, E: Debug + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn burn<Y, E: Debug + ScryptoDecode>(&mut self, amount: Decimal, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 pub trait NativeFungibleVault {
@@ -65,7 +65,7 @@ pub trait NativeFungibleVault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn lock_contingent_fee<Y, E: Debug + ScryptoDecode>(
         &mut self,
@@ -73,7 +73,7 @@ pub trait NativeFungibleVault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
         &self,
@@ -81,7 +81,7 @@ pub trait NativeFungibleVault {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 pub trait NativeNonFungibleVault {
@@ -91,7 +91,7 @@ pub trait NativeNonFungibleVault {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
@@ -99,7 +99,7 @@ pub trait NativeNonFungibleVault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &self,
@@ -107,7 +107,7 @@ pub trait NativeNonFungibleVault {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn burn_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
@@ -115,7 +115,7 @@ pub trait NativeNonFungibleVault {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 impl NativeVault for Vault {
@@ -124,7 +124,7 @@ impl NativeVault for Vault {
         api: &mut Y,
     ) -> Result<Vault, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             resource_address.as_node_id(),
@@ -138,7 +138,7 @@ impl NativeVault for Vault {
 
     fn put<Y, E: Debug + ScryptoDecode>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -155,7 +155,7 @@ impl NativeVault for Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -173,7 +173,7 @@ impl NativeVault for Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -190,7 +190,7 @@ impl NativeVault for Vault {
 
     fn take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         // TODO: Replace with actual take all blueprint method
         let amount = self.amount(api)?;
@@ -205,7 +205,7 @@ impl NativeVault for Vault {
 
     fn amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -221,7 +221,7 @@ impl NativeVault for Vault {
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let address = api.get_outer_object(self.0.as_node_id())?;
         Ok(ResourceAddress::try_from(address.into_node_id().0).unwrap())
@@ -229,7 +229,7 @@ impl NativeVault for Vault {
 
     fn burn<Y, E: Debug + ScryptoDecode>(&mut self, amount: Decimal, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -248,7 +248,7 @@ impl NativeFungibleVault for Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -268,7 +268,7 @@ impl NativeFungibleVault for Vault {
         amount: Decimal,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -288,7 +288,7 @@ impl NativeFungibleVault for Vault {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -307,7 +307,7 @@ impl NativeNonFungibleVault for Vault {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -327,7 +327,7 @@ impl NativeNonFungibleVault for Vault {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -344,7 +344,7 @@ impl NativeNonFungibleVault for Vault {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -364,7 +364,7 @@ impl NativeNonFungibleVault for Vault {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

@@ -99,7 +99,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         dispatch! {
             EXPORT_NAME,
@@ -134,7 +134,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerInstantiateOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::instantiate_internal(
             owner_role,
@@ -155,7 +155,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerInstantiateSimpleOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Two address reservations are needed. One for the badge and another for the account locker
         // that we're instantiating.
@@ -227,7 +227,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<Global<AccountLockerMarker>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Main module
         let object_id = api.new_simple_object(ACCOUNT_LOCKER_BLUEPRINT, indexmap! {})?;
@@ -269,7 +269,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerStoreOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // If we should try to send first then attempt the deposit into the account
         let bucket = if try_direct_send {
@@ -334,7 +334,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerAirdropOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Distribute and call `store`
         let resource_address = bucket.resource_address(api)?;
@@ -373,7 +373,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerRecoverOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Recover the resources from the vault.
         let bucket = Self::with_vault_create_on_traversal(
@@ -407,7 +407,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerRecoverNonFungiblesOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Recover the resources from the vault.
         let bucket = Self::with_vault_create_on_traversal(
@@ -441,7 +441,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerClaimOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Read and assert against the owner role of the claimant.
         let claimant_owner_role = api
@@ -486,7 +486,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerClaimNonFungiblesOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Read and assert against the owner role of the claimant.
         let claimant_owner_role = api
@@ -530,7 +530,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerGetAmountOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_vault(claimant.0, resource_address, api, |vault, api| {
             vault
@@ -548,7 +548,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerGetNonFungibleLocalIdsOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_vault(claimant.0, resource_address, api, |vault, api| {
             vault
@@ -564,7 +564,7 @@ impl AccountLockerBlueprint {
         handler: F,
     ) -> Result<O, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
         F: FnOnce(Vault, &mut Y) -> O,
     {
         // The collection on the blueprint maps an account address to a key value store. We read the
@@ -641,7 +641,7 @@ impl AccountLockerBlueprint {
         handler: F,
     ) -> Result<O, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
         F: FnOnce(Option<Vault>, &mut Y) -> O,
     {
         // The collection on the blueprint maps an account address to a key value store. We read the
@@ -697,7 +697,7 @@ fn bucket_to_resource_specifier<Y>(
     api: &mut Y,
 ) -> Result<(ResourceAddress, ResourceSpecifier), RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     let resource_address = bucket.resource_address(api)?;
     if resource_address.is_fungible() {

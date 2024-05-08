@@ -376,7 +376,7 @@ fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
 
 fn validate_royalties<Y>(definition: &PackageDefinition, api: &mut Y) -> Result<(), RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     for (blueprint, definition_init) in &definition.blueprints {
         match &definition_init.royalty_config {
@@ -798,7 +798,7 @@ fn globalize_package<Y>(
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     let vault = Vault(ResourceManager(XRD).new_empty_vault(api)?);
 
@@ -953,7 +953,7 @@ impl PackageNativePackage {
         vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
         V: VmApi,
     {
         let restrict_reserved_key = match version {
@@ -1371,7 +1371,7 @@ impl PackageNativePackage {
         vm_api: &V,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
         V: VmApi,
     {
         validate_royalties(&definition, api)?;
@@ -1404,7 +1404,7 @@ impl PackageNativePackage {
         vm_api: &V,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
         V: VmApi,
     {
         validate_royalties(&definition, api)?;
@@ -1455,7 +1455,7 @@ impl PackageNativePackage {
         vm_api: &V,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
         V: VmApi,
     {
         validate_royalties(&definition, api)?;
@@ -1569,7 +1569,7 @@ impl PackageRoyaltyNativeBlueprint {
 
     pub(crate) fn claim_royalties<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,

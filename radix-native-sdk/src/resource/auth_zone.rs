@@ -3,7 +3,7 @@ use radix_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_common::math::Decimal;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
@@ -16,35 +16,35 @@ pub trait NativeAuthZone {
         api: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn drop_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn drop_regular_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn drop_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Option<Proof>, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -53,7 +53,7 @@ pub trait NativeAuthZone {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -62,7 +62,7 @@ pub trait NativeAuthZone {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -70,7 +70,7 @@ pub trait NativeAuthZone {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -78,7 +78,7 @@ pub trait NativeAuthZone {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 impl NativeAuthZone for AuthZoneRef {
@@ -87,7 +87,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<Vec<Proof>, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             &self.0,
@@ -102,7 +102,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             &self.0,
@@ -117,7 +117,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             &self.0,
@@ -132,7 +132,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             &self.0,
@@ -147,7 +147,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<Option<Proof>, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             &self.0,
@@ -165,7 +165,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             &self.0,
@@ -187,7 +187,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             &self.0,
@@ -208,7 +208,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             &self.0,
@@ -225,7 +225,7 @@ impl NativeAuthZone for AuthZoneRef {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let proof: Proof = proof.into();
 

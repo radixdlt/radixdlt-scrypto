@@ -1,14 +1,14 @@
-//! This module has the implementation of the [`ClientApi`] for the [`TestEnvironment`] in order not
+//! This module has the implementation of the [`SystemApi`] for the [`TestEnvironment`] in order not
 //! to clutter up the other modules.
 //!
-//! [`ClientApi`]: crate::prelude::ClientApi
+//! [`SystemApi`]: crate::prelude::SystemApi
 //! [`TestEnvironment`]: crate::prelude::TestEnvironment
 
 use crate::prelude::*;
 
-/// Implements the [`ClientApi`] for the [`TestEnvironment`] struct.
+/// Implements the [`SystemApi`] for the [`TestEnvironment`] struct.
 ///
-/// This macro exposes a high-level API for specifying the [`ClientApi`] traits to implement for the
+/// This macro exposes a high-level API for specifying the [`SystemApi`] traits to implement for the
 /// [`TestEnvironment`]. The trait methods are implements through a simple mechanism which creates a
 /// [`SystemService`] object from the kernel and calls the trait method on the [`SystemService`]
 /// object.
@@ -24,10 +24,10 @@ use crate::prelude::*;
 /// }
 /// ```
 ///
-/// This macro is only used internally in this crate for easy implementation of the [`ClientApi`]
+/// This macro is only used internally in this crate for easy implementation of the [`SystemApi`]
 /// and is not meant to be used outside or exported.
 ///
-/// [`ClientApi`]: crate::prelude::ClientApi
+/// [`SystemApi`]: crate::prelude::SystemApi
 /// [`TestEnvironment`]: crate::prelude::TestEnvironment
 /// [`SystemService`]: crate::prelude::SystemService
 macro_rules! implement_client_api {
@@ -101,7 +101,7 @@ macro_rules! implement_client_api {
     };
 }
 implement_client_api! {
-    ClientApi: {},
+    SystemApi: {},
     ClientActorApi: {
         actor_get_blueprint_id: (&mut self) -> Result<BlueprintId, RuntimeError>,
         actor_open_field: (

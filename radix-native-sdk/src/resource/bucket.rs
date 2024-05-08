@@ -3,7 +3,7 @@ use radix_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_common::math::Decimal;
-use radix_engine_interface::api::{ClientApi, ClientObjectApi};
+use radix_engine_interface::api::{SystemApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
@@ -19,14 +19,14 @@ pub trait NativeBucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Decimal, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -34,7 +34,7 @@ pub trait NativeBucket {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -42,7 +42,7 @@ pub trait NativeBucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn take_advanced<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -51,22 +51,22 @@ pub trait NativeBucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn package_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode;
 
     fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -74,21 +74,21 @@ pub trait NativeBucket {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<bool, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         self,
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 pub trait NativeFungibleBucket {
@@ -98,7 +98,7 @@ pub trait NativeFungibleBucket {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 pub trait NativeNonFungibleBucket {
@@ -107,7 +107,7 @@ pub trait NativeNonFungibleBucket {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -115,7 +115,7 @@ pub trait NativeNonFungibleBucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 
     fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
@@ -123,7 +123,7 @@ pub trait NativeNonFungibleBucket {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 impl NativeBucket for Bucket {
@@ -132,7 +132,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let resource_address = self.resource_address(api)?;
         let rtn = api.call_method(
@@ -166,7 +166,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<Decimal, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -183,7 +183,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let _rtn = api.call_method(
             self.0.as_node_id(),
@@ -200,7 +200,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -218,7 +218,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -235,7 +235,7 @@ impl NativeBucket for Bucket {
 
     fn burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let resource_address = self.resource_address(api)?;
         ResourceManager(resource_address).burn(Bucket(self.0), api)
@@ -246,7 +246,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let resource_address = self.resource_address(api)?;
         ResourceManager(resource_address).package_burn(Bucket(self.0), api)
@@ -254,7 +254,7 @@ impl NativeBucket for Bucket {
 
     fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let resource_address = ResourceAddress::new_or_panic(
@@ -269,7 +269,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -284,7 +284,7 @@ impl NativeBucket for Bucket {
         api: &mut Y,
     ) -> Result<bool, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         Ok(self.amount(api)?.is_zero())
     }
@@ -297,7 +297,7 @@ impl NativeFungibleBucket for Bucket {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -314,7 +314,7 @@ impl NativeNonFungibleBucket for Bucket {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -331,7 +331,7 @@ impl NativeNonFungibleBucket for Bucket {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -348,7 +348,7 @@ impl NativeNonFungibleBucket for Bucket {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

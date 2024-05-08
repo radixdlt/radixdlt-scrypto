@@ -7,7 +7,7 @@ use crate::prelude::*;
 ///
 /// This struct may be thought of as the main struct in this testing framework which encapsulates a
 /// a self-contained instance of the Radix Engine ([`EncapsulatedRadixEngine`]). The functionality
-/// of the Radix Engine is exposed through the [`ClientApi`] which makes this testing environment no
+/// of the Radix Engine is exposed through the [`SystemApi`] which makes this testing environment no
 /// less capable than Scrypto code.
 ///
 /// ## Introduction

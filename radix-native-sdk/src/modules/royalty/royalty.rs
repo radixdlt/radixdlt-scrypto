@@ -15,7 +15,7 @@ impl ComponentRoyalty {
         api: &mut Y,
     ) -> Result<Own, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_function(
             ROYALTY_MODULE_PACKAGE,
@@ -35,7 +35,7 @@ impl ComponentRoyalty {
         api: &mut Y,
     ) -> Result<ComponentRoyaltySetOutput, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -56,7 +56,7 @@ impl ComponentRoyalty {
         api: &mut Y,
     ) -> Result<ComponentRoyaltyLockOutput, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -75,7 +75,7 @@ impl ComponentRoyalty {
         api: &mut Y,
     ) -> Result<ComponentClaimRoyaltiesOutput, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

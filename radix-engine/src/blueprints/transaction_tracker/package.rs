@@ -6,7 +6,7 @@ use radix_blueprint_schema_init::{
 };
 use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 use radix_common::constants::AuthAddresses;
-use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldValue};
+use radix_engine_interface::api::{AttachedModuleId, SystemApi, FieldValue};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
@@ -120,7 +120,7 @@ impl TransactionTrackerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             TRANSACTION_TRACKER_CREATE_EXPORT_NAME => {
@@ -246,7 +246,7 @@ impl TransactionTrackerBlueprint {
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let current_epoch = Runtime::current_epoch(api)?;
         let intent_store = api.new_simple_object(

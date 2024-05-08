@@ -4,7 +4,7 @@ use radix_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_common::math::Decimal;
-use radix_engine_interface::api::{ClientApi, ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::api::{SystemApi, ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
@@ -34,7 +34,7 @@ pub trait NativeProof {
 
     fn drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 pub trait NativeFungibleProof {}

@@ -78,7 +78,7 @@
 //!    to this Call Frame. We are now able to call methods such as resource_address() and amount()
 //!    on this Bucket since it’s a node we own and the [`TestEnvironment`] has a Heap.
 //!
-//! [`ClientApi`]: crate::prelude::ClientApi
+//! [`ClientApi`]: crate::prelude::SystemApi
 //! [`TestEnvironment`]: crate::prelude::TestEnvironment
 
 pub mod environment;

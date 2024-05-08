@@ -15,7 +15,7 @@ use radix_blueprint_schema_init::{
 };
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, GenericArgs, KVEntry, ModuleId, ACTOR_STATE_SELF,
+    SystemApi, FieldValue, GenericArgs, KVEntry, ModuleId, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, BlueprintVersionKey, FunctionAuth,
@@ -209,7 +209,7 @@ impl RoleAssignmentNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             ROLE_ASSIGNMENT_CREATE_IDENT => {
@@ -450,7 +450,7 @@ impl RoleAssignmentNativePackage {
         api: &mut Y,
     ) -> Result<Own, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (fields, kv_entries) = Self::init_system_struct(owner_role, roles).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
@@ -469,7 +469,7 @@ impl RoleAssignmentNativePackage {
 
     fn set_owner_role<Y>(rule: AccessRule, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::verify_access_rule(&rule).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
@@ -494,7 +494,7 @@ impl RoleAssignmentNativePackage {
 
     fn lock_owner_role<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE)?;
         let mut owner_role = api
@@ -520,7 +520,7 @@ impl RoleAssignmentNativePackage {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if module.eq(&ModuleId::RoleAssignment) {
             return Err(RuntimeError::ApplicationError(
@@ -594,7 +594,7 @@ impl RoleAssignmentNativePackage {
         api: &mut Y,
     ) -> Result<Option<AccessRule>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let module_role_key = ModuleRoleKey::new(module, role_key);
 
@@ -645,7 +645,7 @@ impl RoleAssignmentBottlenoseExtension {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT => {
@@ -666,7 +666,7 @@ impl RoleAssignmentBottlenoseExtension {
 
     pub(crate) fn get_owner_role<Y>(api: &mut Y) -> Result<OwnerRoleEntry, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,

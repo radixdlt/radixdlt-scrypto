@@ -1,7 +1,7 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 
@@ -24,7 +24,7 @@ impl TestUtilsNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             TEST_UTILS_PANIC_IDENT => {

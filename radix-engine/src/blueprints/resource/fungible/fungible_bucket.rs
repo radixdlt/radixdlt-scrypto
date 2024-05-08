@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
+    SystemApi, FieldValue, LockFlags, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::runtime::Runtime;
@@ -15,7 +15,7 @@ pub struct FungibleBucketBlueprint;
 impl FungibleBucketBlueprint {
     fn get_divisibility<Y>(api: &mut Y) -> Result<u8, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
@@ -33,7 +33,7 @@ impl FungibleBucketBlueprint {
 
     pub fn take<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::take_advanced(amount, WithdrawStrategy::Exact, api)
     }
@@ -44,7 +44,7 @@ impl FungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let taken = {
             let divisibility = Self::get_divisibility(api)?;
@@ -71,7 +71,7 @@ impl FungibleBucketBlueprint {
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // This will fail if bucket is not an inner object of the current fungible resource
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
@@ -93,7 +93,7 @@ impl FungibleBucketBlueprint {
 
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
             .checked_add(Self::locked_amount(api)?)
@@ -104,7 +104,7 @@ impl FungibleBucketBlueprint {
 
     pub fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
@@ -114,7 +114,7 @@ impl FungibleBucketBlueprint {
 
     pub fn create_proof_of_amount<Y>(amount: Decimal, api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
@@ -151,7 +151,7 @@ impl FungibleBucketBlueprint {
 
     pub fn create_proof_of_all<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::create_proof_of_amount(Self::get_amount(api)?, api)
     }
@@ -162,7 +162,7 @@ impl FungibleBucketBlueprint {
 
     pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -193,7 +193,7 @@ impl FungibleBucketBlueprint {
 
     pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -228,7 +228,7 @@ impl FungibleBucketBlueprint {
 
     fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -243,7 +243,7 @@ impl FungibleBucketBlueprint {
 
     fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -261,7 +261,7 @@ impl FungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<LiquidFungibleResource, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -281,7 +281,7 @@ impl FungibleBucketBlueprint {
 
     fn internal_put<Y>(resource: LiquidFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());

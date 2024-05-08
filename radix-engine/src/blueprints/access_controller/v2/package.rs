@@ -394,7 +394,7 @@ impl AccessControllerV2NativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         AccessControllerV2Blueprint::invoke_export(export_name, input, api)
     }

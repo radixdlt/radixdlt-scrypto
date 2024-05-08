@@ -6,7 +6,7 @@ use core::ops::Neg;
 use radix_common::math::Decimal;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_REF_GLOBAL, ACTOR_STATE_SELF,
+    SystemApi, FieldValue, GenericArgs, KVEntry, ACTOR_REF_GLOBAL, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
@@ -123,7 +123,7 @@ fn create_non_fungibles<Y>(
     api: &mut Y,
 ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     let mut ids = index_set_new();
     for (non_fungible_local_id, value) in entries {
@@ -495,7 +495,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(GenericArgs, IndexMap<String, usize>), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match schema {
             NonFungibleDataSchema::Local {
@@ -639,7 +639,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (object_id, roles) = Self::create_object(
             id_type,
@@ -685,7 +685,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // TODO: Do this check in a better way (e.g. via type check)
         if id_type == NonFungibleIdType::RUID {
@@ -751,7 +751,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let entries: Result<IndexMap<NonFungibleLocalId, (ScryptoValue,)>, RuntimeError> = entries
             .into_iter()
@@ -812,7 +812,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_mintable(api)?;
         let id_type = Self::assert_is_not_ruid(api)?;
@@ -836,7 +836,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_mintable(api)?;
         Self::assert_is_ruid(api)?;
@@ -870,7 +870,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_mintable(api)?;
         Self::assert_is_ruid(api)?;
@@ -906,7 +906,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let field_index = {
             let data_schema_handle = api.actor_open_field(
@@ -972,7 +972,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let non_fungible_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
@@ -993,7 +993,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let non_fungible_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
@@ -1022,7 +1022,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_empty_bucket<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::create_bucket(index_set_new(), api)
     }
@@ -1032,7 +1032,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let bucket_id = api.new_simple_object(
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
@@ -1047,7 +1047,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::burn_internal(bucket, api)
     }
@@ -1055,14 +1055,14 @@ impl NonFungibleResourceManagerBlueprint {
     /// Only callable within this package - this is to allow the burning of tokens from a vault.
     pub(crate) fn package_burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::burn_internal(bucket, api)
     }
 
     fn burn_internal<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_burnable(api)?;
 
@@ -1101,7 +1101,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn drop_empty_bucket<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -1118,7 +1118,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn create_empty_vault<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let balance = LiquidNonFungibleVault {
             amount: Decimal::zero(),
@@ -1157,7 +1157,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn get_resource_type<Y>(api: &mut Y) -> Result<ResourceType, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1175,7 +1175,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
@@ -1206,7 +1206,7 @@ impl NonFungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(NodeId, RoleAssignmentInit), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (generic_args, mutable_field_index) =
             Self::resolve_and_validate_non_fungible_schema(&non_fungible_schema, api)?;
@@ -1282,7 +1282,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     fn assert_is_not_ruid<Y>(api: &mut Y) -> Result<NonFungibleIdType, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1305,7 +1305,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     fn assert_is_ruid<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Check type
         let handle = api.actor_open_field(
@@ -1331,7 +1331,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
@@ -1353,7 +1353,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     fn assert_burnable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
@@ -1375,7 +1375,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     fn update_total_supply<Y>(api: &mut Y, amount: Decimal) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
@@ -1416,7 +1416,7 @@ impl NonFungibleResourceManagerBlueprint {
         withdraw_strategy: WithdrawStrategy,
     ) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Ok(amount
             .for_withdrawal(0, withdraw_strategy)

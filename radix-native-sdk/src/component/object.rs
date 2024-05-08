@@ -3,7 +3,7 @@ use crate::modules::role_assignment::RoleAssignment;
 use radix_common::data::scrypto::{scrypto_encode, ScryptoDecode};
 use radix_common::prelude::ScryptoEncode;
 use radix_common::types::GlobalAddress;
-use radix_engine_interface::api::{AttachedModuleId, ClientApi, FieldIndex, ModuleId};
+use radix_engine_interface::api::{AttachedModuleId, SystemApi, FieldIndex, ModuleId};
 use radix_engine_interface::object_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
 };
@@ -30,7 +30,7 @@ impl BorrowedObject {
 
     pub fn set_metadata<Y, E, S, V>(&mut self, key: S, value: V, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         S: AsRef<str>,
         V: MetadataVal,
         E: Debug + ScryptoDecode,
@@ -59,7 +59,7 @@ pub fn globalize_object<Y, E>(
     api: &mut Y,
 ) -> Result<GlobalAddress, E>
 where
-    Y: ClientApi<E>,
+    Y: SystemApi<E>,
     E: Debug + ScryptoDecode,
 {
     let role_assignment = {
@@ -97,7 +97,7 @@ pub fn globalize_object_with_inner_object_and_event<Y, E, V>(
     api: &mut Y,
 ) -> Result<(GlobalAddress, NodeId), E>
 where
-    Y: ClientApi<E>,
+    Y: SystemApi<E>,
     E: Debug + ScryptoDecode,
     V: ScryptoEncode,
 {

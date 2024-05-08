@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::{System, SystemLockData};
 use crate::track::BootStore;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::PackageExport;
 
 /// Invocation callback invoked by the system layer
@@ -21,7 +21,7 @@ pub trait SystemCallbackObject: Sized {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>
+        Y: SystemApi<RuntimeError>
             + KernelInternalApi<System<Self>>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>;

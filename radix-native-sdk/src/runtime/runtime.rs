@@ -21,7 +21,7 @@ impl Runtime {
         event: T,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.actor_emit_event(
@@ -36,7 +36,7 @@ impl Runtime {
         event: T,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.actor_emit_event(
@@ -100,7 +100,7 @@ impl Runtime {
 
     pub fn generate_ruid<Y, E>(api: &mut Y) -> Result<[u8; 32], E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.generate_ruid()
@@ -108,7 +108,7 @@ impl Runtime {
 
     pub fn assert_access_rule<Y, E>(rule: AccessRule, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
@@ -123,7 +123,7 @@ impl Runtime {
 
     pub fn get_node_id<Y, E>(api: &mut Y) -> Result<NodeId, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         api.actor_get_node_id(ACTOR_REF_SELF)
@@ -131,7 +131,7 @@ impl Runtime {
 
     pub fn package_address<Y, E>(api: &mut Y) -> Result<PackageAddress, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug,
     {
         api.actor_get_blueprint_id().map(|x| x.package_address)

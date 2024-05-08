@@ -6,7 +6,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::object_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::{
     PackageDefinition, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
     PACKAGE_PUBLISH_NATIVE_IDENT,
@@ -33,7 +33,7 @@ fn cannot_define_more_than_50_roles() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             Ok(IndexedScryptoValue::from_typed(&()))
@@ -95,7 +95,7 @@ fn cannot_define_role_name_larger_than_max() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             Ok(IndexedScryptoValue::from_typed(&()))
@@ -158,7 +158,7 @@ fn cannot_setup_more_than_50_roles() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {
@@ -229,7 +229,7 @@ fn cannot_set_role_before_attachment() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {

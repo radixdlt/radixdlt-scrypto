@@ -1,8 +1,7 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorBlueprint};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelNodeApi;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 
@@ -26,7 +25,7 @@ impl ConsensusManagerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             CONSENSUS_MANAGER_CREATE_IDENT => {
@@ -285,7 +284,7 @@ impl ConsensusManagerSecondsPrecisionNativeCode {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => {

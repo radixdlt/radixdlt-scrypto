@@ -2961,7 +2961,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,

@@ -3,7 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{SystemApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::runtime::Runtime;
 
@@ -12,7 +12,7 @@ pub struct NonFungibleBucketBlueprint;
 impl NonFungibleBucketBlueprint {
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::take_advanced(amount, WithdrawStrategy::Exact, api)
     }
@@ -23,7 +23,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let taken = {
             // Apply withdraw strategy
@@ -51,7 +51,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Take
         let taken = Self::internal_take(ids, api)?;
@@ -63,7 +63,7 @@ impl NonFungibleBucketBlueprint {
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Drop other bucket
         // This will fail if bucket is not an inner object of the current non-fungible resource
@@ -79,7 +79,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let mut ids = Self::liquid_non_fungible_local_ids(api)?;
         ids.extend(Self::locked_non_fungible_local_ids(api)?);
@@ -91,7 +91,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let ids = Self::liquid_non_fungible_local_ids(api)?;
         if ids.contains(&id) {
@@ -108,7 +108,7 @@ impl NonFungibleBucketBlueprint {
 
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
             .checked_add(Self::locked_amount(api)?)
@@ -119,7 +119,7 @@ impl NonFungibleBucketBlueprint {
 
     pub fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
@@ -132,7 +132,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::lock_non_fungibles(&ids, api)?;
 
@@ -161,7 +161,7 @@ impl NonFungibleBucketBlueprint {
 
     pub fn create_proof_of_all<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::create_proof_of_non_fungibles(Self::get_non_fungible_local_ids(api)?, api)
     }
@@ -175,7 +175,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -208,7 +208,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -241,7 +241,7 @@ impl NonFungibleBucketBlueprint {
 
     fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -256,7 +256,7 @@ impl NonFungibleBucketBlueprint {
 
     fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -273,7 +273,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -290,7 +290,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -308,7 +308,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -330,7 +330,7 @@ impl NonFungibleBucketBlueprint {
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -353,7 +353,7 @@ impl NonFungibleBucketBlueprint {
 
     fn internal_put<Y>(resource: LiquidNonFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());

@@ -5,7 +5,7 @@ use crate::vm::wasm::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
-use radix_engine_interface::api::{ActorRefHandle, AttachedModuleId, ClientApi, FieldValue};
+use radix_engine_interface::api::{ActorRefHandle, AttachedModuleId, SystemApi, FieldValue};
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
 use sbor::rust::vec::Vec;
@@ -13,7 +13,7 @@ use sbor::rust::vec::Vec;
 /// A shim between ClientApi and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: IndexMap<BufferId, Vec<u8>>,
@@ -26,7 +26,7 @@ where
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y, package_address: PackageAddress, export_name: String) -> Self {
         ScryptoRuntime {
@@ -54,7 +54,7 @@ where
 
 impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,

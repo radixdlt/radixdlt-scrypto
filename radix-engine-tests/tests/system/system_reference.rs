@@ -6,7 +6,7 @@ use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, LockFlags, ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF,
+    SystemApi, FieldValue, LockFlags, ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
 use radix_transactions::builder::ManifestBuilder;
@@ -28,7 +28,7 @@ fn cannot_store_reference_in_non_transient_blueprint() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {
@@ -91,7 +91,7 @@ fn cannot_write_reference_in_non_transient_blueprint() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {
@@ -157,7 +157,7 @@ fn cannot_write_reference_in_kv_store() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {
