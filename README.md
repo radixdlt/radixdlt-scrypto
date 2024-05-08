@@ -41,7 +41,7 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
    - Linux:
      - Make sure a C++ compiler, LLVM and cmake is installed:
      ```bash
-     sudo apt install build-essential llvm cmake
+     sudo apt install build-essential llvm cmake clang
      ```
      - Install the Rust compiler:
      ```bash
