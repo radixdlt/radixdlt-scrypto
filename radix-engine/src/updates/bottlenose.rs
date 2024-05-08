@@ -108,12 +108,16 @@ impl ProtocolUpdateBatchGenerator for BottlenoseBatchGenerator {
         &self,
         store: &dyn SubstateDatabase,
         batch_index: u32,
-    ) -> Option<ProtocolUpdateBatch> {
-        match batch_index {
-            // Just a single batch for Bottlenose, perhaps in future updates we should have separate batches for each update?
-            0 => Some(generate_principal_batch(store, &self.settings)),
-            _ => None,
+    ) -> ProtocolUpdateBatch {
+        if batch_index != 0 {
+            panic!("batch index out of range")
         }
+        // Just a single batch for Bottlenose, perhaps in future updates we should have separate batches for each update?
+        generate_principal_batch(store, &self.settings)
+    }
+
+    fn batch_count(&self) -> u32 {
+        1
     }
 }
 
