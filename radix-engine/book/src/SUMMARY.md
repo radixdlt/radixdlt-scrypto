@@ -18,6 +18,7 @@
     - [Collections](architecture/application/blueprint/collections.md)
     - [Events](architecture/application/blueprint/events.md)
     - [Functions](architecture/application/blueprint/functions.md)
+    - [Hooks](architecture/application/blueprint/hooks.md)
     - [Types](architecture/application/blueprint/types.md)
     - [Blueprint Modules](architecture/application/blueprint/blueprint_modules.md)
 - [VM Layer](architecture/vm/README.md)
