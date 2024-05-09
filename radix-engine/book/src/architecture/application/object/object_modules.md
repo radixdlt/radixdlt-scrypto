@@ -7,6 +7,6 @@ An Object Module itself has a Blueprint type along with associated logic to mani
 the state of the object module.
 
 Currently, there exists three object modules:
-* RoleAssignment Object Module (Required)
-* Metadata Object Module (Required)
-* Royalty Object Module (Optional)
+* [RoleAssignment](../../../native/access_control/role_assignment.md) (Required)
+* [Metadata](../../../native/metadata/object_module.md) (Required)
+* [Component Royalties](../../../native/royalties/component_royalties.md) (Optional)

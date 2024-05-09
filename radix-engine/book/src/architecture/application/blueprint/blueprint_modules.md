@@ -4,5 +4,5 @@ The system may define additional state to be stored per blueprint known as Bluep
 every blueprint definition must initialize these modules.
 
 Currently there exists two blueprint modules:
-* Auth Blueprint Module
-* Royalty Blueprint Module
+* [Auth](../../../native/access_control/blueprint_module.md)
+* [Package Royalties](../../../native/royalties/package_royalties.md)

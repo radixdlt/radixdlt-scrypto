@@ -50,9 +50,12 @@
   - [Role Assignment Object Module](native/access_control/role_assignment.md)
   - [Auth Zone Blueprint](native/access_control/authzone.md)
   - [Access Control System Module](native/access_control/system_module.md)
-- [Costing/Limits]()
-- [Royalties]()
-- [Metadata]()
+- [Costing/Limits](native/costing_limits/README.md)
+- [Royalties](native/royalties/README.md)
+  - [Package Royalties Blueprint Module](native/royalties/package_royalties.md)
+  - [Component Royalties Object Module](native/royalties/component_royalties.md)
+- [Metadata](native/metadata/README.md)
+  - [Metadata Object Module](native/metadata/object_module.md)
 
 # Protocol
 - [Genesis Bootstrap]()
