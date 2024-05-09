@@ -8,6 +8,7 @@ use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{ActorRefHandle, AttachedModuleId, FieldValue, SystemApi};
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
+use radix_engine_profiling_derive::trace_resources;
 use sbor::rust::vec::Vec;
 
 /// A shim between SystemAPI and WASM, with buffer capability.
@@ -561,6 +562,7 @@ where
         self.allocate_buffer(scrypto_encode(&fee_balance).expect("Failed to encode fee_balance"))
     }
 
+    #[trace_resources(log=message.len())]
     fn crypto_utils_bls12381_v1_verify(
         &mut self,
         message: Vec<u8>,
@@ -580,6 +582,7 @@ where
         Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
     }
 
+    #[trace_resources(log={pub_keys_and_msgs.iter().flat_map(|(_, msg)| msg).count()/pub_keys_and_msgs.len()},log=pub_keys_and_msgs.len())]
     fn crypto_utils_bls12381_v1_aggregate_verify(
         &mut self,
         pub_keys_and_msgs: Vec<u8>,
@@ -605,6 +608,7 @@ where
         Ok(aggregate_verify_bls12381_v1(&pub_keys_and_msgs, &signature) as u32)
     }
 
+    #[trace_resources(log=message.len(), log=public_keys.len())]
     fn crypto_utils_bls12381_v1_fast_aggregate_verify(
         &mut self,
         message: Vec<u8>,
@@ -629,6 +633,7 @@ where
         Ok(fast_aggregate_verify_bls12381_v1(&message, &public_keys, &signature) as u32)
     }
 
+    #[trace_resources(log=signatures.len())]
     fn crypto_utils_bls12381_g2_signature_aggregate(
         &mut self,
         signatures: Vec<u8>,
@@ -652,6 +657,7 @@ where
         )
     }
 
+    #[trace_resources(log=data.len())]
     fn crypto_utils_keccak256_hash(
         &mut self,
         data: Vec<u8>,
