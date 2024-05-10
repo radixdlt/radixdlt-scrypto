@@ -44,15 +44,20 @@ pub mod package_loader {
     pub struct PackageLoader;
     impl PackageLoader {
         pub fn get(name: &str) -> (Vec<u8>, PackageDefinition) {
-            let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
-            let package_dir = manifest_dir.join("assets").join("blueprints").join(name);
-            scrypto_test::prelude::Compile::compile(package_dir, CompileProfile::FastWithTraceLogs)
+            Self::get_internal(name, CompileProfile::FastWithTraceLogs)
         }
 
         pub fn get_using_default_compiler_options(name: &str) -> (Vec<u8>, PackageDefinition) {
+            Self::get_internal(name, CompileProfile::Default)
+        }
+
+        fn get_internal(
+            name: &str,
+            compile_profile: CompileProfile,
+        ) -> (Vec<u8>, PackageDefinition) {
             let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
             let package_dir = manifest_dir.join("assets").join("blueprints").join(name);
-            scrypto_test::prelude::Compile::compile(package_dir, CompileProfile::Default)
+            scrypto_test::prelude::Compile::compile(package_dir, compile_profile)
         }
     }
 }
