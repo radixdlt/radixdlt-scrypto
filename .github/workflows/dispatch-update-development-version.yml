@@ -1,0 +1,32 @@
+name: Dispatch release
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        type: string
+        description: development-tag
+
+permissions: write-all
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    steps:
+    - uses: RDXWorks-actions/checkout@main
+    - name: Update Version
+      run: |
+        echo "${{ inputs.release-tag }}" > VERSION
+        git config --global user.name 'Radix Bot'
+        git config --global user.email 'radixbot@rdx.works'
+        git add .
+        git commit -m "Update version to ${{ inputs.release-tag }}"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+
+
+
+
+          

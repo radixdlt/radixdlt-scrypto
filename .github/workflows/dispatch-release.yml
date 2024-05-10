@@ -1,0 +1,39 @@
+name: Dispatch release
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        type: string
+        description: release-tag
+
+permissions: write-all
+
+jobs:
+  dispatch-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: RDXWorks-actions/checkout@main
+    - name: create pull request
+      run: gh pr create -B ${BASE_BRANCH} -H ${CURRENT_BRANCH} --title 'Merge release into main' --body 'Created by Github action'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BASE_BRANCH: main
+        CURRENT_BRANCH: ${{ github.ref_name }}
+      continue-on-error: true
+    - name: Update Version
+      run: |
+        ./update-cargo-toml-versions.sh ${{ inputs.release-tag }}
+        git config --global user.name 'Radix Bot'
+        git config --global user.email 'radixbot@rdx.works'
+        git add .
+        git commit -m "Update version to ${{ inputs.release-tag }}"
+        git push
+        gh release create ${{ inputs.release-tag }} --notes "Release from dispatch" --prerelease
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+
+
+
+
+          
