@@ -43,7 +43,8 @@
 
 # Native Systems
 
-- [Transaction Manifest]()
+- [Transaction Processor](native/transaction_processor/README.md)
+  - [Transaction Processor Blueprint](native/transaction_processor/blueprint.md)
 - [Resources](native/resources/README.md)
 - [Access Control](native/access_control/README.md)
   - [Access Control Blueprint Module](native/access_control/blueprint_module.md)
@@ -58,6 +59,6 @@
   - [Metadata Object Module](native/metadata/object_module.md)
 
 # Protocol
-- [Genesis Bootstrap]()
-- [Protocol Updates]()
+- [Genesis Bootstrap](protocol/genesis_bootstrap.md)
+- [Protocol Updates](protocol/protocol_updates.md)
  
