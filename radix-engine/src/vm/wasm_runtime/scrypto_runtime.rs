@@ -582,7 +582,7 @@ where
         Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
     }
 
-    #[trace_resources(log={pub_keys_and_msgs.iter().flat_map(|(_, msg)| msg).count()/pub_keys_and_msgs.len()},log=pub_keys_and_msgs.len())]
+    #[trace_resources(log=pub_keys_and_msgs.len())]
     fn crypto_utils_bls12381_v1_aggregate_verify(
         &mut self,
         pub_keys_and_msgs: Vec<u8>,
