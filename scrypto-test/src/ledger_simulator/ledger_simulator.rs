@@ -1238,7 +1238,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     }
 
     pub fn compile<P: AsRef<Path>>(&mut self, package_dir: P) -> (Vec<u8>, PackageDefinition) {
-        Compile::compile(package_dir)
+        Compile::compile(package_dir, CompileProfile::FastWithTraceLogs)
     }
 
     // Doesn't need to be here - kept for backward compatibility
@@ -2614,7 +2614,9 @@ impl From<(Vec<u8>, PackageDefinition)> for PackagePublishingSource {
 impl PackagePublishingSource {
     pub fn code_and_definition(self) -> (Vec<u8>, PackageDefinition) {
         match self {
-            Self::CompileAndPublishFromSource(path) => Compile::compile(path),
+            Self::CompileAndPublishFromSource(path) => {
+                Compile::compile(path, CompileProfile::FastWithTraceLogs)
+            }
             Self::PublishExisting(code, definition) => (code, definition),
         }
     }

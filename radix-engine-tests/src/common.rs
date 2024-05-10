@@ -38,6 +38,7 @@ pub mod package_loader {
 pub mod package_loader {
     use radix_common::prelude::*;
     use radix_substate_store_queries::typed_substate_layout::*;
+    use scrypto_test::ledger_simulator::CompileProfile;
     use std::path::PathBuf;
 
     pub struct PackageLoader;
@@ -45,7 +46,13 @@ pub mod package_loader {
         pub fn get(name: &str) -> (Vec<u8>, PackageDefinition) {
             let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
             let package_dir = manifest_dir.join("assets").join("blueprints").join(name);
-            scrypto_test::prelude::Compile::compile(package_dir)
+            scrypto_test::prelude::Compile::compile(package_dir, CompileProfile::FastWithTraceLogs)
+        }
+
+        pub fn get_using_default_compiler_options(name: &str) -> (Vec<u8>, PackageDefinition) {
+            let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
+            let package_dir = manifest_dir.join("assets").join("blueprints").join(name);
+            scrypto_test::prelude::Compile::compile(package_dir, CompileProfile::Default)
         }
     }
 }
