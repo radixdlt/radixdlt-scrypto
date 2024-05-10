@@ -35,7 +35,7 @@ impl Compile {
         package_dir: P,
         env_vars: sbor::rust::collections::BTreeMap<String, String>,
         compile_profile: CompileProfile,
-        use_coverage: bool,
+        _use_coverage: bool,
     ) -> (Vec<u8>, PackageDefinition) {
         // Initialize compiler
         let mut compiler_builder = ScryptoCompiler::builder();
@@ -57,7 +57,7 @@ impl Compile {
         });
 
         #[cfg(feature = "coverage")]
-        if use_coverage {
+        if _use_coverage {
             compiler_builder.coverage();
         }
 
@@ -67,7 +67,7 @@ impl Compile {
 
         #[cfg(feature = "coverage")]
         // Check if binary exists in coverage directory, if it doesn't only then build it
-        if use_coverage {
+        if _use_coverage {
             let mut coverage_path = compiler.target_binary_path();
             if coverage_path.is_file() {
                 let code = fs::read(&coverage_path).unwrap_or_else(|err| {
@@ -118,5 +118,87 @@ impl Compile {
         } else {
             panic!("Build artifacts list is empty: {:?}", package_dir.as_ref(),);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Compile, CompileProfile};
+    use std::process::Command;
+
+    fn compile_blueprint() -> Vec<u8> {
+        // Build `scrypto` cli
+        Command::new("cargo")
+            .arg("build")
+            .arg("--release")
+            .arg("--bin")
+            .arg("scrypto")
+            .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../radix-clis"))
+            .output()
+            .inspect_err(|e| println!("Scrypto cli build failed: {}", e))
+            .unwrap();
+
+        // Run `scrypto build` for example blueprit
+        Command::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../radix-clis/target/release/scrypto"
+        ))
+        .arg("build")
+        .current_dir(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/blueprints/tuple-return"
+        ))
+        .output()
+        .inspect_err(|e| println!("Blueprint compilation falied: {}", e))
+        .unwrap();
+
+        let output_file = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/blueprints/target/wasm32-unknown-unknown/release/tuple_return.wasm"
+        );
+        std::fs::read(output_file)
+            .inspect_err(|e| println!("Failed to load file: {}, error: {}", output_file, e))
+            .unwrap()
+    }
+
+    #[test]
+    fn validate_compile_profile_default() {
+        // Compile blueprint using `scrypto compile` command
+        let output_file_content = compile_blueprint();
+
+        // Compile same blueprint using Compile object
+        let (bin, _) = Compile::compile(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
+            CompileProfile::Default,
+        );
+
+        // Assert
+        assert_eq!(
+            output_file_content.len(),
+            bin.len(),
+            "Wasm files should have same size."
+        );
+        assert_eq!(
+            output_file_content, bin,
+            "Wasm files should have same content."
+        )
+    }
+
+    #[test]
+    fn validate_compile_profile_fast_with_log() {
+        // Compile blueprint using `scrypto compile` command
+        let output_file_content = compile_blueprint();
+
+        // Compile same blueprint using Compile object
+        let (bin, _) = Compile::compile(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
+            CompileProfile::FastWithTraceLogs,
+        );
+
+        // Assert
+        assert!(
+            output_file_content.len() < bin.len(),
+            "Size of Wasm file compiled by `scrypto build` command should be smaller."
+        );
     }
 }
