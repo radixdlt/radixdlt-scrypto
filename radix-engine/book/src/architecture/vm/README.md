@@ -7,8 +7,6 @@ Radix Engine currently supports two VM environments:
 * A Scrypto WASM VM which exposes the system layer interface through WASM extern functions
 * A Native VM which directly compiles applications with Radix Engine in the host's environment.
 
-![](vm_layer.drawio.svg)
-
 ## Implementation
 
 The VM Layer is implemented by defining the System Callback Object, which requires two callback

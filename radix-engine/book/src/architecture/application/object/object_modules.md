@@ -6,7 +6,9 @@ an *Object Module*.
 An Object Module itself has a Blueprint type along with associated logic to manipulate
 the state of the object module.
 
+![](object_modules.drawio.svg)
+
 Currently, there exists three object modules:
-* [RoleAssignment](../../../native/access_control/role_assignment.md) (Required)
+* [RoleAssignment](../../../native/auth/role_assignment.md) (Required)
 * [Metadata](../../../native/metadata/object_module.md) (Required)
 * [Component Royalties](../../../native/royalties/component_royalties.md) (Optional)

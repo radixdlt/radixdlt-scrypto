@@ -1,7 +1,7 @@
-# Access Control
+# Auth
 
 Unlike the majority of blockchains which rely on a caller identifier for access control,
-the Access Control system uses a more distributed "Proof" system. Before accessing a protected
+the Auth system uses a more distributed "Proof" system. Before accessing a protected
 method a caller must provide specific "Proofs" of resources they have access to. These proofs
 must then match the required proofs defined by protected method or function of the callee.
 

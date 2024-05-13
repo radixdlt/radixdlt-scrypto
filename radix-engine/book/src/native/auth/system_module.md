@@ -1,6 +1,6 @@
-# Access Control System Module
+# Auth System Module
 
-The Access Control System Module operates on every invocation:
+The Auth System Module operates on every invocation:
 1. Creates a new AuthZone
 2. Resolve the Permission required to access the method/function invocation
 3. Verifies that the Global Caller AuthZone has sufficient proofs to pass the AccessRule

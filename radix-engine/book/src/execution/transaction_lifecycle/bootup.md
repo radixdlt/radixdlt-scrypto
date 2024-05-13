@@ -1,6 +1,6 @@
 # Transaction Bootup
 
-The initialization of a transaction execution consists of two steps:
+The bootup and initialization of a transaction consists of two steps:
 1. Initialize Stack
 2. Invoke Transaction Processor
 

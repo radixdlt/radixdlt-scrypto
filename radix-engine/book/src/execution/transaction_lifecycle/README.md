@@ -1,7 +1,7 @@
 # Transaction Lifecycle
 
 Radix Engine is a transactional state machine which accepts a transaction and a given state and
-outputs a state change.
+outputs a state change and additional output.
 
 ```
 radix_engine(State, Transaction) -> (StateChange, Output)
