@@ -30,6 +30,10 @@ pub mod package_loader {
                 panic!("Package \"{}\" not found. Are you sure that this package is: a) in the blueprints folder, b) that this is the same as the package name in the Cargo.toml file?", name)
             }
         }
+
+        pub fn get_using_standard_compiler_profile(name: &str) -> (Vec<u8>, PackageDefinition) {
+            panic!("Package \"{}\" already compiled. Cannot use specific compiler profile in compile-blueprints-at-build-time mode.", name)
+        }
     }
 }
 
@@ -47,8 +51,8 @@ pub mod package_loader {
             Self::get_internal(name, CompileProfile::FastWithTraceLogs)
         }
 
-        pub fn get_using_default_compiler_options(name: &str) -> (Vec<u8>, PackageDefinition) {
-            Self::get_internal(name, CompileProfile::Default)
+        pub fn get_using_standard_compiler_profile(name: &str) -> (Vec<u8>, PackageDefinition) {
+            Self::get_internal(name, CompileProfile::Standard)
         }
 
         fn get_internal(

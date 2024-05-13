@@ -5,7 +5,9 @@ use std::path::Path;
 pub enum CompileProfile {
     /// Uses default compilation options - same as `scrypto build`. Should be used in all cases which requires
     /// compilation results to be as close to production as possible (for instance costing related tests).
-    Default,
+    Standard,
+    /// Same as Standard with enabled all logs from error to trace level.
+    StandardWithTraceLogs,
     /// Disables WASM optimization to speed-up compilation process, by default used by SDK PackageFactory.
     Fast,
     /// Disables WASM optimization and enables all logs from error to trace level, by default used by Ledger Simulator.
@@ -42,7 +44,10 @@ impl Compile {
         compiler_builder.manifest_path(package_dir.as_ref());
 
         match compile_profile {
-            CompileProfile::Default => (),
+            CompileProfile::Standard => (),
+            CompileProfile::StandardWithTraceLogs => {
+                compiler_builder.log_level(Level::Trace); // all logs from error to trace
+            }
             CompileProfile::Fast => {
                 compiler_builder.optimize_with_wasm_opt(None);
             }
@@ -163,14 +168,14 @@ mod tests {
     }
 
     #[test]
-    fn validate_compile_profile_default() {
+    fn validate_compile_profile_standard() {
         // Compile blueprint using `scrypto compile` command
         let output_file_content = compile_blueprint(&[]);
 
         // Compile same blueprint using Compile object
         let (bin, _) = Compile::compile(
             concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
-            CompileProfile::Default,
+            CompileProfile::Standard,
         );
 
         // Assert
@@ -183,6 +188,24 @@ mod tests {
             output_file_content, bin,
             "Wasm files should have same content."
         )
+    }
+
+    #[test]
+    fn validate_compile_profile_standard_with_logs() {
+        // Compile blueprint using `scrypto compile` command
+        let output_file_content = compile_blueprint(&[]);
+
+        // Compile same blueprint using Compile object
+        let (bin, _) = Compile::compile(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
+            CompileProfile::StandardWithTraceLogs,
+        );
+
+        // Assert
+        assert!(
+            output_file_content.len() < bin.len(),
+            "Size of Wasm file compiled by `scrypto build` command should be smaller."
+        );
     }
 
     #[test]
@@ -204,7 +227,7 @@ mod tests {
     }
 
     #[test]
-    fn validate_compile_profile_fast_with_log() {
+    fn validate_compile_profile_fast_with_logs() {
         // Compile blueprint using `scrypto compile` command
         let output_file_content = compile_blueprint(&[]);
 
@@ -219,6 +242,29 @@ mod tests {
             output_file_content.len() < bin.len(),
             "Size of Wasm file compiled by `scrypto build` command should be smaller."
         );
+    }
+
+    #[test]
+    fn verify_scrypto_build_with_args_for_compile_profile_standard_with_logs() {
+        // Compile blueprint using `scrypto compile` command
+        let output_file_content = compile_blueprint(&["--log-level", "TRACE"]);
+
+        // Compile same blueprint using Compile object
+        let (bin, _) = Compile::compile(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
+            CompileProfile::StandardWithTraceLogs,
+        );
+
+        // Assert
+        assert_eq!(
+            output_file_content.len(),
+            bin.len(),
+            "Wasm files should have same size."
+        );
+        assert_eq!(
+            output_file_content, bin,
+            "Wasm files should have same content."
+        )
     }
 
     #[test]
@@ -245,7 +291,7 @@ mod tests {
     }
 
     #[test]
-    fn verify_scrypto_build_with_args_for_compile_profile_fast_with_log() {
+    fn verify_scrypto_build_with_args_for_compile_profile_fast_with_logs() {
         // Compile blueprint using `scrypto compile` command
         let output_file_content =
             compile_blueprint(&["--disable-wasm-opt", "--log-level", "TRACE"]);
