@@ -60,8 +60,8 @@ use crate::transaction::{
 };
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
+use radix_engine_interface::api::SystemObjectApi;
+use radix_engine_interface::api::{CollectionIndex, SystemBlueprintApi};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::hooks::OnDropInput;
 use radix_engine_interface::blueprints::hooks::OnDropOutput;

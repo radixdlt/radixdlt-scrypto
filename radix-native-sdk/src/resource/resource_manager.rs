@@ -6,7 +6,7 @@ use radix_common::data::scrypto::{
 use radix_common::math::Decimal;
 use radix_common::traits::NonFungibleData;
 use radix_common::ScryptoSbor;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::api::{SystemBlueprintApi, SystemObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
@@ -28,7 +28,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientBlueprintApi<E>,
+        Y: SystemBlueprintApi<E>,
     {
         let metadata = ModuleConfig {
             init: metadata.into(),
@@ -65,7 +65,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
-        Y: ClientBlueprintApi<E>,
+        Y: SystemBlueprintApi<E>,
     {
         let metadata = ModuleConfig {
             init: metadata.into(),
@@ -107,7 +107,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientBlueprintApi<E>,
+        Y: SystemBlueprintApi<E>,
     {
         let metadata = ModuleConfig {
             init: metadata.into(),
@@ -142,7 +142,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
 
@@ -163,7 +163,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<NonFungibleResourceManagerMintOutput, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -192,7 +192,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -209,7 +209,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<T, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -223,7 +223,7 @@ impl ResourceManager {
 
     pub fn resource_type<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<ResourceType, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -240,7 +240,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -256,7 +256,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -271,7 +271,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Option<Decimal>, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -283,7 +283,7 @@ impl ResourceManager {
 
     pub fn new_empty_bucket<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Bucket, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -295,7 +295,7 @@ impl ResourceManager {
 
     pub fn new_empty_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

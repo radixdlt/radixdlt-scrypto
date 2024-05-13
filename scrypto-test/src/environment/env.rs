@@ -7,7 +7,7 @@ use crate::prelude::*;
 ///
 /// This struct may be thought of as the main struct in this testing framework which encapsulates a
 /// a self-contained instance of the Radix Engine ([`EncapsulatedRadixEngine`]). The functionality
-/// of the Radix Engine is exposed through the [`ClientApi`] which makes this testing environment no
+/// of the Radix Engine is exposed through the [`SystemApi`] which makes this testing environment no
 /// less capable than Scrypto code.
 ///
 /// ## Introduction
@@ -180,7 +180,7 @@ where
 
     /// Invokes a function on the provided blueprint and package with the given arguments.
     ///
-    /// This method is a typed version of the [`ClientBlueprintApi::call_function`] which Scrypto
+    /// This method is a typed version of the [`SystemBlueprintApi::call_function`] which Scrypto
     /// encodes the arguments and Scrypto decodes the returns on behalf of the caller. This method
     /// assumes that the caller is correct about the argument and return types and panics if the
     /// encoding or decoding fails.
@@ -227,7 +227,7 @@ where
 
     /// Invokes a method on the main module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.
@@ -273,7 +273,7 @@ where
 
     /// Invokes a method on the main module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.
@@ -319,7 +319,7 @@ where
 
     /// Invokes a method on a module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.

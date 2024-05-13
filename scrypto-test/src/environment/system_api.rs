@@ -1,14 +1,14 @@
-//! This module has the implementation of the [`ClientApi`] for the [`TestEnvironment`] in order not
+//! This module has the implementation of the [`SystemApi`] for the [`TestEnvironment`] in order not
 //! to clutter up the other modules.
 //!
-//! [`ClientApi`]: crate::prelude::ClientApi
+//! [`SystemApi`]: crate::prelude::SystemApi
 //! [`TestEnvironment`]: crate::prelude::TestEnvironment
 
 use crate::prelude::*;
 
-/// Implements the [`ClientApi`] for the [`TestEnvironment`] struct.
+/// Implements the [`SystemApi`] for the [`TestEnvironment`] struct.
 ///
-/// This macro exposes a high-level API for specifying the [`ClientApi`] traits to implement for the
+/// This macro exposes a high-level API for specifying the [`SystemApi`] traits to implement for the
 /// [`TestEnvironment`]. The trait methods are implements through a simple mechanism which creates a
 /// [`SystemService`] object from the kernel and calls the trait method on the [`SystemService`]
 /// object.
@@ -24,13 +24,13 @@ use crate::prelude::*;
 /// }
 /// ```
 ///
-/// This macro is only used internally in this crate for easy implementation of the [`ClientApi`]
+/// This macro is only used internally in this crate for easy implementation of the [`SystemApi`]
 /// and is not meant to be used outside or exported.
 ///
-/// [`ClientApi`]: crate::prelude::ClientApi
+/// [`SystemApi`]: crate::prelude::SystemApi
 /// [`TestEnvironment`]: crate::prelude::TestEnvironment
 /// [`SystemService`]: crate::prelude::SystemService
-macro_rules! implement_client_api {
+macro_rules! implement_system_api {
     (
         $(
             $trait: ident: {
@@ -100,9 +100,9 @@ macro_rules! implement_client_api {
         )*
     };
 }
-implement_client_api! {
-    ClientApi: {},
-    ClientActorApi: {
+implement_system_api! {
+    SystemApi: {},
+    SystemActorApi: {
         actor_get_blueprint_id: (&mut self) -> Result<BlueprintId, RuntimeError>,
         actor_open_field: (
             &mut self,
@@ -123,7 +123,7 @@ implement_client_api! {
             event_flags: EventFlags,
         ) -> Result<(), RuntimeError>
     },
-    ClientActorIndexApi: {
+    SystemActorIndexApi: {
         actor_index_insert: (
             &mut self,
             object_handle: ActorStateHandle,
@@ -150,7 +150,7 @@ implement_client_api! {
             limit: u32,
         ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError>,
     },
-    ClientActorKeyValueEntryApi: {
+    SystemActorKeyValueEntryApi: {
         actor_open_key_value_entry: (
             &mut self,
             object_handle: ActorStateHandle,
@@ -165,7 +165,7 @@ implement_client_api! {
             key: &Vec<u8>,
         ) -> Result<Vec<u8>, RuntimeError>,
     },
-    ClientActorSortedIndexApi: {
+    SystemActorSortedIndexApi: {
         actor_sorted_index_insert: (
             &mut self,
             object_handle: ActorStateHandle,
@@ -186,7 +186,7 @@ implement_client_api! {
             count: u32,
         ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError>,
     },
-    ClientBlueprintApi: {
+    SystemBlueprintApi: {
         call_function: (
             &mut self,
             package_address: PackageAddress,
@@ -199,13 +199,13 @@ implement_client_api! {
             blueprint_type_id: &BlueprintTypeIdentifier,
         ) -> Result<(Rc<VersionedScryptoSchema>, ScopedTypeId), RuntimeError>
     },
-    ClientFieldApi: {
+    SystemFieldApi: {
         field_read: (&mut self, handle: field_api::FieldHandle) -> Result<Vec<u8>, RuntimeError>,
         field_write: (&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError>,
         field_lock: (&mut self, handle: FieldHandle) -> Result<(), RuntimeError>,
         field_close: (&mut self, handle: FieldHandle) -> Result<(), RuntimeError>
     },
-    ClientKeyValueEntryApi: {
+    SystemKeyValueEntryApi: {
         key_value_entry_get: (&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, RuntimeError>,
         key_value_entry_set: (
             &mut self,
@@ -216,7 +216,7 @@ implement_client_api! {
         key_value_entry_lock: (&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError>,
         key_value_entry_close: (&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError>,
     },
-    ClientKeyValueStoreApi: {
+    SystemKeyValueStoreApi: {
         key_value_store_new: (&mut self, data_schema: KeyValueStoreDataSchema) -> Result<NodeId, RuntimeError>,
         key_value_store_open_entry: (
             &mut self,
@@ -230,7 +230,7 @@ implement_client_api! {
             key: &Vec<u8>,
         ) -> Result<Vec<u8>, RuntimeError>,
     },
-    ClientObjectApi: {
+    SystemObjectApi: {
         new_object: (
             &mut self,
             blueprint_ident: &str,
@@ -288,17 +288,17 @@ implement_client_api! {
             args: Vec<u8>,
         ) -> Result<Vec<u8>, RuntimeError>,
     },
-    ClientExecutionTraceApi: {
+    SystemExecutionTraceApi: {
         update_instruction_index: (&mut self, new_index: usize) -> Result<(), RuntimeError>,
     },
-    ClientTransactionRuntimeApi: {
+    SystemTransactionRuntimeApi: {
         bech32_encode_address: (&mut self, address: GlobalAddress) -> Result<String, RuntimeError>,
         get_transaction_hash: (&mut self) -> Result<Hash, RuntimeError>,
         generate_ruid: (&mut self) -> Result<[u8; 32], RuntimeError>,
         emit_log: (&mut self, level: Level, message: String) -> Result<(), RuntimeError>,
         panic: (&mut self, message: String) -> Result<(), RuntimeError>,
     },
-    ClientCostingApi: {
+    SystemCostingApi: {
         start_lock_fee: (&mut self, amount: Decimal) -> Result<bool, RuntimeError>,
         lock_fee: (
             &mut self,
@@ -314,32 +314,5 @@ implement_client_api! {
         max_per_function_royalty_in_xrd: (&mut self) -> Result<Decimal, RuntimeError>,
         tip_percentage: (&mut self) -> Result<u32, RuntimeError>,
         fee_balance: (&mut self) -> Result<Decimal, RuntimeError>,
-    },
-    ClientCryptoUtilsApi: {
-        bls12381_v1_verify: (
-            &mut self,
-            message: &[u8],
-            public_key: &Bls12381G1PublicKey,
-            signature: &Bls12381G2Signature
-        ) -> Result<u32, RuntimeError>,
-        bls12381_v1_aggregate_verify: (
-            &mut self,
-            pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
-            signature: &Bls12381G2Signature
-        ) -> Result<u32, RuntimeError>,
-        bls12381_v1_fast_aggregate_verify: (
-            &mut self,
-            message: &[u8],
-            public_keys: &[Bls12381G1PublicKey],
-            signature: &Bls12381G2Signature
-        ) -> Result<u32, RuntimeError>,
-        bls12381_g2_signature_aggregate: (
-            &mut self,
-            signatures: &[Bls12381G2Signature]
-        ) -> Result<Bls12381G2Signature, RuntimeError>,
-        keccak256_hash: (
-            &mut self,
-            data: &[u8]
-        ) -> Result<Hash, RuntimeError>,
-    },
+    }
 }

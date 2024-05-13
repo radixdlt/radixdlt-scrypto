@@ -4,7 +4,7 @@ use radix_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_common::math::Decimal;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
@@ -17,7 +17,7 @@ pub struct Worktop(pub Own);
 impl Worktop {
     pub fn drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let _rtn = api.call_function(
             RESOURCE_PACKAGE,
@@ -38,7 +38,7 @@ impl Worktop {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let _rtn = api.call_method(
             self.0.as_node_id(),
@@ -56,7 +56,7 @@ impl Worktop {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -78,7 +78,7 @@ impl Worktop {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -99,7 +99,7 @@ impl Worktop {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -115,7 +115,7 @@ impl Worktop {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let _rtn = api.call_method(
             self.0.as_node_id(),
@@ -132,7 +132,7 @@ impl Worktop {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let _rtn = api.call_method(
             self.0.as_node_id(),
@@ -153,7 +153,7 @@ impl Worktop {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let _rtn = api.call_method(
             self.0.as_node_id(),
@@ -172,7 +172,7 @@ impl Worktop {
         api: &mut Y,
     ) -> Result<Vec<Bucket>, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

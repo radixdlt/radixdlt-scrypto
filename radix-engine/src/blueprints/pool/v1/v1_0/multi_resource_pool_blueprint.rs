@@ -24,7 +24,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi,
+        Y: SystemApi<RuntimeError> + KernelNodeApi,
     {
         // A pool can't be created where one of the resources is non-fungible - error out if any of
         // them are
@@ -204,7 +204,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolContributeOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (mut substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
@@ -420,7 +420,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolRedeemOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
@@ -493,7 +493,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let resource_address = bucket.resource_address(api)?;
@@ -519,7 +519,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let vault = substate.vaults.get_mut(&resource_address);
@@ -548,7 +548,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
@@ -598,7 +598,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolGetVaultAmountsOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (multi_resource_pool_substate, handle) =
             Self::lock_and_read(api, LockFlags::read_only())?;
@@ -623,7 +623,7 @@ impl MultiResourcePoolBlueprint {
         lock_flags: LockFlags,
     ) -> Result<(Substate, SubstateHandle), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let substate_key = MultiResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;

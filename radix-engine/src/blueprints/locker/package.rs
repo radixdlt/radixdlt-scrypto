@@ -21,7 +21,7 @@ impl LockerNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Delegated to the blueprint's dispatcher since it's the only blueprint in the package. If
         // we add more then we need to control the dispatch here.

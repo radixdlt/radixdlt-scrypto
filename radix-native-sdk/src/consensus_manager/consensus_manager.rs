@@ -1,7 +1,7 @@
 use radix_common::crypto::Secp256k1PublicKey;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_common::math::Decimal;
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::SystemObjectApi;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerCreateValidatorInput, ConsensusManagerStartInput,
     CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT, CONSENSUS_MANAGER_START_IDENT,
@@ -22,7 +22,7 @@ impl ConsensusManager {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket, Bucket), E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -40,7 +40,7 @@ impl ConsensusManager {
 
     pub fn start<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         api.call_method(
             self.0.as_node_id(),

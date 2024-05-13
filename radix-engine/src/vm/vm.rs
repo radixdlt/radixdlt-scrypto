@@ -9,7 +9,7 @@ use crate::track::BootStore;
 use crate::vm::wasm::{ScryptoV1WasmValidator, WasmEngine};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 
 use crate::vm::ScryptoVmVersion;
 
@@ -105,7 +105,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>
+        Y: SystemApi<RuntimeError>
             + KernelInternalApi<System<Self>>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
@@ -233,7 +233,7 @@ pub trait VmInvoke {
         vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi;
 }
 

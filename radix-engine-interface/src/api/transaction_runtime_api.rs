@@ -3,7 +3,7 @@ use crate::types::Level;
 use radix_common::crypto::Hash;
 use radix_common::types::GlobalAddress;
 
-pub trait ClientTransactionRuntimeApi<E> {
+pub trait SystemTransactionRuntimeApi<E> {
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, E>;
 
     fn get_transaction_hash(&mut self) -> Result<Hash, E>;

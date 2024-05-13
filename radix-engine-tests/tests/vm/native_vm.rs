@@ -244,7 +244,7 @@ impl VmInvoke for NonStringPanicExtensionInstance {
         _: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,
     {
         // A panic with a non-string type. Making sure that our panic infrastructure can catch those

@@ -4,8 +4,8 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
-use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::resource::ResourceManager;
 
@@ -48,7 +48,7 @@ impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
 }
 
 /// Compose a proof by amount, given a list of proofs of any address.
-pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
+pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     amount: Option<Decimal>,
@@ -94,7 +94,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
 }
 
 /// Compose a proof by ids, given a list of proofs of any address.
-pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
+pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     ids: Option<IndexSet<NonFungibleLocalId>>,
@@ -129,7 +129,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<Run
 // Helper functions
 //====================
 
-fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
+fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     api: &mut Y,
@@ -176,7 +176,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     Ok((total, per_container))
 }
 
-fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
+fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     api: &mut Y,
@@ -219,7 +219,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     Ok((total, per_container))
 }
 
-fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
+fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     amount: Option<Decimal>,
@@ -292,7 +292,7 @@ enum NonFungiblesSpecification {
     Exact(IndexSet<NonFungibleLocalId>),
 }
 
-fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>>(
+fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>>(
     proofs: &[Proof],
     resource_address: ResourceAddress,
     ids: NonFungiblesSpecification,

@@ -4,7 +4,6 @@ pub mod actor_key_value_entry_api;
 pub mod actor_sorted_index_api;
 pub mod blueprint_api;
 pub mod costing_api;
-pub mod crypto_utils_api;
 pub mod execution_trace_api;
 pub mod field_api;
 pub mod key_value_entry_api;
@@ -19,7 +18,6 @@ pub use actor_key_value_entry_api::*;
 pub use actor_sorted_index_api::*;
 pub use blueprint_api::*;
 pub use costing_api::*;
-pub use crypto_utils_api::*;
 pub use execution_trace_api::*;
 pub use field_api::*;
 pub use key_value_entry_api::*;
@@ -45,19 +43,18 @@ pub type CollectionIndex = u8;
 /// Interface of the system, for blueprints and Node modules.
 ///
 /// For WASM blueprints, only a subset of the API is exposed at the moment.
-pub trait ClientApi<E: sbor::rust::fmt::Debug>:
-    ClientActorApi<E>
-    + ClientActorKeyValueEntryApi<E>
-    + ClientObjectApi<E>
-    + ClientKeyValueStoreApi<E>
-    + ClientKeyValueEntryApi<E>
-    + ClientActorSortedIndexApi<E>
-    + ClientActorIndexApi<E>
-    + ClientFieldApi<E>
-    + ClientBlueprintApi<E>
-    + ClientCostingApi<E>
-    + ClientTransactionRuntimeApi<E>
-    + ClientExecutionTraceApi<E>
-    + ClientCryptoUtilsApi<E>
+pub trait SystemApi<E: sbor::rust::fmt::Debug>:
+    SystemActorApi<E>
+    + SystemActorKeyValueEntryApi<E>
+    + SystemObjectApi<E>
+    + SystemKeyValueStoreApi<E>
+    + SystemKeyValueEntryApi<E>
+    + SystemActorSortedIndexApi<E>
+    + SystemActorIndexApi<E>
+    + SystemFieldApi<E>
+    + SystemBlueprintApi<E>
+    + SystemCostingApi<E>
+    + SystemTransactionRuntimeApi<E>
+    + SystemExecutionTraceApi<E>
 {
 }

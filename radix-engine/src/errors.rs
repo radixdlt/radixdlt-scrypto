@@ -94,7 +94,7 @@ pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
 
-    /// An error occurred within the system, notably the ClientApi implementation.
+    /// An error occurred within the system, notably the SystemAPI implementation.
     SystemError(SystemError),
 
     /// An error occurred within a specific system module, like auth, costing and royalty.

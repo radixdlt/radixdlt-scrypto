@@ -1,5 +1,5 @@
 use radix_common::data::scrypto::{scrypto_encode, ScryptoDecode};
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::SystemObjectApi;
 use radix_engine_interface::blueprints::account::{AccountDepositInput, ACCOUNT_DEPOSIT_IDENT};
 use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::types::ComponentAddress;
@@ -11,7 +11,7 @@ pub struct Account(pub ComponentAddress);
 impl Account {
     pub fn deposit<Y, E: Debug + ScryptoDecode>(&self, bucket: Bucket, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         api.call_method(
             self.0.as_node_id(),

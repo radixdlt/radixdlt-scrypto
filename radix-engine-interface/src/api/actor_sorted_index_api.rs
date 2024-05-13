@@ -8,7 +8,7 @@ use sbor::rust::vec::Vec;
 pub trait SortedIndexKeyPayloadMarker {}
 pub trait SortedIndexEntryPayloadMarker {}
 
-pub trait ClientActorSortedIndexApi<E> {
+pub trait SystemActorSortedIndexApi<E> {
     /// Inserts an entry into a sorted index
     fn actor_sorted_index_insert(
         &mut self,

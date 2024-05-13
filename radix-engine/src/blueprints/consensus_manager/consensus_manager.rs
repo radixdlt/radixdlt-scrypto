@@ -3,12 +3,11 @@ use crate::blueprints::consensus_manager::VALIDATOR_ROLE;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelNodeApi;
 use radix_common::constants::AuthAddresses;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{
-    AttachedModuleId, ClientApi, CollectionIndex, FieldValue, ACTOR_STATE_SELF,
+    AttachedModuleId, CollectionIndex, FieldValue, SystemApi, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
@@ -515,7 +514,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if initial_config.max_validators > ValidatorIndex::MAX as u32 {
             return Err(RuntimeError::ApplicationError(
@@ -634,7 +633,7 @@ impl ConsensusManagerBlueprint {
 
     pub(crate) fn get_current_epoch<Y>(api: &mut Y) -> Result<Epoch, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -651,7 +650,7 @@ impl ConsensusManagerBlueprint {
 
     pub(crate) fn start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let config_substate = {
             let config_handle = api.actor_open_field(
@@ -709,7 +708,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<Instant, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match precision {
             TimePrecisionV1::Minute => {
@@ -737,7 +736,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<Instant, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match precision {
             TimePrecisionV2::Minute => {
@@ -782,7 +781,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match precision {
             TimePrecisionV1::Minute => {
@@ -831,7 +830,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match precision {
             TimePrecisionV2::Minute => {
@@ -913,7 +912,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::check_non_decreasing_and_update_timestamps(proposer_timestamp_milli, api)?;
 
@@ -992,7 +991,7 @@ impl ConsensusManagerBlueprint {
 
     fn get_validator_xrd_cost<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let manager_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1040,7 +1039,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !xrd_payment.resource_address(api)?.eq(&XRD) {
             return Err(RuntimeError::ApplicationError(
@@ -1065,7 +1064,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1131,7 +1130,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if proposal_history.gap_round_leaders.len() as u64 != progressed_rounds - 1 {
             return Err(RuntimeError::ApplicationError(
@@ -1178,7 +1177,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Read previous validator set
         let validator_set_handle = api.actor_open_field(
@@ -1366,7 +1365,7 @@ impl ConsensusManagerBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let mut stake_sum_xrd = Decimal::ZERO;
 

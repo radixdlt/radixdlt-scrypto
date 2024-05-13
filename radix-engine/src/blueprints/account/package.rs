@@ -2,7 +2,7 @@ use crate::blueprints::account::AccountBlueprint;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::hooks::OnVirtualizeInput;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -26,7 +26,7 @@ impl AccountNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME => {

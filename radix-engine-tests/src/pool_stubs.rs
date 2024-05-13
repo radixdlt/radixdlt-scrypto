@@ -72,7 +72,7 @@ impl OneResourcePool {
         api: &mut Y,
     ) -> Result<Self, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_function::<_, _, OneResourcePoolInstantiateOutput>(
             POOL_PACKAGE,
@@ -91,7 +91,7 @@ impl OneResourcePool {
 
     pub fn contribute<Y>(&mut self, bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method::<_, _, OneResourcePoolContributeOutput>(
             &self.0,
@@ -103,7 +103,7 @@ impl OneResourcePool {
 
     pub fn protected_deposit<Y>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method::<_, _, OneResourcePoolProtectedDepositOutput>(
             &self.0,
@@ -120,7 +120,7 @@ impl OneResourcePool {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method::<_, _, OneResourcePoolProtectedWithdrawOutput>(
             &self.0,
@@ -139,7 +139,7 @@ impl OneResourcePool {
         api: &mut Y,
     ) -> Result<OneResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -157,7 +157,7 @@ impl OneResourcePool {
         api: &mut Y,
     ) -> Result<OneResourcePoolRedeemOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -179,7 +179,7 @@ impl TwoResourcePool {
         api: &mut Y,
     ) -> Result<Self, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_function::<_, _, TwoResourcePoolInstantiateOutput>(
             POOL_PACKAGE,
@@ -202,7 +202,7 @@ impl TwoResourcePool {
         api: &mut Y,
     ) -> Result<TwoResourcePoolContributeOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -218,7 +218,7 @@ impl TwoResourcePool {
         api: &mut Y,
     ) -> Result<TwoResourcePoolProtectedDepositOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -236,7 +236,7 @@ impl TwoResourcePool {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method::<_, _, TwoResourcePoolProtectedWithdrawOutput>(
             &self.0,
@@ -256,7 +256,7 @@ impl TwoResourcePool {
         api: &mut Y,
     ) -> Result<TwoResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -274,7 +274,7 @@ impl TwoResourcePool {
         api: &mut Y,
     ) -> Result<TwoResourcePoolRedeemOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -296,7 +296,7 @@ impl<const N: usize> MultiResourcePool<N> {
         api: &mut Y,
     ) -> Result<Self, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_function::<_, _, MultiResourcePoolInstantiateOutput>(
             POOL_PACKAGE,
@@ -319,7 +319,7 @@ impl<const N: usize> MultiResourcePool<N> {
         api: &mut Y,
     ) -> Result<MultiResourcePoolContributeOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -337,7 +337,7 @@ impl<const N: usize> MultiResourcePool<N> {
         api: &mut Y,
     ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -355,7 +355,7 @@ impl<const N: usize> MultiResourcePool<N> {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method::<_, _, MultiResourcePoolProtectedWithdrawOutput>(
             &self.0,
@@ -375,7 +375,7 @@ impl<const N: usize> MultiResourcePool<N> {
         api: &mut Y,
     ) -> Result<MultiResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method(
             &self.0,
@@ -389,7 +389,7 @@ impl<const N: usize> MultiResourcePool<N> {
 
     pub fn redeem<Y>(&mut self, bucket: Bucket, api: &mut Y) -> Result<[Bucket; N], RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         typed_call_method::<_, _, MultiResourcePoolRedeemOutput>(
             &self.0,
@@ -409,7 +409,7 @@ fn typed_call_function<Y, I, O>(
     api: &mut Y,
 ) -> Result<O, RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
     I: ScryptoEncode,
     O: ScryptoDecode,
 {
@@ -429,7 +429,7 @@ fn typed_call_method<Y, I, O>(
     api: &mut Y,
 ) -> Result<O, RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
     I: ScryptoEncode,
     O: ScryptoDecode,
 {

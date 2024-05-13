@@ -15,4 +15,20 @@ pub enum ClientCostingEntry<'a> {
     PrepareWasmCode {
         size: usize,
     },
+    Bls12381V1Verify {
+        size: usize,
+    },
+    Bls12381V1AggregateVerify {
+        sizes: &'a [usize],
+    },
+    Bls12381V1FastAggregateVerify {
+        size: usize,
+        keys_cnt: usize,
+    },
+    Bls12381G2SignatureAggregate {
+        signatures_cnt: usize,
+    },
+    Keccak256Hash {
+        size: usize,
+    },
 }
