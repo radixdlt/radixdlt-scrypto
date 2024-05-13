@@ -11,6 +11,10 @@ use std::{env, io};
 const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
+const SCRYPTO_COVERAGE: &str = "scrypto/coverage";
+const CARGO_ENCODED_RUSTFLAGS: &str = "CARGO_ENCODED_RUSTFLAGS";
+const CARGO_ENCODED_RUSTFLAGS_COVERAGE: &str =
+    "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
@@ -540,6 +544,20 @@ impl ScryptoCompiler {
         } else if !for_package_extract {
             features.push(["--features", SCRYPTO_NO_SCHEMA]);
         }
+
+        let coverage_build = if let Some(idx) = features
+            .iter()
+            .position(|[_tag, value]| *value == SCRYPTO_COVERAGE)
+        {
+            if for_package_extract {
+                // for schema extract 'scrypto/coverage' flag must be removed
+                features.remove(idx);
+            }
+            true
+        } else {
+            false
+        };
+
         let features: Vec<&str> = features.into_iter().flatten().collect();
 
         let package: Vec<&str> = self
@@ -574,13 +592,23 @@ impl ScryptoCompiler {
             command.arg("--all_features");
         }
 
+        if coverage_build && !for_package_extract {
+            // for coverage WASM file build (2nd phase) add these Rustflags
+            command.env(CARGO_ENCODED_RUSTFLAGS, CARGO_ENCODED_RUSTFLAGS_COVERAGE);
+        }
         self.input_params
             .environment_variables
             .iter()
             .for_each(|(name, action)| {
                 match action {
-                    EnvironmentVariableAction::Set(value) => command.env(name, value),
-                    EnvironmentVariableAction::Unset => command.env_remove(name),
+                    EnvironmentVariableAction::Set(value) => {
+                        if !(coverage_build && name == CARGO_ENCODED_RUSTFLAGS) {
+                            command.env(name, value);
+                        }
+                    }
+                    EnvironmentVariableAction::Unset => {
+                        command.env_remove(name);
+                    }
                 };
             });
 
@@ -873,7 +901,7 @@ impl ScryptoCompilerBuilder {
     pub fn coverage(&mut self) -> &mut Self {
         self.input_params
             .features
-            .insert(String::from("scrypto/coverage"));
+            .insert(String::from(SCRYPTO_COVERAGE));
         self
     }
 
@@ -922,7 +950,23 @@ mod tests {
             .map(|arg| arg.to_str().unwrap())
             .collect::<Vec<_>>()
             .join(" ");
-        let mut ret = cmd.get_program().to_str().unwrap().to_string();
+        let envs = cmd
+            .get_envs()
+            .into_iter()
+            .map(|(name, value)| {
+                if let Some(value) = value {
+                    format!("{}={}", name.to_str().unwrap(), value.to_str().unwrap())
+                } else {
+                    format!("{}", name.to_str().unwrap())
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
+        let mut ret = envs;
+        if !ret.is_empty() {
+            ret.push(' ');
+        }
+        ret.push_str(cmd.get_program().to_str().unwrap());
         ret.push(' ');
         ret.push_str(&args);
         ret
@@ -1217,5 +1261,37 @@ mod tests {
             format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", default_target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
             format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/no-schema --profile release", default_target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_coverage() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut target_path = manifest_path.clone();
+        manifest_path.push("Cargo.toml");
+        target_path.pop(); // ScryptoCompiler dir
+        target_path.push("coverage");
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .coverage()
+            .target_directory(target_path.clone())
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .coverage()
+            .target_directory(target_path.clone())
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("CARGO_ENCODED_RUSTFLAGS=-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
     }
 }
