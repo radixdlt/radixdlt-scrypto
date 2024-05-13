@@ -310,7 +310,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.put(bucket, api),
-        )??;
+        )?;
 
         // Emit an event with the stored resource
         Runtime::emit_event(
@@ -381,7 +381,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.take(amount, api),
-        )??;
+        )?;
 
         // Emitting the event
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
@@ -415,7 +415,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.take_non_fungibles(ids, api),
-        )??;
+        )?;
 
         // Emitting the event
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
@@ -460,7 +460,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.take(amount, api),
-        )??;
+        )?;
 
         // Emitting the event
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
@@ -505,7 +505,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.take_non_fungibles(ids, api),
-        )??;
+        )?;
 
         // Emitting the event
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
@@ -536,7 +536,7 @@ impl AccountLockerBlueprint {
             vault
                 .map(|vault| vault.amount(api))
                 .unwrap_or(Ok(Decimal::ZERO))
-        })?
+        })
     }
 
     fn get_non_fungible_local_ids<Y>(
@@ -554,7 +554,7 @@ impl AccountLockerBlueprint {
             vault
                 .map(|vault| vault.non_fungible_local_ids(limit, api))
                 .unwrap_or(Ok(indexset! {}))
-        })?
+        })
     }
 
     fn with_vault_create_on_traversal<Y, F, O>(
@@ -565,7 +565,7 @@ impl AccountLockerBlueprint {
     ) -> Result<O, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
-        F: FnOnce(Vault, &mut Y) -> O,
+        F: FnOnce(Vault, &mut Y) -> Result<O, RuntimeError>,
     {
         // The collection on the blueprint maps an account address to a key value store. We read the
         // node id of that key value store.
@@ -623,8 +623,10 @@ impl AccountLockerBlueprint {
             }
         };
 
-        // Call the callback
-        let rtn = handler(vault, api);
+        // Call the callback - if the callback fails then the following code will not be executed
+        // and the substate locks will not be released. We are making the assumption that a failed
+        // callback that returns an `Err(RuntimeError)` can not be recovered from.
+        let rtn = handler(vault, api)?;
 
         // Close the opened kv-entries.
         api.key_value_entry_close(vault_entry_handle)?;
@@ -642,7 +644,7 @@ impl AccountLockerBlueprint {
     ) -> Result<O, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
-        F: FnOnce(Option<Vault>, &mut Y) -> O,
+        F: FnOnce(Option<Vault>, &mut Y) -> Result<O, RuntimeError>,
     {
         // The collection on the blueprint maps an account address to a key value store. We read the
         // node id of that key value store.
@@ -662,7 +664,7 @@ impl AccountLockerBlueprint {
             Some(account_claims_kv_store) => account_claims_kv_store,
             None => {
                 // Call the callback function.
-                let rtn = handler(None, api);
+                let rtn = handler(None, api)?;
                 // Dropping the lock on the collection entry.
                 api.key_value_entry_close(account_claims_handle)?;
                 // Return the result of the callback.
@@ -680,8 +682,10 @@ impl AccountLockerBlueprint {
 
         let vault_entry = api.key_value_entry_get_typed::<Vault>(vault_entry_handle)?;
 
-        // Call the callback
-        let rtn = handler(vault_entry, api);
+        // Call the callback - if the callback fails then the following code will not be executed
+        // and the substate locks will not be released. We are making the assumption that a failed
+        // callback that returns an `Err(RuntimeError)` can not be recovered from.
+        let rtn = handler(vault_entry, api)?;
 
         // Close the opened kv-entries.
         api.key_value_entry_close(vault_entry_handle)?;
