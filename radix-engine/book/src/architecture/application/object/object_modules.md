@@ -1,7 +1,7 @@
 # Object Modules
 
 The system may define additional state/logic to be stored per globalized object known as
-an *Object Module*. 
+an *Object Module*. The system can define whether an Object Module is required or optional.
 
 An Object Module itself has a Blueprint type along with associated logic to manipulate
 the state of the object module.

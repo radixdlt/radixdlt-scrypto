@@ -27,6 +27,7 @@
   - [Type Checking](architecture/application/type_checking/README.md)
 - [VM Layer](architecture/vm/README.md)
 - [System Layer](architecture/system/README.md)
+  - [System Modules](architecture/system/system_modules.md)
 - [Kernel Layer](architecture/kernel/README.md)
 - [Database Layer](architecture/database/README.md)
 
