@@ -3385,7 +3385,7 @@ fn recover_does_not_accept_an_address_that_is_not_an_account() {
 }
 
 #[test]
-fn airdrops_doable_in_one_transaction_if_no_accounts_accept_deposits() {
+fn exceeding_one_of_the_limits_when_airdropping_returns_the_expected_error() {
     for airdrops in 1u64.. {
         let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
         let (pk, _, account) = ledger.new_account(false);
