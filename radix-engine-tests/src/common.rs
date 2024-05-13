@@ -30,10 +30,6 @@ pub mod package_loader {
                 panic!("Package \"{}\" not found. Are you sure that this package is: a) in the blueprints folder, b) that this is the same as the package name in the Cargo.toml file?", name)
             }
         }
-
-        pub fn get_using_standard_compiler_profile(name: &str) -> (Vec<u8>, PackageDefinition) {
-            panic!("Package \"{}\" already compiled. Cannot use specific compiler profile in compile-blueprints-at-build-time mode.", name)
-        }
     }
 }
 
@@ -48,20 +44,9 @@ pub mod package_loader {
     pub struct PackageLoader;
     impl PackageLoader {
         pub fn get(name: &str) -> (Vec<u8>, PackageDefinition) {
-            Self::get_internal(name, CompileProfile::FastWithTraceLogs)
-        }
-
-        pub fn get_using_standard_compiler_profile(name: &str) -> (Vec<u8>, PackageDefinition) {
-            Self::get_internal(name, CompileProfile::Standard)
-        }
-
-        fn get_internal(
-            name: &str,
-            compile_profile: CompileProfile,
-        ) -> (Vec<u8>, PackageDefinition) {
             let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
             let package_dir = manifest_dir.join("assets").join("blueprints").join(name);
-            scrypto_test::prelude::Compile::compile(package_dir, compile_profile)
+            scrypto_test::prelude::Compile::compile(package_dir, CompileProfile::FastWithTraceLogs)
         }
     }
 }
