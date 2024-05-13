@@ -64,6 +64,10 @@ impl Compile {
         #[cfg(feature = "coverage")]
         if _use_coverage {
             compiler_builder.coverage();
+
+            let mut coverage_dir = std::path::PathBuf::from(package_dir.as_ref());
+            coverage_dir.push("coverage");
+            compiler_builder.target_directory(coverage_dir);
         }
 
         let mut compiler = compiler_builder
@@ -73,30 +77,31 @@ impl Compile {
         #[cfg(feature = "coverage")]
         // Check if binary exists in coverage directory, if it doesn't only then build it
         if _use_coverage {
-            let mut coverage_path = compiler.target_binary_path();
-            if coverage_path.is_file() {
-                let code = fs::read(&coverage_path).unwrap_or_else(|err| {
+            let manifest = compiler.get_main_manifest_definition();
+            if manifest.target_binary_rpd_path.exists() && manifest.target_binary_wasm_path.exists()
+            {
+                let code = std::fs::read(&manifest.target_binary_wasm_path).unwrap_or_else(|err| {
                     panic!(
                         "Failed to read built WASM from path {:?} - {:?}",
-                        &path, err
+                        &manifest.target_binary_wasm_path, err
                     )
                 });
-                coverage_path.set_extension("rpd");
-                let definition = fs::read(&coverage_path).unwrap_or_else(|err| {
-                    panic!(
-                        "Failed to read package definition from path {:?} - {:?}",
-                        &coverage_path, err
-                    )
-                });
+                let definition =
+                    std::fs::read(&manifest.target_binary_rpd_path).unwrap_or_else(|err| {
+                        panic!(
+                            "Failed to read package definition from path {:?} - {:?}",
+                            &manifest.target_binary_rpd_path, err
+                        )
+                    });
                 let definition = manifest_decode(&definition).unwrap_or_else(|err| {
                     panic!(
                         "Failed to parse package definition from path {:?} - {:?}",
-                        &coverage_path, err
+                        &manifest.target_binary_rpd_path, err
                     )
                 });
                 return (code, definition);
             }
-        };
+        }
 
         // Build
         let mut build_artifacts = compiler.compile().unwrap_or_else(|error| {

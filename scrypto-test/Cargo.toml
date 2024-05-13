@@ -41,6 +41,8 @@ resource_tracker = ["radix-engine/resource_tracker", "radix-common/resource_trac
 rocksdb = ["radix-substate-store-impls/rocksdb"]
 post_run_db_check = []
 
+coverage = ["radix-common/coverage", "radix-engine/coverage"]
+
 [lib]
 doctest = false
 bench = false

@@ -201,15 +201,15 @@ pub struct BuildArtifact<T> {
 }
 
 #[derive(Debug, Clone)]
-struct CompilerManifestDefinition {
+pub struct CompilerManifestDefinition {
     /// Path to Cargo.toml file.
-    manifest_path: PathBuf,
+    pub manifest_path: PathBuf,
     /// Path to directory where compilation artifacts are stored.
-    target_directory: PathBuf,
+    pub target_directory: PathBuf,
     /// Path to target binary WASM file.
-    target_binary_wasm_path: PathBuf,
+    pub target_binary_wasm_path: PathBuf,
     /// Path to target binary RPD file.
-    target_binary_rpd_path: PathBuf,
+    pub target_binary_rpd_path: PathBuf,
 }
 
 /// Programmatic implementation of Scrypto compiler which is a wrapper around rust cargo tool.
@@ -770,6 +770,11 @@ impl ScryptoCompiler {
             .success()
             .then_some(())
             .ok_or(ScryptoCompilerError::CargoBuildFailure(status))
+    }
+
+    /// Returns information about the main manifest
+    pub fn get_main_manifest_definition(&self) -> CompilerManifestDefinition {
+        self.main_manifest.clone()
     }
 }
 

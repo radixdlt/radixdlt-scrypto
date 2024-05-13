@@ -64,6 +64,10 @@ pub fn build_package<P: AsRef<Path>>(
     }
     if coverage {
         compiler_builder.coverage();
+
+        let mut target_path = PathBuf::from(base_path.as_ref());
+        target_path.push("coverage");
+        compiler_builder.target_directory(target_path);
     }
     env.iter().for_each(|(name, value)| {
         compiler_builder.env(name, EnvironmentVariableAction::Set(value.clone()));
