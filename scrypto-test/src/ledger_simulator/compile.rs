@@ -126,7 +126,7 @@ mod tests {
     use super::{Compile, CompileProfile};
     use std::process::Command;
 
-    fn compile_blueprint() -> Vec<u8> {
+    fn compile_blueprint(additional_args: &[&str]) -> Vec<u8> {
         // Build `scrypto` cli
         Command::new("cargo")
             .arg("build")
@@ -144,6 +144,7 @@ mod tests {
             "/../radix-clis/target/release/scrypto"
         ))
         .arg("build")
+        .args(additional_args)
         .current_dir(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests/blueprints/tuple-return"
@@ -164,7 +165,7 @@ mod tests {
     #[test]
     fn validate_compile_profile_default() {
         // Compile blueprint using `scrypto compile` command
-        let output_file_content = compile_blueprint();
+        let output_file_content = compile_blueprint(&[]);
 
         // Compile same blueprint using Compile object
         let (bin, _) = Compile::compile(
@@ -185,9 +186,27 @@ mod tests {
     }
 
     #[test]
+    fn validate_compile_profile_fast() {
+        // Compile blueprint using `scrypto compile` command
+        let output_file_content = compile_blueprint(&[]);
+
+        // Compile same blueprint using Compile object
+        let (bin, _) = Compile::compile(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
+            CompileProfile::Fast,
+        );
+
+        // Assert
+        assert!(
+            output_file_content.len() < bin.len(),
+            "Size of Wasm file compiled by `scrypto build` command should be smaller."
+        );
+    }
+
+    #[test]
     fn validate_compile_profile_fast_with_log() {
         // Compile blueprint using `scrypto compile` command
-        let output_file_content = compile_blueprint();
+        let output_file_content = compile_blueprint(&[]);
 
         // Compile same blueprint using Compile object
         let (bin, _) = Compile::compile(
@@ -200,5 +219,52 @@ mod tests {
             output_file_content.len() < bin.len(),
             "Size of Wasm file compiled by `scrypto build` command should be smaller."
         );
+    }
+
+    #[test]
+    fn verify_scrypto_build_with_args_for_compile_profile_fast() {
+        // Compile blueprint using `scrypto compile` command
+        let output_file_content = compile_blueprint(&["--disable-wasm-opt"]);
+
+        // Compile same blueprint using Compile object
+        let (bin, _) = Compile::compile(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
+            CompileProfile::Fast,
+        );
+
+        // Assert
+        assert_eq!(
+            output_file_content.len(),
+            bin.len(),
+            "Wasm files should have same size."
+        );
+        assert_eq!(
+            output_file_content, bin,
+            "Wasm files should have same content."
+        )
+    }
+
+    #[test]
+    fn verify_scrypto_build_with_args_for_compile_profile_fast_with_log() {
+        // Compile blueprint using `scrypto compile` command
+        let output_file_content =
+            compile_blueprint(&["--disable-wasm-opt", "--log-level", "TRACE"]);
+
+        // Compile same blueprint using Compile object
+        let (bin, _) = Compile::compile(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
+            CompileProfile::FastWithTraceLogs,
+        );
+
+        // Assert
+        assert_eq!(
+            output_file_content.len(),
+            bin.len(),
+            "Wasm files should have same size."
+        );
+        assert_eq!(
+            output_file_content, bin,
+            "Wasm files should have same content."
+        )
     }
 }
