@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::test_utils::invocations::*;
 
 pub struct TestUtilsBlueprint;
@@ -55,7 +55,7 @@ impl TestUtilsBlueprint {
 
     pub fn panic<Y>(message: &str, _api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         panic!("{}", message);
     }

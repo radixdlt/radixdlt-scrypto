@@ -6,7 +6,7 @@ use radix_common::traits::NonFungibleData;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::role_assignment::RoleDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::prelude::ClientApi;
+use radix_engine_interface::prelude::SystemApi;
 use sbor::rust::marker::PhantomData;
 use std::fmt::Debug;
 
@@ -468,7 +468,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
     /// The resource's address is returned.
     fn create_with_no_initial_supply<Y, E>(self, env: &mut Y) -> Result<ResourceManager, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug,
     {
         match self.into_create_with_no_supply_invocation() {
@@ -573,7 +573,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     ) -> Result<radix_engine_interface::blueprints::resource::Bucket, E>
     where
         T: Into<Decimal>,
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug,
     {
         let metadata = self
@@ -633,7 +633,7 @@ impl<D: NonFungibleData>
     pub fn mint_initial_supply<T, Y, E>(mut self, entries: T, env: &mut Y) -> Result<Bucket, E>
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug,
     {
         let non_fungible_schema =
@@ -693,7 +693,7 @@ impl<D: NonFungibleData>
     pub fn mint_initial_supply<T, Y, E>(mut self, entries: T, env: &mut Y) -> Result<Bucket, E>
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug,
     {
         let non_fungible_schema =
@@ -753,7 +753,7 @@ impl<D: NonFungibleData>
     pub fn mint_initial_supply<T, Y, E>(mut self, entries: T, env: &mut Y) -> Result<Bucket, E>
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug,
     {
         let non_fungible_schema =
@@ -816,7 +816,7 @@ impl<D: NonFungibleData>
     pub fn mint_initial_supply<T, Y, E>(mut self, entries: T, env: &mut Y) -> Result<Bucket, E>
     where
         T: IntoIterator<Item = D>,
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug,
     {
         let non_fungible_schema =

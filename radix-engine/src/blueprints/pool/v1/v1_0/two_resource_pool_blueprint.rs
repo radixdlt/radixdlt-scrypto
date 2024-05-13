@@ -24,7 +24,7 @@ impl TwoResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi,
+        Y: SystemApi<RuntimeError> + KernelNodeApi,
     {
         // A pool can't be created between the same resources - error out if it's
         if resource_address1 == resource_address2 {
@@ -140,7 +140,7 @@ impl TwoResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<TwoResourcePoolContributeOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
@@ -389,7 +389,7 @@ impl TwoResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<TwoResourcePoolRedeemOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
@@ -461,7 +461,7 @@ impl TwoResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<TwoResourcePoolProtectedDepositOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let resource_address = bucket.resource_address(api)?;
@@ -487,7 +487,7 @@ impl TwoResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<TwoResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let vault = substate.vault(resource_address);
@@ -516,7 +516,7 @@ impl TwoResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<TwoResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
@@ -566,7 +566,7 @@ impl TwoResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<TwoResourcePoolGetVaultAmountsOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (two_resource_pool_substate, handle) =
             Self::lock_and_read(api, LockFlags::read_only())?;
@@ -591,7 +591,7 @@ impl TwoResourcePoolBlueprint {
         lock_flags: LockFlags,
     ) -> Result<(Substate, SubstateHandle), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let substate_key = TwoResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;

@@ -31,8 +31,8 @@ pub trait FieldPayloadMarker {}
 
 impl<T: FieldPayloadMarker> FieldPayloadMarker for &T {}
 
-/// A high level api to read/write fields
-pub trait ClientFieldApi<E: Debug> {
+/// System api to read/write fields
+pub trait SystemFieldApi<E: Debug> {
     // Retrieve the value of a field
     fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, E>;
 

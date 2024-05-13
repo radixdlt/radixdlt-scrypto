@@ -4,7 +4,7 @@ use radix_common::data::scrypto::{
     scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
 };
 use radix_common::math::Decimal;
-use radix_engine_interface::api::{ClientApi, ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::api::{SystemApi, SystemBlueprintApi, SystemObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
@@ -16,25 +16,25 @@ pub trait NativeProof {
         api: &mut Y,
     ) -> Result<Decimal, E>
     where
-        Y: ClientObjectApi<E>;
+        Y: SystemObjectApi<E>;
 
     fn resource_address<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientObjectApi<E>;
+        Y: SystemObjectApi<E>;
 
     fn clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientObjectApi<E>;
+        Y: SystemObjectApi<E>;
 
     fn drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientApi<E>;
+        Y: SystemApi<E>;
 }
 
 pub trait NativeFungibleProof {}
@@ -45,7 +45,7 @@ pub trait NativeNonFungibleProof {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
-        Y: ClientObjectApi<E>;
+        Y: SystemObjectApi<E>;
 }
 
 impl NativeProof for Proof {
@@ -54,7 +54,7 @@ impl NativeProof for Proof {
         api: &mut Y,
     ) -> Result<Decimal, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -69,7 +69,7 @@ impl NativeProof for Proof {
         api: &mut Y,
     ) -> Result<ResourceAddress, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let address = api.get_outer_object(self.0.as_node_id())?;
         Ok(ResourceAddress::try_from(address).unwrap())
@@ -80,7 +80,7 @@ impl NativeProof for Proof {
         api: &mut Y,
     ) -> Result<Proof, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
@@ -92,7 +92,7 @@ impl NativeProof for Proof {
 
     fn drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
-        Y: ClientObjectApi<E> + ClientBlueprintApi<E>,
+        Y: SystemObjectApi<E> + SystemBlueprintApi<E>,
     {
         let blueprint_id = api.get_blueprint_id(self.0.as_node_id())?;
         api.call_function(
@@ -116,7 +116,7 @@ impl NativeNonFungibleProof for Proof {
         api: &mut Y,
     ) -> Result<IndexSet<NonFungibleLocalId>, E>
     where
-        Y: ClientObjectApi<E>,
+        Y: SystemObjectApi<E>,
     {
         let rtn = api.call_method(
             self.0.as_node_id(),

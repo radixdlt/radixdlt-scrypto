@@ -7,7 +7,7 @@ use radix_blueprint_schema_init::{
     TypeRef,
 };
 use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
-use radix_engine_interface::api::{AttachedModuleId, ClientApi};
+use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
@@ -130,7 +130,7 @@ impl IdentityNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             IDENTITY_CREATE_ADVANCED_IDENT => {
@@ -196,7 +196,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let role_assignment = SecurifiedIdentity::create_advanced(owner_role, api)?;
 
@@ -214,7 +214,7 @@ impl IdentityBlueprint {
 
     pub fn create<Y>(api: &mut Y) -> Result<(GlobalAddress, Bucket), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: IDENTITY_PACKAGE,
@@ -246,7 +246,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match input.variant_id {
             IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => {
@@ -269,7 +269,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let owner_badge = {
             let bytes = public_key_hash.get_hash_bytes();
@@ -312,7 +312,7 @@ impl IdentityBlueprint {
 
     fn securify<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let receiver = Runtime::get_node_id(api)?;
         let owner_badge_data = IdentityOwnerBadgeData {
@@ -333,7 +333,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<(NodeId, IndexMap<AttachedModuleId, Own>), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;

@@ -28,7 +28,7 @@ impl PoolNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
     {
         match export_name {
             ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {

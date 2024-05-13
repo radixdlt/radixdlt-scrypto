@@ -2,7 +2,7 @@ use radix_common::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_common::data::scrypto::model::Own;
 use radix_common::data::scrypto::*;
 use radix_engine_interface::api::object_api::ModuleId;
-use radix_engine_interface::api::{AttachedModuleId, ClientApi};
+use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
 };
@@ -20,7 +20,7 @@ impl RoleAssignment {
         api: &mut Y,
     ) -> Result<Self, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_function(
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
@@ -56,7 +56,7 @@ impl RoleAssignmentObject for AttachedRoleAssignment {
 pub trait RoleAssignmentObject {
     fn self_id(&self) -> (&NodeId, Option<AttachedModuleId>);
 
-    fn set_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
+    fn set_owner_role<Y: SystemApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
         &self,
         rule: A,
         api: &mut Y,
@@ -83,7 +83,7 @@ pub trait RoleAssignmentObject {
         Ok(())
     }
 
-    fn lock_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode>(
+    fn lock_owner_role<Y: SystemApi<E>, E: Debug + ScryptoDecode>(
         &self,
         api: &mut Y,
     ) -> Result<(), E> {
@@ -110,7 +110,7 @@ pub trait RoleAssignmentObject {
     }
 
     fn set_role<
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
         E: Debug + ScryptoDecode,
         R: Into<RoleKey>,
         A: Into<AccessRule>,
@@ -153,7 +153,7 @@ pub trait RoleAssignmentObject {
         Ok(())
     }
 
-    fn get_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
+    fn get_role<Y: SystemApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
         &self,
         module: ModuleId,
         role_key: R,
@@ -187,7 +187,7 @@ pub trait RoleAssignmentObject {
         }
     }
 
-    fn get_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
+    fn get_owner_role<Y: SystemApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
         &self,
         api: &mut Y,
     ) -> Result<RoleAssignmentGetOwnerRoleOutput, E> {

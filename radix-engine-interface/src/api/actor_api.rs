@@ -17,7 +17,7 @@ bitflags! {
 }
 
 /// Api which exposes methods in the context of the actor
-pub trait ClientActorApi<E: Debug> {
+pub trait SystemActorApi<E: Debug> {
     /// Retrieve the current blueprint id
     fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, E>;
 

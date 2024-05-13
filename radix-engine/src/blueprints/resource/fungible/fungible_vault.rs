@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    ClientApi, FieldValue, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
+    FieldValue, SystemApi, ACTOR_REF_OUTER, ACTOR_STATE_OUTER_OBJECT, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -281,7 +281,7 @@ impl FungibleVaultBlueprint {
 
     fn get_divisibility<Y>(api: &mut Y) -> Result<u8, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
@@ -297,7 +297,7 @@ impl FungibleVaultBlueprint {
 
     pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::take_advanced(amount, WithdrawStrategy::Exact, api)
     }
@@ -308,7 +308,7 @@ impl FungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
@@ -345,7 +345,7 @@ impl FungibleVaultBlueprint {
 
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
 
@@ -363,7 +363,7 @@ impl FungibleVaultBlueprint {
 
     pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::liquid_amount(api)?
             .checked_add(Self::locked_amount(api)?)
@@ -374,7 +374,7 @@ impl FungibleVaultBlueprint {
 
     pub fn lock_fee<Y>(amount: Decimal, contingent: bool, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
@@ -441,7 +441,7 @@ impl FungibleVaultBlueprint {
 
     pub fn recall<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_recallable(api)?;
 
@@ -463,7 +463,7 @@ impl FungibleVaultBlueprint {
 
     pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_freezable(api)?;
 
@@ -487,7 +487,7 @@ impl FungibleVaultBlueprint {
 
     pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_freezable(api)?;
 
@@ -510,7 +510,7 @@ impl FungibleVaultBlueprint {
 
     pub fn create_proof_of_amount<Y>(amount: Decimal, api: &mut Y) -> Result<Proof, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
@@ -547,7 +547,7 @@ impl FungibleVaultBlueprint {
 
     pub fn burn<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
 
@@ -561,7 +561,7 @@ impl FungibleVaultBlueprint {
 
     pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -596,7 +596,7 @@ impl FungibleVaultBlueprint {
 
     pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -636,7 +636,7 @@ impl FungibleVaultBlueprint {
 
     fn assert_not_frozen<Y>(flags: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
@@ -666,7 +666,7 @@ impl FungibleVaultBlueprint {
 
     fn assert_freezable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
@@ -686,7 +686,7 @@ impl FungibleVaultBlueprint {
 
     fn assert_recallable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
@@ -706,7 +706,7 @@ impl FungibleVaultBlueprint {
 
     fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -723,7 +723,7 @@ impl FungibleVaultBlueprint {
 
     fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -743,7 +743,7 @@ impl FungibleVaultBlueprint {
         api: &mut Y,
     ) -> Result<LiquidFungibleResource, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -769,7 +769,7 @@ impl FungibleVaultBlueprint {
 
     fn internal_put<Y>(resource: LiquidFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if resource.is_empty() {
             return Ok(());

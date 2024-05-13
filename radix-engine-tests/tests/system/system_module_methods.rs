@@ -4,7 +4,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::{
-    AttachedModuleId, ClientApi, FieldValue, LockFlags, ACTOR_STATE_SELF,
+    AttachedModuleId, SystemApi, FieldValue, LockFlags, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::object_modules::royalty::{
@@ -32,7 +32,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             let node_id = input.references()[0];
@@ -116,7 +116,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {
@@ -188,7 +188,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {

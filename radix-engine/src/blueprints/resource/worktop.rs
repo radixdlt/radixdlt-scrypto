@@ -5,7 +5,7 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{SystemApi, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManager};
 
@@ -40,7 +40,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
     {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
@@ -85,7 +85,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopPutInput = input
             .as_typed()
@@ -120,7 +120,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopTakeInput = input
             .as_typed()
@@ -169,7 +169,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopTakeNonFungiblesInput = input
             .as_typed()
@@ -219,7 +219,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopTakeAllInput = input
             .as_typed()
@@ -248,7 +248,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopAssertContainsInput = input
             .as_typed()
@@ -279,7 +279,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopAssertContainsAmountInput = input
             .as_typed()
@@ -310,7 +310,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopAssertContainsNonFungiblesInput = input
             .as_typed()
@@ -342,7 +342,7 @@ impl WorktopBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let _input: WorktopDrainInput = input
             .as_typed()

@@ -3,7 +3,7 @@ use radix_common::types::*;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
-pub trait ClientBlueprintApi<E> {
+pub trait SystemBlueprintApi<E> {
     /// Calls a function on a blueprint
     fn call_function(
         &mut self,

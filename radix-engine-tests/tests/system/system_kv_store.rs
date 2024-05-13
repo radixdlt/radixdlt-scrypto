@@ -5,7 +5,7 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
-use radix_engine_interface::api::{ClientApi, LockFlags};
+use radix_engine_interface::api::{SystemApi, LockFlags};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
@@ -23,7 +23,7 @@ impl VmInvoke for TestInvoke {
         _vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,
     {
         match export_name {

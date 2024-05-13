@@ -4,7 +4,7 @@ use radix_engine_interface::api::{ActorStateHandle, CollectionIndex, LockFlags};
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-pub trait ClientActorKeyValueEntryApi<E: Debug> {
+pub trait SystemActorKeyValueEntryApi<E: Debug> {
     /// Returns a handle for a specified key value entry in a collection. If an invalid collection
     /// index or key is passed an error is returned.
     fn actor_open_key_value_entry(

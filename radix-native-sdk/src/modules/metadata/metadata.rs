@@ -1,7 +1,7 @@
 use radix_common::constants::METADATA_MODULE_PACKAGE;
 use radix_common::data::scrypto::model::Own;
 use radix_common::data::scrypto::*;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::object_modules::metadata::{
     MetadataCreateInput, MetadataCreateWithDataInput, MetadataInit, MetadataSetInput, MetadataVal,
     METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_CREATE_WITH_DATA_IDENT, METADATA_SET_IDENT,
@@ -13,7 +13,7 @@ pub struct Metadata(pub Own);
 impl Metadata {
     pub fn create<Y, E: Debug + ScryptoDecode>(api: &mut Y) -> Result<Own, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_function(
             METADATA_MODULE_PACKAGE,
@@ -31,7 +31,7 @@ impl Metadata {
         api: &mut Y,
     ) -> Result<Own, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         let rtn = api.call_function(
             METADATA_MODULE_PACKAGE,
@@ -46,7 +46,7 @@ impl Metadata {
 
     pub fn new<Y, E: Debug + ScryptoDecode>(api: &mut Y) -> Result<Self, E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         Self::create(api).map(Self)
     }
@@ -58,7 +58,7 @@ impl Metadata {
         value: V,
     ) -> Result<(), E>
     where
-        Y: ClientApi<E>,
+        Y: SystemApi<E>,
     {
         api.call_method(
             self.0.as_node_id(),

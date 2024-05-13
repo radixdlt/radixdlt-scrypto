@@ -7,7 +7,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_init::type_info_partition;
 use crate::system::type_info::TypeInfoBlueprint;
 use crate::system::type_info::TypeInfoSubstate;
-use radix_engine_interface::api::{AttachedModuleId, ClientApi};
+use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
@@ -79,7 +79,7 @@ fn handle_invocation<'a, 'p, 'w, F, Y, L>(
     version: TransactionProcessorV1MinorVersion,
 ) -> Result<InstructionOutput, RuntimeError>
 where
-    Y: ClientApi<RuntimeError> + KernelSubstateApi<L>,
+    Y: SystemApi<RuntimeError> + KernelSubstateApi<L>,
     F: FnOnce(&mut Y, ScryptoValue) -> Result<Vec<u8>, RuntimeError>,
     L: Default,
 {
@@ -117,7 +117,7 @@ impl TransactionProcessorBlueprint {
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<L> + SystemApi<RuntimeError>,
     {
         // Create a worktop
         let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
@@ -660,7 +660,7 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + SystemApi<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for node_id in value.owned_nodes() {
@@ -696,7 +696,7 @@ impl TransactionProcessor {
     }
 }
 
-struct TransactionProcessorWithApi<'a, 'p, 'w, Y: ClientApi<RuntimeError>> {
+struct TransactionProcessorWithApi<'a, 'p, 'w, Y: SystemApi<RuntimeError>> {
     worktop: &'w mut Worktop,
     processor: &'p mut TransactionProcessor,
     api: &'a mut Y,
@@ -704,7 +704,7 @@ struct TransactionProcessorWithApi<'a, 'p, 'w, Y: ClientApi<RuntimeError>> {
     max_total_size_of_blobs: usize,
 }
 
-impl<'a, 'p, 'w, Y: ClientApi<RuntimeError>> TransformHandler<RuntimeError>
+impl<'a, 'p, 'w, Y: SystemApi<RuntimeError>> TransformHandler<RuntimeError>
     for TransactionProcessorWithApi<'a, 'p, 'w, Y>
 {
     fn replace_bucket(&mut self, b: ManifestBucket) -> Result<Own, RuntimeError> {

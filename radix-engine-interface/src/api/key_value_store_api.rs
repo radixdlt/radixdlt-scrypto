@@ -137,7 +137,7 @@ impl KeyValueStoreDataSchema {
     }
 }
 
-pub trait ClientKeyValueStoreApi<E> {
+pub trait SystemKeyValueStoreApi<E> {
     /// Creates a new key value store with a given schema
     fn key_value_store_new(&mut self, data_schema: KeyValueStoreDataSchema) -> Result<NodeId, E>;
 

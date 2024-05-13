@@ -22,7 +22,7 @@ use crate::object_modules::role_assignment::*;
 use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback::SystemLockData;
 use crate::vm::{VmApi, VmInvoke};
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_profiling_derive::trace_resources;
 
@@ -101,7 +101,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
         vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,
     {
         #[allow(unused_mut)]
@@ -284,7 +284,7 @@ impl VmInvoke for NullVmInvoke {
         _vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,
     {
         panic!("Invocation was called on null VmInvoke");

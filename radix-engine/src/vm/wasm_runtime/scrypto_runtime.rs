@@ -5,15 +5,16 @@ use crate::vm::wasm::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
-use radix_engine_interface::api::{ActorRefHandle, AttachedModuleId, ClientApi, FieldValue};
+use radix_engine_interface::api::{ActorRefHandle, AttachedModuleId, FieldValue, SystemApi};
 use radix_engine_interface::types::ClientCostingEntry;
 use radix_engine_interface::types::Level;
+use radix_engine_profiling_derive::trace_resources;
 use sbor::rust::vec::Vec;
 
-/// A shim between ClientApi and WASM, with buffer capability.
+/// A shim between SystemAPI and WASM, with buffer capability.
 pub struct ScryptoRuntime<'y, Y>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     api: &'y mut Y,
     buffers: IndexMap<BufferId, Vec<u8>>,
@@ -26,7 +27,7 @@ where
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     pub fn new(api: &'y mut Y, package_address: PackageAddress, export_name: String) -> Self {
         ScryptoRuntime {
@@ -54,7 +55,7 @@ where
 
 impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     fn allocate_buffer(
         &mut self,
@@ -561,6 +562,7 @@ where
         self.allocate_buffer(scrypto_encode(&fee_balance).expect("Failed to encode fee_balance"))
     }
 
+    #[trace_resources(log=message.len())]
     fn crypto_utils_bls12381_v1_verify(
         &mut self,
         message: Vec<u8>,
@@ -571,12 +573,16 @@ where
             scrypto_decode(&public_key).map_err(WasmRuntimeError::InvalidBlsPublicKey)?;
         let signature: Bls12381G2Signature =
             scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
-        let result = self
-            .api
-            .bls12381_v1_verify(&message, &public_key, &signature)?;
-        Ok(result)
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Bls12381V1Verify {
+                size: message.len(),
+            })?;
+
+        Ok(verify_bls12381_v1(&message, &public_key, &signature) as u32)
     }
 
+    #[trace_resources(log=pub_keys_and_msgs.len())]
     fn crypto_utils_bls12381_v1_aggregate_verify(
         &mut self,
         pub_keys_and_msgs: Vec<u8>,
@@ -588,12 +594,21 @@ where
             scrypto_decode(&pub_keys_and_msgs)
                 .map_err(WasmRuntimeError::InvalidBlsPublicKeyOrMessage)?;
 
-        let result = self
-            .api
-            .bls12381_v1_aggregate_verify(&pub_keys_and_msgs, &signature)?;
-        Ok(result)
+        if pub_keys_and_msgs.is_empty() {
+            return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
+        }
+
+        let sizes: Vec<usize> = pub_keys_and_msgs.iter().map(|(_, msg)| msg.len()).collect();
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Bls12381V1AggregateVerify {
+                sizes: sizes.as_slice(),
+            })?;
+
+        Ok(aggregate_verify_bls12381_v1(&pub_keys_and_msgs, &signature) as u32)
     }
 
+    #[trace_resources(log=message.len(), log=public_keys.len())]
     fn crypto_utils_bls12381_v1_fast_aggregate_verify(
         &mut self,
         message: Vec<u8>,
@@ -605,12 +620,20 @@ where
         let signature: Bls12381G2Signature =
             scrypto_decode(&signature).map_err(WasmRuntimeError::InvalidBlsSignature)?;
 
-        let result =
-            self.api
-                .bls12381_v1_fast_aggregate_verify(&message, &public_keys, &signature)?;
-        Ok(result)
+        if public_keys.is_empty() {
+            return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
+        }
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Bls12381V1FastAggregateVerify {
+                size: message.len(),
+                keys_cnt: public_keys.len(),
+            })?;
+
+        Ok(fast_aggregate_verify_bls12381_v1(&message, &public_keys, &signature) as u32)
     }
 
+    #[trace_resources(log=signatures.len())]
     fn crypto_utils_bls12381_g2_signature_aggregate(
         &mut self,
         signatures: Vec<u8>,
@@ -618,18 +641,31 @@ where
         let signatures: Vec<Bls12381G2Signature> =
             scrypto_decode(&signatures).map_err(WasmRuntimeError::InvalidBlsSignature)?;
 
-        let agg_sig = self.api.bls12381_g2_signature_aggregate(&signatures)?;
+        if signatures.is_empty() {
+            return Err(InvokeError::SelfError(WasmRuntimeError::InputDataEmpty));
+        }
+
+        self.api
+            .consume_cost_units(ClientCostingEntry::Bls12381G2SignatureAggregate {
+                signatures_cnt: signatures.len(),
+            })?;
+        let agg_sig = Bls12381G2Signature::aggregate(&signatures)
+            .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))?;
 
         self.allocate_buffer(
             scrypto_encode(&agg_sig).expect("Failed to encode Bls12381G2Signature"),
         )
     }
 
+    #[trace_resources(log=data.len())]
     fn crypto_utils_keccak256_hash(
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let hash = self.api.keccak256_hash(&data)?;
+        self.api
+            .consume_cost_units(ClientCostingEntry::Keccak256Hash { size: data.len() })?;
+
+        let hash = keccak256_hash(data);
 
         self.allocate_buffer(hash.to_vec())
     }

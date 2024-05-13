@@ -24,7 +24,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi,
+        Y: SystemApi<RuntimeError> + KernelNodeApi,
     {
         // A pool can't be created where one of the resources is non-fungible - error out if any of
         // them are
@@ -197,7 +197,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolContributeOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |mut substate, api| {
             let pool_unit_total_supply = substate
@@ -390,7 +390,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolRedeemOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |mut substate, api| {
             // Ensure that the passed pool resources are indeed pool resources
@@ -463,7 +463,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |mut substate, api| {
             let resource_address = bucket.resource_address(api)?;
@@ -489,7 +489,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |mut substate, api| {
             let vault = substate.vaults.get_mut(&resource_address);
@@ -518,7 +518,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<MultiResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |substate, api| {
             let pool_units_to_redeem = amount_of_pool_units;
@@ -563,7 +563,7 @@ impl MultiResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<TwoResourcePoolGetVaultAmountsOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |substate, api| {
             substate
@@ -582,7 +582,7 @@ impl MultiResourcePoolBlueprint {
 
     fn with_state<Y, F, O>(api: &mut Y, callback: F) -> Result<O, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
         F: FnOnce(Substate, &mut Y) -> Result<O, RuntimeError>,
     {
         // Open

@@ -4,7 +4,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::object_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ModuleId};
+use radix_engine_interface::api::{SystemApi, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
 use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
@@ -242,7 +242,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {
