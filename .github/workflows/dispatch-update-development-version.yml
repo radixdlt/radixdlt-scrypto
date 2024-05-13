@@ -1,4 +1,4 @@
-name: Dispatch release
+name: Dispatch Update Development Version
 on:
   workflow_dispatch:
     inputs:
