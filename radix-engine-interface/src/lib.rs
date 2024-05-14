@@ -13,6 +13,7 @@ pub mod blueprints;
 pub mod macros;
 pub mod object_modules;
 pub mod types;
+pub mod utils;
 
 // extern crate self as X; in lib.rs allows ::X and X to resolve to this crate inside this crate.
 // This enables procedural macros which output code involving paths to this crate, to work inside
@@ -49,6 +50,7 @@ pub mod prelude {
     pub use crate::object_modules::royalty::*;
     pub use crate::object_modules::ModuleConfig;
     pub use crate::types::*;
+    pub use crate::utils::*;
     pub use crate::{
         access_and_or, access_rule_node, burn_roles, deposit_roles, freeze_roles, internal_roles,
         metadata, metadata_init, metadata_init_set_entry, metadata_roles, mint_roles,
