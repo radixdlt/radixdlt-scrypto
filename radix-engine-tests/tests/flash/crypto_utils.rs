@@ -86,8 +86,11 @@ fn run_flash_test_test_environment(enable_bls: bool, expect_success: bool) {
         .build();
 
     // Act
-    let result =
-        PackageFactory::compile_and_publish(path_local_blueprint!("crypto_scrypto"), &mut test_env);
+    let result = PackageFactory::compile_and_publish(
+        path_local_blueprint!("crypto_scrypto"),
+        &mut test_env,
+        CompileProfile::Fast,
+    );
 
     // Assert
     if expect_success {

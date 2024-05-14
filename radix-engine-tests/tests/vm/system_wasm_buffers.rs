@@ -14,7 +14,10 @@ fn get_ledger() -> (
     LedgerSimulator<NoExtension, InMemorySubstateDatabase>,
     ComponentAddress,
 ) {
-    let (code, definition) = Compile::compile(path_local_blueprint!("system_wasm_buffers"));
+    let (code, definition) = Compile::compile(
+        path_local_blueprint!("system_wasm_buffers"),
+        CompileProfile::FastWithTraceLogs,
+    );
 
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
