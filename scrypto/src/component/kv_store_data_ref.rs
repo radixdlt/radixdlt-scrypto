@@ -85,3 +85,29 @@ impl<'a, V: ScryptoEncode> DerefMut for KeyValueEntryRefMut<'a, V> {
         &mut self.value
     }
 }
+
+pub trait KeyValueEntryCloned<T> {
+    fn cloned(&self) -> Option<T>;
+}
+
+impl<'a, V: Clone + ScryptoEncode + ScryptoDecode> KeyValueEntryCloned<V>
+    for Option<KeyValueEntryRef<'a, V>>
+{
+    fn cloned(&self) -> Option<V> {
+        match self {
+            Some(value) => Some(value.value.clone()),
+            None => None,
+        }
+    }
+}
+
+impl<'a, V: Clone + ScryptoEncode + ScryptoDecode> KeyValueEntryCloned<V>
+    for Option<KeyValueEntryRefMut<'a, V>>
+{
+    fn cloned(&self) -> Option<V> {
+        match self {
+            Some(value) => Some(value.value.clone()),
+            None => None,
+        }
+    }
+}
