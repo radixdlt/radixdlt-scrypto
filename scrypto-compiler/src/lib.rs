@@ -12,9 +12,6 @@ const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
 const SCRYPTO_COVERAGE: &str = "scrypto/coverage";
-const CARGO_ENCODED_RUSTFLAGS: &str = "CARGO_ENCODED_RUSTFLAGS";
-const CARGO_ENCODED_RUSTFLAGS_COVERAGE: &str =
-    "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir";
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
@@ -545,18 +542,17 @@ impl ScryptoCompiler {
             features.push(["--features", SCRYPTO_NO_SCHEMA]);
         }
 
-        let coverage_build = if let Some(idx) = features
-            .iter()
-            .position(|[_tag, value]| *value == SCRYPTO_COVERAGE)
-        {
-            if for_package_extract {
+        let mut remove_cargo_rustflags_env = false;
+        if for_package_extract {
+            if let Some(idx) = features
+                .iter()
+                .position(|[_tag, value]| *value == SCRYPTO_COVERAGE)
+            {
                 // for schema extract 'scrypto/coverage' flag must be removed
                 features.remove(idx);
+                remove_cargo_rustflags_env = true;
             }
-            true
-        } else {
-            false
-        };
+        }
 
         let features: Vec<&str> = features.into_iter().flatten().collect();
 
@@ -592,17 +588,14 @@ impl ScryptoCompiler {
             command.arg("--all_features");
         }
 
-        if coverage_build && !for_package_extract {
-            // for coverage WASM file build (2nd phase) add these Rustflags
-            command.env(CARGO_ENCODED_RUSTFLAGS, CARGO_ENCODED_RUSTFLAGS_COVERAGE);
-        }
         self.input_params
             .environment_variables
             .iter()
             .for_each(|(name, action)| {
                 match action {
                     EnvironmentVariableAction::Set(value) => {
-                        if !(coverage_build && name == CARGO_ENCODED_RUSTFLAGS) {
+                        // CARGO_ENCODED_RUSTFLAGS for coverage build must be removed for 1st phase compilation
+                        if !(remove_cargo_rustflags_env && name == "CARGO_ENCODED_RUSTFLAGS") {
                             command.env(name, value);
                         }
                     }
@@ -1284,6 +1277,43 @@ mod tests {
         ScryptoCompiler::builder()
             .coverage()
             .target_directory(target_path.clone())
+            .build()
+            .unwrap()
+            .prepare_command_phase_2(&mut cmd_phase_2);
+
+        // Assert
+        assert_eq!(cmd_to_string(&cmd_phase_1),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
+        assert_eq!(cmd_to_string(&cmd_phase_2),
+            format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_command_coverage_with_env() {
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut target_path = manifest_path.clone();
+        manifest_path.push("Cargo.toml");
+        target_path.pop(); // ScryptoCompiler dir
+        target_path.push("coverage");
+        let action = EnvironmentVariableAction::Set(String::from(
+            "-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir",
+        ));
+        let mut cmd_phase_1 = Command::new("cargo");
+        let mut cmd_phase_2 = Command::new("cargo");
+
+        // Act
+        ScryptoCompiler::builder()
+            .coverage()
+            .target_directory(target_path.clone())
+            .env("CARGO_ENCODED_RUSTFLAGS", action.clone()) // CARGO_ENCODED_RUSTFLAGS must be removed for 1st phase
+            .build()
+            .unwrap()
+            .prepare_command_phase_1(&mut cmd_phase_1);
+        ScryptoCompiler::builder()
+            .coverage()
+            .target_directory(target_path.clone())
+            .env("CARGO_ENCODED_RUSTFLAGS", action.clone())
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
