@@ -27,3 +27,13 @@ done
 rm -f simulator/Cargo.lock.new
 
 echo "Done"
+
+function checkSemversion(){
+    if [[ $versionNumber =~ ^v[0-9]+\.[0-9]+ ]]; then
+        echo "Input ${versionNumber}"
+        echo "Output ${versionNumber:1}" 
+    else
+        echo "Something is wrong with your version" >&2
+        echo "Make sure your version is in semantic versioning format and starts with a v" >&2
+    fi
+}

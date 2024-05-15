@@ -1,4 +1,4 @@
-name: Merge to main
+name: Merge main into develop
 on:
   push:
     branches:
@@ -18,8 +18,3 @@ jobs:
         BASE_BRANCH: develop
         CURRENT_BRANCH: main
       continue-on-error: true
-
-
-
-
-          

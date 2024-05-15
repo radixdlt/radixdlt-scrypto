@@ -12,6 +12,36 @@ permissions:
 
 jobs:
   publish-crates:
+    strategy:
+      matrix:
+        include:
+          - toml_file: "./scrypto-derive/Cargo.toml" 
+          - toml_file: "./radix-substate-store-queries/Cargo.toml" 
+          - toml_file: "./radix-common-derive/Cargo.toml"
+          - toml_file: "./radix-engine-profiling/Cargo.toml"
+          - toml_file: "./radix-substate-store-impls/Cargo.toml"
+          - toml_file: "./radix-clis/Cargo.toml"
+          - toml_file: "./radix-sbor-derive/Cargo.toml"
+          - toml_file: "./sbor-derive/Cargo.toml"
+          - toml_file: "./scrypto/Cargo.toml"
+          - toml_file: "./scrypto-test/Cargo.toml"
+          - toml_file: "./radix-transactions/Cargo.toml"
+          - toml_file: "./radix-native-sdk/Cargo.toml"
+          - toml_file: "./radix-blueprint-schema-init/Cargo.toml"
+          - toml_file: "./scrypto-compiler/Cargo.toml"
+          - toml_file: "./sbor-tests/Cargo.toml"
+          - toml_file: "./radix-engine-interface/Cargo.toml"
+          - toml_file: "./radix-rust/Cargo.toml"
+          - toml_file: "./sbor-derive-common/Cargo.toml"
+          - toml_file: "./radix-engine-profiling-derive/Cargo.toml"
+          - toml_file: "./radix-common/Cargo.toml"
+          - toml_file: "./sbor/Cargo.toml"
+          - toml_file: "./scrypto-derive-tests/Cargo.toml"
+          - toml_file: "./radix-engine/Cargo.toml"
+          - toml_file: "./radix-transaction-scenarios/Cargo.toml"
+          - toml_file: "./radix-engine-monkey-tests/Cargo.toml"
+          - toml_file: "./radix-engine-tests/Cargo.toml"
+          - toml_file: "./radix-substate-store-interface/Cargo.toml"
     runs-on: ubuntu-latest
     steps:
     - uses: RDXWorks-actions/checkout@main
@@ -23,13 +53,13 @@ jobs:
         secret_prefix: "CRATES"
         secret_name: "arn:aws:secretsmanager:eu-west-2:308190735829:secret:github-actions/radixdlt/radixdlt-scrypto/crates-token"
         parse_json: true
-    - name: Publish crates
+    - name: Dry Run Publish crates
+      if: github.event.release.prerelease
       run: |
-        ./publish-cargo-crates.sh
-      env:
-        CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
+        cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path ${{ matrix.toml_file }}
       continue-on-error: true
-
-
-  
-
+    - name: Publish crates
+      if: !github.event.release.prerelease 
+      run: |
+        cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path ${{ matrix.toml_file }}
+      continue-on-error: true
