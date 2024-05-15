@@ -16,7 +16,7 @@ use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::interface::DatabaseUpdate;
 use radix_transactions::model::Executable;
-use radix_transactions::prelude::TransactionCostingParametersV1;
+use radix_transactions::prelude::TransactionCostingParametersReceipt;
 use sbor::representations::*;
 
 define_single_versioned! {
@@ -33,7 +33,7 @@ pub struct TransactionReceiptV1 {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters
-    pub transaction_costing_parameters: TransactionCostingParametersV1,
+    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
     /// Transaction fee summary
     pub fee_summary: TransactionFeeSummary,
     /// Transaction fee detail

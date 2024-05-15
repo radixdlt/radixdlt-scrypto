@@ -5,7 +5,7 @@ use crate::{
     transaction::{AbortReason, CostingParameters},
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
-use radix_transactions::prelude::TransactionCostingParametersV2;
+use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::rust::cmp::min;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -146,7 +146,7 @@ impl Default for SystemLoanFeeReserve {
     fn default() -> Self {
         Self::new(
             &CostingParameters::babylon_genesis(),
-            &TransactionCostingParametersV2::default(),
+            &TransactionCostingParameters::default(),
         )
     }
 }
@@ -165,7 +165,7 @@ fn checked_add_assign(value: &mut u32, summand: u32) -> Result<(), FeeReserveErr
 impl SystemLoanFeeReserve {
     pub fn new(
         costing_parameters: &CostingParameters,
-        transaction_costing_parameters: &TransactionCostingParametersV2,
+        transaction_costing_parameters: &TransactionCostingParameters,
     ) -> Self {
         // Sanity checks
         assert!(!costing_parameters.execution_cost_unit_price.is_negative());
@@ -608,7 +608,7 @@ mod tests {
         costing_parameters.execution_cost_unit_loan = execution_cost_unit_loan;
         costing_parameters.usd_price = usd_price;
         costing_parameters.state_storage_price = state_storage_price;
-        let mut transaction_costing_parameters = TransactionCostingParametersV2::default();
+        let mut transaction_costing_parameters = TransactionCostingParameters::default();
         transaction_costing_parameters.tip_percentage = tip_percentage;
         transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 

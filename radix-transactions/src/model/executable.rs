@@ -20,7 +20,7 @@ pub struct ExecutionContext {
     pub payload_size: usize,
     pub num_of_signature_validations: usize,
     pub auth_zone_params: AuthZoneParams,
-    pub costing_parameters: TransactionCostingParametersV2,
+    pub costing_parameters: TransactionCostingParameters,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -61,15 +61,22 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
     }
 }
 
+// Note: we have the two models below after finding an issue where a new field was added to the
+// transaction costing parameters struct, which is used in the receipt, without moving to a new
+// version of the receipt.
+//
+// Relevant discussion:
+// https://rdxworks.slack.com/archives/C060RCS9MPW/p1715762426579329?thread_ts=1714585544.709299&cid=C060RCS9MPW
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct TransactionCostingParametersV2 {
+pub struct TransactionCostingParameters {
     pub tip_percentage: u16,
     /// Free credit for execution, for preview only!
     pub free_credit_in_xrd: Decimal,
     pub abort_when_loan_repaid: bool,
 }
 
-impl Default for TransactionCostingParametersV2 {
+impl Default for TransactionCostingParameters {
     fn default() -> Self {
         Self {
             tip_percentage: DEFAULT_TIP_PERCENTAGE,
@@ -80,13 +87,13 @@ impl Default for TransactionCostingParametersV2 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct TransactionCostingParametersV1 {
+pub struct TransactionCostingParametersReceipt {
     pub tip_percentage: u16,
     /// Free credit for execution, for preview only!
     pub free_credit_in_xrd: Decimal,
 }
 
-impl Default for TransactionCostingParametersV1 {
+impl Default for TransactionCostingParametersReceipt {
     fn default() -> Self {
         Self {
             tip_percentage: DEFAULT_TIP_PERCENTAGE,
@@ -95,8 +102,8 @@ impl Default for TransactionCostingParametersV1 {
     }
 }
 
-impl From<TransactionCostingParametersV2> for TransactionCostingParametersV1 {
-    fn from(value: TransactionCostingParametersV2) -> Self {
+impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt {
+    fn from(value: TransactionCostingParameters) -> Self {
         Self {
             free_credit_in_xrd: value.free_credit_in_xrd,
             tip_percentage: value.tip_percentage,
@@ -190,7 +197,7 @@ impl<'a> Executable<'a> {
         self.context.epoch_range.as_ref()
     }
 
-    pub fn costing_parameters(&self) -> &TransactionCostingParametersV2 {
+    pub fn costing_parameters(&self) -> &TransactionCostingParameters {
         &self.context.costing_parameters
     }
 

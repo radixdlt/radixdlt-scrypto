@@ -68,7 +68,7 @@ impl PreparedTestTransaction {
                     initial_proofs,
                     virtual_resources: BTreeSet::new(),
                 },
-                costing_parameters: TransactionCostingParametersV2 {
+                costing_parameters: TransactionCostingParameters {
                     tip_percentage: DEFAULT_TIP_PERCENTAGE,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,

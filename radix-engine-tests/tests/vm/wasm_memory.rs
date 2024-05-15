@@ -8,7 +8,7 @@ use radix_engine::vm::wasm_runtime::NoOpWasmRuntime;
 use radix_engine_interface::blueprints::package::CodeHash;
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
-use radix_transactions::model::TransactionCostingParametersV2;
+use radix_transactions::model::TransactionCostingParameters;
 use wabt::wat2wasm;
 
 const KB: u64 = 1024;
@@ -72,7 +72,7 @@ fn test_wasm_memory_grow_read_write() {
 
     let fee_reserve = SystemLoanFeeReserve::new(
         &CostingParameters::babylon_genesis(),
-        &TransactionCostingParametersV2::default(),
+        &TransactionCostingParameters::default(),
     );
     let mut wasm_execution_units_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
@@ -164,7 +164,7 @@ fn test_wasm_memory_is_clean() {
 
     let fee_reserve = SystemLoanFeeReserve::new(
         &CostingParameters::babylon_genesis(),
-        &TransactionCostingParametersV2::default(),
+        &TransactionCostingParameters::default(),
     );
     let mut wasm_execution_units_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
