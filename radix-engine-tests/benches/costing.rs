@@ -18,7 +18,7 @@ use radix_engine::{
 use radix_engine_interface::prelude::*;
 use radix_engine_tests::common::*;
 use radix_substate_store_queries::typed_substate_layout::{CodeHash, PackageDefinition};
-use radix_transactions::prelude::TransactionCostingParameters;
+use radix_transactions::prelude::TransactionCostingParametersV2;
 use sbor::rust::iter;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
 use wabt::wat2wasm;
@@ -123,7 +123,7 @@ fn bench_spin_loop(c: &mut Criterion) {
         b.iter(|| {
             let fee_reserve = SystemLoanFeeReserve::new(
                 &CostingParameters::babylon_genesis(),
-                &TransactionCostingParameters {
+                &TransactionCostingParametersV2 {
                     free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
                     tip_percentage: DEFAULT_TIP_PERCENTAGE,
                     abort_when_loan_repaid: false,

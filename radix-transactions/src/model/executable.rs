@@ -20,7 +20,7 @@ pub struct ExecutionContext {
     pub payload_size: usize,
     pub num_of_signature_validations: usize,
     pub auth_zone_params: AuthZoneParams,
-    pub costing_parameters: TransactionCostingParameters,
+    pub costing_parameters: TransactionCostingParametersV2,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -62,19 +62,44 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct TransactionCostingParameters {
+pub struct TransactionCostingParametersV2 {
     pub tip_percentage: u16,
     /// Free credit for execution, for preview only!
     pub free_credit_in_xrd: Decimal,
     pub abort_when_loan_repaid: bool,
 }
 
-impl Default for TransactionCostingParameters {
+impl Default for TransactionCostingParametersV2 {
     fn default() -> Self {
         Self {
             tip_percentage: DEFAULT_TIP_PERCENTAGE,
             free_credit_in_xrd: Default::default(),
             abort_when_loan_repaid: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct TransactionCostingParametersV1 {
+    pub tip_percentage: u16,
+    /// Free credit for execution, for preview only!
+    pub free_credit_in_xrd: Decimal,
+}
+
+impl Default for TransactionCostingParametersV1 {
+    fn default() -> Self {
+        Self {
+            tip_percentage: DEFAULT_TIP_PERCENTAGE,
+            free_credit_in_xrd: Default::default(),
+        }
+    }
+}
+
+impl From<TransactionCostingParametersV2> for TransactionCostingParametersV1 {
+    fn from(value: TransactionCostingParametersV2) -> Self {
+        Self {
+            free_credit_in_xrd: value.free_credit_in_xrd,
+            tip_percentage: value.tip_percentage,
         }
     }
 }
@@ -165,7 +190,7 @@ impl<'a> Executable<'a> {
         self.context.epoch_range.as_ref()
     }
 
-    pub fn costing_parameters(&self) -> &TransactionCostingParameters {
+    pub fn costing_parameters(&self) -> &TransactionCostingParametersV2 {
         &self.context.costing_parameters
     }
 

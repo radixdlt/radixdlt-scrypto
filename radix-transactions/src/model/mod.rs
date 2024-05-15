@@ -220,7 +220,7 @@ Enum<3u8>(
                         ),
                         virtual_resources: btreeset!()
                     },
-                    costing_parameters: TransactionCostingParameters {
+                    costing_parameters: TransactionCostingParametersV2 {
                         tip_percentage: 4,
                         free_credit_in_xrd: dec!(0),
                         abort_when_loan_repaid: false,

@@ -16,7 +16,7 @@ use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_substate_store_interface::interface::DatabaseUpdate;
 use radix_transactions::model::Executable;
-use radix_transactions::prelude::TransactionCostingParameters;
+use radix_transactions::prelude::TransactionCostingParametersV1;
 use sbor::representations::*;
 
 define_single_versioned! {
@@ -33,7 +33,7 @@ pub struct TransactionReceiptV1 {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters
-    pub transaction_costing_parameters: TransactionCostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParametersV1,
     /// Transaction fee summary
     pub fee_summary: TransactionFeeSummary,
     /// Transaction fee detail
@@ -50,7 +50,7 @@ impl ExecutionReceipt for TransactionReceipt {
     fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self {
         TransactionReceipt {
             costing_parameters: CostingParameters::babylon_genesis(),
-            transaction_costing_parameters: executable.costing_parameters().clone(),
+            transaction_costing_parameters: executable.costing_parameters().clone().into(),
             fee_summary: TransactionFeeSummary::default(),
             fee_details: None,
             result: TransactionResult::Reject(RejectResult { reason }),

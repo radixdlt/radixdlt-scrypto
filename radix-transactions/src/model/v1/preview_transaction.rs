@@ -35,7 +35,7 @@ impl ValidatedPreviewIntent {
         }
 
         let header = &intent.header.inner;
-        let fee_payment = TransactionCostingParameters {
+        let fee_payment = TransactionCostingParametersV2 {
             tip_percentage: header.tip_percentage,
             free_credit_in_xrd: if self.flags.use_free_credit {
                 Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap()

@@ -5,7 +5,7 @@ use crate::vm::wasm_runtime::NoOpWasmRuntime;
 use crate::vm::ScryptoVmVersion;
 use crate::{errors::InvokeError, transaction::CostingParameters};
 use radix_engine_interface::blueprints::package::*;
-use radix_transactions::prelude::TransactionCostingParameters;
+use radix_transactions::prelude::TransactionCostingParametersV2;
 use sbor::rust::iter;
 
 #[derive(Debug)]
@@ -40,7 +40,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     let wasm_engine = DefaultWasmEngine::default();
     let fee_reserve = SystemLoanFeeReserve::new(
         &CostingParameters::babylon_genesis(),
-        &TransactionCostingParameters {
+        &TransactionCostingParametersV2 {
             tip_percentage: 0,
             free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
             abort_when_loan_repaid: false,
