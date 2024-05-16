@@ -69,7 +69,7 @@ pub struct CurrentValidatorSetSubstate {
     pub validator_set: ActiveValidatorSet,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 #[sbor(transparent)]
 pub struct ActiveValidatorSet {
     /// The validators in the set, ordered by stake descending.
