@@ -363,6 +363,7 @@ jobs:
         run: |
           rustup toolchain install nightly-2024-02-08
           rustup target add wasm32-unknown-unknown --toolchain nightly-2024-02-08
+          rustup default nightly-2024-02-08
           rustup show
       - name: Install LLVM 17
         run: |
