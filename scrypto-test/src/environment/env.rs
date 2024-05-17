@@ -746,9 +746,8 @@ where
                     env.field_read_typed::<ConsensusManagerProposerMilliTimestampFieldPayload>(
                         handle,
                     )?;
-                proposer_milli_timestamp
-                    .as_unique_version_mut()
-                    .epoch_milli = instant.seconds_since_unix_epoch * 1000;
+                proposer_milli_timestamp.as_unique_version_mut().epoch_milli =
+                    instant.seconds_since_unix_epoch * 1000;
                 env.field_write_typed(handle, &proposer_milli_timestamp)?;
                 env.field_close(handle)?;
                 Ok(())
