@@ -347,7 +347,7 @@ jobs:
         working-directory: radix-clis
   
   scrypto-coverage-tests:
-    name: Run Scrypto coverage tests
+    name: Run CLI tests (scrypto coverage)
     runs-on: ubuntu-16-cores-selfhosted
     steps:
       - uses: RDXWorks-actions/checkout@main
