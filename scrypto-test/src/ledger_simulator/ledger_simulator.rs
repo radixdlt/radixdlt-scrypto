@@ -1238,7 +1238,15 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     }
 
     pub fn compile<P: AsRef<Path>>(&mut self, package_dir: P) -> (Vec<u8>, PackageDefinition) {
-        Compile::compile(package_dir)
+        self.compile_with_option(package_dir, CompileProfile::FastWithTraceLogs)
+    }
+
+    pub fn compile_with_option<P: AsRef<Path>>(
+        &mut self,
+        package_dir: P,
+        compile_profile: CompileProfile,
+    ) -> (Vec<u8>, PackageDefinition) {
+        Compile::compile(package_dir, compile_profile)
     }
 
     // Doesn't need to be here - kept for backward compatibility
@@ -2577,31 +2585,31 @@ pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
 }
 
 pub enum PackagePublishingSource {
-    CompileAndPublishFromSource(PathBuf),
+    CompileAndPublishFromSource(PathBuf, CompileProfile),
     PublishExisting(Vec<u8>, PackageDefinition),
 }
 
 impl From<String> for PackagePublishingSource {
     fn from(value: String) -> Self {
-        Self::CompileAndPublishFromSource(value.into())
+        Self::CompileAndPublishFromSource(value.into(), CompileProfile::FastWithTraceLogs)
     }
 }
 
 impl<'g> From<&'g str> for PackagePublishingSource {
     fn from(value: &'g str) -> Self {
-        Self::CompileAndPublishFromSource(value.into())
+        Self::CompileAndPublishFromSource(value.into(), CompileProfile::FastWithTraceLogs)
     }
 }
 
 impl From<PathBuf> for PackagePublishingSource {
     fn from(value: PathBuf) -> Self {
-        Self::CompileAndPublishFromSource(value)
+        Self::CompileAndPublishFromSource(value, CompileProfile::FastWithTraceLogs)
     }
 }
 
 impl<'g> From<&'g Path> for PackagePublishingSource {
     fn from(value: &'g Path) -> Self {
-        Self::CompileAndPublishFromSource(value.into())
+        Self::CompileAndPublishFromSource(value.into(), CompileProfile::FastWithTraceLogs)
     }
 }
 
@@ -2614,7 +2622,7 @@ impl From<(Vec<u8>, PackageDefinition)> for PackagePublishingSource {
 impl PackagePublishingSource {
     pub fn code_and_definition(self) -> (Vec<u8>, PackageDefinition) {
         match self {
-            Self::CompileAndPublishFromSource(path) => Compile::compile(path),
+            Self::CompileAndPublishFromSource(path, profile) => Compile::compile(path, profile),
             Self::PublishExisting(code, definition) => (code, definition),
         }
     }

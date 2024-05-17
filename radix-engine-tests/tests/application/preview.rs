@@ -231,6 +231,107 @@ fn test_preview_no_auth() {
         .contains_key(CONSENSUS_MANAGER.as_node_id());
 }
 
+#[test]
+fn notary_key_is_in_initial_proofs_when_notary_as_signatory_is_true() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (public_key, _, account) = ledger.new_account(true);
+    let current_epoch = ledger.get_current_epoch();
+
+    // Act
+    let receipt = ledger.preview(
+        PreviewIntentV1 {
+            intent: IntentV1 {
+                header: TransactionHeaderV1 {
+                    network_id: 0xf2,
+                    start_epoch_inclusive: current_epoch,
+                    end_epoch_exclusive: current_epoch.after(10).unwrap(),
+                    nonce: 10,
+                    notary_public_key: public_key.into(),
+                    notary_is_signatory: true,
+                    tip_percentage: 0,
+                },
+                instructions: InstructionsV1(
+                    ManifestBuilder::new()
+                        .lock_fee_and_withdraw(account, 10, XRD, 10)
+                        .deposit_batch(account)
+                        .build()
+                        .instructions,
+                ),
+                blobs: Default::default(),
+                message: Default::default(),
+            },
+            signer_public_keys: Default::default(),
+            flags: PreviewFlags {
+                use_free_credit: false,
+                assume_all_signature_proofs: false,
+                skip_epoch_check: false,
+                disable_auth: false,
+            },
+        },
+        &NetworkDefinition::simulator(),
+    );
+
+    // Assert
+    receipt.expect("Must succeed!").expect_commit_success();
+}
+
+#[test]
+fn notary_key_is_not_in_initial_proofs_when_notary_as_signatory_is_false() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let (public_key, _, account) = ledger.new_account(true);
+    let current_epoch = ledger.get_current_epoch();
+
+    // Act
+    let receipt = ledger.preview(
+        PreviewIntentV1 {
+            intent: IntentV1 {
+                header: TransactionHeaderV1 {
+                    network_id: 0xf2,
+                    start_epoch_inclusive: current_epoch,
+                    end_epoch_exclusive: current_epoch.after(10).unwrap(),
+                    nonce: 10,
+                    notary_public_key: public_key.into(),
+                    notary_is_signatory: false,
+                    tip_percentage: 0,
+                },
+                instructions: InstructionsV1(
+                    ManifestBuilder::new()
+                        .lock_fee_and_withdraw(account, 10, XRD, 10)
+                        .deposit_batch(account)
+                        .build()
+                        .instructions,
+                ),
+                blobs: Default::default(),
+                message: Default::default(),
+            },
+            signer_public_keys: Default::default(),
+            flags: PreviewFlags {
+                use_free_credit: false,
+                assume_all_signature_proofs: false,
+                skip_epoch_check: false,
+                disable_auth: false,
+            },
+        },
+        &NetworkDefinition::simulator(),
+    );
+
+    // Assert
+    receipt
+        .expect("Must succeed!")
+        .expect_specific_rejection(|error| {
+            matches!(
+                error,
+                RejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(
+                    RuntimeError::SystemModuleError(SystemModuleError::AuthError(
+                        AuthError::Unauthorized(..)
+                    ))
+                )
+            )
+        });
+}
+
 fn prepare_matching_test_tx_and_preview_intent(
     ledger: &mut DefaultLedgerSimulator,
     network: &NetworkDefinition,

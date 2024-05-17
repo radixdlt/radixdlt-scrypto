@@ -298,6 +298,35 @@ jobs:
         run: bash ./tests/scrypto.sh
         working-directory: radix-clis
 
+  radix-clis-scrypto-coverage:
+    name: Run CLI tests (scrypto coverage)
+    runs-on: ubuntu-16-cores-selfhosted
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - uses: radixdlt/rust-cache@allow_registry_src_caching
+        with:
+          prefix-key: ""
+          shared-key: radix-clis-debug-${{ runner.os }}
+          cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+          workspaces: radix-clis
+      - name: Install rustc 1.78.0-nightly
+        run: |
+          rustup toolchain install nightly-2024-02-08
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-02-08
+          rustup default nightly-2024-02-08
+          rustup show
+      - name: Install LLVM 17
+        run: |
+          sudo apt install lsb-release wget software-properties-common gnupg
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 17
+      - name: Run tests
+        working-directory: radix-clis
+        run: bash ./tests/scrypto_coverage.sh
+        
   cargo-check:
     name: Run cargo check
     runs-on: ${{ matrix.os }}
@@ -312,7 +341,7 @@ jobs:
         run: cargo check --all
 
   cargo-check-post-run-db-check:
-    name: Run cargo check
+    name: Run cargo check with post run db check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -345,3 +374,4 @@ jobs:
             --max-version 50000 \
             --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
         working-directory: radix-clis
+  

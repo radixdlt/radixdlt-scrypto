@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use crate::prelude::*;
-use scrypto_compiler::*;
 
 pub struct PackageFactory;
 
@@ -59,12 +58,13 @@ impl PackageFactory {
     pub fn compile_and_publish<P, D>(
         path: P,
         env: &mut TestEnvironment<D>,
+        compile_profile: CompileProfile,
     ) -> Result<PackageAddress, RuntimeError>
     where
         P: AsRef<Path>,
         D: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
-        let (wasm, package_definition) = Self::compile(path);
+        let (wasm, package_definition) = Self::compile(path, compile_profile);
         Self::publish_advanced(
             OwnerRole::None,
             package_definition,
@@ -75,34 +75,10 @@ impl PackageFactory {
         )
     }
 
-    pub fn compile<P>(path: P) -> (Vec<u8>, PackageDefinition)
+    pub fn compile<P>(path: P, compile_profile: CompileProfile) -> (Vec<u8>, PackageDefinition)
     where
         P: AsRef<Path>,
     {
-        // Initialize compiler
-        let mut compiler = ScryptoCompiler::builder()
-            .manifest_path(path.as_ref())
-            .optimize_with_wasm_opt(None)
-            .build()
-            .unwrap_or_else(|err| panic!("Failed to initialize Scrypto Compiler  {:?}", err));
-
-        // Build
-        let mut build_artifacts = compiler.compile().unwrap_or_else(|err| {
-            panic!(
-                "Failed to compile package: {:?}, error: {:?}",
-                path.as_ref(),
-                err
-            )
-        });
-
-        if !build_artifacts.is_empty() {
-            let build_artifact = build_artifacts.remove(0); // take first element
-            (
-                build_artifact.wasm.content,
-                build_artifact.package_definition.content,
-            )
-        } else {
-            panic!("Build artifacts list is empty: {:?}", path.as_ref(),);
-        }
+        Compile::compile_with_env_vars(path, BTreeMap::new(), compile_profile, false)
     }
 }

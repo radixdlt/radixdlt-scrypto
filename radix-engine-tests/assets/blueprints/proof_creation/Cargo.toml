@@ -1,6 +1,6 @@
 [package]
 name = "proof_creation"
-version = "1.2.0-dev"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]

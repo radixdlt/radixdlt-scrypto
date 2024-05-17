@@ -148,7 +148,10 @@ impl Coverage {
         fs::create_dir_all(&data_path).unwrap();
 
         // Set enviromental variable COVERAGE_DIRECTORY
-        env::set_var("COVERAGE_DIRECTORY", data_path.to_str().unwrap());
+        env::set_var(
+            "COVERAGE_DIRECTORY",
+            fs::canonicalize(&data_path).unwrap().to_str().unwrap(),
+        );
 
         // Run tests
         test_package(path, self.arguments.clone(), true)

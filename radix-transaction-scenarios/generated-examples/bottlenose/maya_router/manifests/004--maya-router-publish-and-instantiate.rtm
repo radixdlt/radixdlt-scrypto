@@ -47,8 +47,8 @@ PUBLISH_PACKAGE_ADVANCED
                                         Enum<1u8>(
                                             5u64
                                         ),
-                                        Enum<0u8>(
-                                            208u8
+                                        Enum<1u8>(
+                                            5u64
                                         ),
                                         Enum<0u8>(
                                             162u8
@@ -63,9 +63,6 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<14u8>(
                                     Array<Enum>(
-                                        Enum<0u8>(
-                                            208u8
-                                        ),
                                         Enum<1u8>(
                                             5u64
                                         ),
@@ -73,23 +70,88 @@ PUBLISH_PACKAGE_ADVANCED
                                             133u8
                                         ),
                                         Enum<0u8>(
+                                            132u8
+                                        ),
+                                        Enum<1u8>(
+                                            7u64
+                                        ),
+                                        Enum<0u8>(
                                             192u8
                                         ),
                                         Enum<0u8>(
                                             12u8
+                                        ),
+                                        Enum<0u8>(
+                                            192u8
+                                        )
+                                    )
+                                ),
+                                Enum<15u8>(
+                                    Map<U8, Array>(
+                                        0u8 => Array<Enum>(),
+                                        1u8 => Array<Enum>(
+                                            Enum<1u8>(
+                                                8u64
+                                            )
                                         )
                                     )
                                 ),
                                 Enum<14u8>(
                                     Array<Enum>(
                                         Enum<0u8>(
-                                            208u8
-                                        ),
-                                        Enum<0u8>(
-                                            208u8
+                                            132u8
                                         ),
                                         Enum<0u8>(
                                             133u8
+                                        ),
+                                        Enum<0u8>(
+                                            192u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<1u8>(
+                                            5u64
+                                        ),
+                                        Enum<0u8>(
+                                            162u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<1u8>(
+                                            5u64
+                                        ),
+                                        Enum<0u8>(
+                                            162u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<1u8>(
+                                            5u64
+                                        ),
+                                        Enum<0u8>(
+                                            133u8
+                                        )
+                                    )
+                                ),
+                                Enum<14u8>(
+                                    Array<Enum>(
+                                        Enum<0u8>(
+                                            132u8
+                                        ),
+                                        Enum<0u8>(
+                                            132u8
+                                        ),
+                                        Enum<0u8>(
+                                            133u8
+                                        ),
+                                        Enum<0u8>(
+                                            192u8
                                         ),
                                         Enum<0u8>(
                                             12u8
@@ -102,42 +164,17 @@ PUBLISH_PACKAGE_ADVANCED
                                             132u8
                                         ),
                                         Enum<0u8>(
-                                            208u8
-                                        ),
-                                        Enum<0u8>(
                                             133u8
                                         ),
                                         Enum<0u8>(
                                             192u8
-                                        ),
-                                        Enum<0u8>(
-                                            12u8
                                         )
                                     )
                                 ),
                                 Enum<14u8>(
                                     Array<Enum>(
                                         Enum<0u8>(
-                                            208u8
-                                        ),
-                                        Enum<0u8>(
-                                            208u8
-                                        ),
-                                        Enum<0u8>(
-                                            133u8
-                                        ),
-                                        Enum<0u8>(
-                                            192u8
-                                        ),
-                                        Enum<0u8>(
-                                            12u8
-                                        )
-                                    )
-                                ),
-                                Enum<14u8>(
-                                    Array<Enum>(
-                                        Enum<0u8>(
-                                            208u8
+                                            132u8
                                         ),
                                         Enum<0u8>(
                                             132u8
@@ -150,6 +187,9 @@ PUBLISH_PACKAGE_ADVANCED
                                         ),
                                         Enum<0u8>(
                                             12u8
+                                        ),
+                                        Enum<1u8>(
+                                            7u64
                                         )
                                     )
                                 )
@@ -192,13 +232,13 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "MayaRouter_deposit_Input"
+                                        "MayaRouter_user_deposit_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
                                             Array<String>(
                                                 "sender",
-                                                "asgard_vault",
+                                                "vault_address",
                                                 "bucket",
                                                 "memo"
                                             )
@@ -213,31 +253,94 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "MayaRouter_transfer_out_Input"
+                                        "MayaRouter_withdraw_Input"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
                                             Array<String>(
-                                                "asgard_vault",
-                                                "receiver",
-                                                "asset",
+                                                "vault_address",
+                                                "resource_address",
+                                                "intended_recipient",
+                                                "aggregator",
                                                 "amount",
-                                                "memo"
+                                                "memo",
+                                                "fee_to_lock"
                                             )
                                         )
                                     )
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "MayaRouter_transfer_between_asgard_vaults_Input"
+                                        "Option"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<1u8>(
+                                            Map<U8, Tuple>(
+                                                0u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "None"
+                                                    ),
+                                                    Enum<0u8>()
+                                                ),
+                                                1u8 => Tuple(
+                                                    Enum<1u8>(
+                                                        "Some"
+                                                    ),
+                                                    Enum<0u8>()
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "AggregatorInfo"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
                                             Array<String>(
-                                                "from_asgard_vault",
-                                                "to_asgard_vault",
-                                                "asset",
-                                                "memo"
+                                                "address",
+                                                "target_resource",
+                                                "min_amount"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "MayaRouter_transfer_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "recipient",
+                                                "bucket"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "MayaRouter_direct_deposit_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "vault_address",
+                                                "bucket"
+                                            )
+                                        )
+                                    )
+                                ),
+                                Tuple(
+                                    Enum<1u8>(
+                                        "MayaRouter_get_vault_balance_Input"
+                                    ),
+                                    Enum<1u8>(
+                                        Enum<0u8>(
+                                            Array<String>(
+                                                "vault_address",
+                                                "resource_address"
                                             )
                                         )
                                     )
@@ -250,8 +353,8 @@ PUBLISH_PACKAGE_ADVANCED
                                         Enum<0u8>(
                                             Array<String>(
                                                 "sender",
-                                                "asgard_vault",
-                                                "asset",
+                                                "vault_address",
+                                                "resource_address",
                                                 "amount",
                                                 "memo"
                                             )
@@ -260,32 +363,31 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "MayaRouterTransferAsgardVaultEvent"
+                                        "MayaRouterDirectDepositEvent"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
                                             Array<String>(
-                                                "from_asgard_vault",
-                                                "to_asgard_vault",
-                                                "asset",
-                                                "amount",
-                                                "memo"
+                                                "vault_address",
+                                                "resource_address",
+                                                "amount"
                                             )
                                         )
                                     )
                                 ),
                                 Tuple(
                                     Enum<1u8>(
-                                        "MayaRouterTransferOutEvent"
+                                        "MayaRouterWithdrawEvent"
                                     ),
                                     Enum<1u8>(
                                         Enum<0u8>(
                                             Array<String>(
-                                                "asgard_vault",
-                                                "receiver",
-                                                "asset",
+                                                "vault_address",
+                                                "intended_recipient",
+                                                "resource_address",
                                                 "amount",
-                                                "memo"
+                                                "memo",
+                                                "aggregator"
                                             )
                                         )
                                     )
@@ -327,6 +429,10 @@ PUBLISH_PACKAGE_ADVANCED
                                 Enum<0u8>(),
                                 Enum<0u8>(),
                                 Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
+                                Enum<0u8>(),
                                 Enum<0u8>()
                             )
                         )
@@ -348,21 +454,34 @@ PUBLISH_PACKAGE_ADVANCED
                     Map<String, Enum>(
                         "MayaRouterDepositEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                8u64
+                                12u64
                             )
                         ),
-                        "MayaRouterTransferAsgardVaultEvent" => Enum<0u8>(
+                        "MayaRouterDirectDepositEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                9u64
+                                13u64
                             )
                         ),
-                        "MayaRouterTransferOutEvent" => Enum<0u8>(
+                        "MayaRouterWithdrawEvent" => Enum<0u8>(
                             Enum<1u8>(
-                                10u64
+                                14u64
                             )
                         )
                     ),
-                    Map<String, Enum>(),
+                    Map<String, Enum>(
+                        "ComponentAddress" => Enum<0u8>(
+                            132u8
+                        ),
+                        "FungibleVault" => Enum<0u8>(
+                            168u8
+                        ),
+                        "KeyValueStore_ResourceAddress_FungibleVault" => Enum<0u8>(
+                            170u8
+                        ),
+                        "ResourceAddress" => Enum<0u8>(
+                            133u8
+                        )
+                    ),
                     Tuple(
                         Map<String, Tuple>(
                             "instantiate" => Tuple(
@@ -379,7 +498,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 "MayaRouter_instantiate"
                             ),
-                            "deposit" => Tuple(
+                            "user_deposit" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
                                         Enum<1u8>(),
@@ -398,9 +517,9 @@ PUBLISH_PACKAGE_ADVANCED
                                         66u8
                                     )
                                 ),
-                                "MayaRouter_deposit"
+                                "MayaRouter_user_deposit"
                             ),
-                            "transfer_out" => Tuple(
+                            "withdraw" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
                                         Enum<1u8>(),
@@ -416,12 +535,12 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<0u8>(
-                                        66u8
+                                        162u8
                                     )
                                 ),
-                                "MayaRouter_transfer_out"
+                                "MayaRouter_withdraw"
                             ),
-                            "transfer_between_asgard_vaults" => Tuple(
+                            "transfer" => Tuple(
                                 Enum<1u8>(
                                     Tuple(
                                         Enum<1u8>(),
@@ -432,7 +551,7 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 Enum<0u8>(
                                     Enum<1u8>(
-                                        7u64
+                                        9u64
                                     )
                                 ),
                                 Enum<0u8>(
@@ -440,7 +559,49 @@ PUBLISH_PACKAGE_ADVANCED
                                         66u8
                                     )
                                 ),
-                                "MayaRouter_transfer_between_asgard_vaults"
+                                "MayaRouter_transfer"
+                            ),
+                            "direct_deposit" => Tuple(
+                                Enum<1u8>(
+                                    Tuple(
+                                        Enum<1u8>(),
+                                        Tuple(
+                                            1u32
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        10u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<0u8>(
+                                        66u8
+                                    )
+                                ),
+                                "MayaRouter_direct_deposit"
+                            ),
+                            "get_vault_balance" => Tuple(
+                                Enum<1u8>(
+                                    Tuple(
+                                        Enum<0u8>(),
+                                        Tuple(
+                                            1u32
+                                        )
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<1u8>(
+                                        11u64
+                                    )
+                                ),
+                                Enum<0u8>(
+                                    Enum<0u8>(
+                                        192u8
+                                    )
+                                ),
+                                "MayaRouter_get_vault_balance"
                             )
                         )
                     ),
@@ -457,9 +618,11 @@ PUBLISH_PACKAGE_ADVANCED
                                 Map<String, Array>()
                             ),
                             Map<String, Enum>(
-                                "deposit" => Enum<0u8>(),
-                                "transfer_out" => Enum<0u8>(),
-                                "transfer_between_asgard_vaults" => Enum<0u8>()
+                                "user_deposit" => Enum<0u8>(),
+                                "withdraw" => Enum<0u8>(),
+                                "transfer" => Enum<0u8>(),
+                                "direct_deposit" => Enum<0u8>(),
+                                "get_vault_balance" => Enum<0u8>()
                             )
                         )
                     )
@@ -467,7 +630,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("814a1af902d10c59dd1b9d06a49db48cd9d9e76b6666a56435c5f1496de78794")
+    Blob("d78be0b56058b6df1ef6d3269e5867b2984f588bb63ec97999755f1c353b0756")
     Map<String, Tuple>(
         "name" => Tuple(
             Enum<1u8>(
