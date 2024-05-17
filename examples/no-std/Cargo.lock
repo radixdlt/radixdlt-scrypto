@@ -307,7 +307,7 @@ checksum = "8452105ba047068f40ff7093dd1d9da90898e63dd61736462e9cdda6a90ad3c3"
 
 [[package]]
 name = "no-std"
-version = "1.2.0-dev"
+version = "1.0.0"
 dependencies = [
  "sbor",
  "scrypto",
@@ -397,7 +397,7 @@ dependencies = [
 
 [[package]]
 name = "radix-blueprint-schema-init"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "bitflags",
  "radix-common",
@@ -407,7 +407,7 @@ dependencies = [
 
 [[package]]
 name = "radix-common"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "bech32",
  "blake2",
@@ -432,7 +432,7 @@ dependencies = [
 
 [[package]]
 name = "radix-common-derive"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -443,7 +443,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -463,7 +463,7 @@ dependencies = [
 
 [[package]]
 name = "radix-rust"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "hashbrown 0.13.2",
  "indexmap",
@@ -472,7 +472,7 @@ dependencies = [
 
 [[package]]
 name = "radix-sbor-derive"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -555,7 +555,7 @@ checksum = "e86697c916019a8588c99b5fac3cead74ec0b4b819707a682fd4d23fa0ce1ba1"
 
 [[package]]
 name = "sbor"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "const-sha1",
  "hex",
@@ -568,7 +568,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -577,7 +577,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "bech32",
  "const-sha1",
@@ -607,7 +607,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "1.2.0-dev"
+version = "1.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
