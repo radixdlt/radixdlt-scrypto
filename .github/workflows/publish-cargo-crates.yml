@@ -2,7 +2,9 @@ name: Publish cargo crates
 
 on:
   release:
-    types: [published]
+    types:
+      - released
+      - prereleased
 
 permissions:
   packages: write
@@ -47,19 +49,17 @@ jobs:
     - uses: RDXWorks-actions/checkout@main
     - uses: radixdlt/iac-resuable-artifacts/fetch-secrets@v0.8.0
       with:
-        role_name: "arn:aws:iam::308190735829:role/gh-common-secret-access"
+        role_name: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
         app_name: "radixdlt-scrypto"
-        step_name: "publish crate"
+        step_name: "publish-crate"
         secret_prefix: "CRATES"
-        secret_name: "arn:aws:secretsmanager:eu-west-2:308190735829:secret:github-actions/radixdlt/radixdlt-scrypto/crates-token"
+        secret_name: "arn:aws:secretsmanager:eu-west-2:308190735829:secret:github-actions/common/cratesio-token-IjOP4n"
         parse_json: true
     - name: Dry Run Publish crates
       if: github.event.release.prerelease
       run: |
         cargo publish --dry-run --token "${{ env.CRATES_TOKEN }}" --manifest-path ${{ matrix.toml_file }}
-      continue-on-error: true
     - name: Publish crates
-      if: !github.event.release.prerelease 
+      if: github.event.release.prerelease == false
       run: |
         cargo publish --token "${{ env.CRATES_TOKEN }}" --manifest-path ${{ matrix.toml_file }}
-      continue-on-error: true

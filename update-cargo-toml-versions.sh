@@ -5,8 +5,9 @@ export VERSION=$1
 
 echo "Updating to version ${VERSION}"
 cargo install toml-cli
+ 
 
-FILES=("monkey-tests/Cargo.toml" "native-sdk/Cargo.toml" "radix-engine-common/Cargo.toml" "radix-engine-derive/Cargo.toml" "radix-engine-interface/Cargo.toml" "radix-engine-macros/Cargo.toml" "radix-engine-profiling/Cargo.toml" "radix-engine-queries/Cargo.toml" "radix-engine-store-interface/Cargo.toml" "radix-engine-stores/Cargo.toml" "radix-engine-tests/Cargo.toml" "radix-engine/Cargo.toml" "sbor-derive-common/Cargo.toml" "sbor-derive/Cargo.toml" "sbor-tests/Cargo.toml" "sbor/Cargo.toml" "scrypto-derive-tests/Cargo.toml" "scrypto-derive/Cargo.toml" "scrypto-schema/Cargo.toml" "scrypto-test/Cargo.toml" "scrypto-unit/Cargo.toml" "scrypto/Cargo.toml" "simulator/Cargo.toml" "transaction-scenarios/Cargo.toml" "transaction/Cargo.toml" "utils/Cargo.toml" "radix-engine-profiling/resources-tracker-macro/Cargo.toml" "radix-engine/wasm-benchmarks-lib/Cargo.toml")
+FILES=("./scrypto-derive/Cargo.toml" "./radix-substate-store-queries/Cargo.toml" "./radix-common-derive/Cargo.toml" "./radix-engine-profiling/Cargo.toml" "./radix-substate-store-impls/Cargo.toml" "./radix-clis/Cargo.toml" "./radix-sbor-derive/Cargo.toml" "./sbor-derive/Cargo.toml" "./scrypto/Cargo.toml" "./scrypto-test/Cargo.toml" "./radix-transactions/Cargo.toml" "./radix-native-sdk/Cargo.toml" "./radix-blueprint-schema-init/Cargo.toml" "./scrypto-compiler/Cargo.toml" "./sbor-tests/Cargo.toml" "./radix-engine-interface/Cargo.toml" "./radix-rust/Cargo.toml" "./sbor-derive-common/Cargo.toml" "./radix-engine-profiling-derive/Cargo.toml" "./radix-common/Cargo.toml" "./sbor/Cargo.toml" "./scrypto-derive-tests/Cargo.toml" "./radix-engine/Cargo.toml" "./radix-transaction-scenarios/Cargo.toml" "./radix-engine-monkey-tests/Cargo.toml" "./radix-engine-tests/Cargo.toml" "./radix-substate-store-interface/Cargo.toml")
 for toml_file in ${FILES[@]}; do
     FILENAME=${toml_file}
     mv "${FILENAME}" "${FILENAME}.old"
@@ -26,14 +27,20 @@ fi;
 done
 rm -f simulator/Cargo.lock.new
 
+WORKSPACE_DEPENDENCIES=("radix-blueprint-schema-init" "radix-common" "radix-common-derive" "radix-engine" "radix-engine-interface" "radix-engine-profiling" "radix-engine-profiling-derive" "radix-native-sdk" "radix-rust" "radix-sbor-derive" "radix-substate-store-impls" "radix-substate-store-interface" "radix-substate-store-queries" "radix-transaction-scenarios" "radix-transactions" "sbor" "sbor-derive" "sbor-derive-common" "scrypto" "scrypto-compiler" "scrypto-derive" "scrypto-test")
+echo "Update workspace dependencies"
+maxi=${#WORKSPACE_DEPENDENCIES[@]}
+for (( i=1; i<$maxi; i++ ))
+do
+    value=$(toml get Cargo.toml "workspace.dependencies.${WORKSPACE_DEPENDENCIES[$i]}" -r);
+    echo "File is ${WORKSPACE_DEPENDENCIES[$i]} Value is$value"
+    toml set Cargo.toml "workspace.dependencies.${WORKSPACE_DEPENDENCIES[$i]}.version" "${VERSION}" > Cargo.toml.new
+    mv Cargo.toml.new Cargo.toml
+done
+rm -f Cargo.toml.new
+
+# ./update-cargo-locks.sh
+
 echo "Done"
 
-function checkSemversion(){
-    if [[ $versionNumber =~ ^v[0-9]+\.[0-9]+ ]]; then
-        echo "Input ${versionNumber}"
-        echo "Output ${versionNumber:1}" 
-    else
-        echo "Something is wrong with your version" >&2
-        echo "Make sure your version is in semantic versioning format and starts with a v" >&2
-    fi
-}
+
