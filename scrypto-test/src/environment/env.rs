@@ -739,17 +739,17 @@ where
             |env| -> Result<(), RuntimeError> {
                 let handle = env.actor_open_field(
                     ACTOR_STATE_SELF,
-                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
+                    ConsensusManagerField::ProposerMilliTimestamp.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut proposer_minute_timestamp =
-                    env.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+                let mut proposer_milli_timestamp =
+                    env.field_read_typed::<ConsensusManagerProposerMilliTimestampFieldPayload>(
                         handle,
                     )?;
-                proposer_minute_timestamp
+                proposer_milli_timestamp
                     .as_unique_version_mut()
-                    .epoch_minute = (instant.seconds_since_unix_epoch / 60) as i32;
-                env.field_write_typed(handle, &proposer_minute_timestamp)?;
+                    .epoch_milli = instant.seconds_since_unix_epoch * 1000;
+                env.field_write_typed(handle, &proposer_milli_timestamp)?;
                 env.field_close(handle)?;
                 Ok(())
             },
