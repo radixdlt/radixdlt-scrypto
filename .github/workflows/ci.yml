@@ -363,10 +363,13 @@ jobs:
         run: |
           rustup toolchain install nightly-2024-02-08
           rustup target add wasm32-unknown-unknown --toolchain nightly-2024-02-08
+          rustup show
       - name: Install LLVM 17
         run: |
-          apt install lsb-release wget software-properties-common gnupg
-          bash -c "$(wget -O - https://apt.llvm.org/llvm.sh 17)"
+          sudo apt install lsb-release wget software-properties-common gnupg
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 17
       - name: Run tests
         working-directory: radix-clis
         run: bash ./tests/scrypto_coverage.sh
