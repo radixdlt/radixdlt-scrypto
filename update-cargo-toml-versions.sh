@@ -39,7 +39,19 @@ do
 done
 rm -f Cargo.toml.new
 
-# ./update-cargo-locks.sh
+WORKSPACE_DEPENDENCIES=("radix-blueprint-schema-init" "radix-common" "radix-common-derive" "radix-engine" "radix-engine-interface" "radix-engine-profiling" "radix-engine-profiling-derive" "radix-native-sdk" "radix-rust" "radix-sbor-derive" "radix-substate-store-impls" "radix-substate-store-interface" "radix-substate-store-queries" "radix-transaction-scenarios" "radix-transactions" "sbor" "sbor-derive" "sbor-derive-common" "scrypto" "scrypto-compiler" "scrypto-derive" "scrypto-test")
+echo "Update dependencies of radix-clis"
+maxi=${#WORKSPACE_DEPENDENCIES[@]}
+for (( i=1; i<$maxi; i++ ))
+do
+    value=$(toml get radix-clis/Cargo.toml "dependencies.${WORKSPACE_DEPENDENCIES[$i]}" -r);
+    echo "File is ${WORKSPACE_DEPENDENCIES[$i]} Value is$value"
+    toml set radix-clis/Cargo.toml "dependencies.${WORKSPACE_DEPENDENCIES[$i]}.version" "${VERSION}" > radix-clis/Cargo.toml.new
+    mv radix-clis/Cargo.toml.new radix-clis/Cargo.toml
+done
+rm -f radix-clis/Cargo.toml.new
+
+./update-cargo-locks.sh
 
 echo "Done"
 
