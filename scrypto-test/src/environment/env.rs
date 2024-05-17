@@ -728,7 +728,7 @@ where
 
     /// Gets the current time stamp from the Consensus Manager.
     pub fn get_current_time(&mut self) -> Instant {
-        Runtime::current_time(self, TimePrecision::Minute).unwrap()
+        Runtime::current_time(self, TimePrecision::Second).unwrap()
     }
 
     pub fn set_current_time(&mut self, instant: Instant) {
