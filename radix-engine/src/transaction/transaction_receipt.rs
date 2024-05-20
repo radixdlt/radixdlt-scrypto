@@ -1165,14 +1165,14 @@ fn format_substate_value<'a, F: fmt::Write>(
                     SystemFieldKind::TypeInfo => {
                         (TYPE_INFO_SUBSTATE_SCHEMA.0, &TYPE_INFO_SUBSTATE_SCHEMA.1)
                     }
-                    SystemFieldKind::BootLoader(BootLoaderFieldKind::VmBoot) => {
+                    SystemFieldKind::VmBoot => {
                         (VM_BOOT_SUBSTATE_SCHEMA.0, &VM_BOOT_SUBSTATE_SCHEMA.1)
                     }
-                    SystemFieldKind::BootLoader(BootLoaderFieldKind::SystemBoot) => (
+                    SystemFieldKind::SystemBoot => (
                         SYSTEM_BOOT_SUBSTATE_SCHEMA.0,
                         &SYSTEM_BOOT_SUBSTATE_SCHEMA.1,
                     ),
-                    SystemFieldKind::BootLoader(BootLoaderFieldKind::KernelBoot) => (
+                    SystemFieldKind::KernelBoot => (
                         KERNEL_BOOT_SUBSTATE_SCHEMA.0,
                         &KERNEL_BOOT_SUBSTATE_SCHEMA.1,
                     ),
