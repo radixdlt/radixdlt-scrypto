@@ -12,6 +12,19 @@ RADIX_CARGO_LOCK_FILES=$(find . -iname Cargo.lock -mindepth 2)
 INTERNAL_PROJECT_LIST=("radix-blueprint-schema-init" "radix-common" "radix-common-derive" "radix-engine" "radix-engine-interface" "radix-engine-profiling" "radix-engine-profiling-derive" "radix-native-sdk" "radix-rust" "radix-sbor-derive" "radix-substate-store-impls" "radix-substate-store-interface" "radix-substate-store-queries" "radix-transaction-scenarios" "radix-transactions" "sbor" "sbor-derive" "sbor-derive-common" "scrypto" "scrypto-compiler" "scrypto-derive" "scrypto-test")
 NUMBER_OF_PROJECTS=${#INTERNAL_PROJECT_LIST[@]}
 
+echo "Update workspace dependencies in Cargo.toml"
+for (( i=0; i<$NUMBER_OF_PROJECTS; i++ ))
+do
+    set +e
+    value=$(toml get Cargo.toml "workspace.dependencies.${INTERNAL_PROJECT_LIST[$i]}" -r);
+    ret=$?
+    set -e
+    if [ $ret -eq 0 ]; then
+        echo "Updating ${INTERNAL_PROJECT_LIST[$i]} from $value to ${VERSION}"
+        toml set Cargo.toml "workspace.dependencies.${INTERNAL_PROJECT_LIST[$i]}.version" "${VERSION}" > Cargo.toml.new
+        mv Cargo.toml.new Cargo.toml
+    fi
+done
 
 echo "Update the package.version in all radix owned Cargo.toml files"
 for toml_file in ${RADIX_CARGO_FILES[@]}; do
@@ -36,19 +49,7 @@ for toml_lock_file in ${RADIX_CARGO_LOCK_FILES[@]}; do
     done
 done
 
-echo "Update workspace dependencies in Cargo.toml"
-for (( i=0; i<$NUMBER_OF_PROJECTS; i++ ))
-do
-    set +e
-    value=$(toml get Cargo.toml "workspace.dependencies.${INTERNAL_PROJECT_LIST[$i]}" -r);
-    ret=$?
-    set -e
-    if [ $ret -wq 0 ]; then
-        echo "File is ${INTERNAL_PROJECT_LIST[$i]} Value is$value"
-        toml set Cargo.toml "workspace.dependencies.${INTERNAL_PROJECT_LIST[$i]}.version" "${VERSION}" > Cargo.toml.new
-        mv Cargo.toml.new Cargo.toml
-    fi
-done
+
 
 for toml_file in ${RADIX_CARGO_FILES[@]}; do
     echo "Update dependencies of $toml_file"
