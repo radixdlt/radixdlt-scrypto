@@ -1,6 +1,6 @@
 [package]
 name = "radix-transactions"
-version = "1.2.0-dev"
+version = "9.9.9"
 edition = "2021"
 description = "Various Radix transaction models and the manifest compiler/decompiler, from the Radix DLT project."
 readme = "README.md"
