@@ -3,7 +3,7 @@
 set -x
 set -e
 
-(cd examples/hello-world; cargo update)
-(cd examples/everything; cargo update)
-(cd examples/no-std; cargo update)
-(cd radix-clis; cargo update)
+(cd examples/hello-world; cargo build)
+(cd examples/everything; cargo build)
+(cd examples/no-std; cargo build)
+(cd radix-clis; cargo build)

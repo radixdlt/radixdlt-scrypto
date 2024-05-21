@@ -1239,7 +1239,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         let receipt = TransactionReceipt {
             costing_parameters,
-            transaction_costing_parameters: executable.costing_parameters().clone(),
+            transaction_costing_parameters: executable.costing_parameters().clone().into(),
             fee_summary,
             fee_details,
             result,

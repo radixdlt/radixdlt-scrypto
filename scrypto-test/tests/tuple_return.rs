@@ -8,6 +8,7 @@ fn tuple_returns_work_with_scrypto_test() {
     let package_address = PackageFactory::compile_and_publish(
         concat!(env!("CARGO_MANIFEST_DIR"), "/tests/blueprints/tuple-return"),
         &mut env,
+        CompileProfile::Fast,
     )
     .unwrap();
 

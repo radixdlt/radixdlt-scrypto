@@ -21,7 +21,10 @@ use radix_transactions::model::*;
 use radix_transactions::validation::*;
 use sbor::rust::prelude::*;
 
+#[cfg(not(feature = "coverage"))]
 pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 1024 * 1024;
+#[cfg(feature = "coverage")]
+pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 64 * 1024 * 1024;
 
 /// The minor version of the TransactionProcessor V1 package
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Sbor)]

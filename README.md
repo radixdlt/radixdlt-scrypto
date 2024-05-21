@@ -58,15 +58,9 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
    ```bash
    rustup target add wasm32-unknown-unknown
    ```
-4. Install `radix-clis`
+4. Install Radix CLIs
    ```bash
-   git clone https://github.com/radixdlt/radixdlt-scrypto.git
-   cd radixdlt-scrypto
-   cargo install --path ./radix-clis
-   ```
-5. (Optional) Open Scrypto documentation for later use
-   ```bash
-   ./doc.sh
+   cargo install radix-clis
    ```
 
 ## Getting Started

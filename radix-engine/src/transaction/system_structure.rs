@@ -34,17 +34,14 @@ pub struct SystemFieldStructure {
 //       for the toolkit which parses it opaquely at the moment when doing transaction preview
 //       in the wallet. This change doesn't apply because BootLoader substates are only edited
 //       during transaction preview.
+//
+// Node depends on this structure, so append only.
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SystemFieldKind {
     TypeInfo,
-    BootLoader(BootLoaderFieldKind),
-}
-
-#[derive(Clone, Debug, ScryptoSbor, PartialEq, Eq)]
-pub enum BootLoaderFieldKind {
-    KernelBoot,
-    SystemBoot,
     VmBoot,
+    SystemBoot,
+    KernelBoot,
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
@@ -234,15 +231,12 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
                         let field_num = key
                             .for_field()
                             .expect("BootLoader substates are expected to be fields");
-                        let kind = match *field_num {
-                            BOOT_LOADER_KERNEL_BOOT_FIELD_KEY => BootLoaderFieldKind::KernelBoot,
-                            BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY => {
-                                BootLoaderFieldKind::SystemBoot
-                            }
-                            BOOT_LOADER_VM_BOOT_FIELD_KEY => BootLoaderFieldKind::VmBoot,
+                        match *field_num {
+                            BOOT_LOADER_KERNEL_BOOT_FIELD_KEY => SystemFieldKind::KernelBoot,
+                            BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY => SystemFieldKind::SystemBoot,
+                            BOOT_LOADER_VM_BOOT_FIELD_KEY => SystemFieldKind::VmBoot,
                             field_num => panic!("Unknown boot loader field kind: {field_num}"),
-                        };
-                        SystemFieldKind::BootLoader(kind)
+                        }
                     },
                 })
             }

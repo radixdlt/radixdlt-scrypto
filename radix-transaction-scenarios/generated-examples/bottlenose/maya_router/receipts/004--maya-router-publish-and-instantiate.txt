@@ -1,10 +1,10 @@
 TRANSACTION STATUS: COMMITTED SUCCESS
 
-TRANSACTION COST: 105.9291411696 XRD
-├─ Network execution: 1.84524515 XRD, 36904903 execution cost units
-├─ Network finalization: 0.1601002 XRD, 3202004 finalization cost units
+TRANSACTION COST: 68.3098894291 XRD
+├─ Network execution: 1.2703393 XRD, 25406786 execution cost units
+├─ Network finalization: 0.15169575 XRD, 3033915 finalization cost units
 ├─ Tip: 0 XRD
-├─ Network Storage: 103.9237958196 XRD
+├─ Network Storage: 66.8878543791 XRD
 └─ Royalties: 0 XRD
 
 LOGS: 0
@@ -16,19 +16,19 @@ EVENTS: 5
    }
 ├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
    Event: VaultCreationEvent {
-     vault_id: NodeId(hex("584965093c5b972990e9b4cfb4aa0022718d3330bbfa3a8a98c4844450bc")),
+     vault_id: NodeId(hex("5836b0f213dd92c8bc94d09d64cd3663c084dc87a56d04ad932b69bd197f")),
    }
 ├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
    Event: PayFeeEvent {
-     amount: Decimal("105.9291411696"),
+     amount: Decimal("68.3098894291"),
    }
 ├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
    Event: DepositEvent {
-     amount: Decimal("52.9645705848"),
+     amount: Decimal("34.15494471455"),
    }
 └─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
    Event: BurnFungibleResourceEvent {
-     amount: Decimal("52.9645705848"),
+     amount: Decimal("34.15494471455"),
    }
 
 STATE UPDATES: 10 entities
@@ -38,7 +38,7 @@ STATE UPDATES: 10 entities
        Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
          ValidatorRewardsSubstate {
            proposer_rewards: {
-             0u8 => Decimal("26.9675303567875"),
+             0u8 => Decimal("17.5627174216625"),
            },
            rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
          },
@@ -56,7 +56,7 @@ STATE UPDATES: 10 entities
          },
        )
   └─ Partition(65): 1 change
-    └─ Set: Hash(hex("edf0c41e2926494c3e300bc534b057c96e726bff0a89fac01bbe06a9f1eec96d"))
+    └─ Set: Hash(hex("0ecac9c64ae3bc892d38f55f285510115d74f5514d63805016893128279472c7"))
        Value: UNLOCKED TransactionStatus::V1(
          TransactionStatusV1::CommittedSuccess,
        )
@@ -71,12 +71,12 @@ STATE UPDATES: 10 entities
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("99999999999989892.12987857285")),
+         LiquidFungibleResource(Decimal("99999999999989929.74913031335")),
        )
-├─ package_sim1pk9jztrwzcl2px0w859fdkxkaygej4m9zryxpau3pqs7vlq9zpyzda across 12 partitions
+├─ package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3 across 12 partitions
   ├─ Partition(1): 1 change
-    └─ Set: SchemaHash(bb99125ec01040730d3516daf3ea083c52829654c1a3fa56496ca0cb72cca9a5)
-       Value: (Hidden as longer than 1024 bytes. Hash: fd179ce1552897e1199245d62ad8cf32849e947e06574d36415507ede5baa6e9)
+    └─ Set: SchemaHash(fa160b6fda209b4a676a67a128414fad1569cbdf4c98c1139feb17e2751f6f3a)
+       Value: (Hidden as longer than 1024 bytes. Hash: a7df6834b5a7b252a815089208aca1e3278e95ef75de2daa6a6f21addac10720)
   ├─ Partition(2): 3 changes
     ├─ Set: "name"
        Value: LOCKED MetadataEntryEntryPayload::V1(
@@ -111,12 +111,12 @@ STATE UPDATES: 10 entities
     └─ Set: Field(0)
        Value: LOCKED PackageRoyaltyAccumulatorFieldPayload::V1(
          PackageRoyaltyAccumulatorV1 {
-           royalty_vault: Vault(Own("internal_vault_sim1tpyk2zfutwtjny8fkn8mf2sqyfcc6vesh0ar4z5ccjzyg59uvnl39m")),
+           royalty_vault: Vault(Own("internal_vault_sim1tqmtpusnmkfv30y56zwkfnfkv0qgfhy854ksftvn9d5m6xtltnqnt6")),
          },
        )
   ├─ Partition(65): 1 change
     └─ Set: BlueprintVersionKey { blueprint: "MayaRouter", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
-       Value: (Hidden as longer than 1024 bytes. Hash: d92ebfbc6cd3cd9a0b9c1167fa9a019d1a4f7896db5021a00f983f4c66bafa92)
+       Value: (Hidden as longer than 1024 bytes. Hash: 41340c5b20fd98918c8ebc2529f17407e24118382a8524e38d2813e94df93c8a)
   ├─ Partition(66): 1 change
     └─ Set: BlueprintVersionKey { blueprint: "MayaRouter", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
        Value: LOCKED PackageBlueprintVersionDependenciesEntryPayload::V1(
@@ -138,25 +138,27 @@ STATE UPDATES: 10 entities
                  {},
                ),
                methods: {
-                 MethodKey("deposit") => MethodAccessibility::Public,
-                 MethodKey("transfer_out") => MethodAccessibility::Public,
-                 MethodKey("transfer_between_asgard_vaults") => MethodAccessibility::Public,
+                 MethodKey("user_deposit") => MethodAccessibility::Public,
+                 MethodKey("withdraw") => MethodAccessibility::Public,
+                 MethodKey("transfer") => MethodAccessibility::Public,
+                 MethodKey("direct_deposit") => MethodAccessibility::Public,
+                 MethodKey("get_vault_balance") => MethodAccessibility::Public,
                },
              },
            ),
          },
        )
   ├─ Partition(69): 1 change
-    └─ Set: CodeHash(hex("814a1af902d10c59dd1b9d06a49db48cd9d9e76b6666a56435c5f1496de78794"))
+    └─ Set: CodeHash(hex("d78be0b56058b6df1ef6d3269e5867b2984f588bb63ec97999755f1c353b0756"))
        Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
          PackageCodeVmTypeV1::ScryptoV1,
        )
   ├─ Partition(70): 1 change
-    └─ Set: CodeHash(hex("814a1af902d10c59dd1b9d06a49db48cd9d9e76b6666a56435c5f1496de78794"))
-       Value: (Hidden as longer than 1024 bytes. Hash: 779f453eeb2d5e7ab30ea757068a22df5a9d5251b453e72f6f4005b45e1d4fae)
+    └─ Set: CodeHash(hex("d78be0b56058b6df1ef6d3269e5867b2984f588bb63ec97999755f1c353b0756"))
+       Value: (Hidden as longer than 1024 bytes. Hash: 4fc7b8989acd34df7f7cddf1f7deea3258353a94296d0fcf09e216dd962d4ca9)
   ├─ Partition(71): 1 change
-    └─ Set: CodeHash(hex("814a1af902d10c59dd1b9d06a49db48cd9d9e76b6666a56435c5f1496de78794"))
-       Value: (Hidden as longer than 1024 bytes. Hash: 67665ccb7576624c3e76cce8778f322078ceb708a6606af9599ee60ce98889b1)
+    └─ Set: CodeHash(hex("d78be0b56058b6df1ef6d3269e5867b2984f588bb63ec97999755f1c353b0756"))
+       Value: (Hidden as longer than 1024 bytes. Hash: b89d91a4786531a64dca4f0a37b54096735d930c710255656812a8f706b73729)
   └─ Partition(0): 1 change
     └─ Set: TypeInfo
        Value: TypeInfoSubstate::Object(
@@ -193,7 +195,7 @@ STATE UPDATES: 10 entities
            },
          },
        )
-├─ internal_vault_sim1tpyk2zfutwtjny8fkn8mf2sqyfcc6vesh0ar4z5ccjzyg59uvnl39m across 2 partitions
+├─ internal_vault_sim1tqmtpusnmkfv30y56zwkfnfkv0qgfhy854ksftvn9d5m6xtltnqnt6 across 2 partitions
   ├─ Partition(0): 1 change
     └─ Set: TypeInfo
        Value: TypeInfoSubstate::Object(
@@ -222,7 +224,7 @@ STATE UPDATES: 10 entities
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
          LiquidFungibleResource(Decimal("0")),
        )
-├─ component_sim1cz2n04uz73lt83e2wagw0zveln0u0q24ydup5vspavglyspfqtl2zc across 3 partitions
+├─ component_sim1czkz6hl5t6u680uvjylms3vyxd36auyduc56nfnkxs392qufhkalfr across 3 partitions
   ├─ Partition(5): 1 change
     └─ Set: Field(0)
        Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
@@ -234,8 +236,8 @@ STATE UPDATES: 10 entities
   ├─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED MayaRouter {
-         locker: GlobalAccountLocker(Reference("locker_sim1dry2hugh70ruy9q9w5380369pxj25hx7y867ulqu0vqaq9ayj7yqqx")),
-         vaults: KeyValueStore(Own("internal_keyvaluestore_sim1kr8slmdqe4eetc3uk5ggc4chg5tnmx6thwtwcpfzfh38hjvku0req7")),
+         locker: GlobalAccountLocker(Reference("locker_sim1dq52tlc2n3gcuvhsagmkgwqyvzukryg84wy6504p996r0qt6fhsypy")),
+         vaults: KeyValueStore(Own("internal_keyvaluestore_sim1kqt0p03x3levw8580h9zs5ezccav208dz37nemtgh9s532f8vempze")),
        }
   └─ Partition(0): 1 change
     └─ Set: TypeInfo
@@ -243,7 +245,7 @@ STATE UPDATES: 10 entities
          ObjectInfo {
            blueprint_info: BlueprintInfo {
              blueprint_id: BlueprintId {
-               package_address: PackageAddress(Reference("package_sim1pk9jztrwzcl2px0w859fdkxkaygej4m9zryxpau3pqs7vlq9zpyzda")),
+               package_address: PackageAddress(Reference("package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3")),
                blueprint_name: "MayaRouter",
              },
              blueprint_version: BlueprintVersion {
@@ -271,7 +273,7 @@ STATE UPDATES: 10 entities
            },
          },
        )
-├─ locker_sim1dry2hugh70ruy9q9w5380369pxj25hx7y867ulqu0vqaq9ayj7yqqx across 4 partitions
+├─ locker_sim1dq52tlc2n3gcuvhsagmkgwqyvzukryg84wy6504p996r0qt6fhsypy across 4 partitions
   ├─ Partition(2): 1 change
     └─ Set: "admin_badge"
        Value: LOCKED EMPTY
@@ -300,7 +302,7 @@ STATE UPDATES: 10 entities
                ResourceOrNonFungible::NonFungible(
                  NonFungibleGlobalId {
                    resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxk5870l")),
-                   local_id: NonFungibleLocalId("[7d77c5d56de1a7975fc55cfee81a2d3bbe63ffea5a18cc631aeabaad176bcdd1]"),
+                   local_id: NonFungibleLocalId("[dda26882402a4b067593cae3a074b07fb63d48c39626c875db70924e809c1501]"),
                  },
                ),
              ),
@@ -345,70 +347,52 @@ STATE UPDATES: 10 entities
            },
          },
        )
-├─ internal_keyvaluestore_sim1kr8slmdqe4eetc3uk5ggc4chg5tnmx6thwtwcpfzfh38hjvku0req7 across 2 partitions
-  ├─ Partition(0): 1 change
+├─ internal_keyvaluestore_sim1kqt0p03x3levw8580h9zs5ezccav208dz37nemtgh9s532f8vempze across 1 partitions
+  └─ Partition(0): 1 change
     └─ Set: TypeInfo
        Value: TypeInfoSubstate::KeyValueStore(
          KeyValueStoreInfo {
            generic_substitutions: KeyValueStoreGenericSubstitutions {
-             key_generic_substitution: GenericSubstitution::Local(
-               ScopedTypeId(
-                 SchemaHash(hex("5984bee33c529de9f322241679b505ab2e60e2189bdf8c2b7811023ffb5c12f9")),
-                 LocalTypeId::WellKnown(
-                   WellKnownTypeId(208u8),
-                 ),
-               ),
+             key_generic_substitution: GenericSubstitution::Remote(
+               BlueprintTypeIdentifier {
+                 package_address: PackageAddress(Reference("package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3")),
+                 blueprint_name: "MayaRouter",
+                 type_name: "ComponentAddress",
+               },
              ),
-             value_generic_substitution: GenericSubstitution::Local(
-               ScopedTypeId(
-                 SchemaHash(hex("5984bee33c529de9f322241679b505ab2e60e2189bdf8c2b7811023ffb5c12f9")),
-                 LocalTypeId::WellKnown(
-                   WellKnownTypeId(170u8),
-                 ),
-               ),
+             value_generic_substitution: GenericSubstitution::Remote(
+               BlueprintTypeIdentifier {
+                 package_address: PackageAddress(Reference("package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3")),
+                 blueprint_name: "MayaRouter",
+                 type_name: "KeyValueStore_ResourceAddress_FungibleVault",
+               },
              ),
              allow_ownership: true,
            },
-         },
-       )
-  └─ Partition(1): 1 change
-    └─ Set: SchemaHash(5984bee33c529de9f322241679b505ab2e60e2189bdf8c2b7811023ffb5c12f9)
-       Value: KeyValueEntrySubstate::V1(
-         KeyValueEntrySubstateV1 {
-           value: Option::Some(
-             PackageSchemaEntryPayload::V1(
-               SchemaV1 {
-                 type_kinds: [],
-                 type_metadata: [],
-                 type_validations: [],
-               },
-             ),
-           ),
-           lock_status: LockStatus::Locked,
          },
        )
 ├─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
-         LiquidFungibleResource(Decimal("53.935060713575")),
+         LiquidFungibleResource(Decimal("35.125434843325")),
        )
 
 OUTPUTS: 4
 ├─ Unit
 ├─ None
-├─ Reference("package_sim1pk9jztrwzcl2px0w859fdkxkaygej4m9zryxpau3pqs7vlq9zpyzda")
-└─ Reference("component_sim1cz2n04uz73lt83e2wagw0zveln0u0q24ydup5vspavglyspfqtl2zc")
+├─ Reference("package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3")
+└─ Reference("component_sim1czkz6hl5t6u680uvjylms3vyxd36auyduc56nfnkxs392qufhkalfr")
 
 BALANCE CHANGES: 2
 ├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: -105.9291411696
+   Change: -68.3098894291
 └─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
    ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
-   Change: 52.9645705848
+   Change: 34.15494471455
 
 NEW ENTITIES: 3
-└─ Package: package_sim1pk9jztrwzcl2px0w859fdkxkaygej4m9zryxpau3pqs7vlq9zpyzda
-├─ Component: component_sim1cz2n04uz73lt83e2wagw0zveln0u0q24ydup5vspavglyspfqtl2zc
-└─ Component: locker_sim1dry2hugh70ruy9q9w5380369pxj25hx7y867ulqu0vqaq9ayj7yqqx
+└─ Package: package_sim1pha7h60q9p4hx40chf8uxntzs3tqgnd72kfu2akz2lx67hq5e32ex3
+├─ Component: component_sim1czkz6hl5t6u680uvjylms3vyxd36auyduc56nfnkxs392qufhkalfr
+└─ Component: locker_sim1dq52tlc2n3gcuvhsagmkgwqyvzukryg84wy6504p996r0qt6fhsypy

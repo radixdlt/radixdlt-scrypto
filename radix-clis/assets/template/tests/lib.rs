@@ -52,7 +52,8 @@ fn test_hello() {
 fn test_hello_with_test_environment() -> Result<(), RuntimeError> {
     // Arrange
     let mut env = TestEnvironment::new();
-    let package_address = PackageFactory::compile_and_publish(this_package!(), &mut env)?;
+    let package_address = 
+        PackageFactory::compile_and_publish(this_package!(), &mut env, CompileProfile::Fast)?;
 
     let mut hello = Hello::instantiate_hello(package_address, &mut env)?;
 

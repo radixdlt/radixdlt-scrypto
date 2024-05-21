@@ -61,6 +61,13 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
     }
 }
 
+// Note: we have the two models below after finding an issue where a new field was added to the
+// transaction costing parameters struct, which is used in the receipt, without moving to a new
+// version of the receipt.
+//
+// Relevant discussion:
+// https://rdxworks.slack.com/archives/C060RCS9MPW/p1715762426579329?thread_ts=1714585544.709299&cid=C060RCS9MPW
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct TransactionCostingParameters {
     pub tip_percentage: u16,
@@ -75,6 +82,31 @@ impl Default for TransactionCostingParameters {
             tip_percentage: DEFAULT_TIP_PERCENTAGE,
             free_credit_in_xrd: Default::default(),
             abort_when_loan_repaid: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
+pub struct TransactionCostingParametersReceipt {
+    pub tip_percentage: u16,
+    /// Free credit for execution, for preview only!
+    pub free_credit_in_xrd: Decimal,
+}
+
+impl Default for TransactionCostingParametersReceipt {
+    fn default() -> Self {
+        Self {
+            tip_percentage: DEFAULT_TIP_PERCENTAGE,
+            free_credit_in_xrd: Default::default(),
+        }
+    }
+}
+
+impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt {
+    fn from(value: TransactionCostingParameters) -> Self {
+        Self {
+            free_credit_in_xrd: value.free_credit_in_xrd,
+            tip_percentage: value.tip_percentage,
         }
     }
 }

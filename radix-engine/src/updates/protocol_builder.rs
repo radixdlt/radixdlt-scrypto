@@ -10,12 +10,8 @@ pub struct ProtocolUpdateExecutor {
 
 impl ProtocolUpdateExecutor {
     pub fn run_and_commit<S: SubstateDatabase + CommittableSubstateDatabase>(self, store: &mut S) {
-        let mut current_batch_index = 0;
-        let batch_generator = self.batch_generator;
-        loop {
-            let Some(batch) = batch_generator.generate_batch(store, current_batch_index) else {
-                break;
-            };
+        for batch_index in 0..self.batch_generator.batch_count() {
+            let batch = self.batch_generator.generate_batch(store, batch_index);
             for transaction in batch.transactions {
                 let state_updates = match transaction {
                     ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) => {
@@ -25,7 +21,6 @@ impl ProtocolUpdateExecutor {
                 let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
                 store.commit(&db_updates);
             }
-            current_batch_index += 1;
         }
     }
 }

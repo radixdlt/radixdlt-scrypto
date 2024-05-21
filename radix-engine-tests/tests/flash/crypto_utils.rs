@@ -32,15 +32,12 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
         let anemone_protocol_update_batch_generator = AnemoneSettings::all_disabled()
             .enable(|item| &mut item.vm_boot_to_enable_bls128_and_keccak256)
             .create_batch_generator();
-        let mut i = 0;
-        while let Some(batch) =
-            anemone_protocol_update_batch_generator.generate_batch(ledger.substate_db(), i)
-        {
-            i += 1;
+        for batch_index in 0..anemone_protocol_update_batch_generator.batch_count() {
+            let batch = anemone_protocol_update_batch_generator
+                .generate_batch(ledger.substate_db(), batch_index);
             for ProtocolUpdateTransactionDetails::FlashV1Transaction(
                 FlashProtocolUpdateTransactionDetails { state_updates, .. },
-            ) in batch.transactions
-            {
+            ) in batch.transactions {
                 ledger
                     .substate_db_mut()
                     .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
@@ -89,8 +86,11 @@ fn run_flash_test_test_environment(enable_bls: bool, expect_success: bool) {
         .build();
 
     // Act
-    let result =
-        PackageFactory::compile_and_publish(path_local_blueprint!("crypto_scrypto"), &mut test_env);
+    let result = PackageFactory::compile_and_publish(
+        path_local_blueprint!("crypto_scrypto"),
+        &mut test_env,
+        CompileProfile::Fast,
+    );
 
     // Assert
     if expect_success {

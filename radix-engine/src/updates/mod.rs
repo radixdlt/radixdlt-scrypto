@@ -115,18 +115,20 @@ impl<T: DefaultForNetwork + UpdateSettingMarker> UpdateSetting<T> {
 /// This must be stateless, to allow the update to be resumed.
 pub trait ProtocolUpdateBatchGenerator: ProtocolUpdateBatchGeneratorDynClone {
     /// Generate a batch of transactions to be committed atomically with a proof.
-    /// Return None if it's the last batch.
+    /// *Panics* if the given batch index is outside the range (see [`Self::batch_count()`]).
     ///
-    /// It should be assumed that the SubstateDatabase has *committed all previous batches*, this
-    /// ensures that the update is deterministically continuable if the node shuts down mid update.
+    /// It should be assumed that the [`SubstateDatabase`] has *committed all previous batches*.
+    /// This ensures that the update is deterministically continuable if the Node shuts down
+    /// mid-update.
     ///
-    /// This is the interface currently needed by the node, to allow the update to be resumed.
-    /// This update isn't great, we could/should probably improve this in future.
-    fn generate_batch(
-        &self,
-        store: &dyn SubstateDatabase,
-        batch_index: u32,
-    ) -> Option<ProtocolUpdateBatch>;
+    /// TODO(potential API improvement): This is the interface currently needed by the Node, to
+    /// allow the update to be resumed; it is not great, and we could improve this in future.
+    fn generate_batch(&self, store: &dyn SubstateDatabase, batch_index: u32)
+        -> ProtocolUpdateBatch;
+
+    /// Returns the number of contained batches.
+    /// The [`Self::generate_batch()`] expects indices in range `[0, self.batch_count() - 1]`.
+    fn batch_count(&self) -> u32;
 }
 
 pub trait ProtocolUpdateBatchGeneratorDynClone {

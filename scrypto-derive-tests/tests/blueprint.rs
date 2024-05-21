@@ -79,3 +79,22 @@ mod empty_with_use_super {
 
     impl EmptyWithUseSuper {}
 }
+
+#[blueprint]
+mod kv_entry_clone {
+    use super::*;
+
+    struct KVEntryClone {
+        store: KeyValueStore<String, String>,
+    }
+
+    impl KVEntryClone {
+        pub fn get_and_clone(&self, key: String) -> Option<String> {
+            self.store.get(&key).cloned()
+        }
+
+        pub fn get_mut_and_clone(&mut self, key: String) -> Option<String> {
+            self.store.get_mut(&key).cloned()
+        }
+    }
+}
