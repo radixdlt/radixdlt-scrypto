@@ -14,7 +14,7 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = ledger.new_ed25519_virtual_account();
+    let (_pk, sk, account) = ledger.new_ed25519_preallocated_account();
 
     let manifest1 = ManifestBuilder::new().build();
     let tx1 = create_notarized_transaction_advanced(
@@ -71,7 +71,7 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk1, sk1, _pk2, _sk2, _pk3, _sk3, _pk4, _sk4, account, access_controller) =
-        ledger.new_ed25519_virtual_account_with_access_controller(1);
+        ledger.new_ed25519_preallocated_account_with_access_controller(1);
 
     let manifest1 = ManifestBuilder::new().build();
     let tx1 = create_notarized_transaction_advanced(
@@ -134,7 +134,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = ledger.new_ed25519_virtual_account();
+    let (_pk, sk, account) = ledger.new_ed25519_preallocated_account();
     let resource_address = ledger.create_fungible_resource(AMOUNT.into(), 18, account);
 
     let manifest1 = ManifestBuilder::new()
@@ -201,7 +201,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk, sk, account) = ledger.new_ed25519_virtual_account();
+    let (_pk, sk, account) = ledger.new_ed25519_preallocated_account();
     let resource_address = ledger.create_non_fungible_resource_advanced(
         NonFungibleResourceRoles::default(),
         account,
@@ -272,8 +272,8 @@ fn estimate_adding_signature() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
-    let (_pk1, sk1, account1) = ledger.new_ed25519_virtual_account();
-    let (_pk2, sk2, account2) = ledger.new_ed25519_virtual_account();
+    let (_pk1, sk1, account1) = ledger.new_ed25519_preallocated_account();
+    let (_pk2, sk2, account2) = ledger.new_ed25519_preallocated_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.
     // We're doing 10 withdraw-deposit calls, which is "larger" than most transactions.
@@ -339,7 +339,7 @@ fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let account1 = ledger.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
-    let (_pk2, sk2, account2) = ledger.new_virtual_account();
+    let (_pk2, sk2, account2) = ledger.new_preallocated_account();
 
     // Additional signature has an impact on the size of `AuthZone` substate.
     // We're doing 10 withdraw-deposit calls, which is "larger" than most transactions.

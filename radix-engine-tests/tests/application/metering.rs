@@ -52,7 +52,7 @@ fn run_all(mode: CostingTaskMode) {
 
         execute(&run_basic_transfer, "cost_transfer.csv");
         execute(
-            &run_basic_transfer_to_virtual_account,
+            &run_basic_transfer_to_preallocated_account,
             "cost_transfer_to_virtual_account.csv",
         );
         execute(&run_radiswap, "cost_radiswap.csv");
@@ -116,10 +116,10 @@ fn run_basic_transfer(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt 
     receipt
 }
 
-fn run_basic_transfer_to_virtual_account(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
+fn run_basic_transfer_to_preallocated_account(mut ledger: DefaultLedgerSimulator) -> TransactionReceipt {
     // Arrange
     let (public_key1, _, account1) = ledger.new_allocated_account();
-    let account2 = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
+    let account2 = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PublicKey([123u8; 33]),
     ));
 
@@ -610,7 +610,7 @@ fn system_loan_should_cover_intended_use_case() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let (_pk1, sk1, _pk2, sk2, _pk3, sk3, _pk4, sk4, account, access_controller) =
-        ledger.new_ed25519_virtual_account_with_access_controller(3);
+        ledger.new_ed25519_preallocated_account_with_access_controller(3);
 
     let manifest1 = ManifestBuilder::new()
         .call_method(

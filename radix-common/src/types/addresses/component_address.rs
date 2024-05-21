@@ -37,7 +37,7 @@ impl ComponentAddress {
         self.as_ref()
     }
 
-    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(
+    pub fn preallocated_account_from_public_key<P: Into<PublicKey> + Clone>(
         public_key: &P,
     ) -> ComponentAddress {
         match public_key.clone().into() {

@@ -5,8 +5,8 @@ use radix_engine_interface::*;
 
 #[allow(deprecated)]
 pub struct FungibleResourceScenarioConfig {
-    pub user_account_1: VirtualAccount,
-    pub user_account_2: VirtualAccount,
+    pub user_account_1: PreallocatedAccount,
+    pub user_account_2: PreallocatedAccount,
 }
 
 #[derive(Default)]

@@ -68,7 +68,7 @@ fn can_securify_from_virtual_identity() {
 fn can_securify_from_virtual_identity_ed25519() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
-    let (pk, _, account) = ledger.new_ed25519_virtual_account();
+    let (pk, _, account) = ledger.new_ed25519_preallocated_account();
     let component_address = ledger.new_identity(pk.clone(), true);
 
     // Act

@@ -90,7 +90,7 @@ pub struct GenesisValidator {
 impl From<Secp256k1PublicKey> for GenesisValidator {
     fn from(key: Secp256k1PublicKey) -> Self {
         // Re-using the validator key for its owner
-        let default_owner_address = ComponentAddress::virtual_account_from_public_key(&key);
+        let default_owner_address = ComponentAddress::preallocated_account_from_public_key(&key);
         GenesisValidator {
             key,
             accept_delegated_stake: true,

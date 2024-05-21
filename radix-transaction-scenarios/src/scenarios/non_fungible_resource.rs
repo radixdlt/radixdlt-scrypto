@@ -5,8 +5,8 @@ use radix_engine_interface::*;
 
 #[allow(deprecated)]
 pub struct NonFungibleResourceScenarioConfig {
-    pub main_account: VirtualAccount,
-    pub occasional_recipient_account: VirtualAccount,
+    pub main_account: PreallocatedAccount,
+    pub occasional_recipient_account: PreallocatedAccount,
 }
 
 #[derive(Default)]

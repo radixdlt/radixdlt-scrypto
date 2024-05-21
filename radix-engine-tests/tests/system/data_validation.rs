@@ -20,7 +20,7 @@ fn setup_component(ledger: &mut DefaultLedgerSimulator) -> ComponentAddress {
 }
 
 fn sink_account() -> ComponentAddress {
-    ComponentAddress::virtual_account_from_public_key(&Secp256k1PublicKey([0; 33]))
+    ComponentAddress::preallocated_account_from_public_key(&Secp256k1PublicKey([0; 33]))
 }
 
 fn create_manifest_with_middle(

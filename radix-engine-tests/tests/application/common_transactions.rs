@@ -44,7 +44,7 @@ fn transfer_of_funds_to_another_account_succeeds() {
     run_manifest(|this_account_address, address_bech32_encoder| {
         let private_key = Secp256k1PrivateKey::from_u64(12).unwrap();
         let public_key = private_key.public_key();
-        let other_account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
+        let other_account_address = ComponentAddress::preallocated_account_from_public_key(&public_key);
 
         let manifest = replace_variables!(
             include_workspace_transaction_examples_str!("account/resource_transfer.rtm"),
