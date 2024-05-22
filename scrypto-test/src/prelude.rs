@@ -92,4 +92,7 @@ pub use radix_transactions::prelude::*;
 pub use crate::environment::*;
 pub use crate::ledger_simulator::*;
 pub use crate::sdk::*;
-pub use crate::{include_code, include_schema, this_package};
+pub use crate::{
+    include_code, include_schema, package_path, this_package, this_package_code_and_schema,
+    this_package_name,
+};

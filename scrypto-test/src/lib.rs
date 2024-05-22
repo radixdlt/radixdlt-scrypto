@@ -94,7 +94,70 @@ macro_rules! this_package {
     };
 }
 
-/// Includes the WASM file of a Scrypto package.
+#[macro_export]
+macro_rules! this_package_name {
+    () => {
+        env!("CARGO_PKG_NAME")
+    };
+}
+
+#[macro_export]
+macro_rules! package_path {
+    ($bin_name: expr, $extension: expr) => {
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            $extension
+        )
+    };
+    ($package_dir: expr, $bin_name: expr, $extension: expr) => {
+        concat!(
+            $package_dir,
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            $extension
+        )
+    };
+}
+
+/// Reads the WASM file and schema of the current package in runtime
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let (wasm, rpd) = this_package_code_and_schema!();
+/// ```
+#[macro_export]
+macro_rules! this_package_code_and_schema {
+    () => {{
+        let wasm = std::fs::read(package_path!(this_package_name!(), ".wasm")).expect(&format!(
+            "Cannot read WASM binary {}",
+            package_path!(this_package_name!(), ".wasm")
+        ));
+
+        let rpd: PackageDefinition = manifest_decode(
+            &std::fs::read(package_path!(this_package_name!(), ".rpd")).expect(&format!(
+                "Cannot read package definition file {}",
+                package_path!(this_package_name!(), ".rpd")
+            )),
+        )
+        .expect(&format!(
+            "Cannot decode package definition file {}",
+            package_path!(this_package_name!(), ".rpd")
+        ));
+
+        (wasm, rpd)
+    }};
+}
+
+/// Includes the WASM file of a Scrypto package in compile time.
 ///
 /// Notes:
 /// * This macro will NOT compile the package;
@@ -113,24 +176,14 @@ macro_rules! this_package {
 #[macro_export]
 macro_rules! include_code {
     ($bin_name: expr) => {
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/target/wasm32-unknown-unknown/release/",
-            $bin_name,
-            ".wasm"
-        ))
+        include_bytes!(package_path!($bin_name, ".wasm"))
     };
     ($package_dir: expr, $bin_name: expr) => {
-        include_bytes!(concat!(
-            $package_dir,
-            "/target/wasm32-unknown-unknown/release/",
-            $bin_name,
-            ".wasm"
-        ))
+        include_bytes!(package_path!($package_dir, $bin_name, ".wasm"))
     };
 }
 
-/// Includes the schema file of a Scrypto package.
+/// Includes the schema file of a Scrypto package in compile time.
 ///
 /// Notes:
 /// * This macro will NOT compile the package;
@@ -149,19 +202,9 @@ macro_rules! include_code {
 #[macro_export]
 macro_rules! include_schema {
     ($bin_name: expr) => {
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/target/wasm32-unknown-unknown/release/",
-            $bin_name,
-            ".rpd"
-        ))
+        include_bytes!(package_path!(".rpd"))
     };
     ($package_dir: expr, $bin_name: expr) => {
-        include_bytes!(concat!(
-            $package_dir,
-            "/target/wasm32-unknown-unknown/release/",
-            $bin_name,
-            ".rpd"
-        ))
+        include_bytes!(package_path!($package_dir, ".rpd"))
     };
 }
