@@ -1,6 +1,6 @@
 [package]
 name = "sbor"
-version = "1.3.0-dev"
+version = "9.9.9"
 edition = "2021"
 description = "Reference implementation of the SBOR binary data format, from the Radix DLT project."
 readme = "README.md"
@@ -8,9 +8,9 @@ license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-radix-rust = { workspace = true }
+radix-rust = { workspace = true , version = "9.9.9" }
 hex = { workspace = true }
-sbor-derive = { workspace = true }
+sbor-derive = { workspace = true , version = "9.9.9" }
 serde = { workspace = true, optional = true, features=["derive"] }
 const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
 lazy_static = { workspace = true }

@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-profiling"
-version = "1.3.0-dev"
+version = "9.9.9"
 edition = "2021"
 description = "A library used by Radix Engine profiling, from the Radix DLT project."
 readme = "README.md"
@@ -8,10 +8,10 @@ license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-radix-substate-store-interface = { workspace = true, optional = true }
-radix-substate-store-impls = { workspace = true, optional = true }
-radix-common = { workspace = true, optional = true }
-radix-engine-interface = { workspace = true, optional = true }
+radix-substate-store-interface = { workspace = true, optional = true , version = "9.9.9" }
+radix-substate-store-impls = { workspace = true, optional = true , version = "9.9.9" }
+radix-common = { workspace = true, optional = true , version = "9.9.9" }
+radix-engine-interface = { workspace = true, optional = true , version = "9.9.9" }
 fixedstr = { workspace = true }
 shared_memory = { workspace = true, optional = true }
 plotters = { workspace = true, optional = true }

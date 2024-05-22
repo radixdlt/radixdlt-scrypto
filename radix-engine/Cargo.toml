@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine"
-version = "1.3.0-dev"
+version = "9.9.9"
 edition = "2021"
 description = "Reference implementation of Radix Engine, from the Radix DLT project."
 readme = "README.md"
@@ -8,16 +8,16 @@ license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-sbor = { workspace = true }
-radix-engine-interface = { workspace = true }
-radix-common = { workspace = true, features = ["secp256k1_sign_and_validate"]}
-radix-substate-store-interface = { workspace = true }
-radix-blueprint-schema-init = { workspace = true }
-radix-native-sdk = { workspace = true }
-radix-transactions = { workspace = true }
-radix-rust = { workspace = true }
-radix-engine-profiling = { workspace = true, optional = true }
-radix-engine-profiling-derive = { workspace = true }
+sbor = { workspace = true , version = "9.9.9" }
+radix-engine-interface = { workspace = true , version = "9.9.9" }
+radix-common = { workspace = true, features = ["secp256k1_sign_and_validate"], version = "9.9.9" }
+radix-substate-store-interface = { workspace = true , version = "9.9.9" }
+radix-blueprint-schema-init = { workspace = true , version = "9.9.9" }
+radix-native-sdk = { workspace = true , version = "9.9.9" }
+radix-transactions = { workspace = true , version = "9.9.9" }
+radix-rust = { workspace = true , version = "9.9.9" }
+radix-engine-profiling = { workspace = true, optional = true , version = "9.9.9" }
+radix-engine-profiling-derive = { workspace = true , version = "9.9.9" }
 
 colored = { workspace = true }
 hex = { workspace = true }
@@ -28,7 +28,7 @@ moka = { workspace = true, features = ["sync"], optional = true }
 strum = { workspace = true, features = ["derive"] }
 perfcnt = { workspace = true, optional = true }
 paste = { workspace = true }
-radix-common-derive = { workspace = true }
+radix-common-derive = { workspace = true , version = "9.9.9" }
 const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
 
 # WASM validation

@@ -1,6 +1,6 @@
 [package]
 name = "scrypto-derive"
-version = "1.3.0-dev"
+version = "9.9.9"
 edition = "2021"
 description = "A collection of macros for writing Scrypto blueprints, from the Radix DLT project."
 readme = "README.md"
@@ -13,9 +13,9 @@ proc-macro = true
 bench = false
 
 [dependencies]
-radix-blueprint-schema-init = { workspace = true }
-sbor = { workspace = true }
-radix-common = { workspace = true }
+radix-blueprint-schema-init = { workspace = true , version = "9.9.9" }
+sbor = { workspace = true , version = "9.9.9" }
+radix-common = { workspace = true , version = "9.9.9" }
 proc-macro2 = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits"] }
 quote = { workspace = true }

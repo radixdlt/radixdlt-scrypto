@@ -1,6 +1,6 @@
 [package]
 name = "radix-sbor-derive"
-version = "1.3.0-dev"
+version = "9.9.9"
 edition = "2021"
 description = "A library of macros for deriving Scrypto SBOR and Manifest SBOR implementation, from the Radix DLT project."
 readme = "README.md"
@@ -16,7 +16,7 @@ bench = false
 proc-macro2 = { workspace = true }
 syn = { workspace = true }
 quote = { workspace = true }
-sbor-derive-common = { workspace = true }
+sbor-derive-common = { workspace = true , version = "9.9.9" }
 
 [features]
 # Currently, dependencies of procedural macros are imported to host crates. This may accidentally 
