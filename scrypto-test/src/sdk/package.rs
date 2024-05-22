@@ -55,6 +55,24 @@ impl PackageFactory {
         })
     }
 
+    pub fn publish_simple<D>(
+        code: Vec<u8>,
+        definition: PackageDefinition,
+        env: &mut TestEnvironment<D>,
+    ) -> Result<PackageAddress, RuntimeError>
+    where
+        D: SubstateDatabase + CommittableSubstateDatabase + 'static,
+    {
+        Self::publish_advanced(
+            OwnerRole::None,
+            definition,
+            code,
+            Default::default(),
+            Default::default(),
+            env,
+        )
+    }
+
     pub fn compile_and_publish<P, D>(
         path: P,
         env: &mut TestEnvironment<D>,
@@ -65,14 +83,7 @@ impl PackageFactory {
         D: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
         let (wasm, package_definition) = Self::compile(path, compile_profile);
-        Self::publish_advanced(
-            OwnerRole::None,
-            package_definition,
-            wasm,
-            Default::default(),
-            Default::default(),
-            env,
-        )
+        Self::publish_simple(wasm, package_definition, env)
     }
 
     pub fn compile<P>(path: P, compile_profile: CompileProfile) -> (Vec<u8>, PackageDefinition)
