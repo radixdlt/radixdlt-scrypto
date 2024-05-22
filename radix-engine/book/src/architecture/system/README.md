@@ -8,5 +8,6 @@ functionality of the system.
 
 ## Implementation
 
-The System Layer implements this by defining the Kernel Callback Object and using the
-kernel Node/Partition/Substate abstractions.
+The System Layer is implemented by defining the Kernel Callback Object and defining the
+Actor/Package/Blueprint/Object abstractings on top of the kernel's Node/Partition/Substate
+abstractions.
