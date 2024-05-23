@@ -87,6 +87,22 @@ pub mod prelude;
 pub mod sdk;
 pub mod utils;
 
+// TODO: consider setting CARGO_TARGET_DIR by `scrypto` command
+#[cfg(feature = "coverage")]
+#[macro_export]
+macro_rules! target_dir {
+    () => {
+        "coverage"
+    };
+}
+#[cfg(not(feature = "coverage"))]
+#[macro_export]
+macro_rules! target_dir {
+    () => {
+        "target"
+    };
+}
+
 #[macro_export]
 macro_rules! this_package {
     () => {
@@ -106,7 +122,9 @@ macro_rules! package_path {
     ($bin_name: expr, $extension: expr) => {
         concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/target/wasm32-unknown-unknown/release/",
+            "/",
+            target_dir!(),
+            "/wasm32-unknown-unknown/release/",
             $bin_name,
             $extension
         )
@@ -114,7 +132,9 @@ macro_rules! package_path {
     ($package_dir: expr, $bin_name: expr, $extension: expr) => {
         concat!(
             $package_dir,
-            "/target/wasm32-unknown-unknown/release/",
+            "/",
+            target_dir!(),
+            "/wasm32-unknown-unknown/release/",
             $bin_name,
             $extension
         )

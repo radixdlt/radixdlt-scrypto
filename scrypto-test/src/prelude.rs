@@ -93,6 +93,6 @@ pub use crate::environment::*;
 pub use crate::ledger_simulator::*;
 pub use crate::sdk::*;
 pub use crate::{
-    include_code, include_schema, package_path, this_package, this_package_code_and_schema,
-    this_package_name,
+    include_code, include_schema, package_path, target_dir, this_package,
+    this_package_code_and_schema, this_package_name,
 };
