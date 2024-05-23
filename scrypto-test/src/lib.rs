@@ -113,28 +113,26 @@ macro_rules! this_package {
 #[macro_export]
 macro_rules! this_package_name {
     () => {
-        env!("CARGO_PKG_NAME")
+        env!("CARGO_PKG_NAME").replace("-", "_")
     };
 }
 
 #[macro_export]
 macro_rules! package_path {
     ($bin_name: expr, $extension: expr) => {
-        concat!(
+        format!(
+            "{}/{}/wasm32-unknown-unknown/release/{}{}",
             env!("CARGO_MANIFEST_DIR"),
-            "/",
             target_dir!(),
-            "/wasm32-unknown-unknown/release/",
             $bin_name,
             $extension
         )
     };
     ($package_dir: expr, $bin_name: expr, $extension: expr) => {
-        concat!(
+        format!(
+            "{}/{}/wasm32-unknown-unknown/release/{}{}",
             $package_dir,
-            "/",
             target_dir!(),
-            "/wasm32-unknown-unknown/release/",
             $bin_name,
             $extension
         )
