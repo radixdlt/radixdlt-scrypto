@@ -11,7 +11,7 @@ fn test_hello() {
     let (public_key, _private_key, account) = ledger.new_allocated_account();
 
     // Publish package
-    let package_address = ledger.compile_and_publish(this_package!());
+    let package_address = ledger.publish_package_simple(this_package_code_and_schema!());
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new()
@@ -52,8 +52,8 @@ fn test_hello() {
 fn test_hello_with_test_environment() -> Result<(), RuntimeError> {
     // Arrange
     let mut env = TestEnvironment::new();
-    let package_address =
-        PackageFactory::compile_and_publish(this_package!(), &mut env, CompileProfile::Fast)?;
+    let (wasm, rpd) = this_package_code_and_schema!();
+    let package_address = PackageFactory::publish_simple(wasm, rpd, &mut env)?;
 
     let mut hello = Hello::instantiate_hello(package_address, &mut env)?;
 
