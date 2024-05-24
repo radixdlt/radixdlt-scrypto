@@ -1,7 +1,8 @@
 # VM Layer
 
-The VM Layer is responsible for providing the application layer a Turing-complete computing
-environment and the interface to the system layer.
+The VM Layer is responsible for passing control from the system to the application as well as
+providing the application layer a Turing-complete computing environment and the interface to the
+system layer.
 
 Radix Engine currently supports two VM environments:
 * A [Scrypto WASM VM](scrypto_vm.md) which exposes the system layer through WASM extern functions
