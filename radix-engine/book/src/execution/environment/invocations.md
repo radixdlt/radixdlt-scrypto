@@ -15,8 +15,8 @@ On one of these calls, the system then follows three phases:
 
 System module does its own checks (e.g. auth).
 
-Kernel invoke is called which setups a new call frame. The passed in objects in the arguments are verified
-to be valid.
+Kernel invoke is called which setups a new call frame. The arguments are verified against the input
+schema of the function defined by the blueprint definition.
 
 ## Execution
 

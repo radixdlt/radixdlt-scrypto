@@ -1,4 +1,5 @@
 # Features
 
-An object's features describes optional features an object may have. An object's features
-must be a subset of the total [features](../blueprint/features.md) defined in the object's blueprint.
+An object's features describes is a subset of the total [features](../blueprint/features.md) defined
+in the object's blueprint. Having a feature enabled/disabled can modify both behavior and state stored
+for the object.

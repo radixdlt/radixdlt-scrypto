@@ -24,7 +24,7 @@
     - [Hooks](architecture/application/blueprint/hooks.md)
     - [Types](architecture/application/blueprint/types.md)
     - [Blueprint Modules](architecture/application/blueprint/blueprint_modules.md)
-  - [Type Checking](architecture/application/type_checking/README.md)
+  - [Type System](architecture/application/type_system/README.md)
   - [Actor](architecture/application/actor/README.md)
 - [VM Layer](architecture/vm/README.md)
   - [Scrypto WASM VM](architecture/vm/scrypto_vm.md)

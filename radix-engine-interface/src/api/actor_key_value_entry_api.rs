@@ -16,7 +16,7 @@ pub trait SystemActorKeyValueEntryApi<E: Debug> {
     ) -> Result<KeyValueEntryHandle, E>;
 
     /// Removes an entry from a collection. If an invalid collection index or key is passed an
-    /// error is returned, otherwise the encoding of a value of an entry is returned.
+    /// error is returned, otherwise the encoding of a value of the entry is returned.
     fn actor_remove_key_value_entry(
         &mut self,
         object_handle: ActorStateHandle,
@@ -25,7 +25,7 @@ pub trait SystemActorKeyValueEntryApi<E: Debug> {
     ) -> Result<Vec<u8>, E>;
 
     /// Removes an entry from a collection. If an invalid collection index or key is passed an
-    /// error is returned, otherwise the value of an entry is returned.
+    /// error is returned, otherwise the value of the entry is returned.
     fn actor_remove_key_value_entry_typed<V: ScryptoDecode>(
         &mut self,
         object_handle: ActorStateHandle,

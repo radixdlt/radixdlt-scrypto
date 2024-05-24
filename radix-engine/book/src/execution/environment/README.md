@@ -3,7 +3,7 @@
 Every method/function execution has a call frame associated with it managed by the Kernel.
 
 A call frame contains all owned and referenced objects usable by the running function. These objects
-are referrable by `NodeId`.
+are referrable by `NodeId` and system-defined indices.
 
 ## Invocations
 

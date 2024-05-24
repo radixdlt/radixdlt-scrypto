@@ -3,8 +3,8 @@
 The Auth System Module is a [system module](../../architecture/system/system_modules.md) which operates
 on every invocation:
 1. Creates a new AuthZone
-2. Resolve the Permission required to access the method/function invocation
-3. Verifies that the Global Caller AuthZone has sufficient proofs to pass the AccessRule
+2. Resolve the requirements to access the method/function invocation
+3. Verifies that the Global Caller AuthZone has sufficient proofs to meet the requirements
 
 ## AuthZone Creation
 
@@ -29,10 +29,10 @@ This pattern generates a stack which looks like:
 Permission resolving involves loading up relevant state of the callee and generating a permission
 object from this state.
 
-If the callee is a function call then the permission is loaded from the function access rules
+If the callee is a function then the permission is loaded from the function access rules
 specified in the blueprint's [access control blueprint module](blueprint_module.md).
 
-If the callee is a method call then the Method Accessibility is loaded from the callee's
+If the callee is a method then the Method Accessibility is loaded from the callee's
 [access control blueprint module](blueprint_module.md) as well as the state in the callee's
 [Role Assignment Object Module](role_assignment.md). From these two states, the permission to
 access the method is derived.

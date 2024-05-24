@@ -1,6 +1,6 @@
-# Access Control Blueprint Module
+# Auth Blueprint Module
 
-The access control [blueprint module](../../architecture/application/blueprint/blueprint_modules.md) defines three
+The auth [blueprint module](../../architecture/application/blueprint/blueprint_modules.md) defines three
 things for every blueprint:
 * Function AccessRules
 * Method accessibility

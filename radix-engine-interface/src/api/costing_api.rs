@@ -18,10 +18,10 @@ pub trait SystemCostingApi<E> {
     /// Retrieve the cost unit price in XRD
     fn execution_cost_unit_price(&mut self) -> Result<Decimal, E>;
 
-    /// Retrieve the cost unit limit for finalization
+    /// Retrieve the finalization cost unit limit
     fn finalization_cost_unit_limit(&mut self) -> Result<u32, E>;
 
-    /// Retrieve the cost unit finalization price in XRD
+    /// Retrieve the finalization cost unit price in XRD
     fn finalization_cost_unit_price(&mut self) -> Result<Decimal, E>;
 
     /// Retrieve the usd price of XRD

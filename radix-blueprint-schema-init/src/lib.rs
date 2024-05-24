@@ -32,7 +32,7 @@ pub enum BlueprintHook {
 pub struct BlueprintSchemaInit {
     /// List of generic parameters which must be provided on component instantiation and the bounds of these generics
     pub generics: Vec<GenericBound>,
-    /// Sbor schema which describes types by index
+    /// Sbor schema which describes various types, each identified by a usize
     pub schema: VersionedScryptoSchema,
     /// Describes schema of state by mapping fields/collection indices as a generic or directly into the Sbor schema
     pub state: BlueprintStateSchemaInit,
@@ -66,7 +66,7 @@ impl Default for BlueprintSchemaInit {
     }
 }
 
-/// Describes the number of fields and collections some Blueprint has as well
+/// Describes the fields and collections some Blueprint has as well
 /// as the schema and properties of each field and collection
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintStateSchemaInit {
