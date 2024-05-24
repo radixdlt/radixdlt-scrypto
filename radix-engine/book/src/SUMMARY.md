@@ -31,6 +31,7 @@
   - [Native VM](architecture/vm/native_vm.md)
 - [System Layer](architecture/system/README.md)
   - [Object Impl](architecture/system/object_impl.md)
+  - [Blueprint Impl](architecture/system/blueprint_impl.md)
   - [Actor Impl](architecture/system/actor_impl.md)
   - [System Modules](architecture/system/system_modules.md)
 - [Kernel Layer](architecture/kernel/README.md)
