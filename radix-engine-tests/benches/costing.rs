@@ -222,7 +222,7 @@ fn bench_prepare_wasm(c: &mut Criterion) {
             ledger.publish_package(
                 (code.clone(), package_definition.clone()),
                 btreemap!(),
-                OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+                OwnerRole::Updatable(rule!(require(signature(&pk1)))),
             );
         })
     });

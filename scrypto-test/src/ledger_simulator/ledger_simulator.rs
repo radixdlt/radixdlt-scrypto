@@ -877,9 +877,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_key_pair();
-        let account = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Secp256k1(
-            pub_key.clone(),
-        ));
+        let account = ComponentAddress::preallocated_account_from_public_key(
+            &PublicKey::Secp256k1(pub_key.clone()),
+        );
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
@@ -888,8 +888,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
     ) -> (Ed25519PublicKey, Ed25519PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_ed25519_key_pair();
-        let account =
-            ComponentAddress::preallocated_account_from_public_key(&PublicKey::Ed25519(pub_key.clone()));
+        let account = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Ed25519(
+            pub_key.clone(),
+        ));
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
@@ -935,7 +936,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let key_pair = self.new_key_pair();
-        let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
+        let withdraw_auth = rule!(require(signature(&key_pair.0)));
         let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
     }

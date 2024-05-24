@@ -476,7 +476,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     // Make the Owner the same as the public key for the main account
                                     // In reality, this should probably be a concrete badge, not a virtual badge, but for tests
                                     // this is okay
-                                    OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&config.main_account.public_key)))),
+                                    OwnerRole::Fixed(rule!(require(signature(&config.main_account.public_key)))),
                                     NonFungibleIdType::Integer,
                                     true,
                                     NonFungibleResourceRoles {

@@ -180,6 +180,11 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::global_caller_badge(global_caller))
 }
 
+/// A requirement for the transaction to be signed using a specific key.
+pub fn signature(public_key: &impl HasPublicKeyHash) -> ResourceOrNonFungible {
+    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(public_key))
+}
+
 pub fn require<T>(required: T) -> AccessRuleNode
 where
     T: Into<AccessRuleNode>,
@@ -293,5 +298,33 @@ impl AccessRuleNode {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use radix_common::prelude::*;
+
+    #[test]
+    fn require_signature_secp256k1() {
+        let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let public_key = private_key.public_key();
+
+        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
+        let r2 = rule!(require(signature(&public_key)));
+
+        assert_eq!(r1, r2);
+    }
+
+    #[test]
+    fn require_signature_ed25519() {
+        let private_key = Ed25519PrivateKey::from_u64(1).unwrap();
+        let public_key = private_key.public_key();
+
+        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
+        let r2 = rule!(require(signature(&public_key)));
+
+        assert_eq!(r1, r2);
     }
 }
