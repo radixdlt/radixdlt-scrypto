@@ -5,9 +5,6 @@ use radix_engine_interface::api::CollectionIndex;
 use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
-pub trait SortedIndexKeyPayloadMarker {}
-pub trait SortedIndexEntryPayloadMarker {}
-
 pub trait SystemActorSortedIndexApi<E> {
     /// Inserts an entry into a sorted index
     fn actor_sorted_index_insert(

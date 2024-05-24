@@ -273,19 +273,6 @@ impl KernelCallbackObject for TestCallbackObject {
     {
         Ok(())
     }
-
-    fn on_move_node<Y>(
-        _node_id: &NodeId,
-        _is_moving_down: bool,
-        _is_to_barrier: bool,
-        _destination_blueprint_id: Option<BlueprintId>,
-        _api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        Ok(())
-    }
 }
 
 struct KernelFuzzer {

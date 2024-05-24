@@ -82,6 +82,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
+    /// Checks that references exist in the store
     fn check_references(
         &mut self,
         callback: &mut M,
@@ -150,7 +151,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         // Create System
         let mut callback = M::init(&mut self.track, executable, self.init.clone())?;
 
-        // Create Kernel
+        // Kernel Initialization
         let mut kernel = {
             // Check references
             let (global_addresses, internal_addresses) = self
@@ -183,14 +184,15 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             // Sanity check heap
             assert!(kernel.substate_io.heap.is_empty());
 
+            // Finalize state updates based on what has occurred
             let commit_info = kernel.substate_io.store.get_commit_info();
-
             kernel.callback.finish(commit_info)?;
 
             Ok(output)
         }()
         .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
+        // Create receipt representing the result of a transaction
         let receipt = M::create_receipt(callback, self.track, executable, result);
 
         Ok(receipt)
