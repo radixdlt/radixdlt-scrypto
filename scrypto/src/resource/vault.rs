@@ -70,6 +70,8 @@ pub trait ScryptoNonFungibleVault {
 
     fn non_fungible_local_id(&self) -> NonFungibleLocalId;
 
+    fn non_fungible_global_id(&self) -> NonFungibleGlobalId;
+
     fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
 
     fn take_non_fungible(
@@ -428,16 +430,24 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
             .collect()
     }
 
-    /// Returns a singleton non-fungible id
+    /// Returns the non-fungible local id if this is a singleton non-fungible vault.
     ///
     /// # Panics
-    /// Panics if this is not a singleton bucket
+    /// Panics if this is not a singleton vault
     fn non_fungible_local_id(&self) -> NonFungibleLocalId {
         let non_fungible_local_ids = self.non_fungible_local_ids(2);
         if non_fungible_local_ids.len() != 1 {
             panic!("Expecting singleton NFT vault");
         }
         non_fungible_local_ids.into_iter().next().unwrap()
+    }
+
+    /// Returns the non-fungible global id if this is a singleton non-fungible vault.
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton vault
+    fn non_fungible_global_id(&self) -> NonFungibleGlobalId {
+        NonFungibleGlobalId::new(self.resource_address(), self.non_fungible_local_id())
     }
 
     /// Returns a singleton non-fungible.
