@@ -243,7 +243,7 @@ impl AuthModule {
         Y: KernelApi<System<V>>,
     {
         let (auth_zone, parent_lock_handle) = {
-            let next_is_barrier = if let Some((receiver, direct_access)) = receiver {
+            let is_global_context_change = if let Some((receiver, direct_access)) = receiver {
                 let object_info = system.get_object_info(receiver)?;
                 object_info.is_global() || direct_access
             } else {
@@ -263,12 +263,12 @@ impl AuthModule {
                         .reference_origin(current_method_actor.node_id)
                         .unwrap();
                     let self_auth_zone = current_method_actor.auth_zone;
-                    match (current_ref_origin, next_is_barrier) {
-                        // Actor is part of the global component state tree AND next actor is a barrier
+                    match (current_ref_origin, is_global_context_change) {
+                        // Actor is part of the global component state tree AND next actor is a global context change
                         (ReferenceOrigin::Global(address), true) => {
                             (Some((address.into(), Reference(self_auth_zone))), None)
                         }
-                        // Actor is part of the global component state tree AND next actor is not a barrier
+                        // Actor is part of the global component state tree AND next actor is NOT a global context change
                         (ReferenceOrigin::Global(..), false) => {
                             Self::copy_global_caller(system, &self_auth_zone)?
                         }
@@ -276,7 +276,7 @@ impl AuthModule {
                         (ReferenceOrigin::DirectlyAccessed, _) => (None, None),
                         // Actor is a non-global reference
                         (ReferenceOrigin::SubstateNonGlobalReference(..), _) => (None, None),
-                        // Actor ia a frame-owned object
+                        // Actor is a frame-owned object
                         (ReferenceOrigin::FrameOwned, _) => {
                             let caller = Self::copy_global_caller(system, &self_auth_zone)?;
                             (
@@ -291,7 +291,7 @@ impl AuthModule {
                 Actor::Function(function_actor) => {
                     let self_auth_zone = function_actor.auth_zone;
                     let global_caller = function_actor.as_global_caller();
-                    if next_is_barrier {
+                    if is_global_context_change {
                         (Some((global_caller, Reference(self_auth_zone))), None)
                     } else {
                         Self::copy_global_caller(system, &self_auth_zone)?
@@ -299,7 +299,7 @@ impl AuthModule {
                 }
             };
 
-            let auth_zone_parent = if next_is_barrier {
+            let auth_zone_parent = if is_global_context_change {
                 None
             } else {
                 system

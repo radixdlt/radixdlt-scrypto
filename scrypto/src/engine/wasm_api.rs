@@ -176,6 +176,7 @@ pub mod actor {
     }
 }
 
+/// API to create or modify Key Value stores
 pub mod kv_store {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
@@ -237,6 +238,7 @@ pub mod field_entry {
     }
 }
 
+/// API to retrieve info about current costing state
 pub mod costing {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
@@ -284,7 +286,7 @@ pub mod system {
     }
 }
 
-/// Various environment-based API calls
+/// Api to execute various crypto functions
 pub mod crypto_utils {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 
@@ -321,6 +323,7 @@ pub mod crypto_utils {
     }
 }
 
+/// Api for handling buffers
 pub mod buffer {
     pub use radix_engine_interface::types::{Buffer, BufferId, Slice};
 

@@ -13,6 +13,7 @@ pub trait SystemBlueprintApi<E> {
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
 
+    /// Retrieves the schema of type under a blueprint
     fn resolve_blueprint_type(
         &mut self,
         blueprint_type_id: &BlueprintTypeIdentifier,

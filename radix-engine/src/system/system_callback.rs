@@ -182,7 +182,7 @@ impl<C: SystemCallbackObject> System<C> {
         println!("References: {:?}", executable.references());
     }
 
-    pub fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
+    fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
         match store.read_substate(
@@ -199,7 +199,7 @@ impl<C: SystemCallbackObject> System<C> {
         }
     }
 
-    pub fn validate_epoch_range(
+    fn validate_epoch_range(
         current_epoch: Epoch,
         start_epoch_inclusive: Epoch,
         end_epoch_exclusive: Epoch,
@@ -220,7 +220,7 @@ impl<C: SystemCallbackObject> System<C> {
         Ok(())
     }
 
-    pub fn validate_intent_hash<S: CommitableSubstateStore>(
+    fn validate_intent_hash<S: CommitableSubstateStore>(
         track: &mut S,
         intent_hash: Hash,
         expiry_epoch: Epoch,
@@ -725,19 +725,69 @@ impl<C: SystemCallbackObject> System<C> {
         }
         println!("{:-^120}", "Finish");
     }
+
+    fn on_move_node<Y>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => {
+                let mut service = SystemService::new(api);
+                let definition = service.load_blueprint_definition(
+                    object_info.blueprint_info.blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: object_info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
+                        version: BlueprintVersion::default(),
+                    },
+                )?;
+                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
+                            receiver: Some(node_id.clone()),
+                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
+                            hook: BlueprintHook::OnMove,
+                        }),
+                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
+                            is_moving_down,
+                            is_to_barrier,
+                            destination_blueprint_id,
+                        }),
+                    }))
+                    .map(|_| ())
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
+        }
+    }
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
-    type Init = SystemInit<C::InitInput>;
+    type Init = SystemInit<C::Init>;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &Executable,
-        init_input: SystemInit<C::InitInput>,
+        init_input: SystemInit<C::Init>,
     ) -> Result<Self, RejectionReason> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
@@ -849,14 +899,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         modules.init().map_err(RejectionReason::BootloadingError)?;
 
-        let system = System {
-            blueprint_cache: NonIterMap::new(),
-            auth_cache: NonIterMap::new(),
-            schema_cache: NonIterMap::new(),
-            callback,
-            modules,
-        };
-
         // Perform runtime validation.
         // TODO: the following assumptions can be removed with better interface.
         // We are assuming that intent hash store is ready when epoch manager is ready.
@@ -867,21 +909,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     current_epoch,
                     range.start_epoch_inclusive,
                     range.end_epoch_exclusive,
-                )
-                .and_then(|_| {
-                    Self::validate_intent_hash(
-                        store,
-                        executable.intent_hash().to_hash(),
-                        range.end_epoch_exclusive,
-                    )
-                })
-                .and_then(|_| Ok(system))
-            } else {
-                Ok(system)
+                )?;
+                Self::validate_intent_hash(
+                    store,
+                    executable.intent_hash().to_hash(),
+                    range.end_epoch_exclusive,
+                )?;
             }
-        } else {
-            Ok(system)
         }
+
+        let system = System {
+            blueprint_cache: NonIterMap::new(),
+            auth_cache: NonIterMap::new(),
+            schema_cache: NonIterMap::new(),
+            callback,
+            modules,
+        };
+        Ok(system)
     }
 
     fn verify_boot_ref_value(
@@ -1684,56 +1728,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 // There is no way to drop a non-object through system API, triggering `NotAnObject` error.
                 Ok(())
             }
-        }
-    }
-
-    fn on_move_node<Y>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
-
-        match type_info {
-            TypeInfoSubstate::Object(object_info) => {
-                let mut service = SystemService::new(api);
-                let definition = service.load_blueprint_definition(
-                    object_info.blueprint_info.blueprint_id.package_address,
-                    &BlueprintVersionKey {
-                        blueprint: object_info
-                            .blueprint_info
-                            .blueprint_id
-                            .blueprint_name
-                            .clone(),
-                        version: BlueprintVersion::default(),
-                    },
-                )?;
-                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
-                    api.kernel_invoke(Box::new(KernelInvocation {
-                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
-                            receiver: Some(node_id.clone()),
-                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
-                            hook: BlueprintHook::OnMove,
-                        }),
-                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
-                            is_moving_down,
-                            is_to_barrier,
-                            destination_blueprint_id,
-                        }),
-                    }))
-                    .map(|_| ())
-                } else {
-                    Ok(())
-                }
-            }
-            TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::GlobalAddressReservation(_)
-            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
 }

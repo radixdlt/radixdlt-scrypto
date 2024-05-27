@@ -141,7 +141,7 @@ pub trait SystemKeyValueStoreApi<E> {
     /// Creates a new key value store with a given schema
     fn key_value_store_new(&mut self, data_schema: KeyValueStoreDataSchema) -> Result<NodeId, E>;
 
-    /// Lock a key value store entry for reading/writing
+    /// Open a key value store entry for reading/writing
     fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
@@ -149,6 +149,7 @@ pub trait SystemKeyValueStoreApi<E> {
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, E>;
 
+    /// Removes an entry from a key value store
     fn key_value_store_remove_entry(
         &mut self,
         node_id: &NodeId,
