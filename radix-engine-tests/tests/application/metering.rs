@@ -53,7 +53,7 @@ fn run_all(mode: CostingTaskMode) {
         execute(&run_basic_transfer, "cost_transfer.csv");
         execute(
             &run_basic_transfer_to_preallocated_account,
-            "cost_transfer_to_virtual_account.csv",
+            "cost_transfer_to_preallocated_account.csv",
         );
         execute(&run_radiswap, "cost_radiswap.csv");
         execute(&run_flash_loan, "cost_flash_loan.csv");
