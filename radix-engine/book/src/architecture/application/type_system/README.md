@@ -6,6 +6,6 @@ the Blueprint. This includes:
 * Function Input/Output 
 * Events
 
-The Type Checking System supports generics. 
+The Schema Checking System supports generics. 
 
 ![](type_checking_arch.drawio.svg)
