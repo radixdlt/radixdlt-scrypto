@@ -1,7 +1,5 @@
-pub mod ast;
-pub mod macros;
-pub mod schema;
-pub mod translation;
+use scrypto_bindgen::schema;
+use scrypto_bindgen::translation;
 
 use clap::Parser;
 use radix_common::prelude::*;
