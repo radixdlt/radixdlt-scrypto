@@ -1,0 +1,20 @@
+name: Merge main into develop
+on:
+  push:
+    branches:
+      - main
+
+permissions: write-all
+
+jobs:
+  create-pr-main-into-develop:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: RDXWorks-actions/checkout@main
+    - name: create pull request
+      run: gh pr create -B ${BASE_BRANCH} -H ${CURRENT_BRANCH} --title 'Merge main into develop' --body 'Created by Github action'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BASE_BRANCH: develop
+        CURRENT_BRANCH: main
+      continue-on-error: true
