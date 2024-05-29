@@ -20,7 +20,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalGenericComponent                                     ,                    47373,      0.6%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    44020,      0.6%
 - OpenSubstate::GlobalPackage                                              ,                  3428986,     46.2%
-- OpenSubstate::GlobalVirtualSecp256k1Account                              ,                   609967,      8.2%
+- OpenSubstate::GlobalPreallocatedSecp256k1Account                         ,                   609967,      8.2%
 - OpenSubstate::InternalFungibleVault                                      ,                   191323,      2.6%
 - OpenSubstate::InternalGenericComponent                                   ,                    83695,      1.1%
 - OpenSubstate::InternalKeyValueStore                                      ,                   202765,      2.7%
@@ -54,6 +54,6 @@ Finalization Cost Breakdown                                                ,    
 - CommitLogs                                                               ,                        0,      0.0%
 - CommitStateUpdates::GlobalFungibleResourceManager                        ,                  4700431,     86.4%
 - CommitStateUpdates::GlobalGenericComponent                               ,                   100018,      1.8%
-- CommitStateUpdates::GlobalVirtualSecp256k1Account                        ,                   100011,      1.8%
+- CommitStateUpdates::GlobalPreallocatedSecp256k1Account                   ,                   100011,      1.8%
 - CommitStateUpdates::InternalFungibleVault                                ,                   400056,      7.4%
 - CommitStateUpdates::InternalKeyValueStore                                ,                   100005,      1.8%

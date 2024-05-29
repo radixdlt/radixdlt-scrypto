@@ -19,7 +19,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalFungibleResourceManager                              ,                   175335,      4.4%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    42686,      1.1%
 - OpenSubstate::GlobalPackage                                              ,                  2037452,     50.6%
-- OpenSubstate::GlobalVirtualSecp256k1Account                              ,                   487127,     12.1%
+- OpenSubstate::GlobalPreallocatedSecp256k1Account                         ,                   487127,     12.1%
 - OpenSubstate::InternalFungibleVault                                      ,                    96660,      2.4%
 - OpenSubstate::InternalGenericComponent                                   ,                    59591,      1.5%
 - PinNode                                                                  ,                      252,      0.0%
@@ -45,5 +45,5 @@ Execution Cost Breakdown                                                   ,    
 Finalization Cost Breakdown                                                ,                  1030222,    100.0%
 - CommitEvents                                                             ,                    30060,      2.9%
 - CommitLogs                                                               ,                        0,      0.0%
-- CommitStateUpdates::GlobalVirtualSecp256k1Account                        ,                   700115,     68.0%
+- CommitStateUpdates::GlobalPreallocatedSecp256k1Account                   ,                   700115,     68.0%
 - CommitStateUpdates::InternalFungibleVault                                ,                   300047,     29.1%

@@ -80,8 +80,8 @@ impl<'a> Arbitrary<'a> for GlobalAddress {
             EntityType::GlobalAccount as u8,
             EntityType::GlobalIdentity as u8,
             EntityType::GlobalGenericComponent as u8,
-            EntityType::GlobalVirtualSecp256k1Account as u8,
-            EntityType::GlobalVirtualEd25519Account as u8,
+            EntityType::GlobalPreallocatedSecp256k1Account as u8,
+            EntityType::GlobalPreallocatedEd25519Account as u8,
             EntityType::GlobalVirtualSecp256k1Identity as u8,
             EntityType::GlobalVirtualEd25519Identity as u8,
         ];

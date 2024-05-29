@@ -20,8 +20,8 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalGenericComponent                                     ,                    50347,      0.2%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    68239,      0.2%
 - OpenSubstate::GlobalPackage                                              ,                  5415153,     18.9%
+- OpenSubstate::GlobalPreallocatedEd25519Account                           ,                   406740,      1.4%
 - OpenSubstate::GlobalTwoResourcePool                                      ,                     5692,      0.0%
-- OpenSubstate::GlobalVirtualEd25519Account                                ,                   406740,      1.4%
 - OpenSubstate::InternalFungibleVault                                      ,                   117887,      0.4%
 - OpenSubstate::InternalGenericComponent                                   ,                   120717,      0.4%
 - OpenSubstate::InternalKeyValueStore                                      ,                   202765,      0.7%
@@ -63,7 +63,7 @@ Finalization Cost Breakdown                                                ,    
 - CommitStateUpdates::GlobalFungibleResourceManager                        ,                  3400338,     37.1%
 - CommitStateUpdates::GlobalGenericComponent                               ,                   700134,      7.6%
 - CommitStateUpdates::GlobalPackage                                        ,                  1505221,     16.4%
+- CommitStateUpdates::GlobalPreallocatedEd25519Account                     ,                   100011,      1.1%
 - CommitStateUpdates::GlobalTwoResourcePool                                ,                  1600338,     17.4%
-- CommitStateUpdates::GlobalVirtualEd25519Account                          ,                   100011,      1.1%
 - CommitStateUpdates::InternalFungibleVault                                ,                  1700313,     18.5%
 - CommitStateUpdates::InternalKeyValueStore                                ,                   100005,      1.1%

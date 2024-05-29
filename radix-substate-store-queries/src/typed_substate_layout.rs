@@ -308,8 +308,8 @@ fn to_typed_object_substate_key_internal(
                 substate_key,
             )?,
         ),
-        EntityType::GlobalVirtualSecp256k1Account
-        | EntityType::GlobalVirtualEd25519Account
+        EntityType::GlobalPreallocatedSecp256k1Account
+        | EntityType::GlobalPreallocatedEd25519Account
         | EntityType::GlobalAccount => {
             TypedMainModuleSubstateKey::Account(AccountTypedSubstateKey::for_key_in_partition(
                 &AccountPartitionOffset::try_from(partition_offset)?,

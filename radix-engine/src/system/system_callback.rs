@@ -1634,11 +1634,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
 
         let (blueprint_id, variant_id) = match node_id.entity_type() {
-            Some(EntityType::GlobalVirtualSecp256k1Account) => (
+            Some(EntityType::GlobalPreallocatedSecp256k1Account) => (
                 BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                 ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
             ),
-            Some(EntityType::GlobalVirtualEd25519Account) => (
+            Some(EntityType::GlobalPreallocatedEd25519Account) => (
                 BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                 ACCOUNT_CREATE_VIRTUAL_ED25519_ID,
             ),
