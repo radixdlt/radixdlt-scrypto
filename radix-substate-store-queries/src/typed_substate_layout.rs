@@ -316,8 +316,8 @@ fn to_typed_object_substate_key_internal(
                 substate_key,
             )?)
         }
-        EntityType::GlobalVirtualSecp256k1Identity
-        | EntityType::GlobalVirtualEd25519Identity
+        EntityType::GlobalPreallocatedSecp256k1Identity
+        | EntityType::GlobalPreallocatedEd25519Identity
         | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates
         EntityType::InternalFungibleVault => TypedMainModuleSubstateKey::FungibleVault(
             FungibleVaultTypedSubstateKey::for_key_at_partition_offset(

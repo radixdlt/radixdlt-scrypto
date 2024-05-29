@@ -1642,11 +1642,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
                 ACCOUNT_CREATE_VIRTUAL_ED25519_ID,
             ),
-            Some(EntityType::GlobalVirtualSecp256k1Identity) => (
+            Some(EntityType::GlobalPreallocatedSecp256k1Identity) => (
                 BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                 IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
             ),
-            Some(EntityType::GlobalVirtualEd25519Identity) => (
+            Some(EntityType::GlobalPreallocatedEd25519Identity) => (
                 BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
                 IDENTITY_CREATE_VIRTUAL_ED25519_ID,
             ),

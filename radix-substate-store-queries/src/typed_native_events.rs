@@ -141,8 +141,8 @@ fn resolve_typed_event_key_from_event_type_identifier(
                 TypedAccountBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
             }
             EntityType::GlobalIdentity
-            | EntityType::GlobalVirtualSecp256k1Identity
-            | EntityType::GlobalVirtualEd25519Identity => {
+            | EntityType::GlobalPreallocatedSecp256k1Identity
+            | EntityType::GlobalPreallocatedEd25519Identity => {
                 TypedIdentityBlueprintEventKey::new(&event_name).map(TypedNativeEventKey::from)
             }
             EntityType::GlobalAccessController => {

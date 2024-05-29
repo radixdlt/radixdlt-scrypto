@@ -213,8 +213,8 @@ fn get_arguments_schema<'s>(
                 }
 
                 EntityType::GlobalIdentity
-                | EntityType::GlobalVirtualEd25519Identity
-                | EntityType::GlobalVirtualSecp256k1Identity => IDENTITY_PACKAGE_DEFINITION
+                | EntityType::GlobalPreallocatedEd25519Identity
+                | EntityType::GlobalPreallocatedSecp256k1Identity => IDENTITY_PACKAGE_DEFINITION
                     .blueprints
                     .get(IDENTITY_BLUEPRINT),
 

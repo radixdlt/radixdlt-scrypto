@@ -60,12 +60,12 @@ impl ComponentAddress {
         match public_key.clone().into() {
             PublicKey::Secp256k1(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualSecp256k1Identity as u8;
+                node_id[0] = EntityType::GlobalPreallocatedSecp256k1Identity as u8;
                 Self(NodeId(node_id))
             }
             PublicKey::Ed25519(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEd25519Identity as u8;
+                node_id[0] = EntityType::GlobalPreallocatedEd25519Identity as u8;
                 Self(NodeId(node_id))
             }
         }
@@ -112,8 +112,8 @@ impl<'a> Arbitrary<'a> for ComponentAddress {
             EntityType::GlobalGenericComponent as u8,
             EntityType::GlobalPreallocatedSecp256k1Account as u8,
             EntityType::GlobalPreallocatedEd25519Account as u8,
-            EntityType::GlobalVirtualSecp256k1Identity as u8,
-            EntityType::GlobalVirtualEd25519Identity as u8,
+            EntityType::GlobalPreallocatedSecp256k1Identity as u8,
+            EntityType::GlobalPreallocatedEd25519Identity as u8,
             EntityType::GlobalOneResourcePool as u8,
             EntityType::GlobalTwoResourcePool as u8,
             EntityType::GlobalMultiResourcePool as u8,
