@@ -15,12 +15,9 @@ serde_json = { workspace = true }
 wasm-opt = { workspace = true }
 cargo_toml = { workspace = true }
 radix-blueprint-schema-init = { workspace = true }
-proc-macro2 = { version = "1.0.38" }
-quote = { version = "1.0.18" }
-syn = { version = "1.0.93", features = ["full", "extra-traits"] }
-
-[dev-dependencies]
-tempdir = "0.3.7"
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true }
 
 [lib]
 doctest = false
