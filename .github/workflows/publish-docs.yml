@@ -21,7 +21,7 @@ jobs:
     env:
       MDBOOK_VERSION: 0.4.36
     steps:
-      - uses: actions/checkout@v4
+      - uses: RDXWorks-actions/checkout@main
       - name: Install mdBook
         run: |
           curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf -y | sh
@@ -29,12 +29,12 @@ jobs:
           cargo install --version ${MDBOOK_VERSION} mdbook
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v5
+        uses: RDXWorks-actions/configure-pages@main
       - name: Build with mdBook
         run: mdbook build
         working-directory: ./radix-engine/book
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: RDXWorks-actions/upload-pages-artifact@main
         with:
           path: ./radix-engine/book/book
 
@@ -47,4 +47,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: RDXWorks-actions/deploy-pages@main
