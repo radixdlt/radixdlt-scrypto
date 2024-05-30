@@ -1,13 +1,13 @@
 use super::system_modules::costing::{CostingModuleConfig, ExecutionCostingEntry};
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
-use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::account::ACCOUNT_CREATE_PREALLOCATED_ED25519_ID;
+use crate::blueprints::account::ACCOUNT_CREATE_PREALLOCATED_SECP256K1_ID;
 use crate::blueprints::consensus_manager::{
     ConsensusManagerField, ConsensusManagerStateFieldPayload,
     ConsensusManagerValidatorRewardsFieldPayload,
 };
-use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
-use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_ED25519_ID;
+use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID;
 use crate::blueprints::resource::fungible_vault::{DepositEvent, PayFeeEvent};
 use crate::blueprints::resource::{
     BurnFungibleResourceEvent, FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate,
@@ -1634,21 +1634,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
 
         let (blueprint_id, variant_id) = match node_id.entity_type() {
-            Some(EntityType::GlobalVirtualSecp256k1Account) => (
+            Some(EntityType::GlobalPreallocatedSecp256k1Account) => (
                 BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
+                ACCOUNT_CREATE_PREALLOCATED_SECP256K1_ID,
             ),
-            Some(EntityType::GlobalVirtualEd25519Account) => (
+            Some(EntityType::GlobalPreallocatedEd25519Account) => (
                 BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                ACCOUNT_CREATE_VIRTUAL_ED25519_ID,
+                ACCOUNT_CREATE_PREALLOCATED_ED25519_ID,
             ),
-            Some(EntityType::GlobalVirtualSecp256k1Identity) => (
+            Some(EntityType::GlobalPreallocatedSecp256k1Identity) => (
                 BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
+                IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID,
             ),
-            Some(EntityType::GlobalVirtualEd25519Identity) => (
+            Some(EntityType::GlobalPreallocatedEd25519Identity) => (
                 BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                IDENTITY_CREATE_VIRTUAL_ED25519_ID,
+                IDENTITY_CREATE_PREALLOCATED_ED25519_ID,
             ),
             _ => return Ok(false),
         };

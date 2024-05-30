@@ -20,8 +20,8 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalGenericComponent                                     ,                    47373,      0.2%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    88040,      0.4%
 - OpenSubstate::GlobalPackage                                              ,                  3680586,     15.9%
-- OpenSubstate::GlobalVirtualEd25519Account                                ,                  4214484,     18.2%
-- OpenSubstate::GlobalVirtualSecp256k1Account                              ,                  3004011,     13.0%
+- OpenSubstate::GlobalPreallocatedEd25519Account                           ,                  4214484,     18.2%
+- OpenSubstate::GlobalPreallocatedSecp256k1Account                         ,                  3004011,     13.0%
 - OpenSubstate::InternalFungibleVault                                      ,                   712894,      3.1%
 - OpenSubstate::InternalGenericComponent                                   ,                   797949,      3.5%
 - OpenSubstate::InternalKeyValueStore                                      ,                   202765,      0.9%
@@ -56,7 +56,7 @@ Finalization Cost Breakdown                                                ,    
 - CommitEvents                                                             ,                   475999,      5.4%
 - CommitLogs                                                               ,                        0,      0.0%
 - CommitStateUpdates::GlobalGenericComponent                               ,                   100018,      1.1%
-- CommitStateUpdates::GlobalVirtualEd25519Account                          ,                  2400340,     27.3%
-- CommitStateUpdates::GlobalVirtualSecp256k1Account                        ,                  1300181,     14.8%
+- CommitStateUpdates::GlobalPreallocatedEd25519Account                     ,                  2400340,     27.3%
+- CommitStateUpdates::GlobalPreallocatedSecp256k1Account                   ,                  1300181,     14.8%
 - CommitStateUpdates::InternalFungibleVault                                ,                  4400776,     50.1%
 - CommitStateUpdates::InternalKeyValueStore                                ,                   100005,      1.1%
