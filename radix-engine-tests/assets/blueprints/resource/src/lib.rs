@@ -15,6 +15,41 @@ mod resource_test {
     }
 
     impl ResourceTest {
+        pub fn non_fungible_global_id() {
+            let bucket = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                .mint_initial_supply(vec![(
+                    0u64.into(),
+                    TestNFData {
+                        name: "name".to_string(),
+                        available: false,
+                    },
+                )]);
+            let expected =
+                NonFungibleGlobalId::new(bucket.resource_address(), NonFungibleLocalId::integer(0));
+            let nf_global_id1 = bucket.non_fungible_global_id();
+
+            let proof = bucket
+                .create_proof_of_non_fungibles(&indexset!(NonFungibleLocalId::integer(0)))
+                .skip_checking();
+            let nf_global_id2 = proof.non_fungible_global_id();
+            proof.drop();
+
+            let vault = NonFungibleVault::with_bucket(bucket);
+            let nf_global_id3 = vault.non_fungible_global_id();
+
+            Self {
+                vault: vault.into(),
+                data: "hi".to_owned(),
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+
+            assert_eq!(nf_global_id1, expected);
+            assert_eq!(nf_global_id2, expected);
+            assert_eq!(nf_global_id3, expected);
+        }
+
         pub fn take_from_vault_after_mint() {
             let bucket: Bucket =
                 ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
