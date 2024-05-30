@@ -3,8 +3,8 @@
 mod multi_threaded_test {
     use radix_common::prelude::*;
     use radix_engine::system::bootstrap::Bootstrapper;
-    use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::ExecutionConfig;
+    use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::prelude::*;
     use radix_engine_interface::rule;
@@ -49,9 +49,7 @@ mod multi_threaded_test {
                 let manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .new_account_advanced(
-                        OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(
-                            &public_key
-                        )))),
+                        OwnerRole::Fixed(rule!(require(signature(&public_key)))),
                         None,
                     )
                     .build();

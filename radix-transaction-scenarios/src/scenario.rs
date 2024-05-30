@@ -311,8 +311,8 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for DescribedAddress {
     }
 }
 
-impl From<&VirtualAccount> for DescribedAddress {
-    fn from(value: &VirtualAccount) -> Self {
+impl From<&PreallocatedAccount> for DescribedAddress {
+    fn from(value: &PreallocatedAccount) -> Self {
         Self::Global(value.address.clone().into())
     }
 }

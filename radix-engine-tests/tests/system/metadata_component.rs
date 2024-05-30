@@ -263,7 +263,7 @@ fn can_set_address_metadata_through_manifest() {
     let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = ledger
-        .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
+        .create_non_fungible_resource(ComponentAddress::preallocated_account_from_public_key(&key));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -301,7 +301,7 @@ fn cannot_set_address_metadata_after_freezing() {
     let package_address = ledger.publish_package_simple(PackageLoader::get("metadata_component"));
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = ledger
-        .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
+        .create_non_fungible_resource(ComponentAddress::preallocated_account_from_public_key(&key));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(

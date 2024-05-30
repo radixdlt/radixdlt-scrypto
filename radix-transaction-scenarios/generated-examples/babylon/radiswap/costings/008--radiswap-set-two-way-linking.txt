@@ -18,8 +18,8 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalGenericComponent                                     ,                  2074262,     16.0%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    42800,      0.3%
 - OpenSubstate::GlobalPackage                                              ,                  2641720,     20.4%
+- OpenSubstate::GlobalPreallocatedEd25519Account                           ,                   616989,      4.8%
 - OpenSubstate::GlobalTwoResourcePool                                      ,                  2032372,     15.7%
-- OpenSubstate::GlobalVirtualEd25519Account                                ,                   616989,      4.8%
 - OpenSubstate::InternalFungibleVault                                      ,                    90202,      0.7%
 - OpenSubstate::InternalGenericComponent                                   ,                   269170,      2.1%
 - OpenSubstate::InternalKeyValueStore                                      ,                    40536,      0.3%
@@ -49,7 +49,7 @@ Finalization Cost Breakdown                                                ,    
 - CommitLogs                                                               ,                        0,      0.0%
 - CommitStateUpdates::GlobalFungibleResourceManager                        ,                  1000152,     27.3%
 - CommitStateUpdates::GlobalGenericComponent                               ,                  1100153,     30.1%
+- CommitStateUpdates::GlobalPreallocatedEd25519Account                     ,                   100050,      2.7%
 - CommitStateUpdates::GlobalTwoResourcePool                                ,                  1000134,     27.3%
-- CommitStateUpdates::GlobalVirtualEd25519Account                          ,                   100050,      2.7%
 - CommitStateUpdates::InternalFungibleVault                                ,                   100009,      2.7%
 - CommitStateUpdates::InternalNonFungibleVault                             ,                   200011,      5.5%

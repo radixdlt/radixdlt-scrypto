@@ -80,10 +80,10 @@ impl<'a> Arbitrary<'a> for GlobalAddress {
             EntityType::GlobalAccount as u8,
             EntityType::GlobalIdentity as u8,
             EntityType::GlobalGenericComponent as u8,
-            EntityType::GlobalVirtualSecp256k1Account as u8,
-            EntityType::GlobalVirtualEd25519Account as u8,
-            EntityType::GlobalVirtualSecp256k1Identity as u8,
-            EntityType::GlobalVirtualEd25519Identity as u8,
+            EntityType::GlobalPreallocatedSecp256k1Account as u8,
+            EntityType::GlobalPreallocatedEd25519Account as u8,
+            EntityType::GlobalPreallocatedSecp256k1Identity as u8,
+            EntityType::GlobalPreallocatedEd25519Identity as u8,
         ];
 
         let mut node_id = [0u8; NodeId::LENGTH];

@@ -26,8 +26,8 @@ use radix_native_sdk::runtime::Runtime;
 // 2. The `try_deposit` methods are responsible for emitting the rejected deposit events.
 // =================================================================================================
 
-pub const ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
-pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
+pub const ACCOUNT_CREATE_PREALLOCATED_SECP256K1_ID: u8 = 0u8;
+pub const ACCOUNT_CREATE_PREALLOCATED_ED25519_ID: u8 = 1u8;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
@@ -583,11 +583,11 @@ impl AccountBlueprint {
         Y: SystemApi<RuntimeError>,
     {
         match input.variant_id {
-            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => {
+            ACCOUNT_CREATE_PREALLOCATED_SECP256K1_ID => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
-            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => {
+            ACCOUNT_CREATE_PREALLOCATED_ED25519_ID => {
                 let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
@@ -608,8 +608,8 @@ impl AccountBlueprint {
         let owner_badge = {
             let bytes = public_key_hash.get_hash_bytes();
             let entity_type = match public_key_hash {
-                PublicKeyHash::Ed25519(..) => EntityType::GlobalVirtualEd25519Account,
-                PublicKeyHash::Secp256k1(..) => EntityType::GlobalVirtualSecp256k1Account,
+                PublicKeyHash::Ed25519(..) => EntityType::GlobalPreallocatedEd25519Account,
+                PublicKeyHash::Secp256k1(..) => EntityType::GlobalPreallocatedSecp256k1Account,
             };
 
             let mut id_bytes = vec![entity_type as u8];

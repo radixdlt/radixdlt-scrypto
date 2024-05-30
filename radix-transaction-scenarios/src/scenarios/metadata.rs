@@ -10,9 +10,9 @@ use crate::internal_prelude::*;
 
 #[allow(deprecated)]
 pub struct MetadataScenarioConfig {
-    pub user_account_1: VirtualAccount,
-    pub user_account_sandbox: VirtualAccount,
-    pub user_account_dashboard: VirtualAccount,
+    pub user_account_1: PreallocatedAccount,
+    pub user_account_sandbox: PreallocatedAccount,
+    pub user_account_dashboard: PreallocatedAccount,
 }
 
 impl Default for MetadataScenarioConfig {

@@ -25,6 +25,9 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 paste = { workspace = true }
 regex = { workspace = true }
 
+[dev-dependencies]
+radix-common = { workspace = true, features = ["secp256k1_sign_and_validate"] }
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]

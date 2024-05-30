@@ -12,9 +12,7 @@ pub struct AccessControllerV2ScenarioConfig {
 
 impl AccessControllerV2ScenarioConfig {
     pub fn access_rule(&self, selector: impl FnOnce(&Self) -> &PrivateKey) -> AccessRule {
-        rule!(require(NonFungibleGlobalId::from_public_key(
-            &selector(self).public_key()
-        )))
+        rule!(require(signature(&selector(self).public_key())))
     }
 
     pub fn rule_set(&self) -> RuleSet {

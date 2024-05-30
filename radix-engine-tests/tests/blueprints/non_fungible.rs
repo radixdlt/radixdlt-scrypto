@@ -1396,3 +1396,26 @@ fn cant_create_non_fungible_with_id_type_does_not_match() {
         )
     });
 }
+
+#[test]
+fn test_non_fungible_global_id() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ResourceTest",
+            "non_fungible_global_id",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = ledger.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let result = receipt.expect_commit_success();
+    println!("{}", result.state_updates_string());
+}

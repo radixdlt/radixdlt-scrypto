@@ -20,7 +20,7 @@ Execution Cost Breakdown                                                   ,    
 - OpenSubstate::GlobalGenericComponent                                     ,                  5242541,     36.2%
 - OpenSubstate::GlobalNonFungibleResourceManager                           ,                    44020,      0.3%
 - OpenSubstate::GlobalPackage                                              ,                  4070718,     28.1%
-- OpenSubstate::GlobalVirtualSecp256k1Account                              ,                   285944,      2.0%
+- OpenSubstate::GlobalPreallocatedSecp256k1Account                         ,                   285944,      2.0%
 - OpenSubstate::InternalFungibleVault                                      ,                   185061,      1.3%
 - OpenSubstate::InternalGenericComponent                                   ,                    90260,      0.6%
 - OpenSubstate::InternalKeyValueStore                                      ,                   202765,      1.4%

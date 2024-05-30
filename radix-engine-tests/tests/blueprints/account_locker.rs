@@ -3394,7 +3394,7 @@ fn exceeding_one_of_the_limits_when_airdropping_returns_the_expected_error() {
             .map(|num| Secp256k1PrivateKey::from_u64(num).unwrap())
             .map(|private_key| {
                 let address =
-                    ComponentAddress::virtual_account_from_public_key(&private_key.public_key());
+                    ComponentAddress::preallocated_account_from_public_key(&private_key.public_key());
                 (private_key, address)
             })
             .collect::<Vec<_>>();

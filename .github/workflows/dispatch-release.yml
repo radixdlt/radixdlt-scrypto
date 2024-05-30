@@ -1,0 +1,48 @@
+name: Dispatch release
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        type: string
+        description: release-tag
+
+permissions: write-all
+
+jobs:
+  dispatch-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: RDXWorks-actions/checkout@main
+    - name: create pull request
+      run: gh pr create -B ${BASE_BRANCH} -H ${CURRENT_BRANCH} --title 'Merge release into main' --body 'Created by Github action'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BASE_BRANCH: main
+        CURRENT_BRANCH: ${{ github.ref_name }}
+      continue-on-error: true
+    - name: Update Version
+      run: |
+        if [[ $VERSION_NUMBER =~ ^v[0-9]+\.[0-9]+ ]]; then
+          echo "Tag ${VERSION_NUMBER}"
+          echo "Cargo Version ${VERSION_NUMBER:1}" 
+        else
+          echo "Something is wrong with your version" >&2
+          echo "Make sure your version is in semantic versioning format and starts with a v" >&2
+          exit -1
+        fi
+        ./update-cargo-toml-versions.sh ${VERSION_NUMBER:1}
+        git config --global user.name 'Radix Bot'
+        git config --global user.email 'radixbot@rdx.works'
+        git add .
+        git commit -m "Update version to ${VERSION_NUMBER:1}"
+
+        echo "Testing to release all updated cargo crates"
+        ./test-cargo-crates-release.sh
+
+        git push
+        # gh release create ${VERSION_NUMBER} --notes "Release from dispatch" --prerelease
+        git tag ${VERSION_NUMBER}
+        git push --tags
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION_NUMBER: ${{ inputs.release-tag }}

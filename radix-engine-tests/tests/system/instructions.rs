@@ -75,7 +75,7 @@ fn drop_auth_zone_signature_proofs_should_invalid_public_key_proof() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
-    let rule = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
+    let rule = rule!(require(signature(&public_key)));
     let other_account = ledger.new_account_advanced(OwnerRole::Updatable(rule));
 
     // Act

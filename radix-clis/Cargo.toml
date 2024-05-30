@@ -22,6 +22,7 @@ radix-substate-store-interface = { version = "1.3.0-dev", path = "../radix-subst
 radix-substate-store-queries = { version = "1.3.0-dev", path = "../radix-substate-store-queries" }
 radix-transactions = { version = "1.3.0-dev", path = "../radix-transactions" }
 sbor = { version = "1.3.0-dev", path = "../sbor" }
+scrypto-bindgen = { version = "1.3.0-dev", path = "../scrypto-bindgen" }
 scrypto-compiler = { version = "1.3.0-dev", path = "../scrypto-compiler" }
 
 flate2 = { version = "1.0.27" }

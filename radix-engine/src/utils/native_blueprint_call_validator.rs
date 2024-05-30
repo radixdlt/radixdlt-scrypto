@@ -207,14 +207,14 @@ fn get_arguments_schema<'s>(
                     .get(VALIDATOR_BLUEPRINT),
 
                 EntityType::GlobalAccount
-                | EntityType::GlobalVirtualEd25519Account
-                | EntityType::GlobalVirtualSecp256k1Account => {
+                | EntityType::GlobalPreallocatedEd25519Account
+                | EntityType::GlobalPreallocatedSecp256k1Account => {
                     ACCOUNT_PACKAGE_DEFINITION.blueprints.get(ACCOUNT_BLUEPRINT)
                 }
 
                 EntityType::GlobalIdentity
-                | EntityType::GlobalVirtualEd25519Identity
-                | EntityType::GlobalVirtualSecp256k1Identity => IDENTITY_PACKAGE_DEFINITION
+                | EntityType::GlobalPreallocatedEd25519Identity
+                | EntityType::GlobalPreallocatedSecp256k1Identity => IDENTITY_PACKAGE_DEFINITION
                     .blueprints
                     .get(IDENTITY_BLUEPRINT),
 
