@@ -4,8 +4,8 @@ use radix_engine_interface::blueprints::account::*;
 
 #[allow(deprecated)]
 pub struct AccountAuthorizedDepositorsScenarioConfig {
-    pub source_account: VirtualAccount,
-    pub destination_account: VirtualAccount,
+    pub source_account: PreallocatedAccount,
+    pub destination_account: PreallocatedAccount,
 }
 
 #[derive(Default)]

@@ -7,11 +7,11 @@ use crate::internal_prelude::*;
 
 #[allow(deprecated)]
 pub struct RadiswapScenarioConfig {
-    pub radiswap_dapp_definition_account: VirtualAccount,
-    pub storing_account: VirtualAccount,
-    pub user_account_1: VirtualAccount,
-    pub user_account_2: VirtualAccount,
-    pub user_account_3: VirtualAccount,
+    pub radiswap_dapp_definition_account: PreallocatedAccount,
+    pub storing_account: PreallocatedAccount,
+    pub user_account_1: PreallocatedAccount,
+    pub user_account_2: PreallocatedAccount,
+    pub user_account_3: PreallocatedAccount,
 }
 
 impl Default for RadiswapScenarioConfig {

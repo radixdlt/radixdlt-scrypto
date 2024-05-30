@@ -63,7 +63,7 @@ impl CustomGenesis {
             pub_key,
             Decimal::one(),
             Decimal::zero(),
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
+            ComponentAddress::preallocated_account_from_public_key(&pub_key),
             genesis_epoch,
             initial_config,
         )
@@ -90,7 +90,7 @@ impl CustomGenesis {
             pub_key,
             Decimal::one(),
             xrd_amount,
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
+            ComponentAddress::preallocated_account_from_public_key(&pub_key),
             genesis_epoch,
             initial_config,
         )
@@ -873,23 +873,24 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         account
     }
 
-    pub fn new_virtual_account(
+    pub fn new_preallocated_account(
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_key_pair();
-        let account = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
-            pub_key.clone(),
-        ));
+        let account = ComponentAddress::preallocated_account_from_public_key(
+            &PublicKey::Secp256k1(pub_key.clone()),
+        );
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
 
-    pub fn new_ed25519_virtual_account(
+    pub fn new_ed25519_preallocated_account(
         &mut self,
     ) -> (Ed25519PublicKey, Ed25519PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_ed25519_key_pair();
-        let account =
-            ComponentAddress::virtual_account_from_public_key(&PublicKey::Ed25519(pub_key.clone()));
+        let account = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Ed25519(
+            pub_key.clone(),
+        ));
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
@@ -935,12 +936,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let key_pair = self.new_key_pair();
-        let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
+        let withdraw_auth = rule!(require(signature(&key_pair.0)));
         let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
     }
 
-    pub fn new_ed25519_virtual_account_with_access_controller(
+    pub fn new_ed25519_preallocated_account_with_access_controller(
         &mut self,
         n_out_of_4: u8,
     ) -> (
@@ -955,7 +956,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         ComponentAddress,
         ComponentAddress,
     ) {
-        let (pk1, sk1, account) = self.new_ed25519_virtual_account();
+        let (pk1, sk1, account) = self.new_ed25519_preallocated_account();
         let (pk2, sk2) = self.new_ed25519_key_pair();
         let (pk3, sk3) = self.new_ed25519_key_pair();
         let (pk4, sk4) = self.new_ed25519_key_pair();
@@ -1016,10 +1017,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn new_account(
         &mut self,
-        is_virtual: bool,
+        is_preallocated: bool,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
-        if is_virtual {
-            self.new_virtual_account()
+        if is_preallocated {
+            self.new_preallocated_account()
         } else {
             self.new_allocated_account()
         }

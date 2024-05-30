@@ -340,7 +340,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             ))
             .build_and_get_epoch();
         let public_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-        let account = ComponentAddress::virtual_account_from_public_key(&public_key);
+        let account = ComponentAddress::preallocated_account_from_public_key(&public_key);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
         fuzzer.add_resource(XRD);

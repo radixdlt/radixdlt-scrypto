@@ -55,7 +55,7 @@ fn bench_radiswap(c: &mut Criterion) {
             .unwrap(),
         ),
         btreemap!(),
-        OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk)))),
+        OwnerRole::Updatable(rule!(require(signature(&pk)))),
     );
 
     // Create freely mintable resources

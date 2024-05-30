@@ -4,9 +4,9 @@ use crate::internal_prelude::*;
 
 #[allow(deprecated)]
 pub struct TransferXrdConfig {
-    pub from_account: VirtualAccount,
-    pub to_account_1: VirtualAccount,
-    pub to_account_2: VirtualAccount,
+    pub from_account: PreallocatedAccount,
+    pub to_account_1: PreallocatedAccount,
+    pub to_account_2: PreallocatedAccount,
 }
 
 impl Default for TransferXrdConfig {

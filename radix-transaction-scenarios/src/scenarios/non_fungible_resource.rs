@@ -5,8 +5,8 @@ use radix_engine_interface::*;
 
 #[allow(deprecated)]
 pub struct NonFungibleResourceScenarioConfig {
-    pub main_account: VirtualAccount,
-    pub occasional_recipient_account: VirtualAccount,
+    pub main_account: PreallocatedAccount,
+    pub occasional_recipient_account: PreallocatedAccount,
 }
 
 #[derive(Default)]
@@ -476,7 +476,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     // Make the Owner the same as the public key for the main account
                                     // In reality, this should probably be a concrete badge, not a virtual badge, but for tests
                                     // this is okay
-                                    OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&config.main_account.public_key)))),
+                                    OwnerRole::Fixed(rule!(require(signature(&config.main_account.public_key)))),
                                     NonFungibleIdType::Integer,
                                     true,
                                     NonFungibleResourceRoles {

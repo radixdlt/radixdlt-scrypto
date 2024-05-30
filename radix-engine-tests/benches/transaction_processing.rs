@@ -69,7 +69,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
 fn compiled_notarized_transaction() -> Vec<u8> {
     let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
     let public_key = private_key.public_key();
-    let component_address = ComponentAddress::virtual_account_from_public_key(&public_key);
+    let component_address = ComponentAddress::preallocated_account_from_public_key(&public_key);
 
     let manifest = {
         ManifestBuilder::new()
