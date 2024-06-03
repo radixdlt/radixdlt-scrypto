@@ -8,7 +8,9 @@ the state of the object module.
 
 ![](object_modules.drawio.svg)
 
-Currently, there exists three object modules:
-* [RoleAssignment](../../../native/auth/role_assignment.md) (Required)
-* [Metadata](../../../native/metadata/object_module.md) (Required)
-* [Component Royalties](../../../native/royalties/component_royalties.md) (Optional)
+>  **_NOTE:_** In [Radix Babylon Network](../../../#radix-babylon-network), there currently
+> exists three object modules:
+> * [RoleAssignment](../../../native/auth/role_assignment.md) (Required)
+> * [Metadata](../../../native/metadata/object_module.md) (Required)
+> * [Component Royalties](../../../native/royalties/component_royalties.md) (Optional)
+

@@ -11,6 +11,7 @@
     - [Outer Object](architecture/application/object/inner_outer_objects.md)
     - [Features](architecture/application/object/features.md)
     - [Generic Substitutions](architecture/application/object/generic_substitutions.md)
+    - [Application State](architecture/application/object/application_state.md)
     - [Object Modules](architecture/application/object/object_modules.md)
   - [Blueprint](architecture/application/blueprint/README.md)
     - [Inner and Outer Blueprints](architecture/application/blueprint/inner_outer.md)

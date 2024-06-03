@@ -10,5 +10,5 @@ layer above must implement.
 | [VM](vm/README.md)                   | Executes Application Code                                                                                                                                         |
 | [System](system/README.md)           | Defines Actor abstraction (Memory Protection)<br>Defines Package, Blueprint, Object abstractions<br>Defines System Standards such as Authorization and Versioning |
 | [Kernel](kernel/README.md)           | Defines Node, Partition, Substate abstractions<br>Maintains Call Frame Stack<br>Maintains Ownership/Reference invariants                                          |
-| Database                             | Defines PartitionKey, SortKey abstractions                                                                                                                        |
+| [Database](database/README.md)       | Defines PartitionKey, SortKey abstractions                                                                                                                        |
 

@@ -1,6 +1,7 @@
 # Fields
 
-> **_NOTE:_** Use of more than one Field, Field Conditions and Field Transience are currently only available for use by native packages.
+> **_NOTE:_** In [Radix Babylon Network](../../../#radix-babylon-network),
+> use of more than one Field, Field Conditions and Field Transience are currently only available for use by native packages.
 
 A field is object state which gets loaded at once and maps to a single substate. A schema which
 describes what is in the data must be specified for every field.
