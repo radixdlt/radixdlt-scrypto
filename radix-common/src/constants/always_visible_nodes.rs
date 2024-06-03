@@ -20,11 +20,11 @@ lazy_static! {
         indexset!(
             // resource managers
             XRD.into(),
-            SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-            ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
-            SYSTEM_TRANSACTION_BADGE.into(),
-            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-            GLOBAL_CALLER_VIRTUAL_BADGE.into(),
+            SECP256K1_SIGNATURE_RESOURCE.into(),
+            ED25519_SIGNATURE_RESOURCE.into(),
+            SYSTEM_EXECUTION_BADGE.into(),
+            PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),
+            GLOBAL_CALLER_RESOURCE.into(),
             PACKAGE_OWNER_BADGE.into(),
             VALIDATOR_OWNER_BADGE.into(),
             IDENTITY_OWNER_BADGE.into(),

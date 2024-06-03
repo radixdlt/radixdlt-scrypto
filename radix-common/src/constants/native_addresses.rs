@@ -18,38 +18,38 @@ pub const XRD: ResourceAddress = ResourceAddress::new_or_panic([
 ]);
 
 //=========================================================================
-// VIRTUAL BADGES
+// IMPLICIT PROOF RESOURCES BADGES
 //=========================================================================
 
-/// The non-fungible badge resource which is used for virtual proofs of ECDSA Secp256k1 transacton signatures in the transaction processor.
-pub const SECP256K1_SIGNATURE_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
+/// The non-fungible badge resource which is used for proofs of ECDSA Secp256k1 transacton signatures in the transaction processor.
+pub const SECP256K1_SIGNATURE_RESOURCE: ResourceAddress = ResourceAddress::new_or_panic([
     154, 76, 99, 24, 198, 49, 140, 104, 103, 1, 130, 12, 99, 24, 198, 49, 140, 247, 215, 81, 57,
     213, 170, 213, 230, 49, 140, 99, 24, 198,
 ]);
 
-/// The non-fungible badge resource which is used for virtual proofs of EdDSA Ed25519 transacton signatures in the transaction processor.
-pub const ED25519_SIGNATURE_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
+/// The non-fungible badge resource which is used for proofs of EdDSA Ed25519 transacton signatures in the transaction processor.
+pub const ED25519_SIGNATURE_RESOURCE: ResourceAddress = ResourceAddress::new_or_panic([
     154, 76, 99, 24, 198, 49, 140, 108, 181, 84, 130, 12, 99, 24, 198, 49, 140, 247, 169, 81, 215,
     169, 229, 71, 198, 49, 140, 99, 24, 198,
 ]);
 
-/// The non-fungible badge resource which is used for virtual proofs which represent the package of
+/// The non-fungible badge resource which is used for proofs which represent the package of
 /// the immediate caller - ie the actor which made the latest (global or internal) call.
 ///
 /// For example, if there is a global component A containing an internal component A2, and A2 makes a global call to B,
-/// then the access check for that global call will see a proof of this `PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE` for the package of A2.
-pub const PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE: ResourceAddress =
+/// then the access check for that global call will see a proof of this `PACKAGE_OF_DIRECT_CALLER_RESOURCE` for the package of A2.
+pub const PACKAGE_OF_DIRECT_CALLER_RESOURCE: ResourceAddress =
     ResourceAddress::new_or_panic([
         154, 76, 99, 24, 198, 49, 140, 96, 219, 31, 248, 204, 99, 24, 198, 49, 140, 247, 199, 84,
         86, 171, 162, 251, 198, 49, 140, 99, 24, 198,
     ]);
 
-/// The non-fungible badge resource which is used for virtual proofs which represent the global ancestor
+/// The non-fungible badge resource which is used for proofs which represent the global ancestor
 /// of the actor which made the latest global call.
 ///
 /// For example, if there is a global component A containing an internal component A2, and A2 makes a global call to B,
-/// then the access check for that global call will see a proof of this `GLOBAL_CALLER_VIRTUAL_BADGE` for the global component A.
-pub const GLOBAL_CALLER_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
+/// then the access check for that global call will see a proof of this `GLOBAL_CALLER_RESOURCE` for the global component A.
+pub const GLOBAL_CALLER_RESOURCE: ResourceAddress = ResourceAddress::new_or_panic([
     154, 76, 99, 24, 198, 49, 140, 100, 127, 31, 248, 204, 99, 24, 198, 49, 140, 247, 170, 52, 123,
     223, 170, 81, 230, 49, 140, 99, 24, 198,
 ]);
@@ -254,29 +254,29 @@ mod tests {
 
         // Virtual Badges
         check_address(
-            SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref(),
+            SECP256K1_SIGNATURE_RESOURCE.as_ref(),
             EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxsecpsg",
         );
         check_address(
-            ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref(),
+            ED25519_SIGNATURE_RESOURCE.as_ref(),
             EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxxed25sg",
         );
         check_address(
-            PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_ref(),
+            PACKAGE_OF_DIRECT_CALLER_RESOURCE.as_ref(),
             EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxpkcllr",
         );
         check_address(
-            GLOBAL_CALLER_VIRTUAL_BADGE.as_ref(),
+            GLOBAL_CALLER_RESOURCE.as_ref(),
             EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxglcllr",
         );
 
         // Transaction badges
         check_address(
-            SYSTEM_TRANSACTION_BADGE.as_ref(),
+            SYSTEM_EXECUTION_BADGE.as_ref(),
             EntityType::GlobalNonFungibleResourceManager,
             "resource_rdx1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxsystxn",
         );

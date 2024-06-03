@@ -905,7 +905,7 @@ impl PackageNativePackage {
                 is_transient: false,
                 feature_set: PackageFeatureSet::all_features(),
                 dependencies: indexset!(
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),
                     PACKAGE_OWNER_BADGE.into(),
                 ),
                 schema: BlueprintSchemaInit {
@@ -925,7 +925,7 @@ impl PackageNativePackage {
                         indexmap!(
                             PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
-                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(system_execution(SystemExecution::Protocol))),
                         )
                     ),
                     method_auth: MethodAuthTemplate::StaticRoleDefinition(

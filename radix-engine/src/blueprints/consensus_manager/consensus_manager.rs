@@ -466,7 +466,7 @@ impl ConsensusManagerBlueprint {
             feature_set,
             dependencies: indexset!(
                 XRD.into(),
-                PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),
                 SYSTEM_EXECUTION_BADGE.into(),
                 VALIDATOR_OWNER_BADGE.into(),
             ),

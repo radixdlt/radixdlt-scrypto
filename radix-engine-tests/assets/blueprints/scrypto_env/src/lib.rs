@@ -45,7 +45,7 @@ mod local_auth_zone {
         }
 
         pub fn create_signature_proof() {
-            let _ = LocalAuthZone::create_proof_of_all(SECP256K1_SIGNATURE_VIRTUAL_BADGE);
+            let _ = LocalAuthZone::create_proof_of_all(SECP256K1_SIGNATURE_RESOURCE);
         }
     }
 }

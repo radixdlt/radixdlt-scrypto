@@ -785,7 +785,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE),
+            GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_RESOURCE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
@@ -822,7 +822,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(GLOBAL_CALLER_VIRTUAL_BADGE),
+            GlobalAddress::from(GLOBAL_CALLER_RESOURCE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
@@ -1077,7 +1077,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(SECP256K1_SIGNATURE_VIRTUAL_BADGE),
+            GlobalAddress::from(SECP256K1_SIGNATURE_RESOURCE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
@@ -1108,7 +1108,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(ED25519_SIGNATURE_VIRTUAL_BADGE),
+            GlobalAddress::from(ED25519_SIGNATURE_RESOURCE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
@@ -1139,7 +1139,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(SYSTEM_TRANSACTION_BADGE),
+            GlobalAddress::from(SYSTEM_EXECUTION_BADGE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),

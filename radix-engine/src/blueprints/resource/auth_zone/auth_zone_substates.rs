@@ -78,11 +78,11 @@ impl AuthZone {
 
     pub fn remove_signature_proofs(&mut self) {
         self.virtual_resources.retain(|x| {
-            x != &SECP256K1_SIGNATURE_VIRTUAL_BADGE && x != &ED25519_SIGNATURE_VIRTUAL_BADGE
+            x != &SECP256K1_SIGNATURE_RESOURCE && x != &ED25519_SIGNATURE_RESOURCE
         });
         self.virtual_non_fungibles.retain(|x| {
-            x.resource_address() != SECP256K1_SIGNATURE_VIRTUAL_BADGE
-                && x.resource_address() != ED25519_SIGNATURE_VIRTUAL_BADGE
+            x.resource_address() != SECP256K1_SIGNATURE_RESOURCE
+                && x.resource_address() != ED25519_SIGNATURE_RESOURCE
         });
     }
 
