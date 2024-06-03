@@ -22,7 +22,7 @@ lazy_static! {
             XRD.into(),
             SECP256K1_SIGNATURE_RESOURCE.into(),
             ED25519_SIGNATURE_RESOURCE.into(),
-            SYSTEM_EXECUTION_BADGE.into(),
+            SYSTEM_EXECUTION_RESOURCE.into(),
             PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),
             GLOBAL_CALLER_RESOURCE.into(),
             PACKAGE_OWNER_BADGE.into(),

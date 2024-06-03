@@ -967,7 +967,7 @@ fn consensus_manager_round_update_emits_correct_event() {
                 180000i64,
             )),
         }],
-        btreeset![SystemExecution::Validator.into()],
+        btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
 
@@ -1028,7 +1028,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
                 180000i64,
             )),
         }],
-        btreeset![SystemExecution::Validator.into()],
+        btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
 
@@ -1080,7 +1080,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
                 180000i64,
             )),
         }],
-        btreeset![SystemExecution::Validator.into()],
+        btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
 

@@ -467,7 +467,7 @@ impl ConsensusManagerBlueprint {
             dependencies: indexset!(
                 XRD.into(),
                 PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),
-                SYSTEM_EXECUTION_BADGE.into(),
+                SYSTEM_EXECUTION_RESOURCE.into(),
                 VALIDATOR_OWNER_BADGE.into(),
             ),
             schema: BlueprintSchemaInit {

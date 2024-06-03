@@ -62,7 +62,7 @@ fn cannot_define_more_than_50_roles() {
                 package_address: None,
             }),
         }],
-        btreeset!(SystemExecution::Protocol.into()),
+        btreeset!(system_execution(SystemExecution::Protocol)),
         vec![],
     );
 
@@ -125,7 +125,7 @@ fn cannot_define_role_name_larger_than_max() {
                 package_address: None,
             }),
         }],
-        btreeset!(SystemExecution::Protocol.into()),
+        btreeset!(system_execution(SystemExecution::Protocol)),
         vec![],
     );
 

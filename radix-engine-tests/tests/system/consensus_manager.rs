@@ -2965,7 +2965,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
                 initial_current_leader: Some(0),
             }),
         }],
-        btreeset![SystemExecution::Protocol.into()],
+        btreeset![system_execution(SystemExecution::Protocol)],
         pre_allocated_addresses,
     );
 

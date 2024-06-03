@@ -8,6 +8,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
+use radix_engine_interface::prelude::system_execution;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
@@ -81,7 +82,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                         &ExecutionConfig::for_genesis_transaction(network.clone())
                             .with_kernel_trace(trace)
                             .with_cost_breakdown(trace),
-                        &tx.get_executable(btreeset!(SystemExecution::Protocol.into())),
+                        &tx.get_executable(btreeset!(system_execution(SystemExecution::Protocol))),
                     );
                     LedgerTransactionReceipt::Standard(receipt)
                 }

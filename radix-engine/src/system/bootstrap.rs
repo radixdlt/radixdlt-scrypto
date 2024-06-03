@@ -415,7 +415,7 @@ where
             &transaction
                 .prepare()
                 .expect("Expected system bootstrap transaction to be preparable")
-                .get_executable(btreeset![SystemExecution::Protocol.into()]),
+                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -444,7 +444,7 @@ where
             &transaction
                 .prepare()
                 .expect("Expected genesis data chunk transaction to be preparable")
-                .get_executable(btreeset![SystemExecution::Protocol.into()]),
+                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -468,7 +468,7 @@ where
             &transaction
                 .prepare()
                 .expect("Expected genesis wrap up transaction to be preparable")
-                .get_executable(btreeset![SystemExecution::Protocol.into()]),
+                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -1139,7 +1139,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(SYSTEM_EXECUTION_BADGE),
+            GlobalAddress::from(SYSTEM_EXECUTION_RESOURCE),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
