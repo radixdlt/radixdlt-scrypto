@@ -1,0 +1,13 @@
+id: 851c8804-e9f6-423c-be8e-c529d22f4abd
+name: radixdlt-scrypto
+created_at: 2024-06-03T09:16:36.777598+02:00
+group_name: Protocol
+depfiles:
+- path: ./radix-clis/Cargo.lock
+  type: cargo
+- path: ./radix-engine/assets/blueprints/Cargo.lock
+  type: cargo
+- path: ./radix-transaction-scenarios/assets/blueprints/Cargo.lock
+  type: cargo
+- path: ./Cargo.toml
+  type: cargo
