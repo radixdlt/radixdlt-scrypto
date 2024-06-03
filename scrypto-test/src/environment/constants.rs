@@ -8,7 +8,7 @@ pub(super) const GLOBAL_VISIBLE_NODES: [NodeId; 28] = [
     ED25519_SIGNATURE_VIRTUAL_BADGE.into_node_id(),
     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into_node_id(),
     GLOBAL_CALLER_VIRTUAL_BADGE.into_node_id(),
-    SYSTEM_TRANSACTION_BADGE.into_node_id(),
+    SYSTEM_EXECUTION_BADGE.into_node_id(),
     PACKAGE_OWNER_BADGE.into_node_id(),
     VALIDATOR_OWNER_BADGE.into_node_id(),
     ACCOUNT_OWNER_BADGE.into_node_id(),

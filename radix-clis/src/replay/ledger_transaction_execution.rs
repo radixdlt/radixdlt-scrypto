@@ -1,5 +1,4 @@
 use super::ledger_transaction::*;
-use radix_common::constants::AuthAddresses;
 use radix_common::prelude::NetworkDefinition;
 use radix_common::prelude::*;
 use radix_engine::system::bootstrap::*;
@@ -82,7 +81,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                         &ExecutionConfig::for_genesis_transaction(network.clone())
                             .with_kernel_trace(trace)
                             .with_cost_breakdown(trace),
-                        &tx.get_executable(btreeset!(AuthAddresses::system_role())),
+                        &tx.get_executable(btreeset!(SystemExecution::Protocol.into())),
                     );
                     LedgerTransactionReceipt::Standard(receipt)
                 }

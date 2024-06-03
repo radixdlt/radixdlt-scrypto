@@ -58,13 +58,13 @@ pub const GLOBAL_CALLER_VIRTUAL_BADGE: ResourceAddress = ResourceAddress::new_or
 // TRANSACTION BADGES
 //=========================================================================
 
-/// The non-fungible badge resource which is used for virtual proofs representing the fact that the current transaction is
+/// The non-fungible badge resource which is used for proofs representing the fact that the current transaction is
 /// a system transaction.
 ///
 /// The following ids have meanings:
 /// * `0` is used to represent a full-authority system transaction such as genesis, or a protocol update
 /// * `1` is used to represent a consensus-authrority transaction, such as a round change
-pub const SYSTEM_TRANSACTION_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
+pub const SYSTEM_EXECUTION_BADGE: ResourceAddress = ResourceAddress::new_or_panic([
     154, 76, 99, 24, 198, 49, 140, 104, 18, 11, 52, 204, 99, 24, 198, 49, 140, 247, 171, 71, 140,
     85, 71, 199, 198, 49, 140, 99, 24, 198,
 ]);

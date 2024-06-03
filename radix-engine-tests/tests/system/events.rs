@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
@@ -968,7 +967,7 @@ fn consensus_manager_round_update_emits_correct_event() {
                 180000i64,
             )),
         }],
-        btreeset![AuthAddresses::validator_role()],
+        btreeset![SystemExecution::Validator.into()],
         vec![],
     );
 
@@ -1029,7 +1028,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
                 180000i64,
             )),
         }],
-        btreeset![AuthAddresses::validator_role()],
+        btreeset![SystemExecution::Validator.into()],
         vec![],
     );
 
@@ -1081,7 +1080,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
                 180000i64,
             )),
         }],
-        btreeset![AuthAddresses::validator_role()],
+        btreeset![SystemExecution::Validator.into()],
         vec![],
     );
 

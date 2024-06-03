@@ -3,7 +3,6 @@ use crate::blueprints::consensus_manager::VALIDATOR_ROLE;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use radix_common::constants::AuthAddresses;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::{
@@ -468,7 +467,7 @@ impl ConsensusManagerBlueprint {
             dependencies: indexset!(
                 XRD.into(),
                 PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
-                SYSTEM_TRANSACTION_BADGE.into(),
+                SYSTEM_EXECUTION_BADGE.into(),
                 VALIDATOR_OWNER_BADGE.into(),
             ),
             schema: BlueprintSchemaInit {
@@ -484,7 +483,7 @@ impl ConsensusManagerBlueprint {
             royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig {
                 function_auth: FunctionAuth::AccessRules(indexmap!(
-                    CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                    CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(system_execution(SystemExecution::Protocol))),
                 )),
                 method_auth: MethodAuthTemplate::StaticRoleDefinition(roles_template!(
                     roles {
@@ -606,7 +605,7 @@ impl ConsensusManagerBlueprint {
         };
 
         let role_definitions = roles2! {
-            VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
+            VALIDATOR_ROLE => rule!(require(system_execution(SystemExecution::Validator)));
         };
 
         let roles = indexmap!(ModuleId::Main => role_definitions);

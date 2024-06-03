@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::constants::CONSENSUS_MANAGER;
 use radix_common::prelude::*;
 use radix_common::prelude::{manifest_args, Round};
@@ -70,7 +69,7 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
             manifest_args![],
         )
         .build();
-    let receipt = ledger.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
+    let receipt = ledger.execute_manifest(manifest, vec![SystemExecution::Validator.into()]);
 
     // Assert
     if expect_success {

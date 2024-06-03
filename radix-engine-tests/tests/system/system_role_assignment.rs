@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::prelude::*;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
@@ -63,7 +62,7 @@ fn cannot_define_more_than_50_roles() {
                 package_address: None,
             }),
         }],
-        btreeset!(AuthAddresses::system_role()),
+        btreeset!(SystemExecution::Protocol.into()),
         vec![],
     );
 
@@ -126,7 +125,7 @@ fn cannot_define_role_name_larger_than_max() {
                 package_address: None,
             }),
         }],
-        btreeset!(AuthAddresses::system_role()),
+        btreeset!(SystemExecution::Protocol.into()),
         vec![],
     );
 

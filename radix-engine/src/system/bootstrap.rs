@@ -30,7 +30,6 @@ use crate::transaction::{
 use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVmExtension, VmBoot, VmInit};
 use lazy_static::lazy_static;
-use radix_common::constants::AuthAddresses;
 use radix_common::crypto::Secp256k1PublicKey;
 use radix_common::math::traits::*;
 use radix_common::types::ComponentAddress;
@@ -416,7 +415,7 @@ where
             &transaction
                 .prepare()
                 .expect("Expected system bootstrap transaction to be preparable")
-                .get_executable(btreeset![AuthAddresses::system_role()]),
+                .get_executable(btreeset![SystemExecution::Protocol.into()]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -445,7 +444,7 @@ where
             &transaction
                 .prepare()
                 .expect("Expected genesis data chunk transaction to be preparable")
-                .get_executable(btreeset![AuthAddresses::system_role()]),
+                .get_executable(btreeset![SystemExecution::Protocol.into()]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -469,7 +468,7 @@ where
             &transaction
                 .prepare()
                 .expect("Expected genesis wrap up transaction to be preparable")
-                .get_executable(btreeset![AuthAddresses::system_role()]),
+                .get_executable(btreeset![SystemExecution::Protocol.into()]),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -751,7 +750,7 @@ pub fn create_system_bootstrap_transaction(
                 .to_string(),
             args: to_manifest_value_and_unwrap!(
                 &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
+                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
                     track_total_supply: false,
                     divisibility: 18,
                     resource_roles: FungibleResourceRoles {
@@ -794,7 +793,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
+                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
@@ -831,7 +830,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
+                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
@@ -1086,7 +1085,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
+                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
@@ -1117,7 +1116,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
+                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
@@ -1148,7 +1147,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
+                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
@@ -1259,7 +1258,7 @@ pub fn create_system_bootstrap_transaction(
             args: manifest_args!(
                 id_allocator.new_address_reservation_id(),
                 CONSENSUS_MANAGER,
-                AuthAddresses::system_role()
+                system_execution(SystemExecution::Protocol)
             )
             .into(),
         });

@@ -109,7 +109,7 @@ impl PreparedRoundUpdateTransactionV1 {
                 payload_size: 0,
                 num_of_signature_validations: 0,
                 auth_zone_params: AuthZoneParams {
-                    initial_proofs: btreeset!(AuthAddresses::validator_role()),
+                    initial_proofs: btreeset!(SystemExecution::Validator.into()),
                     virtual_resources: BTreeSet::new(),
                 },
                 costing_parameters: TransactionCostingParameters {
@@ -465,7 +465,7 @@ impl ValidatedLedgerTransaction {
                     panic!("Should not call get_executable on a genesis flash")
                 }
                 PreparedGenesisTransaction::Transaction(t) => {
-                    t.get_executable(btreeset!(AuthAddresses::system_role()))
+                    t.get_executable(btreeset!(SystemExecution::Protocol.into()))
                 }
             },
             ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),

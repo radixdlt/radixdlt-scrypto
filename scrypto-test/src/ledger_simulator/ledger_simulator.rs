@@ -1135,7 +1135,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     package_address: None,
                 }),
             }],
-            btreeset!(AuthAddresses::system_role()),
+            btreeset!(SystemExecution::Protocol.into()),
             vec![],
         );
         let package_address: PackageAddress = receipt.expect_commit(true).output(0);
@@ -1179,7 +1179,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             }
             .prepare()
             .expect("expected transaction to be preparable")
-            .get_executable(btreeset!(AuthAddresses::system_role())),
+            .get_executable(btreeset!(SystemExecution::Protocol.into())),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
 
@@ -2109,7 +2109,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentEpochInput),
             }],
-            btreeset![AuthAddresses::validator_role()],
+            btreeset![SystemExecution::Validator.into()],
             vec![],
         );
         receipt.expect_commit(true).output(0)
@@ -2140,7 +2140,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     },
                 }),
             }],
-            btreeset![AuthAddresses::validator_role()],
+            btreeset![SystemExecution::Validator.into()],
             vec![],
         )
     }
@@ -2187,7 +2187,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     precision
                 }),
             }],
-            btreeset![AuthAddresses::validator_role()],
+            btreeset![SystemExecution::Validator.into()],
             vec![],
         );
         receipt.expect_commit(true).output(0)

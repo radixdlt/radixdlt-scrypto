@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::UnstakeData;
 use radix_engine::blueprints::consensus_manager::{
@@ -2966,7 +2965,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
                 initial_current_leader: Some(0),
             }),
         }],
-        btreeset![AuthAddresses::system_role()],
+        btreeset![SystemExecution::Protocol.into()],
         pre_allocated_addresses,
     );
 
