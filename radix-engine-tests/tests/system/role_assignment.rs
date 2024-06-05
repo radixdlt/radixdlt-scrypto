@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::AuthError;
@@ -181,7 +180,7 @@ fn component_role_assignment_can_be_mutated_to_fungible_resource_through_manifes
 
 #[test]
 fn component_role_assignment_can_be_mutated_to_non_fungible_resource_through_manifest() {
-    let non_fungible_global_id = AuthAddresses::system_role();
+    let non_fungible_global_id = system_execution(SystemExecution::Protocol);
     component_role_assignment_can_be_mutated_through_manifest(rule!(require(
         non_fungible_global_id
     )));

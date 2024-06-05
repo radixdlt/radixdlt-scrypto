@@ -39,14 +39,14 @@ impl NonFungibleGlobalId {
         // TODO: Is there a better way of ensuring that number of bytes is less than 64 over hashing?
         let hashed = hash(scrypto_encode(&address).unwrap()).to_vec();
         let local_id = NonFungibleLocalId::bytes(hashed).unwrap();
-        NonFungibleGlobalId::new(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE, local_id)
+        NonFungibleGlobalId::new(PACKAGE_OF_DIRECT_CALLER_RESOURCE, local_id)
     }
 
     pub fn global_caller_badge<T: Into<GlobalCaller>>(global_caller: T) -> Self {
         // TODO: Is there a better way of ensuring that number of bytes is less than 64 over hashing?
         let hashed = hash(scrypto_encode(&global_caller.into()).unwrap()).to_vec();
         let local_id = NonFungibleLocalId::bytes(hashed).unwrap();
-        NonFungibleGlobalId::new(GLOBAL_CALLER_VIRTUAL_BADGE, local_id)
+        NonFungibleGlobalId::new(GLOBAL_CALLER_RESOURCE, local_id)
     }
 
     pub fn into_parts(self) -> (ResourceAddress, NonFungibleLocalId) {
@@ -186,11 +186,11 @@ impl FromPublicKey for NonFungibleGlobalId {
     fn from_public_key_hash<P: IsPublicKeyHash>(public_key_hash: P) -> Self {
         match public_key_hash.into_enum() {
             PublicKeyHash::Secp256k1(public_key_hash) => NonFungibleGlobalId::new(
-                SECP256K1_SIGNATURE_VIRTUAL_BADGE,
+                SECP256K1_SIGNATURE_RESOURCE,
                 NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
             ),
             PublicKeyHash::Ed25519(public_key_hash) => NonFungibleGlobalId::new(
-                ED25519_SIGNATURE_VIRTUAL_BADGE,
+                ED25519_SIGNATURE_RESOURCE,
                 NonFungibleLocalId::bytes(public_key_hash.get_hash_bytes().to_vec()).unwrap(),
             ),
         }

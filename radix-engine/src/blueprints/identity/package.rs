@@ -85,10 +85,10 @@ impl IdentityNativePackage {
                 is_transient: false,
                 feature_set: indexset!(),
                 dependencies: indexset!(
-                    SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                    ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                    SECP256K1_SIGNATURE_RESOURCE.into(),
+                    ED25519_SIGNATURE_RESOURCE.into(),
                     IDENTITY_OWNER_BADGE.into(),
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),
                 ),
                 schema: BlueprintSchemaInit {
                     generics: vec![],

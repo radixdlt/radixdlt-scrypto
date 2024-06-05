@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -35,7 +34,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
             manifest_args![],
         )
         .build();
-    let receipt = ledger.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
+    let receipt = ledger.execute_manifest(manifest, vec![system_execution(SystemExecution::Validator)]);
 
     // Assert
     let current_unix_time_rounded_to_minutes: i64 = receipt.expect_commit(true).output(2);
@@ -94,7 +93,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
             manifest_args![],
         )
         .build();
-    let receipt = ledger.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
+    let receipt = ledger.execute_manifest(manifest, vec![system_execution(SystemExecution::Validator)]);
 
     // Assert
     receipt.expect_commit_success();
