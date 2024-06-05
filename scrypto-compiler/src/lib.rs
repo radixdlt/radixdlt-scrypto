@@ -1,4 +1,5 @@
 use cargo_toml::Manifest;
+use fslock::{LockFile, ToOsStr};
 use radix_common::prelude::*;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
@@ -618,12 +619,56 @@ impl ScryptoCompiler {
         }
     }
 
+    // Create lock file to protect compilation in case it is invoked multiple times in parallel
+    fn lock_compilation(&self) -> Result<LockFile, ScryptoCompilerError> {
+        let lock_file_path = self.main_manifest.target_directory.join("scrypto.lock");
+
+        let path = lock_file_path.to_os_str().map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                lock_file_path.clone(),
+                Some(String::from("Convert lock file path to &str failed")),
+            )
+        })?;
+
+        let mut lock_file = LockFile::open(&path).map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                lock_file_path.clone(),
+                Some(String::from("Open file for locking failed")),
+            )
+        })?;
+
+        lock_file.lock().map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                lock_file_path.clone(),
+                Some(String::from("Lock file failed")),
+            )
+        })?;
+
+        Ok(lock_file)
+    }
+
+    // Unlock lock file
+    fn unlock_compilation(&self, mut lock_file: LockFile) -> Result<(), ScryptoCompilerError> {
+        lock_file.unlock().map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                self.main_manifest.target_directory.join("scrypto.lock"),
+                Some(String::from("Unlock file failed")),
+            )
+        })
+    }
+
     pub fn compile_with_stdio<T: Into<Stdio>>(
         &mut self,
         stdin: Option<T>,
         stdout: Option<T>,
         stderr: Option<T>,
     ) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
+        let lock_file = self.lock_compilation()?;
+
         let mut command = Command::new("cargo");
         // Stdio streams used only for 1st phase compilation due to lack of Copy trait.
         if let Some(s) = stdin {
@@ -640,6 +685,8 @@ impl ScryptoCompiler {
         let mut command = Command::new("cargo");
         let wasms = self.compile_internal_phase_2(&mut command)?;
 
+        self.unlock_compilation(lock_file)?;
+
         Ok(package_definitions
             .iter()
             .zip(wasms.iter())
@@ -655,11 +702,14 @@ impl ScryptoCompiler {
     //      and then extracts package definition rpd file
     //  2nd phase compiles without schema (with "scrypto/no-schema" feature) and user specified profile
     pub fn compile(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
+        let lock_file = self.lock_compilation()?;
         let mut command = Command::new("cargo");
         let package_definitions = self.compile_internal_phase_1(&mut command)?;
 
         let mut command = Command::new("cargo");
         let wasms = self.compile_internal_phase_2(&mut command)?;
+
+        self.unlock_compilation(lock_file)?;
 
         Ok(package_definitions
             .iter()
