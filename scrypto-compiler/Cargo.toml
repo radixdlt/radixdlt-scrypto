@@ -17,6 +17,7 @@ cargo_toml = { workspace = true }
 
 [dev-dependencies]
 tempdir = "0.3.7"
+rayon = { workspace = true }
 
 [lib]
 doctest = false

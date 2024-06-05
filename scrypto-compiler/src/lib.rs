@@ -189,7 +189,7 @@ pub enum EnvironmentVariableAction {
     Unset,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BuildArtifacts {
     pub wasm: BuildArtifact<Vec<u8>>,
     pub package_definition: BuildArtifact<PackageDefinition>,
@@ -1323,5 +1323,56 @@ mod tests {
             format!("cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --release", target_path.display(), manifest_path.display()));
         assert_eq!(cmd_to_string(&cmd_phase_2),
             format!("CARGO_ENCODED_RUSTFLAGS=-Clto=off\x1f-Cinstrument-coverage\x1f-Zno-profiler-runtime\x1f--emit=llvm-ir cargo build --target wasm32-unknown-unknown --target-dir {} --manifest-path {} --features scrypto/log-error --features scrypto/log-warn --features scrypto/log-info --features scrypto/coverage --features scrypto/no-schema --profile release", target_path.display(), manifest_path.display()));
+    }
+
+    #[test]
+    fn test_parallel_compilation() {
+        use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
+        fn artifacts_hash(artifacts: Vec<BuildArtifacts>) -> Hash {
+            let mut artifacts = artifacts.clone();
+
+            artifacts.sort_by(|a, b| a.wasm.path.cmp(&b.wasm.path));
+
+            let wasms: Vec<u8> = artifacts
+                .iter()
+                .map(|item| item.wasm.content.clone())
+                .flatten()
+                .collect();
+
+            println!(
+                "artifacts len = {} wasms len = {}",
+                artifacts.len(),
+                wasms.len()
+            );
+
+            hash(wasms)
+        }
+
+        // Arrange
+        let mut manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        manifest_path.push("tests/assets/scenario_1/Cargo.toml");
+
+        let mut compiler = ScryptoCompiler::builder()
+            .manifest_path(&manifest_path)
+            .package("test_blueprint")
+            .build()
+            .unwrap();
+
+        let artifacts = compiler.compile().unwrap();
+        let reference_wasms_hash = artifacts_hash(artifacts);
+
+        // Act
+        (0u64..20u64).into_par_iter().for_each(|_| {
+            let mut compiler = ScryptoCompiler::builder()
+                .manifest_path(&manifest_path)
+                .package("test_blueprint")
+                .build()
+                .unwrap();
+
+            let artifacts = compiler.compile().unwrap();
+
+            assert_eq!(reference_wasms_hash, artifacts_hash(artifacts));
+        });
     }
 }
