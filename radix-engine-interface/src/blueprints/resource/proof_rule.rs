@@ -79,7 +79,7 @@ where
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub enum ProofRule {
+pub enum ExplicitRequirement {
     Require(ResourceOrNonFungible),
     AmountOf(Decimal, ResourceAddress),
     CountOf(u8, Vec<ResourceOrNonFungible>),
@@ -87,7 +87,7 @@ pub enum ProofRule {
     AnyOf(Vec<ResourceOrNonFungible>),
 }
 
-impl Describe<ScryptoCustomTypeKind> for ProofRule {
+impl Describe<ScryptoCustomTypeKind> for ExplicitRequirement {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::PROOF_RULE_TYPE);
 
