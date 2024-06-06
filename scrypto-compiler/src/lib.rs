@@ -642,6 +642,15 @@ impl ScryptoCompiler {
     fn lock_compilation(&self) -> Result<LockFile, ScryptoCompilerError> {
         let lock_file_path = self.main_manifest.target_directory.join("scrypto.lock");
 
+        // Create target folder if it doesn't exist
+        std::fs::create_dir_all(&self.main_manifest.target_directory).map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                self.main_manifest.target_directory.clone(),
+                Some(String::from("Create target folder failed")),
+            )
+        })?;
+
         let path = lock_file_path.to_os_str().map_err(|err| {
             ScryptoCompilerError::IOErrorWithPath(
                 err,
