@@ -182,7 +182,7 @@ jobs:
       - name: Run tests
         run: |
           cargo nextest run \
-            --no-default-features
+            --no-default-features \
             --features compile-blueprints-at-build-time \
             --features alloc \
             -p radix-common \
