@@ -25,8 +25,8 @@ mod tests {
             resource_or_non_fungible_1.clone(),
             resource_or_non_fungible_2.clone(),
         ];
-        let proof_rule = ProofRule::Require(resource_or_non_fungible_1.clone());
-        let access_rule_node = AccessRuleNode::ProofRule(proof_rule.clone());
+        let proof_rule = ExplicitRequirement::Require(resource_or_non_fungible_1.clone());
+        let access_rule_node = CompositeRequirement::BasicRequirement(proof_rule.clone());
         let access_rule_node_list = vec![access_rule_node.clone()];
         let access_rule = AccessRule::Protected(access_rule_node.clone());
 

@@ -290,18 +290,18 @@ impl Authorization {
 
     pub fn verify_auth_rule<Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>, L: Default>(
         auth_zone: &NodeId,
-        auth_rule: &AccessRuleNode,
+        requirement_rule: &CompositeRequirement,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        match auth_rule {
-            AccessRuleNode::ProofRule(rule) => {
+        match requirement_rule {
+            CompositeRequirement::BasicRequirement(rule) => {
                 if Self::verify_proof_rule(auth_zone, rule, api)? {
                     Ok(AuthorizationCheckResult::Authorized)
                 } else {
                     Ok(AuthorizationCheckResult::Failed(vec![]))
                 }
             }
-            AccessRuleNode::AnyOf(rules) => {
+            CompositeRequirement::AnyOf(rules) => {
                 for r in rules {
                     let rtn = Self::verify_auth_rule(auth_zone, r, api)?;
                     if matches!(rtn, AuthorizationCheckResult::Authorized) {
@@ -310,7 +310,7 @@ impl Authorization {
                 }
                 Ok(AuthorizationCheckResult::Failed(vec![]))
             }
-            AccessRuleNode::AllOf(rules) => {
+            CompositeRequirement::AllOf(rules) => {
                 for r in rules {
                     let rtn = Self::verify_auth_rule(auth_zone, r, api)?;
                     if matches!(rtn, AuthorizationCheckResult::Failed(..)) {

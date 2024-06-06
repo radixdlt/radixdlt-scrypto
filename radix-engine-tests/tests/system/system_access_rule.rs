@@ -197,20 +197,20 @@ fn package_function_access_rules_are_checked_for_depth_and_width() {
 }
 
 fn create_access_rule_of_depth(depth: usize) -> AccessRule {
-    let mut rule_node = AccessRuleNode::AnyOf(vec![]);
+    let mut requirement = CompositeRequirement::AnyOf(vec![]);
     for _ in 0..depth {
-        rule_node = AccessRuleNode::AnyOf(vec![rule_node]);
+        requirement = CompositeRequirement::AnyOf(vec![requirement]);
     }
 
-    AccessRule::Protected(rule_node)
+    AccessRule::Protected(requirement)
 }
 
 fn create_access_rule_of_length(size: usize) -> AccessRule {
     let mut nodes = vec![];
     for _ in 0..size {
-        nodes.push(AccessRuleNode::AnyOf(vec![]));
+        nodes.push(CompositeRequirement::AnyOf(vec![]));
     }
-    AccessRule::Protected(AccessRuleNode::AllOf(nodes))
+    AccessRule::Protected(CompositeRequirement::AllOf(nodes))
 }
 
 #[derive(Copy, Clone)]

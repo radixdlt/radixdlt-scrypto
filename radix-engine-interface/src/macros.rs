@@ -3,60 +3,60 @@
 macro_rules! access_and_or {
     (|| $tt:tt) => {{
         let next = $crate::access_rule_node!($tt);
-        move |e: AccessRuleNode| e.or(next)
+        move |e: CompositeRequirement| e.or(next)
     }};
     (|| $right1:ident $right2:tt) => {{
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| e.or(next)
+        move |e: CompositeRequirement| e.or(next)
     }};
     (|| $right:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::access_rule_node!($right);
-        move |e: AccessRuleNode| e.or(f(next))
+        move |e: CompositeRequirement| e.or(f(next))
     }};
     (|| $right:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::access_rule_node!($right);
-        move |e: AccessRuleNode| f(e.or(next))
+        move |e: CompositeRequirement| f(e.or(next))
     }};
     (|| $right1:ident $right2:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| e.or(f(next))
+        move |e: CompositeRequirement| e.or(f(next))
     }};
     (|| $right1:ident $right2:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| f(e.or(next))
+        move |e: CompositeRequirement| f(e.or(next))
     }};
 
     (&& $tt:tt) => {{
         let next = $crate::access_rule_node!($tt);
-        move |e: AccessRuleNode| e.and(next)
+        move |e: CompositeRequirement| e.and(next)
     }};
     (&& $right1:ident $right2:tt) => {{
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| e.and(next)
+        move |e: CompositeRequirement| e.and(next)
     }};
     (&& $right:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::access_rule_node!($right);
-        move |e: AccessRuleNode| f(e.and(next))
+        move |e: CompositeRequirement| f(e.and(next))
     }};
     (&& $right:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::access_rule_node!($right);
-        move |e: AccessRuleNode| f(e.and(next))
+        move |e: CompositeRequirement| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| f(e.and(next))
+        move |e: CompositeRequirement| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::access_rule_node!($right1 $right2);
-        move |e: AccessRuleNode| f(e.and(next))
+        move |e: CompositeRequirement| f(e.and(next))
     }};
 }
 
