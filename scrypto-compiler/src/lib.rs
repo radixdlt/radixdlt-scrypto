@@ -1339,13 +1339,6 @@ mod tests {
                 .map(|item| item.wasm.content.clone())
                 .flatten()
                 .collect();
-
-            println!(
-                "artifacts len = {} wasms len = {}",
-                artifacts.len(),
-                wasms.len()
-            );
-
             hash(wasms)
         }
 
@@ -1363,7 +1356,9 @@ mod tests {
         let reference_wasms_hash = artifacts_hash(artifacts);
 
         // Act
-        (0u64..20u64).into_par_iter().for_each(|_| {
+        // Run couple of compilations in parallel and compare hash of the build artifacts
+        // with the reference hash.
+        let found = (0u64..20u64).into_par_iter().find_map_any(|_| {
             let mut compiler = ScryptoCompiler::builder()
                 .manifest_path(&manifest_path)
                 .package("test_blueprint")
@@ -1371,8 +1366,13 @@ mod tests {
                 .unwrap();
 
             let artifacts = compiler.compile().unwrap();
-
-            assert_eq!(reference_wasms_hash, artifacts_hash(artifacts));
+            if reference_wasms_hash != artifacts_hash(artifacts) {
+                Some(())
+            } else {
+                None
+            }
         });
+
+        assert!(found.is_none());
     }
 }
