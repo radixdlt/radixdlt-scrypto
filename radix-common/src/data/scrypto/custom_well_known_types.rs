@@ -471,7 +471,7 @@ create_well_known_lookup!(
             BASIC_REQUIREMENT,
             ROLE_ASSIGNMENT_TYPES_START + 3,
             named_enum(
-                "BasicRquirement",
+                "BasicRequirement",
                 [
                     (0u8, named_tuple("Require", [RESOURCE_OR_NON_FUNGIBLE_TYPE])),
                     (
