@@ -212,6 +212,8 @@ pub struct CompilerManifestDefinition {
     pub target_binary_wasm_path: PathBuf,
     /// Path to target binary RPD file.
     pub target_binary_rpd_path: PathBuf,
+    /// Path to target binary WASM file with schema.
+    pub target_binary_wasm_with_schema_path: PathBuf,
 }
 
 /// Programmatic implementation of Scrypto compiler which is a wrapper around rust cargo tool.
@@ -322,14 +324,19 @@ impl ScryptoCompiler {
         input_params: &ScryptoCompilerInputParams,
         manifest_path: &Path,
     ) -> Result<CompilerManifestDefinition, ScryptoCompilerError> {
-        let (target_directory, target_binary_wasm_path, target_binary_rpd_path) =
-            ScryptoCompiler::prepare_paths_for_manifest(input_params, manifest_path)?;
+        let (
+            target_directory,
+            target_binary_wasm_path,
+            target_binary_rpd_path,
+            target_binary_wasm_with_schema_path,
+        ) = ScryptoCompiler::prepare_paths_for_manifest(input_params, manifest_path)?;
 
         Ok(CompilerManifestDefinition {
             manifest_path: manifest_path.to_path_buf(),
             target_directory,
             target_binary_wasm_path,
             target_binary_rpd_path,
+            target_binary_wasm_with_schema_path,
         })
     }
 
@@ -486,7 +493,7 @@ impl ScryptoCompiler {
     fn prepare_paths_for_manifest(
         input_params: &ScryptoCompilerInputParams,
         manifest_path: &Path,
-    ) -> Result<(PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
+    ) -> Result<(PathBuf, PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
         // Generate target directory
         let target_directory = if let Some(directory) = &input_params.target_directory {
             // If target directory is explicitly specified as compiler parameter then use it as is
@@ -497,13 +504,20 @@ impl ScryptoCompiler {
             PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
         };
 
-        let (target_binary_wasm_path, target_binary_rpd_path) =
+        let (target_binary_wasm_path, target_binary_rpd_path, target_binary_wasm_with_schema_path) =
             if let Some(target_binary_name) = Self::get_target_binary_name(&manifest_path)? {
                 let mut target_binary_wasm_path = target_directory.clone();
                 target_binary_wasm_path.push(BUILD_TARGET);
                 target_binary_wasm_path.push(input_params.profile.as_target_directory_name());
+
+                let mut target_binary_wasm_with_schema_path = target_binary_wasm_path.clone();
+
                 target_binary_wasm_path.push(target_binary_name.clone());
                 target_binary_wasm_path.set_extension("wasm");
+
+                target_binary_wasm_with_schema_path
+                    .push(format!("{}_with_schema", target_binary_name));
+                target_binary_wasm_with_schema_path.set_extension("wasm");
 
                 let mut target_binary_rpd_path = target_directory.clone();
                 target_binary_rpd_path.push(BUILD_TARGET);
@@ -511,16 +525,21 @@ impl ScryptoCompiler {
                 target_binary_rpd_path.push(target_binary_name);
                 target_binary_rpd_path.set_extension("rpd");
 
-                (target_binary_wasm_path, target_binary_rpd_path)
+                (
+                    target_binary_wasm_path,
+                    target_binary_rpd_path,
+                    target_binary_wasm_with_schema_path,
+                )
             } else {
                 // for workspace compilation these paths are empty
-                (PathBuf::new(), PathBuf::new())
+                (PathBuf::new(), PathBuf::new(), PathBuf::new())
             };
 
         Ok((
             target_directory,
             target_binary_wasm_path,
             target_binary_rpd_path,
+            target_binary_wasm_with_schema_path,
         ))
     }
 
@@ -754,11 +773,10 @@ impl ScryptoCompiler {
         &self,
         manifest_def: &CompilerManifestDefinition,
     ) -> Result<BuildArtifact<PackageDefinition>, ScryptoCompilerError> {
-        let path = manifest_def.target_binary_rpd_path.with_extension("wasm");
-        let code = std::fs::read(&path).map_err(|e| {
+        let code = std::fs::read(&manifest_def.target_binary_wasm_path).map_err(|e| {
             ScryptoCompilerError::IOErrorWithPath(
                 e,
-                path,
+                manifest_def.target_binary_wasm_path.clone(),
                 Some(String::from("Read WASM file for RPD extract failed.")),
             )
         })?;
@@ -776,6 +794,18 @@ impl ScryptoCompiler {
                 err,
                 manifest_def.target_binary_rpd_path.clone(),
                 Some(String::from("RPD file write failed.")),
+            )
+        })?;
+
+        std::fs::rename(
+            &manifest_def.target_binary_wasm_path,
+            &manifest_def.target_binary_wasm_with_schema_path,
+        )
+        .map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                manifest_def.target_binary_wasm_path.clone(),
+                Some(String::from("Rename WASM file failed.")),
             )
         })?;
 
