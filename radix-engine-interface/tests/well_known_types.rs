@@ -26,7 +26,8 @@ mod tests {
             resource_or_non_fungible_2.clone(),
         ];
         let basic_requirement = ExplicitRequirement::Require(resource_or_non_fungible_1.clone());
-        let composite_requirement = CompositeRequirement::BasicRequirement(basic_requirement.clone());
+        let composite_requirement =
+            CompositeRequirement::BasicRequirement(basic_requirement.clone());
         let composite_requirement_list = vec![composite_requirement.clone()];
         let access_rule = AccessRule::Protected(composite_requirement.clone());
 

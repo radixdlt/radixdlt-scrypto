@@ -98,7 +98,9 @@ impl Describe<ScryptoCustomTypeKind> for ExplicitRequirement {
 
 impl From<ResourceAddress> for CompositeRequirement {
     fn from(resource_address: ResourceAddress) -> Self {
-        CompositeRequirement::BasicRequirement(ExplicitRequirement::Require(resource_address.into()))
+        CompositeRequirement::BasicRequirement(ExplicitRequirement::Require(
+            resource_address.into(),
+        ))
     }
 }
 
@@ -110,7 +112,9 @@ impl From<NonFungibleGlobalId> for CompositeRequirement {
 
 impl From<ResourceOrNonFungible> for CompositeRequirement {
     fn from(resource_or_non_fungible: ResourceOrNonFungible) -> Self {
-        CompositeRequirement::BasicRequirement(ExplicitRequirement::Require(resource_or_non_fungible))
+        CompositeRequirement::BasicRequirement(ExplicitRequirement::Require(
+            resource_or_non_fungible,
+        ))
     }
 }
 
@@ -227,7 +231,10 @@ where
     D: Into<Decimal>,
     T: Into<ResourceAddress>,
 {
-    CompositeRequirement::BasicRequirement(ExplicitRequirement::AmountOf(amount.into(), resource.into()))
+    CompositeRequirement::BasicRequirement(ExplicitRequirement::AmountOf(
+        amount.into(),
+        resource.into(),
+    ))
 }
 
 #[cfg_attr(

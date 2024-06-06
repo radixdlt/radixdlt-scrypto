@@ -24,9 +24,9 @@ fn generate_deep_access_rules(
     resource_address: ResourceAddress,
     exceed_depth: usize,
 ) -> RoleAssignmentInit {
-    let mut composite_requirement = CompositeRequirement::BasicRequirement(ExplicitRequirement::Require(
-        ResourceOrNonFungible::Resource(resource_address),
-    ));
+    let mut composite_requirement = CompositeRequirement::BasicRequirement(
+        ExplicitRequirement::Require(ResourceOrNonFungible::Resource(resource_address)),
+    );
     let mut curr_depth = 6; // The inner bit and the outer mapping
     while curr_depth < exceed_depth {
         composite_requirement = CompositeRequirement::AllOf(vec![composite_requirement]);

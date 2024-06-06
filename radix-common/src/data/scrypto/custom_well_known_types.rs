@@ -456,7 +456,10 @@ create_well_known_lookup!(
             named_enum(
                 "CompositeRequirement",
                 [
-                    (0u8, named_tuple("BasicRequirement", [BASIC_REQUIREMENT_TYPE])),
+                    (
+                        0u8,
+                        named_tuple("BasicRequirement", [BASIC_REQUIREMENT_TYPE])
+                    ),
                     (1u8, named_tuple("AnyOf", [COMPOSITE_REQUIREMENT_LIST_TYPE])),
                     (2u8, named_tuple("AllOf", [COMPOSITE_REQUIREMENT_LIST_TYPE])),
                 ],

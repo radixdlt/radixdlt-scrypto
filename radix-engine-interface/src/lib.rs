@@ -50,9 +50,10 @@ pub mod prelude {
     pub use crate::object_modules::ModuleConfig;
     pub use crate::types::*;
     pub use crate::{
-        access_and_or, composite_requirement, burn_roles, deposit_roles, freeze_roles, internal_roles,
-        metadata, metadata_init, metadata_init_set_entry, metadata_roles, mint_roles,
-        non_fungible_data_update_roles, recall_roles, role_entry, roles2, rule, withdraw_roles,
+        access_and_or, burn_roles, composite_requirement, deposit_roles, freeze_roles,
+        internal_roles, metadata, metadata_init, metadata_init_set_entry, metadata_roles,
+        mint_roles, non_fungible_data_update_roles, recall_roles, role_entry, roles2, rule,
+        withdraw_roles,
     };
 }
 
