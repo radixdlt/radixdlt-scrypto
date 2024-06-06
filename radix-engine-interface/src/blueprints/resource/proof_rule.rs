@@ -89,10 +89,10 @@ pub enum ExplicitRequirement {
 
 impl Describe<ScryptoCustomTypeKind> for ExplicitRequirement {
     const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::PROOF_RULE_TYPE);
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::BASIC_REQUIREMENT_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::proof_rule_type_data()
+        well_known_scrypto_custom_types::basic_requirement_type_data()
     }
 }
 
@@ -139,10 +139,10 @@ pub enum CompositeRequirement {
 
 impl Describe<ScryptoCustomTypeKind> for CompositeRequirement {
     const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_NODE_TYPE);
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::COMPOSITE_REQUIREMENT_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::access_rule_node_type_data()
+        well_known_scrypto_custom_types::composite_requirement_type_data()
     }
 }
 

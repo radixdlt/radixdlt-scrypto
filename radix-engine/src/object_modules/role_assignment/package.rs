@@ -285,7 +285,7 @@ impl RoleAssignmentNativePackage {
 
                 self.0 += 1;
 
-                if self.0 > MAX_ACCESS_RULE_NODES {
+                if self.0 > MAX_COMPOSITE_REQUIREMENTS {
                     return Err(RoleAssignmentError::ExceededMaxAccessRuleNodes);
                 }
 
