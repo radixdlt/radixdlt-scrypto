@@ -295,7 +295,7 @@ mod swappy {
 #[blueprint]
 mod count_of_zero {
     enable_function_auth! {
-        hi => AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(0, vec![ResourceOrNonFungible::Resource(XRD)])));
+        hi => AccessRule::Protected(CompositeRequirement::BasicRequirement(ExplicitRequirement::CountOf(0, vec![ResourceOrNonFungible::Resource(XRD)])));
     }
 
     struct CountOfZero {}
