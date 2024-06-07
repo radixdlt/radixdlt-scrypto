@@ -801,7 +801,7 @@ impl ScryptoCompiler {
         stdout: Option<T>,
         stderr: Option<T>,
     ) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
-        let lock_file = self.lock_packages()?;
+        let package_locks = self.lock_packages()?;
 
         let mut command = Command::new("cargo");
         // Stdio streams used only for 1st phase compilation due to lack of Copy trait.
@@ -819,7 +819,7 @@ impl ScryptoCompiler {
         let mut command = Command::new("cargo");
         let wasms = self.compile_internal_phase_2(&mut command)?;
 
-        self.unlock_packages(lock_file)?;
+        self.unlock_packages(package_locks)?;
 
         Ok(package_definitions
             .iter()
