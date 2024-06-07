@@ -768,8 +768,8 @@ impl ScryptoCompiler {
                     }
                 }
             }
-            // Give CPU some rest - sleep for 200ms
-            std::thread::sleep(std::time::Duration::from_millis(200));
+            // Give CPU some rest - sleep for 10ms
+            std::thread::sleep(std::time::Duration::from_millis(10));
         }
 
         Ok(package_locks)
