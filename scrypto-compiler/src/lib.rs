@@ -737,6 +737,7 @@ impl ScryptoCompiler {
             )
         })?;
 
+        // Collect packages to be locked
         if self.manifests.is_empty() {
             let lock_file_path = self
                 .main_manifest
@@ -757,6 +758,7 @@ impl ScryptoCompiler {
         }
 
         let mut all_locked = false;
+        // Attempt to lock all compiled packages.
         while !all_locked {
             all_locked = true;
             for package_lock in package_locks.iter_mut() {
@@ -766,7 +768,7 @@ impl ScryptoCompiler {
                     }
                 }
             }
-            // sleep for 200ms
+            // Give CPU some rest - sleep for 200ms
             std::thread::sleep(std::time::Duration::from_millis(200));
         }
 
@@ -899,6 +901,11 @@ impl ScryptoCompiler {
             )
         })?;
 
+        // The best would be to directly produce wasm file with schema by overriding Cargo.toml
+        // values from command line.
+        // Possibly it could be done by replacing 'cargo build' with 'cargo rustc' command,
+        // which allows to customize settings on lower level. It is very likely it would implicate
+        // more changes. And we don't want to complicate things more. So lets just rename the file.
         std::fs::rename(
             &manifest_def.target_binary_wasm_path,
             &manifest_def.target_binary_wasm_with_schema_path,
