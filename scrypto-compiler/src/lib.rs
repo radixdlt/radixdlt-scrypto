@@ -7,7 +7,7 @@ use radix_rust::prelude::{IndexMap, IndexSet};
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
-use std::{env, io};
+use std::{env, io, thread};
 
 const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
@@ -47,7 +47,7 @@ pub enum ScryptoCompilerError {
     NothingToCompile,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ScryptoCompilerInputParams {
     /// Path to Cargo.toml file, if not specified current directory will be used.
     pub manifest_path: Option<PathBuf>,
@@ -184,7 +184,7 @@ impl FromStr for Profile {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum EnvironmentVariableAction {
     Set(String),
     Unset,
@@ -626,6 +626,11 @@ impl ScryptoCompiler {
             });
 
         command.args(self.input_params.custom_options.iter());
+
+        println!(
+            "prepare_command {for_package_extract} command = {:#?}",
+            command
+        );
     }
 
     fn wasm_optimize(&self, wasm_path: &Path) -> Result<(), ScryptoCompilerError> {
@@ -638,9 +643,32 @@ impl ScryptoCompiler {
         }
     }
 
-    // Create lock file to protect compilation in case it is invoked multiple times in parallel
-    fn lock_compilation(&self) -> Result<LockFile, ScryptoCompilerError> {
-        let lock_file_path = self.main_manifest.target_directory.join("scrypto.lock");
+    // Create lock file to protect compilation in case it is in, booolvoked multiple times in parallel
+    fn lock_compilation(&self) -> Result<Vec<(PathBuf, LockFile, bool)>, ScryptoCompilerError> {
+        let mut file_paths: Vec<(PathBuf, LockFile, bool)> = vec![];
+
+        for package in self.input_params.package.iter() {
+            let lock_file_path = self
+                .main_manifest
+                .target_directory
+                .join(format!("{}.lock", package));
+            let path = lock_file_path.to_os_str().map_err(|err| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    err,
+                    lock_file_path.clone(),
+                    Some(String::from("Convert lock file path to &str failed")),
+                )
+            })?;
+
+            let lock_file = LockFile::open(&path).map_err(|err| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    err,
+                    lock_file_path.clone(),
+                    Some(String::from("Open file for locking failed")),
+                )
+            })?;
+            file_paths.push((lock_file_path, lock_file, false));
+        }
 
         // Create target folder if it doesn't exist
         std::fs::create_dir_all(&self.main_manifest.target_directory).map_err(|err| {
@@ -651,42 +679,68 @@ impl ScryptoCompiler {
             )
         })?;
 
-        let path = lock_file_path.to_os_str().map_err(|err| {
-            ScryptoCompilerError::IOErrorWithPath(
-                err,
-                lock_file_path.clone(),
-                Some(String::from("Convert lock file path to &str failed")),
-            )
-        })?;
+        let curr = thread::current();
 
-        let mut lock_file = LockFile::open(&path).map_err(|err| {
-            ScryptoCompilerError::IOErrorWithPath(
-                err,
-                lock_file_path.clone(),
-                Some(String::from("Open file for locking failed")),
-            )
-        })?;
+        println!(
+            "lock_compilation thread: name:{} id:{:?} file_paths: {:?}",
+            curr.name().unwrap_or("none"),
+            curr.id(),
+            file_paths
+        );
+        let mut all_locked = false;
+        while !all_locked {
+            all_locked = true;
+            for (path, lock_file, locked) in file_paths.iter_mut() {
+                if !*locked {
+                    if lock_file.try_lock().map_err(|err| {
+                        ScryptoCompilerError::IOErrorWithPath(
+                            err,
+                            path.clone(),
+                            Some(String::from("Lock file failed")),
+                        )
+                    })? {
+                        *locked = true;
+                    } else {
+                        all_locked = false;
+                    }
+                }
+            }
+            // sleep for 200ms
+            std::thread::sleep(std::time::Duration::from_millis(1000));
+            println!(
+                "lock_compilation thread: name:{} id:{:?} all_locked:{:?} file_paths: {:?}",
+                curr.name().unwrap_or("none"),
+                curr.id(),
+                all_locked,
+                file_paths
+            );
+        }
 
-        lock_file.lock().map_err(|err| {
-            ScryptoCompilerError::IOErrorWithPath(
-                err,
-                lock_file_path.clone(),
-                Some(String::from("Lock file failed")),
-            )
-        })?;
-
-        Ok(lock_file)
+        Ok(file_paths)
     }
 
     // Unlock lock file
-    fn unlock_compilation(&self, mut lock_file: LockFile) -> Result<(), ScryptoCompilerError> {
-        lock_file.unlock().map_err(|err| {
-            ScryptoCompilerError::IOErrorWithPath(
-                err,
-                self.main_manifest.target_directory.join("scrypto.lock"),
-                Some(String::from("Unlock file failed")),
-            )
-        })
+    fn unlock_compilation(
+        &self,
+        file_locks: Vec<(PathBuf, LockFile, bool)>,
+    ) -> Result<(), ScryptoCompilerError> {
+        let curr = thread::current();
+        println!(
+            "unlock_compilation thread: name:{} id:{:?} file_paths: {:?}",
+            curr.name().unwrap_or("none"),
+            curr.id(),
+            file_locks
+        );
+        for (path, mut file_lock, _locked) in file_locks {
+            file_lock.unlock().map_err(|err| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    err,
+                    path.clone(),
+                    Some(String::from("Unlock file failed")),
+                )
+            })?;
+        }
+        Ok(())
     }
 
     pub fn compile_with_stdio<T: Into<Stdio>>(
@@ -730,6 +784,8 @@ impl ScryptoCompiler {
     //      and then extracts package definition rpd file
     //  2nd phase compiles without schema (with "scrypto/no-schema" feature) and user specified profile
     pub fn compile(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
+        println!("compile main_manifest = {:#?}", self.main_manifest);
+        println!("compile input_params = {:#?}", self.input_params);
         let lock_file = self.lock_compilation()?;
         let mut command = Command::new("cargo");
         let package_definitions = self.compile_internal_phase_1(&mut command)?;
@@ -1438,6 +1494,7 @@ mod tests {
         let mut compiler = ScryptoCompiler::builder()
             .manifest_path(&manifest_path)
             .package("test_blueprint")
+            .package("test_blueprint_2")
             .build()
             .unwrap();
 
@@ -1451,6 +1508,7 @@ mod tests {
             let mut compiler = ScryptoCompiler::builder()
                 .manifest_path(&manifest_path)
                 .package("test_blueprint")
+                .package("test_blueprint_2")
                 .build()
                 .unwrap();
 
