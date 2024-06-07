@@ -209,6 +209,8 @@ pub struct CompilerManifestDefinition {
     pub manifest_path: PathBuf,
     /// Path to directory where compilation artifacts are stored.
     pub target_directory: PathBuf,
+    /// Target binary name
+    pub target_binary_name: String,
     /// Path to target binary WASM file.
     pub target_binary_wasm_path: PathBuf,
     /// Path to target binary RPD file.
@@ -398,6 +400,7 @@ impl ScryptoCompiler {
     ) -> Result<CompilerManifestDefinition, ScryptoCompilerError> {
         let (
             target_directory,
+            target_binary_name,
             target_binary_wasm_path,
             target_binary_rpd_path,
             target_binary_wasm_with_schema_path,
@@ -406,6 +409,7 @@ impl ScryptoCompiler {
         Ok(CompilerManifestDefinition {
             manifest_path: manifest_path.to_path_buf(),
             target_directory,
+            target_binary_name,
             target_binary_wasm_path,
             target_binary_rpd_path,
             target_binary_wasm_with_schema_path,
@@ -565,7 +569,7 @@ impl ScryptoCompiler {
     fn prepare_paths_for_manifest(
         input_params: &ScryptoCompilerInputParams,
         manifest_path: &Path,
-    ) -> Result<(PathBuf, PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
+    ) -> Result<(PathBuf, String, PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
         // Generate target directory
         let target_directory = if let Some(directory) = &input_params.target_directory {
             // If target directory is explicitly specified as compiler parameter then use it as is
@@ -576,39 +580,50 @@ impl ScryptoCompiler {
             PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
         };
 
-        let (target_binary_wasm_path, target_binary_rpd_path, target_binary_wasm_with_schema_path) =
-            if let Some(target_binary_name) = Self::get_target_binary_name(&manifest_path)? {
-                let mut target_binary_wasm_path = target_directory.clone();
-                target_binary_wasm_path.push(BUILD_TARGET);
-                target_binary_wasm_path.push(input_params.profile.as_target_directory_name());
+        let (
+            target_binary_name,
+            target_binary_wasm_path,
+            target_binary_rpd_path,
+            target_binary_wasm_with_schema_path,
+        ) = if let Some(target_binary_name) = Self::get_target_binary_name(&manifest_path)? {
+            let mut target_binary_wasm_path = target_directory.clone();
+            target_binary_wasm_path.push(BUILD_TARGET);
+            target_binary_wasm_path.push(input_params.profile.as_target_directory_name());
 
-                let mut target_binary_wasm_with_schema_path = target_binary_wasm_path.clone();
+            let mut target_binary_wasm_with_schema_path = target_binary_wasm_path.clone();
 
-                target_binary_wasm_path.push(target_binary_name.clone());
-                target_binary_wasm_path.set_extension("wasm");
+            target_binary_wasm_path.push(target_binary_name.clone());
+            target_binary_wasm_path.set_extension("wasm");
 
-                target_binary_wasm_with_schema_path
-                    .push(format!("{}_with_schema", target_binary_name));
-                target_binary_wasm_with_schema_path.set_extension("wasm");
+            target_binary_wasm_with_schema_path
+                .push(format!("{}_with_schema", target_binary_name.clone()));
+            target_binary_wasm_with_schema_path.set_extension("wasm");
 
-                let mut target_binary_rpd_path = target_directory.clone();
-                target_binary_rpd_path.push(BUILD_TARGET);
-                target_binary_rpd_path.push(Profile::Release.as_target_directory_name());
-                target_binary_rpd_path.push(target_binary_name);
-                target_binary_rpd_path.set_extension("rpd");
+            let mut target_binary_rpd_path = target_directory.clone();
+            target_binary_rpd_path.push(BUILD_TARGET);
+            target_binary_rpd_path.push(Profile::Release.as_target_directory_name());
+            target_binary_rpd_path.push(target_binary_name.clone());
+            target_binary_rpd_path.set_extension("rpd");
 
-                (
-                    target_binary_wasm_path,
-                    target_binary_rpd_path,
-                    target_binary_wasm_with_schema_path,
-                )
-            } else {
-                // for workspace compilation these paths are empty
-                (PathBuf::new(), PathBuf::new(), PathBuf::new())
-            };
+            (
+                target_binary_name,
+                target_binary_wasm_path,
+                target_binary_rpd_path,
+                target_binary_wasm_with_schema_path,
+            )
+        } else {
+            // for workspace compilation these paths are empty
+            (
+                String::new(),
+                PathBuf::new(),
+                PathBuf::new(),
+                PathBuf::new(),
+            )
+        };
 
         Ok((
             target_directory,
+            target_binary_name,
             target_binary_wasm_path,
             target_binary_rpd_path,
             target_binary_wasm_with_schema_path,
@@ -713,7 +728,6 @@ impl ScryptoCompiler {
     // Create lock file for each compiled package to protect compilation in case it is invoked multiple times in parallel.
     fn lock_packages(&self) -> Result<Vec<PackageLock>, ScryptoCompilerError> {
         let mut package_locks: Vec<PackageLock> = vec![];
-
         // Create target folder if it doesn't exist
         std::fs::create_dir_all(&self.main_manifest.target_directory).map_err(|err| {
             ScryptoCompilerError::IOErrorWithPath(
@@ -722,15 +736,25 @@ impl ScryptoCompiler {
                 Some(String::from("Create target folder failed")),
             )
         })?;
-        for package in self.input_params.package.iter() {
+
+        if self.manifests.is_empty() {
             let lock_file_path = self
                 .main_manifest
                 .target_directory
-                .join(format!("{}.lock", package));
+                .join(format!("{}.lock", self.main_manifest.target_binary_name));
             let package_lock = PackageLock::new(lock_file_path)?;
             package_locks.push(package_lock);
+        } else {
+            for package in self.manifests.iter().map(|m| &m.target_binary_name) {
+                let lock_file_path = self
+                    .main_manifest
+                    .target_directory
+                    .join(format!("{}.lock", package));
+                let package_lock = PackageLock::new(lock_file_path)?;
+                package_locks.push(package_lock);
+            }
+            package_locks.sort();
         }
-        package_locks.sort();
 
         let mut all_locked = false;
         while !all_locked {
@@ -798,14 +822,15 @@ impl ScryptoCompiler {
     //      and then extracts package definition rpd file
     //  2nd phase compiles without schema (with "scrypto/no-schema" feature) and user specified profile
     pub fn compile(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
-        let lock_file = self.lock_packages()?;
+        let package_locks = self.lock_packages()?;
         let mut command = Command::new("cargo");
         let package_definitions = self.compile_internal_phase_1(&mut command)?;
 
         let mut command = Command::new("cargo");
+
         let wasms = self.compile_internal_phase_2(&mut command)?;
 
-        self.unlock_packages(lock_file)?;
+        self.unlock_packages(package_locks)?;
 
         Ok(package_definitions
             .iter()
