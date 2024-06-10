@@ -166,8 +166,8 @@ Enum<3u8>(
                 references: indexset!(
                     Reference(FAUCET.into_node_id()),
                     // NOTE: not needed
-                    Reference(SECP256K1_SIGNATURE_VIRTUAL_BADGE.into_node_id()),
-                    Reference(ED25519_SIGNATURE_VIRTUAL_BADGE.into_node_id())
+                    Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
+                    Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
                 ),
                 blobs: &indexmap!(
                     hash(&[1, 2]) => vec![1, 2]

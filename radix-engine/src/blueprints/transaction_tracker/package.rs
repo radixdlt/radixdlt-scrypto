@@ -5,7 +5,6 @@ use radix_blueprint_schema_init::{
     FunctionSchemaInit, TypeRef,
 };
 use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
-use radix_common::constants::AuthAddresses;
 use radix_engine_interface::api::{AttachedModuleId, FieldValue, SystemApi};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
@@ -103,7 +102,7 @@ impl TransactionTrackerNativePackage {
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AccessRules(
                         indexmap!(
-                            TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                            TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(system_execution(SystemExecution::Protocol))),
                         )
                     ),
                     method_auth: MethodAuthTemplate::default(),

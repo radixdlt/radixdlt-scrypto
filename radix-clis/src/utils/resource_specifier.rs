@@ -198,7 +198,7 @@ mod test {
                     57, 234, 210, 144, 88, 253, 255, 44
                 ])
                 .unwrap()]),
-                SECP256K1_SIGNATURE_VIRTUAL_BADGE
+                SECP256K1_SIGNATURE_RESOURCE
             )
         )
     }
@@ -237,7 +237,7 @@ mod test {
                     ])
                     .unwrap()
                 ]),
-                SECP256K1_SIGNATURE_VIRTUAL_BADGE
+                SECP256K1_SIGNATURE_RESOURCE
             )
         )
     }

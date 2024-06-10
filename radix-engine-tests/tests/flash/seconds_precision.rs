@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::constants::CONSENSUS_MANAGER;
 use radix_common::prelude::*;
 use radix_common::prelude::{manifest_args, Round};
@@ -9,6 +8,7 @@ use radix_engine::updates::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
+use radix_engine_interface::prelude::system_execution;
 use radix_engine_tests::common::PackageLoader;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
@@ -46,7 +46,8 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
                 .generate_batch(ledger.substate_db(), batch_index);
             for ProtocolUpdateTransactionDetails::FlashV1Transaction(
                 FlashProtocolUpdateTransactionDetails { state_updates, .. },
-            ) in batch.transactions {
+            ) in batch.transactions
+            {
                 ledger
                     .substate_db_mut()
                     .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
@@ -70,7 +71,8 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
             manifest_args![],
         )
         .build();
-    let receipt = ledger.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
+    let receipt =
+        ledger.execute_manifest(manifest, vec![system_execution(SystemExecution::Validator)]);
 
     // Assert
     if expect_success {

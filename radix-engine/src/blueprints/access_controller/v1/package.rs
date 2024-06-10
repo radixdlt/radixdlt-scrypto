@@ -271,7 +271,7 @@ impl AccessControllerV1NativePackage {
             blueprint_type: BlueprintType::default(),
             is_transient: false,
             feature_set,
-            dependencies: indexset!(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),),
+            dependencies: indexset!(PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),),
 
             schema: BlueprintSchemaInit {
                 generics: vec![],

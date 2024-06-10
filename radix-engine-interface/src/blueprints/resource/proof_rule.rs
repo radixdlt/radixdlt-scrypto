@@ -185,6 +185,11 @@ pub fn signature(public_key: &impl HasPublicKeyHash) -> ResourceOrNonFungible {
     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(public_key))
 }
 
+/// A requirement for the transaction to be a system transaction.
+pub fn system_execution(transaction_type: SystemExecution) -> NonFungibleGlobalId {
+    transaction_type.into()
+}
+
 pub fn require<T>(required: T) -> AccessRuleNode
 where
     T: Into<AccessRuleNode>,

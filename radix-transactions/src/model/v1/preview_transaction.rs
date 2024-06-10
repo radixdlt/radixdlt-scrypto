@@ -30,8 +30,8 @@ impl ValidatedPreviewIntent {
 
         let mut virtual_resources = BTreeSet::new();
         if self.flags.assume_all_signature_proofs {
-            virtual_resources.insert(SECP256K1_SIGNATURE_VIRTUAL_BADGE);
-            virtual_resources.insert(ED25519_SIGNATURE_VIRTUAL_BADGE);
+            virtual_resources.insert(SECP256K1_SIGNATURE_RESOURCE);
+            virtual_resources.insert(ED25519_SIGNATURE_RESOURCE);
         }
 
         let header = &intent.header.inner;
