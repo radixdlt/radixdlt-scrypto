@@ -962,7 +962,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (pk4, sk4) = self.new_ed25519_key_pair();
 
         let access_rule = AccessRule::Protected(CompositeRequirement::BasicRequirement(
-            ExplicitRequirement::CountOf(
+            BasicRequirement::CountOf(
                 n_out_of_4,
                 vec![
                     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),

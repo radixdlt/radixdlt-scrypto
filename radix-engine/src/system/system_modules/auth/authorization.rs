@@ -233,25 +233,25 @@ impl Authorization {
         L: Default,
     >(
         auth_zone: &NodeId,
-        requirement_rule: &ExplicitRequirement,
+        requirement_rule: &BasicRequirement,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match requirement_rule {
-            ExplicitRequirement::Require(resource) => {
+            BasicRequirement::Require(resource) => {
                 if Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {
                     Ok(true)
                 } else {
                     Ok(false)
                 }
             }
-            ExplicitRequirement::AmountOf(amount, resource) => {
+            BasicRequirement::AmountOf(amount, resource) => {
                 if Self::auth_zone_stack_has_amount(auth_zone, resource, *amount, api)? {
                     Ok(true)
                 } else {
                     Ok(false)
                 }
             }
-            ExplicitRequirement::AllOf(resources) => {
+            BasicRequirement::AllOf(resources) => {
                 for resource in resources {
                     if !Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {
                         return Ok(false);
@@ -260,7 +260,7 @@ impl Authorization {
 
                 Ok(true)
             }
-            ExplicitRequirement::AnyOf(resources) => {
+            BasicRequirement::AnyOf(resources) => {
                 for resource in resources {
                     if Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {
                         return Ok(true);
@@ -269,7 +269,7 @@ impl Authorization {
 
                 Ok(false)
             }
-            ExplicitRequirement::CountOf(count, resources) => {
+            BasicRequirement::CountOf(count, resources) => {
                 if count.is_zero() {
                     return Ok(true);
                 }

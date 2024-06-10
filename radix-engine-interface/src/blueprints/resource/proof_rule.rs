@@ -79,7 +79,7 @@ where
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub enum ExplicitRequirement {
+pub enum BasicRequirement {
     Require(ResourceOrNonFungible),
     AmountOf(Decimal, ResourceAddress),
     CountOf(u8, Vec<ResourceOrNonFungible>),
@@ -87,7 +87,7 @@ pub enum ExplicitRequirement {
     AnyOf(Vec<ResourceOrNonFungible>),
 }
 
-impl Describe<ScryptoCustomTypeKind> for ExplicitRequirement {
+impl Describe<ScryptoCustomTypeKind> for BasicRequirement {
     const TYPE_ID: RustTypeId =
         RustTypeId::WellKnown(well_known_scrypto_custom_types::BASIC_REQUIREMENT_TYPE);
 
@@ -98,7 +98,7 @@ impl Describe<ScryptoCustomTypeKind> for ExplicitRequirement {
 
 impl From<ResourceAddress> for CompositeRequirement {
     fn from(resource_address: ResourceAddress) -> Self {
-        CompositeRequirement::BasicRequirement(ExplicitRequirement::Require(
+        CompositeRequirement::BasicRequirement(BasicRequirement::Require(
             resource_address.into(),
         ))
     }
@@ -106,13 +106,13 @@ impl From<ResourceAddress> for CompositeRequirement {
 
 impl From<NonFungibleGlobalId> for CompositeRequirement {
     fn from(id: NonFungibleGlobalId) -> Self {
-        CompositeRequirement::BasicRequirement(ExplicitRequirement::Require(id.into()))
+        CompositeRequirement::BasicRequirement(BasicRequirement::Require(id.into()))
     }
 }
 
 impl From<ResourceOrNonFungible> for CompositeRequirement {
     fn from(resource_or_non_fungible: ResourceOrNonFungible) -> Self {
-        CompositeRequirement::BasicRequirement(ExplicitRequirement::Require(
+        CompositeRequirement::BasicRequirement(BasicRequirement::Require(
             resource_or_non_fungible,
         ))
     }
@@ -136,7 +136,7 @@ impl From<ResourceOrNonFungible> for CompositeRequirement {
     ScryptoDecode,
 )]
 pub enum CompositeRequirement {
-    BasicRequirement(ExplicitRequirement),
+    BasicRequirement(BasicRequirement),
     AnyOf(Vec<CompositeRequirement>),
     AllOf(Vec<CompositeRequirement>),
 }
@@ -206,7 +206,7 @@ where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    CompositeRequirement::BasicRequirement(ExplicitRequirement::AnyOf(list.list))
+    CompositeRequirement::BasicRequirement(BasicRequirement::AnyOf(list.list))
 }
 
 pub fn require_all_of<T>(resources: T) -> CompositeRequirement
@@ -214,7 +214,7 @@ where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    CompositeRequirement::BasicRequirement(ExplicitRequirement::AllOf(list.list))
+    CompositeRequirement::BasicRequirement(BasicRequirement::AllOf(list.list))
 }
 
 pub fn require_n_of<C, T>(count: C, resources: T) -> CompositeRequirement
@@ -223,7 +223,7 @@ where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    CompositeRequirement::BasicRequirement(ExplicitRequirement::CountOf(count.into(), list.list))
+    CompositeRequirement::BasicRequirement(BasicRequirement::CountOf(count.into(), list.list))
 }
 
 pub fn require_amount<D, T>(amount: D, resource: T) -> CompositeRequirement
@@ -231,7 +231,7 @@ where
     D: Into<Decimal>,
     T: Into<ResourceAddress>,
 {
-    CompositeRequirement::BasicRequirement(ExplicitRequirement::AmountOf(
+    CompositeRequirement::BasicRequirement(BasicRequirement::AmountOf(
         amount.into(),
         resource.into(),
     ))

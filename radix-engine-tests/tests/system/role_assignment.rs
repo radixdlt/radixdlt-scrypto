@@ -282,7 +282,7 @@ fn update_rule() {
         ret[1],
         InstructionOutput::CallReturn(
             scrypto_encode(&Some(AccessRule::Protected(CompositeRequirement::BasicRequirement(
-                ExplicitRequirement::Require(ResourceOrNonFungible::Resource(XRD))
+                BasicRequirement::Require(ResourceOrNonFungible::Resource(XRD))
             ))))
             .unwrap()
         )
