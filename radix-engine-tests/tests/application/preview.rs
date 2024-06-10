@@ -232,6 +232,81 @@ fn test_preview_no_auth() {
 }
 
 #[test]
+fn test_preview_if_auth_disabled_then_assert_access_rule_succeeds() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let network = NetworkDefinition::simulator();
+
+    let (public_key, _, account_address) = ledger.new_allocated_account();
+    let account_owner_proof = NonFungibleGlobalId::from_public_key(&public_key);
+    let (other_pub_key, _, _) = ledger.new_allocated_account();
+    let authorized_depositor_badge = ResourceOrNonFungible::NonFungible(
+        NonFungibleGlobalId::from_public_key(&other_pub_key)
+    );
+
+    // Set up account default deposit rules
+    ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(
+                account_address,
+                ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT.to_string(),
+                AccountSetDefaultDepositRuleInput {
+                    default: DefaultDepositRule::Reject,
+                },
+            )
+            .call_method(
+                account_address,
+                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                AccountAddAuthorizedDepositorInput {
+                    badge: authorized_depositor_badge.clone(),
+                },
+            )
+            .build(),
+        [
+            account_owner_proof,
+        ],
+    );
+
+    // Now attempt a preview of using the authorized depositor.
+    // Behind the scenes, this uses an assert access rule against the specificied authorized depositor.
+    // We'd expect parity between auth assertions on the boundary and inline, so we should expect this to be
+    // a no-op with the auth module disabled - that is, it should succeed without requiring the
+    // authorized depositor.
+    let preview_flags = PreviewFlags {
+        use_free_credit: true,
+        assume_all_signature_proofs: false,
+        skip_epoch_check: false,
+        disable_auth: true,
+    };
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .take_all_from_worktop(XRD, "my_bucket")
+        .try_deposit_or_abort(
+            account_address,
+            Some(authorized_depositor_badge),
+            "my_bucket",
+        )
+        .build();
+
+    let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
+        &mut ledger,
+        &network,
+        manifest,
+        &preview_flags,
+    );
+
+    // Act
+    let result = ledger.preview(preview_intent, &network);
+
+    // Assert
+    result
+        .unwrap()
+        .expect_commit_success();
+}
+
+#[test]
 fn notary_key_is_in_initial_proofs_when_notary_as_signatory_is_true() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
