@@ -129,6 +129,8 @@ wasmparser = { version = "0.107.0", default-features = false }
 extend = { version = "1.2.0" }
 zeroize = { version = "1.3.0" }
 fslock = { version = "0.2.1" }
+wasm-snip = { version = "0.4.0" }
+walrus = { version = "0.12.0", features = ["parallel"] }
 
 # Both the release and test profiles use `panic = "unwind"` to allow certain parts of the Radix
 # Engine to be able to catch panics. As an example, the native-vm has a `catch_unwind` to catch

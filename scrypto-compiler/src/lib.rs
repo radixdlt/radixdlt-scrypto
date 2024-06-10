@@ -46,6 +46,8 @@ pub enum ScryptoCompilerError {
     SchemaEncodeError(EncodeError),
     /// Returned when trying to compile workspace without any scrypto packages.
     NothingToCompile,
+    /// Snip error
+    SnipError(String),
 }
 
 #[derive(Debug, Clone)]
@@ -941,9 +943,8 @@ impl ScryptoCompiler {
         &mut self,
         command: &mut Command,
     ) -> Result<Vec<BuildArtifact<Vec<u8>>>, ScryptoCompilerError> {
-        self.prepare_command_phase_2(command);
-        self.cargo_command_call(command)?;
-
+        // self.prepare_command_phase_2(command);
+        // self.cargo_command_call(command)?;
         // compilation post-processing for all manifests
         if self.manifests.is_empty() {
             // non-workspace compilation
@@ -965,10 +966,45 @@ impl ScryptoCompiler {
         self.prepare_command(command, false); // build without schema and with userchoosen profile
     }
 
+    // Remove "*_schema" export from the generated WASM file
+    fn snip_schema_from_wasm(
+        &self,
+        manifest_def: &CompilerManifestDefinition,
+    ) -> Result<(), ScryptoCompilerError> {
+        let mut options = wasm_snip::Options::default();
+        options.patterns.push(".*_schema".to_owned());
+
+        let config = walrus::ModuleConfig::new();
+
+        let code =
+            std::fs::read(&manifest_def.target_binary_wasm_with_schema_path).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    manifest_def.target_binary_wasm_with_schema_path.clone(),
+                    Some(String::from("Read WASM file failed.")),
+                )
+            })?;
+
+        let mut module = config.parse(&code).map_err(|e| {
+            ScryptoCompilerError::SnipError(format!("Parsing snip config file failed - {:?}", e,))
+        })?;
+
+        wasm_snip::snip(&mut module, options)
+            .map_err(|e| ScryptoCompilerError::SnipError(format!("Snip file failed - {:?}", e,)))?;
+
+        module
+            .emit_wasm_file(&manifest_def.target_binary_wasm_path)
+            .map_err(|e| {
+                ScryptoCompilerError::SnipError(format!("Emitting snipped file failed - {:?}", e,))
+            })
+    }
+
     fn compile_internal_phase_2_postprocess(
         &self,
         manifest_def: &CompilerManifestDefinition,
     ) -> Result<BuildArtifact<Vec<u8>>, ScryptoCompilerError> {
+        self.snip_schema_from_wasm(manifest_def)?;
+
         self.wasm_optimize(&manifest_def.target_binary_wasm_path.clone())?;
 
         let code = std::fs::read(&manifest_def.target_binary_wasm_path).map_err(|e| {
