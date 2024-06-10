@@ -1,6 +1,7 @@
 # Hooks
 
-> **_NOTE:_** Hooks are currently only available for use by native packages.
+> **_NOTE:_** In [Radix Babylon Network](../../../#radix-babylon-network),
+> Hooks are currently only available for use by native packages.
  
 Hooks define logic which get executed when certain system events occur.
 

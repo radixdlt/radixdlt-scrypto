@@ -1,6 +1,7 @@
 # Collections
 
-> **_NOTE:_** Collections are currently only available for use by native packages.
+> **_NOTE:_** In [Radix Babylon Network](../../../#radix-babylon-network),
+> Collections are currently only available for use by native packages.
  
 A collection is a set of data which share the same schema. There are currently three types
 of collections:

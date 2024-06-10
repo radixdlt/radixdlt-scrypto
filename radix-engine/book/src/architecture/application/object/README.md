@@ -7,8 +7,10 @@ parent in the tree hierarchy. Each root object is assigned a *global address*.
 ![](object_model.drawio.svg)
 
 Each object has:
-* A [BlueprintId](blueprint_id.md) (type)
-* An optional [Outer Object](inner_outer_objects.md)
-* A list of [Features](features.md)
-* A list of [Generic Substitutions](generic_substitutions.md)
+* Static Type Information which includes:
+  * A [BlueprintId](blueprint_id.md)
+  * An optional [Outer Object](inner_outer_objects.md)
+  * A list of [Features](features.md)
+  * A list of [Generic Substitutions](generic_substitutions.md)
+* Application State
 * A set of [Object Modules](object_modules.md)

@@ -1,6 +1,7 @@
 # Inner and Outer Blueprints
 
-> **_NOTE:_** Inner Blueprints are currently only available for use by native packages.
+> **_NOTE:_** In [Radix Babylon Network](../../../#radix-babylon-network),
+> Inner Blueprints are currently only available for use by native packages.
 
 A blueprint may be specified as either an Outer or Inner Blueprint. Inner blueprints must specify
 an associated outer blueprint defined in the same package.
