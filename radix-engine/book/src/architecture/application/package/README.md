@@ -18,3 +18,7 @@ This circular definition creates the notion of the Package Blueprint and the
 Package Package (similar to Class.class in java). A Package Blueprint is the
 blueprint type of a Package object and Package Package is the package which
 contains the Package Blueprint.
+
+Due to the circular dependency, the first object (Package object) is created
+without following standard object creation process. It's directly [flashed into
+the database](../../../protocol/genesis_bootstrap.md).
