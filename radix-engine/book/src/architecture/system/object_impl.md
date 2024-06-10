@@ -1,9 +1,9 @@
 # Object Implementation
 
 The system layer defines the [Object](../application/object/README.md) abstraction on top of the
-kernel's Node/Partition/Substate abstraction.
+kernel's [Node](../kernel/node.md) abstraction.
 
-The system layer maps every object to a unique NodeId and under every NodeId the partitions are
+Every object is mapped to a unique node and the partition numbers of every node are
 mapped in the following manner:
 
 |                   | Partition Number |
