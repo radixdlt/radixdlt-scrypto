@@ -768,6 +768,18 @@ impl ScryptoCompiler {
                     }
                 }
             }
+
+            // Unlock if not all packages locked.
+            // We need all packages to be locked at once to make sure
+            // no other thread locked some package in the meantime.
+            if !all_locked {
+                for package_lock in package_locks.iter_mut() {
+                    if package_lock.is_locked() {
+                        package_lock.unlock()?;
+                    }
+                }
+            }
+
             // Give CPU some rest - sleep for 10ms
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
