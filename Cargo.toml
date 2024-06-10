@@ -136,3 +136,8 @@ fslock = { version = "0.2.1" }
 # crashing the engine.
 [profile.release]
 panic = "unwind"
+
+# Optimize for speed for test profile to speed up the tests
+[profile.test]
+opt-level = 3
+
