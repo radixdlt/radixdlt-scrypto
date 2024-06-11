@@ -99,6 +99,12 @@ impl CostingModuleConfig {
     }
 }
 
+#[derive(Debug)]
+pub enum ExecutionCostBreakdownItem {
+    Invocation(KernelInvocation<Actor>),
+    Execution(owned::ExecutionCostingEntryOwned),
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct CostBreakdown {
     pub execution_cost_breakdown: IndexMap<String, u32>,
