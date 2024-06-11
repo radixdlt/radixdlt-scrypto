@@ -98,9 +98,7 @@ impl Describe<ScryptoCustomTypeKind> for BasicRequirement {
 
 impl From<ResourceAddress> for CompositeRequirement {
     fn from(resource_address: ResourceAddress) -> Self {
-        CompositeRequirement::BasicRequirement(BasicRequirement::Require(
-            resource_address.into(),
-        ))
+        CompositeRequirement::BasicRequirement(BasicRequirement::Require(resource_address.into()))
     }
 }
 
@@ -112,9 +110,7 @@ impl From<NonFungibleGlobalId> for CompositeRequirement {
 
 impl From<ResourceOrNonFungible> for CompositeRequirement {
     fn from(resource_or_non_fungible: ResourceOrNonFungible) -> Self {
-        CompositeRequirement::BasicRequirement(BasicRequirement::Require(
-            resource_or_non_fungible,
-        ))
+        CompositeRequirement::BasicRequirement(BasicRequirement::Require(resource_or_non_fungible))
     }
 }
 
