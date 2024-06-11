@@ -238,7 +238,7 @@ impl PartitionNumber {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub struct PartitionOffset(pub u8);
 
-/// The unique identifier of a substate within a node module.
+/// The unique identifier of a substate within a node partition.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum SubstateKey {
     Field(FieldKey),

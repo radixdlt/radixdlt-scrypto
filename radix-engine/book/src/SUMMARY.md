@@ -39,6 +39,8 @@
   - [Actor Impl](architecture/system/actor_impl.md)
   - [System Modules](architecture/system/system_modules.md)
 - [Kernel Layer](architecture/kernel/README.md)
+  - [Node](architecture/kernel/node.md)
+    - [Node State](architecture/kernel/node_state.md)
 - [Database Layer](architecture/database/README.md)
 
 # Execution
