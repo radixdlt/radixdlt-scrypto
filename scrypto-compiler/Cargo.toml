@@ -15,8 +15,7 @@ serde_json = { workspace = true }
 wasm-opt = { workspace = true }
 cargo_toml = { workspace = true }
 fslock = { workspace = true }
-wasm-snip = { workspace = true }
-walrus = { workspace = true }
+radix-wasm-instrument = { workspace = true }
 
 [dev-dependencies]
 tempdir = "0.3.7"

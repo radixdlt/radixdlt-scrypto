@@ -84,6 +84,7 @@ impl Default for ScryptoCompilerInputParams {
                 .add_pass(wasm_opt::Pass::StripDebug)
                 .add_pass(wasm_opt::Pass::StripDwarf)
                 .add_pass(wasm_opt::Pass::StripProducers)
+                .add_pass(wasm_opt::Pass::Dce)
                 .to_owned(),
         );
         let mut ret = Self {
@@ -974,11 +975,6 @@ impl ScryptoCompiler {
         &self,
         manifest_def: &CompilerManifestDefinition,
     ) -> Result<(), ScryptoCompilerError> {
-        let mut options = wasm_snip::Options::default();
-        options.patterns.push(".*_schema".to_owned());
-
-        let config = walrus::ModuleConfig::new();
-
         let code =
             std::fs::read(&manifest_def.target_binary_wasm_with_schema_path).map_err(|e| {
                 ScryptoCompilerError::IOErrorWithPath(
@@ -988,18 +984,17 @@ impl ScryptoCompiler {
                 )
             })?;
 
-        let mut module = config.parse(&code).map_err(|e| {
-            ScryptoCompilerError::SnipError(format!("Parsing snip config file failed - {:?}", e,))
-        })?;
+        let mut module = radix_wasm_instrument::utils::module_info::ModuleInfo::new(&code).unwrap();
 
-        wasm_snip::snip(&mut module, options)
-            .map_err(|e| ScryptoCompilerError::SnipError(format!("Snip file failed - {:?}", e,)))?;
+        module.remove_export("_schema").unwrap();
 
-        module
-            .emit_wasm_file(&manifest_def.target_binary_wasm_path)
-            .map_err(|e| {
-                ScryptoCompilerError::SnipError(format!("Emitting snipped file failed - {:?}", e,))
-            })
+        std::fs::write(&manifest_def.target_binary_wasm_path, module.bytes()).map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                manifest_def.target_binary_wasm_path.clone(),
+                Some(String::from("WASM file write failed.")),
+            )
+        })
     }
 
     fn compile_internal_phase_2_postprocess(

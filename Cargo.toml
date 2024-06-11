@@ -104,7 +104,8 @@ perfcnt = { version = "0.8.0" }
 plotters = { version = "0.3.4" }
 proc-macro2 = { version = "1.0.38" }
 quote = { version = "1.0.18" }
-radix-wasm-instrument = { version = "1.0.0", default-features = false,  features = ["ignore_custom_section"]}
+# radix-wasm-instrument = { version = "1.0.0", default-features = false,  features = ["ignore_custom_section"]}
+radix-wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument.git", branch = "feature/remove_exports", default-features = false,  features = ["ignore_custom_section"]}
 radix-wasmi = {  version = "1.0.0" }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
