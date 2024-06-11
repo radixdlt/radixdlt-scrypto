@@ -451,15 +451,13 @@ create_well_known_lookup!(
             )
         ),
         (
+            ///Name of the schema type AccessRuleNode is not changed to CompositeRequirement to preserve backward compatibility.
             COMPOSITE_REQUIREMENT,
             ROLE_ASSIGNMENT_TYPES_START + 1,
             named_enum(
-                "CompositeRequirement",
+                "AccessRuleNode",
                 [
-                    (
-                        0u8,
-                        named_tuple("BasicRequirement", [BASIC_REQUIREMENT_TYPE])
-                    ),
+                    (0u8, named_tuple("ProofRule", [BASIC_REQUIREMENT_TYPE])),
                     (1u8, named_tuple("AnyOf", [COMPOSITE_REQUIREMENT_LIST_TYPE])),
                     (2u8, named_tuple("AllOf", [COMPOSITE_REQUIREMENT_LIST_TYPE])),
                 ],
@@ -471,10 +469,11 @@ create_well_known_lookup!(
             array_of(COMPOSITE_REQUIREMENT_TYPE)
         ),
         (
+            ///Name of the schema type ProofRule is not changed to BasicRequirement to preserve backward compatibility.
             BASIC_REQUIREMENT,
             ROLE_ASSIGNMENT_TYPES_START + 3,
             named_enum(
-                "BasicRequirement",
+                "ProofRule",
                 [
                     (0u8, named_tuple("Require", [RESOURCE_OR_NON_FUNGIBLE_TYPE])),
                     (

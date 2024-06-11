@@ -90,6 +90,7 @@ macro_rules! create_well_known_lookup {
         $custom_type_kind: ty,
         [
             $((
+                $(#[$meta:meta])*
                 $name: ident,
                 $type_id: expr,
                 $type_data: expr$(,)?
@@ -103,6 +104,7 @@ macro_rules! create_well_known_lookup {
                 use super::*;
 
                 $(
+                    $(#[$meta])*
                     pub const [<$name:upper _TYPE>]: WellKnownTypeId = WellKnownTypeId::of($type_id);
 
                     pub fn [<$name:lower _type_data>]<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
