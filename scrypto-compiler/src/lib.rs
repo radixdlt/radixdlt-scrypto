@@ -943,8 +943,11 @@ impl ScryptoCompiler {
         &mut self,
         command: &mut Command,
     ) -> Result<Vec<BuildArtifact<Vec<u8>>>, ScryptoCompilerError> {
-        // self.prepare_command_phase_2(command);
-        // self.cargo_command_call(command)?;
+        // Compile only if coverage enabled
+        if self.input_params.features.contains(SCRYPTO_COVERAGE) {
+            self.prepare_command_phase_2(command);
+            self.cargo_command_call(command)?;
+        }
         // compilation post-processing for all manifests
         if self.manifests.is_empty() {
             // non-workspace compilation
