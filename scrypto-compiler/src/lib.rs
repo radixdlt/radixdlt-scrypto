@@ -988,6 +988,16 @@ impl ScryptoCompiler {
 
         module.remove_export("_schema").unwrap();
 
+        // On filesystems with hard-linking support `target_binary_wasm_path` might be a hard-link
+        // (rust caching for incremental builds)
+        // pointing to `./<target-dir>/wasm32-unknown-unknown/release/deps/<wasm_binary>`,
+        // which would be also modified if we would directly wrote below data.
+        // Which in turn would be reused in the next recompilation resulting with a
+        // `target_binary_wasm_with_schema_path` not including the schema.
+        // So if `target_binary_wasm_path` exists just remove it assuming it is a hard-link.
+        if std::fs::metadata(&manifest_def.target_binary_wasm_path).is_ok() {
+            std::fs::remove_file(&manifest_def.target_binary_wasm_path).unwrap();
+        }
         std::fs::write(&manifest_def.target_binary_wasm_path, module.bytes()).map_err(|err| {
             ScryptoCompilerError::IOErrorWithPath(
                 err,
