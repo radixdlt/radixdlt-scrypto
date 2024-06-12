@@ -25,15 +25,16 @@ mod tests {
             resource_or_non_fungible_1.clone(),
             resource_or_non_fungible_2.clone(),
         ];
-        let proof_rule = ProofRule::Require(resource_or_non_fungible_1.clone());
-        let access_rule_node = AccessRuleNode::ProofRule(proof_rule.clone());
-        let access_rule_node_list = vec![access_rule_node.clone()];
-        let access_rule = AccessRule::Protected(access_rule_node.clone());
+        let basic_requirement = BasicRequirement::Require(resource_or_non_fungible_1.clone());
+        let composite_requirement =
+            CompositeRequirement::BasicRequirement(basic_requirement.clone());
+        let composite_requirement_list = vec![composite_requirement.clone()];
+        let access_rule = AccessRule::Protected(composite_requirement.clone());
 
         test_equivalence(ACCESS_RULE_TYPE, access_rule);
-        test_equivalence(ACCESS_RULE_NODE_TYPE, access_rule_node);
-        test_statically_valid(ACCESS_RULE_NODE_LIST_TYPE, access_rule_node_list);
-        test_equivalence(PROOF_RULE_TYPE, proof_rule);
+        test_equivalence(COMPOSITE_REQUIREMENT_TYPE, composite_requirement);
+        test_statically_valid(COMPOSITE_REQUIREMENT_LIST_TYPE, composite_requirement_list);
+        test_equivalence(BASIC_REQUIREMENT_TYPE, basic_requirement);
         test_equivalence(RESOURCE_OR_NON_FUNGIBLE_TYPE, resource_or_non_fungible_1);
         test_equivalence(RESOURCE_OR_NON_FUNGIBLE_TYPE, resource_or_non_fungible_2);
         test_statically_valid(

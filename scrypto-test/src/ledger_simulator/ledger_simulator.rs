@@ -961,15 +961,17 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (pk3, sk3) = self.new_ed25519_key_pair();
         let (pk4, sk4) = self.new_ed25519_key_pair();
 
-        let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
-            n_out_of_4,
-            vec![
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
-            ],
-        )));
+        let access_rule = AccessRule::Protected(CompositeRequirement::BasicRequirement(
+            BasicRequirement::CountOf(
+                n_out_of_4,
+                vec![
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
+                ],
+            ),
+        ));
 
         let access_controller = self
             .execute_manifest(
