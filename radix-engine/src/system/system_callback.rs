@@ -871,6 +871,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         let limits_module = { LimitsModule::from_params(system_parameters.limit_parameters) };
 
         let costing_module = CostingModule {
+            current_depth: 0, // TODO: Is it correct to assume that the current depth is zero here?
             fee_reserve: SystemLoanFeeReserve::new(
                 &system_parameters.costing_parameters,
                 executable.costing_parameters(),

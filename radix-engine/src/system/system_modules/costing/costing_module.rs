@@ -99,10 +99,15 @@ impl CostingModuleConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExecutionCostBreakdownItem {
     Invocation(KernelInvocation<Actor>),
-    Execution(owned::ExecutionCostingEntryOwned),
+    InvocationComplete,
+    Execution {
+        simple_name: String,
+        item: owned::ExecutionCostingEntryOwned,
+        cost_units: u32,
+    },
 }
 
 #[derive(Debug, Clone, Default)]
@@ -110,6 +115,9 @@ pub struct CostBreakdown {
     pub execution_cost_breakdown: IndexMap<String, u32>,
     pub finalization_cost_breakdown: IndexMap<String, u32>,
     pub storage_cost_breakdown: IndexMap<StorageType, usize>,
+
+    /// A more detailed cost breakdown with information on the depth.
+    pub detailed_execution_cost_breakdown: Vec<(usize, ExecutionCostBreakdownItem)>,
 }
 
 #[derive(Debug, Clone)]
@@ -122,6 +130,9 @@ pub struct CostingModule {
     pub tx_payload_len: usize,
     pub tx_num_of_signature_validations: usize,
     pub cost_breakdown: Option<CostBreakdown>,
+
+    /// This keeps track of the current kernel depth.
+    pub current_depth: usize,
 }
 
 impl CostingModule {
@@ -135,7 +146,7 @@ impl CostingModule {
 
         self.fee_reserve
             .consume_execution(cost_units)
-            .map_err(|e| CostingError::FeeReserveError(e))?;
+            .map_err(CostingError::FeeReserveError)?;
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
@@ -144,6 +155,16 @@ impl CostingModule {
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
+
+            // Add an entry for the more detailed execution cost
+            cost_breakdown.detailed_execution_cost_breakdown.push((
+                self.current_depth,
+                ExecutionCostBreakdownItem::Execution {
+                    simple_name: costing_entry.to_trace_key(),
+                    item: owned::ExecutionCostingEntryOwned::from(costing_entry),
+                    cost_units,
+                },
+            ));
         }
 
         Ok(())
@@ -176,7 +197,7 @@ impl CostingModule {
 
         self.fee_reserve
             .consume_deferred_execution(cost_units)
-            .map_err(|e| CostingError::FeeReserveError(e))?;
+            .map_err(CostingError::FeeReserveError)?;
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
@@ -185,6 +206,16 @@ impl CostingModule {
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
+
+            // Add an entry for the more detailed execution cost
+            cost_breakdown.detailed_execution_cost_breakdown.push((
+                self.current_depth,
+                ExecutionCostBreakdownItem::Execution {
+                    simple_name: costing_entry.to_trace_key(),
+                    item: owned::ExecutionCostingEntryOwned::from(costing_entry),
+                    cost_units,
+                },
+            ));
         }
 
         Ok(())
@@ -199,7 +230,7 @@ impl CostingModule {
 
         self.fee_reserve
             .consume_deferred_storage(storage_type, size_increase)
-            .map_err(|e| CostingError::FeeReserveError(e))?;
+            .map_err(CostingError::FeeReserveError)?;
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
             cost_breakdown
@@ -222,7 +253,7 @@ impl CostingModule {
 
         self.fee_reserve
             .consume_finalization(cost_units)
-            .map_err(|e| CostingError::FeeReserveError(e))?;
+            .map_err(CostingError::FeeReserveError)?;
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
             let key = costing_entry.to_trace_key();
@@ -245,7 +276,7 @@ impl CostingModule {
 
         self.fee_reserve
             .consume_storage(storage_type, size_increase)
-            .map_err(|e| CostingError::FeeReserveError(e))?;
+            .map_err(CostingError::FeeReserveError)?;
 
         if let Some(cost_breakdown) = &mut self.cost_breakdown {
             cost_breakdown
@@ -297,15 +328,15 @@ impl InitSystemModule for CostingModule {
         self.apply_deferred_execution_cost(ExecutionCostingEntry::ValidateTxPayload {
             size: self.tx_payload_len,
         })
-        .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+        .map_err(BootloadingError::FailedToApplyDeferredCosts)?;
 
         self.apply_deferred_execution_cost(ExecutionCostingEntry::VerifyTxSignatures {
             num_signatures: self.tx_num_of_signature_validations,
         })
-        .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+        .map_err(BootloadingError::FailedToApplyDeferredCosts)?;
 
         self.apply_deferred_storage_cost(StorageType::Archive, self.tx_payload_len)
-            .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+            .map_err(BootloadingError::FailedToApplyDeferredCosts)?;
 
         Ok(())
     }
@@ -316,14 +347,25 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
+        let depth = api.kernel_get_current_depth();
+
+        // Add invocation information to the execution cost breakdown.
+        if let Some(ref mut cost_breakdown) = api.kernel_get_system().modules.costing.cost_breakdown
+        {
+            cost_breakdown.detailed_execution_cost_breakdown.push((
+                depth,
+                ExecutionCostBreakdownItem::Invocation(invocation.clone()),
+            ));
+        }
+
         // Skip invocation costing for transaction processor
-        if api.kernel_get_current_depth() == 0 {
+        if depth == 0 {
             return Ok(());
         }
 
-        api.kernel_get_system()
-            .modules
-            .costing
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::BeforeInvoke {
                 actor: &invocation.call_frame_data,
                 input_size: invocation.len(),
@@ -350,7 +392,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
                         ObjectType::Global { modules }
                             if modules.contains_key(&AttachedModuleId::Royalty) =>
                         {
-                            (Some(node_id.clone()), ident)
+                            (Some(*node_id), ident)
                         }
                         _ => (None, ident),
                     }
@@ -397,14 +439,24 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
+        let depth = api.kernel_get_current_depth();
+
+        // Add invocation information to the execution cost breakdown.
+        if let Some(ref mut cost_breakdown) = api.kernel_get_system().modules.costing.cost_breakdown
+        {
+            cost_breakdown
+                .detailed_execution_cost_breakdown
+                .push((depth, ExecutionCostBreakdownItem::InvocationComplete));
+        }
+
         // Skip invocation costing for transaction processor
-        if api.kernel_get_current_depth() == 0 {
+        if depth == 0 {
             return Ok(());
         }
 
-        api.kernel_get_system()
-            .modules
-            .costing
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::AfterInvoke {
                 output_size: output.len(),
             })
@@ -417,9 +469,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
+        let depth = api.kernel_get_current_depth();
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::CreateNode { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -440,9 +493,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
+        let depth = api.kernel_get_current_depth();
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::DropNode { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -453,9 +507,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
+        let depth = api.kernel_get_current_depth();
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::MoveModule { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -466,9 +521,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
+        let depth = api.kernel_get_current_depth();
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::OpenSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -498,9 +554,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
+        let depth = api.kernel_get_current_depth();
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::ReadSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -511,9 +568,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
+        let depth = api.kernel_get_current_depth();
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::WriteSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -524,9 +582,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
+        let depth = api.kernel_get_current_depth();
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::CloseSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -599,9 +658,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         api: &mut Y,
         _entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
+        let depth = api.kernel_get_current_depth();
+        let costing_module = &mut api.kernel_get_system().modules.costing;
+        costing_module.current_depth = depth;
+        costing_module
             .apply_execution_cost(ExecutionCostingEntry::AllocateNodeId)
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
