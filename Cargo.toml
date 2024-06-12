@@ -139,8 +139,3 @@ walrus = { version = "0.12.0", features = ["parallel"] }
 # crashing the engine.
 [profile.release]
 panic = "unwind"
-
-# Optimize for speed for test profile to speed up the tests
-[profile.test]
-opt-level = 3
-
