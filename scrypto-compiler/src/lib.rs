@@ -1011,7 +1011,9 @@ impl ScryptoCompiler {
         &self,
         manifest_def: &CompilerManifestDefinition,
     ) -> Result<BuildArtifact<Vec<u8>>, ScryptoCompilerError> {
-        self.snip_schema_from_wasm(manifest_def)?;
+        if !self.input_params.features.contains(SCRYPTO_COVERAGE) {
+            self.snip_schema_from_wasm(manifest_def)?;
+        }
 
         self.wasm_optimize(&manifest_def.target_binary_wasm_path.clone())?;
 
