@@ -23,9 +23,7 @@ test_crates_features \
     radix-engine \
     radix-engine-tests \
     radix-transaction-scenarios \
-    radix-transactions" \
-    --features=compile-blueprints-at-build-time
-
+    radix-transactions"
 
 echo "Testing scrypto packages..."
 test_packages \
