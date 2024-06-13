@@ -935,7 +935,7 @@ impl ScryptoCompiler {
             ScryptoCompilerError::IOErrorWithPath(
                 err,
                 artifacts.package_definition.path.clone(),
-                Some(String::from("Storing RPD in cache folder failed")),
+                Some(String::from("Copy RPD into cache folder failed")),
             )
         })?;
 
@@ -943,7 +943,7 @@ impl ScryptoCompiler {
             ScryptoCompilerError::IOErrorWithPath(
                 err,
                 artifacts.wasm.path.clone(),
-                Some(String::from("Storing WASM in cache folder failed")),
+                Some(String::from("Copy WASM file into cache folder failed")),
             )
         })?;
 
@@ -1003,15 +1003,31 @@ impl ScryptoCompiler {
                 ScryptoCompilerError::IOErrorWithPath(
                     e,
                     manifest_def.target_binary_rpd_path.clone(),
-                    Some(String::from("Writing RPD file failed.")),
+                    Some(String::from("Write RPD file failed.")),
                 )
             })?;
 
+            // On filesystems with hard-linking support `target_binary_wasm_path` might be a hard-link
+            // (rust caching for incremental builds)
+            // pointing to `./<target-dir>/wasm32-unknown-unknown/release/deps/<wasm_binary>`,
+            // which would be also modified if we would directly wrote below data.
+            // Which in turn would be reused in the next recompilation resulting with a
+            // `target_binary_wasm_with_schema_path` not including the schema.
+            // So if `target_binary_wasm_path` exists just remove it assuming it is a hard-link.
+            if std::fs::metadata(&manifest_def.target_binary_wasm_path).is_ok() {
+                std::fs::remove_file(&manifest_def.target_binary_wasm_path).map_err(|e| {
+                    ScryptoCompilerError::IOErrorWithPath(
+                        e,
+                        manifest_def.target_binary_wasm_path.clone(),
+                        Some(String::from("Remove WASM file failed.")),
+                    )
+                })?;
+            }
             std::fs::write(&manifest_def.target_binary_wasm_path, wasm.clone()).map_err(|e| {
                 ScryptoCompilerError::IOErrorWithPath(
                     e,
                     manifest_def.target_binary_wasm_path.clone(),
-                    Some(String::from("Writing WASM file failed.")),
+                    Some(String::from("Write WASM file failed.")),
                 )
             })?;
 
