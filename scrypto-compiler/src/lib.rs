@@ -6,6 +6,7 @@ use radix_engine_interface::{blueprints::package::PackageDefinition, types::Leve
 use radix_rust::prelude::{IndexMap, IndexSet};
 use std::cmp::Ordering;
 use std::error::Error;
+use std::iter;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
 use std::{env, io};
@@ -220,6 +221,27 @@ pub struct CompilerManifestDefinition {
     pub target_binary_rpd_path: PathBuf,
     /// Path to target binary WASM file with schema.
     pub target_binary_wasm_with_schema_path: PathBuf,
+}
+
+// Helper enum to unify different iterator types
+enum Either<L, R> {
+    Left(L),
+    Right(R),
+}
+
+impl<L, R> Iterator for Either<L, R>
+where
+    L: Iterator,
+    R: Iterator<Item = L::Item>,
+{
+    type Item = L::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Either::Left(iter) => iter.next(),
+            Either::Right(iter) => iter.next(),
+        }
+    }
 }
 
 /// Programmatic implementation of Scrypto compiler which is a wrapper around rust cargo tool.
@@ -741,24 +763,18 @@ impl ScryptoCompiler {
         })?;
 
         // Collect packages to be locked
-        if self.manifests.is_empty() {
+        for package in self
+            .iter_manifests()
+            .map(|manifest| &manifest.target_binary_name)
+        {
             let lock_file_path = self
                 .main_manifest
                 .target_directory
-                .join(format!("{}.lock", self.main_manifest.target_binary_name));
+                .join(format!("{}.lock", package));
             let package_lock = PackageLock::new(lock_file_path)?;
             package_locks.push(package_lock);
-        } else {
-            for package in self.manifests.iter().map(|m| &m.target_binary_name) {
-                let lock_file_path = self
-                    .main_manifest
-                    .target_directory
-                    .join(format!("{}.lock", package));
-                let package_lock = PackageLock::new(lock_file_path)?;
-                package_locks.push(package_lock);
-            }
-            package_locks.sort();
         }
+        package_locks.sort();
 
         let mut all_locked = false;
         // Attempt to lock all compiled packages.
@@ -796,6 +812,14 @@ impl ScryptoCompiler {
             package_lock.unlock()?;
         }
         Ok(())
+    }
+
+    fn iter_manifests<'a>(&self) -> impl Iterator<Item = &CompilerManifestDefinition> {
+        if self.manifests.is_empty() {
+            Either::Left(iter::once(&self.main_manifest))
+        } else {
+            Either::Right(self.manifests.iter())
+        }
     }
 
     pub fn compile_with_stdio<T: Into<Stdio>>(
@@ -868,19 +892,10 @@ impl ScryptoCompiler {
         self.cargo_command_call(command)?;
 
         // compilation post-processing for all manifests
-        if self.manifests.is_empty() {
-            // non-workspace compilation
-            Ok(vec![self.compile_internal_phase_1_postprocess(
-                &self.main_manifest,
-            )?])
-        } else {
-            // workspace compilation
-            Ok(self
-                .manifests
-                .iter()
-                .map(|manifest| self.compile_internal_phase_1_postprocess(&manifest))
-                .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
-        }
+        Ok(self
+            .iter_manifests()
+            .map(|manifest| self.compile_internal_phase_1_postprocess(&manifest))
+            .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
     }
 
     // used for unit tests
@@ -949,20 +964,10 @@ impl ScryptoCompiler {
             self.prepare_command_phase_2(command);
             self.cargo_command_call(command)?;
         }
-        // compilation post-processing for all manifests
-        if self.manifests.is_empty() {
-            // non-workspace compilation
-            Ok(vec![self.compile_internal_phase_2_postprocess(
-                &self.main_manifest,
-            )?])
-        } else {
-            // workspace compilation
-            Ok(self
-                .manifests
-                .iter()
-                .map(|manifest| self.compile_internal_phase_2_postprocess(&manifest))
-                .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
-        }
+        Ok(self
+            .iter_manifests()
+            .map(|manifest| self.compile_internal_phase_2_postprocess(&manifest))
+            .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
     }
 
     // used for unit tests
