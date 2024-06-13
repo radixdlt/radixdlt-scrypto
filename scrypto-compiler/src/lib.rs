@@ -822,6 +822,10 @@ impl ScryptoCompiler {
         }
     }
 
+    // Two phase compilation:
+    //  1st phase compiles with schema (without "scrypto/no-schema" feature) and release profile
+    //      and then extracts package definition rpd file
+    //  2nd phase compiles without schema (with "scrypto/no-schema" feature) and user specified profile
     pub fn compile_with_stdio<T: Into<Stdio>>(
         &mut self,
         stdin: Option<T>,
@@ -841,10 +845,14 @@ impl ScryptoCompiler {
         if let Some(s) = stderr {
             command.stderr(s);
         }
-        let package_definitions = self.compile_internal_phase_1(&mut command)?;
+
+        self.compile_phase_1(&mut command)?;
+
+        let package_definitions = self.compile_phase_1_postprocess()?;
 
         let mut command = Command::new("cargo");
-        let wasms = self.compile_internal_phase_2(&mut command)?;
+        self.compile_phase_2(&mut command)?;
+        let wasms = self.compile_phase_2_postprocess()?;
 
         self.unlock_packages(package_locks)?;
 
@@ -858,39 +866,19 @@ impl ScryptoCompiler {
             .collect())
     }
 
-    // Two phase compilation:
-    //  1st phase compiles with schema (without "scrypto/no-schema" feature) and release profile
-    //      and then extracts package definition rpd file
-    //  2nd phase compiles without schema (with "scrypto/no-schema" feature) and user specified profile
     pub fn compile(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
-        let package_locks = self.lock_packages()?;
-        let mut command = Command::new("cargo");
-        let package_definitions = self.compile_internal_phase_1(&mut command)?;
-
-        let mut command = Command::new("cargo");
-
-        let wasms = self.compile_internal_phase_2(&mut command)?;
-
-        self.unlock_packages(package_locks)?;
-
-        Ok(package_definitions
-            .iter()
-            .zip(wasms.iter())
-            .map(|(package, wasm)| BuildArtifacts {
-                wasm: wasm.clone(),
-                package_definition: package.clone(),
-            })
-            .collect())
+        self.compile_with_stdio::<Stdio>(None, None, None)
     }
 
     // 1st compilation phase: compile with schema and extract schema to .rpd file
-    fn compile_internal_phase_1(
-        &mut self,
-        command: &mut Command,
-    ) -> Result<Vec<BuildArtifact<PackageDefinition>>, ScryptoCompilerError> {
+    fn compile_phase_1(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
         self.prepare_command_phase_1(command);
-        self.cargo_command_call(command)?;
+        self.cargo_command_call(command)
+    }
 
+    fn compile_phase_1_postprocess(
+        &mut self,
+    ) -> Result<Vec<BuildArtifact<PackageDefinition>>, ScryptoCompilerError> {
         // compilation post-processing for all manifests
         Ok(self
             .iter_manifests()
@@ -955,15 +943,14 @@ impl ScryptoCompiler {
     }
 
     // 2nd compilation phase: compile without schema and with optional wasm optimisations - this is the final .wasm file
-    fn compile_internal_phase_2(
+    fn compile_phase_2(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
+        self.prepare_command_phase_2(command);
+        self.cargo_command_call(command)
+    }
+
+    fn compile_phase_2_postprocess(
         &mut self,
-        command: &mut Command,
     ) -> Result<Vec<BuildArtifact<Vec<u8>>>, ScryptoCompilerError> {
-        // Compile only if coverage enabled
-        if self.input_params.features.contains(SCRYPTO_COVERAGE) {
-            self.prepare_command_phase_2(command);
-            self.cargo_command_call(command)?;
-        }
         Ok(self
             .iter_manifests()
             .map(|manifest| self.compile_internal_phase_2_postprocess(&manifest))
@@ -1016,10 +1003,6 @@ impl ScryptoCompiler {
         &self,
         manifest_def: &CompilerManifestDefinition,
     ) -> Result<BuildArtifact<Vec<u8>>, ScryptoCompilerError> {
-        if !self.input_params.features.contains(SCRYPTO_COVERAGE) {
-            self.snip_schema_from_wasm(manifest_def)?;
-        }
-
         self.wasm_optimize(&manifest_def.target_binary_wasm_path.clone())?;
 
         let code = std::fs::read(&manifest_def.target_binary_wasm_path).map_err(|e| {
