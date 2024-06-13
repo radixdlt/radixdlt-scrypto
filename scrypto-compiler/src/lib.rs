@@ -45,6 +45,8 @@ pub enum ScryptoCompilerError {
     SchemaExtractionError(ExtractSchemaError),
     /// Returns error occured during schema encoding.
     SchemaEncodeError(EncodeError),
+    /// Returns error occured during schema decoding.
+    SchemaDecodeError(DecodeError),
     /// Returned when trying to compile workspace without any scrypto packages.
     NothingToCompile,
     /// Snip error
@@ -847,23 +849,21 @@ impl ScryptoCompiler {
         }
 
         self.compile_phase_1(&mut command)?;
+        self.compile_phase_1_postprocess()?;
 
-        let package_definitions = self.compile_phase_1_postprocess()?;
+        let artifacts = self.get_artifacts_from_cache()?;
 
-        let mut command = Command::new("cargo");
-        self.compile_phase_2(&mut command)?;
-        let wasms = self.compile_phase_2_postprocess()?;
+        let artifacts = if artifacts.is_empty() {
+            let mut command = Command::new("cargo");
+            self.compile_phase_2(&mut command)?;
+
+            self.compile_phase_2_postprocess()?
+        } else {
+            artifacts
+        };
 
         self.unlock_packages(package_locks)?;
-
-        Ok(package_definitions
-            .iter()
-            .zip(wasms.iter())
-            .map(|(package, wasm)| BuildArtifacts {
-                wasm: wasm.clone(),
-                package_definition: package.clone(),
-            })
-            .collect())
+        Ok(artifacts)
     }
 
     pub fn compile(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
@@ -876,14 +876,12 @@ impl ScryptoCompiler {
         self.cargo_command_call(command)
     }
 
-    fn compile_phase_1_postprocess(
-        &mut self,
-    ) -> Result<Vec<BuildArtifact<PackageDefinition>>, ScryptoCompilerError> {
+    fn compile_phase_1_postprocess(&mut self) -> Result<(), ScryptoCompilerError> {
         // compilation post-processing for all manifests
-        Ok(self
-            .iter_manifests()
-            .map(|manifest| self.compile_internal_phase_1_postprocess(&manifest))
-            .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
+        for manifest in self.iter_manifests() {
+            self.compile_internal_phase_1_postprocess(&manifest)?;
+        }
+        Ok(())
     }
 
     // used for unit tests
@@ -891,17 +889,206 @@ impl ScryptoCompiler {
         self.prepare_command(command, true); // build with schema and release profile
     }
 
+    fn get_artifacts_from_cache(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
+        // compilation post-processing for all manifests
+        let mut artifacts = vec![];
+        for manifest in self.iter_manifests() {
+            let artifact = self.get_artifact_from_cache_for_manifest(manifest)?;
+
+            // If artifact for any manifest is missing then assume no artifacts in cache at all
+            if let Some(artifact) = artifact {
+                artifacts.push(artifact);
+            } else {
+                return Ok(vec![]);
+            }
+        }
+
+        Ok(artifacts)
+    }
+
+    fn store_artifacts_in_cache(
+        &self,
+        manifest_def: &CompilerManifestDefinition,
+        code_hash: Hash,
+        artifacts: &BuildArtifacts,
+    ) -> Result<(), ScryptoCompilerError> {
+        let cache_dir = manifest_def.target_directory.join(code_hash.to_string());
+
+        // Create target folder if it doesn't exist
+        std::fs::create_dir_all(&cache_dir).map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                cache_dir.clone(),
+                Some(String::from("Create cache folder failed")),
+            )
+        })?;
+
+        let mut rpd_cache_path = cache_dir
+            .clone()
+            .join(manifest_def.target_binary_name.clone());
+        rpd_cache_path.set_extension("rpd");
+
+        let mut wasm_cache_path = cache_dir.join(manifest_def.target_binary_name.clone());
+        wasm_cache_path.set_extension("wasm");
+
+        std::fs::copy(&artifacts.package_definition.path, &rpd_cache_path).map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                artifacts.package_definition.path.clone(),
+                Some(String::from("Storing RPD in cache folder failed")),
+            )
+        })?;
+
+        std::fs::copy(&artifacts.wasm.path, &wasm_cache_path).map_err(|err| {
+            ScryptoCompilerError::IOErrorWithPath(
+                err,
+                artifacts.wasm.path.clone(),
+                Some(String::from("Storing WASM in cache folder failed")),
+            )
+        })?;
+
+        Ok(())
+    }
+
+    fn get_artifact_from_cache_for_manifest(
+        &self,
+        manifest_def: &CompilerManifestDefinition,
+    ) -> Result<Option<BuildArtifacts>, ScryptoCompilerError> {
+        let code =
+            std::fs::read(&manifest_def.target_binary_wasm_with_schema_path).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    manifest_def.target_binary_wasm_with_schema_path.clone(),
+                    Some(String::from("Read WASM with schema file failed.")),
+                )
+            })?;
+
+        let code_hash = hash(&code);
+        let mut rpd_cache_path = manifest_def
+            .target_directory
+            .join(code_hash.to_string())
+            .join(manifest_def.target_binary_name.clone());
+        rpd_cache_path.set_extension("rpd");
+
+        let mut wasm_cache_path = manifest_def
+            .target_directory
+            .join(code_hash.to_string())
+            .join(manifest_def.target_binary_name.clone());
+        wasm_cache_path.set_extension("wasm");
+
+        // Get WASM and RPD files only if they both exist
+        if std::fs::metadata(&rpd_cache_path).is_ok() && std::fs::metadata(&wasm_cache_path).is_ok()
+        {
+            let rpd = std::fs::read(&rpd_cache_path).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    rpd_cache_path.clone(),
+                    Some(String::from("Read RPD from cache failed.")),
+                )
+            })?;
+
+            let package_definition: PackageDefinition =
+                manifest_decode(&rpd).map_err(ScryptoCompilerError::SchemaDecodeError)?;
+
+            let wasm = std::fs::read(&wasm_cache_path).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    wasm_cache_path.clone(),
+                    Some(String::from("Read WASM from cache failed.")),
+                )
+            })?;
+
+            // Store artifacts into release folder
+            std::fs::write(&manifest_def.target_binary_rpd_path, rpd).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    manifest_def.target_binary_rpd_path.clone(),
+                    Some(String::from("Writing RPD file failed.")),
+                )
+            })?;
+
+            std::fs::write(&manifest_def.target_binary_wasm_path, wasm.clone()).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    manifest_def.target_binary_wasm_path.clone(),
+                    Some(String::from("Writing WASM file failed.")),
+                )
+            })?;
+
+            let wasm = BuildArtifact {
+                path: manifest_def.target_binary_wasm_path.clone(),
+                content: wasm,
+            };
+            let package_definition = BuildArtifact {
+                path: manifest_def.target_binary_rpd_path.clone(),
+                content: package_definition,
+            };
+
+            Ok(Some(BuildArtifacts {
+                wasm,
+                package_definition,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    // Rename WASM files from '*.wasm' to '*_with_schema.wasm'
     fn compile_internal_phase_1_postprocess(
         &self,
         manifest_def: &CompilerManifestDefinition,
-    ) -> Result<BuildArtifact<PackageDefinition>, ScryptoCompilerError> {
-        let code = std::fs::read(&manifest_def.target_binary_wasm_path).map_err(|e| {
+    ) -> Result<(), ScryptoCompilerError> {
+        // The best would be to directly produce wasm file with schema by overriding Cargo.toml
+        // values from command line.
+        // Possibly it could be done by replacing 'cargo build' with 'cargo rustc' command,
+        // which allows to customize settings on lower level. It is very likely it would implicate
+        // more changes. And we don't want to complicate things more. So lets just rename the file.
+        std::fs::rename(
+            &manifest_def.target_binary_wasm_path,
+            &manifest_def.target_binary_wasm_with_schema_path,
+        )
+        .map_err(|err| {
             ScryptoCompilerError::IOErrorWithPath(
-                e,
+                err,
                 manifest_def.target_binary_wasm_path.clone(),
-                Some(String::from("Read WASM file for RPD extract failed.")),
+                Some(String::from("Rename WASM file failed.")),
             )
         })?;
+        Ok(())
+    }
+
+    // 2nd compilation phase: compile without schema and with optional wasm optimisations - this is the final .wasm file
+    fn compile_phase_2(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
+        self.prepare_command_phase_2(command);
+        self.cargo_command_call(command)
+    }
+
+    fn compile_phase_2_postprocess(&mut self) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
+        Ok(self
+            .iter_manifests()
+            .map(|manifest| self.compile_internal_phase_2_postprocess(&manifest))
+            .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
+    }
+
+    // used for unit tests
+    fn prepare_command_phase_2(&mut self, command: &mut Command) {
+        self.prepare_command(command, false); // build without schema and with userchoosen profile
+    }
+
+    fn compile_internal_phase_2_postprocess(
+        &self,
+        manifest_def: &CompilerManifestDefinition,
+    ) -> Result<BuildArtifacts, ScryptoCompilerError> {
+        // TODO: code was already read to calculate hash. Optimize it.
+        let code =
+            std::fs::read(&manifest_def.target_binary_wasm_with_schema_path).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    manifest_def.target_binary_wasm_with_schema_path.clone(),
+                    Some(String::from("Read WASM file for RPD extract failed.")),
+                )
+            })?;
+        let code_hash = hash(&code);
 
         let package_definition =
             extract_definition(&code).map_err(ScryptoCompilerError::SchemaExtractionError)?;
@@ -919,103 +1106,32 @@ impl ScryptoCompiler {
             )
         })?;
 
-        // The best would be to directly produce wasm file with schema by overriding Cargo.toml
-        // values from command line.
-        // Possibly it could be done by replacing 'cargo build' with 'cargo rustc' command,
-        // which allows to customize settings on lower level. It is very likely it would implicate
-        // more changes. And we don't want to complicate things more. So lets just rename the file.
-        std::fs::rename(
-            &manifest_def.target_binary_wasm_path,
-            &manifest_def.target_binary_wasm_with_schema_path,
-        )
-        .map_err(|err| {
-            ScryptoCompilerError::IOErrorWithPath(
-                err,
-                manifest_def.target_binary_wasm_path.clone(),
-                Some(String::from("Rename WASM file failed.")),
-            )
-        })?;
-
-        Ok(BuildArtifact {
-            path: manifest_def.target_binary_rpd_path.clone(),
-            content: package_definition,
-        })
-    }
-
-    // 2nd compilation phase: compile without schema and with optional wasm optimisations - this is the final .wasm file
-    fn compile_phase_2(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
-        self.prepare_command_phase_2(command);
-        self.cargo_command_call(command)
-    }
-
-    fn compile_phase_2_postprocess(
-        &mut self,
-    ) -> Result<Vec<BuildArtifact<Vec<u8>>>, ScryptoCompilerError> {
-        Ok(self
-            .iter_manifests()
-            .map(|manifest| self.compile_internal_phase_2_postprocess(&manifest))
-            .collect::<Result<Vec<_>, ScryptoCompilerError>>()?)
-    }
-
-    // used for unit tests
-    fn prepare_command_phase_2(&mut self, command: &mut Command) {
-        self.prepare_command(command, false); // build without schema and with userchoosen profile
-    }
-
-    // Remove "*_schema" export from the generated WASM file
-    fn snip_schema_from_wasm(
-        &self,
-        manifest_def: &CompilerManifestDefinition,
-    ) -> Result<(), ScryptoCompilerError> {
-        let code =
-            std::fs::read(&manifest_def.target_binary_wasm_with_schema_path).map_err(|e| {
-                ScryptoCompilerError::IOErrorWithPath(
-                    e,
-                    manifest_def.target_binary_wasm_with_schema_path.clone(),
-                    Some(String::from("Read WASM file failed.")),
-                )
-            })?;
-
-        let mut module = radix_wasm_instrument::utils::module_info::ModuleInfo::new(&code).unwrap();
-
-        module.remove_export("_schema").unwrap();
-
-        // On filesystems with hard-linking support `target_binary_wasm_path` might be a hard-link
-        // (rust caching for incremental builds)
-        // pointing to `./<target-dir>/wasm32-unknown-unknown/release/deps/<wasm_binary>`,
-        // which would be also modified if we would directly wrote below data.
-        // Which in turn would be reused in the next recompilation resulting with a
-        // `target_binary_wasm_with_schema_path` not including the schema.
-        // So if `target_binary_wasm_path` exists just remove it assuming it is a hard-link.
-        if std::fs::metadata(&manifest_def.target_binary_wasm_path).is_ok() {
-            std::fs::remove_file(&manifest_def.target_binary_wasm_path).unwrap();
-        }
-        std::fs::write(&manifest_def.target_binary_wasm_path, module.bytes()).map_err(|err| {
-            ScryptoCompilerError::IOErrorWithPath(
-                err,
-                manifest_def.target_binary_wasm_path.clone(),
-                Some(String::from("WASM file write failed.")),
-            )
-        })
-    }
-
-    fn compile_internal_phase_2_postprocess(
-        &self,
-        manifest_def: &CompilerManifestDefinition,
-    ) -> Result<BuildArtifact<Vec<u8>>, ScryptoCompilerError> {
         self.wasm_optimize(&manifest_def.target_binary_wasm_path.clone())?;
 
         let code = std::fs::read(&manifest_def.target_binary_wasm_path).map_err(|e| {
             ScryptoCompilerError::IOErrorWithPath(
                 e,
                 manifest_def.target_binary_wasm_path.clone(),
-                Some(String::from("Read WASM file failed.")),
+                Some(String::from("Read optimized WASM file failed.")),
             )
         })?;
-        Ok(BuildArtifact {
+
+        let package_definition = BuildArtifact {
+            path: manifest_def.target_binary_rpd_path.clone(),
+            content: package_definition,
+        };
+        let wasm = BuildArtifact {
             path: manifest_def.target_binary_wasm_path.clone(),
             content: code,
-        })
+        };
+        let artifacts = BuildArtifacts {
+            wasm,
+            package_definition,
+        };
+
+        self.store_artifacts_in_cache(manifest_def, code_hash, &artifacts)?;
+
+        Ok(artifacts)
     }
 
     fn cargo_command_call(&mut self, command: &mut Command) -> Result<(), ScryptoCompilerError> {
