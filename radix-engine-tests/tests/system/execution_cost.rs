@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use scrypto_test::prelude::*;
 use std::path::PathBuf;
 
