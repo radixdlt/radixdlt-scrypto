@@ -1121,6 +1121,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             Some(TransactionFeeDetails {
                 execution_cost_breakdown,
                 finalization_cost_breakdown,
+                detailed_execution_cost_breakdown: cost_breakdown.detailed_execution_cost_breakdown,
             })
         } else {
             None

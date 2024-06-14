@@ -99,9 +99,12 @@ impl CostingModuleConfig {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum ExecutionCostBreakdownItem {
-    Invocation(KernelInvocation<Actor>),
+    Invocation {
+        actor: Actor,
+        args: (ScryptoValue,),
+    },
     InvocationComplete,
     Execution {
         simple_name: String,
@@ -354,7 +357,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         {
             cost_breakdown.detailed_execution_cost_breakdown.push((
                 depth,
-                ExecutionCostBreakdownItem::Invocation(invocation.clone()),
+                ExecutionCostBreakdownItem::Invocation {
+                    actor: invocation.call_frame_data.clone(),
+                    args: (invocation.args.as_scrypto_value().to_owned(),),
+                },
             ));
         }
 

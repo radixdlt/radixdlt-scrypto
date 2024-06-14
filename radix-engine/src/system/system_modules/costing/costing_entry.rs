@@ -278,7 +278,7 @@ pub mod owned {
     use crate::track::*;
 
     /// An owned model equivalent of [`ExecutionCostingEntry`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum ExecutionCostingEntryOwned {
         /* verify signature */
         VerifyTxSignatures {
@@ -404,35 +404,41 @@ pub mod owned {
     }
 
     /// An owned model equivalent of [`CreateNodeEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum CreateNodeEventOwned {
-        Start(NodeId, NodeSubstates),
+        Start(
+            NodeId,
+            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, (ScryptoValue,)>>,
+        ),
         IOAccess(IOAccess),
         End(NodeId),
     }
 
     /// An owned model equivalent of [`DropNodeEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum DropNodeEventOwned {
         Start(NodeId),
         IOAccess(IOAccess),
-        End(NodeId, NodeSubstates),
+        End(
+            NodeId,
+            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, (ScryptoValue,)>>,
+        ),
     }
 
     /// An owned model equivalent of [`RefCheckEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum RefCheckEventOwned {
         IOAccess(IOAccess),
     }
 
     /// An owned model equivalent of [`MoveModuleEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum MoveModuleEventOwned {
         IOAccess(IOAccess),
     }
 
     /// An owned model equivalent of [`OpenSubstateEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum OpenSubstateEventOwned {
         Start {
             node_id: NodeId,
@@ -449,62 +455,62 @@ pub mod owned {
     }
 
     /// An owned model equivalent of [`ReadSubstateEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum ReadSubstateEventOwned {
         OnRead {
             handle: SubstateHandle,
-            value: IndexedScryptoValue,
+            value: (ScryptoValue,),
             device: SubstateDevice,
         },
         IOAccess(IOAccess),
     }
 
     /// An owned model equivalent of [`WriteSubstateEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum WriteSubstateEventOwned {
         Start {
             handle: SubstateHandle,
-            value: IndexedScryptoValue,
+            value: (ScryptoValue,),
         },
         IOAccess(IOAccess),
     }
 
     /// An owned model equivalent of [`CloseSubstateEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum CloseSubstateEventOwned {
         Start(SubstateHandle),
     }
 
     /// An owned model equivalent of [`SetSubstateEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum SetSubstateEventOwned {
-        Start(NodeId, PartitionNumber, SubstateKey, IndexedScryptoValue),
+        Start(NodeId, PartitionNumber, SubstateKey, (ScryptoValue,)),
         IOAccess(IOAccess),
     }
 
     /// An owned model equivalent of [`RemoveSubstateEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum RemoveSubstateEventOwned {
         Start(NodeId, PartitionNumber, SubstateKey),
         IOAccess(IOAccess),
     }
 
     /// An owned model equivalent of [`ScanKeysEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum ScanKeysEventOwned {
         Start,
         IOAccess(IOAccess),
     }
 
     /// An owned model equivalent of [`DrainSubstatesEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum DrainSubstatesEventOwned {
         Start(u32),
         IOAccess(IOAccess),
     }
 
     /// An owned model equivalent of [`ScanSortedSubstatesEvent`].
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum ScanSortedSubstatesEventOwned {
         Start,
         IOAccess(IOAccess),
@@ -625,7 +631,23 @@ pub mod owned {
     impl<'a> From<&'a CreateNodeEvent<'a>> for CreateNodeEventOwned {
         fn from(value: &'a CreateNodeEvent<'a>) -> Self {
             match value {
-                CreateNodeEvent::Start(item1, item2) => Self::Start(**item1, (*item2).clone()),
+                CreateNodeEvent::Start(item1, item2) => Self::Start(
+                    **item1,
+                    item2
+                        .iter()
+                        .map(|(key, value)| {
+                            (
+                                key.clone(),
+                                value
+                                    .iter()
+                                    .map(|(key, value)| {
+                                        (key.clone(), (value.as_scrypto_value().to_owned(),))
+                                    })
+                                    .collect(),
+                            )
+                        })
+                        .collect(),
+                ),
                 CreateNodeEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
                 CreateNodeEvent::End(item) => Self::End(**item),
             }
@@ -637,7 +659,23 @@ pub mod owned {
             match value {
                 DropNodeEvent::Start(item) => Self::Start(**item),
                 DropNodeEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
-                DropNodeEvent::End(item1, item2) => Self::End(**item1, (*item2).clone()),
+                DropNodeEvent::End(item1, item2) => Self::End(
+                    **item1,
+                    item2
+                        .iter()
+                        .map(|(key, value)| {
+                            (
+                                key.clone(),
+                                value
+                                    .iter()
+                                    .map(|(key, value)| {
+                                        (key.clone(), (value.as_scrypto_value().to_owned(),))
+                                    })
+                                    .collect(),
+                            )
+                        })
+                        .collect(),
+                ),
             }
         }
     }
@@ -695,7 +733,7 @@ pub mod owned {
                     device,
                 } => Self::OnRead {
                     handle: *handle,
-                    value: (*value).clone(),
+                    value: (value.as_scrypto_value().to_owned(),),
                     device: *device,
                 },
                 ReadSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
@@ -708,7 +746,7 @@ pub mod owned {
             match value {
                 WriteSubstateEvent::Start { handle, value } => Self::Start {
                     handle: *handle,
-                    value: (*value).clone(),
+                    value: (value.as_scrypto_value().to_owned(),),
                 },
                 WriteSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
             }
@@ -726,9 +764,12 @@ pub mod owned {
     impl<'a> From<&'a SetSubstateEvent<'a>> for SetSubstateEventOwned {
         fn from(value: &'a SetSubstateEvent<'a>) -> Self {
             match value {
-                SetSubstateEvent::Start(item1, item2, item3, item4) => {
-                    Self::Start(**item1, **item2, (*item3).clone(), (*item4).clone())
-                }
+                SetSubstateEvent::Start(item1, item2, item3, item4) => Self::Start(
+                    **item1,
+                    **item2,
+                    (*item3).clone(),
+                    (item4.as_scrypto_value().to_owned(),),
+                ),
                 SetSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
             }
         }
