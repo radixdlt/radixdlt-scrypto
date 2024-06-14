@@ -408,6 +408,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f830c31a9c9fb94e2d27fbc76daf642784ce14eb3910d4719e29b50ccda5d0f0"
 
 [[package]]
+name = "fslock"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04412b8935272e3a9bae6f48c7bfff74c2911f60525404edfdd28e49884c3bfb"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1206,10 +1216,12 @@ name = "scrypto-compiler"
 version = "1.3.0-dev"
 dependencies = [
  "cargo_toml",
+ "fslock",
  "radix-common",
  "radix-engine",
  "radix-engine-interface",
  "radix-rust",
+ "radix-wasm-instrument",
  "serde_json",
  "wasm-opt",
 ]
