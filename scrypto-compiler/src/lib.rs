@@ -49,8 +49,6 @@ pub enum ScryptoCompilerError {
     SchemaDecodeError(DecodeError),
     /// Returned when trying to compile workspace without any scrypto packages.
     NothingToCompile,
-    /// Snip error
-    SnipError(String),
 }
 
 #[derive(Debug, Clone)]
@@ -76,7 +74,7 @@ pub struct ScryptoCompilerInputParams {
     pub custom_options: IndexSet<String>,
     /// If specified optimizes the built wasm using Binaryen's wasm-opt tool.
     /// Default configuration is equivalent to running the following commands in the CLI:
-    /// wasm-opt -0z --strip-debug --strip-dwarf --strip-procedures $some_path $some_path
+    /// wasm-opt -0z --strip-debug --strip-dwarf --strip-producers --dce $some_path $some_path
     pub wasm_optimization: Option<wasm_opt::OptimizationOptions>,
 }
 impl Default for ScryptoCompilerInputParams {
