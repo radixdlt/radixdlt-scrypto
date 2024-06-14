@@ -180,7 +180,8 @@ jobs:
       - name: Run tests
         run: |
           cargo nextest run \
-            --no-default-features --features alloc \
+            --no-default-features \
+            --features alloc \
             -p radix-common \
             -p radix-sbor-derive \
             -p radix-engine-interface \
@@ -326,7 +327,7 @@ jobs:
       - name: Run tests
         working-directory: radix-clis
         run: bash ./tests/scrypto_coverage.sh
-        
+
   cargo-check:
     name: Run cargo check
     runs-on: ${{ matrix.os }}
@@ -360,7 +361,7 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Cargo Check
         run: |
-          sudo apt-get install libclang-dev -y 
+          sudo apt-get install libclang-dev -y
           curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
           sudo apt-get install git-lfs -y
       - name: Setup environment
@@ -374,4 +375,4 @@ jobs:
             --max-version 50000 \
             --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
         working-directory: radix-clis
-  
+
