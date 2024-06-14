@@ -1,6 +1,5 @@
 use cargo_toml::Manifest;
 use fslock::{LockFile, ToOsStr};
-use highway::{HighwayHash, HighwayHasher, Key};
 use radix_common::prelude::*;
 use radix_engine::utils::{extract_definition, ExtractSchemaError};
 use radix_engine_interface::{blueprints::package::PackageDefinition, types::Level};
@@ -16,32 +15,6 @@ const MANIFEST_FILE: &str = "Cargo.toml";
 const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 const SCRYPTO_NO_SCHEMA: &str = "scrypto/no-schema";
 const SCRYPTO_COVERAGE: &str = "scrypto/coverage";
-
-#[derive(Debug)]
-struct CacheHash([u8; 16]);
-
-impl CacheHash {
-    fn hash(bytes: &[u8]) -> Self {
-        let key = Key([1, 2, 3, 4]);
-        let mut hasher128 = HighwayHasher::new(key);
-        hasher128.append(bytes);
-        let res128: [u64; 2] = hasher128.finalize128();
-
-        let mut bytes = [0u8; 16];
-
-        bytes[0..8].copy_from_slice(&res128[0].to_le_bytes());
-        bytes[8..16].copy_from_slice(&res128[1].to_le_bytes());
-
-        Self(bytes)
-    }
-}
-
-impl Display for CacheHash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hash_string: String = self.0.iter().map(|byte| format!("{:02x}", byte)).collect();
-        write!(f, "{}", hash_string)
-    }
-}
 
 #[derive(Debug)]
 pub enum ScryptoCompilerError {
@@ -971,7 +944,7 @@ impl ScryptoCompiler {
                     Some(String::from("Read WASM file for RPD extract failed.")),
                 )
             })?;
-        let code_hash = CacheHash::hash(&code);
+        let code_hash = hash(&code);
 
         let package_definition =
             extract_definition(&code).map_err(ScryptoCompilerError::SchemaExtractionError)?;
@@ -1031,14 +1004,14 @@ impl ScryptoCompiler {
     fn get_scrypto_cache_paths(
         &self,
         manifest_def: &CompilerManifestDefinition,
-        code_hash: CacheHash,
+        code_hash: Hash,
         create_if_not_exists: bool,
     ) -> Result<(PathBuf, PathBuf), ScryptoCompilerError> {
         // WASM optimizations are optional and might be configured on different ways.
         // They are applied in 2nd compilation, which means one can receive different WASMs
         // for the same WASM files from 1st compilation.
         let options = format!("{:?}{:?}", code_hash, self.input_params.wasm_optimization);
-        let hash_dir = CacheHash::hash(options.as_bytes());
+        let hash_dir = hash(options);
 
         let cache_path = manifest_def
             .target_directory
@@ -1071,7 +1044,7 @@ impl ScryptoCompiler {
     fn store_artifacts_in_cache(
         &self,
         manifest_def: &CompilerManifestDefinition,
-        code_hash: CacheHash,
+        code_hash: Hash,
         artifacts: &BuildArtifacts,
     ) -> Result<(), ScryptoCompilerError> {
         let (rpd_cache_path, wasm_cache_path) =
@@ -1127,7 +1100,7 @@ impl ScryptoCompiler {
                     Some(String::from("Read WASM with schema file failed.")),
                 )
             })?;
-        let code_hash = CacheHash::hash(&code);
+        let code_hash = hash(&code);
 
         let (rpd_cache_path, wasm_cache_path) =
             self.get_scrypto_cache_paths(manifest_def, code_hash, false)?;
