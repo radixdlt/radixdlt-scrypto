@@ -7,7 +7,9 @@ use radix_engine::kernel::kernel_api::KernelSubstateApi;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::auth::AuthModule;
-use radix_engine::system::system_modules::costing::{CostingModule, CostingModuleConfig, FeeTable, SystemLoanFeeReserve};
+use radix_engine::system::system_modules::costing::{
+    CostingModule, CostingModuleConfig, FeeTable, SystemLoanFeeReserve,
+};
 use radix_engine::system::system_modules::execution_trace::ExecutionTraceModule;
 use radix_engine::system::system_modules::kernel_trace::KernelTraceModule;
 use radix_engine::system::system_modules::limits::LimitsModule;
@@ -15,7 +17,7 @@ use radix_engine::system::system_modules::transaction_runtime::TransactionRuntim
 use radix_engine::system::system_modules::{EnabledModules, SystemModuleMixer};
 use radix_engine::track::Track;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmInit, VmBoot};
+use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmBoot, VmInit};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -69,6 +71,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             AuthModule::new(executable.auth_zone_params().clone()),
             LimitsModule::babylon_genesis(),
             CostingModule {
+                current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: executable.payload_size(),
