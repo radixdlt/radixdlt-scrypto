@@ -47,6 +47,7 @@ pub struct TransactionReceiptV1 {
     pub resources_usage: Option<ResourcesUsage>,
 }
 
+#[cfg(feature = "std")]
 impl TransactionReceiptV1 {
     pub fn generate_execution_breakdown_flamegraph(
         &self,
@@ -1603,6 +1604,7 @@ impl TransactionFeeSummary {
     }
 }
 
+#[cfg(feature = "std")]
 #[derive(Debug)]
 pub enum FlamegraphError {
     IOError(std::io::Error),
