@@ -58,9 +58,9 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     let receipt = ledger.quick_confirm_recovery(
         Role::Primary,
         Role::Recovery,
-        rule!(require(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)),
-        rule!(require(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)),
-        rule!(require(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE)),
+        rule!(require(PACKAGE_OF_DIRECT_CALLER_RESOURCE)),
+        rule!(require(PACKAGE_OF_DIRECT_CALLER_RESOURCE)),
+        rule!(require(PACKAGE_OF_DIRECT_CALLER_RESOURCE)),
         Some(10),
     );
 

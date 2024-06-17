@@ -3,17 +3,18 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::{System, SystemLockData};
 use crate::track::BootStore;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::PackageExport;
 
-/// Invocation callback invoked by the system layer
+/// Callback object invoked by the system layer
 pub trait SystemCallbackObject: Sized {
-    type InitInput: Clone;
+    /// Initialization Object
+    type Init: Clone;
 
-    /// Initialize the layer above the system with data from the substate store
-    fn init<S: BootStore>(store: &S, init_input: Self::InitInput)
-        -> Result<Self, BootloadingError>;
+    /// Initialize and create the callback object above the system
+    fn init<S: BootStore>(store: &S, init_input: Self::Init) -> Result<Self, BootloadingError>;
 
+    /// Invoke a function
     fn invoke<Y>(
         package_address: &PackageAddress,
         package_export: PackageExport,
@@ -21,7 +22,7 @@ pub trait SystemCallbackObject: Sized {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>
+        Y: SystemApi<RuntimeError>
             + KernelInternalApi<System<Self>>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>;

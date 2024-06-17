@@ -1,6 +1,6 @@
 [package]
 name = "radix-engine-interface"
-version = "1.2.0-dev"
+version = "1.3.0-dev"
 edition = "2021"
 description = "The interface between system layer and VM layer, from the Radix DLT project."
 readme = "README.md"
@@ -24,6 +24,9 @@ const-sha1 = { workspace = true }
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 paste = { workspace = true }
 regex = { workspace = true }
+
+[dev-dependencies]
+radix-common = { workspace = true, features = ["secp256k1_sign_and_validate"] }
 
 [features]
 # You should enable either `std` or `alloc`

@@ -462,9 +462,9 @@ struct AccountDepositModesLedgerSimulator {
 }
 
 impl AccountDepositModesLedgerSimulator {
-    pub fn new(virtual_account: bool) -> Self {
+    pub fn new(preallocated_account: bool) -> Self {
         let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
-        let (public_key, _, component_address) = ledger.new_account(virtual_account);
+        let (public_key, _, component_address) = ledger.new_account(preallocated_account);
 
         Self {
             component_address,
@@ -589,7 +589,7 @@ impl AccountDepositModesLedgerSimulator {
     }
 
     pub fn burn(&mut self, resource_address: ResourceAddress) {
-        let virtual_account = ComponentAddress::virtual_account_from_public_key(
+        let uninstantiated_account = ComponentAddress::preallocated_account_from_public_key(
             &Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key(),
         );
 
@@ -599,7 +599,7 @@ impl AccountDepositModesLedgerSimulator {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(self.component_address, resource_address, balance)
-            .try_deposit_entire_worktop_or_refund(virtual_account, None)
+            .try_deposit_entire_worktop_or_refund(uninstantiated_account, None)
             .build();
 
         self.execute_manifest(manifest, true)

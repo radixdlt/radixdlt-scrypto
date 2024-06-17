@@ -4,7 +4,7 @@ use radix_engine::kernel::call_frame::CreateFrameError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ACTOR_REF_AUTH_ZONE};
+use radix_engine_interface::api::{SystemApi, ACTOR_REF_AUTH_ZONE};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_test::prelude::*;
 
@@ -24,7 +24,7 @@ fn should_not_be_able_to_move_auth_zone() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {

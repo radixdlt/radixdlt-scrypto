@@ -2,12 +2,11 @@ use crate::blueprints::resource::*;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelNodeApi;
 use lazy_static::lazy_static;
 use num_traits::pow::Pow;
 use radix_common::math::Decimal;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{FieldValue, GenericArgs, SystemApi, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
@@ -401,7 +400,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (object_id, roles) = Self::create_object(
             Decimal::ZERO,
@@ -435,7 +434,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (object_id, roles) = Self::create_object(
             initial_supply,
@@ -481,7 +480,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<GlobalAddressReservation, RuntimeError>
     where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -505,7 +504,7 @@ impl FungibleResourceManagerBlueprint {
         api: &mut Y,
     ) -> Result<(NodeId, RoleAssignmentInit), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         verify_divisibility(divisibility)?;
 
@@ -553,7 +552,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn mint<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_mintable(api)?;
 
@@ -613,7 +612,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::burn_internal(bucket, api)
     }
@@ -621,14 +620,14 @@ impl FungibleResourceManagerBlueprint {
     /// Only callable within this package - this is to allow the burning of tokens from a vault.
     pub(crate) fn package_burn<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::burn_internal(bucket, api)
     }
 
     fn burn_internal<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::assert_burnable(api)?;
 
@@ -678,7 +677,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn drop_empty_bucket<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -695,14 +694,14 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn create_empty_bucket<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::create_bucket(0.into(), api)
     }
 
     pub(crate) fn create_bucket<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
@@ -717,7 +716,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn create_empty_vault<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let mut fields: IndexMap<FieldIndex, FieldValue> = indexmap! {
             FungibleVaultField::Balance.into() => FieldValue::new(&FungibleVaultBalanceFieldPayload::from_content_source(
@@ -747,7 +746,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn get_resource_type<Y>(api: &mut Y) -> Result<ResourceType, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -767,7 +766,7 @@ impl FungibleResourceManagerBlueprint {
 
     pub(crate) fn get_total_supply<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
@@ -795,7 +794,7 @@ impl FungibleResourceManagerBlueprint {
         withdraw_strategy: WithdrawStrategy,
     ) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let divisibility_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -820,7 +819,7 @@ impl FungibleResourceManagerBlueprint {
 
     fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
@@ -842,7 +841,7 @@ impl FungibleResourceManagerBlueprint {
 
     fn assert_burnable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,

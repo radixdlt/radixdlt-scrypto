@@ -31,7 +31,13 @@ pub enum GlobalTypeAddress {
 /// Note - this type provides scoping to a schema even for well-known types where
 /// the schema is irrelevant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sbor)]
-pub struct FullyScopedTypeId<T: Into<NodeId>>(pub T, pub SchemaHash, pub LocalTypeId);
+pub struct FullyScopedTypeId<T: AsRef<NodeId>>(pub T, pub SchemaHash, pub LocalTypeId);
+
+impl<T: AsRef<NodeId>> FullyScopedTypeId<T> {
+    pub fn into_general(self) -> FullyScopedTypeId<NodeId> {
+        FullyScopedTypeId(*self.0.as_ref(), self.1, self.2)
+    }
+}
 
 /// An identifier for a type in the context of a schema.
 ///
@@ -48,7 +54,7 @@ pub struct FullyScopedTypeId<T: Into<NodeId>>(pub T, pub SchemaHash, pub LocalTy
 pub struct ScopedTypeId(pub SchemaHash, pub LocalTypeId);
 
 impl ScopedTypeId {
-    pub fn under_node<T: Into<NodeId>>(self, node: T) -> FullyScopedTypeId<T> {
+    pub fn under_node<T: AsRef<NodeId>>(self, node: T) -> FullyScopedTypeId<T> {
         FullyScopedTypeId(node, self.0, self.1)
     }
 }

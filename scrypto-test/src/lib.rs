@@ -48,14 +48,14 @@
 //! transaction instructions, processor, and worktop at all. In fact, **nothing** related to
 //! transactions exists in this model. Instead, there exists a [`TestEnvironment`] struct that each
 //! test can instantiate instances of. Each [`TestEnvironment`] instance has a substate store,
-//! track, and kernel. On top of that, [`TestEnvironment`] implements the [`ClientApi`] trait. The
+//! track, and kernel. On top of that, [`TestEnvironment`] implements the [`SystemApi`] trait. The
 //! [`TestEnvironment`] can be looked at as self-contained Radix Engine that’s exposed through the
-//! [`ClientApi`] and that has some other high-level helper methods as it contains all of the layers
+//! [`SystemApi`] and that has some other high-level helper methods as it contains all of the layers
 //! of the engine. This means that:
 //!
 //! * A [`TestEnvironment`] instance is a self-contained instance of the Radix Engine and Kernel
-//!   which are exposed through the [`ClientApi`].
-//! * Since [`TestEnvironment`] implements the [`ClientApi`] it can be used as a substitute to
+//!   which are exposed through the [`SystemApi`].
+//! * Since [`TestEnvironment`] implements the [`SystemApi`] it can be used as a substitute to
 //!   ScryptoEnv from Scrypto and the SystemService from native. This means that the simple
 //!   interface seen in the radix_native_sdk crate can be used within tests.
 //! * If each test has it’s own [`TestEnvironment`] instance (they instantiate that themselves if
@@ -78,7 +78,7 @@
 //!    to this Call Frame. We are now able to call methods such as resource_address() and amount()
 //!    on this Bucket since it’s a node we own and the [`TestEnvironment`] has a Heap.
 //!
-//! [`ClientApi`]: crate::prelude::ClientApi
+//! [`SystemApi`]: crate::prelude::SystemApi
 //! [`TestEnvironment`]: crate::prelude::TestEnvironment
 
 pub mod environment;

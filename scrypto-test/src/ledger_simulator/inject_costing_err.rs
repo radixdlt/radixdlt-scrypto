@@ -2,7 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
+use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, StableReferenceType};
 use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi, SystemState,
@@ -88,7 +88,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 
-    type Init = InjectCostingErrorInput<SystemInit<K::InitInput>>;
+    type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
@@ -105,6 +105,14 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         };
 
         Ok(Self { fail_after, system })
+    }
+
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        self.system.verify_boot_ref_value(node_id, value)
     }
 
     fn start<Y>(
@@ -249,15 +257,6 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         System::before_invoke(invocation, &mut api)
     }
 
-    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::after_invoke(output, &mut api)
-    }
-
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
@@ -265,24 +264,6 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_execution_start(&mut api)
-    }
-
-    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::on_execution_finish(message, &mut api)
-    }
-
-    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::on_allocate_node_id(entity_type, &mut api)
     }
 
     fn invoke_upstream<Y>(
@@ -304,6 +285,33 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::auto_drop(nodes, &mut api)
+    }
+
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_api!(api);
+        System::on_execution_finish(message, &mut api)
+    }
+
+    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_api!(api);
+        System::after_invoke(output, &mut api)
+    }
+
+    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_api!(api);
+        System::on_allocate_node_id(entity_type, &mut api)
     }
 
     fn on_mark_substate_as_transient(
@@ -338,37 +346,6 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_drop_node_mut(node_id, &mut api)
-    }
-
-    fn on_move_node<Y>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::on_move_node(
-            node_id,
-            is_moving_down,
-            is_to_barrier,
-            destination_blueprint_id,
-            &mut api,
-        )
-    }
-
-    fn on_ref_check<Y>(
-        _api: &mut Y,
-        _event: radix_engine::kernel::kernel_callback_api::RefCheckEvent,
-    ) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self>,
-    {
-        Ok(())
     }
 }
 

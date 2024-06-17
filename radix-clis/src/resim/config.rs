@@ -1,8 +1,6 @@
 use crate::resim::*;
 use radix_common::prelude::*;
-use radix_engine::updates::ProtocolUpdates;
-use radix_substate_store_interface::db_key_mapper::*;
-use radix_substate_store_interface::interface::*;
+use radix_engine::updates::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -13,6 +11,7 @@ pub struct SimulatorEnvironment {
     pub db: RocksdbSubstateStore,
     // VMs
     pub scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    pub network_definition: NetworkDefinition,
 }
 
 impl SimulatorEnvironment {
@@ -23,7 +22,11 @@ impl SimulatorEnvironment {
         // Create the VMs
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
 
-        let mut env = Self { db, scrypto_vm };
+        let mut env = Self {
+            db,
+            scrypto_vm,
+            network_definition: NetworkDefinition::simulator(),
+        };
         env.bootstrap();
 
         Ok(env)
@@ -42,17 +45,14 @@ impl SimulatorEnvironment {
         let vm = VmInit::new(&self.scrypto_vm, NoExtension);
 
         // Bootstrap
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut self.db, vm, false)
+        Bootstrapper::new(self.network_definition.clone(), &mut self.db, vm, false)
             .bootstrap_test_default();
 
-        // Run the protocol updates - unlike the test runner, the user has no way in whether they
+        // Run the protocol updates - for now, unlike the test runner, the user has no way in whether they
         // get these protocol updates or not.
-        for state_updates in
-            ProtocolUpdates::all().generate_state_updates(&self.db, &NetworkDefinition::simulator())
-        {
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.db.commit(&db_updates);
-        }
+        ProtocolBuilder::for_network(&self.network_definition)
+            .until_latest_protocol_version()
+            .commit_each_protocol_update(&mut self.db);
     }
 }
 

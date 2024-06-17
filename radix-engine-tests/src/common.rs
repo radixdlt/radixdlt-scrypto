@@ -38,6 +38,7 @@ pub mod package_loader {
 pub mod package_loader {
     use radix_common::prelude::*;
     use radix_substate_store_queries::typed_substate_layout::*;
+    use scrypto_test::ledger_simulator::CompileProfile;
     use std::path::PathBuf;
 
     pub struct PackageLoader;
@@ -45,7 +46,7 @@ pub mod package_loader {
         pub fn get(name: &str) -> (Vec<u8>, PackageDefinition) {
             let manifest_dir = PathBuf::from_str(env!("CARGO_MANIFEST_DIR")).unwrap();
             let package_dir = manifest_dir.join("assets").join("blueprints").join(name);
-            scrypto_test::prelude::Compile::compile(package_dir)
+            scrypto_test::prelude::Compile::compile(package_dir, CompileProfile::FastWithTraceLogs)
         }
     }
 }
@@ -78,19 +79,6 @@ pub mod path_macros {
     }
 
     #[macro_export]
-    macro_rules! path_workspace_blueprint {
-        ($package: expr, $name: expr) => {
-            concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../",
-                $package,
-                "/assets/blueprints/",
-                $name
-            )
-        };
-    }
-
-    #[macro_export]
     macro_rules! path_workspace_transaction_examples {
         ($name: expr) => {
             concat!(
@@ -115,18 +103,16 @@ pub mod path_macros {
         };
     }
 
-    #[macro_export]
-    macro_rules! path_local_metering_assets {
-        ($folder: expr) => {
-            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/metering/", $folder)
-        };
+    // Not a macro, because it needs to support a variable folder, but here
+    // for consistency
+    pub fn path_local_metering_assets(folder: &str) -> String {
+        format!("{}/assets/metering/{}", env!("CARGO_MANIFEST_DIR"), folder)
     }
 
     pub use crate::include_local_wasm_str;
     pub use crate::include_workspace_asset_bytes;
     pub use crate::include_workspace_transaction_examples_str;
     pub use crate::path_local_blueprint;
-    pub use crate::path_workspace_blueprint;
     pub use crate::path_workspace_transaction_examples;
 }
 

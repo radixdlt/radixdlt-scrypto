@@ -18,7 +18,7 @@ use radix_engine::system::system_modules::transaction_runtime::TransactionRuntim
 use radix_engine::system::system_modules::*;
 use radix_engine::track::*;
 use radix_engine::transaction::*;
-use radix_engine::updates::ProtocolUpdates;
+use radix_engine::updates::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::package::*;
@@ -53,8 +53,8 @@ where
     /// Specifies whether the builder should run genesis and bootstrap the environment or not.
     bootstrap: bool,
 
-    /// The protocol updates the the user has opt in to get. This defaults to all true.
-    protocol_updates: ProtocolUpdates,
+    /// The protocol updates the the user wishes to execute. This defaults to all.
+    protocol_executor: ProtocolExecutor,
 }
 
 impl Default for TestEnvironmentBuilder<InMemorySubstateDatabase> {
@@ -70,7 +70,7 @@ impl TestEnvironmentBuilder<InMemorySubstateDatabase> {
             flash_database: FlashSubstateDatabase::standard(),
             added_global_references: Default::default(),
             bootstrap: true,
-            protocol_updates: ProtocolUpdates::all(),
+            protocol_executor: ProtocolBuilder::for_simulator().until_latest_protocol_version(),
         }
     }
 }
@@ -178,12 +178,15 @@ where
             added_global_references: self.added_global_references,
             flash_database: self.flash_database,
             bootstrap: self.bootstrap,
-            protocol_updates: self.protocol_updates,
+            protocol_executor: self.protocol_executor,
         }
     }
 
-    pub fn protocol_updates(mut self, protocol_updates: ProtocolUpdates) -> Self {
-        self.protocol_updates = protocol_updates;
+    pub fn with_protocol(
+        mut self,
+        executor: impl FnOnce(ProtocolBuilder) -> ProtocolExecutor,
+    ) -> Self {
+        self.protocol_executor = executor(ProtocolBuilder::for_simulator());
         self
     }
 
@@ -213,13 +216,8 @@ where
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
 
         // Determine if any protocol updates need to be run against the database.
-        for state_updates in self
-            .protocol_updates
-            .generate_state_updates(&self.database, &NetworkDefinition::simulator())
-        {
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.database.commit(&db_updates);
-        }
+        self.protocol_executor
+            .commit_each_protocol_update(&mut self.database);
 
         // If a flash is specified execute it.
         let database_updates = self.flash_database.database_updates();
@@ -264,13 +262,9 @@ where
                     fee_table: FeeTable::new(),
                     tx_payload_len: 0,
                     tx_num_of_signature_validations: 0,
-                    max_per_function_royalty_in_xrd: Decimal::try_from(
-                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-                    )
-                    .unwrap(),
+                    config: CostingModuleConfig::babylon_genesis(),
                     cost_breakdown: Some(Default::default()),
                     on_apply_cost: Default::default(),
-                    apply_additional_costing: false,
                 };
 
                 System {

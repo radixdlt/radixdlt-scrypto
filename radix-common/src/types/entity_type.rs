@@ -38,10 +38,10 @@ pub enum EntityType {
     /// A global generic (eg scrypto) component entity (192 in decimal). Gives Bech32 prefix: `c` followed by one of `q`, `p`, `z` or `r`.
     GlobalGenericComponent = 0b11000000, //---------- 11000 => c, 000xx => qpzr [cpt vanity prefix] (000 = generic component)
 
-    /// A global non-virtual native account component entity (193 in decimal). Gives Bech32 prefix: `c` followed by one of `y`, `9`, `x` or `8`.
+    /// A global allocated native account component entity (193 in decimal). Gives Bech32 prefix: `c` followed by one of `y`, `9`, `x` or `8`.
     GlobalAccount = 0b11000001, //------------------- 11000 => c, 001xx => y9x8 (001 = account)
 
-    /// A global non-virtual native identity component entity (194 in decimal). Gives Bech32 prefix: `c` followed by one of `g`, `f`, `2` or `t`.
+    /// A global allocated native identity component entity (194 in decimal). Gives Bech32 prefix: `c` followed by one of `g`, `f`, `2` or `t`.
     GlobalIdentity = 0b11000010, //------------------ 11000 => c, 010xx => gf2t (010 = identity)
 
     /// A global native access controller entity (195 in decimal). Gives Bech32 prefix: `c` followed by one of `v`, `d`, `w` or `0`.
@@ -63,22 +63,22 @@ pub enum EntityType {
     GlobalAccountLocker = 0b01101000, //--------- 01101 => d, 000xx => qpzr (000 = account locker)
 
     //=========================================================================
-    // Secp256k1 Virtual Global Components (start with char 6 for Secp256k1)
+    // Secp256k1 Preallocated Global Components (start with char 6 for Secp256k1)
     //=========================================================================
-    /// A global virtual Secp256k1 account component entity (209 in decimal). Gives Bech32 prefix: `6` followed by one of `y`, `9`, `x` or `8`.
-    GlobalVirtualSecp256k1Account = 0b11010001, //--- 11010 => 6, 001xx => y9x8 (001 = account)
+    /// A global preallocated Secp256k1 account component entity (209 in decimal). Gives Bech32 prefix: `6` followed by one of `y`, `9`, `x` or `8`.
+    GlobalPreallocatedSecp256k1Account = 0b11010001, //--- 11010 => 6, 001xx => y9x8 (001 = account)
 
-    /// A global virtual Secp256k1 identity component entity (210 in decimal). Gives Bech32 prefix: `6` followed by one of `g`, `f`, `2` or `t`.
-    GlobalVirtualSecp256k1Identity = 0b11010010, //-- 11010 => 6, 010xx => gf2t (010 = identity)
+    /// A global preallocated Secp256k1 identity component entity (210 in decimal). Gives Bech32 prefix: `6` followed by one of `g`, `f`, `2` or `t`.
+    GlobalPreallocatedSecp256k1Identity = 0b11010010, //-- 11010 => 6, 010xx => gf2t (010 = identity)
 
     //=========================================================================
-    // Ed25519 Virtual Global Components (start with char 2 for Ed25519)
+    // Ed25519 Preallocated Global Components (start with char 2 for Ed25519)
     //=========================================================================
-    /// A global virtual Ed25519 account component entity (81 in decimal). Gives Bech32 prefix: `2` followed by one of `y`, `9`, `x` or `8`.
-    GlobalVirtualEd25519Account = 0b01010001, //----- 01010 => 2, 001xx => y9x8 (001 = account)
+    /// A global preallocated Ed25519 account component entity (81 in decimal). Gives Bech32 prefix: `2` followed by one of `y`, `9`, `x` or `8`.
+    GlobalPreallocatedEd25519Account = 0b01010001, //----- 01010 => 2, 001xx => y9x8 (001 = account)
 
-    /// A global virtual Ed25519 identity component entity (82 in decimal). Gives Bech32 prefix: `2` followed by one of `g`, `f`, `2` or `t`.
-    GlobalVirtualEd25519Identity = 0b01010010, //---- 01010 => 2, 010xx => gf2t (010 = identity)
+    /// A global preallocated Ed25519 identity component entity (82 in decimal). Gives Bech32 prefix: `2` followed by one of `g`, `f`, `2` or `t`.
+    GlobalPreallocatedEd25519Identity = 0b01010010, //---- 01010 => 2, 010xx => gf2t (010 = identity)
 
     //=========================================================================
     // Fungible-related (start with letter t for token)
@@ -125,10 +125,10 @@ impl EntityType {
             | EntityType::GlobalAccount
             | EntityType::GlobalIdentity
             | EntityType::GlobalGenericComponent
-            | EntityType::GlobalVirtualSecp256k1Account
-            | EntityType::GlobalVirtualEd25519Account
-            | EntityType::GlobalVirtualSecp256k1Identity
-            | EntityType::GlobalVirtualEd25519Identity
+            | EntityType::GlobalPreallocatedSecp256k1Account
+            | EntityType::GlobalPreallocatedEd25519Account
+            | EntityType::GlobalPreallocatedSecp256k1Identity
+            | EntityType::GlobalPreallocatedEd25519Identity
             | EntityType::GlobalOneResourcePool
             | EntityType::GlobalTwoResourcePool
             | EntityType::GlobalMultiResourcePool
@@ -153,10 +153,10 @@ impl EntityType {
             | EntityType::GlobalAccount
             | EntityType::GlobalIdentity
             | EntityType::GlobalGenericComponent
-            | EntityType::GlobalVirtualSecp256k1Account
-            | EntityType::GlobalVirtualEd25519Account
-            | EntityType::GlobalVirtualSecp256k1Identity
-            | EntityType::GlobalVirtualEd25519Identity
+            | EntityType::GlobalPreallocatedSecp256k1Account
+            | EntityType::GlobalPreallocatedEd25519Account
+            | EntityType::GlobalPreallocatedSecp256k1Identity
+            | EntityType::GlobalPreallocatedEd25519Identity
             | EntityType::GlobalOneResourcePool
             | EntityType::GlobalTwoResourcePool
             | EntityType::GlobalMultiResourcePool
@@ -202,10 +202,10 @@ impl EntityType {
 
     pub const fn is_global_virtual(&self) -> bool {
         match self {
-            EntityType::GlobalVirtualSecp256k1Account
-            | EntityType::GlobalVirtualEd25519Account
-            | EntityType::GlobalVirtualSecp256k1Identity
-            | EntityType::GlobalVirtualEd25519Identity => true,
+            EntityType::GlobalPreallocatedSecp256k1Account
+            | EntityType::GlobalPreallocatedEd25519Account
+            | EntityType::GlobalPreallocatedSecp256k1Identity
+            | EntityType::GlobalPreallocatedEd25519Identity => true,
             _ => false,
         }
     }

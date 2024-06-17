@@ -81,6 +81,16 @@ lazy_static! {
 
         known_enum!(
             m,
+            enum CompositeRequirement {
+                BasicRequirement = 0;
+                AnyOf = 1;
+                AllOf = 2;
+            }
+        );
+
+        // Replaced by CompositeRequirement, left for backward compatibility
+        known_enum!(
+            m,
             enum AccessRuleNode {
                 ProofRule = 0;
                 AnyOf = 1;
@@ -88,6 +98,18 @@ lazy_static! {
             }
         );
 
+        known_enum!(
+            m,
+            enum BasicRequirement {
+                Require = 0;
+                AmountOf = 1;
+                CountOf = 2;
+                AllOf = 3;
+                AnyOf = 4;
+            }
+        );
+
+        // Replaced by BasicRequirement, left for backward compatibility
         known_enum!(
             m,
             enum ProofRule {

@@ -30,13 +30,13 @@ use radix_blueprint_schema_init::{Condition, KeyValueStoreGenericSubstitutions};
 #[cfg(not(feature = "alloc"))]
 use radix_common_derive::*;
 use radix_engine_interface::api::actor_api::EventFlags;
-use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
+use radix_engine_interface::api::actor_index_api::SystemActorIndexApi;
 use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
-    ClientKeyValueEntryApi, KeyValueEntryHandle,
+    KeyValueEntryHandle, SystemKeyValueEntryApi,
 };
 use radix_engine_interface::api::key_value_store_api::{
-    ClientKeyValueStoreApi, KeyValueStoreDataSchema,
+    KeyValueStoreDataSchema, SystemKeyValueStoreApi,
 };
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::*;
@@ -1113,7 +1113,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientFieldApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemFieldApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -1206,7 +1206,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientObjectApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemObjectApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -1595,7 +1595,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -1734,7 +1734,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemKeyValueStoreApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -1888,7 +1888,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientActorIndexApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemActorIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2022,7 +2022,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientActorSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemActorSortedIndexApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2142,7 +2142,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemBlueprintApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2190,7 +2190,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientCostingApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemCostingApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2229,6 +2229,21 @@ where
                 },
                 ClientCostingEntry::PrepareWasmCode { size } => {
                     ExecutionCostingEntry::PrepareWasmCode { size }
+                }
+                ClientCostingEntry::Bls12381V1Verify { size } => {
+                    ExecutionCostingEntry::Bls12381V1Verify { size }
+                }
+                ClientCostingEntry::Bls12381V1AggregateVerify { sizes } => {
+                    ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes }
+                }
+                ClientCostingEntry::Bls12381V1FastAggregateVerify { size, keys_cnt } => {
+                    ExecutionCostingEntry::Bls12381V1FastAggregateVerify { size, keys_cnt }
+                }
+                ClientCostingEntry::Bls12381G2SignatureAggregate { signatures_cnt } => {
+                    ExecutionCostingEntry::Bls12381G2SignatureAggregate { signatures_cnt }
+                }
+                ClientCostingEntry::Keccak256Hash { size } => {
+                    ExecutionCostingEntry::Keccak256Hash { size }
                 }
             })
     }
@@ -2379,7 +2394,7 @@ where
     fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_after_update(ExecutionCostingEntry::QueryFeeReserve)
+                .apply_execution_cost_2(ExecutionCostingEntry::QueryFeeReserve)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
         }
 
@@ -2395,9 +2410,9 @@ where
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, RuntimeError> {
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_after_update(ExecutionCostingEntry::QueryCostingModule)
+                .apply_execution_cost_2(ExecutionCostingEntry::QueryCostingModule)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
-            Ok(costing.max_per_function_royalty_in_xrd)
+            Ok(costing.config.max_per_function_royalty_in_xrd)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
@@ -2440,7 +2455,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientActorApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemActorApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2661,7 +2676,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemActorKeyValueEntryApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2754,7 +2769,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2774,7 +2789,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemTransactionRuntimeApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,
@@ -2815,7 +2830,7 @@ where
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_after_update(ExecutionCostingEntry::EncodeBech32Address)
+                .apply_execution_cost_2(ExecutionCostingEntry::EncodeBech32Address)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
         }
 
@@ -2869,99 +2884,7 @@ where
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y, V> ClientCryptoUtilsApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<System<V>>,
-    V: SystemCallbackObject,
-{
-    #[trace_resources(log=message.len())]
-    fn bls12381_v1_verify(
-        &mut self,
-        message: &[u8],
-        public_key: &Bls12381G1PublicKey,
-        signature: &Bls12381G2Signature,
-    ) -> Result<u32, RuntimeError> {
-        self.api.kernel_get_system().modules.apply_execution_cost(
-            ExecutionCostingEntry::Bls12381V1Verify {
-                size: message.len(),
-            },
-        )?;
-        Ok(verify_bls12381_v1(message, public_key, signature) as u32)
-    }
-
-    // Trace average message length and number of public_keys
-    #[trace_resources(log={pub_keys_and_msgs.iter().flat_map(|(_, msg)| msg).count()/pub_keys_and_msgs.len()},log=pub_keys_and_msgs.len())]
-    fn bls12381_v1_aggregate_verify(
-        &mut self,
-        pub_keys_and_msgs: &[(Bls12381G1PublicKey, Vec<u8>)],
-        signature: &Bls12381G2Signature,
-    ) -> Result<u32, RuntimeError> {
-        if !pub_keys_and_msgs.is_empty() {
-            let sizes: Vec<usize> = pub_keys_and_msgs.iter().map(|(_, msg)| msg.len()).collect();
-            self.api.kernel_get_system().modules.apply_execution_cost(
-                ExecutionCostingEntry::Bls12381V1AggregateVerify {
-                    sizes: sizes.as_slice(),
-                },
-            )?;
-            Ok(aggregate_verify_bls12381_v1(pub_keys_and_msgs, signature) as u32)
-        } else {
-            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
-        }
-    }
-
-    #[trace_resources(log=message.len(), log=public_keys.len())]
-    fn bls12381_v1_fast_aggregate_verify(
-        &mut self,
-        message: &[u8],
-        public_keys: &[Bls12381G1PublicKey],
-        signature: &Bls12381G2Signature,
-    ) -> Result<u32, RuntimeError> {
-        if !public_keys.is_empty() {
-            self.api.kernel_get_system().modules.apply_execution_cost(
-                ExecutionCostingEntry::Bls12381V1FastAggregateVerify {
-                    size: message.len(),
-                    keys_cnt: public_keys.len(),
-                },
-            )?;
-            Ok(fast_aggregate_verify_bls12381_v1(message, public_keys, signature) as u32)
-        } else {
-            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
-        }
-    }
-
-    #[trace_resources(log=signatures.len())]
-    fn bls12381_g2_signature_aggregate(
-        &mut self,
-        signatures: &[Bls12381G2Signature],
-    ) -> Result<Bls12381G2Signature, RuntimeError> {
-        if !signatures.is_empty() {
-            self.api.kernel_get_system().modules.apply_execution_cost(
-                ExecutionCostingEntry::Bls12381G2SignatureAggregate {
-                    signatures_cnt: signatures.len(),
-                },
-            )?;
-            Bls12381G2Signature::aggregate(signatures)
-                .map_err(|err| RuntimeError::SystemError(SystemError::BlsError(err.to_string())))
-        } else {
-            Err(RuntimeError::SystemError(SystemError::InputDataEmpty))
-        }
-    }
-
-    #[trace_resources(log=data.len())]
-    fn keccak256_hash(&mut self, data: &[u8]) -> Result<Hash, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(ExecutionCostingEntry::Keccak256Hash { size: data.len() })?;
-        Ok(keccak256_hash(data))
-    }
-}
-
-#[cfg_attr(
-    feature = "std",
-    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
-)]
-impl<'a, Y, V> ClientApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> SystemApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<System<V>>,
     V: SystemCallbackObject,

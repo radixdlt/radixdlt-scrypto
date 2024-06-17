@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::UnstakeData;
 use radix_engine::blueprints::consensus_manager::{
@@ -38,7 +37,7 @@ fn genesis_epoch_has_correct_initial_validators() {
             .unwrap()
             .public_key();
         keys.insert(pub_key.clone(), k);
-        let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+        let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
         accounts.push(validator_account_address);
         validators.push(GenesisValidator {
             key: pub_key,
@@ -554,7 +553,7 @@ fn register_validator_with_auth_succeeds() {
     // Arrange
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
@@ -592,7 +591,7 @@ fn register_validator_without_auth_fails() {
     // Arrange
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
@@ -627,7 +626,7 @@ fn unregister_validator_with_auth_succeeds() {
     // Arrange
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
@@ -665,7 +664,7 @@ fn unregister_validator_without_auth_fails() {
     // Arrange
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
@@ -699,7 +698,7 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     // Arrange
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+    let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
@@ -1006,7 +1005,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         validator_pub_key,
         validator_initial_stake,
         Decimal::ZERO,
-        ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
+        ComponentAddress::preallocated_account_from_public_key(&validator_pub_key),
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_epoch_change_condition(EpochChangeCondition {
@@ -1099,7 +1098,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         validator_pub_key,
         validator_stake,
         Decimal::ZERO,
-        ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
+        ComponentAddress::preallocated_account_from_public_key(&validator_pub_key),
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_epoch_change_condition(EpochChangeCondition {
@@ -1175,7 +1174,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     let emission_xrd_per_epoch = dec!("1000.0"); // to avoid rounding errors
     let next_epoch_fee_factor = dec!("0.25"); // for easier asserts
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         initial_stake_amount,
@@ -1331,7 +1330,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let emission_xrd_per_epoch = dec!("2.0");
     let increased_fee_factor = dec!("0.25");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         initial_stake_amount,
@@ -1482,7 +1481,7 @@ fn create_custom_genesis(
         let pub_key = Secp256k1PrivateKey::from_u64(k.try_into().unwrap())
             .unwrap()
             .public_key();
-        let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+        let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
 
         accounts.push(validator_account_address);
         validators.push(GenesisValidator {
@@ -1513,7 +1512,7 @@ fn create_custom_genesis(
             Secp256k1PrivateKey::from_u64((validator_account_index + 1 + i).try_into().unwrap())
                 .unwrap()
                 .public_key();
-        let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+        let account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
         pub_key_accounts.push((pub_key, account_address));
         xrd_balances.push((account_address, accounts_xrd_balance));
     }
@@ -1871,7 +1870,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let rounds_per_epoch = 2;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account_address =
-        ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
+        ComponentAddress::preallocated_account_from_public_key(&validator_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key.clone(),
         Decimal::one(),
@@ -1926,7 +1925,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let rounds_per_epoch = 2;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account_address =
-        ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
+        ComponentAddress::preallocated_account_from_public_key(&validator_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key.clone(),
         Decimal::one(),
@@ -1989,7 +1988,7 @@ fn cannot_claim_unstake_immediately() {
     let genesis_epoch = Epoch::of(5);
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
@@ -2037,7 +2036,7 @@ fn can_claim_unstake_after_epochs() {
     let num_unstake_epochs = 7;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
@@ -2089,7 +2088,7 @@ fn owner_can_lock_stake_units() {
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         total_stake_amount,
@@ -2155,7 +2154,7 @@ fn owner_can_start_unlocking_stake_units() {
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amount = dec!("0.1");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         total_stake_amount,
@@ -2257,7 +2256,7 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amount = dec!("0.1");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         total_stake_amount,
@@ -2342,7 +2341,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amounts = vec![dec!("0.1"), dec!("0.3"), dec!("1.2")];
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         total_stake_amount,
@@ -2459,7 +2458,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .checked_add(stake_units_to_unlock_next_amount)
         .unwrap();
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         total_stake_amount,
@@ -2582,7 +2581,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amount = dec!("0.1");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         total_stake_amount,
@@ -2706,7 +2705,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     let stake_units_to_lock_amount = dec!("2.2");
     let stake_units_to_unlock_amount = dec!("0.1");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         total_stake_amount,
@@ -2821,7 +2820,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let rounds_per_epoch = 2;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
 
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
@@ -2966,7 +2965,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
                 initial_current_leader: Some(0),
             }),
         }],
-        btreeset![AuthAddresses::system_role()],
+        btreeset![system_execution(SystemExecution::Protocol)],
         pre_allocated_addresses,
     );
 
@@ -2989,7 +2988,7 @@ fn test_tips_and_fee_distribution_single_validator() {
     let initial_stake_amount = dec!("100");
     let emission_xrd_per_epoch = dec!("0");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         initial_stake_amount,
@@ -3054,7 +3053,7 @@ fn test_tips_and_fee_distribution_two_validators() {
     let validator1_key = Secp256k1PrivateKey::from_u64(5u64).unwrap().public_key();
     let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
     let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
-    let staker_account = ComponentAddress::virtual_account_from_public_key(&staker_key);
+    let staker_account = ComponentAddress::preallocated_account_from_public_key(&staker_key);
     let genesis = CustomGenesis::validators_and_single_staker(
         vec![
             (validator1_key, initial_stake_amount1),
@@ -3147,7 +3146,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
         .map(|key| {
             // Validator owner defaults to a virtual account
             // corresponding to its public key
-            ComponentAddress::virtual_account_from_public_key(key)
+            ComponentAddress::preallocated_account_from_public_key(key)
         })
         .collect();
     let staker_key = Secp256k1PrivateKey::from_u64(10u64).unwrap().public_key();
@@ -3158,7 +3157,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
             (validators_keys[2], dec!("10")),
             (validators_keys[3], dec!("3")), // 3/33 == just below 10% stake
         ],
-        ComponentAddress::virtual_account_from_public_key(&staker_key),
+        ComponentAddress::preallocated_account_from_public_key(&staker_key),
         Decimal::ZERO,
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
@@ -3253,7 +3252,7 @@ fn cannot_unstake_with_wrong_resource() {
     let num_unstake_epochs = 7;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
@@ -3294,7 +3293,7 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
     let num_unstake_epochs = 7;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
@@ -3400,7 +3399,7 @@ fn can_stake_with_zero_bucket() {
     let num_unstake_epochs = 7;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
@@ -3438,7 +3437,7 @@ fn can_unstake_with_zero_bucket() {
     let num_unstake_epochs = 7;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
@@ -3478,7 +3477,7 @@ fn can_claim_unstake_after_epochs_with_zero_bucket() {
     let num_unstake_epochs = 7;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
@@ -3528,7 +3527,7 @@ fn can_lock_owner_stake_with_zero_bucket() {
     // Arrange
     let total_stake_amount = dec!("10.5");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
-    let validator_account = ComponentAddress::virtual_account_from_public_key(&validator_key);
+    let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_key,
         total_stake_amount,
@@ -3584,7 +3583,7 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
     let validator1_key = Secp256k1PrivateKey::from_u64(5u64).unwrap().public_key();
     let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
     let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
-    let staker_account = ComponentAddress::virtual_account_from_public_key(&staker_key);
+    let staker_account = ComponentAddress::preallocated_account_from_public_key(&staker_key);
     let genesis = CustomGenesis::validators_and_single_staker(
         vec![
             (validator1_key, initial_stake_amount1),

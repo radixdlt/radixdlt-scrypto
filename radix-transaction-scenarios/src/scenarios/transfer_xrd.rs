@@ -4,9 +4,9 @@ use crate::internal_prelude::*;
 
 #[allow(deprecated)]
 pub struct TransferXrdConfig {
-    pub from_account: VirtualAccount,
-    pub to_account_1: VirtualAccount,
-    pub to_account_2: VirtualAccount,
+    pub from_account: PreallocatedAccount,
+    pub to_account_1: PreallocatedAccount,
+    pub to_account_2: PreallocatedAccount,
 }
 
 impl Default for TransferXrdConfig {
@@ -19,26 +19,26 @@ impl Default for TransferXrdConfig {
     }
 }
 
-pub enum TransferXrdScenarioCreator {}
+pub struct TransferXrdScenarioCreator;
 
 impl ScenarioCreator for TransferXrdScenarioCreator {
     type Config = TransferXrdConfig;
     type State = ();
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
-    #[allow(deprecated)]
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "transfer_xrd",
+        protocol_min_requirement: ProtocolVersion::Babylon,
+        testnet_run_at: Some(ProtocolVersion::Babylon),
+    };
+
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "transfer_xrd",
-        };
-
         #[allow(unused_variables)]
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction(|core, config, state| {
                 core.next_transaction_free_xrd_from_faucet(config.from_account.address)
             })

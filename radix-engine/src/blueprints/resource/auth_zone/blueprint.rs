@@ -6,7 +6,7 @@ use crate::system::node_init::type_info_partition;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResult};
 use crate::system::type_info::TypeInfoSubstate;
-use radix_engine_interface::api::{ClientApi, LockFlags, ACTOR_REF_SELF, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{LockFlags, SystemApi, ACTOR_REF_SELF, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::resource::NativeProof;
@@ -23,7 +23,7 @@ pub struct AuthZoneBlueprint;
 impl AuthZoneBlueprint {
     pub fn pop<Y>(api: &mut Y) -> Result<Option<Proof>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -40,7 +40,7 @@ impl AuthZoneBlueprint {
 
     pub fn push<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -63,7 +63,7 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -131,7 +131,7 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -174,7 +174,7 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<Proof, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -218,7 +218,7 @@ impl AuthZoneBlueprint {
 
     pub fn drop_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::drop_signature_proofs(api)?;
         Self::drop_regular_proofs(api)?;
@@ -227,7 +227,7 @@ impl AuthZoneBlueprint {
 
     pub fn drop_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -244,7 +244,7 @@ impl AuthZoneBlueprint {
 
     pub fn drop_regular_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -265,7 +265,7 @@ impl AuthZoneBlueprint {
 
     pub fn drain<Y>(api: &mut Y) -> Result<Vec<Proof>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -285,7 +285,7 @@ impl AuthZoneBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: KernelSubstateApi<L> + SystemApi<RuntimeError>,
     {
         let node_id = api.actor_get_node_id(ACTOR_REF_SELF)?;
         let auth_result =

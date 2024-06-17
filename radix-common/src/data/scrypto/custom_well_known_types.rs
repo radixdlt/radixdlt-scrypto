@@ -446,29 +446,31 @@ create_well_known_lookup!(
                 [
                     (0u8, named_tuple("AllowAll", [])),
                     (1u8, named_tuple("DenyAll", [])),
-                    (2u8, named_tuple("Protected", [ACCESS_RULE_NODE_TYPE])),
+                    (2u8, named_tuple("Protected", [COMPOSITE_REQUIREMENT_TYPE])),
                 ],
             )
         ),
         (
-            ACCESS_RULE_NODE,
+            ///Name of the schema type AccessRuleNode is not changed to CompositeRequirement to preserve backward compatibility.
+            COMPOSITE_REQUIREMENT,
             ROLE_ASSIGNMENT_TYPES_START + 1,
             named_enum(
                 "AccessRuleNode",
                 [
-                    (0u8, named_tuple("ProofRule", [PROOF_RULE_TYPE])),
-                    (1u8, named_tuple("AnyOf", [ACCESS_RULE_NODE_LIST_TYPE])),
-                    (2u8, named_tuple("AllOf", [ACCESS_RULE_NODE_LIST_TYPE])),
+                    (0u8, named_tuple("ProofRule", [BASIC_REQUIREMENT_TYPE])),
+                    (1u8, named_tuple("AnyOf", [COMPOSITE_REQUIREMENT_LIST_TYPE])),
+                    (2u8, named_tuple("AllOf", [COMPOSITE_REQUIREMENT_LIST_TYPE])),
                 ],
             )
         ),
         (
-            ACCESS_RULE_NODE_LIST,
+            COMPOSITE_REQUIREMENT_LIST,
             ROLE_ASSIGNMENT_TYPES_START + 2,
-            array_of(ACCESS_RULE_NODE_TYPE)
+            array_of(COMPOSITE_REQUIREMENT_TYPE)
         ),
         (
-            PROOF_RULE,
+            ///Name of the schema type ProofRule is not changed to BasicRequirement to preserve backward compatibility.
+            BASIC_REQUIREMENT,
             ROLE_ASSIGNMENT_TYPES_START + 3,
             named_enum(
                 "ProofRule",

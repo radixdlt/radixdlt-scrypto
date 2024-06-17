@@ -6,7 +6,7 @@ use crate::internal_prelude::*;
 use crate::{event_schema, roles_template};
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{
-    AttachedModuleId, ClientApi, FieldValue, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT,
+    AttachedModuleId, FieldValue, SystemApi, ACTOR_REF_GLOBAL, ACTOR_STATE_OUTER_OBJECT,
     ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -548,28 +548,28 @@ impl ValidatorBlueprint {
 
     pub fn register<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::register_update(true, api)
     }
 
     pub fn unregister<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::register_update(false, api)
     }
 
     pub fn stake_as_owner<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::stake_internal(xrd_bucket, true, api)
     }
 
     pub fn stake<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::stake_internal(xrd_bucket, false, api)
     }
@@ -580,7 +580,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -645,7 +645,7 @@ impl ValidatorBlueprint {
 
     pub fn unstake<Y>(stake_unit_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let stake_unit_bucket_amount = stake_unit_bucket.amount(api)?;
 
@@ -743,7 +743,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if protocol_version_name.len() != VALIDATOR_PROTOCOL_VERSION_NAME_LEN {
             return Err(RuntimeError::ApplicationError(
@@ -783,7 +783,7 @@ impl ValidatorBlueprint {
 
     pub fn get_protocol_update_readiness<Y>(api: &mut Y) -> Result<Option<String>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -800,7 +800,7 @@ impl ValidatorBlueprint {
 
     fn register_update<Y>(new_registered: bool, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -846,7 +846,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<Option<SortedKey>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let validator_address: ComponentAddress =
             ComponentAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
@@ -886,7 +886,7 @@ impl ValidatorBlueprint {
 
     pub fn claim_xrd<Y>(bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -952,7 +952,7 @@ impl ValidatorBlueprint {
 
     pub fn update_key<Y>(key: Secp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -986,7 +986,7 @@ impl ValidatorBlueprint {
 
     pub fn update_fee<Y>(new_fee_factor: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // check if new fee is valid
         check_validator_fee_factor(new_fee_factor)?;
@@ -1057,7 +1057,7 @@ impl ValidatorBlueprint {
 
     pub fn accepts_delegated_stake<Y>(api: &mut Y) -> Result<bool, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1075,7 +1075,7 @@ impl ValidatorBlueprint {
 
     pub fn total_stake_xrd_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1095,7 +1095,7 @@ impl ValidatorBlueprint {
 
     pub fn total_stake_unit_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1118,7 +1118,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<Decimal, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if amount_of_stake_units.is_negative() || amount_of_stake_units.is_zero() {
             return Err(RuntimeError::ApplicationError(
@@ -1157,7 +1157,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1192,7 +1192,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1218,7 +1218,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // read the current epoch (needed for a drive-by "finish unlocking" of available withdrawals)
         let consensus_manager_handle = api.actor_open_field(
@@ -1296,7 +1296,7 @@ impl ValidatorBlueprint {
     /// none).
     pub fn finish_unlock_owner_stake_units<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // read the current epoch
         let consensus_manager_handle = api.actor_open_field(
@@ -1385,7 +1385,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
@@ -1480,7 +1480,7 @@ impl ValidatorBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
@@ -1556,7 +1556,7 @@ impl ValidatorBlueprint {
 
     fn update_validator<Y>(update: UpdateSecondaryIndex, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match update {
             UpdateSecondaryIndex::Create {
@@ -1629,7 +1629,7 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
-    fn calculate_redemption_value<Y: ClientApi<RuntimeError>>(
+    fn calculate_redemption_value<Y: SystemApi<RuntimeError>>(
         amount_of_stake_units: Decimal,
         validator_substate: &ValidatorSubstate,
         api: &mut Y,
@@ -1730,7 +1730,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let stake_unit_resman = ResourceManager::new_fungible(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
@@ -1766,7 +1766,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError, _>(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
@@ -1804,7 +1804,7 @@ impl ValidatorCreator {
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // check if validator fee is valid
         check_validator_fee_factor(fee_factor)?;

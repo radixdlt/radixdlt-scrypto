@@ -1,5 +1,6 @@
 use radix_engine::errors::*;
 use radix_engine::system::system_modules::auth::*;
+use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::system::system_type_checker::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
@@ -15,7 +16,7 @@ fn account_locker_cant_be_instantiated_before_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_kernel_trace()
-        .with_custom_protocol_updates(ProtocolUpdates::up_to_anemone())
+        .with_protocol_version(ProtocolVersion::Anemone)
         .build();
     let (_, _, account) = ledger.new_account(false);
 
@@ -3032,11 +3033,7 @@ pub impl DefaultLedgerSimulator {
         &mut self,
         manifest: TransactionManifestV1,
     ) -> TransactionReceiptV1 {
-        self.execute_manifest_with_enabled_modules(
-            manifest,
-            true,
-            false,
-        )
+        self.execute_manifest_with_enabled_modules(manifest, true, false)
     }
 
     fn execute_manifest_with_enabled_modules(
@@ -3058,189 +3055,6 @@ pub impl DefaultLedgerSimulator {
         let prepared_transaction = test_transaction.prepare().unwrap();
         let executable = prepared_transaction.get_executable(Default::default());
         self.execute_transaction(executable, execution_config)
-    }
-}
-
-#[test]
-#[ignore = "Not a test, just a quick way to determine how many airdrops we can do in 1 tx."]
-fn airdrops_doable_in_one_transaction_if_all_accounts_accept_deposits() {
-    for airdrops in 1u64.. {
-        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
-        let (pk, _, account) = ledger.new_account(false);
-
-        let keys_and_accounts = (1..=airdrops)
-            .map(|num| Secp256k1PrivateKey::from_u64(num).unwrap())
-            .map(|private_key| {
-                let address =
-                    ComponentAddress::virtual_account_from_public_key(&private_key.public_key());
-                (private_key, address)
-            })
-            .collect::<Vec<_>>();
-
-        let (account_locker, account_locker_badge) = {
-            let commit_result = ledger
-                .execute_manifest(
-                    ManifestBuilder::new()
-                        .lock_fee_from_faucet()
-                        .call_function(
-                            LOCKER_PACKAGE,
-                            ACCOUNT_LOCKER_BLUEPRINT,
-                            ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
-                            AccountLockerInstantiateSimpleManifestInput {
-                                allow_recover: false,
-                            },
-                        )
-                        .try_deposit_entire_worktop_or_abort(account, None)
-                        .build(),
-                    vec![],
-                )
-                .expect_commit_success()
-                .clone();
-
-            let locker = commit_result
-                .new_component_addresses()
-                .first()
-                .copied()
-                .unwrap();
-            let badge = commit_result
-                .new_resource_addresses()
-                .first()
-                .copied()
-                .unwrap();
-
-            (locker, badge)
-        };
-
-        let manifest = ManifestBuilder::new()
-            .lock_fee_from_faucet()
-            .get_free_xrd_from_faucet()
-            .create_proof_from_account_of_amount(account, account_locker_badge, 1)
-            .take_all_from_worktop(XRD, "bucket")
-            .with_bucket("bucket", |builder, bucket| {
-                builder.call_method(
-                    account_locker,
-                    ACCOUNT_LOCKER_AIRDROP_IDENT,
-                    AccountLockerAirdropManifestInput {
-                        claimants: keys_and_accounts
-                            .iter()
-                            .map(|entry| (entry.1, ResourceSpecifier::Fungible(dec!(1))))
-                            .collect(),
-                        bucket,
-                        try_direct_send: true,
-                    },
-                )
-            })
-            .try_deposit_entire_worktop_or_abort(account, None)
-            .build();
-        if ledger
-            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
-            .is_commit_failure()
-        {
-            println!("Max airdrops = {airdrops}");
-            break;
-        }
-    }
-}
-
-#[test]
-#[ignore = "Not a test, just a quick way to determine how many airdrops we can do in 1 tx."]
-fn airdrops_doable_in_one_transaction_if_no_accounts_accept_deposits() {
-    for airdrops in 1u64.. {
-        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
-        let (pk, _, account) = ledger.new_account(false);
-
-        let keys_and_accounts = (1..=airdrops)
-            .map(|num| Secp256k1PrivateKey::from_u64(num).unwrap())
-            .map(|private_key| {
-                let address =
-                    ComponentAddress::virtual_account_from_public_key(&private_key.public_key());
-                (private_key, address)
-            })
-            .collect::<Vec<_>>();
-
-        let manifest = keys_and_accounts
-            .iter()
-            .map(|(_, account)| account)
-            .copied()
-            .fold(
-                ManifestBuilder::new().lock_fee_from_faucet(),
-                |builder, account| {
-                    builder.call_method(
-                        account,
-                        ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
-                        AccountSetDefaultDepositRuleInput {
-                            default: DefaultDepositRule::Reject,
-                        },
-                    )
-                },
-            )
-            .build();
-        ledger
-            .execute_manifest_without_auth(manifest)
-            .expect_commit_success();
-
-        let (account_locker, account_locker_badge) = {
-            let commit_result = ledger
-                .execute_manifest(
-                    ManifestBuilder::new()
-                        .lock_fee_from_faucet()
-                        .call_function(
-                            LOCKER_PACKAGE,
-                            ACCOUNT_LOCKER_BLUEPRINT,
-                            ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
-                            AccountLockerInstantiateSimpleManifestInput {
-                                allow_recover: false,
-                            },
-                        )
-                        .try_deposit_entire_worktop_or_abort(account, None)
-                        .build(),
-                    vec![],
-                )
-                .expect_commit_success()
-                .clone();
-
-            let locker = commit_result
-                .new_component_addresses()
-                .first()
-                .copied()
-                .unwrap();
-            let badge = commit_result
-                .new_resource_addresses()
-                .first()
-                .copied()
-                .unwrap();
-
-            (locker, badge)
-        };
-
-        let manifest = ManifestBuilder::new()
-            .lock_fee_from_faucet()
-            .get_free_xrd_from_faucet()
-            .create_proof_from_account_of_amount(account, account_locker_badge, 1)
-            .take_all_from_worktop(XRD, "bucket")
-            .with_bucket("bucket", |builder, bucket| {
-                builder.call_method(
-                    account_locker,
-                    ACCOUNT_LOCKER_AIRDROP_IDENT,
-                    AccountLockerAirdropManifestInput {
-                        claimants: keys_and_accounts
-                            .iter()
-                            .map(|entry| (entry.1, ResourceSpecifier::Fungible(dec!(1))))
-                            .collect(),
-                        bucket,
-                        try_direct_send: true,
-                    },
-                )
-            })
-            .try_deposit_entire_worktop_or_abort(account, None)
-            .build();
-        if ledger
-            .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
-            .is_commit_failure()
-        {
-            println!("Max airdrops = {airdrops}");
-            break;
-        }
     }
 }
 
@@ -3568,4 +3382,111 @@ fn recover_does_not_accept_an_address_that_is_not_an_account() {
             )) if func_name == ACCOUNT_LOCKER_RECOVER_IDENT
         )
     });
+}
+
+#[test]
+fn exceeding_one_of_the_limits_when_airdropping_returns_the_expected_error() {
+    for airdrops in 1u64.. {
+        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+        let (pk, _, account) = ledger.new_account(false);
+
+        let keys_and_accounts = (1..=airdrops)
+            .map(|num| Secp256k1PrivateKey::from_u64(num).unwrap())
+            .map(|private_key| {
+                let address =
+                    ComponentAddress::preallocated_account_from_public_key(&private_key.public_key());
+                (private_key, address)
+            })
+            .collect::<Vec<_>>();
+
+        let manifest = keys_and_accounts
+            .iter()
+            .map(|(_, account)| account)
+            .copied()
+            .fold(
+                ManifestBuilder::new().lock_fee_from_faucet(),
+                |builder, account| {
+                    builder.call_method(
+                        account,
+                        ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT,
+                        AccountSetDefaultDepositRuleInput {
+                            default: DefaultDepositRule::Reject,
+                        },
+                    )
+                },
+            )
+            .build();
+        ledger
+            .execute_manifest_without_auth(manifest)
+            .expect_commit_success();
+
+        let (account_locker, account_locker_badge) = {
+            let commit_result = ledger
+                .execute_manifest(
+                    ManifestBuilder::new()
+                        .lock_fee_from_faucet()
+                        .call_function(
+                            LOCKER_PACKAGE,
+                            ACCOUNT_LOCKER_BLUEPRINT,
+                            ACCOUNT_LOCKER_INSTANTIATE_SIMPLE_IDENT,
+                            AccountLockerInstantiateSimpleManifestInput {
+                                allow_recover: false,
+                            },
+                        )
+                        .try_deposit_entire_worktop_or_abort(account, None)
+                        .build(),
+                    vec![],
+                )
+                .expect_commit_success()
+                .clone();
+
+            let locker = commit_result
+                .new_component_addresses()
+                .first()
+                .copied()
+                .unwrap();
+            let badge = commit_result
+                .new_resource_addresses()
+                .first()
+                .copied()
+                .unwrap();
+
+            (locker, badge)
+        };
+
+        let manifest = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .create_proof_from_account_of_amount(account, account_locker_badge, 1)
+            .take_all_from_worktop(XRD, "bucket")
+            .with_bucket("bucket", |builder, bucket| {
+                builder.call_method(
+                    account_locker,
+                    ACCOUNT_LOCKER_AIRDROP_IDENT,
+                    AccountLockerAirdropManifestInput {
+                        claimants: keys_and_accounts
+                            .iter()
+                            .map(|entry| (entry.1, ResourceSpecifier::Fungible(dec!(1))))
+                            .collect(),
+                        bucket,
+                        try_direct_send: true,
+                    },
+                )
+            })
+            .try_deposit_entire_worktop_or_abort(account, None)
+            .build();
+        let receipt =
+            ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+        if receipt.is_commit_failure() {
+            receipt.expect_specific_failure(|error| {
+                matches!(
+                    error,
+                    RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::TooManyEvents
+                    ))
+                )
+            });
+            break;
+        }
+    }
 }

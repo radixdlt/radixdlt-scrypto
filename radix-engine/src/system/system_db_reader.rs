@@ -102,7 +102,7 @@ pub enum SystemReaderError {
 }
 
 /// A System Layer (Layer 2) abstraction over an underlying substate database
-pub struct SystemDatabaseReader<'a, S: SubstateDatabase> {
+pub struct SystemDatabaseReader<'a, S: SubstateDatabase + ?Sized> {
     substate_db: &'a S,
     state_updates: Option<&'a StateUpdates>,
 
@@ -110,7 +110,7 @@ pub struct SystemDatabaseReader<'a, S: SubstateDatabase> {
     schema_cache: RefCell<NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>>,
 }
 
-impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
+impl<'a, S: SubstateDatabase + ?Sized> SystemDatabaseReader<'a, S> {
     pub fn new_with_overlay(substate_db: &'a S, state_updates: &'a StateUpdates) -> Self {
         Self {
             substate_db,
@@ -1124,14 +1124,16 @@ impl<'a, S: SubstateDatabase> SystemDatabaseReader<'a, S> {
     }
 }
 
-struct ValidationPayloadCheckerContext<'a, S: SubstateDatabase> {
+struct ValidationPayloadCheckerContext<'a, S: SubstateDatabase + ?Sized> {
     reader: &'a SystemDatabaseReader<'a, S>,
     schema_origin: SchemaOrigin,
     allow_non_global_ref: bool,
     allow_ownership: bool,
 }
 
-impl<'a, S: SubstateDatabase> ValidationContext for ValidationPayloadCheckerContext<'a, S> {
+impl<'a, S: SubstateDatabase + ?Sized> ValidationContext
+    for ValidationPayloadCheckerContext<'a, S>
+{
     type Error = String;
 
     fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, String> {

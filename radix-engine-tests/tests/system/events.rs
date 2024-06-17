@@ -1,4 +1,3 @@
-use radix_common::constants::AuthAddresses;
 use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
@@ -968,7 +967,7 @@ fn consensus_manager_round_update_emits_correct_event() {
                 180000i64,
             )),
         }],
-        btreeset![AuthAddresses::validator_role()],
+        btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
 
@@ -1029,7 +1028,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
                 180000i64,
             )),
         }],
-        btreeset![AuthAddresses::validator_role()],
+        btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
 
@@ -1056,7 +1055,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
         validator_key,
         Decimal::one(),
         Decimal::ZERO,
-        ComponentAddress::virtual_account_from_public_key(&validator_key),
+        ComponentAddress::preallocated_account_from_public_key(&validator_key),
         Epoch::of(4),
         CustomGenesis::default_consensus_manager_config()
             .with_epoch_change_condition(EpochChangeCondition {
@@ -1081,7 +1080,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
                 180000i64,
             )),
         }],
-        btreeset![AuthAddresses::validator_role()],
+        btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
 
@@ -1386,7 +1385,7 @@ fn validator_unstake_emits_correct_events() {
     let num_unstake_epochs = 1;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
@@ -1534,7 +1533,7 @@ fn validator_claim_xrd_emits_correct_events() {
     let num_unstake_epochs = 1;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-    let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),

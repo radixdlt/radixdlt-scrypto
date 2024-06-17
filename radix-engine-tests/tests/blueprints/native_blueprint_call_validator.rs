@@ -124,9 +124,9 @@ fn private_key2() -> Secp256k1PrivateKey {
 }
 
 fn account1() -> ComponentAddress {
-    ComponentAddress::virtual_account_from_public_key(&private_key1().public_key())
+    ComponentAddress::preallocated_account_from_public_key(&private_key1().public_key())
 }
 
 fn account2() -> ComponentAddress {
-    ComponentAddress::virtual_account_from_public_key(&private_key2().public_key())
+    ComponentAddress::preallocated_account_from_public_key(&private_key2().public_key())
 }

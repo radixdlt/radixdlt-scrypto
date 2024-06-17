@@ -28,7 +28,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
-    let staker_address = ComponentAddress::virtual_account_from_public_key(
+    let staker_address = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
     let genesis_epoch = Epoch::of(1);
@@ -134,7 +134,7 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
-    let staker_address = ComponentAddress::virtual_account_from_public_key(
+    let staker_address = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
     let genesis_epoch = Epoch::of(1);
@@ -212,7 +212,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
+    let token_holder = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     ));
     let resource_address = ResourceAddress::new_or_panic(
@@ -222,7 +222,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         )
         .0,
     );
-    let resource_owner = ComponentAddress::virtual_account_from_public_key(
+    let resource_owner = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(2).unwrap().public_key(),
     );
     let allocation_amount = dec!("105");
@@ -394,10 +394,10 @@ fn test_genesis_stake_allocation() {
     // - one with one staker (just 1)
     let validator_0_key = Secp256k1PrivateKey::from_u64(10).unwrap().public_key();
     let validator_1_key = Secp256k1PrivateKey::from_u64(11).unwrap().public_key();
-    let staker_0 = ComponentAddress::virtual_account_from_public_key(
+    let staker_0 = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(4).unwrap().public_key(),
     );
-    let staker_1 = ComponentAddress::virtual_account_from_public_key(
+    let staker_1 = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(5).unwrap().public_key(),
     );
     let validator_0_allocations = vec![
@@ -594,10 +594,10 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     // Data migrated from Olympia
     let validator_0_key = Secp256k1PrivateKey::from_u64(10).unwrap().public_key();
     let validator_1_key = Secp256k1PrivateKey::from_u64(11).unwrap().public_key();
-    let staker_0 = ComponentAddress::virtual_account_from_public_key(
+    let staker_0 = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(4).unwrap().public_key(),
     );
-    let staker_1 = ComponentAddress::virtual_account_from_public_key(
+    let staker_1 = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(5).unwrap().public_key(),
     );
     let validator_0_allocations = vec![
@@ -707,7 +707,7 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let staker_address = ComponentAddress::virtual_account_from_public_key(
+    let staker_address = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
     let validator_key = Secp256k1PublicKey([7; 33]);

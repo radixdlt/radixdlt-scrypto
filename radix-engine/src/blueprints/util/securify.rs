@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use radix_engine_interface::api::{ClientApi, ModuleId};
+use radix_engine_interface::api::{ModuleId, SystemApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::modules::role_assignment::{
     AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
@@ -12,7 +12,7 @@ pub trait SecurifiedRoleAssignment {
     type OwnerBadgeNonFungibleData: NonFungibleData;
     const SECURIFY_ROLE: Option<&'static str> = None;
 
-    fn create_advanced<Y: ClientApi<RuntimeError>>(
+    fn create_advanced<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
         api: &mut Y,
     ) -> Result<RoleAssignment, RuntimeError> {
@@ -25,7 +25,7 @@ pub trait SecurifiedRoleAssignment {
         Ok(role_assignment)
     }
 
-    fn create_securified<Y: ClientApi<RuntimeError>>(
+    fn create_securified<Y: SystemApi<RuntimeError>>(
         owner_badge_data: Self::OwnerBadgeNonFungibleData,
         non_fungible_local_id: Option<NonFungibleLocalId>,
         api: &mut Y,
@@ -41,7 +41,7 @@ pub trait SecurifiedRoleAssignment {
         Ok((role_assignment, bucket))
     }
 
-    fn mint_securified_badge<Y: ClientApi<RuntimeError>>(
+    fn mint_securified_badge<Y: SystemApi<RuntimeError>>(
         owner_badge_data: Self::OwnerBadgeNonFungibleData,
         non_fungible_local_id: Option<NonFungibleLocalId>,
         api: &mut Y,
@@ -66,7 +66,7 @@ pub trait SecurifiedRoleAssignment {
 }
 
 pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
-    fn create_presecurified<Y: ClientApi<RuntimeError>>(
+    fn create_presecurified<Y: SystemApi<RuntimeError>>(
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<RoleAssignment, RuntimeError> {
@@ -91,7 +91,7 @@ pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
         Ok(role_assignment)
     }
 
-    fn securify<Y: ClientApi<RuntimeError>>(
+    fn securify<Y: SystemApi<RuntimeError>>(
         receiver: &NodeId,
         owner_badge_data: Self::OwnerBadgeNonFungibleData,
         non_fungible_local_id: Option<NonFungibleLocalId>,

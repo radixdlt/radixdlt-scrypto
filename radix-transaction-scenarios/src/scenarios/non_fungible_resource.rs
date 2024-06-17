@@ -5,8 +5,8 @@ use radix_engine_interface::*;
 
 #[allow(deprecated)]
 pub struct NonFungibleResourceScenarioConfig {
-    pub main_account: VirtualAccount,
-    pub occasional_recipient_account: VirtualAccount,
+    pub main_account: PreallocatedAccount,
+    pub occasional_recipient_account: PreallocatedAccount,
 }
 
 #[derive(Default)]
@@ -36,20 +36,20 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
     type Config = NonFungibleResourceScenarioConfig;
     type State = NonFungibleResourceScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
-    #[allow(deprecated)]
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "non_fungible_resource",
+        protocol_min_requirement: ProtocolVersion::Babylon,
+        testnet_run_at: Some(ProtocolVersion::Babylon),
+    };
+
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "non_fungible_resource",
-        };
-
         #[allow(unused_variables)]
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
@@ -476,7 +476,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     // Make the Owner the same as the public key for the main account
                                     // In reality, this should probably be a concrete badge, not a virtual badge, but for tests
                                     // this is okay
-                                    OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&config.main_account.public_key)))),
+                                    OwnerRole::Fixed(rule!(require(signature(&config.main_account.public_key)))),
                                     NonFungibleIdType::Integer,
                                     true,
                                     NonFungibleResourceRoles {
@@ -642,5 +642,3 @@ pub enum InnerEnum {
     InnerEnum(Box<InnerEnum>),
     InnerStruct(Box<InnerStruct>),
 }
-
-pub type NoNonFungibleData = ();

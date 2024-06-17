@@ -27,7 +27,6 @@ test_crates_features \
 
 echo "Testing scrypto packages..."
 test_packages \
-    "assets/blueprints/faucet \
     examples/hello-world \
     examples/no-std"
 

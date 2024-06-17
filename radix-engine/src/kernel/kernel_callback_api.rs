@@ -1,4 +1,4 @@
-use super::call_frame::CallFrameMessage;
+use super::call_frame::{CallFrameMessage, StableReferenceType};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -143,11 +143,17 @@ pub trait ExecutionReceipt {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
 
+/// Upper layer callback object which a kernel interacts with during execution
 pub trait KernelCallbackObject: Sized {
+    /// Data to be stored with each substate lock
     type LockData: Default + Clone;
+    /// Data to be stored with every call frame
     type CallFrameData: CallFrameReferences;
+    /// Initialization object
     type Init: Clone;
+    /// Output to be returned at the end of execution
     type ExecutionOutput;
+    /// Final receipt to be created after transaction execution
     type Receipt: ExecutionReceipt;
 
     /// Create the callback object (system layer) with data loaded from the substate store
@@ -156,6 +162,13 @@ pub trait KernelCallbackObject: Sized {
         executable: &Executable,
         init: Self::Init,
     ) -> Result<Self, RejectionReason>;
+
+    /// Verifies and returns the type of a given reference used during boot
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError>;
 
     /// Start execution
     fn start<Y>(
@@ -179,53 +192,63 @@ pub trait KernelCallbackObject: Sized {
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 
-    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self>;
-
+    /// Callback before a node is pinned to it's device
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;
 
+    /// Callbacks before/on-io-access/after a new node is created
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
+    /// Callbacks before/on-io-access/after a node is dropped
     fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
+    /// Callback when a module is moved
     fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
+    /// Callback before/on-io-access/after a substate is opened
     fn on_open_substate<Y>(api: &mut Y, event: OpenSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
+    /// Callback before a substate is closed
     fn on_close_substate<Y>(api: &mut Y, event: CloseSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
+    /// Callback before a substate is read
     fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
+    /// Callback before a substate is written to
     fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
+    /// Callback before/on-io-access a substate is set
     fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError>;
 
+    /// Callback before/on-io-access a substate is removed
     fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError>;
 
+    /// Callback before/on-io-access a key scan occurs
     fn on_scan_keys(&mut self, event: ScanKeysEvent) -> Result<(), RuntimeError>;
 
+    /// Callback before/on-io-access a substate drain occurs
     fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError>;
 
+    /// Callback before/on-io-access a sorted substate scan occurs
     fn on_scan_sorted_substates(
         &mut self,
         event: ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError>;
 
+    /// Callback before an invocation and a new call frame is created
     fn before_invoke<Y>(
         invocation: &KernelInvocation<Self::CallFrameData>,
         api: &mut Y,
@@ -233,22 +256,12 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
+    /// Callback after a new call frame is created for a new invocation
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
+    /// Callback on invocation. This is where the callback object should execute application logic.
     fn invoke_upstream<Y>(
         args: &IndexedScryptoValue,
         api: &mut Y,
@@ -256,10 +269,28 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    /// Callback after invocation during call frame cleanup and nodes are still owned by the executed
+    /// call frame
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
+    /// Callback right after execution of invocation and where call of execution still exists
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    /// Callback after an invocation and where invocation's call frame has already been destroyed
+    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    /// Callback before node id allocation
+    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    /// Callback before a substate is marked as transient
     fn on_mark_substate_as_transient(
         &mut self,
         node_id: &NodeId,
@@ -267,6 +298,7 @@ pub trait KernelCallbackObject: Sized {
         substate_key: &SubstateKey,
     ) -> Result<(), RuntimeError>;
 
+    /// Callback when a substate does not exist
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
         partition_num: PartitionNumber,
@@ -276,18 +308,8 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    /// Callback before a node is dropped
     fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    // This is technically not a kernel event, but system event, per current implementation.
-    fn on_move_node<Y>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 }

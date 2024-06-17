@@ -1,9 +1,6 @@
 use radix_common::prelude::*;
 use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
-use radix_engine::kernel::call_frame::{
-    CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
-    PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
-};
+use radix_engine::kernel::call_frame::{CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, StableReferenceType, TakeNodeError, WriteSubstateError};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -64,6 +61,10 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::Init) -> Result<Self, RejectionReason> {
         Ok(Self)
+    }
+
+    fn verify_boot_ref_value(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
+        Ok(StableReferenceType::Global)
     }
 
     fn start<Y>(
@@ -245,28 +246,6 @@ impl KernelCallbackObject for TestCallbackObject {
     {
         Ok(())
     }
-
-    fn on_move_node<Y>(
-        _node_id: &NodeId,
-        _is_moving_down: bool,
-        _is_to_barrier: bool,
-        _destination_blueprint_id: Option<BlueprintId>,
-        _api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        Ok(())
-    }
-    
-    fn on_ref_check<Y>(
-        _api: &mut Y,
-        _event: scrypto_test::prelude::RefCheckEvent,
-    ) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self> {
-        Ok(())
-    }
 }
 
 enum MoveVariation {
@@ -283,7 +262,7 @@ fn kernel_move_node_via_create_with_opened_substate(
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
 
     let child_id = {
         let child_id = kernel
@@ -420,7 +399,7 @@ fn kernel_close_substate_should_fail_if_opened_child_exists() {
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut id_allocator = IdAllocator::new(Hash([0u8; Hash::LENGTH]));
     let mut callback = TestCallbackObject;
-    let mut kernel = Kernel::new(&mut track, &mut id_allocator, &mut callback);
+    let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut callback);
     let mut create_node = || {
         let id = kernel
             .kernel_allocate_node_id(EntityType::InternalKeyValueStore)

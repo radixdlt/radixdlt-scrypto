@@ -7,7 +7,7 @@ use radix_blueprint_schema_init::{
     TypeRef,
 };
 use radix_blueprint_schema_init::{BlueprintSchemaInit, BlueprintStateSchemaInit};
-use radix_engine_interface::api::{AttachedModuleId, ClientApi};
+use radix_engine_interface::api::{AttachedModuleId, SystemApi};
 use radix_engine_interface::blueprints::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
@@ -24,8 +24,8 @@ use radix_native_sdk::runtime::Runtime;
 
 pub const IDENTITY_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 
-pub const IDENTITY_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
-pub const IDENTITY_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
+pub const IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID: u8 = 0u8;
+pub const IDENTITY_CREATE_PREALLOCATED_ED25519_ID: u8 = 1u8;
 
 pub struct IdentityNativePackage;
 
@@ -85,10 +85,10 @@ impl IdentityNativePackage {
                 is_transient: false,
                 feature_set: indexset!(),
                 dependencies: indexset!(
-                    SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
-                    ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
+                    SECP256K1_SIGNATURE_RESOURCE.into(),
+                    ED25519_SIGNATURE_RESOURCE.into(),
                     IDENTITY_OWNER_BADGE.into(),
-                    PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
+                    PACKAGE_OF_DIRECT_CALLER_RESOURCE.into(),
                 ),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
@@ -130,7 +130,7 @@ impl IdentityNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             IDENTITY_CREATE_ADVANCED_IDENT => {
@@ -196,7 +196,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let role_assignment = SecurifiedIdentity::create_advanced(owner_role, api)?;
 
@@ -214,7 +214,7 @@ impl IdentityBlueprint {
 
     pub fn create<Y>(api: &mut Y) -> Result<(GlobalAddress, Bucket), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: IDENTITY_PACKAGE,
@@ -246,14 +246,14 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match input.variant_id {
-            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => {
+            IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
-            IDENTITY_CREATE_VIRTUAL_ED25519_ID => {
+            IDENTITY_CREATE_PREALLOCATED_ED25519_ID => {
                 let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
@@ -269,13 +269,13 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let owner_badge = {
             let bytes = public_key_hash.get_hash_bytes();
             let entity_type = match public_key_hash {
-                PublicKeyHash::Ed25519(..) => EntityType::GlobalVirtualEd25519Identity,
-                PublicKeyHash::Secp256k1(..) => EntityType::GlobalVirtualSecp256k1Identity,
+                PublicKeyHash::Ed25519(..) => EntityType::GlobalPreallocatedEd25519Identity,
+                PublicKeyHash::Secp256k1(..) => EntityType::GlobalPreallocatedSecp256k1Identity,
             };
 
             let mut id_bytes = vec![entity_type as u8];
@@ -312,7 +312,7 @@ impl IdentityBlueprint {
 
     fn securify<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let receiver = Runtime::get_node_id(api)?;
         let owner_badge_data = IdentityOwnerBadgeData {
@@ -333,7 +333,7 @@ impl IdentityBlueprint {
         api: &mut Y,
     ) -> Result<(NodeId, IndexMap<AttachedModuleId, Own>), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;

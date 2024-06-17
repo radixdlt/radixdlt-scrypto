@@ -22,10 +22,10 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// Simple use case:
 /// ```
 /// # use radix_transactions::prelude::*;
-/// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+/// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
 /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
 /// # );
-/// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
+/// # let to_account_address = ComponentAddress::preallocated_account_from_public_key(
 /// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
 /// # );
 /// let manifest = ManifestBuilder::new()
@@ -40,10 +40,10 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// ```
 /// # use radix_transactions::prelude::*;
 /// # let package_address = RESOURCE_PACKAGE; // Just some address to get it to compile
-/// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+/// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
 /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
 /// # );
-/// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
+/// # let to_account_address = ComponentAddress::preallocated_account_from_public_key(
 /// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
 /// # );
 /// let manifest = ManifestBuilder::new()
@@ -64,7 +64,7 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// Advanced use case, where we need to generate a collision-free bucket name:
 /// ```
 /// # use radix_transactions::prelude::*;
-/// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
+/// # let to_account_address = ComponentAddress::preallocated_account_from_public_key(
 /// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
 /// # );
 /// let mut builder = ManifestBuilder::new()
@@ -185,7 +185,7 @@ impl ManifestBuilder {
     /// Example usage:
     /// ```
     /// # use radix_transactions::prelude::*;
-    /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+    /// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
     /// # );
     /// # let package_address = FAUCET_PACKAGE; // Just so it compiles
@@ -868,7 +868,7 @@ impl ManifestBuilder {
     /// ```
     /// # use radix_transactions::prelude::*;
     /// # let package_address = RESOURCE_PACKAGE; // Just some address to get it to compile
-    /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+    /// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
     /// # );
     /// let manifest = ManifestBuilder::new()
@@ -1099,7 +1099,7 @@ impl ManifestBuilder {
     /// ```
     /// # use radix_transactions::prelude::*;
     /// # let component_address = GENESIS_HELPER; // Just some address to get it to compile
-    /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+    /// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
     /// # );
     /// let manifest = ManifestBuilder::new()

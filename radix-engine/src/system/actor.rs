@@ -130,19 +130,21 @@ impl CallFrameReferences for Actor {
         match self {
             Actor::Root => 1,
             Actor::Method(MethodActor { ident, node_id, .. }) => {
-                node_id.as_ref().len() + ident.len()
+                node_id.as_bytes().len() + ident.len()
             }
             Actor::Function(FunctionActor {
                 blueprint_id,
                 ident,
                 ..
             }) => {
-                blueprint_id.package_address.as_ref().len()
+                blueprint_id.package_address.as_bytes().len()
                     + blueprint_id.blueprint_name.len()
                     + ident.len()
             }
             Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
-                blueprint_id.package_address.as_ref().len() + blueprint_id.blueprint_name.len() + 1
+                blueprint_id.package_address.as_bytes().len()
+                    + blueprint_id.blueprint_name.len()
+                    + 1
             }
         }
     }

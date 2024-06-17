@@ -33,6 +33,10 @@ impl GlobalAddress {
         self.0.to_vec()
     }
 
+    pub fn as_bytes(&self) -> &[u8] {
+        self.as_ref()
+    }
+
     pub fn as_node_id(&self) -> &NodeId {
         &self.0
     }
@@ -76,10 +80,10 @@ impl<'a> Arbitrary<'a> for GlobalAddress {
             EntityType::GlobalAccount as u8,
             EntityType::GlobalIdentity as u8,
             EntityType::GlobalGenericComponent as u8,
-            EntityType::GlobalVirtualSecp256k1Account as u8,
-            EntityType::GlobalVirtualEd25519Account as u8,
-            EntityType::GlobalVirtualSecp256k1Identity as u8,
-            EntityType::GlobalVirtualEd25519Identity as u8,
+            EntityType::GlobalPreallocatedSecp256k1Account as u8,
+            EntityType::GlobalPreallocatedEd25519Account as u8,
+            EntityType::GlobalPreallocatedSecp256k1Identity as u8,
+            EntityType::GlobalPreallocatedEd25519Identity as u8,
         ];
 
         let mut node_id = [0u8; NodeId::LENGTH];
@@ -96,6 +100,12 @@ impl<'a> Arbitrary<'a> for GlobalAddress {
 impl AsRef<[u8]> for GlobalAddress {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl AsRef<NodeId> for GlobalAddress {
+    fn as_ref(&self) -> &NodeId {
+        &self.0
     }
 }
 

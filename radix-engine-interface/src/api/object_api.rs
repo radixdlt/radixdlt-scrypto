@@ -206,7 +206,7 @@ pub struct KVEntry {
 }
 
 /// A high level interface to manipulate objects in the actor's call frame
-pub trait ClientObjectApi<E> {
+pub trait SystemObjectApi<E> {
     /// Creates a new simple blueprint object of a given blueprint type
     fn new_simple_object(
         &mut self,
@@ -241,18 +241,20 @@ pub trait ClientObjectApi<E> {
     /// Get the outer object of a visible object
     fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
-    /// Pre-allocates a global address, for a future globalization.
+    /// Allocates a global address, for a future globalization.
     fn allocate_global_address(
         &mut self,
         blueprint_id: BlueprintId,
     ) -> Result<(GlobalAddressReservation, GlobalAddress), E>;
 
+    /// Allocates a specific virtual global address
     fn allocate_virtual_global_address(
         &mut self,
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
     ) -> Result<GlobalAddressReservation, E>;
 
+    /// Retrieve the global address of a given address reservation
     fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
     /// Moves an object currently in the heap into the global space making
@@ -264,6 +266,7 @@ pub trait ClientObjectApi<E> {
         address_reservation: Option<GlobalAddressReservation>,
     ) -> Result<GlobalAddress, E>;
 
+    /// Globalizes with a new inner object and emits an event
     fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         node_id: NodeId,
@@ -283,6 +286,7 @@ pub trait ClientObjectApi<E> {
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;
 
+    /// Calls a direct access method on an object
     fn call_direct_access_method(
         &mut self,
         receiver: &NodeId,

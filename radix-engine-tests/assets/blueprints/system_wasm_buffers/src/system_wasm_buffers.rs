@@ -24,8 +24,8 @@ mod system_wasm_buffers {
             let node_id = self.kv_store.id.as_node_id();
             let handle = unsafe {
                 kv_store::kv_store_open_entry(
-                    node_id.as_ref().as_ptr(),
-                    node_id.as_ref().len(),
+                    node_id.as_bytes().as_ptr(),
+                    node_id.as_bytes().len(),
                     self.key.as_ptr(),
                     self.key.len(),
                     LockFlags::MUTABLE.bits(),

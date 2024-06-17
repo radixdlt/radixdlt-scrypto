@@ -14,7 +14,7 @@ use radix_engine::transaction::{
     execute_preview, execute_transaction_with_configuration, BalanceChange, CommitResult,
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
 };
-use radix_engine::updates::{ProtocolUpdate, ProtocolUpdates};
+use radix_engine::updates::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
@@ -63,7 +63,7 @@ impl CustomGenesis {
             pub_key,
             Decimal::one(),
             Decimal::zero(),
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
+            ComponentAddress::preallocated_account_from_public_key(&pub_key),
             genesis_epoch,
             initial_config,
         )
@@ -90,7 +90,7 @@ impl CustomGenesis {
             pub_key,
             Decimal::one(),
             xrd_amount,
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
+            ComponentAddress::preallocated_account_from_public_key(&pub_key),
             genesis_epoch,
             initial_config,
         )
@@ -197,7 +197,7 @@ pub struct LedgerSimulatorBuilder<E, D> {
     custom_genesis: Option<CustomGenesis>,
     custom_extension: E,
     custom_database: D,
-    custom_protocol_updates: ProtocolUpdates,
+    protocol_executor: ProtocolExecutor,
 
     // General options
     with_kernel_trace: bool,
@@ -210,7 +210,8 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
-            custom_protocol_updates: ProtocolUpdates::all(),
+            protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
+                .until_latest_protocol_version(),
             with_kernel_trace: true,
             with_receipt_substate_check: true,
         }
@@ -218,12 +219,16 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
 }
 
 impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
+    pub fn network_definition() -> NetworkDefinition {
+        NetworkDefinition::simulator()
+    }
+
     pub fn with_state_hashing(self) -> LedgerSimulatorBuilder<E, StateTreeUpdatingDatabase<D>> {
         LedgerSimulatorBuilder {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: StateTreeUpdatingDatabase::new(self.custom_database),
-            custom_protocol_updates: self.custom_protocol_updates,
+            protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
@@ -262,7 +267,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: extension,
             custom_database: self.custom_database,
-            custom_protocol_updates: self.custom_protocol_updates,
+            protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
@@ -276,15 +281,23 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: database,
-            custom_protocol_updates: self.custom_protocol_updates,
+            protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
     }
 
-    pub fn with_custom_protocol_updates(mut self, protocol_updates: ProtocolUpdates) -> Self {
-        self.custom_protocol_updates = protocol_updates;
+    pub fn with_custom_protocol(
+        mut self,
+        executor: impl FnOnce(ProtocolBuilder) -> ProtocolExecutor,
+    ) -> Self {
+        self.protocol_executor =
+            executor(ProtocolBuilder::for_network(&Self::network_definition()));
         self
+    }
+
+    pub fn with_protocol_version(self, protocol_version: ProtocolVersion) -> Self {
+        self.with_custom_protocol(|builder| builder.until(protocol_version))
     }
 
     pub fn build_from_snapshot(
@@ -362,20 +375,15 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 .clone(),
         );
 
+        // Protocol Updates
+        self.protocol_executor
+            .commit_each_protocol_update(&mut substate_db);
+
         // Note that 0 is not a valid private key
         let next_private_key = 100;
 
         // Starting from non-zero considering that bootstrap might have used a few.
         let next_transaction_nonce = 100;
-
-        // Protocol Updates
-        for state_updates in self
-            .custom_protocol_updates
-            .generate_state_updates(&substate_db, &NetworkDefinition::simulator())
-        {
-            let db_updates = state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            substate_db.commit(&db_updates);
-        }
 
         let runner = LedgerSimulator {
             scrypto_vm,
@@ -865,23 +873,24 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         account
     }
 
-    pub fn new_virtual_account(
+    pub fn new_preallocated_account(
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_key_pair();
-        let account = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
-            pub_key.clone(),
-        ));
+        let account = ComponentAddress::preallocated_account_from_public_key(
+            &PublicKey::Secp256k1(pub_key.clone()),
+        );
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
 
-    pub fn new_ed25519_virtual_account(
+    pub fn new_ed25519_preallocated_account(
         &mut self,
     ) -> (Ed25519PublicKey, Ed25519PrivateKey, ComponentAddress) {
         let (pub_key, priv_key) = self.new_ed25519_key_pair();
-        let account =
-            ComponentAddress::virtual_account_from_public_key(&PublicKey::Ed25519(pub_key.clone()));
+        let account = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Ed25519(
+            pub_key.clone(),
+        ));
         self.load_account_from_faucet(account);
         (pub_key, priv_key, account)
     }
@@ -927,12 +936,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
         let key_pair = self.new_key_pair();
-        let withdraw_auth = rule!(require(NonFungibleGlobalId::from_public_key(&key_pair.0)));
+        let withdraw_auth = rule!(require(signature(&key_pair.0)));
         let account = self.new_account_advanced(OwnerRole::Fixed(withdraw_auth));
         (key_pair.0, key_pair.1, account)
     }
 
-    pub fn new_ed25519_virtual_account_with_access_controller(
+    pub fn new_ed25519_preallocated_account_with_access_controller(
         &mut self,
         n_out_of_4: u8,
     ) -> (
@@ -947,20 +956,22 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         ComponentAddress,
         ComponentAddress,
     ) {
-        let (pk1, sk1, account) = self.new_ed25519_virtual_account();
+        let (pk1, sk1, account) = self.new_ed25519_preallocated_account();
         let (pk2, sk2) = self.new_ed25519_key_pair();
         let (pk3, sk3) = self.new_ed25519_key_pair();
         let (pk4, sk4) = self.new_ed25519_key_pair();
 
-        let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
-            n_out_of_4,
-            vec![
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
-            ],
-        )));
+        let access_rule = AccessRule::Protected(CompositeRequirement::BasicRequirement(
+            BasicRequirement::CountOf(
+                n_out_of_4,
+                vec![
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
+                ],
+            ),
+        ));
 
         let access_controller = self
             .execute_manifest(
@@ -1008,10 +1019,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn new_account(
         &mut self,
-        is_virtual: bool,
+        is_preallocated: bool,
     ) -> (Secp256k1PublicKey, Secp256k1PrivateKey, ComponentAddress) {
-        if is_virtual {
-            self.new_virtual_account()
+        if is_preallocated {
+            self.new_preallocated_account()
         } else {
             self.new_allocated_account()
         }
@@ -1126,7 +1137,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     package_address: None,
                 }),
             }],
-            btreeset!(AuthAddresses::system_role()),
+            btreeset!(system_execution(SystemExecution::Protocol)),
             vec![],
         );
         let package_address: PackageAddress = receipt.expect_commit(true).output(0);
@@ -1170,7 +1181,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             }
             .prepare()
             .expect("expected transaction to be preparable")
-            .get_executable(btreeset!(AuthAddresses::system_role())),
+            .get_executable(btreeset!(system_execution(SystemExecution::Protocol))),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         );
 
@@ -1230,7 +1241,15 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     }
 
     pub fn compile<P: AsRef<Path>>(&mut self, package_dir: P) -> (Vec<u8>, PackageDefinition) {
-        Compile::compile(package_dir)
+        self.compile_with_option(package_dir, CompileProfile::FastWithTraceLogs)
+    }
+
+    pub fn compile_with_option<P: AsRef<Path>>(
+        &mut self,
+        package_dir: P,
+        compile_profile: CompileProfile,
+    ) -> (Vec<u8>, PackageDefinition) {
+        Compile::compile(package_dir, compile_profile)
     }
 
     // Doesn't need to be here - kept for backward compatibility
@@ -2092,7 +2111,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentEpochInput),
             }],
-            btreeset![AuthAddresses::validator_role()],
+            btreeset![system_execution(SystemExecution::Validator)],
             vec![],
         );
         receipt.expect_commit(true).output(0)
@@ -2123,7 +2142,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     },
                 }),
             }],
-            btreeset![AuthAddresses::validator_role()],
+            btreeset![system_execution(SystemExecution::Validator)],
             vec![],
         )
     }
@@ -2170,7 +2189,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     precision
                 }),
             }],
-            btreeset![AuthAddresses::validator_role()],
+            btreeset![system_execution(SystemExecution::Validator)],
             vec![],
         );
         receipt.expect_commit(true).output(0)
@@ -2335,18 +2354,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             ResourceReconciler::reconcile(&db_results.1 .0, &event_results)
                 .expect("Resource reconciliation failed");
         }
-    }
-
-    pub fn apply_protocol_updates(&mut self, protocol_updates: &[ProtocolUpdate]) {
-        protocol_updates.iter().for_each(|protocol_update| {
-            protocol_update
-                .generate_state_updates(&self.database, &NetworkDefinition::simulator())
-                .into_iter()
-                .for_each(|update| {
-                    self.database
-                        .commit(&update.create_database_updates::<SpreadPrefixKeyMapper>())
-                })
-        })
     }
 }
 
@@ -2581,31 +2588,31 @@ pub fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
 }
 
 pub enum PackagePublishingSource {
-    CompileAndPublishFromSource(PathBuf),
+    CompileAndPublishFromSource(PathBuf, CompileProfile),
     PublishExisting(Vec<u8>, PackageDefinition),
 }
 
 impl From<String> for PackagePublishingSource {
     fn from(value: String) -> Self {
-        Self::CompileAndPublishFromSource(value.into())
+        Self::CompileAndPublishFromSource(value.into(), CompileProfile::FastWithTraceLogs)
     }
 }
 
 impl<'g> From<&'g str> for PackagePublishingSource {
     fn from(value: &'g str) -> Self {
-        Self::CompileAndPublishFromSource(value.into())
+        Self::CompileAndPublishFromSource(value.into(), CompileProfile::FastWithTraceLogs)
     }
 }
 
 impl From<PathBuf> for PackagePublishingSource {
     fn from(value: PathBuf) -> Self {
-        Self::CompileAndPublishFromSource(value)
+        Self::CompileAndPublishFromSource(value, CompileProfile::FastWithTraceLogs)
     }
 }
 
 impl<'g> From<&'g Path> for PackagePublishingSource {
     fn from(value: &'g Path) -> Self {
-        Self::CompileAndPublishFromSource(value.into())
+        Self::CompileAndPublishFromSource(value.into(), CompileProfile::FastWithTraceLogs)
     }
 }
 
@@ -2618,7 +2625,7 @@ impl From<(Vec<u8>, PackageDefinition)> for PackagePublishingSource {
 impl PackagePublishingSource {
     pub fn code_and_definition(self) -> (Vec<u8>, PackageDefinition) {
         match self {
-            Self::CompileAndPublishFromSource(path) => Compile::compile(path),
+            Self::CompileAndPublishFromSource(path, profile) => Compile::compile(path, profile),
             Self::PublishExisting(code, definition) => (code, definition),
         }
     }

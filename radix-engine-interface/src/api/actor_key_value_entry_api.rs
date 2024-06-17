@@ -4,8 +4,9 @@ use radix_engine_interface::api::{ActorStateHandle, CollectionIndex, LockFlags};
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-pub trait ClientActorKeyValueEntryApi<E: Debug> {
-    /// If the key value entry doesn't exist, it uses the default "Option::None"
+pub trait SystemActorKeyValueEntryApi<E: Debug> {
+    /// Returns a handle for a specified key value entry in a collection. If an invalid collection
+    /// index or key is passed an error is returned.
     fn actor_open_key_value_entry(
         &mut self,
         object_handle: ActorStateHandle,
@@ -14,6 +15,8 @@ pub trait ClientActorKeyValueEntryApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, E>;
 
+    /// Removes an entry from a collection. If an invalid collection index or key is passed an
+    /// error is returned, otherwise the encoding of a value of the entry is returned.
     fn actor_remove_key_value_entry(
         &mut self,
         object_handle: ActorStateHandle,
@@ -21,6 +24,8 @@ pub trait ClientActorKeyValueEntryApi<E: Debug> {
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, E>;
 
+    /// Removes an entry from a collection. If an invalid collection index or key is passed an
+    /// error is returned, otherwise the value of the entry is returned.
     fn actor_remove_key_value_entry_typed<V: ScryptoDecode>(
         &mut self,
         object_handle: ActorStateHandle,

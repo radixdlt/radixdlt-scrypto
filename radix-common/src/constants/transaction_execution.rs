@@ -79,8 +79,8 @@ pub const MAX_ORIGIN_LENGTH: usize = 1024;
 /// The max depth of an access rule, to protect unbounded native stack usage
 pub const MAX_ACCESS_RULE_DEPTH: usize = 8;
 
-/// The max number of access rule nodes in an access rule
-pub const MAX_ACCESS_RULE_NODES: usize = 64;
+/// The max number of composite requirements in an access rule
+pub const MAX_COMPOSITE_REQUIREMENTS: usize = 64;
 
 /// The max number of roles in a Role Specification
 pub const MAX_ROLES: usize = 50;

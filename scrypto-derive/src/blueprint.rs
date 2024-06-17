@@ -1724,7 +1724,7 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
                     #(#args),*
                 ) -> Result<#rtn_type, E>
                 where
-                    Y: ::scrypto::api::ClientApi<E>,
+                    Y: ::scrypto::api::SystemApi<E>,
                     E: Debug
                 {
                     let rtn = env. #invocation_type ( #invocation_args )?;
@@ -2515,7 +2515,7 @@ mod tests {
                     impl Test {
                         pub fn x<Y, E>(&self, i: u32, env: &mut Y) -> Result<u32, E>
                         where
-                            Y: ::scrypto::api::ClientApi<E>,
+                            Y: ::scrypto::api::SystemApi<E>,
                             E: Debug
                         {
                             let rtn = env.call_method(
@@ -2532,7 +2532,7 @@ mod tests {
                             env: &mut Y
                         ) -> Result<u32, E>
                         where
-                            Y: ::scrypto::api::ClientApi<E>,
+                            Y: ::scrypto::api::SystemApi<E>,
                             E: Debug
                         {
                             let rtn = env.call_function(

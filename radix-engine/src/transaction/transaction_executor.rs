@@ -310,7 +310,7 @@ where
 
 pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCallbackObject>(
     substate_db: &S,
-    vms: V::InitInput,
+    vms: V::Init,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {

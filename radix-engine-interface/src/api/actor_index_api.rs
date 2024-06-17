@@ -5,7 +5,7 @@ use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
 /// Api to manage an iterable index
-pub trait ClientActorIndexApi<E> {
+pub trait SystemActorIndexApi<E> {
     /// Inserts an entry into an index
     fn actor_index_insert(
         &mut self,

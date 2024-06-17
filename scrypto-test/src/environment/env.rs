@@ -7,7 +7,7 @@ use crate::prelude::*;
 ///
 /// This struct may be thought of as the main struct in this testing framework which encapsulates a
 /// a self-contained instance of the Radix Engine ([`EncapsulatedRadixEngine`]). The functionality
-/// of the Radix Engine is exposed through the [`ClientApi`] which makes this testing environment no
+/// of the Radix Engine is exposed through the [`SystemApi`] which makes this testing environment no
 /// less capable than Scrypto code.
 ///
 /// ## Introduction
@@ -180,7 +180,7 @@ where
 
     /// Invokes a function on the provided blueprint and package with the given arguments.
     ///
-    /// This method is a typed version of the [`ClientBlueprintApi::call_function`] which Scrypto
+    /// This method is a typed version of the [`SystemBlueprintApi::call_function`] which Scrypto
     /// encodes the arguments and Scrypto decodes the returns on behalf of the caller. This method
     /// assumes that the caller is correct about the argument and return types and panics if the
     /// encoding or decoding fails.
@@ -227,7 +227,7 @@ where
 
     /// Invokes a method on the main module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.
@@ -273,7 +273,7 @@ where
 
     /// Invokes a method on the main module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.
@@ -319,7 +319,7 @@ where
 
     /// Invokes a method on a module of a node with the provided typed arguments.
     ///
-    /// This method is a typed version of the [`ClientObjectApi::call_method`] which Scrypto encodes
+    /// This method is a typed version of the [`SystemObjectApi::call_method`] which Scrypto encodes
     /// the arguments and Scrypto decodes the returns on behalf of the caller. This method assumes
     /// that the caller is correct about the argument and return types and panics if the encoding or
     /// decoding fails.
@@ -728,7 +728,7 @@ where
 
     /// Gets the current time stamp from the Consensus Manager.
     pub fn get_current_time(&mut self) -> Instant {
-        Runtime::current_time(self, TimePrecision::Minute).unwrap()
+        Runtime::current_time(self, TimePrecision::Second).unwrap()
     }
 
     pub fn set_current_time(&mut self, instant: Instant) {
@@ -739,17 +739,16 @@ where
             |env| -> Result<(), RuntimeError> {
                 let handle = env.actor_open_field(
                     ACTOR_STATE_SELF,
-                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
+                    ConsensusManagerField::ProposerMilliTimestamp.into(),
                     LockFlags::MUTABLE,
                 )?;
-                let mut proposer_minute_timestamp =
-                    env.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+                let mut proposer_milli_timestamp =
+                    env.field_read_typed::<ConsensusManagerProposerMilliTimestampFieldPayload>(
                         handle,
                     )?;
-                proposer_minute_timestamp
-                    .as_unique_version_mut()
-                    .epoch_minute = (instant.seconds_since_unix_epoch / 60) as i32;
-                env.field_write_typed(handle, &proposer_minute_timestamp)?;
+                proposer_milli_timestamp.as_unique_version_mut().epoch_milli =
+                    instant.seconds_since_unix_epoch * 1000;
+                env.field_write_typed(handle, &proposer_milli_timestamp)?;
                 env.field_close(handle)?;
                 Ok(())
             },

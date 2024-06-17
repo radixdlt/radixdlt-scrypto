@@ -1,6 +1,6 @@
 [package]
 name = "radix-transaction-scenarios"
-version = "1.2.0-dev"
+version = "1.3.0-dev"
 edition = "2021"
 description = "A set of common transaction scenarios for testing and demonstration purpose, from the Radix DLT project."
 readme = "README.md"
@@ -20,6 +20,7 @@ radix-rust = { workspace = true }
 itertools = { workspace = true }
 hex = { workspace = true }
 walkdir = { workspace = true }
+lazy_static = { workspace = true }
 
 [features]
 # You should enable either `std` or `alloc`

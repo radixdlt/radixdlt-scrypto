@@ -1,4 +1,4 @@
-use crate::blueprints::resource::AccessRuleNode::{AllOf, AnyOf};
+use crate::blueprints::resource::CompositeRequirement::{AllOf, AnyOf};
 use crate::internal_prelude::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
@@ -79,7 +79,7 @@ where
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub enum ProofRule {
+pub enum BasicRequirement {
     Require(ResourceOrNonFungible),
     AmountOf(Decimal, ResourceAddress),
     CountOf(u8, Vec<ResourceOrNonFungible>),
@@ -87,30 +87,30 @@ pub enum ProofRule {
     AnyOf(Vec<ResourceOrNonFungible>),
 }
 
-impl Describe<ScryptoCustomTypeKind> for ProofRule {
+impl Describe<ScryptoCustomTypeKind> for BasicRequirement {
     const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::PROOF_RULE_TYPE);
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::BASIC_REQUIREMENT_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::proof_rule_type_data()
+        well_known_scrypto_custom_types::basic_requirement_type_data()
     }
 }
 
-impl From<ResourceAddress> for AccessRuleNode {
+impl From<ResourceAddress> for CompositeRequirement {
     fn from(resource_address: ResourceAddress) -> Self {
-        AccessRuleNode::ProofRule(ProofRule::Require(resource_address.into()))
+        CompositeRequirement::BasicRequirement(BasicRequirement::Require(resource_address.into()))
     }
 }
 
-impl From<NonFungibleGlobalId> for AccessRuleNode {
+impl From<NonFungibleGlobalId> for CompositeRequirement {
     fn from(id: NonFungibleGlobalId) -> Self {
-        AccessRuleNode::ProofRule(ProofRule::Require(id.into()))
+        CompositeRequirement::BasicRequirement(BasicRequirement::Require(id.into()))
     }
 }
 
-impl From<ResourceOrNonFungible> for AccessRuleNode {
+impl From<ResourceOrNonFungible> for CompositeRequirement {
     fn from(resource_or_non_fungible: ResourceOrNonFungible) -> Self {
-        AccessRuleNode::ProofRule(ProofRule::Require(resource_or_non_fungible))
+        CompositeRequirement::BasicRequirement(BasicRequirement::Require(resource_or_non_fungible))
     }
 }
 
@@ -131,25 +131,25 @@ impl From<ResourceOrNonFungible> for AccessRuleNode {
     ScryptoEncode,
     ScryptoDecode,
 )]
-pub enum AccessRuleNode {
-    ProofRule(ProofRule),
-    AnyOf(Vec<AccessRuleNode>),
-    AllOf(Vec<AccessRuleNode>),
+pub enum CompositeRequirement {
+    BasicRequirement(BasicRequirement),
+    AnyOf(Vec<CompositeRequirement>),
+    AllOf(Vec<CompositeRequirement>),
 }
 
-impl Describe<ScryptoCustomTypeKind> for AccessRuleNode {
+impl Describe<ScryptoCustomTypeKind> for CompositeRequirement {
     const TYPE_ID: RustTypeId =
-        RustTypeId::WellKnown(well_known_scrypto_custom_types::ACCESS_RULE_NODE_TYPE);
+        RustTypeId::WellKnown(well_known_scrypto_custom_types::COMPOSITE_REQUIREMENT_TYPE);
 
     fn type_data() -> ScryptoTypeData<RustTypeId> {
-        well_known_scrypto_custom_types::access_rule_node_type_data()
+        well_known_scrypto_custom_types::composite_requirement_type_data()
     }
 }
 
-impl AccessRuleNode {
-    pub fn or(self, other: AccessRuleNode) -> Self {
+impl CompositeRequirement {
+    pub fn or(self, other: CompositeRequirement) -> Self {
         match self {
-            AccessRuleNode::AnyOf(mut rules) => {
+            CompositeRequirement::AnyOf(mut rules) => {
                 rules.push(other);
                 AnyOf(rules)
             }
@@ -157,9 +157,9 @@ impl AccessRuleNode {
         }
     }
 
-    pub fn and(self, other: AccessRuleNode) -> Self {
+    pub fn and(self, other: CompositeRequirement) -> Self {
         match self {
-            AccessRuleNode::AllOf(mut rules) => {
+            CompositeRequirement::AllOf(mut rules) => {
                 rules.push(other);
                 AllOf(rules)
             }
@@ -180,44 +180,57 @@ pub fn global_caller(global_caller: impl Into<GlobalCaller>) -> ResourceOrNonFun
     ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::global_caller_badge(global_caller))
 }
 
-pub fn require<T>(required: T) -> AccessRuleNode
+/// A requirement for the transaction to be signed using a specific key.
+pub fn signature(public_key: &impl HasPublicKeyHash) -> ResourceOrNonFungible {
+    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(public_key))
+}
+
+/// A requirement for the transaction to be a system transaction.
+pub fn system_execution(transaction_type: SystemExecution) -> NonFungibleGlobalId {
+    transaction_type.into()
+}
+
+pub fn require<T>(required: T) -> CompositeRequirement
 where
-    T: Into<AccessRuleNode>,
+    T: Into<CompositeRequirement>,
 {
     required.into()
 }
 
-pub fn require_any_of<T>(resources: T) -> AccessRuleNode
+pub fn require_any_of<T>(resources: T) -> CompositeRequirement
 where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    AccessRuleNode::ProofRule(ProofRule::AnyOf(list.list))
+    CompositeRequirement::BasicRequirement(BasicRequirement::AnyOf(list.list))
 }
 
-pub fn require_all_of<T>(resources: T) -> AccessRuleNode
+pub fn require_all_of<T>(resources: T) -> CompositeRequirement
 where
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    AccessRuleNode::ProofRule(ProofRule::AllOf(list.list))
+    CompositeRequirement::BasicRequirement(BasicRequirement::AllOf(list.list))
 }
 
-pub fn require_n_of<C, T>(count: C, resources: T) -> AccessRuleNode
+pub fn require_n_of<C, T>(count: C, resources: T) -> CompositeRequirement
 where
     C: Into<u8>,
     T: Into<ResourceOrNonFungibleList>,
 {
     let list: ResourceOrNonFungibleList = resources.into();
-    AccessRuleNode::ProofRule(ProofRule::CountOf(count.into(), list.list))
+    CompositeRequirement::BasicRequirement(BasicRequirement::CountOf(count.into(), list.list))
 }
 
-pub fn require_amount<D, T>(amount: D, resource: T) -> AccessRuleNode
+pub fn require_amount<D, T>(amount: D, resource: T) -> CompositeRequirement
 where
     D: Into<Decimal>,
     T: Into<ResourceAddress>,
 {
-    AccessRuleNode::ProofRule(ProofRule::AmountOf(amount.into(), resource.into()))
+    CompositeRequirement::BasicRequirement(BasicRequirement::AmountOf(
+        amount.into(),
+        resource.into(),
+    ))
 }
 
 #[cfg_attr(
@@ -240,7 +253,7 @@ where
 pub enum AccessRule {
     AllowAll,
     DenyAll,
-    Protected(AccessRuleNode),
+    Protected(CompositeRequirement),
 }
 
 impl Describe<ScryptoCustomTypeKind> for AccessRule {
@@ -252,15 +265,15 @@ impl Describe<ScryptoCustomTypeKind> for AccessRule {
     }
 }
 
-impl From<AccessRuleNode> for AccessRule {
-    fn from(value: AccessRuleNode) -> Self {
+impl From<CompositeRequirement> for AccessRule {
+    fn from(value: CompositeRequirement) -> Self {
         AccessRule::Protected(value)
     }
 }
 
 pub trait AccessRuleVisitor {
     type Error;
-    fn visit(&mut self, node: &AccessRuleNode, depth: usize) -> Result<(), Self::Error>;
+    fn visit(&mut self, node: &CompositeRequirement, depth: usize) -> Result<(), Self::Error>;
 }
 
 impl AccessRule {
@@ -275,7 +288,7 @@ impl AccessRule {
     }
 }
 
-impl AccessRuleNode {
+impl CompositeRequirement {
     fn dfs_traverse_recursive<V: AccessRuleVisitor>(
         &self,
         visitor: &mut V,
@@ -284,8 +297,8 @@ impl AccessRuleNode {
         visitor.visit(self, depth)?;
 
         match self {
-            AccessRuleNode::ProofRule(..) => {}
-            AccessRuleNode::AnyOf(nodes) | AccessRuleNode::AllOf(nodes) => {
+            CompositeRequirement::BasicRequirement(..) => {}
+            CompositeRequirement::AnyOf(nodes) | CompositeRequirement::AllOf(nodes) => {
                 for node in nodes {
                     node.dfs_traverse_recursive(visitor, depth + 1)?;
                 }
@@ -293,5 +306,33 @@ impl AccessRuleNode {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use radix_common::prelude::*;
+
+    #[test]
+    fn require_signature_secp256k1() {
+        let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let public_key = private_key.public_key();
+
+        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
+        let r2 = rule!(require(signature(&public_key)));
+
+        assert_eq!(r1, r2);
+    }
+
+    #[test]
+    fn require_signature_ed25519() {
+        let private_key = Ed25519PrivateKey::from_u64(1).unwrap();
+        let public_key = private_key.public_key();
+
+        let r1 = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
+        let r2 = rule!(require(signature(&public_key)));
+
+        assert_eq!(r1, r2);
     }
 }

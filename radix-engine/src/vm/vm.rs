@@ -9,11 +9,13 @@ use crate::track::BootStore;
 use crate::vm::wasm::{ScryptoV1WasmValidator, WasmEngine};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 
 use crate::vm::ScryptoVmVersion;
 
 pub const BOOT_LOADER_VM_BOOT_FIELD_KEY: FieldKey = 2u8;
+
+pub type VmBootSubstate = VmBoot;
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmBoot {
@@ -77,7 +79,7 @@ pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
 }
 
 impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
-    type InitInput = VmInit<'g, W, E>;
+    type Init = VmInit<'g, W, E>;
 
     fn init<S: BootStore>(store: &S, vm_init: VmInit<'g, W, E>) -> Result<Self, BootloadingError> {
         let vm_boot = store
@@ -103,7 +105,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>
+        Y: SystemApi<RuntimeError>
             + KernelInternalApi<System<Self>>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
@@ -231,7 +233,7 @@ pub trait VmInvoke {
         vm_api: &V,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi;
 }
 

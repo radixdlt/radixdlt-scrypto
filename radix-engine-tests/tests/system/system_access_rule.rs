@@ -4,7 +4,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::object_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ModuleId};
+use radix_engine_interface::api::{SystemApi, ModuleId};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
 use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
@@ -82,7 +82,7 @@ fn setting_a_role_access_rule_which_is_beyond_the_depth_limit_should_error() {
 
 #[test]
 fn creating_an_owner_access_rule_which_is_beyond_the_length_limit_should_error() {
-    let access_rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
+    let access_rule = create_access_rule_of_length(MAX_COMPOSITE_REQUIREMENTS + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
         AccessRuleCreation::OwnerCreation,
         access_rule,
@@ -99,7 +99,7 @@ fn creating_an_owner_access_rule_which_is_beyond_the_length_limit_should_error()
 
 #[test]
 fn creating_a_regular_access_rule_which_is_beyond_the_length_limit_should_error() {
-    let access_rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
+    let access_rule = create_access_rule_of_length(MAX_COMPOSITE_REQUIREMENTS + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
         AccessRuleCreation::RoleCreation,
         access_rule,
@@ -116,7 +116,7 @@ fn creating_a_regular_access_rule_which_is_beyond_the_length_limit_should_error(
 
 #[test]
 fn setting_an_owner_access_rule_which_is_beyond_the_length_limit_should_error() {
-    let access_rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
+    let access_rule = create_access_rule_of_length(MAX_COMPOSITE_REQUIREMENTS + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
         AccessRuleCreation::OwnerSet,
         access_rule,
@@ -133,7 +133,7 @@ fn setting_an_owner_access_rule_which_is_beyond_the_length_limit_should_error() 
 
 #[test]
 fn setting_a_role_access_rule_which_is_beyond_the_length_limit_should_error() {
-    let access_rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
+    let access_rule = create_access_rule_of_length(MAX_COMPOSITE_REQUIREMENTS + 1);
     creating_an_access_rule_which_is_beyond_the_depth_limit_should_error(
         AccessRuleCreation::RoleSet,
         access_rule,
@@ -153,7 +153,7 @@ fn package_function_access_rules_are_checked_for_depth_and_width() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = PackageLoader::get("address");
-    let rule = create_access_rule_of_length(MAX_ACCESS_RULE_NODES + 1);
+    let rule = create_access_rule_of_length(MAX_COMPOSITE_REQUIREMENTS + 1);
 
     definition.blueprints.values_mut().for_each(|bp_def| {
         let func_auth = bp_def
@@ -197,20 +197,20 @@ fn package_function_access_rules_are_checked_for_depth_and_width() {
 }
 
 fn create_access_rule_of_depth(depth: usize) -> AccessRule {
-    let mut rule_node = AccessRuleNode::AnyOf(vec![]);
+    let mut requirement = CompositeRequirement::AnyOf(vec![]);
     for _ in 0..depth {
-        rule_node = AccessRuleNode::AnyOf(vec![rule_node]);
+        requirement = CompositeRequirement::AnyOf(vec![requirement]);
     }
 
-    AccessRule::Protected(rule_node)
+    AccessRule::Protected(requirement)
 }
 
 fn create_access_rule_of_length(size: usize) -> AccessRule {
     let mut nodes = vec![];
     for _ in 0..size {
-        nodes.push(AccessRuleNode::AnyOf(vec![]));
+        nodes.push(CompositeRequirement::AnyOf(vec![]));
     }
-    AccessRule::Protected(AccessRuleNode::AllOf(nodes))
+    AccessRule::Protected(CompositeRequirement::AllOf(nodes))
 }
 
 #[derive(Copy, Clone)]
@@ -242,7 +242,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {

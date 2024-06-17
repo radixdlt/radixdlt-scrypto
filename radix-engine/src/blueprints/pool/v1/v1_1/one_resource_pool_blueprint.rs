@@ -24,7 +24,7 @@ impl OneResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<OneResourcePoolInstantiateOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + KernelNodeApi,
+        Y: SystemApi<RuntimeError> + KernelNodeApi,
     {
         // Validate that the resource is a fungible resource - a pool can't be created with non
         // fungible resources.
@@ -126,7 +126,7 @@ impl OneResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<OneResourcePoolContributeOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         if bucket.is_empty(api)? {
             return Err(Error::ContributionOfEmptyBucketError.into());
@@ -225,7 +225,7 @@ impl OneResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<OneResourcePoolRedeemOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |mut substate, api| {
             // Ensure that the passed pool resources are indeed pool resources
@@ -292,7 +292,7 @@ impl OneResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<OneResourcePoolProtectedDepositOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let bucket_amount = bucket.amount(api)?;
 
@@ -314,7 +314,7 @@ impl OneResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<OneResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let bucket = Self::with_state(api, |mut substate, api| {
             substate.vault.take_advanced(amount, withdraw_strategy, api)
@@ -336,7 +336,7 @@ impl OneResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<OneResourcePoolGetRedemptionValueOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |substate, api| {
             let pool_units_to_redeem = amount_of_pool_units;
@@ -377,7 +377,7 @@ impl OneResourcePoolBlueprint {
         api: &mut Y,
     ) -> Result<OneResourcePoolGetVaultAmountOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_state(api, |substate, api| substate.vault.amount(api))
     }
@@ -412,7 +412,7 @@ impl OneResourcePoolBlueprint {
     /// Opens the substate, executes the callback, and closes the substate.
     fn with_state<Y, F, O>(api: &mut Y, callback: F) -> Result<O, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
         F: FnOnce(Substate, &mut Y) -> Result<O, RuntimeError>,
     {
         // Open

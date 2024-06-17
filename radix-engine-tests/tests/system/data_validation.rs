@@ -20,7 +20,7 @@ fn setup_component(ledger: &mut DefaultLedgerSimulator) -> ComponentAddress {
 }
 
 fn sink_account() -> ComponentAddress {
-    ComponentAddress::virtual_account_from_public_key(&Secp256k1PublicKey([0; 33]))
+    ComponentAddress::preallocated_account_from_public_key(&Secp256k1PublicKey([0; 33]))
 }
 
 fn create_manifest_with_middle(
@@ -331,7 +331,7 @@ fn test_receive_reference_not_of_specific_blueprint() {
         .call_method(
             component_address,
             "accept_custom_reference",
-            manifest_args!(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE),
+            manifest_args!(PACKAGE_OF_DIRECT_CALLER_RESOURCE),
         )
         .build();
 

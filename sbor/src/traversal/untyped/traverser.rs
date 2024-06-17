@@ -474,6 +474,7 @@ mod tests {
     use super::*;
 
     #[derive(Categorize, Encode)]
+    #[allow(dead_code)]
     struct TestStruct {
         x: u32,
     }

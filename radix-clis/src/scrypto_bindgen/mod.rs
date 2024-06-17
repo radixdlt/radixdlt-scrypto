@@ -4,6 +4,9 @@ pub mod schema;
 pub mod translation;
 pub mod types;
 
+use scrypto_bindgen::schema;
+use scrypto_bindgen::translation;
+
 use clap::Parser;
 use radix_common::prelude::*;
 use radix_engine::system::system_db_reader::SystemDatabaseReader;

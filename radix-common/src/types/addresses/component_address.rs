@@ -33,18 +33,22 @@ impl ComponentAddress {
         self.0.to_vec()
     }
 
-    pub fn virtual_account_from_public_key<P: Into<PublicKey> + Clone>(
+    pub fn as_bytes(&self) -> &[u8] {
+        self.as_ref()
+    }
+
+    pub fn preallocated_account_from_public_key<P: Into<PublicKey> + Clone>(
         public_key: &P,
     ) -> ComponentAddress {
         match public_key.clone().into() {
             PublicKey::Secp256k1(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualSecp256k1Account as u8;
+                node_id[0] = EntityType::GlobalPreallocatedSecp256k1Account as u8;
                 Self(NodeId(node_id))
             }
             PublicKey::Ed25519(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEd25519Account as u8;
+                node_id[0] = EntityType::GlobalPreallocatedEd25519Account as u8;
                 Self(NodeId(node_id))
             }
         }
@@ -56,12 +60,12 @@ impl ComponentAddress {
         match public_key.clone().into() {
             PublicKey::Secp256k1(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualSecp256k1Identity as u8;
+                node_id[0] = EntityType::GlobalPreallocatedSecp256k1Identity as u8;
                 Self(NodeId(node_id))
             }
             PublicKey::Ed25519(public_key) => {
                 let mut node_id: [u8; NodeId::LENGTH] = hash(public_key.to_vec()).lower_bytes();
-                node_id[0] = EntityType::GlobalVirtualEd25519Identity as u8;
+                node_id[0] = EntityType::GlobalPreallocatedEd25519Identity as u8;
                 Self(NodeId(node_id))
             }
         }
@@ -106,10 +110,10 @@ impl<'a> Arbitrary<'a> for ComponentAddress {
             EntityType::GlobalAccount as u8,
             EntityType::GlobalIdentity as u8,
             EntityType::GlobalGenericComponent as u8,
-            EntityType::GlobalVirtualSecp256k1Account as u8,
-            EntityType::GlobalVirtualEd25519Account as u8,
-            EntityType::GlobalVirtualSecp256k1Identity as u8,
-            EntityType::GlobalVirtualEd25519Identity as u8,
+            EntityType::GlobalPreallocatedSecp256k1Account as u8,
+            EntityType::GlobalPreallocatedEd25519Account as u8,
+            EntityType::GlobalPreallocatedSecp256k1Identity as u8,
+            EntityType::GlobalPreallocatedEd25519Identity as u8,
             EntityType::GlobalOneResourcePool as u8,
             EntityType::GlobalTwoResourcePool as u8,
             EntityType::GlobalMultiResourcePool as u8,
@@ -130,6 +134,12 @@ impl<'a> Arbitrary<'a> for ComponentAddress {
 impl AsRef<[u8]> for ComponentAddress {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl AsRef<NodeId> for ComponentAddress {
+    fn as_ref(&self) -> &NodeId {
+        &self.0
     }
 }
 

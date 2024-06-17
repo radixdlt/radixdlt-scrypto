@@ -6,7 +6,7 @@ use radix_blueprint_schema_init::{
     FunctionSchemaInit, TypeRef,
 };
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, GenericArgs, KVEntry, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{FieldValue, GenericArgs, KVEntry, SystemApi, ACTOR_STATE_SELF};
 use radix_engine_interface::object_modules::royalty::*;
 use radix_native_sdk::resource::NativeVault;
 
@@ -170,7 +170,7 @@ impl RoyaltyNativePackage {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match export_name {
             COMPONENT_ROYALTY_CREATE_IDENT => {
@@ -229,7 +229,7 @@ impl RoyaltyUtil {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let max_royalty_in_xrd = match api.max_per_function_royalty_in_xrd() {
             Ok(amount) => Ok(amount),
@@ -323,7 +323,7 @@ impl ComponentRoyaltyBlueprint {
         api: &mut Y,
     ) -> Result<Own, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Create a royalty vault
         let accumulator_substate = ComponentRoyaltySubstate {
@@ -379,7 +379,7 @@ impl ComponentRoyaltyBlueprint {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         RoyaltyUtil::verify_royalty_amounts(vec![amount.clone()].iter(), true, api)?;
 
@@ -400,7 +400,7 @@ impl ComponentRoyaltyBlueprint {
 
     pub(crate) fn lock_royalty<Y>(method: String, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
@@ -416,7 +416,7 @@ impl ComponentRoyaltyBlueprint {
 
     pub(crate) fn claim_royalties<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,

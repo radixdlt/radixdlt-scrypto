@@ -4,8 +4,8 @@ use radix_engine_interface::blueprints::account::*;
 
 #[allow(deprecated)]
 pub struct AccountAuthorizedDepositorsScenarioConfig {
-    pub source_account: VirtualAccount,
-    pub destination_account: VirtualAccount,
+    pub source_account: PreallocatedAccount,
+    pub destination_account: PreallocatedAccount,
 }
 
 #[derive(Default)]
@@ -28,20 +28,20 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
     type Config = AccountAuthorizedDepositorsScenarioConfig;
     type State = AccountAuthorizedDepositorsScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
-    #[allow(deprecated)]
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "account_authorized_depositors",
+        protocol_min_requirement: ProtocolVersion::Babylon,
+        testnet_run_at: Some(ProtocolVersion::Babylon),
+    };
+
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "account_authorized_depositors",
-        };
-
         #[allow(unused_variables)]
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, _| {
                     let AccountAuthorizedDepositorsScenarioConfig {

@@ -31,18 +31,22 @@ pub trait FieldPayloadMarker {}
 
 impl<T: FieldPayloadMarker> FieldPayloadMarker for &T {}
 
-/// A high level api to read/write fields
-pub trait ClientFieldApi<E: Debug> {
+/// System api to read/write fields
+pub trait SystemFieldApi<E: Debug> {
+    /// Retrieve the value of a field
     fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, E>;
 
+    /// Retrieve the value of a field
     fn field_read_typed<S: ScryptoDecode>(&mut self, handle: FieldHandle) -> Result<S, E> {
         let buf = self.field_read(handle)?;
         let typed_substate: S = scrypto_decode(&buf).map_err(|e| e).unwrap();
         Ok(typed_substate)
     }
 
+    /// Write a value to a field
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), E>;
 
+    /// Write a value to a field
     fn field_write_typed<S: ScryptoEncode>(
         &mut self,
         handle: FieldHandle,
@@ -52,7 +56,9 @@ pub trait ClientFieldApi<E: Debug> {
         self.field_write(handle, buf)
     }
 
+    /// Lock a field such that it becomes immutable
     fn field_lock(&mut self, handle: FieldHandle) -> Result<(), E>;
 
+    /// Close a field handle so that it is no longer usable
     fn field_close(&mut self, handle: FieldHandle) -> Result<(), E>;
 }

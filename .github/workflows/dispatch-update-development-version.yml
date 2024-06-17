@@ -1,0 +1,35 @@
+name: Dispatch Update Development Version
+on:
+  workflow_dispatch:
+    inputs:
+      development-tag:
+        type: string
+        description: development-tag
+
+permissions: write-all
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    steps:
+    - uses: RDXWorks-actions/checkout@main
+    - name: Update Version
+      run: |
+        if [[ $VERSION_NUMBER =~ ^v[0-9]+\.[0-9]\.[0-9]+-dev ]]; then
+          echo "Tag ${VERSION_NUMBER}"
+          echo "Cargo Version ${VERSION_NUMBER:1}" 
+        else
+          echo "Something is wrong with your version" >&2
+          echo "Make sure your version is in semantic versioning format and starts with a v and ends in -dev" >&2
+          exit -1
+        fi
+        ./update-cargo-toml-versions.sh ${VERSION_NUMBER:1}
+        git config --global user.name 'Radix Bot'
+        git config --global user.email 'radixbot@rdx.works'
+        git add .
+        git commit -m "Update version to ${VERSION_NUMBER:1}"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION_NUMBER: ${{ inputs.development-tag }}

@@ -1,13 +1,13 @@
-use super::system_modules::costing::ExecutionCostingEntry;
+use super::system_modules::costing::{CostingModuleConfig, ExecutionCostingEntry};
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
-use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::account::ACCOUNT_CREATE_PREALLOCATED_ED25519_ID;
+use crate::blueprints::account::ACCOUNT_CREATE_PREALLOCATED_SECP256K1_ID;
 use crate::blueprints::consensus_manager::{
     ConsensusManagerField, ConsensusManagerStateFieldPayload,
     ConsensusManagerValidatorRewardsFieldPayload,
 };
-use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
-use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_ED25519_ID;
+use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID;
 use crate::blueprints::resource::fungible_vault::{DepositEvent, PayFeeEvent};
 use crate::blueprints::resource::{
     BurnFungibleResourceEvent, FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate,
@@ -19,7 +19,7 @@ use crate::blueprints::transaction_tracker::{
 };
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::call_frame::CallFrameMessage;
+use crate::kernel::call_frame::{CallFrameMessage, StableReferenceType};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::RefCheckEvent;
@@ -49,8 +49,8 @@ use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::system::system_type_checker::{BlueprintTypeTarget, KVStoreTypeTarget};
 use crate::track::{
-    to_state_updates, BootStore, CommitableSubstateStore, StoreCommitInfo, Track,
-    TrackFinalizeError,
+    to_state_updates, BootStore, CanonicalSubstateKey, CommitableSubstateStore, IOAccess,
+    StoreCommitInfo, Track, TrackFinalizeError,
 };
 use crate::transaction::{
     reconcile_resource_state_and_events, AbortResult, CommitResult, CostingParameters,
@@ -60,8 +60,8 @@ use crate::transaction::{
 };
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::{ClientBlueprintApi, CollectionIndex};
+use radix_engine_interface::api::SystemObjectApi;
+use radix_engine_interface::api::{CollectionIndex, SystemBlueprintApi};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::hooks::OnDropInput;
 use radix_engine_interface::blueprints::hooks::OnDropOutput;
@@ -82,11 +82,12 @@ pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct SystemParameters {
     pub network_definition: NetworkDefinition,
+    pub costing_module_config: CostingModuleConfig,
     pub costing_parameters: CostingParameters,
     pub limit_parameters: LimitParameters,
-    pub max_per_function_royalty_in_xrd: Decimal,
-    pub apply_additional_costing: bool,
 }
+
+pub type SystemBootSubstate = SystemBoot;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
@@ -181,7 +182,7 @@ impl<C: SystemCallbackObject> System<C> {
         println!("References: {:?}", executable.references());
     }
 
-    pub fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
+    fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
         match store.read_substate(
@@ -198,7 +199,7 @@ impl<C: SystemCallbackObject> System<C> {
         }
     }
 
-    pub fn validate_epoch_range(
+    fn validate_epoch_range(
         current_epoch: Epoch,
         start_epoch_inclusive: Epoch,
         end_epoch_exclusive: Epoch,
@@ -219,7 +220,7 @@ impl<C: SystemCallbackObject> System<C> {
         Ok(())
     }
 
-    pub fn validate_intent_hash<S: CommitableSubstateStore>(
+    fn validate_intent_hash<S: CommitableSubstateStore>(
         track: &mut S,
         intent_hash: Hash,
         expiry_epoch: Epoch,
@@ -724,19 +725,69 @@ impl<C: SystemCallbackObject> System<C> {
         }
         println!("{:-^120}", "Finish");
     }
+
+    fn on_move_node<Y>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => {
+                let mut service = SystemService::new(api);
+                let definition = service.load_blueprint_definition(
+                    object_info.blueprint_info.blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: object_info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
+                        version: BlueprintVersion::default(),
+                    },
+                )?;
+                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
+                            receiver: Some(node_id.clone()),
+                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
+                            hook: BlueprintHook::OnMove,
+                        }),
+                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
+                            is_moving_down,
+                            is_to_barrier,
+                            destination_blueprint_id,
+                        }),
+                    }))
+                    .map(|_| ())
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
+        }
+    }
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
-    type Init = SystemInit<C::InitInput>;
+    type Init = SystemInit<C::Init>;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &Executable,
-        init_input: SystemInit<C::InitInput>,
+        init_input: SystemInit<C::Init>,
     ) -> Result<Self, RejectionReason> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
@@ -755,12 +806,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .unwrap_or(SystemBoot::V1(SystemParameters {
                     network_definition: NetworkDefinition::mainnet(),
                     costing_parameters: CostingParameters::babylon_genesis(),
+                    costing_module_config: CostingModuleConfig::babylon_genesis(),
                     limit_parameters: LimitParameters::babylon_genesis(),
-                    max_per_function_royalty_in_xrd: Decimal::try_from(
-                        MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-                    )
-                    .unwrap(),
-                    apply_additional_costing: false,
                 }));
 
             match system_boot {
@@ -831,14 +878,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             fee_table: FeeTable::new(),
             tx_payload_len: executable.payload_size(),
             tx_num_of_signature_validations: executable.num_of_signature_validations(),
-            max_per_function_royalty_in_xrd: system_parameters.max_per_function_royalty_in_xrd,
+            config: system_parameters.costing_module_config,
             cost_breakdown: if init_input.enable_cost_breakdown {
                 Some(Default::default())
             } else {
                 None
             },
             on_apply_cost: Default::default(),
-            apply_additional_costing: system_parameters.apply_additional_costing,
         };
 
         let mut modules = SystemModuleMixer::new(
@@ -853,14 +899,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         modules.init().map_err(RejectionReason::BootloadingError)?;
 
-        let system = System {
-            blueprint_cache: NonIterMap::new(),
-            auth_cache: NonIterMap::new(),
-            schema_cache: NonIterMap::new(),
-            callback,
-            modules,
-        };
-
         // Perform runtime validation.
         // TODO: the following assumptions can be removed with better interface.
         // We are assuming that intent hash store is ready when epoch manager is ready.
@@ -871,34 +909,71 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     current_epoch,
                     range.start_epoch_inclusive,
                     range.end_epoch_exclusive,
-                )
-                .and_then(|_| {
-                    Self::validate_intent_hash(
-                        store,
-                        executable.intent_hash().to_hash(),
-                        range.end_epoch_exclusive,
-                    )
-                })
-                .and_then(|_| Ok(system))
-            } else {
-                Ok(system)
+                )?;
+                Self::validate_intent_hash(
+                    store,
+                    executable.intent_hash().to_hash(),
+                    range.end_epoch_exclusive,
+                )?;
             }
-        } else {
-            Ok(system)
         }
+
+        let system = System {
+            blueprint_cache: NonIterMap::new(),
+            auth_cache: NonIterMap::new(),
+            schema_cache: NonIterMap::new(),
+            callback,
+            modules,
+        };
+        Ok(system)
     }
 
-    fn on_ref_check<Y>(api: &mut Y, event: RefCheckEvent) -> Result<(), BootloadingError>
-    where
-        Y: KernelApi<Self>,
-    {
-        if let Some(costing) = api.kernel_get_system_state().system.modules.costing_mut() {
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        ref_value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        if let Some(costing) = self.modules.costing_mut() {
+            let io_access = IOAccess::ReadFromDb(
+                CanonicalSubstateKey {
+                    node_id: *node_id,
+                    partition_number: TYPE_INFO_FIELD_PARTITION,
+                    substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
+                },
+                ref_value.len(),
+            );
+            let event = RefCheckEvent::IOAccess(&io_access);
+
             costing
                 .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
                 .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
         }
 
-        Ok(())
+        let type_substate: TypeInfoSubstate = ref_value.as_typed().unwrap();
+        return match &type_substate {
+            TypeInfoSubstate::Object(
+                info @ ObjectInfo {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
+                    ..
+                },
+            ) => {
+                if info.is_global() {
+                    Ok(StableReferenceType::Global)
+                } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                    && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                        || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                {
+                    Ok(StableReferenceType::DirectAccess)
+                } else {
+                    Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
+                        node_id.clone(),
+                    ))
+                }
+            }
+            _ => Err(BootloadingError::ReferencedNodeIsNotAnObject(
+                node_id.clone(),
+            )),
+        };
     }
 
     fn start<Y>(
@@ -1164,7 +1239,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         let receipt = TransactionReceipt {
             costing_parameters,
-            transaction_costing_parameters: executable.costing_parameters().clone(),
+            transaction_costing_parameters: executable.costing_parameters().clone().into(),
             fee_summary,
             fee_details,
             result,
@@ -1559,21 +1634,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
 
         let (blueprint_id, variant_id) = match node_id.entity_type() {
-            Some(EntityType::GlobalVirtualSecp256k1Account) => (
+            Some(EntityType::GlobalPreallocatedSecp256k1Account) => (
                 BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
+                ACCOUNT_CREATE_PREALLOCATED_SECP256K1_ID,
             ),
-            Some(EntityType::GlobalVirtualEd25519Account) => (
+            Some(EntityType::GlobalPreallocatedEd25519Account) => (
                 BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                ACCOUNT_CREATE_VIRTUAL_ED25519_ID,
+                ACCOUNT_CREATE_PREALLOCATED_ED25519_ID,
             ),
-            Some(EntityType::GlobalVirtualSecp256k1Identity) => (
+            Some(EntityType::GlobalPreallocatedSecp256k1Identity) => (
                 BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
+                IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID,
             ),
-            Some(EntityType::GlobalVirtualEd25519Identity) => (
+            Some(EntityType::GlobalPreallocatedEd25519Identity) => (
                 BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                IDENTITY_CREATE_VIRTUAL_ED25519_ID,
+                IDENTITY_CREATE_PREALLOCATED_ED25519_ID,
             ),
             _ => return Ok(false),
         };
@@ -1653,56 +1728,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 // There is no way to drop a non-object through system API, triggering `NotAnObject` error.
                 Ok(())
             }
-        }
-    }
-
-    fn on_move_node<Y>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
-
-        match type_info {
-            TypeInfoSubstate::Object(object_info) => {
-                let mut service = SystemService::new(api);
-                let definition = service.load_blueprint_definition(
-                    object_info.blueprint_info.blueprint_id.package_address,
-                    &BlueprintVersionKey {
-                        blueprint: object_info
-                            .blueprint_info
-                            .blueprint_id
-                            .blueprint_name
-                            .clone(),
-                        version: BlueprintVersion::default(),
-                    },
-                )?;
-                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
-                    api.kernel_invoke(Box::new(KernelInvocation {
-                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
-                            receiver: Some(node_id.clone()),
-                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
-                            hook: BlueprintHook::OnMove,
-                        }),
-                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
-                            is_moving_down,
-                            is_to_barrier,
-                            destination_blueprint_id,
-                        }),
-                    }))
-                    .map(|_| ())
-                } else {
-                    Ok(())
-                }
-            }
-            TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::GlobalAddressReservation(_)
-            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
 }

@@ -7,7 +7,7 @@ use crate::internal_prelude::*;
 #[sbor(transparent)]
 pub struct BlobV1(pub Vec<u8>);
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
 pub struct BlobsV1 {
     pub blobs: Vec<BlobV1>,

@@ -19,7 +19,7 @@ pub(super) trait Transition<I> {
 
     fn transition<Y>(&self, api: &mut Y, input: I) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>;
+        Y: SystemApi<RuntimeError>;
 }
 
 /// A trait which defines the interface for an access controller transition for a given trigger or
@@ -29,7 +29,7 @@ pub(super) trait TransitionMut<I> {
 
     fn transition_mut<Y>(&mut self, api: &mut Y, input: I) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>;
+        Y: SystemApi<RuntimeError>;
 }
 
 //=================================================
@@ -55,7 +55,7 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
         _input: AccessControllerCreateProofStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Proofs can only be created when the primary role is unlocked - regardless of any pending
         // recovery or withdraw attempts.
@@ -94,7 +94,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsPrimaryStateMachineInput>
         input: AccessControllerInitiateRecoveryAsPrimaryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match self.state {
             (
@@ -136,7 +136,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
         input: AccessControllerInitiateRecoveryAsRecoveryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match self.state {
             (
@@ -193,7 +193,7 @@ impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMac
         _input: AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match self.state {
             (
@@ -232,7 +232,7 @@ impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMa
         _input: AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match self.state {
             (
@@ -271,7 +271,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateM
         input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match self.state {
             (_, PrimaryRoleRecoveryAttemptState::RecoveryAttempt(ref proposal), _, _, _) => {
@@ -310,7 +310,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalState
         input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match self.state {
             (
@@ -356,7 +356,7 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptSt
         _input: AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match self.state {
             (_, _, PrimaryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt, _, _) => {
@@ -388,7 +388,7 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptS
         _input: AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         match self.state {
             (_, _, _, _, RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt) => {
@@ -422,7 +422,7 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
         input: AccessControllerTimedConfirmRecoveryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Timed confirm recovery can only be performed by the recovery role (this is checked
         // through access rules on the invocation itself) and can be performed in recovery mode
@@ -480,7 +480,7 @@ impl TransitionMut<AccessControllerCancelPrimaryRoleRecoveryProposalStateMachine
         _input: AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
@@ -514,7 +514,7 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleRecoveryProposalStateMachin
         _input: AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
@@ -548,7 +548,7 @@ impl TransitionMut<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMac
         _input: AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // A badge withdraw attempt can only be canceled when it exists regardless of whether
         // primary is locked or unlocked
@@ -582,7 +582,7 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMa
         _input: AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // A badge withdraw attempt can only be canceled when it exists regardless of whether
         // primary is locked or unlocked
@@ -616,7 +616,7 @@ impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput>
         _input: AccessControllerLockPrimaryRoleStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Primary can only be locked when it's unlocked
         match self.state {
@@ -642,7 +642,7 @@ impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
         _input: AccessControllerUnlockPrimaryRoleStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Primary can only be unlocked when it's locked
         match self.state {
@@ -670,7 +670,7 @@ impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
         input: AccessControllerStopTimedRecoveryStateMachineInput,
     ) -> Result<Self::Output, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // We can only stop the timed recovery timer if we're in recovery mode. It doesn't matter
         // if primary is locked or unlocked

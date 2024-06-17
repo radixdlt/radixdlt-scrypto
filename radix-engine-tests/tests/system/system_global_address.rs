@@ -5,7 +5,7 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{ClientApi, ACTOR_REF_GLOBAL};
+use radix_engine_interface::api::{SystemApi, ACTOR_REF_GLOBAL};
 use radix_engine_interface::blueprints::package::{NativeCodeId, PackageDefinition};
 use radix_engine_tests::common::*;
 use radix_transactions::builder::ManifestBuilder;
@@ -28,7 +28,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             match export_name {
@@ -106,7 +106,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             _vm_api: &V,
         ) -> Result<IndexedScryptoValue, RuntimeError>
         where
-            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
         {
             if self.0.contains(export_name) {

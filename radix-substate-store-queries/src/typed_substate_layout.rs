@@ -308,16 +308,16 @@ fn to_typed_object_substate_key_internal(
                 substate_key,
             )?,
         ),
-        EntityType::GlobalVirtualSecp256k1Account
-        | EntityType::GlobalVirtualEd25519Account
+        EntityType::GlobalPreallocatedSecp256k1Account
+        | EntityType::GlobalPreallocatedEd25519Account
         | EntityType::GlobalAccount => {
             TypedMainModuleSubstateKey::Account(AccountTypedSubstateKey::for_key_in_partition(
                 &AccountPartitionOffset::try_from(partition_offset)?,
                 substate_key,
             )?)
         }
-        EntityType::GlobalVirtualSecp256k1Identity
-        | EntityType::GlobalVirtualEd25519Identity
+        EntityType::GlobalPreallocatedSecp256k1Identity
+        | EntityType::GlobalPreallocatedEd25519Identity
         | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates
         EntityType::InternalFungibleVault => TypedMainModuleSubstateKey::FungibleVault(
             FungibleVaultTypedSubstateKey::for_key_at_partition_offset(

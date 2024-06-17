@@ -5,8 +5,8 @@ use radix_engine_interface::*;
 
 #[allow(deprecated)]
 pub struct FungibleResourceScenarioConfig {
-    pub user_account_1: VirtualAccount,
-    pub user_account_2: VirtualAccount,
+    pub user_account_1: PreallocatedAccount,
+    pub user_account_2: PreallocatedAccount,
 }
 
 #[derive(Default)]
@@ -32,20 +32,20 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
     type Config = FungibleResourceScenarioConfig;
     type State = FungibleResourceScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion = ProtocolVersion::Genesis;
 
-    #[allow(deprecated)]
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "fungible_resource",
+        protocol_min_requirement: ProtocolVersion::Babylon,
+        testnet_run_at: Some(ProtocolVersion::Babylon),
+    };
+
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "fungible_resource",
-        };
-
         #[allow(unused_variables)]
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(

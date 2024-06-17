@@ -1,7 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug)]
@@ -58,7 +58,7 @@ pub fn drop_fungible_bucket<Y>(
     api: &mut Y,
 ) -> Result<DroppedFungibleBucket, RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedFungibleBucket = fields.into();
@@ -76,7 +76,7 @@ pub fn drop_non_fungible_bucket<Y>(
     api: &mut Y,
 ) -> Result<DroppedNonFungibleBucket, RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedNonFungibleBucket = fields.into();

@@ -69,6 +69,36 @@ impl OnApplyCost {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct CostingModuleConfig {
+    /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
+    pub max_per_function_royalty_in_xrd: Decimal,
+    /// If true, execution costing for all system calls will occur
+    pub apply_execution_cost_2: bool,
+    /// If true, costing on reference checks on boot will occur
+    pub apply_boot_ref_check_costing: bool,
+}
+
+impl CostingModuleConfig {
+    pub fn babylon_genesis() -> Self {
+        Self {
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
+            apply_execution_cost_2: false,
+            apply_boot_ref_check_costing: false,
+        }
+    }
+
+    pub fn bottlenose() -> Self {
+        Self {
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
+            apply_execution_cost_2: true,
+            apply_boot_ref_check_costing: true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct CostBreakdown {
     pub execution_cost_breakdown: IndexMap<String, u32>,
@@ -78,19 +108,14 @@ pub struct CostBreakdown {
 
 #[derive(Debug, Clone)]
 pub struct CostingModule {
+    pub config: CostingModuleConfig,
     pub fee_reserve: SystemLoanFeeReserve,
-
     pub fee_table: FeeTable,
-    pub tx_payload_len: usize,
-    pub tx_num_of_signature_validations: usize,
-    /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
-    pub max_per_function_royalty_in_xrd: Decimal,
-
-    pub cost_breakdown: Option<CostBreakdown>,
-
     pub on_apply_cost: OnApplyCost,
 
-    pub apply_additional_costing: bool,
+    pub tx_payload_len: usize,
+    pub tx_num_of_signature_validations: usize,
+    pub cost_breakdown: Option<CostBreakdown>,
 }
 
 impl CostingModule {
@@ -118,11 +143,11 @@ impl CostingModule {
         Ok(())
     }
 
-    pub fn apply_execution_cost_after_update(
+    pub fn apply_execution_cost_2(
         &mut self,
         costing_entry: ExecutionCostingEntry,
     ) -> Result<(), CostingError> {
-        if self.apply_additional_costing {
+        if self.config.apply_execution_cost_2 {
             self.apply_execution_cost(costing_entry)
         } else {
             Ok(())
@@ -133,6 +158,12 @@ impl CostingModule {
         &mut self,
         costing_entry: ExecutionCostingEntry,
     ) -> Result<(), CostingError> {
+        if let ExecutionCostingEntry::RefCheck { .. } = &costing_entry {
+            if !self.config.apply_boot_ref_check_costing {
+                return Ok(());
+            }
+        }
+
         self.on_apply_cost.on_call()?;
 
         let cost_units = costing_entry.to_execution_cost_units(&self.fee_table);

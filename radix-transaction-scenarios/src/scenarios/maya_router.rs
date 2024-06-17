@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 use crate::utils::{new_ed25519_private_key, new_secp256k1_private_key};
-use radix_engine::updates::{ProtocolUpdate, ProtocolVersion};
+use radix_engine::updates::ProtocolVersion;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::object_modules::ModuleConfig;
@@ -54,20 +54,20 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
     type Config = MayaRouterScenarioConfig;
     type State = MayaRouterScenarioState;
     type Instance = Scenario<Self::Config, Self::State>;
-    const SCENARIO_PROTOCOL_REQUIREMENT: ProtocolVersion =
-        ProtocolVersion::ProtocolUpdate(ProtocolUpdate::Bottlenose);
+
+    const METADATA: ScenarioMetadata = ScenarioMetadata {
+        logical_name: "maya_router",
+        protocol_min_requirement: ProtocolVersion::Bottlenose,
+        testnet_run_at: Some(ProtocolVersion::Bottlenose),
+    };
 
     fn create_with_config_and_state(
         core: ScenarioCore,
         config: Self::Config,
         start_state: Self::State,
     ) -> Self::Instance {
-        let metadata = ScenarioMetadata {
-            logical_name: "maya_router",
-        };
-
         #[allow(unused_variables)]
-        ScenarioBuilder::new(core, metadata, config, start_state)
+        ScenarioBuilder::new(core, Self::METADATA, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, _| {
                     core.next_transaction_with_faucet_lock_fee(
@@ -217,265 +217,6 @@ impl ScenarioCreator for MayaRouterScenarioCreator {
                     let new_components = result.new_component_addresses();
                     state.maya_router_data.maya_router_address.set(new_components[0]);
                     Ok(())
-                },
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-deposit-to-asgard-vault-1",
-                        |builder| {
-                            let resource_1 = state.maya_router_data.resource_1.get()?;
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            let swapper_account = state.swapper_account.get()?;
-
-                            builder
-                                .withdraw_from_account(state.swapper_account.get()?, XRD, dec!(100))
-                                .withdraw_from_account(state.swapper_account.get()?, resource_1, dec!(200))
-                                .take_all_from_worktop(XRD, "xrds")
-                                .with_bucket("xrds", |builder, bucket| {
-                                    builder.call_method(
-                                        router_address,
-                                        "deposit",
-                                        manifest_args!(
-                                            swapper_account,
-                                            config.asgard_vault_1_public_key,
-                                            bucket,
-                                            "=:MAYA.CACAO:maya12ehykd8m4a79av36x0m9wzvq3uf06x5xa2yzd2::wr:100".to_string(),
-                                        ),
-                                    )
-                                })
-                                .take_all_from_worktop(resource_1, "resource_2")
-                                .with_bucket("resource_2", |builder, bucket| {
-                                    builder.call_method(
-                                        router_address,
-                                        "deposit",
-                                        manifest_args!(
-                                            swapper_account,
-                                            config.asgard_vault_1_public_key,
-                                            bucket,
-                                            "=:MAYA.CACAO:maya12ehykd8m4a79av36x0m9wzvq3uf06x5xa2yzd2::wr:100".to_string()
-                                        ),
-                                    )
-                                })
-                                .done()
-                        },
-                        vec![&config.swapper_private_key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    let swapper_account = state.swapper_account.get()?;
-                    let swapper_account_str = swapper_account.to_string(AddressDisplayContext::with_encoder(&core.encoder()));
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-from-asgard-vault-1",
-                        |builder| {
-                            let resource_1 = state.maya_router_data.resource_1.get()?;
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            builder
-                                .call_method(
-                                    router_address,
-                                    "transfer_out",
-                                    manifest_args!(
-                                        config.asgard_vault_1_public_key,
-                                        swapper_account,
-                                        XRD,
-                                        dec!(10),
-                                        format!("=:XRD.XRD:{}::wr:100", swapper_account_str),
-                                    ),
-                                )
-                                .call_method(
-                                    router_address,
-                                    "transfer_out",
-                                    manifest_args!(
-                                        config.asgard_vault_1_public_key,
-                                        swapper_account,
-                                        resource_1,
-                                        dec!(20),
-                                        format!("=:XRD.FIZZ:{}::wr:100", swapper_account_str),
-                                    ),
-                                )
-                                .done()
-                        },
-                        vec![&config.asgard_vault_1_private_key],
-                    )
-                }
-            )
-            .failed_transaction_with_error_handler(
-                |core, config, state| {
-                    let swapper_account = state.swapper_account.get()?;
-                    let swapper_account_str = swapper_account.to_string(AddressDisplayContext::with_encoder(&core.encoder()));
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-from-asgard-vault-1-resource-3-failed-asset-not-available",
-                        |builder| {
-                            // resource_2 is not available in the deposited resources in MayaRouter
-                            let resource_2 = state.maya_router_data.resource_2.get()?;
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            builder
-                                .call_method(
-                                    router_address,
-                                    "transfer_out",
-                                    manifest_args!(
-                                        config.asgard_vault_1_public_key,
-                                        swapper_account,
-                                        resource_2,
-                                        dec!(30),
-                                        format!("=:XRD.BUZZ:{}::wr:100", swapper_account_str),
-                                    ),
-                                )
-                                .done()
-                        },
-                        vec![&config.asgard_vault_1_private_key],
-                    )
-                },
-                |_, _, _, _| Ok(()),
-            )
-            .failed_transaction_with_error_handler(
-                |core, config, state| {
-                    let swapper_account = state.swapper_account.get()?;
-                    let swapper_account_str = swapper_account.to_string(AddressDisplayContext::with_encoder(&core.encoder()));
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-failed-auth-error",
-                        |builder| {
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            builder
-                                .call_method(
-                                    router_address,
-                                    "transfer_out",
-                                    manifest_args!(
-                                        config.asgard_vault_1_public_key,
-                                        state.swapper_account.get()?,
-                                        XRD,
-                                        dec!(20),
-                                        format!("=:XRD.XRD:{}::wr:100", swapper_account_str),
-                                    ),
-                                )
-                                .done()
-                        },
-                        // Transaction should fail, because asgard_vault_2 key is used
-                        vec![&config.asgard_vault_2_private_key],
-                    )
-                },
-                |_, _, _, _| Ok(()),
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-between-asgard-vaults",
-                        |builder| {
-                            let resource_1 = state.maya_router_data.resource_1.get()?;
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            builder
-                                .call_method(
-                                    router_address,
-                                    "transfer_between_asgard_vaults",
-                                    manifest_args!(
-                                        config.asgard_vault_1_public_key,
-                                        config.asgard_vault_2_public_key,
-                                        XRD,
-                                        "migrate:3494355".to_string(),
-                                    ),
-                                )
-                                .call_method(
-                                    router_address,
-                                    "transfer_between_asgard_vaults",
-                                    manifest_args!(
-                                        config.asgard_vault_1_public_key,
-                                        config.asgard_vault_2_public_key,
-                                        resource_1,
-                                        "migrate:3494355".to_string(),
-                                    ),
-                                )
-                                .done()
-                        },
-                        //
-                        vec![&config.asgard_vault_1_private_key],
-                    )
-                },
-            )
-            .failed_transaction_with_error_handler(
-                |core, config, state| {
-                    let swapper_account = state.swapper_account.get()?;
-                    let swapper_account_str = swapper_account.to_string(AddressDisplayContext::with_encoder(&core.encoder()));
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-from-asgard-vault-1-resource-1-failed-asset-not-available",
-                        |builder| {
-                            // XRD shall no longer be available in the Asgard Vault 1
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            builder
-                                .call_method(
-                                    router_address,
-                                    "transfer_out",
-                                    manifest_args!(
-                                        config.asgard_vault_1_public_key,
-                                        swapper_account,
-                                        XRD,
-                                        dec!(30),
-                                        format!("=:XRD.XRD:{}::wr:100", swapper_account_str),
-                                    ),
-                                )
-                                .done()
-                        },
-                        vec![&config.asgard_vault_1_private_key],
-                    )
-                },
-                |_, _, _, _| Ok(()),
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-deposit-to-asgard-vault-2",
-                        |builder| {
-                            let resource_1 = state.maya_router_data.resource_1.get()?;
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            let swapper_account = state.swapper_account.get()?;
-                            builder
-                                .withdraw_from_account(state.swapper_account.get()?, resource_1, dec!(200))
-                                .take_all_from_worktop(resource_1, "resource_2")
-                                .with_bucket("resource_2", |builder, bucket| {
-                                    builder.call_method(
-                                        router_address,
-                                        "deposit",
-                                        manifest_args!(
-                                            swapper_account,
-                                            config.asgard_vault_2_public_key,
-                                            bucket,
-                                            "=:MAYA.CACAO:maya1x5979k5wqgq58f4864glr7w2rtgyuqqm6l2zhx::wr:100".to_string(),
-                                        ),
-                                    )
-                                })
-                                .done()
-                        },
-                        vec![&config.swapper_private_key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    let swapper_account = state.swapper_account.get()?;
-                    let swapper_account_str = swapper_account.to_string(AddressDisplayContext::with_encoder(&core.encoder()));
-                    core.next_transaction_with_faucet_lock_fee_fallible(
-                        "maya-router-transfer-out-asgard-vault-2",
-                        |builder| {
-                            let resource_1 = state.maya_router_data.resource_1.get()?;
-                            let router_address = state.maya_router_data.maya_router_address.get()?;
-                            builder
-                                .call_method(
-                                    router_address,
-                                    "transfer_out",
-                                    manifest_args!(
-                                        config.asgard_vault_2_public_key,
-                                        swapper_account,
-                                        resource_1,
-                                        dec!(20),
-                                        format!("=:XRD.FIZZ:{}::wr:100", swapper_account_str),
-                                    ),
-                                )
-                                .done()
-                        },
-                        //
-                        vec![&config.asgard_vault_2_private_key],
-                    )
                 },
             )
             .finalize(|core, config, state| {

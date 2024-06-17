@@ -99,7 +99,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         dispatch! {
             EXPORT_NAME,
@@ -134,7 +134,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerInstantiateOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::instantiate_internal(
             owner_role,
@@ -155,7 +155,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerInstantiateSimpleOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Two address reservations are needed. One for the badge and another for the account locker
         // that we're instantiating.
@@ -227,7 +227,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<Global<AccountLockerMarker>, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Main module
         let object_id = api.new_simple_object(ACCOUNT_LOCKER_BLUEPRINT, indexmap! {})?;
@@ -269,7 +269,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerStoreOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // If we should try to send first then attempt the deposit into the account
         let bucket = if try_direct_send {
@@ -310,7 +310,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.put(bucket, api),
-        )??;
+        )?;
 
         // Emit an event with the stored resource
         Runtime::emit_event(
@@ -334,7 +334,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerAirdropOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Distribute and call `store`
         let resource_address = bucket.resource_address(api)?;
@@ -373,7 +373,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerRecoverOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Recover the resources from the vault.
         let bucket = Self::with_vault_create_on_traversal(
@@ -381,7 +381,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.take(amount, api),
-        )??;
+        )?;
 
         // Emitting the event
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
@@ -407,7 +407,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerRecoverNonFungiblesOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Recover the resources from the vault.
         let bucket = Self::with_vault_create_on_traversal(
@@ -415,7 +415,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.take_non_fungibles(ids, api),
-        )??;
+        )?;
 
         // Emitting the event
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
@@ -441,7 +441,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerClaimOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Read and assert against the owner role of the claimant.
         let claimant_owner_role = api
@@ -460,7 +460,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.take(amount, api),
-        )??;
+        )?;
 
         // Emitting the event
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
@@ -486,7 +486,7 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerClaimNonFungiblesOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         // Read and assert against the owner role of the claimant.
         let claimant_owner_role = api
@@ -505,7 +505,7 @@ impl AccountLockerBlueprint {
             resource_address,
             api,
             |mut vault, api| vault.take_non_fungibles(ids, api),
-        )??;
+        )?;
 
         // Emitting the event
         let (resource_address, resource_specifier) = bucket_to_resource_specifier(&bucket, api)?;
@@ -530,13 +530,13 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerGetAmountOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_vault(claimant.0, resource_address, api, |vault, api| {
             vault
                 .map(|vault| vault.amount(api))
                 .unwrap_or(Ok(Decimal::ZERO))
-        })?
+        })
     }
 
     fn get_non_fungible_local_ids<Y>(
@@ -548,13 +548,13 @@ impl AccountLockerBlueprint {
         api: &mut Y,
     ) -> Result<AccountLockerGetNonFungibleLocalIdsOutput, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
+        Y: SystemApi<RuntimeError>,
     {
         Self::with_vault(claimant.0, resource_address, api, |vault, api| {
             vault
                 .map(|vault| vault.non_fungible_local_ids(limit, api))
                 .unwrap_or(Ok(indexset! {}))
-        })?
+        })
     }
 
     fn with_vault_create_on_traversal<Y, F, O>(
@@ -564,8 +564,8 @@ impl AccountLockerBlueprint {
         handler: F,
     ) -> Result<O, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
-        F: FnOnce(Vault, &mut Y) -> O,
+        Y: SystemApi<RuntimeError>,
+        F: FnOnce(Vault, &mut Y) -> Result<O, RuntimeError>,
     {
         // The collection on the blueprint maps an account address to a key value store. We read the
         // node id of that key value store.
@@ -623,8 +623,10 @@ impl AccountLockerBlueprint {
             }
         };
 
-        // Call the callback
-        let rtn = handler(vault, api);
+        // Call the callback - if the callback fails then the following code will not be executed
+        // and the substate locks will not be released. We are making the assumption that a failed
+        // callback that returns an `Err(RuntimeError)` can not be recovered from.
+        let rtn = handler(vault, api)?;
 
         // Close the opened kv-entries.
         api.key_value_entry_close(vault_entry_handle)?;
@@ -641,8 +643,8 @@ impl AccountLockerBlueprint {
         handler: F,
     ) -> Result<O, RuntimeError>
     where
-        Y: ClientApi<RuntimeError>,
-        F: FnOnce(Option<Vault>, &mut Y) -> O,
+        Y: SystemApi<RuntimeError>,
+        F: FnOnce(Option<Vault>, &mut Y) -> Result<O, RuntimeError>,
     {
         // The collection on the blueprint maps an account address to a key value store. We read the
         // node id of that key value store.
@@ -662,7 +664,7 @@ impl AccountLockerBlueprint {
             Some(account_claims_kv_store) => account_claims_kv_store,
             None => {
                 // Call the callback function.
-                let rtn = handler(None, api);
+                let rtn = handler(None, api)?;
                 // Dropping the lock on the collection entry.
                 api.key_value_entry_close(account_claims_handle)?;
                 // Return the result of the callback.
@@ -680,8 +682,10 @@ impl AccountLockerBlueprint {
 
         let vault_entry = api.key_value_entry_get_typed::<Vault>(vault_entry_handle)?;
 
-        // Call the callback
-        let rtn = handler(vault_entry, api);
+        // Call the callback - if the callback fails then the following code will not be executed
+        // and the substate locks will not be released. We are making the assumption that a failed
+        // callback that returns an `Err(RuntimeError)` can not be recovered from.
+        let rtn = handler(vault_entry, api)?;
 
         // Close the opened kv-entries.
         api.key_value_entry_close(vault_entry_handle)?;
@@ -697,7 +701,7 @@ fn bucket_to_resource_specifier<Y>(
     api: &mut Y,
 ) -> Result<(ResourceAddress, ResourceSpecifier), RuntimeError>
 where
-    Y: ClientApi<RuntimeError>,
+    Y: SystemApi<RuntimeError>,
 {
     let resource_address = bucket.resource_address(api)?;
     if resource_address.is_fungible() {
