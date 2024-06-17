@@ -20,7 +20,7 @@ pub trait ScryptoVault {
 
     fn with_bucket(bucket: Self::BucketType) -> Self;
 
-    fn new(resource_manager: Self::ResourceManagerType) -> Self;
+    fn new(resource_address: ResourceAddress) -> Self;
 
     fn put(&mut self, bucket: Self::BucketType) -> ();
 
@@ -106,14 +106,14 @@ impl ScryptoVault for Vault {
 
     /// Creates an empty vault and fills it with an initial bucket of resource.
     fn with_bucket(bucket: Self::BucketType) -> Self {
-        let mut vault = Vault::new(bucket.resource_manager());
+        let mut vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
         vault
     }
 
-    fn new(resource_manager: Self::ResourceManagerType) -> Self {
+    fn new(resource_address: ResourceAddress) -> Self {
         let rtn = ScryptoVmV1Api::object_call(
-            resource_manager.address().as_node_id(),
+            resource_address.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
             scrypto_encode(&ResourceManagerCreateEmptyVaultInput {}).unwrap(),
         );
@@ -228,8 +228,11 @@ impl ScryptoVault for FungibleVault {
         Self(Vault::with_bucket(bucket.0))
     }
 
-    fn new(resource_manager: Self::ResourceManagerType) -> Self {
-        Self(Vault::new(resource_manager.into()))
+    fn new(resource_address: ResourceAddress) -> Self {
+        assert!(resource_address
+            .as_node_id()
+            .is_global_fungible_resource_manager());
+        Self(Vault::new(resource_address))
     }
 
     fn put(&mut self, bucket: Self::BucketType) -> () {
@@ -347,8 +350,11 @@ impl ScryptoVault for NonFungibleVault {
         Self(Vault::with_bucket(bucket.0))
     }
 
-    fn new(resource_manager: Self::ResourceManagerType) -> Self {
-        Self(Vault::new(resource_manager.into()))
+    fn new(resource_address: ResourceAddress) -> Self {
+        assert!(resource_address
+            .as_node_id()
+            .is_global_non_fungible_resource_manager());
+        Self(Vault::new(resource_address))
     }
 
     fn put(&mut self, bucket: Self::BucketType) -> () {

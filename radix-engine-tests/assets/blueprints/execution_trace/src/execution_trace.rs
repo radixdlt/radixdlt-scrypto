@@ -28,7 +28,7 @@ mod execution_trace_test {
             .globalize();
 
             let target_component = ExecutionTraceBp {
-                vault: Vault::new(resource_address.into()),
+                vault: Vault::new(resource_address),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

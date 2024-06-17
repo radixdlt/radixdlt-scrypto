@@ -21,7 +21,7 @@ mod fee {
 
             Self {
                 xrd: Vault::with_bucket(xrd),
-                xrd_empty: Vault::new(XRD.into()),
+                xrd_empty: Vault::new(XRD),
                 doge: Vault::with_bucket(doge_tokens.into()),
                 garbage_vaults: Vec::new(),
             }
@@ -43,7 +43,7 @@ mod fee {
         }
 
         pub fn lock_fee_with_temp_vault(&mut self, amount: Decimal) {
-            let vault = Vault::new(XRD.into());
+            let vault = Vault::new(XRD);
             vault.as_fungible().lock_fee(amount);
             self.garbage_vaults.push(vault);
         }

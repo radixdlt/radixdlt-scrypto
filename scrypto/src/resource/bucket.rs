@@ -22,7 +22,7 @@ pub trait ScryptoBucket {
     type ProofType;
     type ResourceManagerType;
 
-    fn new(resource_manager: Self::ResourceManagerType) -> Self;
+    fn new(resource_address: ResourceAddress) -> Self;
 
     fn drop_empty(self);
 
@@ -99,9 +99,9 @@ impl ScryptoBucket for Bucket {
     type ProofType = Proof;
     type ResourceManagerType = ResourceManager;
 
-    fn new(resource_manager: Self::ResourceManagerType) -> Self {
+    fn new(resource_address: ResourceAddress) -> Self {
         let rtn = ScryptoVmV1Api::object_call(
-            resource_manager.address().as_node_id(),
+            resource_address.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
             scrypto_encode(&ResourceManagerCreateEmptyBucketInput {}).unwrap(),
         );
@@ -238,8 +238,11 @@ impl ScryptoBucket for FungibleBucket {
     type ProofType = FungibleProof;
     type ResourceManagerType = FungibleResourceManager;
 
-    fn new(resource_manager: Self::ResourceManagerType) -> Self {
-        Self(Bucket::new(resource_manager.into()))
+    fn new(resource_address: ResourceAddress) -> Self {
+        assert!(resource_address
+            .as_node_id()
+            .is_global_fungible_resource_manager());
+        Self(Bucket::new(resource_address))
     }
 
     fn drop_empty(self) {
@@ -330,8 +333,11 @@ impl ScryptoBucket for NonFungibleBucket {
     type ProofType = NonFungibleProof;
     type ResourceManagerType = NonFungibleResourceManager;
 
-    fn new(resource_manager: Self::ResourceManagerType) -> Self {
-        Self(Bucket::new(resource_manager.into()))
+    fn new(resource_address: ResourceAddress) -> Self {
+        assert!(resource_address
+            .as_node_id()
+            .is_global_non_fungible_resource_manager());
+        Self(Bucket::new(resource_address))
     }
 
     fn resource_address(&self) -> ResourceAddress {

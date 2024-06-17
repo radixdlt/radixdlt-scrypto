@@ -43,7 +43,7 @@ mod vault_test {
 
         pub fn invalid_double_ownership_of_vault() -> Global<VaultTest> {
             let bucket = Self::new_fungible();
-            let vault = Vault::new(bucket.resource_manager());
+            let vault = Vault::new(bucket.resource_address());
             let vault_fake_copy = Vault(vault.0.clone());
 
             VaultTest {
@@ -58,7 +58,7 @@ mod vault_test {
 
         pub fn new_vault_into_map_then_get() -> Global<VaultTest> {
             let bucket = Self::new_fungible();
-            let vault = Vault::new(bucket.resource_manager());
+            let vault = Vault::new(bucket.resource_address());
             let mut vaults = KeyValueStore::new();
             vaults.insert(0, vault);
             {

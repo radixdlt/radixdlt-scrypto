@@ -70,7 +70,7 @@ mod bucket_test {
                 let resource_manager =
                     ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
                         .create_with_no_initial_supply();
-                NonFungibleBucket::new(resource_manager)
+                NonFungibleBucket::new(resource_manager.address())
             } else {
                 ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
                     .mint_initial_supply([MyData {}])
@@ -187,7 +187,7 @@ mod bucket_test {
             let resource_manager =
                 ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
                     .create_with_no_initial_supply();
-            Bucket::new(resource_manager.into())
+            Bucket::new(resource_manager.address())
         }
 
         pub fn drop_locked_fungible_bucket() {

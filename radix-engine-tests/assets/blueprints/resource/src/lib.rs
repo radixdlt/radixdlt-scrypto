@@ -60,7 +60,7 @@ mod resource_test {
                     },
                 )]);
             let global = Self {
-                vault: NonFungibleVault::new(bucket.resource_manager()),
+                vault: NonFungibleVault::new(bucket.resource_address()),
                 data: "hi".to_string(),
             }
             .instantiate()
@@ -91,7 +91,7 @@ mod resource_test {
                     .create_with_no_initial_supply();
 
             let global = Self {
-                vault: NonFungibleVault::new(resource_manager),
+                vault: NonFungibleVault::new(resource_manager.address()),
                 data: "hi".to_string(),
             }
             .instantiate()
