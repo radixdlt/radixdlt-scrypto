@@ -1,11 +1,6 @@
-pub mod ast;
-pub mod macros;
-pub mod schema;
-pub mod translation;
-pub mod types;
-
 use scrypto_bindgen::schema;
 use scrypto_bindgen::translation;
+use scrypto_bindgen::types;
 
 use clap::Parser;
 use radix_common::prelude::*;
@@ -16,7 +11,6 @@ use std::io::Write;
 use crate::resim::*;
 
 use self::schema::*;
-use self::types::{prepare_replacement_map, FunctionSignatureReplacementsInput};
 
 /// Generates interfaces for Scrypto packages to ease the use of external packages.
 #[derive(Parser, Debug)]
@@ -31,7 +25,7 @@ pub struct Args {
     reset_ledger: bool,
 
     #[clap(short, long)]
-    func_sig_change: Vec<FunctionSignatureReplacementsInput>,
+    func_sig_change: Vec<types::FunctionSignatureReplacementsInput>,
 }
 
 #[derive(Debug)]
@@ -55,7 +49,7 @@ pub fn run() -> Result<(), Error> {
     }
     let db = env.db;
 
-    let blueprint_replacement_map = prepare_replacement_map(&args.func_sig_change);
+    let blueprint_replacement_map = types::prepare_replacement_map(&args.func_sig_change);
 
     // Decode the package address without network context.
     let package_address = {

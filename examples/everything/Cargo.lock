@@ -1221,7 +1221,6 @@ dependencies = [
  "radix-engine",
  "radix-engine-interface",
  "radix-rust",
- "radix-wasm-instrument",
  "serde_json",
  "wasm-opt",
 ]
