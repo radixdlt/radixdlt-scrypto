@@ -202,6 +202,7 @@ pub struct LedgerSimulatorBuilder<E, D> {
     // General options
     with_kernel_trace: bool,
     with_receipt_substate_check: bool,
+    with_bootstrap: bool,
 }
 
 impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
@@ -214,6 +215,7 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
                 .until_latest_protocol_version(),
             with_kernel_trace: true,
             with_receipt_substate_check: true,
+            with_bootstrap: true,
         }
     }
 }
@@ -231,6 +233,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
+            with_bootstrap: self.with_bootstrap,
         }
     }
 
@@ -259,6 +262,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         self
     }
 
+    pub fn without_bootstrap(mut self) -> Self {
+        self.with_bootstrap = false;
+        self
+    }
+
     pub fn with_custom_extension<NE: NativeVmExtension>(
         self,
         extension: NE,
@@ -270,6 +278,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
+            with_bootstrap: self.with_bootstrap,
         }
     }
 
@@ -284,6 +293,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
+            with_bootstrap: self.with_bootstrap,
         }
     }
 
@@ -333,51 +343,61 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         };
         let vm_init = VmInit::new(&scrypto_vm, self.custom_extension.clone());
         let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(
-            NetworkDefinition::simulator(),
-            &mut substate_db,
-            vm_init,
-            bootstrap_trace,
-        );
-        let GenesisReceipts {
-            system_bootstrap_receipt,
-            data_ingestion_receipts,
-            wrap_up_receipt,
-        } = match self.custom_genesis {
-            Some(custom_genesis) => bootstrapper
-                .bootstrap_with_genesis_data(
-                    custom_genesis.genesis_data_chunks,
-                    custom_genesis.genesis_epoch,
-                    custom_genesis.initial_config,
-                    custom_genesis.initial_time_ms,
-                    custom_genesis.initial_current_leader,
-                    custom_genesis.faucet_supply,
-                )
-                .unwrap(),
-            None => bootstrapper.bootstrap_test_default().unwrap(),
-        };
 
         let mut events = Vec::new();
 
-        events.push(
-            system_bootstrap_receipt
-                .expect_commit_success()
-                .application_events
-                .clone(),
-        );
-        for receipt in data_ingestion_receipts {
-            events.push(receipt.expect_commit_success().application_events.clone());
-        }
-        events.push(
-            wrap_up_receipt
-                .expect_commit_success()
-                .application_events
-                .clone(),
-        );
+        let validator_set = if self.with_bootstrap {
+            let mut bootstrapper = Bootstrapper::new(
+                NetworkDefinition::simulator(),
+                &mut substate_db,
+                vm_init,
+                bootstrap_trace,
+            );
+            let GenesisReceipts {
+                system_bootstrap_receipt,
+                data_ingestion_receipts,
+                wrap_up_receipt,
+            } = match self.custom_genesis {
+                Some(custom_genesis) => bootstrapper
+                    .bootstrap_with_genesis_data(
+                        custom_genesis.genesis_data_chunks,
+                        custom_genesis.genesis_epoch,
+                        custom_genesis.initial_config,
+                        custom_genesis.initial_time_ms,
+                        custom_genesis.initial_current_leader,
+                        custom_genesis.faucet_supply,
+                    )
+                    .unwrap(),
+                None => bootstrapper.bootstrap_test_default().unwrap(),
+            };
 
-        // Protocol Updates
-        self.protocol_executor
-            .commit_each_protocol_update(&mut substate_db);
+            events.push(
+                system_bootstrap_receipt
+                    .expect_commit_success()
+                    .application_events
+                    .clone(),
+            );
+            for receipt in data_ingestion_receipts {
+                events.push(receipt.expect_commit_success().application_events.clone());
+            }
+            events.push(
+                wrap_up_receipt
+                    .expect_commit_success()
+                    .application_events
+                    .clone(),
+            );
+
+            let next_epoch = wrap_up_receipt
+                .expect_commit_success()
+                .next_epoch()
+                .unwrap();
+            next_epoch.validator_set
+        } else {
+            // Don't support returning validator set
+            ActiveValidatorSet {
+                validators_by_stake_desc: Default::default()
+            }
+        };
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -397,11 +417,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             with_receipt_substate_check: self.with_receipt_substate_check,
         };
 
-        let next_epoch = wrap_up_receipt
-            .expect_commit_success()
-            .next_epoch()
-            .unwrap();
-        (runner, next_epoch.validator_set)
+
+        (runner, validator_set)
     }
 
     pub fn build(self) -> LedgerSimulator<E, D> {
