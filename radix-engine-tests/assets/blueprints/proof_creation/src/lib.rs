@@ -7,6 +7,8 @@ struct DummyNFData {
 
 #[blueprint]
 mod pc {
+    use std::any::Any;
+
     struct ProofCreation {
         vault: Vault,
     }
@@ -242,6 +244,8 @@ mod pc {
             let bucket = Self::prepare_non_fungible_proof();
             let proof =
                 LocalAuthZone::create_proof_of_amount(2, bucket.resource_address()).skip_checking();
+            // let _p = proof.as_fungible();
+            let _p = proof.as_non_fungible();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
             LocalAuthZone::drop_proofs();
@@ -254,7 +258,7 @@ mod pc {
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
                 ),
-                bucket.resource_address(),
+                bucket.resource_address().into(),
             )
             .skip_checking();
             assert_eq!(proof.amount(), dec!(2));

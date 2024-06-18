@@ -8,7 +8,7 @@ pub struct Sandwich {
 #[blueprint]
 mod big_vault {
     struct BigVault {
-        vault: Vault,
+        vault: NonFungibleVault,
     }
 
     impl BigVault {

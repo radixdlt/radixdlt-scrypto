@@ -10,7 +10,7 @@ mod big_fi {
     struct BigFi {
         child: Owned<Subservio>,
         swappy: Global<Swappy>,
-        cerb: ResourceManager,
+        cerb: NonFungibleResourceManager,
         cerb_vault: Vault,
     }
 
@@ -26,7 +26,7 @@ mod big_fi {
 
             let child = Blueprint::<Subservio>::create(swappy, cerb_resource);
 
-            let cerb_vault = Vault::new(cerb_resource);
+            let cerb_vault = Vault::new(cerb_resource.into());
 
             let global = Self {
                 child,
@@ -68,6 +68,7 @@ mod big_fi {
         pub fn mint_cerb(&self) -> Bucket {
             self.cerb
                 .mint_non_fungible(&NonFungibleLocalId::Integer(64u64.into()), ())
+                .into()
         }
 
         pub fn recall_cerb(&self, vault_id: InternalAddress) -> Bucket {
@@ -160,7 +161,7 @@ mod subservio {
 
     impl Subservio {
         pub fn create(swappy: Global<Swappy>, cerb_resource: ResourceAddress) -> Owned<Subservio> {
-            let cerb_vault = Vault::new(cerb_resource);
+            let cerb_vault = Vault::new(cerb_resource.into());
 
             Self { swappy, cerb_vault }.instantiate()
         }
