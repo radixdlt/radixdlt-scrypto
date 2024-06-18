@@ -58,11 +58,9 @@ impl<S, D> SubstateDatabaseOverlay<S, D> {
     pub fn into_database_updates(self) -> DatabaseUpdates {
         self.overlay.into()
     }
-}
 
-impl<S: Borrow<D>, D> SubstateDatabaseOverlay<S, D> {
-    fn get_readable_root(&self) -> &D {
-        self.root.borrow()
+    pub fn root(&self) -> &S {
+        &self.root
     }
 }
 
@@ -79,7 +77,7 @@ impl<S: BorrowMut<D>, D: CommittableSubstateDatabase> SubstateDatabaseOverlay<S,
     }
 }
 
-impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOverlay<S, D> {
+impl<S: SubstateDatabase, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOverlay<S, D> {
     fn get_substate(
         &self,
         partition_key @ DbPartitionKey {
@@ -135,7 +133,7 @@ impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOve
         match overlay_lookup_result {
             OverlayLookupResult::Found(substate_value) => substate_value.cloned(),
             OverlayLookupResult::NotFound => self
-                .get_readable_root()
+                .root()
                 .get_substate(partition_key, sort_key),
         }
     }
@@ -186,7 +184,7 @@ impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOve
                     // There are some changes that need to be overlayed.
                     Some(StagingPartitionDatabaseUpdates::Delta { substate_updates }) => {
                         let underlying = self
-                            .get_readable_root()
+                            .root()
                             .list_entries_from(partition_key, from_sort_key.as_ref());
 
                         match from_sort_key {
@@ -223,14 +221,14 @@ impl<S: Borrow<D>, D: SubstateDatabase> SubstateDatabase for SubstateDatabaseOve
                     // Overlay doesn't contain anything for the provided partition number. Return an
                     // iterator over the data in the root store.
                     None => self
-                        .get_readable_root()
+                        .root()
                         .list_entries_from(partition_key, from_sort_key.as_ref()),
                 }
             }
             // Overlay doesn't contain anything for the provided node key. Return an iterator over
             // the data in the root store.
             None => self
-                .get_readable_root()
+                .root()
                 .list_entries_from(partition_key, from_sort_key.as_ref()),
         }
     }
@@ -242,7 +240,7 @@ impl<S, D> CommittableSubstateDatabase for SubstateDatabaseOverlay<S, D> {
     }
 }
 
-impl<S: Borrow<D>, D: ListableSubstateDatabase> ListableSubstateDatabase
+impl<S: ListableSubstateDatabase, D: ListableSubstateDatabase> ListableSubstateDatabase
     for SubstateDatabaseOverlay<S, D>
 {
     fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
@@ -262,7 +260,7 @@ impl<S: Borrow<D>, D: ListableSubstateDatabase> ListableSubstateDatabase
             )
             .map(|partition_key| (partition_key, Some(())));
         let underlying = self
-            .get_readable_root()
+            .root()
             .list_partition_keys()
             .map(|partition_key| (partition_key, ()));
 
