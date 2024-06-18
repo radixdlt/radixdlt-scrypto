@@ -47,7 +47,7 @@ mod data_validation {
         }
 
         pub fn create_object_with_illegal_data() {
-            let bucket = Bucket::new(XRD.into());
+            let bucket = Bucket::new(XRD);
 
             Self {
                 vault: Vault(bucket.0),

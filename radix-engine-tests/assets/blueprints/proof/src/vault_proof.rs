@@ -110,11 +110,9 @@ mod vault_proof {
         ) {
             self.vault.as_fungible().authorize_with_amount(dec!(1), || {
                 bucket.authorize_with_all(|| {
-                    let proof = LocalAuthZone::create_proof_of_amount(
-                        amount,
-                        bucket.resource_address().into(),
-                    )
-                    .skip_checking();
+                    let proof =
+                        LocalAuthZone::create_proof_of_amount(amount, bucket.resource_address())
+                            .skip_checking();
                     assert_eq!(proof.resource_address(), self.vault.resource_address());
                     assert_eq!(proof.amount(), amount);
                     proof.drop();
@@ -135,7 +133,7 @@ mod vault_proof {
                     bucket.authorize_with_all(|| {
                         let proof = LocalAuthZone::create_proof_of_non_fungibles(
                             ids.clone(),
-                            bucket.resource_address().into(),
+                            bucket.resource_address(),
                         )
                         .skip_checking();
                         assert_eq!(proof.resource_address(), self.vault.resource_address());

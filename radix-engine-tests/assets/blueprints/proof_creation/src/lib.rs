@@ -199,8 +199,8 @@ mod pc {
 
         pub fn create_proof_from_fungible_auth_zone_of_amount() {
             let bucket = Self::prepare_auth_zone_fungible_proof_to_bucket();
-            let proof = LocalAuthZone::create_proof_of_amount(2, bucket.resource_address().into())
-                .skip_checking();
+            let proof =
+                LocalAuthZone::create_proof_of_amount(2, bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(2));
             proof.drop();
             LocalAuthZone::drop_proofs();
@@ -213,7 +213,7 @@ mod pc {
                     NonFungibleLocalId::integer(1),
                     NonFungibleLocalId::integer(2)
                 ),
-                bucket.resource_address().into(),
+                bucket.resource_address(),
             )
             .skip_checking();
             assert_eq!(proof.amount(), dec!(2));
@@ -223,8 +223,8 @@ mod pc {
         }
         pub fn create_proof_from_fungible_auth_zone_of_all() {
             let bucket = Self::prepare_auth_zone_fungible_proof_to_bucket();
-            let proof = LocalAuthZone::create_proof_of_all(bucket.resource_address().into())
-                .skip_checking();
+            let proof =
+                LocalAuthZone::create_proof_of_all(bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(100));
             proof.drop();
             LocalAuthZone::drop_proofs();
@@ -233,8 +233,8 @@ mod pc {
 
         pub fn create_proof_from_non_fungible_auth_zone() {
             let bucket = Self::prepare_non_fungible_proof();
-            let proof = LocalAuthZone::create_proof_of_all(bucket.resource_address().into())
-                .skip_checking();
+            let proof =
+                LocalAuthZone::create_proof_of_all(bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(1));
             proof.drop();
             LocalAuthZone::drop_proofs();
@@ -242,8 +242,8 @@ mod pc {
         }
         pub fn create_proof_from_non_fungible_auth_zone_of_amount() {
             let bucket = Self::prepare_non_fungible_proof();
-            let proof = LocalAuthZone::create_proof_of_amount(2, bucket.resource_address().into())
-                .skip_checking();
+            let proof =
+                LocalAuthZone::create_proof_of_amount(2, bucket.resource_address()).skip_checking();
             // let _p = proof.as_fungible();
             let _p = proof.as_non_fungible();
             assert_eq!(proof.amount(), dec!(2));
@@ -268,8 +268,8 @@ mod pc {
         }
         pub fn create_proof_from_non_fungible_auth_zone_of_all() {
             let bucket = Self::prepare_non_fungible_proof();
-            let proof = LocalAuthZone::create_proof_of_all(bucket.resource_address().into())
-                .skip_checking();
+            let proof =
+                LocalAuthZone::create_proof_of_all(bucket.resource_address()).skip_checking();
             assert_eq!(proof.amount(), dec!(3));
             proof.drop();
             LocalAuthZone::drop_proofs();

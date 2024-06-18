@@ -15,7 +15,7 @@ mod balance_changes_test {
     impl BalanceChangesTest {
         pub fn instantiate() -> Global<BalanceChangesTest> {
             Self {
-                vault: Vault::new(XRD.into()),
+                vault: Vault::new(XRD),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))

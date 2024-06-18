@@ -180,7 +180,7 @@ mod bucket_test {
         }
 
         pub fn create_empty_bucket_fungible() -> Bucket {
-            Bucket::new(XRD.into())
+            Bucket::new(XRD)
         }
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {
