@@ -1321,6 +1321,28 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         )
     }
 
+
+    pub fn execute_manifest_with_overrides<T>(
+        &mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        overrides: SystemOverrides,
+    ) -> TransactionReceipt
+        where
+            T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        let mut config = ExecutionConfig::for_test_transaction();
+        config.overrides = Some(overrides);
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            config,
+        )
+    }
+
     pub fn execute_manifest_with_costing_params<T>(
         &mut self,
         manifest: TransactionManifestV1,
