@@ -75,9 +75,7 @@ pub trait ScryptoResourceManagerStub {
 // ResourceManager
 //=================
 
-#[derive(
-    Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize, Hash,
-)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoCategorize, Hash)]
 #[sbor(transparent)]
 pub struct ResourceManager(Global<ResourceManagerStub>);
 
@@ -86,6 +84,22 @@ impl Describe<ScryptoCustomTypeKind> for ResourceManager {
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         resource_address_type_data()
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for ResourceManager {
+    #[inline]
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let value =
+            <Global<ResourceManagerStub>>::decode_body_with_value_kind(decoder, value_kind)?;
+        if value.handle().as_node_id().is_global_resource_manager() {
+            Ok(Self(value))
+        } else {
+            Err(DecodeError::InvalidCustomValue)
+        }
     }
 }
 
@@ -352,9 +366,7 @@ impl ResourceManagerStub {
 // FungibleResourceManager
 //=========================
 
-#[derive(
-    Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize, Hash,
-)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoCategorize, Hash)]
 #[sbor(transparent)]
 pub struct FungibleResourceManager(Global<FungibleResourceManagerStub>);
 
@@ -363,6 +375,29 @@ impl Describe<ScryptoCustomTypeKind> for FungibleResourceManager {
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         resource_address_type_data()
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
+    for FungibleResourceManager
+{
+    #[inline]
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let value = <Global<FungibleResourceManagerStub>>::decode_body_with_value_kind(
+            decoder, value_kind,
+        )?;
+        if value
+            .handle()
+            .as_node_id()
+            .is_global_fungible_resource_manager()
+        {
+            Ok(Self(value))
+        } else {
+            Err(DecodeError::InvalidCustomValue)
+        }
     }
 }
 
@@ -543,9 +578,7 @@ impl FungibleResourceManagerStub {
 // NonFungibleResourceManager
 //============================
 
-#[derive(
-    Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoDecode, ScryptoCategorize, Hash,
-)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoEncode, ScryptoCategorize, Hash)]
 #[sbor(transparent)]
 pub struct NonFungibleResourceManager(Global<NonFungibleResourceManagerStub>);
 
@@ -554,6 +587,29 @@ impl Describe<ScryptoCustomTypeKind> for NonFungibleResourceManager {
 
     fn type_data() -> TypeData<ScryptoCustomTypeKind, RustTypeId> {
         resource_address_type_data()
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D>
+    for NonFungibleResourceManager
+{
+    #[inline]
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let value = <Global<NonFungibleResourceManagerStub>>::decode_body_with_value_kind(
+            decoder, value_kind,
+        )?;
+        if value
+            .handle()
+            .as_node_id()
+            .is_global_non_fungible_resource_manager()
+        {
+            Ok(Self(value))
+        } else {
+            Err(DecodeError::InvalidCustomValue)
+        }
     }
 }
 
