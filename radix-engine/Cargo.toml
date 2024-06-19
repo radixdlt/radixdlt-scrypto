@@ -102,6 +102,7 @@ full_wasm_benchmarks = []
 
 # This flag disables package size limit, memory size limit and fee limit
 coverage = [ "radix-common/coverage" ]
+wasm_fuzzing = [ "radix-common/wasm_fuzzing" ]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

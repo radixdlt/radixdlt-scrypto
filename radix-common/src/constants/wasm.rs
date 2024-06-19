@@ -1,7 +1,7 @@
 /// The maximum memory size (per call frame): 64 * 64KiB = 4MiB
-#[cfg(not(feature = "coverage"))]
+#[cfg(all(not(feature = "coverage"), not(feature = "wasm_fuzzing")))]
 pub const MAX_MEMORY_SIZE_IN_PAGES: u32 = 64;
-#[cfg(feature = "coverage")]
+#[cfg(any(feature = "coverage", feature = "wasm_fuzzing"))]
 pub const MAX_MEMORY_SIZE_IN_PAGES: u32 = 512;
 
 /// The maximum initial table size

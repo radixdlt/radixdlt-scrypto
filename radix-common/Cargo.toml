@@ -64,6 +64,7 @@ resource_tracker = []
 full_math_benches = [ "dep:rug", "dep:ethnum"]
 
 coverage = []
+wasm_fuzzing = []
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

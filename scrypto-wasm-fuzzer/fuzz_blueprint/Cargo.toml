@@ -1,0 +1,17 @@
+[package]
+name = "fuzz_blueprint"
+version = "1.2.0-dev"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../sbor" }
+scrypto = { path = "../../scrypto" }
+
+[dev-dependencies]
+radix-engine = { path = "../../radix-engine" }
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]
+
+[workspace]
