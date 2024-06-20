@@ -52,6 +52,8 @@ pub struct TransactionReceiptV1 {
     /// the schema generation. Meaning, the only way to get this field is to execute transactions
     /// locally (through a ledger simulator) with the appropriate execution config for this field
     /// to be populated.
+    ///
+    /// Available if [`ExecutionConfig::enable_debug_information`] is enabled.
     #[sbor(skip)]
     pub debug_information: Option<TransactionDebugInformation>,
 }

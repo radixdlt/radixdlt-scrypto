@@ -99,7 +99,7 @@ impl CostingModuleConfig {
     }
 }
 
-#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExecutionCostBreakdownItem {
     Invocation {
         actor: Actor,
@@ -108,7 +108,7 @@ pub enum ExecutionCostBreakdownItem {
     InvocationComplete,
     Execution {
         simple_name: String,
-        item: owned::ExecutionCostingEntryOwned,
+        item: Box<owned::ExecutionCostingEntryOwned>,
         cost_units: u32,
     },
 }
@@ -171,7 +171,7 @@ impl CostingModule {
                     self.current_depth,
                     ExecutionCostBreakdownItem::Execution {
                         simple_name: costing_entry.to_trace_key(),
-                        item: owned::ExecutionCostingEntryOwned::from(costing_entry),
+                        item: Box::new(owned::ExecutionCostingEntryOwned::from(costing_entry)),
                         cost_units,
                     },
                 ));
@@ -225,7 +225,7 @@ impl CostingModule {
                     self.current_depth,
                     ExecutionCostBreakdownItem::Execution {
                         simple_name: costing_entry.to_trace_key(),
-                        item: owned::ExecutionCostingEntryOwned::from(costing_entry),
+                        item: Box::new(owned::ExecutionCostingEntryOwned::from(costing_entry)),
                         cost_units,
                     },
                 ));
