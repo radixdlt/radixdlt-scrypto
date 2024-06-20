@@ -222,7 +222,7 @@ impl CostingModule {
             detailed_cost_breakdown
                 .detailed_execution_cost_breakdown
                 .push((
-                    self.current_depth,
+                    0,
                     ExecutionCostBreakdownItem::Execution {
                         simple_name: costing_entry.to_trace_key(),
                         item: Box::new(owned::ExecutionCostingEntryOwned::from(costing_entry)),
