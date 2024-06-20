@@ -82,5 +82,6 @@ fn generate_flamegraph_of_faucet_free_method() -> Result<(), FlamegraphError> {
             .join("flamegraphs")
             .join("faucet-free-xrd.svg"),
         "Faucet Free XRD",
+        &NetworkDefinition::simulator(),
     )
 }

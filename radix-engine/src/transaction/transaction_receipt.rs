@@ -64,6 +64,7 @@ impl TransactionReceiptV1 {
         &self,
         path: impl AsRef<std::path::Path>,
         title: impl AsRef<str>,
+        network_definition: &NetworkDefinition,
     ) -> Result<(), FlamegraphError> {
         let path = path.as_ref();
         let title = title.as_ref().to_owned();
@@ -85,6 +86,7 @@ impl TransactionReceiptV1 {
 
         let flamegraph_string = Self::transform_detailed_execution_breakdown_into_flamegraph_string(
             detailed_execution_cost_breakdown,
+            network_definition,
         );
 
         // Writing the flamegraph string to a temporary file since its required by the flamegraph lib to
@@ -108,8 +110,8 @@ impl TransactionReceiptV1 {
 
     fn transform_detailed_execution_breakdown_into_flamegraph_string(
         detailed_execution_cost_breakdown: &[(usize, ExecutionCostBreakdownItem)],
+        network_definition: &NetworkDefinition,
     ) -> String {
-        let network_definition = NetworkDefinition::mainnet();
         let address_bech32m_encoder = AddressBech32Encoder::new(&network_definition);
 
         let mut lines = Vec::<String>::new();
