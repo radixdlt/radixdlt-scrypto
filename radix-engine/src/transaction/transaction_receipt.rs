@@ -45,6 +45,15 @@ pub struct TransactionReceiptV1 {
     /// Hardware resources usage report
     /// Available if `resources_usage` feature flag is enabled
     pub resources_usage: Option<ResourcesUsage>,
+    /// This field contains debug information about the transaction which is extracted during the
+    /// transaction execution.
+    ///
+    /// To maintain backward compatibility this field is skipped in the SBOR encoding, decoding and
+    /// the schema generation. Meaning, the only way to get this field is to execute transactions
+    /// locally (through a ledger simulator) with the appropriate execution config for this field
+    /// to be populated.
+    #[sbor(skip)]
+    pub debug_information: Option<TransactionDebugInformation>,
 }
 
 #[cfg(feature = "std")]
@@ -64,12 +73,16 @@ impl TransactionReceiptV1 {
 
         // Transforming the detailed execution cost breakdown into a string understood by the flamegraph
         // library.
-        let Some(ref cost_breakdown) = self.fee_details else {
-            return Err(FlamegraphError::CostBreakdownNotAvailable);
+        let Some(TransactionDebugInformation {
+            ref detailed_execution_cost_breakdown,
+            ..
+        }) = self.debug_information
+        else {
+            return Err(FlamegraphError::DetailedCostBreakdownNotAvailable);
         };
 
         let flamegraph_string = Self::transform_detailed_execution_breakdown_into_flamegraph_string(
-            &cost_breakdown.detailed_execution_cost_breakdown,
+            detailed_execution_cost_breakdown,
         );
 
         // Writing the flamegraph string to a temporary file since its required by the flamegraph lib to
@@ -184,10 +197,11 @@ impl ExecutionReceipt for TransactionReceipt {
         TransactionReceipt {
             costing_parameters: CostingParameters::babylon_genesis(),
             transaction_costing_parameters: executable.costing_parameters().clone().into(),
-            fee_summary: TransactionFeeSummary::default(),
-            fee_details: None,
+            fee_summary: Default::default(),
+            fee_details: Default::default(),
             result: TransactionResult::Reject(RejectResult { reason }),
-            resources_usage: None,
+            resources_usage: Default::default(),
+            debug_information: Default::default(),
         }
     }
 
@@ -221,10 +235,6 @@ pub struct TransactionFeeDetails {
     pub execution_cost_breakdown: BTreeMap<String, u32>,
     /// Finalization cost breakdown
     pub finalization_cost_breakdown: BTreeMap<String, u32>,
-    // TODO: This is a breaking change to the receipt and will be fixed in the future when we add
-    // a dedicated transaction receipt DTO with the cuttlefish release.
-    /// Detailed execution cost breakdown
-    pub detailed_execution_cost_breakdown: Vec<(usize, ExecutionCostBreakdownItem)>,
 }
 
 /// Captures whether a transaction should be committed, and its other results
@@ -311,6 +321,17 @@ pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
     pub heap_peak_memory: usize,
     pub cpu_cycles: u64,
+}
+
+/// A structure of debug information about the transaction execution.
+///
+/// This is intentionally not SBOR codable since we never want this data to be persisted or
+/// transmitted over the wire.
+#[derive(Clone, PartialEq, Eq)]
+pub struct TransactionDebugInformation {
+    /* Costing Breakdown */
+    /// A detailed trace of where execution cost units were consumed.
+    pub detailed_execution_cost_breakdown: Vec<(usize, ExecutionCostBreakdownItem)>,
 }
 
 impl TransactionExecutionTrace {
@@ -522,6 +543,7 @@ impl TransactionReceipt {
             fee_details: Default::default(),
             result: TransactionResult::Commit(commit_result),
             resources_usage: Default::default(),
+            debug_information: Default::default(),
         }
     }
 
@@ -1609,5 +1631,5 @@ impl TransactionFeeSummary {
 pub enum FlamegraphError {
     IOError(std::io::Error),
     CreationError,
-    CostBreakdownNotAvailable,
+    DetailedCostBreakdownNotAvailable,
 }

@@ -52,12 +52,7 @@ use crate::track::{
     to_state_updates, BootStore, CanonicalSubstateKey, CommitableSubstateStore, IOAccess,
     StoreCommitInfo, Track, TrackFinalizeError,
 };
-use crate::transaction::{
-    reconcile_resource_state_and_events, AbortResult, CommitResult, CostingParameters,
-    FeeDestination, FeeSource, LimitParameters, RejectResult, StateUpdateSummary, SystemOverrides,
-    SystemStructure, TransactionFeeDetails, TransactionOutcome, TransactionReceipt,
-    TransactionResult, TransactionResultType,
-};
+use crate::transaction::*;
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::SystemObjectApi;
@@ -1121,10 +1116,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             Some(TransactionFeeDetails {
                 execution_cost_breakdown,
                 finalization_cost_breakdown,
-                detailed_execution_cost_breakdown: cost_breakdown.detailed_execution_cost_breakdown,
             })
         } else {
             None
+        };
+
+        let debug_information = match (&costing_module.cost_breakdown,) {
+            (Some(cost_breakdown),) => Some(TransactionDebugInformation {
+                detailed_execution_cost_breakdown: cost_breakdown
+                    .detailed_execution_cost_breakdown
+                    .clone(),
+            }),
+            _ => None,
         };
 
         let result_type =
@@ -1246,6 +1249,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             fee_details,
             result,
             resources_usage: None,
+            debug_information,
         };
 
         // Dump summary
