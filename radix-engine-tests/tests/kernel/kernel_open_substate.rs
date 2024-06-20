@@ -78,6 +78,7 @@ pub fn test_open_substate_of_invisible_package_address() {
                 tx_num_of_signature_validations: executable.auth_zone_params().initial_proofs.len(),
                 config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
+                detailed_cost_breakdown: None,
                 on_apply_cost: Default::default(),
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),

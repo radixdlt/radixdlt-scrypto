@@ -118,7 +118,10 @@ pub struct CostBreakdown {
     pub execution_cost_breakdown: IndexMap<String, u32>,
     pub finalization_cost_breakdown: IndexMap<String, u32>,
     pub storage_cost_breakdown: IndexMap<StorageType, usize>,
+}
 
+#[derive(Debug, Clone, Default)]
+pub struct DetailedCostBreakdown {
     /// A more detailed cost breakdown with information on the depth.
     pub detailed_execution_cost_breakdown: Vec<(usize, ExecutionCostBreakdownItem)>,
 }
@@ -133,6 +136,7 @@ pub struct CostingModule {
     pub tx_payload_len: usize,
     pub tx_num_of_signature_validations: usize,
     pub cost_breakdown: Option<CostBreakdown>,
+    pub detailed_cost_breakdown: Option<DetailedCostBreakdown>,
 
     /// This keeps track of the current kernel depth.
     pub current_depth: usize,
@@ -158,16 +162,19 @@ impl CostingModule {
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
-
+        }
+        if let Some(detailed_cost_breakdown) = &mut self.detailed_cost_breakdown {
             // Add an entry for the more detailed execution cost
-            cost_breakdown.detailed_execution_cost_breakdown.push((
-                self.current_depth,
-                ExecutionCostBreakdownItem::Execution {
-                    simple_name: costing_entry.to_trace_key(),
-                    item: owned::ExecutionCostingEntryOwned::from(costing_entry),
-                    cost_units,
-                },
-            ));
+            detailed_cost_breakdown
+                .detailed_execution_cost_breakdown
+                .push((
+                    self.current_depth,
+                    ExecutionCostBreakdownItem::Execution {
+                        simple_name: costing_entry.to_trace_key(),
+                        item: owned::ExecutionCostingEntryOwned::from(costing_entry),
+                        cost_units,
+                    },
+                ));
         }
 
         Ok(())
@@ -209,16 +216,19 @@ impl CostingModule {
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
-
+        }
+        if let Some(detailed_cost_breakdown) = &mut self.detailed_cost_breakdown {
             // Add an entry for the more detailed execution cost
-            cost_breakdown.detailed_execution_cost_breakdown.push((
-                self.current_depth,
-                ExecutionCostBreakdownItem::Execution {
-                    simple_name: costing_entry.to_trace_key(),
-                    item: owned::ExecutionCostingEntryOwned::from(costing_entry),
-                    cost_units,
-                },
-            ));
+            detailed_cost_breakdown
+                .detailed_execution_cost_breakdown
+                .push((
+                    self.current_depth,
+                    ExecutionCostBreakdownItem::Execution {
+                        simple_name: costing_entry.to_trace_key(),
+                        item: owned::ExecutionCostingEntryOwned::from(costing_entry),
+                        cost_units,
+                    },
+                ));
         }
 
         Ok(())
@@ -353,15 +363,21 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         let depth = api.kernel_get_current_depth();
 
         // Add invocation information to the execution cost breakdown.
-        if let Some(ref mut cost_breakdown) = api.kernel_get_system().modules.costing.cost_breakdown
+        if let Some(ref mut detailed_cost_breakdown) = api
+            .kernel_get_system()
+            .modules
+            .costing
+            .detailed_cost_breakdown
         {
-            cost_breakdown.detailed_execution_cost_breakdown.push((
-                depth,
-                ExecutionCostBreakdownItem::Invocation {
-                    actor: invocation.call_frame_data.clone(),
-                    args: (invocation.args.as_scrypto_value().to_owned(),),
-                },
-            ));
+            detailed_cost_breakdown
+                .detailed_execution_cost_breakdown
+                .push((
+                    depth,
+                    ExecutionCostBreakdownItem::Invocation {
+                        actor: invocation.call_frame_data.clone(),
+                        args: (invocation.args.as_scrypto_value().to_owned(),),
+                    },
+                ));
         }
 
         // Skip invocation costing for transaction processor
@@ -448,9 +464,13 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         let depth = api.kernel_get_current_depth();
 
         // Add invocation information to the execution cost breakdown.
-        if let Some(ref mut cost_breakdown) = api.kernel_get_system().modules.costing.cost_breakdown
+        if let Some(ref mut detailed_cost_breakdown) = api
+            .kernel_get_system()
+            .modules
+            .costing
+            .detailed_cost_breakdown
         {
-            cost_breakdown
+            detailed_cost_breakdown
                 .detailed_execution_cost_breakdown
                 .push((depth, ExecutionCostBreakdownItem::InvocationComplete));
         }

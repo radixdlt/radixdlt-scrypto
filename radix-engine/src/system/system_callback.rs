@@ -143,6 +143,7 @@ pub struct SystemInit<C> {
     pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
+    pub enable_debug_information: bool,
 
     // Higher layer initialization object
     pub callback_init: C,
@@ -880,6 +881,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             } else {
                 None
             },
+            detailed_cost_breakdown: if init_input.enable_debug_information {
+                Some(Default::default())
+            } else {
+                None
+            },
             on_apply_cost: Default::default(),
         };
 
@@ -1121,9 +1127,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             None
         };
 
-        let debug_information = match (&costing_module.cost_breakdown,) {
-            (Some(cost_breakdown),) => Some(TransactionDebugInformation {
-                detailed_execution_cost_breakdown: cost_breakdown
+        let debug_information = match (&costing_module.detailed_cost_breakdown,) {
+            (Some(detailed_cost_breakdown),) => Some(TransactionDebugInformation {
+                detailed_execution_cost_breakdown: detailed_cost_breakdown
                     .detailed_execution_cost_breakdown
                     .clone(),
             }),
