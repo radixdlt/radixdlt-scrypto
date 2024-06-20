@@ -8,7 +8,7 @@ pub struct Sandwich {
 #[blueprint]
 mod mint_and_burn {
     struct MintAndBurn {
-        vault: Vault,
+        vault: NonFungibleVault,
     }
 
     impl MintAndBurn {

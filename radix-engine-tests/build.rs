@@ -46,6 +46,8 @@ fn main() {
                 "CARGO_ENCODED_RUSTFLAGS".to_owned() => "".to_owned(),
                 "LLVM_PROFILE_FILE".to_owned() => "".to_owned()
             },
+            scrypto_test::prelude::CompileProfile::Fast,
+            false,
         );
         packages.insert(name, (code, definition));
     }

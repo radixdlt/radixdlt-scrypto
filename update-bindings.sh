@@ -22,19 +22,74 @@ use crate::prelude::*;
 "
 
 list=(
-    "package_sim1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxhkrefh" # Faucet
-    "package_sim1pkgxxxxxxxxxcnsmgrxxxxxxxxx000746305335xxxxxxxxxxc06cl" # Consensus Manager
-    "package_sim1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxnc59k6" # Identity
-    "package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6" # Account
-    "package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6" # Pools
-    "package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l" # Access Controller
-    "package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6" # Locker Package
+    # Faucet
+    "package_sim1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxhkrefh
+      --func-sig-change blueprint_name=Faucet;func_name=new;1=FungibleBucket
+      --func-sig-change blueprint_name=Faucet;func_name=free;r=FungibleBucket
+    "
+    # Consensus Manager & Validator
+    "package_sim1pkgxxxxxxxxxcnsmgrxxxxxxxxx000746305335xxxxxxxxxxc06cl
+      --func-sig-change blueprint_name=ConsensusManager;func_name=create_validator;2=FungibleBucket;r=(Global<Validator>,NonFungibleBucket,FungibleBucket)
+      --func-sig-change blueprint_name=Validator;func_name=stake_as_owner;0=FungibleBucket;r=FungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=stake;0=FungibleBucket;r=FungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=unstake;0=FungibleBucket;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=claim_xrd;0=NonFungibleBucket;r=FungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=lock_owner_stake_units;0=FungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=finish_unlock_owner_stake_units;r=FungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=apply_emission;0=FungibleBucket
+      --func-sig-change blueprint_name=Validator;func_name=apply_reward;0=FungibleBucket
+    "
+    # Identity
+    "package_sim1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxnc59k6
+      --func-sig-change blueprint_name=Identity;func_name=create;r=(Global<Identity>,NonFungibleBucket)
+      --func-sig-change blueprint_name=Identity;func_name=securify;r=NonFungibleBucket
+    "
+    # Account
+    "package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6
+      --func-sig-change blueprint_name=Account;func_name=create;r=(Global<Account>,NonFungibleBucket)
+      --func-sig-change blueprint_name=Account;func_name=securify;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Account;func_name=withdraw_non_fungibles;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Account;func_name=lock_fee_and_withdraw_non_fungibles;r=NonFungibleBucket
+      --func-sig-change blueprint_name=Account;func_name=create_proof_of_amount;r=FungibleProof
+      --func-sig-change blueprint_name=Account;func_name=create_proof_of_non_fungibles;r=NonFungibleProof
+    "
+    # Pools
+    "package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6
+      --func-sig-change blueprint_name=OneResourcePool;func_name=contribute;0=FungibleBucket;r=FungibleBucket
+      --func-sig-change blueprint_name=OneResourcePool;func_name=redeem;0=FungibleBucket;r=FungibleBucket
+      --func-sig-change blueprint_name=OneResourcePool;func_name=protected_deposit;0=FungibleBucket
+      --func-sig-change blueprint_name=OneResourcePool;func_name=protected_withdraw;r=FungibleBucket
+
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=contribute;0=(FungibleBucket,FungibleBucket);r=(FungibleBucket,Option<FungibleBucket>)
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=redeem;0=FungibleBucket;r=(FungibleBucket,FungibleBucket)
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=protected_deposit;0=FungibleBucket
+      --func-sig-change blueprint_name=TwoResourcePool;func_name=protected_withdraw;r=FungibleBucket
+
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=contribute;0=Vec<FungibleBucket>;r=(FungibleBucket,Vec<FungibleBucket>)
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=redeem;0=FungibleBucket;r=Vec<FungibleBucket>
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=protected_deposit;0=FungibleBucket
+      --func-sig-change blueprint_name=MultiResourcePool;func_name=protected_withdraw;r=FungibleBucket
+    "
+    # Access Controller
+    "package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l
+      --func-sig-change blueprint_name=AccessController;func_name=mint_recovery_badges;r=NonFungibleBucket
+      --func-sig-change blueprint_name=AccessController;func_name=withdraw_recovery_fee;r=FungibleBucket
+      --func-sig-change blueprint_name=AccessController;func_name=contribute_recovery_fee;0=FungibleBucket
+    "
+    # Locker Package
+    "package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6
+      --func-sig-change blueprint_name=AccountLocker;func_name=instantiate_simple;r=(Global<AccountLocker>,FungibleBucket)
+      --func-sig-change blueprint_name=AccountLocker;func_name=recover_non_fungibles;r=NonFungibleBucket
+      --func-sig-change blueprint_name=AccountLocker;func_name=claim_non_fungibles;r=NonFungibleBucket
+    "
 );
-for address in ${list[@]}; 
+
+for entry in "${list[@]}";
 do
+    read -r address replacement <<< $(echo $entry)
     file_contents="$file_contents
 
-$($scrypto_bindgen $address --reset-ledger)"
+$($scrypto_bindgen $address --reset-ledger $replacement)"
 done
 
 echo "$file_contents" > $PWD/scrypto/src/component/stubs.rs

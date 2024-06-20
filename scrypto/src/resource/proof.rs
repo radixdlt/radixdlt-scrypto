@@ -18,6 +18,7 @@ use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 pub trait ScryptoUncheckedProof {
     type CheckedProofType;
+    type ResourceManagerType;
 
     /// Checks the resource address of this proof and panics if it's unexpected.
     fn check(self, expected_resource_address: ResourceAddress) -> Self::CheckedProofType;
@@ -38,9 +39,7 @@ pub trait ScryptoUncheckedProof {
 
     fn resource_address(&self) -> ResourceAddress;
 
-    fn resource_manager(&self) -> ResourceManager {
-        self.resource_address().into()
-    }
+    fn resource_manager(&self) -> Self::ResourceManagerType;
 
     fn drop(self);
 
@@ -50,15 +49,15 @@ pub trait ScryptoUncheckedProof {
 }
 
 pub trait ScryptoProof {
+    type ResourceManagerType;
+
     fn contains_amount(&self, amount: Decimal) -> bool;
 
     fn amount(&self) -> Decimal;
 
     fn resource_address(&self) -> ResourceAddress;
 
-    fn resource_manager(&self) -> ResourceManager {
-        self.resource_address().into()
-    }
+    fn resource_manager(&self) -> Self::ResourceManagerType;
 
     fn drop(self);
 
@@ -128,6 +127,7 @@ impl From<CheckedNonFungibleProof> for CheckedProof {
 
 impl ScryptoUncheckedProof for Proof {
     type CheckedProofType = CheckedProof;
+    type ResourceManagerType = ResourceManager;
 
     fn check(self, expected_resource_address: ResourceAddress) -> CheckedProof {
         let actual_resource_address = self.resource_address();
@@ -169,7 +169,7 @@ impl ScryptoUncheckedProof for Proof {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn resource_manager(&self) -> ResourceManager {
+    fn resource_manager(&self) -> Self::ResourceManagerType {
         self.resource_address().into()
     }
 
@@ -216,6 +216,7 @@ impl ScryptoUncheckedProof for Proof {
 
 impl ScryptoUncheckedProof for FungibleProof {
     type CheckedProofType = CheckedFungibleProof;
+    type ResourceManagerType = FungibleResourceManager;
 
     fn check(self, expected_resource_address: ResourceAddress) -> Self::CheckedProofType {
         CheckedFungibleProof(Proof::check(self.0, expected_resource_address))
@@ -241,6 +242,10 @@ impl ScryptoUncheckedProof for FungibleProof {
         self.0.resource_address()
     }
 
+    fn resource_manager(&self) -> Self::ResourceManagerType {
+        self.resource_address().into()
+    }
+
     fn drop(self) {
         self.0.drop()
     }
@@ -256,6 +261,7 @@ impl ScryptoUncheckedProof for FungibleProof {
 
 impl ScryptoUncheckedProof for NonFungibleProof {
     type CheckedProofType = CheckedNonFungibleProof;
+    type ResourceManagerType = NonFungibleResourceManager;
 
     fn check(self, expected_resource_address: ResourceAddress) -> Self::CheckedProofType {
         CheckedNonFungibleProof(Proof::check(self.0, expected_resource_address))
@@ -281,6 +287,10 @@ impl ScryptoUncheckedProof for NonFungibleProof {
         self.0.resource_address()
     }
 
+    fn resource_manager(&self) -> Self::ResourceManagerType {
+        self.resource_address().into()
+    }
+
     fn drop(self) {
         self.0.drop()
     }
@@ -299,6 +309,8 @@ impl ScryptoUncheckedProof for NonFungibleProof {
 //===================
 
 impl ScryptoProof for CheckedProof {
+    type ResourceManagerType = ResourceManager;
+
     fn contains_amount(&self, amount: Decimal) -> bool {
         self.amount() >= amount
     }
@@ -316,7 +328,7 @@ impl ScryptoProof for CheckedProof {
         self.0.resource_address()
     }
 
-    fn resource_manager(&self) -> ResourceManager {
+    fn resource_manager(&self) -> Self::ResourceManagerType {
         self.resource_address().into()
     }
 
@@ -358,6 +370,8 @@ impl ScryptoProof for CheckedProof {
 //========================
 
 impl ScryptoProof for CheckedFungibleProof {
+    type ResourceManagerType = FungibleResourceManager;
+
     fn contains_amount(&self, amount: Decimal) -> bool {
         self.0.contains_amount(amount)
     }
@@ -366,7 +380,7 @@ impl ScryptoProof for CheckedFungibleProof {
         self.0.amount()
     }
 
-    fn resource_manager(&self) -> ResourceManager {
+    fn resource_manager(&self) -> Self::ResourceManagerType {
         self.resource_address().into()
     }
 
@@ -402,6 +416,8 @@ impl ScryptoFungibleProof for CheckedFungibleProof {}
 //============================
 
 impl ScryptoProof for CheckedNonFungibleProof {
+    type ResourceManagerType = NonFungibleResourceManager;
+
     fn contains_amount(&self, amount: Decimal) -> bool {
         self.0.contains_amount(amount)
     }
@@ -410,7 +426,7 @@ impl ScryptoProof for CheckedNonFungibleProof {
         self.0.amount()
     }
 
-    fn resource_manager(&self) -> ResourceManager {
+    fn resource_manager(&self) -> Self::ResourceManagerType {
         self.resource_address().into()
     }
 

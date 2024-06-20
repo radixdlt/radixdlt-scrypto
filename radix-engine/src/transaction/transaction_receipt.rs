@@ -88,12 +88,11 @@ impl TransactionReceiptV1 {
         // Writing the flamegraph string to a temporary file since its required by the flamegraph lib to
         // have a path.
         let result = {
-            let tempdir = tempfile::tempdir().map_err(FlamegraphError::IOError)?;
-            let tempfile = tempdir.path().join("file.txt");
+            let tempfile = tempfile::NamedTempFile::new().map_err(FlamegraphError::IOError)?;
             std::fs::write(&tempfile, flamegraph_string).map_err(FlamegraphError::IOError)?;
 
             let mut result = std::io::Cursor::new(Vec::new());
-            inferno::flamegraph::from_files(&mut opts, &[tempfile], &mut result)
+            inferno::flamegraph::from_files(&mut opts, &[tempfile.path().to_owned()], &mut result)
                 .map_err(|_| FlamegraphError::CreationError)?;
 
             result.set_position(0);

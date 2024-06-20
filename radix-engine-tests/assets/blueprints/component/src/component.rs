@@ -73,7 +73,7 @@ mod component_test2 {
     use component_test3::ComponentTest3;
 
     struct ComponentTest2 {
-        vault: Vault,
+        vault: NonFungibleVault,
     }
 
     impl ComponentTest2 {
@@ -111,7 +111,7 @@ mod component_test2 {
                 },
             );
             self.vault.put(bucket);
-            let bucket = self.vault.as_non_fungible().take_non_fungible(&id);
+            let bucket = self.vault.take_non_fungible(&id);
             bucket.into()
         }
 
