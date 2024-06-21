@@ -2,12 +2,12 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use radix_engine_interface::api::{AttachedModuleId, ModuleId};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct InstanceContext {
     pub outer_object: GlobalAddress,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum MethodType {
     Main,
     Direct,
@@ -23,7 +23,7 @@ impl MethodType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct MethodActor {
     pub method_type: MethodType,
     pub node_id: NodeId,
@@ -46,7 +46,7 @@ impl MethodActor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
@@ -60,14 +60,14 @@ impl FunctionActor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct BlueprintHookActor {
     pub receiver: Option<NodeId>,
     pub hook: BlueprintHook,
     pub blueprint_id: BlueprintId,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum Actor {
     Root,
     Method(MethodActor),
