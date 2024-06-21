@@ -107,14 +107,21 @@ impl TransactionReceiptV1 {
     }
 
     fn transform_detailed_execution_breakdown_into_flamegraph_string(
-        detailed_execution_cost_breakdown: &[(usize, ExecutionCostBreakdownItem)],
+        detailed_execution_cost_breakdown: &[DetailedExecutionCostBreakdownEntry],
         network_definition: &NetworkDefinition,
     ) -> String {
         let address_bech32m_encoder = AddressBech32Encoder::new(&network_definition);
 
         let mut lines = Vec::<String>::new();
         let mut path_stack = vec![];
-        for (index, (_, execution_item)) in detailed_execution_cost_breakdown.iter().enumerate() {
+        for (
+            index,
+            DetailedExecutionCostBreakdownEntry {
+                item: execution_item,
+                ..
+            },
+        ) in detailed_execution_cost_breakdown.iter().enumerate()
+        {
             // Constructing the full path
             match execution_item {
                 ExecutionCostBreakdownItem::Invocation { actor, .. } => {
@@ -332,7 +339,7 @@ pub struct ResourcesUsage {
 pub struct TransactionDebugInformation {
     /* Costing Breakdown */
     /// A detailed trace of where execution cost units were consumed.
-    pub detailed_execution_cost_breakdown: Vec<(usize, ExecutionCostBreakdownItem)>,
+    pub detailed_execution_cost_breakdown: Vec<DetailedExecutionCostBreakdownEntry>,
 }
 
 impl TransactionExecutionTrace {

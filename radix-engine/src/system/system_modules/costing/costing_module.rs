@@ -100,6 +100,12 @@ impl CostingModuleConfig {
 }
 
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+pub struct DetailedExecutionCostBreakdownEntry {
+    pub depth: usize,
+    pub item: ExecutionCostBreakdownItem,
+}
+
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum ExecutionCostBreakdownItem {
     Invocation {
         actor: Actor,
@@ -123,7 +129,7 @@ pub struct CostBreakdown {
 #[derive(Debug, Clone, Default)]
 pub struct DetailedCostBreakdown {
     /// A more detailed cost breakdown with information on the depth.
-    pub detailed_execution_cost_breakdown: Vec<(usize, ExecutionCostBreakdownItem)>,
+    pub detailed_execution_cost_breakdown: Vec<DetailedExecutionCostBreakdownEntry>,
 }
 
 #[derive(Debug, Clone)]
@@ -167,14 +173,14 @@ impl CostingModule {
             // Add an entry for the more detailed execution cost
             detailed_cost_breakdown
                 .detailed_execution_cost_breakdown
-                .push((
-                    self.current_depth,
-                    ExecutionCostBreakdownItem::Execution {
+                .push(DetailedExecutionCostBreakdownEntry {
+                    depth: self.current_depth,
+                    item: ExecutionCostBreakdownItem::Execution {
                         simple_name: costing_entry.to_trace_key(),
                         item: owned::ExecutionCostingEntryOwned::from(costing_entry),
                         cost_units,
                     },
-                ));
+                });
         }
 
         Ok(())
@@ -221,14 +227,14 @@ impl CostingModule {
             // Add an entry for the more detailed execution cost
             detailed_cost_breakdown
                 .detailed_execution_cost_breakdown
-                .push((
-                    0,
-                    ExecutionCostBreakdownItem::Execution {
+                .push(DetailedExecutionCostBreakdownEntry {
+                    depth: 0,
+                    item: ExecutionCostBreakdownItem::Execution {
                         simple_name: costing_entry.to_trace_key(),
                         item: owned::ExecutionCostingEntryOwned::from(costing_entry),
                         cost_units,
                     },
-                ));
+                });
         }
 
         Ok(())
@@ -371,13 +377,13 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         {
             detailed_cost_breakdown
                 .detailed_execution_cost_breakdown
-                .push((
+                .push(DetailedExecutionCostBreakdownEntry {
                     depth,
-                    ExecutionCostBreakdownItem::Invocation {
+                    item: ExecutionCostBreakdownItem::Invocation {
                         actor: invocation.call_frame_data.clone(),
                         args: (invocation.args.as_scrypto_value().to_owned(),),
                     },
-                ));
+                });
         }
 
         // Skip invocation costing for transaction processor
@@ -472,7 +478,10 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         {
             detailed_cost_breakdown
                 .detailed_execution_cost_breakdown
-                .push((depth, ExecutionCostBreakdownItem::InvocationComplete));
+                .push(DetailedExecutionCostBreakdownEntry {
+                    depth,
+                    item: ExecutionCostBreakdownItem::InvocationComplete,
+                });
         }
 
         // Skip invocation costing for transaction processor
