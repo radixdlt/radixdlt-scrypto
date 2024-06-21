@@ -2,6 +2,7 @@
 
 use radix_common::data::scrypto::*;
 use radix_common::prelude::*;
+use radix_transactions::manifest::decompile;
 use radix_transactions::prelude::*;
 use sbor::representations::SerializationParameters;
 use scrypto_test::prelude::*;
@@ -62,6 +63,16 @@ fn executing_transactions_with_debug_information_outputs_the_detailed_cost_break
 }
 
 #[test]
+fn generate_flamegraph_of_faucet_lock_fee_method() {
+    generate_and_write_flamegraph_and_detailed_breakdown("faucet-lock-fee", |_| {
+        (
+            ManifestBuilder::new().lock_fee_from_faucet().build(),
+            Default::default(),
+        )
+    });
+}
+
+#[test]
 fn generate_flamegraph_of_faucet_lock_fee_and_free_xrd_method() {
     generate_and_write_flamegraph_and_detailed_breakdown(
         "faucet-lock-fee-and-free-xrd",
@@ -86,6 +97,8 @@ where
     let network_definition = NetworkDefinition::simulator();
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (manifest, signers) = callback(&mut ledger);
+    let string_manifest =
+        decompile(&manifest.instructions, &network_definition).expect("Can't fail!");
     let receipt = ledger.execute_manifest_with_execution_config(
         manifest,
         signers
@@ -117,6 +130,14 @@ where
                 .detailed_execution_cost_breakdown,
             &network_definition,
         ),
+    )
+    .expect("Must succeed");
+    std::fs::write(
+        PathBuf::from(std::env!("CARGO_MANIFEST_DIR"))
+            .join("assets")
+            .join("flamegraphs")
+            .join(format!("{}.rtm", title)),
+        string_manifest,
     )
     .expect("Must succeed")
 }
