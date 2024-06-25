@@ -1,9 +1,6 @@
 use sbor::prelude::*;
 use sbor::schema::*;
-use sbor::BasicValue;
-use sbor::ComparisonSchema;
-use sbor::NoCustomSchema;
-use sbor::NoCustomTypeKind;
+use sbor::{BasicTypeAggregator, BasicValue, ComparisonSchema, NoCustomSchema, NoCustomTypeKind};
 
 //=====================
 // HELPER CODE / TRAITS
@@ -359,14 +356,14 @@ fn equality_removing_length_validation_fails() {
 #[should_panic(expected = "TypeUnreachableFromRootInBaseSchema")]
 fn base_schema_not_covered_by_root_types_fails() {
     let mut base_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
-        aggregator.add_named_root_type_and_descendents::<MyEnum>("enum");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
+        aggregator.add_root_type::<MyEnum>("enum");
         aggregator.generate_named_types_schema()
     };
     let compared_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
         aggregator.generate_named_types_schema()
     };
     // Forget about a root type - this leaves the schema not fully covered.
@@ -379,14 +376,14 @@ fn base_schema_not_covered_by_root_types_fails() {
 #[should_panic(expected = "TypeUnreachableFromRootInComparedSchema")]
 fn compared_schema_not_covered_by_root_types_fails() {
     let base_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
         aggregator.generate_named_types_schema()
     };
     let mut compared_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
-        aggregator.add_named_root_type_and_descendents::<MyEnum>("enum");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
+        aggregator.add_root_type::<MyEnum>("enum");
         aggregator.generate_named_types_schema()
     };
     // Forget about a root type - this leaves the schema not fully covered.
@@ -402,14 +399,14 @@ fn compared_schema_not_covered_by_root_types_fails() {
 #[should_panic(expected = "NamedRootTypeMissingInComparedSchema")]
 fn removed_root_type_fails_comparison() {
     let base_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
-        aggregator.add_named_root_type_and_descendents::<MyEnum>("enum");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
+        aggregator.add_root_type::<MyEnum>("enum");
         aggregator.generate_named_types_schema()
     };
     let compared_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
         aggregator.generate_named_types_schema()
     };
 
@@ -419,14 +416,14 @@ fn removed_root_type_fails_comparison() {
 #[test]
 fn under_extension_added_root_type_succeeds() {
     let base_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
         aggregator.generate_named_types_schema()
     };
     let compared_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
-        aggregator.add_named_root_type_and_descendents::<MyEnum>("enum");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
+        aggregator.add_root_type::<MyEnum>("enum");
         aggregator.generate_named_types_schema()
     };
 
@@ -437,14 +434,14 @@ fn under_extension_added_root_type_succeeds() {
 #[should_panic(expected = "DisallowedNewRootTypeInComparedSchema")]
 fn under_equality_added_root_type_fails() {
     let base_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
         aggregator.generate_named_types_schema()
     };
     let compared_schema = {
-        let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
-        aggregator.add_named_root_type_and_descendents::<MyStruct>("struct");
-        aggregator.add_named_root_type_and_descendents::<MyEnum>("enum");
+        let mut aggregator = BasicTypeAggregator::new();
+        aggregator.add_root_type::<MyStruct>("struct");
+        aggregator.add_root_type::<MyEnum>("enum");
         aggregator.generate_named_types_schema()
     };
 

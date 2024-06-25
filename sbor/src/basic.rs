@@ -299,6 +299,7 @@ pub type BasicVersionedSchema = VersionedSchema<NoCustomSchema>;
 pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
 pub type BasicLocalTypeData = LocalTypeData<NoCustomSchema>;
 pub type BasicAggregatorTypeData = LocalTypeData<NoCustomSchema>;
+pub type BasicTypeAggregator = TypeAggregator<NoCustomTypeKind>;
 
 impl<'a> CustomDisplayContext<'a> for () {
     type CustomExtension = NoCustomExtension;

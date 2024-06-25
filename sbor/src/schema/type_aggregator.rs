@@ -163,7 +163,7 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
     ///
     /// This is only intended for use when adding root types to schemas,
     /// /and should not be called from inside Describe macros.
-    pub fn add_named_root_type_and_descendents<T: Describe<C> + ?Sized>(
+    pub fn add_root_type<T: Describe<C> + ?Sized>(
         &mut self,
         name: impl Into<String>,
     ) -> LocalTypeId {

@@ -9,6 +9,7 @@ pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
 pub type ScryptoLocalTypeData = LocalTypeData<ScryptoCustomSchema>;
 pub type ScryptoAggregatorTypeData = AggregatorTypeData<ScryptoCustomSchema>;
 pub type ScryptoTypeValidation = TypeValidation<ScryptoCustomTypeValidation>;
+pub type ScryptoTypeAggregator = TypeAggregator<ScryptoCustomTypeKind>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
