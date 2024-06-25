@@ -18,7 +18,7 @@ impl CustomTraversal for ManifestCustomTraversal {
     type CustomValueKind = ManifestCustomValueKind;
     type CustomTerminalValueRef<'de> = ManifestCustomTerminalValueRef;
 
-    fn decode_custom_value_body<'de, R>(
+    fn read_custom_value_body<'de, R>(
         custom_value_kind: Self::CustomValueKind,
         reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>

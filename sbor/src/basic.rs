@@ -142,7 +142,7 @@ impl CustomTraversal for NoCustomTraversal {
     type CustomValueKind = NoCustomValueKind;
     type CustomTerminalValueRef<'de> = NoCustomTerminalValueRef;
 
-    fn decode_custom_value_body<'de, R>(
+    fn read_custom_value_body<'de, R>(
         _custom_value_kind: Self::CustomValueKind,
         _reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
@@ -157,22 +157,42 @@ impl CustomTraversal for NoCustomTraversal {
 pub fn basic_payload_traverser<'b>(buf: &'b [u8]) -> BasicTraverser<'b> {
     BasicTraverser::new(
         buf,
-        BASIC_SBOR_V1_MAX_DEPTH,
         ExpectedStart::PayloadPrefix(BASIC_SBOR_V1_PAYLOAD_PREFIX),
-        true,
+        VecTraverserConfig {
+            max_depth: BASIC_SBOR_V1_MAX_DEPTH,
+            check_exact_end: true,
+        },
     )
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum NoCustomTypeKind {}
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
+pub enum NoCustomTypeKindLabel {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum NoCustomTypeValidation {}
 
-impl CustomTypeValidation for NoCustomTypeValidation {}
+impl CustomTypeValidation for NoCustomTypeValidation {
+    fn compare(_base: &Self, _compared: &Self) -> ValidationChange {
+        unreachable!("No custom validations exist")
+    }
+}
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
     type CustomTypeValidation = NoCustomTypeValidation;
+    type CustomTypeKindLabel = NoCustomTypeKindLabel;
+    
+    fn label(&self) -> Self::CustomTypeKindLabel {
+        unreachable!("No custom type kinds exist")
+    }
+}
+
+impl CustomTypeKindLabel for NoCustomTypeKindLabel {
+    fn name(&self) -> &'static str {
+        unreachable!("No custom type kinds exist")
+    }
 }
 
 lazy_static::lazy_static! {
@@ -186,6 +206,7 @@ pub enum NoCustomSchema {}
 
 impl CustomSchema for NoCustomSchema {
     type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
+    type CustomTypeKindLabel = NoCustomTypeKindLabel;
     type CustomTypeValidation = NoCustomTypeValidation;
 
     fn linearize_type_kind(

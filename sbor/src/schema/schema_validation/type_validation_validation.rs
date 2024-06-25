@@ -103,7 +103,7 @@ pub fn validate_custom_type_validation<'a, S: CustomSchema>(
     Ok(())
 }
 
-fn validate_numeric_validation<T: Ord + Copy>(
+fn validate_numeric_validation<T: NumericValidationBound>(
     numeric_validation: &NumericValidation<T>,
 ) -> Result<(), SchemaValidationError> {
     if let Some(min) = numeric_validation.min {

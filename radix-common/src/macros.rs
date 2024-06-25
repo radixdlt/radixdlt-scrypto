@@ -61,46 +61,6 @@ macro_rules! well_known_scrypto_custom_type {
 }
 
 #[macro_export]
-macro_rules! schemaless_scrypto_custom_type {
-    // without describe
-    ($t:ty, $value_kind:expr, $size: expr) => {
-        impl sbor::Categorize<$crate::data::scrypto::ScryptoCustomValueKind> for $t {
-            #[inline]
-            fn value_kind() -> sbor::ValueKind<$crate::data::scrypto::ScryptoCustomValueKind> {
-                sbor::ValueKind::Custom($value_kind)
-            }
-        }
-
-        impl<E: sbor::Encoder<$crate::data::scrypto::ScryptoCustomValueKind>>
-            sbor::Encode<$crate::data::scrypto::ScryptoCustomValueKind, E> for $t
-        {
-            #[inline]
-            fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
-                encoder.write_value_kind(Self::value_kind())
-            }
-
-            #[inline]
-            fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
-                encoder.write_slice(&self.to_vec())
-            }
-        }
-
-        impl<D: sbor::Decoder<$crate::data::scrypto::ScryptoCustomValueKind>>
-            sbor::Decode<$crate::data::scrypto::ScryptoCustomValueKind, D> for $t
-        {
-            fn decode_body_with_value_kind(
-                decoder: &mut D,
-                value_kind: sbor::ValueKind<$crate::data::scrypto::ScryptoCustomValueKind>,
-            ) -> Result<Self, sbor::DecodeError> {
-                decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-                let slice = decoder.read_slice($size)?;
-                Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)
-            }
-        }
-    };
-}
-
-#[macro_export]
 macro_rules! manifest_type {
     // without describe
     ($t:ty, $value_kind:expr, $size: expr) => {

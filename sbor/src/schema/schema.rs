@@ -148,6 +148,36 @@ impl<S: CustomSchema> SchemaV1<S> {
         }
     }
 
+    pub fn resolve_type_data(
+        &self,
+        type_id: LocalTypeId,
+    ) -> Option<(
+        &TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId>,
+        &TypeMetadata,
+        &TypeValidation<S::CustomTypeValidation>,
+    )> {
+        match type_id {
+            LocalTypeId::WellKnown(index) => {
+                let Some(type_data) = S::resolve_well_known_type(index) else {
+                    return None;
+                };
+                Some((&type_data.kind, &type_data.metadata, &type_data.validation))
+            }
+            LocalTypeId::SchemaLocalIndex(index) => {
+                let Some(type_kind) = self.type_kinds.get(index) else {
+                    return None;
+                };
+                let Some(type_metadata) = self.type_metadata.get(index) else {
+                    return None;
+                };
+                let Some(type_validation) = self.type_validations.get(index) else {
+                    return None;
+                };
+                Some((type_kind, type_metadata, type_validation))
+            }
+        }
+    }
+
     pub fn validate(&self) -> Result<(), SchemaValidationError> {
         validate_schema(self)
     }

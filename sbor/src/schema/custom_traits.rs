@@ -4,16 +4,27 @@ use crate::*;
 
 pub trait CustomTypeKind<L: SchemaTypeLink>: Debug + Clone + PartialEq + Eq {
     type CustomTypeValidation: CustomTypeValidation;
+    type CustomTypeKindLabel: CustomTypeKindLabel;
+
+    fn label(&self) -> Self::CustomTypeKindLabel;
 }
 
-pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {}
+pub trait CustomTypeKindLabel: Debug + Copy + Clone + PartialEq + Eq {
+    fn name(&self) -> &'static str;
+}
+
+pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {
+    fn compare(base: &Self, compared: &Self) -> ValidationChange;
+}
 
 pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
     type CustomTypeValidation: CustomTypeValidation;
     type CustomTypeKind<L: SchemaTypeLink>: CustomTypeKind<
         L,
         CustomTypeValidation = Self::CustomTypeValidation,
+        CustomTypeKindLabel = Self::CustomTypeKindLabel,
     >;
+    type CustomTypeKindLabel: CustomTypeKindLabel;
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<RustTypeId>,
