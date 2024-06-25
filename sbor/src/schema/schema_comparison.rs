@@ -1655,7 +1655,7 @@ impl<E: CustomExtension, C: ComparisonSchema<E>> NamedSchemaVersions<E, C> {
 ///   can be an extension (e.g. enums can have new variants)
 ///
 /// The indexmap should be a map from a version name to a hex-encoded
-/// basic-sbor-encoded `SingleTypeSchemaVersion` (with a single type).
+/// basic-sbor-encoded `SingleTypeSchema` (with a single type).
 /// The version name is only used for a more useful message on error.
 ///
 /// ## Example usage

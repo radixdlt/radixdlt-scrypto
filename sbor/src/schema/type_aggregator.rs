@@ -1,5 +1,4 @@
 use super::*;
-use indexmap::IndexMap;
 use sbor::rust::prelude::*;
 
 pub fn generate_full_schema_from_single_type<
