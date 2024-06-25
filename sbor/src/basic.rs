@@ -205,20 +205,21 @@ lazy_static::lazy_static! {
 pub enum NoCustomSchema {}
 
 impl CustomSchema for NoCustomSchema {
-    type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
+    type CustomLocalTypeKind = NoCustomTypeKind;
+    type CustomAggregatorTypeKind = NoCustomTypeKind;
     type CustomTypeKindLabel = NoCustomTypeKindLabel;
     type CustomTypeValidation = NoCustomTypeValidation;
 
     fn linearize_type_kind(
-        _: Self::CustomTypeKind<RustTypeId>,
+        _: Self::CustomAggregatorTypeKind,
         _: &IndexSet<TypeHash>,
-    ) -> Self::CustomTypeKind<LocalTypeId> {
+    ) -> Self::CustomLocalTypeKind {
         unreachable!("No custom type kinds exist")
     }
 
     fn resolve_well_known_type(
         well_known_id: WellKnownTypeId,
-    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeId>, LocalTypeId>> {
+    ) -> Option<&'static LocalTypeData<Self>> {
         WELL_KNOWN_LOOKUP
             .get(well_known_id.as_index())
             .and_then(|x| x.as_ref())
@@ -226,7 +227,7 @@ impl CustomSchema for NoCustomSchema {
 
     fn validate_custom_type_validation(
         _: &SchemaContext,
-        _: &Self::CustomTypeKind<LocalTypeId>,
+        _: &Self::CustomLocalTypeKind,
         _: &Self::CustomTypeValidation,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type validation")
@@ -234,14 +235,14 @@ impl CustomSchema for NoCustomSchema {
 
     fn validate_custom_type_kind(
         _: &SchemaContext,
-        _: &Self::CustomTypeKind<LocalTypeId>,
+        _: &Self::CustomLocalTypeKind,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
     }
 
     fn validate_type_metadata_with_custom_type_kind(
         _: &SchemaContext,
-        _: &Self::CustomTypeKind<LocalTypeId>,
+        _: &Self::CustomLocalTypeKind,
         _: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {
         unreachable!("No custom type kinds exist")
@@ -271,17 +272,14 @@ impl CustomExtension for NoCustomExtension {
     fn custom_value_kind_matches_type_kind(
         _: &Schema<Self::CustomSchema>,
         _: Self::CustomValueKind,
-        _: &TypeKind<
-            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
-            LocalTypeId,
-        >,
+        _: &TypeKind<<Self::CustomSchema as CustomSchema>::CustomLocalTypeKind, LocalTypeId>,
     ) -> bool {
         unreachable!("No custom value kinds exist")
     }
 
     fn custom_type_kind_matches_non_custom_value_kind(
         _: &Schema<Self::CustomSchema>,
-        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomLocalTypeKind,
         _: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         unreachable!("No custom type kinds exist")
@@ -293,9 +291,13 @@ pub type BasicOwnedRawPayload = RawPayload<'static, NoCustomExtension>;
 pub type BasicRawValue<'a> = RawValue<'a, NoCustomExtension>;
 pub type BasicOwnedRawValue = RawValue<'static, NoCustomExtension>;
 pub type BasicTypeKind<L> = TypeKind<NoCustomTypeKind, L>;
+pub type BasicLocalTypeKind = LocalTypeKind<NoCustomSchema>;
+pub type BasicAggregatorTypeKind = AggregatorTypeKind<NoCustomSchema>;
 pub type BasicSchema = Schema<NoCustomSchema>;
 pub type BasicVersionedSchema = VersionedSchema<NoCustomSchema>;
 pub type BasicTypeData<L> = TypeData<NoCustomTypeKind, L>;
+pub type BasicLocalTypeData = LocalTypeData<NoCustomSchema>;
+pub type BasicAggregatorTypeData = LocalTypeData<NoCustomSchema>;
 
 impl<'a> CustomDisplayContext<'a> for () {
     type CustomExtension = NoCustomExtension;

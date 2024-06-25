@@ -4,7 +4,7 @@ use crate::schema::*;
 
 pub fn validate_type_metadata_with_type_kind<'a, S: CustomSchema>(
     context: &SchemaContext,
-    type_kind: &SchemaTypeKind<S>,
+    type_kind: &LocalTypeKind<S>,
     type_metadata: &TypeMetadata,
 ) -> Result<(), SchemaValidationError> {
     match type_kind {

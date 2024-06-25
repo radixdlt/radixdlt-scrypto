@@ -445,7 +445,7 @@ mod tests {
 
     #[test]
     pub fn test_vec_u8_with_min_max() {
-        let t0 = BasicTypeData {
+        let t0 = BasicLocalTypeData {
             kind: BasicTypeKind::Array {
                 element_type: LocalTypeId::SchemaLocalIndex(1),
             },
@@ -455,7 +455,7 @@ mod tests {
                 max: 1.into(),
             }),
         };
-        let t1 = BasicTypeData {
+        let t1 = BasicLocalTypeData {
             kind: BasicTypeKind::U8,
             metadata: TypeMetadata::unnamed(),
             validation: TypeValidation::U8(NumericValidation {

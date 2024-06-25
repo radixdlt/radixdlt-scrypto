@@ -630,8 +630,8 @@ impl<S: CustomSchema> TypeKindComparisonResult<S> {
 
     fn with_mismatch_error(
         mut self,
-        base_type_kind: &TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId>,
-        compared_type_kind: &TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId>,
+        base_type_kind: &LocalTypeKind<S>,
+        compared_type_kind: &LocalTypeKind<S>,
     ) -> Self {
         self.add_error(SchemaComparisonErrorDetail::TypeKindMismatch {
             base: base_type_kind.label(),
@@ -1071,8 +1071,8 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
 
     fn compare_type_kind_internal(
         &self,
-        base_type_kind: &TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId>,
-        compared_type_kind: &TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId>,
+        base_type_kind: &LocalTypeKind<S>,
+        compared_type_kind: &LocalTypeKind<S>,
     ) -> TypeKindComparisonResult<S> {
         // The returned children to check should be driven from the base type kind,
         // because these are the children where we have to maintain backwards-compatibility
@@ -1271,7 +1271,7 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
 
     fn compare_type_metadata_internal(
         &self,
-        base_type_kind: &TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId>,
+        base_type_kind: &LocalTypeKind<S>,
         base_type_metadata: &TypeMetadata,
         compared_type_metadata: &TypeMetadata,
     ) -> TypeMetadataComparisonResult<S> {
@@ -1680,7 +1680,7 @@ impl<E: CustomExtension, C: ComparisonSchema<E>> NamedSchemaVersions<E, C> {
 /// ```
 pub fn assert_type_backwards_compatibility<
     E: CustomExtension,
-    T: Describe<<E::CustomSchema as CustomSchema>::CustomTypeKind<RustTypeId>>,
+    T: Describe<<E::CustomSchema as CustomSchema>::CustomAggregatorTypeKind>,
 >(
     versions_builder: impl FnOnce(
         NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>,
@@ -1696,7 +1696,7 @@ pub fn assert_type_backwards_compatibility<
 
 pub fn assert_type_compatibility<
     E: CustomExtension,
-    T: Describe<<E::CustomSchema as CustomSchema>::CustomTypeKind<RustTypeId>>,
+    T: Describe<<E::CustomSchema as CustomSchema>::CustomAggregatorTypeKind>,
 >(
     comparison_settings: &SchemaComparisonSettings,
     versions_builder: impl FnOnce(
@@ -1794,7 +1794,7 @@ fn assert_schema_compatibility<E: CustomExtension, C: ComparisonSchema<E>>(
 /// A serializable record of the schema of a single type.
 /// Intended for historical backwards compatibility checking of a single type.
 #[derive(Debug, Clone, Sbor)]
-#[sbor(child_types = "S::CustomTypeKind<LocalTypeId>, S::CustomTypeValidation")]
+#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
 pub struct SingleTypeSchema<S: CustomSchema> {
     pub schema: VersionedSchema<S>,
     pub type_id: LocalTypeId,
@@ -1805,14 +1805,14 @@ impl<S: CustomSchema> SingleTypeSchema<S> {
         Self { schema, type_id }
     }
 
-    pub fn from<T: Describe<S::CustomTypeKind<RustTypeId>> + ?Sized>() -> Self {
+    pub fn from<T: Describe<S::CustomAggregatorTypeKind> + ?Sized>() -> Self {
         generate_single_type_schema::<T, S>()
     }
 }
 
 impl<E: CustomExtension> ComparisonSchema<E> for SingleTypeSchema<E::CustomSchema>
 where
-    <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>: VecSbor<E>,
+    <E::CustomSchema as CustomSchema>::CustomLocalTypeKind: VecSbor<E>,
     <E::CustomSchema as CustomSchema>::CustomTypeValidation: VecSbor<E>,
 {
     fn compare_with<'s>(
@@ -1848,7 +1848,7 @@ where
 ///
 /// For example, traits, or blueprint interfaces.
 #[derive(Debug, Clone, Sbor)]
-#[sbor(child_types = "S::CustomTypeKind<LocalTypeId>, S::CustomTypeValidation")]
+#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
 pub struct NamedTypesSchema<S: CustomSchema> {
     pub schema: VersionedSchema<S>,
     pub type_ids: IndexMap<String, LocalTypeId>,
@@ -1859,14 +1859,14 @@ impl<S: CustomSchema> NamedTypesSchema<S> {
         Self { schema, type_ids }
     }
 
-    pub fn from(aggregator: TypeAggregator<S::CustomTypeKind<RustTypeId>>) -> Self {
+    pub fn from(aggregator: TypeAggregator<S::CustomAggregatorTypeKind>) -> Self {
         aggregator.generate_named_types_schema::<S>()
     }
 }
 
 impl<E: CustomExtension> ComparisonSchema<E> for NamedTypesSchema<E::CustomSchema>
 where
-    <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>: VecSbor<E>,
+    <E::CustomSchema as CustomSchema>::CustomLocalTypeKind: VecSbor<E>,
     <E::CustomSchema as CustomSchema>::CustomTypeValidation: VecSbor<E>,
 {
     fn compare_with<'s>(

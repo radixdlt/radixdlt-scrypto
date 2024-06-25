@@ -30,7 +30,7 @@ pub trait VecSbor<E: CustomExtension>:
     Categorize<E::CustomValueKind>
     + VecEncode<E::CustomValueKind>
     + VecDecode<E::CustomValueKind>
-    + Describe<<E::CustomSchema as CustomSchema>::CustomTypeKind<RustTypeId>>
+    + Describe<<E::CustomSchema as CustomSchema>::CustomAggregatorTypeKind>
 {
 }
 
@@ -39,6 +39,6 @@ where
     T: Categorize<E::CustomValueKind>,
     T: VecEncode<E::CustomValueKind>,
     T: VecDecode<E::CustomValueKind>,
-    T: Describe<<E::CustomSchema as CustomSchema>::CustomTypeKind<RustTypeId>>,
+    T: Describe<<E::CustomSchema as CustomSchema>::CustomAggregatorTypeKind>,
 {
 }

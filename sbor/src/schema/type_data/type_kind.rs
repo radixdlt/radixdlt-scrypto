@@ -2,9 +2,13 @@ use super::*;
 use crate::rust::collections::IndexMap;
 use crate::rust::vec::Vec;
 
+pub type LocalTypeKind<S> = TypeKind<<S as CustomSchema>::CustomLocalTypeKind, LocalTypeId>;
+pub type AggregatorTypeKind<S> =
+    TypeKind<<S as CustomSchema>::CustomAggregatorTypeKind, RustTypeId>;
+
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-#[sbor(child_types = "T,L", categorize_types = "L")]
+#[sbor(child_types = "T, L", categorize_types = "L")]
 pub enum TypeKind<T: CustomTypeKind<L>, L: SchemaTypeLink> {
     Any,
 

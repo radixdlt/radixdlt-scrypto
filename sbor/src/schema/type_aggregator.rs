@@ -2,7 +2,7 @@ use super::*;
 use sbor::rust::prelude::*;
 
 pub fn generate_full_schema_from_single_type<
-    T: Describe<S::CustomTypeKind<RustTypeId>> + ?Sized,
+    T: Describe<S::CustomAggregatorTypeKind> + ?Sized,
     S: CustomSchema,
 >() -> (LocalTypeId, VersionedSchema<S>) {
     let mut aggregator = TypeAggregator::new();
@@ -11,7 +11,7 @@ pub fn generate_full_schema_from_single_type<
 }
 
 pub fn generate_single_type_schema<
-    T: Describe<S::CustomTypeKind<RustTypeId>> + ?Sized,
+    T: Describe<S::CustomAggregatorTypeKind> + ?Sized,
     S: CustomSchema,
 >() -> SingleTypeSchema<S> {
     let (type_id, schema) = generate_full_schema_from_single_type::<T, S>();
@@ -23,13 +23,13 @@ pub fn generate_single_type_schema<
 /// also captures named root types to give more structure to enable schema
 /// comparisons over time.
 pub fn generate_full_schema<S: CustomSchema>(
-    aggregator: TypeAggregator<S::CustomTypeKind<RustTypeId>>,
+    aggregator: TypeAggregator<S::CustomAggregatorTypeKind>,
 ) -> VersionedSchema<S> {
     generate_schema_from_types(aggregator.types)
 }
 
 fn generate_schema_from_types<S: CustomSchema>(
-    types: IndexMap<TypeHash, TypeData<S::CustomTypeKind<RustTypeId>, RustTypeId>>,
+    types: IndexMap<TypeHash, AggregatorTypeData<S>>,
 ) -> VersionedSchema<S> {
     let type_count = types.len();
     let type_indices = IndexSet::from_iter(types.keys().map(|k| k.clone()));
@@ -52,8 +52,8 @@ fn generate_schema_from_types<S: CustomSchema>(
 }
 
 pub fn localize_well_known_type_data<S: CustomSchema>(
-    type_data: TypeData<S::CustomTypeKind<RustTypeId>, RustTypeId>,
-) -> TypeData<S::CustomTypeKind<LocalTypeId>, LocalTypeId> {
+    type_data: AggregatorTypeData<S>,
+) -> LocalTypeData<S> {
     let TypeData {
         kind,
         metadata,
@@ -66,16 +66,14 @@ pub fn localize_well_known_type_data<S: CustomSchema>(
     }
 }
 
-pub fn localize_well_known<S: CustomSchema>(
-    type_kind: TypeKind<S::CustomTypeKind<RustTypeId>, RustTypeId>,
-) -> TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId> {
+pub fn localize_well_known<S: CustomSchema>(type_kind: AggregatorTypeKind<S>) -> LocalTypeKind<S> {
     linearize::<S>(type_kind, &indexset!())
 }
 
 fn linearize<S: CustomSchema>(
-    type_kind: TypeKind<S::CustomTypeKind<RustTypeId>, RustTypeId>,
+    type_kind: AggregatorTypeKind<S>,
     type_indices: &IndexSet<TypeHash>,
-) -> TypeKind<S::CustomTypeKind<LocalTypeId>, LocalTypeId> {
+) -> LocalTypeKind<S> {
     match type_kind {
         TypeKind::Any => TypeKind::Any,
         TypeKind::Bool => TypeKind::Bool,
@@ -238,7 +236,7 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
         return true;
     }
 
-    pub fn generate_named_types_schema<S: CustomSchema<CustomTypeKind<RustTypeId> = C>>(
+    pub fn generate_named_types_schema<S: CustomSchema<CustomAggregatorTypeKind = C>>(
         self,
     ) -> NamedTypesSchema<S> {
         NamedTypesSchema::new(

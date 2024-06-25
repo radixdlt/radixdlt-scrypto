@@ -522,7 +522,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
 fn value_kind_matches_type_kind<E: CustomExtension>(
     schema: &Schema<E::CustomSchema>,
     value_kind: ValueKind<E::CustomValueKind>,
-    type_kind: &SchemaTypeKind<E::CustomSchema>,
+    type_kind: &LocalTypeKind<E::CustomSchema>,
 ) -> bool {
     if matches!(type_kind, TypeKind::Any) {
         return true;
