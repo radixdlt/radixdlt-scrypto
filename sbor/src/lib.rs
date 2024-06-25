@@ -19,6 +19,8 @@ pub mod decode;
 pub mod decoder;
 /// SBOR encode trait.
 pub mod encode;
+/// Simpler traits specific to encodability/decodability against vec-based encoders/decoders
+pub mod vec_traits;
 /// SBOR payload wrappers.
 /// These are new types around an encoded payload or sub-payload, with helper methods / traits implemented.
 /// They can be used as a more efficient wrapper a ScryptoValue if the content of that value is not needed.
@@ -113,6 +115,7 @@ pub mod prelude {
     };
     pub use crate::{define_single_versioned, define_versioned};
     pub use crate::{Categorize, Decode, Encode, Sbor, SborEnum, SborTuple};
+    pub use crate::vec_traits::*;
     pub use crate::{DecodeError, EncodeError};
 }
 

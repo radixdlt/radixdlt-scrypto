@@ -1,8 +1,9 @@
 use super::*;
+use indexmap::IndexMap;
 use sbor::rust::prelude::*;
 
 pub fn generate_full_schema_from_single_type<
-    T: Describe<S::CustomTypeKind<RustTypeId>>,
+    T: Describe<S::CustomTypeKind<RustTypeId>> + ?Sized,
     S: CustomSchema,
 >() -> (LocalTypeId, VersionedSchema<S>) {
     let mut aggregator = TypeAggregator::new();
@@ -10,16 +11,34 @@ pub fn generate_full_schema_from_single_type<
     (type_id, generate_full_schema(aggregator))
 }
 
+pub fn generate_single_type_schema<
+    T: Describe<S::CustomTypeKind<RustTypeId>> + ?Sized,
+    S: CustomSchema,
+>() -> SingleTypeSchema<S> {
+    let (type_id, schema) = generate_full_schema_from_single_type::<T, S>();
+    SingleTypeSchema::new(schema, type_id)
+}
+
+/// You may wish to use the newer `schema.generate_named_types_schema_version()`
+/// which, in tandom with `add_named_root_type_and_descendents`
+/// also captures named root types to give more structure to enable schema
+/// comparisons over time.
 pub fn generate_full_schema<S: CustomSchema>(
     aggregator: TypeAggregator<S::CustomTypeKind<RustTypeId>>,
 ) -> VersionedSchema<S> {
-    let type_count = aggregator.types.len();
-    let type_indices = IndexSet::from_iter(aggregator.types.keys().map(|k| k.clone()));
+    generate_schema_from_types(aggregator.types)
+}
+
+fn generate_schema_from_types<S: CustomSchema>(
+    types: IndexMap<TypeHash, TypeData<S::CustomTypeKind<RustTypeId>, RustTypeId>>
+) -> VersionedSchema<S> {
+    let type_count = types.len();
+    let type_indices = IndexSet::from_iter(types.keys().map(|k| k.clone()));
 
     let mut type_kinds = Vec::with_capacity(type_count);
     let mut type_metadata = Vec::with_capacity(type_count);
     let mut type_validations = Vec::with_capacity(type_count);
-    for (_type_hash, type_data) in aggregator.types {
+    for (_type_hash, type_data) in types {
         type_kinds.push(linearize::<S>(type_data.kind, &type_indices));
         type_metadata.push(type_data.metadata);
         type_validations.push(type_data.validation);
@@ -129,6 +148,7 @@ fn resolve_index(type_indices: &IndexSet<TypeHash>, type_hash: &TypeHash) -> usi
 
 pub struct TypeAggregator<C: CustomTypeKind<RustTypeId>> {
     already_read_dependencies: IndexSet<TypeHash>,
+    named_root_types: IndexMap<String, LocalTypeId>,
     types: IndexMap<TypeHash, TypeData<C, RustTypeId>>,
 }
 
@@ -136,12 +156,24 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
     pub fn new() -> Self {
         Self {
             already_read_dependencies: index_set_new(),
+            named_root_types: IndexMap::default(),
             types: IndexMap::default(),
         }
     }
 
+    /// Adds the type (and its dependencies) to the `TypeAggregator`.
+    /// Also tracks it as a named root type, which can be used e.g. in schema comparisons.
+    ///
+    /// This is only intended for use when adding root types to schemas,
+    /// /and should not be called from inside Describe macros.
+    pub fn add_named_root_type_and_descendents<T: Describe<C> + ?Sized>(&mut self, name: impl Into<String>) -> LocalTypeId {
+        let local_type_id = self.add_child_type_and_descendents::<T>();
+        self.named_root_types.insert(name.into(), local_type_id);
+        local_type_id
+    }
+
     /// Adds the dependent type (and its dependencies) to the `TypeAggregator`.
-    pub fn add_child_type_and_descendents<T: Describe<C>>(&mut self) -> LocalTypeId {
+    pub fn add_child_type_and_descendents<T: Describe<C> + ?Sized>(&mut self) -> LocalTypeId {
         let schema_type_id = self.add_child_type(T::TYPE_ID, || T::type_data());
         self.add_schema_descendents::<T>();
         schema_type_id
@@ -188,7 +220,7 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
     /// [`add_child_type`]: #method.add_child_type
     /// [`add_schema_descendents`]: #method.add_schema_descendents
     /// [`add_child_type_and_descendents`]: #method.add_child_type_and_descendents
-    pub fn add_schema_descendents<T: Describe<C>>(&mut self) -> bool {
+    pub fn add_schema_descendents<T: Describe<C> + ?Sized>(&mut self) -> bool {
         let RustTypeId::Novel(complex_type_hash) = T::TYPE_ID else {
             return false;
         };
@@ -202,5 +234,13 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
         T::add_all_dependencies(self);
 
         return true;
+    }
+
+    pub fn generate_named_types_schema<S: CustomSchema<CustomTypeKind<RustTypeId> = C>>(self)
+    -> NamedTypesSchema<S> {
+        NamedTypesSchema::new(
+            generate_schema_from_types(self.types),
+            self.named_root_types,
+        )
     }
 }
