@@ -209,6 +209,7 @@ impl CustomSchema for NoCustomSchema {
     type CustomAggregatorTypeKind = NoCustomTypeKind;
     type CustomTypeKindLabel = NoCustomTypeKindLabel;
     type CustomTypeValidation = NoCustomTypeValidation;
+    type DefaultCustomExtension = NoCustomExtension;
 
     fn linearize_type_kind(
         _: Self::CustomAggregatorTypeKind,

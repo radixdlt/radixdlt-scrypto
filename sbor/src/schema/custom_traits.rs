@@ -1,3 +1,5 @@
+use vec_traits::VecSbor;
+
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
@@ -18,18 +20,21 @@ pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {
 }
 
 pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
-    type CustomTypeValidation: CustomTypeValidation;
+    type CustomTypeValidation: CustomTypeValidation + VecSbor<Self::DefaultCustomExtension>;
     type CustomLocalTypeKind: CustomTypeKind<
-        LocalTypeId,
-        CustomTypeValidation = Self::CustomTypeValidation,
-        CustomTypeKindLabel = Self::CustomTypeKindLabel,
-    >;
+            LocalTypeId,
+            CustomTypeValidation = Self::CustomTypeValidation,
+            CustomTypeKindLabel = Self::CustomTypeKindLabel,
+        > + VecSbor<Self::DefaultCustomExtension>;
     type CustomAggregatorTypeKind: CustomTypeKind<
         RustTypeId,
         CustomTypeValidation = Self::CustomTypeValidation,
         CustomTypeKindLabel = Self::CustomTypeKindLabel,
     >;
     type CustomTypeKindLabel: CustomTypeKindLabel;
+    /// Should only be used for default encoding of a schema, where it's required.
+    /// Typically you should start from a CustomExtension and not use this.
+    type DefaultCustomExtension: CustomExtension<CustomSchema = Self>;
 
     fn linearize_type_kind(
         type_kind: Self::CustomAggregatorTypeKind,

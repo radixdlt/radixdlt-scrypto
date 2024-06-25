@@ -226,6 +226,7 @@ impl CustomSchema for ScryptoCustomSchema {
     type CustomAggregatorTypeKind = ScryptoCustomTypeKind;
     type CustomTypeKindLabel = ScryptoCustomTypeKindLabel;
     type CustomTypeValidation = ScryptoCustomTypeValidation;
+    type DefaultCustomExtension = ScryptoCustomExtension;
 
     fn linearize_type_kind(
         type_kind: Self::CustomLocalTypeKind,

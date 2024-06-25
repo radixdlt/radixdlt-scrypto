@@ -2,7 +2,6 @@ use sbor::prelude::*;
 use sbor::schema::*;
 use sbor::BasicValue;
 use sbor::ComparisonSchema;
-use sbor::NoCustomExtension;
 use sbor::NoCustomSchema;
 use sbor::NoCustomTypeKind;
 
@@ -10,86 +9,75 @@ use sbor::NoCustomTypeKind;
 // HELPER CODE / TRAITS
 //=====================
 trait DerivableTypeSchema: Describe<NoCustomTypeKind> {
-    fn single_type_schema_version() -> String {
-        let single_type_schema_version: SingleTypeSchema<NoCustomSchema> =
-            SingleTypeSchema::<NoCustomSchema>::from::<Self>();
-        ComparisonSchema::<NoCustomExtension>::encode_to_hex(&single_type_schema_version)
+    fn single_type_schema_version() -> SingleTypeSchema<NoCustomSchema> {
+        SingleTypeSchema::for_type::<Self>()
+    }
+
+    fn single_type_schema_version_hex() -> String {
+        Self::single_type_schema_version().encode_to_hex()
     }
 }
 
 impl<T: Describe<NoCustomTypeKind>> DerivableTypeSchema for T {}
 
-trait RegisterType {
-    fn register_schema_of<T: DerivableTypeSchema>(self, name: &'static str) -> Self;
-}
-
-impl<E: CustomExtension, C: ComparisonSchema<E>> RegisterType for NamedSchemaVersions<E, C> {
-    fn register_schema_of<T: DerivableTypeSchema>(self, name: &'static str) -> Self {
-        self.register_version(name, T::single_type_schema_version())
-    }
-}
-
-fn assert_extension<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
-    assert_type_backwards_compatibility::<NoCustomExtension, T2>(|v| {
-        v.register_schema_of::<T1>("base")
-            .register_schema_of::<T2>("latest")
-    })
-}
-
-fn assert_extension_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
-    let settings = SchemaComparisonSettings::allow_structural_extension()
-        .metadata_settings(SchemaComparisonMetadataSettings::allow_all_changes());
-    assert_comparison_succeeds::<T1, T2>(&settings);
-}
-
 fn assert_equality<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
-    assert_comparison_succeeds::<T1, T2>(&SchemaComparisonSettings::require_equality());
+    let settings = SchemaComparisonSettings::require_equality();
+    assert_single_type_comparison::<NoCustomSchema>(
+        &settings,
+        &T1::single_type_schema_version(),
+        &T2::single_type_schema_version(),
+    )
 }
 
 fn assert_equality_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
     let settings = SchemaComparisonSettings::require_equality()
         .metadata_settings(SchemaComparisonMetadataSettings::allow_all_changes());
-    assert_comparison_succeeds::<T1, T2>(&settings);
-}
-
-fn assert_comparison_succeeds<T1: DerivableTypeSchema, T2: DerivableTypeSchema>(
-    settings: &SchemaComparisonSettings,
-) {
-    assert_type_compatibility::<NoCustomExtension, T2>(settings, |v| {
-        v.register_schema_of::<T1>("base")
-            .register_schema_of::<T2>("latest")
-    })
-}
-
-fn assert_extension_multi(
-    base: NamedTypesSchema<NoCustomSchema>,
-    latest: NamedTypesSchema<NoCustomSchema>,
-) {
-    let settings = SchemaComparisonSettings::allow_structural_extension();
-    assert_multi_comparison_succeeds(&settings, base, latest);
-}
-
-fn assert_equality_multi(
-    base: NamedTypesSchema<NoCustomSchema>,
-    latest: NamedTypesSchema<NoCustomSchema>,
-) {
-    let settings = SchemaComparisonSettings::require_equality();
-    assert_multi_comparison_succeeds(&settings, base, latest);
-}
-
-fn assert_multi_comparison_succeeds(
-    settings: &SchemaComparisonSettings,
-    base: NamedTypesSchema<NoCustomSchema>,
-    latest: NamedTypesSchema<NoCustomSchema>,
-) {
-    assert_type_collection_backwards_compatibility::<NoCustomExtension>(
-        settings,
-        latest.clone(),
-        |v| {
-            v.register_version("base", base)
-                .register_version("latest", latest)
-        },
+    assert_single_type_comparison::<NoCustomSchema>(
+        &settings,
+        &T1::single_type_schema_version(),
+        &T2::single_type_schema_version(),
     )
+}
+
+fn assert_extension<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
+    let settings = SchemaComparisonSettings::allow_extension();
+    assert_single_type_comparison::<NoCustomSchema>(
+        &settings,
+        &T1::single_type_schema_version(),
+        &T2::single_type_schema_version(),
+    )
+}
+
+fn assert_extension_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
+    let settings = SchemaComparisonSettings::allow_extension()
+        .metadata_settings(SchemaComparisonMetadataSettings::allow_all_changes());
+    assert_single_type_comparison::<NoCustomSchema>(
+        &settings,
+        &T1::single_type_schema_version(),
+        &T2::single_type_schema_version(),
+    )
+}
+
+fn assert_type_collection_equality(
+    base: NamedTypesSchema<NoCustomSchema>,
+    compared: NamedTypesSchema<NoCustomSchema>,
+) {
+    assert_type_collection_comparison(
+        &SchemaComparisonSettings::require_equality(),
+        &base,
+        &compared,
+    );
+}
+
+fn assert_type_collection_extension(
+    base: NamedTypesSchema<NoCustomSchema>,
+    compared: NamedTypesSchema<NoCustomSchema>,
+) {
+    assert_type_collection_comparison(
+        &SchemaComparisonSettings::allow_extension(),
+        &base,
+        &compared,
+    );
 }
 
 //=============
@@ -209,21 +197,21 @@ enum MyMultiRecursiveTypeForm2 {
 #[test]
 #[should_panic]
 fn asserting_backwards_compatibility_requires_a_named_schema() {
-    assert_type_backwards_compatibility::<NoCustomExtension, MyStructFieldRenamed>(|v| v)
+    assert_type_backwards_compatibility::<NoCustomSchema, MyStructFieldRenamed>(|v| v)
 }
 
 #[test]
 fn asserting_backwards_compatibility_with_a_single_latest_schema_version_succeeds() {
-    assert_type_backwards_compatibility::<NoCustomExtension, MyStruct>(|v| {
-        v.register_schema_of::<MyStruct>("latest")
+    assert_type_backwards_compatibility::<NoCustomSchema, MyStruct>(|v| {
+        v.register_version("latest", MyStruct::single_type_schema_version())
     })
 }
 
 #[test]
 #[should_panic]
 fn asserting_backwards_compatibility_with_incorrect_latest_schema_version_succeeds() {
-    assert_type_backwards_compatibility::<NoCustomExtension, MyStruct>(|v| {
-        v.register_schema_of::<MyStructFieldRenamed>("latest")
+    assert_type_backwards_compatibility::<NoCustomSchema, MyStruct>(|v| {
+        v.register_version("latest", MyStructFieldRenamed::single_type_schema_version())
     })
 }
 
@@ -384,7 +372,7 @@ fn base_schema_not_covered_by_root_types_fails() {
     // Forget about a root type - this leaves the schema not fully covered.
     base_schema.type_ids.swap_remove("enum");
 
-    assert_equality_multi(base_schema, compared_schema);
+    assert_type_collection_equality(base_schema, compared_schema);
 }
 
 #[test]
@@ -407,7 +395,7 @@ fn compared_schema_not_covered_by_root_types_fails() {
     // Note - the process starts by comparing "latest" with "current"
     // (i.e. compared_schema against itself) - so we get both a
     // TypeUnreachableFromRootInBaseSchema and a TypeUnreachableFromRootInComparedSchema
-    assert_equality_multi(base_schema, compared_schema);
+    assert_type_collection_equality(base_schema, compared_schema);
 }
 
 #[test]
@@ -425,7 +413,7 @@ fn removed_root_type_fails_comparison() {
         aggregator.generate_named_types_schema()
     };
 
-    assert_extension_multi(base_schema, compared_schema);
+    assert_type_collection_extension(base_schema, compared_schema);
 }
 
 #[test]
@@ -442,7 +430,7 @@ fn under_extension_added_root_type_succeeds() {
         aggregator.generate_named_types_schema()
     };
 
-    assert_extension_multi(base_schema, compared_schema);
+    assert_type_collection_extension(base_schema, compared_schema);
 }
 
 #[test]
@@ -460,5 +448,5 @@ fn under_equality_added_root_type_fails() {
         aggregator.generate_named_types_schema()
     };
 
-    assert_equality_multi(base_schema, compared_schema);
+    assert_type_collection_equality(base_schema, compared_schema);
 }
