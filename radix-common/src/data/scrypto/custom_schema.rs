@@ -45,10 +45,18 @@ impl ReferenceValidation {
     fn compare(base: &Self, compared: &Self) -> ValidationChange {
         match (base, compared) {
             (base, compared) if base == compared => ValidationChange::Unchanged,
-            (ReferenceValidation::IsGlobal, compared) if compared.requires_global() => ValidationChange::Strengthened,
-            (base, ReferenceValidation::IsGlobal) if base.requires_global() => ValidationChange::Weakened,
-            (ReferenceValidation::IsInternal, compared) if compared.requires_internal() => ValidationChange::Strengthened,
-            (base, ReferenceValidation::IsInternal) if base.requires_internal() => ValidationChange::Weakened,
+            (ReferenceValidation::IsGlobal, compared) if compared.requires_global() => {
+                ValidationChange::Strengthened
+            }
+            (base, ReferenceValidation::IsGlobal) if base.requires_global() => {
+                ValidationChange::Weakened
+            }
+            (ReferenceValidation::IsInternal, compared) if compared.requires_internal() => {
+                ValidationChange::Strengthened
+            }
+            (base, ReferenceValidation::IsInternal) if base.requires_internal() => {
+                ValidationChange::Weakened
+            }
             (_, _) => ValidationChange::Incomparable,
         }
     }
@@ -152,14 +160,16 @@ impl ReferenceValidation {
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
     type CustomTypeValidation = ScryptoCustomTypeValidation;
     type CustomTypeKindLabel = ScryptoCustomTypeKindLabel;
-    
+
     fn label(&self) -> Self::CustomTypeKindLabel {
         match self {
             ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKindLabel::Reference,
             ScryptoCustomTypeKind::Own => ScryptoCustomTypeKindLabel::Own,
             ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKindLabel::Decimal,
             ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKindLabel::PreciseDecimal,
-            ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKindLabel::NonFungibleLocalId,
+            ScryptoCustomTypeKind::NonFungibleLocalId => {
+                ScryptoCustomTypeKindLabel::NonFungibleLocalId
+            }
         }
     }
 }
@@ -179,10 +189,20 @@ impl CustomTypeKindLabel for ScryptoCustomTypeKindLabel {
 impl CustomTypeValidation for ScryptoCustomTypeValidation {
     fn compare(base: &Self, compared: &Self) -> ValidationChange {
         match (base, compared) {
-            (ScryptoCustomTypeValidation::Reference(base), ScryptoCustomTypeValidation::Reference(compared)) => ReferenceValidation::compare(base, compared),
-            (ScryptoCustomTypeValidation::Reference(_), ScryptoCustomTypeValidation::Own(_)) => ValidationChange::Incomparable,
-            (ScryptoCustomTypeValidation::Own(_), ScryptoCustomTypeValidation::Reference(_)) => ValidationChange::Incomparable,
-            (ScryptoCustomTypeValidation::Own(base), ScryptoCustomTypeValidation::Own(compared)) => OwnValidation::compare(base, compared),
+            (
+                ScryptoCustomTypeValidation::Reference(base),
+                ScryptoCustomTypeValidation::Reference(compared),
+            ) => ReferenceValidation::compare(base, compared),
+            (ScryptoCustomTypeValidation::Reference(_), ScryptoCustomTypeValidation::Own(_)) => {
+                ValidationChange::Incomparable
+            }
+            (ScryptoCustomTypeValidation::Own(_), ScryptoCustomTypeValidation::Reference(_)) => {
+                ValidationChange::Incomparable
+            }
+            (
+                ScryptoCustomTypeValidation::Own(base),
+                ScryptoCustomTypeValidation::Own(compared),
+            ) => OwnValidation::compare(base, compared),
         }
     }
 }

@@ -25,7 +25,7 @@ impl IndexedScryptoValue {
             VecTraverserConfig {
                 max_depth: SCRYPTO_SBOR_V1_MAX_DEPTH,
                 check_exact_end: true,
-            }
+            },
         );
         let mut references = Vec::<NodeId>::new();
         let mut owned_nodes = Vec::<NodeId>::new();

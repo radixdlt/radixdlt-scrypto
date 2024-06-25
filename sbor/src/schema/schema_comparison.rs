@@ -51,7 +51,10 @@ impl SchemaComparisonSettings {
         }
     }
 
-    pub const fn completeness_settings(mut self, checks: SchemaComparisonCompletenessSettings) -> Self {
+    pub const fn completeness_settings(
+        mut self,
+        checks: SchemaComparisonCompletenessSettings,
+    ) -> Self {
         self.completeness = checks;
         self
     }
@@ -183,9 +186,16 @@ impl NameChangeRule {
 
 pub enum NameChange<'a> {
     Unchanged,
-    NameAdded { new_name: &'a str },
-    NameRemoved { old_name: &'a str, },
-    NameChanged { old_name: &'a str, new_name: &'a str, },
+    NameAdded {
+        new_name: &'a str,
+    },
+    NameRemoved {
+        old_name: &'a str,
+    },
+    NameChanged {
+        old_name: &'a str,
+        new_name: &'a str,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -199,17 +209,14 @@ pub enum OwnedNameChange {
     Unchanged,
     NameAdded { new_name: String },
     NameRemoved { old_name: String },
-    NameChanged { old_name: String, new_name: String, },
+    NameChanged { old_name: String, new_name: String },
 }
 
 impl<'a> NameChange<'a> {
     pub fn of_changed_option(from: Option<&'a str>, to: Option<&'a str>) -> Self {
         match (from, to) {
             (Some(old_name), Some(new_name)) if old_name == new_name => NameChange::Unchanged,
-            (Some(old_name), Some(new_name)) => NameChange::NameChanged {
-                old_name,
-                new_name,
-            },
+            (Some(old_name), Some(new_name)) => NameChange::NameChanged { old_name, new_name },
             (Some(old_name), None) => NameChange::NameRemoved { old_name },
             (None, Some(new_name)) => NameChange::NameAdded { new_name },
             (None, None) => NameChange::Unchanged,
@@ -238,9 +245,16 @@ impl<'a> NameChange<'a> {
     fn into_owned(&self) -> OwnedNameChange {
         match *self {
             NameChange::Unchanged => OwnedNameChange::Unchanged,
-            NameChange::NameAdded { new_name } => OwnedNameChange::NameAdded { new_name: new_name.to_string() },
-            NameChange::NameRemoved { old_name } => OwnedNameChange::NameRemoved { old_name: old_name.to_string() },
-            NameChange::NameChanged { old_name, new_name } => OwnedNameChange::NameChanged { old_name: old_name.to_string(), new_name: new_name.to_string(), },
+            NameChange::NameAdded { new_name } => OwnedNameChange::NameAdded {
+                new_name: new_name.to_string(),
+            },
+            NameChange::NameRemoved { old_name } => OwnedNameChange::NameRemoved {
+                old_name: old_name.to_string(),
+            },
+            NameChange::NameChanged { old_name, new_name } => OwnedNameChange::NameChanged {
+                old_name: old_name.to_string(),
+                new_name: new_name.to_string(),
+            },
         }
     }
 }
@@ -279,9 +293,15 @@ impl ValidationChange {
             (_, ValidationChange::Incomparable) => ValidationChange::Incomparable,
             (ValidationChange::Unchanged, other) => other,
             (other, ValidationChange::Unchanged) => other,
-            (ValidationChange::Strengthened, ValidationChange::Strengthened) => ValidationChange::Strengthened,
-            (ValidationChange::Strengthened, ValidationChange::Weakened) => ValidationChange::Incomparable,
-            (ValidationChange::Weakened, ValidationChange::Strengthened) => ValidationChange::Incomparable,
+            (ValidationChange::Strengthened, ValidationChange::Strengthened) => {
+                ValidationChange::Strengthened
+            }
+            (ValidationChange::Strengthened, ValidationChange::Weakened) => {
+                ValidationChange::Incomparable
+            }
+            (ValidationChange::Weakened, ValidationChange::Strengthened) => {
+                ValidationChange::Incomparable
+            }
             (ValidationChange::Weakened, ValidationChange::Weakened) => ValidationChange::Weakened,
         }
     }
@@ -299,7 +319,11 @@ impl<'s, S: CustomSchema> SchemaComparisonResult<'s, S> {
         self.errors.len() == 0
     }
 
-    pub fn error_message(&self, base_schema_name: &str, compared_schema_name: &str) -> Option<String> {
+    pub fn error_message(
+        &self,
+        base_schema_name: &str,
+        compared_schema_name: &str,
+    ) -> Option<String> {
         if self.errors.len() == 0 {
             return None;
         }
@@ -313,7 +337,9 @@ impl<'s, S: CustomSchema> SchemaComparisonResult<'s, S> {
         ).unwrap();
         for error in &self.errors {
             write!(&mut output, "- ").unwrap();
-            error.write_against_schemas(&mut output, &self.base_schema, &self.compared_schema).unwrap();
+            error
+                .write_against_schemas(&mut output, &self.base_schema, &self.compared_schema)
+                .unwrap();
             writeln!(&mut output).unwrap();
         }
         Some(output)
@@ -343,8 +369,7 @@ impl<S: CustomSchema> SchemaComparisonError<S> {
             write!(
                 f,
                 "{:?} under {} at type path ",
-                &self.error_detail,
-                location.root_type_identifier,
+                &self.error_detail, location.root_type_identifier,
             )?;
             (location, base_schema, compared_schema).write_path(f)?;
         } else {
@@ -356,7 +381,9 @@ impl<S: CustomSchema> SchemaComparisonError<S> {
 
 fn combine_names(base_name: Option<&str>, compared_name: Option<&str>) -> Option<String> {
     match (base_name, compared_name) {
-        (Some(base_name), Some(compared_name)) if base_name == compared_name => Some(base_name.to_string()),
+        (Some(base_name), Some(compared_name)) if base_name == compared_name => {
+            Some(base_name.to_string())
+        }
         (Some(base_name), Some(compared_name)) => Some(format!("{base_name}|{compared_name}")),
         (Some(base_name), None) => Some(format!("{base_name}|anon")),
         (None, Some(compared_name)) => Some(format!("anon|{compared_name}")),
@@ -364,80 +391,87 @@ fn combine_names(base_name: Option<&str>, compared_name: Option<&str>) -> Option
     }
 }
 
-impl<'s, 'a, S: CustomSchema> PathAnnotate
-    for (&'a TypeFullPath, &'a Schema<S>, &'a Schema<S>)
-{
+impl<'s, 'a, S: CustomSchema> PathAnnotate for (&'a TypeFullPath, &'a Schema<S>, &'a Schema<S>) {
     fn iter_ancestor_path(&self) -> Box<dyn Iterator<Item = AnnotatedSborAncestor<'_>> + '_> {
         let (full_path, base_schema, compared_schema) = *self;
 
-        let iterator = full_path.ancestor_path
-            .iter()
-            .map(|path_segment| {
-                let base_metadata = base_schema.resolve_type_metadata(path_segment.parent_base_type_id)
-                    .expect("Invalid base schema - Could not find metadata for base type");
-                let compared_metadata = compared_schema.resolve_type_metadata(path_segment.parent_compared_type_id)
-                    .expect("Invalid compared schema - Could not find metadata for compared type");
+        let iterator = full_path.ancestor_path.iter().map(|path_segment| {
+            let base_metadata = base_schema
+                .resolve_type_metadata(path_segment.parent_base_type_id)
+                .expect("Invalid base schema - Could not find metadata for base type");
+            let compared_metadata = compared_schema
+                .resolve_type_metadata(path_segment.parent_compared_type_id)
+                .expect("Invalid compared schema - Could not find metadata for compared type");
 
-                let name = Cow::Owned(combine_names(
-                    base_metadata.get_name(),
-                    compared_metadata.get_name()
-                ).unwrap_or_else(|| {
-                    combine_names(
-                        Some(base_schema.resolve_type_kind(path_segment.parent_base_type_id).unwrap().category_name()),
-                        Some(compared_schema.resolve_type_kind(path_segment.parent_compared_type_id).unwrap().category_name()),
-                    ).unwrap()
-                }));
+            let name = Cow::Owned(
+                combine_names(base_metadata.get_name(), compared_metadata.get_name())
+                    .unwrap_or_else(|| {
+                        combine_names(
+                            Some(
+                                base_schema
+                                    .resolve_type_kind(path_segment.parent_base_type_id)
+                                    .unwrap()
+                                    .category_name(),
+                            ),
+                            Some(
+                                compared_schema
+                                    .resolve_type_kind(path_segment.parent_compared_type_id)
+                                    .unwrap()
+                                    .category_name(),
+                            ),
+                        )
+                        .unwrap()
+                    }),
+            );
 
-                let container = match path_segment.child_locator {
-                    ChildTypeLocator::Tuple { field_index } => {
-                        let field_name = combine_names(
-                            base_metadata.get_field_name(field_index),
-                            compared_metadata.get_field_name(field_index),
-                        ).map(Cow::Owned);
-                        AnnotatedSborAncestorContainer::Tuple {
-                            field_index,
-                            field_name,
-                        }
-                    },
-                    ChildTypeLocator::EnumVariant {
-                        discriminator,
+            let container = match path_segment.child_locator {
+                ChildTypeLocator::Tuple { field_index } => {
+                    let field_name = combine_names(
+                        base_metadata.get_field_name(field_index),
+                        compared_metadata.get_field_name(field_index),
+                    )
+                    .map(Cow::Owned);
+                    AnnotatedSborAncestorContainer::Tuple {
                         field_index,
-                    } => {
-                        let base_variant_metadata = base_metadata.get_enum_variant_data(discriminator).expect("Base schema has variant names");
-                        let compared_variant_metadata = compared_metadata.get_enum_variant_data(discriminator).expect("Compared schema has variant names");
-                        let variant_name = combine_names(
-                            base_variant_metadata.get_name(),
-                            compared_variant_metadata.get_name(),
-                        ).map(Cow::Owned);
-                        let field_name = combine_names(
-                            base_variant_metadata.get_field_name(field_index),
-                            compared_variant_metadata.get_field_name(field_index),
-                        ).map(Cow::Owned);
-                        AnnotatedSborAncestorContainer::EnumVariant {
-                            discriminator,
-                            variant_name,
-                            field_index,
-                            field_name,
-                        }
-                    },
-                    ChildTypeLocator::Array { } => {
-                        AnnotatedSborAncestorContainer::Array {
-                            index: None,
-                        }
-                    },
-                    ChildTypeLocator::Map { entry_part } => {
-                        AnnotatedSborAncestorContainer::Map {
-                            index: None,
-                            entry_part,
-                        }
-                    },
-                };
-
-                AnnotatedSborAncestor {
-                    name,
-                    container,
+                        field_name,
+                    }
                 }
-            });
+                ChildTypeLocator::EnumVariant {
+                    discriminator,
+                    field_index,
+                } => {
+                    let base_variant_metadata = base_metadata
+                        .get_enum_variant_data(discriminator)
+                        .expect("Base schema has variant names");
+                    let compared_variant_metadata = compared_metadata
+                        .get_enum_variant_data(discriminator)
+                        .expect("Compared schema has variant names");
+                    let variant_name = combine_names(
+                        base_variant_metadata.get_name(),
+                        compared_variant_metadata.get_name(),
+                    )
+                    .map(Cow::Owned);
+                    let field_name = combine_names(
+                        base_variant_metadata.get_field_name(field_index),
+                        compared_variant_metadata.get_field_name(field_index),
+                    )
+                    .map(Cow::Owned);
+                    AnnotatedSborAncestorContainer::EnumVariant {
+                        discriminator,
+                        variant_name,
+                        field_index,
+                        field_name,
+                    }
+                }
+                ChildTypeLocator::Array {} => AnnotatedSborAncestorContainer::Array { index: None },
+                ChildTypeLocator::Map { entry_part } => AnnotatedSborAncestorContainer::Map {
+                    index: None,
+                    entry_part,
+                },
+            };
+
+            AnnotatedSborAncestor { name, container }
+        });
 
         Box::new(iterator)
     }
@@ -447,20 +481,34 @@ impl<'s, 'a, S: CustomSchema> PathAnnotate
         let base_type_id = full_path.leaf_base_type_id;
         let compared_type_id = full_path.leaf_compared_type_id;
 
-        let base_metadata = base_schema.resolve_type_metadata(base_type_id)
+        let base_metadata = base_schema
+            .resolve_type_metadata(base_type_id)
             .expect("Invalid base schema - Could not find metadata for base type");
-        let compared_metadata = compared_schema.resolve_type_metadata(compared_type_id)
+        let compared_metadata = compared_schema
+            .resolve_type_metadata(compared_type_id)
             .expect("Invalid compared schema - Could not find metadata for compared type");
 
-        let name = Cow::Owned(combine_names(
-            base_metadata.get_name(),
-            compared_metadata.get_name()
-        ).unwrap_or_else(|| {
-            combine_names(
-                Some(base_schema.resolve_type_kind(base_type_id).unwrap().category_name()),
-                Some(compared_schema.resolve_type_kind(compared_type_id).unwrap().category_name()),
-            ).unwrap()
-        }));
+        let name = Cow::Owned(
+            combine_names(base_metadata.get_name(), compared_metadata.get_name()).unwrap_or_else(
+                || {
+                    combine_names(
+                        Some(
+                            base_schema
+                                .resolve_type_kind(base_type_id)
+                                .unwrap()
+                                .category_name(),
+                        ),
+                        Some(
+                            compared_schema
+                                .resolve_type_kind(compared_type_id)
+                                .unwrap()
+                                .category_name(),
+                        ),
+                    )
+                    .unwrap()
+                },
+            ),
+        );
 
         Some(AnnotatedSborPartialLeaf {
             name,
@@ -477,7 +525,11 @@ struct SchemaComparisonPathSegment {
 }
 
 impl SchemaComparisonPathSegment {
-    pub fn of(parent_base_type_id: &LocalTypeId, parent_compared_type_id: &LocalTypeId, child_locator: ChildTypeLocator) -> Self {
+    pub fn of(
+        parent_base_type_id: &LocalTypeId,
+        parent_compared_type_id: &LocalTypeId,
+        child_locator: ChildTypeLocator,
+    ) -> Self {
         Self {
             parent_base_type_id: *parent_base_type_id,
             parent_compared_type_id: *parent_compared_type_id,
@@ -551,10 +603,17 @@ struct TypeKindComparisonResult<S: CustomSchema> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ChildTypeLocator {
-    Tuple { field_index: usize, },
-    EnumVariant { discriminator: u8, field_index: usize, },
-    Array { }, // Unlike values, we don't have an index
-    Map { entry_part: MapEntryPart, } // Unlike values, we don't have an index
+    Tuple {
+        field_index: usize,
+    },
+    EnumVariant {
+        discriminator: u8,
+        field_index: usize,
+    },
+    Array {}, // Unlike values, we don't have an index
+    Map {
+        entry_part: MapEntryPart,
+    }, // Unlike values, we don't have an index
 }
 
 impl<S: CustomSchema> TypeKindComparisonResult<S> {
@@ -581,16 +640,19 @@ impl<S: CustomSchema> TypeKindComparisonResult<S> {
         self
     }
 
-    fn with_error(
-        mut self,
-        error: SchemaComparisonErrorDetail<S>,
-    ) -> Self {
+    fn with_error(mut self, error: SchemaComparisonErrorDetail<S>) -> Self {
         self.add_error(error);
         self
     }
 
-    fn add_child_to_check(&mut self, child_locator: ChildTypeLocator, base_type_id: LocalTypeId, compared_type_id: LocalTypeId) {
-        self.children_needing_checking.push((child_locator, base_type_id, compared_type_id));
+    fn add_child_to_check(
+        &mut self,
+        child_locator: ChildTypeLocator,
+        base_type_id: LocalTypeId,
+        compared_type_id: LocalTypeId,
+    ) {
+        self.children_needing_checking
+            .push((child_locator, base_type_id, compared_type_id));
     }
 }
 
@@ -741,9 +803,11 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                 self.mark_root_reachable_base_types(base_type_id);
                 self.mark_root_reachable_compared_types(compared_type_id);
             } else {
-                self.errors.record_error_with_unvisited_location(SchemaComparisonErrorDetail::NamedRootTypeMissingInComparedSchema {
-                    root_type_name: base_root_type_name.clone(),
-                });
+                self.errors.record_error_with_unvisited_location(
+                    SchemaComparisonErrorDetail::NamedRootTypeMissingInComparedSchema {
+                        root_type_name: base_root_type_name.clone(),
+                    },
+                );
                 self.mark_root_reachable_base_types(base_type_id);
             }
         }
@@ -751,10 +815,16 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
         // We now loop through the compared types not covered in the above loop over base types
         for (compared_root_type_name, compared_type_id) in compared_type_roots.iter() {
             if !base_type_roots.contains_key(compared_root_type_name) {
-                if !self.settings.completeness.allow_compared_to_have_more_root_types {
-                    self.errors.record_error_with_unvisited_location(SchemaComparisonErrorDetail::DisallowedNewRootTypeInComparedSchema {
-                        root_type_name: compared_root_type_name.clone(),
-                    });
+                if !self
+                    .settings
+                    .completeness
+                    .allow_compared_to_have_more_root_types
+                {
+                    self.errors.record_error_with_unvisited_location(
+                        SchemaComparisonErrorDetail::DisallowedNewRootTypeInComparedSchema {
+                            root_type_name: compared_root_type_name.clone(),
+                        },
+                    );
                 }
                 self.mark_root_reachable_compared_types(compared_type_id);
             }
@@ -786,10 +856,7 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
         }
     }
 
-    fn mark_root_reachable_base_types(
-        &mut self,
-        root_base_type_id: &LocalTypeId,
-    ) {
+    fn mark_root_reachable_base_types(&mut self, root_base_type_id: &LocalTypeId) {
         // Due to the cache, we do max O(TypesInBase) work.
         // Note that reachability analysis needs to be performed separately to comparison analysis, because
         // sometimes with comparisons of MyTuple(A) and MyTuple(B1, B2), we still want to perform reachability
@@ -799,13 +866,20 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
         };
         let mut base_reachability_work_list = vec![*root_base_local_index];
         while let Some(base_type_index) = base_reachability_work_list.pop() {
-            match self.base_local_types_reachable_from_a_root.entry(base_type_index) {
+            match self
+                .base_local_types_reachable_from_a_root
+                .entry(base_type_index)
+            {
                 hash_map::Entry::Occupied(_) => continue,
                 hash_map::Entry::Vacant(vacant_entry) => vacant_entry.insert(()),
             };
             let type_id = LocalTypeId::SchemaLocalIndex(base_type_index);
-            let type_kind = self.base_schema.resolve_type_kind(type_id)
-                .unwrap_or_else(|| panic!("Invalid base schema - type kind for {type_id:?} not found"));
+            let type_kind = self
+                .base_schema
+                .resolve_type_kind(type_id)
+                .unwrap_or_else(|| {
+                    panic!("Invalid base schema - type kind for {type_id:?} not found")
+                });
             visit_type_kind_children(type_kind, |_child_locator, child_type_kind| {
                 if let LocalTypeId::SchemaLocalIndex(local_index) = child_type_kind {
                     base_reachability_work_list.push(local_index);
@@ -814,22 +888,26 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
         }
     }
 
-    fn mark_root_reachable_compared_types(
-        &mut self,
-        root_compared_type_id: &LocalTypeId,
-    ) {
+    fn mark_root_reachable_compared_types(&mut self, root_compared_type_id: &LocalTypeId) {
         let LocalTypeId::SchemaLocalIndex(root_compared_local_index) = root_compared_type_id else {
             return;
         };
         let mut compared_reachability_work_list = vec![*root_compared_local_index];
         while let Some(compared_local_index) = compared_reachability_work_list.pop() {
-            match self.compared_local_types_reachable_from_a_root.entry(compared_local_index) {
+            match self
+                .compared_local_types_reachable_from_a_root
+                .entry(compared_local_index)
+            {
                 hash_map::Entry::Occupied(_) => continue,
                 hash_map::Entry::Vacant(vacant_entry) => vacant_entry.insert(()),
             };
             let type_id = LocalTypeId::SchemaLocalIndex(compared_local_index);
-            let type_kind = self.compared_schema.resolve_type_kind(type_id)
-                .unwrap_or_else(|| panic!("Invalid compared schema - type kind for {type_id:?} not found"));
+            let type_kind = self
+                .compared_schema
+                .resolve_type_kind(type_id)
+                .unwrap_or_else(|| {
+                    panic!("Invalid compared schema - type kind for {type_id:?} not found")
+                });
             visit_type_kind_children(type_kind, |_child_locator, child_type_kind| {
                 if let LocalTypeId::SchemaLocalIndex(local_index) = child_type_kind {
                     compared_reachability_work_list.push(local_index);
@@ -854,7 +932,9 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
         }
 
         let result = self.compare_types_internal(&example_location, base_type_id, compared_type_id);
-        for (child_locator, child_base_type_id, child_compared_type_id) in result.child_checks_required {
+        for (child_locator, child_base_type_id, child_compared_type_id) in
+            result.child_checks_required
+        {
             if self
                 .cached_located_type_comparisons
                 .contains_key(&(child_base_type_id, child_compared_type_id))
@@ -910,12 +990,18 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
         }
 
         // Load type data from each schema
-        let (base_type_kind, base_type_metadata, base_type_validation) =
-            self.base_schema.resolve_type_data(base_type_id)
-                .unwrap_or_else(|| panic!("Base schema was not valid - no type data for {base_type_id:?}"));
-        let (compared_type_kind, compared_type_metadata, compared_type_validation) =
-            self.compared_schema.resolve_type_data(compared_type_id)
-                .unwrap_or_else(|| panic!("Compared schema was not valid - no type data for {compared_type_id:?}"));
+        let (base_type_kind, base_type_metadata, base_type_validation) = self
+            .base_schema
+            .resolve_type_data(base_type_id)
+            .unwrap_or_else(|| {
+                panic!("Base schema was not valid - no type data for {base_type_id:?}")
+            });
+        let (compared_type_kind, compared_type_metadata, compared_type_validation) = self
+            .compared_schema
+            .resolve_type_data(compared_type_id)
+            .unwrap_or_else(|| {
+                panic!("Compared schema was not valid - no type data for {compared_type_id:?}")
+            });
 
         // Type Kind Comparison
         let further_checks_required = {
@@ -948,21 +1034,16 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
 
         // Type Metadata Comparison
         {
-            let TypeMetadataComparisonResult { errors } =
-                self.compare_type_metadata_internal(
-                    base_type_kind,
-                    base_type_metadata,
-                    compared_type_metadata,
-                );
+            let TypeMetadataComparisonResult { errors } = self.compare_type_metadata_internal(
+                base_type_kind,
+                base_type_metadata,
+                compared_type_metadata,
+            );
 
             for error in errors {
                 error_recorded = true;
-                self.errors.record_error(
-                    error,
-                    example_location,
-                    base_type_id,
-                    compared_type_id,
-                );
+                self.errors
+                    .record_error(error, example_location, base_type_id, compared_type_id);
             }
         }
 
@@ -973,12 +1054,8 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
 
             for error in errors {
                 error_recorded = true;
-                self.errors.record_error(
-                    error,
-                    example_location,
-                    base_type_id,
-                    compared_type_id,
-                );
+                self.errors
+                    .record_error(error, example_location, base_type_id, compared_type_id);
             }
         }
 
@@ -1013,7 +1090,11 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
             //   which have now disappeared because the Compared side is Any)
             // * To ensure we pass completeness checks on the base side
             visit_type_kind_children(&base_type_kind, |child_type_locator, child_type_kind| {
-                result.add_child_to_check(child_type_locator, child_type_kind, LocalTypeId::WellKnown(ANY_TYPE));
+                result.add_child_to_check(
+                    child_type_locator,
+                    child_type_kind,
+                    LocalTypeId::WellKnown(ANY_TYPE),
+                );
             });
             return result;
         }
@@ -1033,10 +1114,7 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
             | TypeKind::U128
             | TypeKind::String => {
                 if compared_type_kind != base_type_kind {
-                    return result.with_mismatch_error(
-                        base_type_kind,
-                        compared_type_kind,
-                    );
+                    return result.with_mismatch_error(base_type_kind, compared_type_kind);
                 }
             }
             TypeKind::Array {
@@ -1046,13 +1124,10 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     element_type: compared_element_type,
                 } = compared_type_kind
                 else {
-                    return result.with_mismatch_error(
-                        base_type_kind,
-                        compared_type_kind,
-                    );
+                    return result.with_mismatch_error(base_type_kind, compared_type_kind);
                 };
                 result.add_child_to_check(
-                    ChildTypeLocator::Array {  },
+                    ChildTypeLocator::Array {},
                     *base_element_type,
                     *compared_element_type,
                 );
@@ -1064,10 +1139,7 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     field_types: compared_field_types,
                 } = compared_type_kind
                 else {
-                    return result.with_mismatch_error(
-                        base_type_kind,
-                        compared_type_kind,
-                    );
+                    return result.with_mismatch_error(base_type_kind, compared_type_kind);
                 };
                 if base_field_types.len() != compared_field_types.len() {
                     return result.with_error(
@@ -1083,7 +1155,11 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     .zip(compared_field_types.iter().cloned())
                     .enumerate();
                 for (field_index, (base, compared)) in matched_field_types {
-                    result.add_child_to_check(ChildTypeLocator::Tuple { field_index }, base, compared);
+                    result.add_child_to_check(
+                        ChildTypeLocator::Tuple { field_index },
+                        base,
+                        compared,
+                    );
                 }
             }
             TypeKind::Enum {
@@ -1093,10 +1169,7 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     variants: compared_variants,
                 } = compared_type_kind
                 else {
-                    return result.with_mismatch_error(
-                        base_type_kind,
-                        compared_type_kind,
-                    );
+                    return result.with_mismatch_error(base_type_kind, compared_type_kind);
                 };
 
                 let base_variants_missing_in_compared: IndexSet<_> = base_variants
@@ -1110,7 +1183,10 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     .cloned()
                     .collect();
 
-                if base_variants_missing_in_compared.len() > 0 || (compared_variants_missing_in_base.len() > 0 && !settings.allow_new_enum_variants){
+                if base_variants_missing_in_compared.len() > 0
+                    || (compared_variants_missing_in_base.len() > 0
+                        && !settings.allow_new_enum_variants)
+                {
                     result.add_error(SchemaComparisonErrorDetail::EnumSupportedVariantsMismatch {
                         base_variants_missing_in_compared,
                         compared_variants_missing_in_base,
@@ -1127,21 +1203,28 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     let discriminator = *discriminator;
 
                     if base_field_type_ids.len() != compared_field_type_ids.len() {
-                        result.add_error(SchemaComparisonErrorDetail::EnumVariantFieldCountMismatch {
-                            variant_discriminator: discriminator,
-                            base_field_count: base_field_type_ids.len(),
-                            compared_field_count: compared_field_type_ids.len(),
-                        });
+                        result.add_error(
+                            SchemaComparisonErrorDetail::EnumVariantFieldCountMismatch {
+                                variant_discriminator: discriminator,
+                                base_field_count: base_field_type_ids.len(),
+                                compared_field_count: compared_field_type_ids.len(),
+                            },
+                        );
                     } else {
                         let paired_child_ids = base_field_type_ids
                             .iter()
                             .zip(compared_field_type_ids.iter())
                             .enumerate();
-                        for (field_index, (base_child_type_id, compared_child_type_id)) in paired_child_ids {
+                        for (field_index, (base_child_type_id, compared_child_type_id)) in
+                            paired_child_ids
+                        {
                             result.add_child_to_check(
-                                ChildTypeLocator::EnumVariant { discriminator, field_index, },
+                                ChildTypeLocator::EnumVariant {
+                                    discriminator,
+                                    field_index,
+                                },
                                 *base_child_type_id,
-                                *compared_child_type_id
+                                *compared_child_type_id,
                             );
                         }
                     }
@@ -1156,27 +1239,33 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     value_type: compared_value_type,
                 } = compared_type_kind
                 else {
-                    return result.with_mismatch_error(
-                        base_type_kind,
-                        compared_type_kind,
-                    );
+                    return result.with_mismatch_error(base_type_kind, compared_type_kind);
                 };
 
-                result.add_child_to_check(ChildTypeLocator::Map { entry_part: MapEntryPart::Key }, *base_key_type, *compared_key_type);
-                result.add_child_to_check(ChildTypeLocator::Map { entry_part: MapEntryPart::Value }, *base_value_type, *compared_value_type);
+                result.add_child_to_check(
+                    ChildTypeLocator::Map {
+                        entry_part: MapEntryPart::Key,
+                    },
+                    *base_key_type,
+                    *compared_key_type,
+                );
+                result.add_child_to_check(
+                    ChildTypeLocator::Map {
+                        entry_part: MapEntryPart::Value,
+                    },
+                    *base_value_type,
+                    *compared_value_type,
+                );
             }
             // Assume for now that custom types are leaf types.
             // Therefore we can directly run equality on the types, like the simple types.
             TypeKind::Custom(_) => {
                 if compared_type_kind != base_type_kind {
-                    return result.with_mismatch_error(
-                        base_type_kind,
-                        compared_type_kind,
-                    );
+                    return result.with_mismatch_error(base_type_kind, compared_type_kind);
                 }
             }
         }
-        
+
         result
     }
 
@@ -1194,7 +1283,9 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
         if let Err(error) = NameChange::of_changed_option(
             base_type_metadata.type_name.as_deref(),
             compared_type_metadata.type_name.as_deref(),
-        ).validate(settings.type_name_changes) {
+        )
+        .validate(settings.type_name_changes)
+        {
             result.add_error(SchemaComparisonErrorDetail::TypeNameChangeError(error));
         }
 
@@ -1208,14 +1299,16 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     if let Err(error) = NameChange::of_changed_option(
                         base_type_metadata.get_field_name(field_index),
                         compared_type_metadata.get_field_name(field_index),
-                    ).validate(settings.field_name_changes) {
+                    )
+                    .validate(settings.field_name_changes)
+                    {
                         result.add_error(SchemaComparisonErrorDetail::FieldNameChangeError {
                             field_index,
                             error,
                         });
                     }
                 }
-            },
+            }
             TypeKind::Enum { variants } => {
                 for (variant_discriminator, base_variant_types) in variants.iter() {
                     let variant_discriminator = *variant_discriminator;
@@ -1229,7 +1322,9 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                     if let Err(error) = NameChange::of_changed_option(
                         base_variant_metadata.type_name.as_deref(),
                         compared_variant_metadata.type_name.as_deref(),
-                    ).validate(settings.field_name_changes) {
+                    )
+                    .validate(settings.field_name_changes)
+                    {
                         result.add_error(SchemaComparisonErrorDetail::EnumVariantNameChangeError {
                             variant_discriminator,
                             error,
@@ -1240,17 +1335,20 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
                         if let Err(error) = NameChange::of_changed_option(
                             base_variant_metadata.get_field_name(field_index),
                             compared_variant_metadata.get_field_name(field_index),
-                        ).validate(settings.field_name_changes) {
-                            result.add_error(SchemaComparisonErrorDetail::EnumVariantFieldNameChangeError {
-                                variant_discriminator,
-                                field_index,
-                                error,
-                            });
+                        )
+                        .validate(settings.field_name_changes)
+                        {
+                            result.add_error(
+                                SchemaComparisonErrorDetail::EnumVariantFieldNameChangeError {
+                                    variant_discriminator,
+                                    field_index,
+                                    error,
+                                },
+                            );
                         }
-                        
                     }
                 }
-            },
+            }
             _ => {
                 // We can assume the schema is valid, therefore the only valid value is ChildNames::None
                 // So validation passes trivially
@@ -1276,22 +1374,50 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
             (_, TypeValidation::None) => ValidationChange::Weakened,
             (TypeValidation::None, _) => ValidationChange::Strengthened,
             // Now test equal validations
-            (TypeValidation::I8(base), TypeValidation::I8(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::I16(base), TypeValidation::I16(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::I32(base), TypeValidation::I32(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::I64(base), TypeValidation::I64(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::I128(base), TypeValidation::I128(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::U8(base), TypeValidation::U8(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::U16(base), TypeValidation::U16(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::U32(base), TypeValidation::U32(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::U64(base), TypeValidation::U64(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::U128(base), TypeValidation::U128(compared)) => NumericValidation::compare(base, compared),
-            (TypeValidation::String(base), TypeValidation::String(compared)) => LengthValidation::compare(base, compared),
-            (TypeValidation::Array(base), TypeValidation::Array(compared)) => LengthValidation::compare(base, compared),
-            (TypeValidation::Map(base), TypeValidation::Map(compared)) => LengthValidation::compare(base, compared),
+            (TypeValidation::I8(base), TypeValidation::I8(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::I16(base), TypeValidation::I16(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::I32(base), TypeValidation::I32(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::I64(base), TypeValidation::I64(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::I128(base), TypeValidation::I128(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::U8(base), TypeValidation::U8(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::U16(base), TypeValidation::U16(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::U32(base), TypeValidation::U32(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::U64(base), TypeValidation::U64(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::U128(base), TypeValidation::U128(compared)) => {
+                NumericValidation::compare(base, compared)
+            }
+            (TypeValidation::String(base), TypeValidation::String(compared)) => {
+                LengthValidation::compare(base, compared)
+            }
+            (TypeValidation::Array(base), TypeValidation::Array(compared)) => {
+                LengthValidation::compare(base, compared)
+            }
+            (TypeValidation::Map(base), TypeValidation::Map(compared)) => {
+                LengthValidation::compare(base, compared)
+            }
             (TypeValidation::Custom(base), TypeValidation::Custom(compared)) => {
-                <<S as CustomSchema>::CustomTypeValidation as CustomTypeValidation>::compare(base, compared)
-            },
+                <<S as CustomSchema>::CustomTypeValidation as CustomTypeValidation>::compare(
+                    base, compared,
+                )
+            }
             // Otherwise assume they are incomparable
             _ => ValidationChange::Incomparable,
         };
@@ -1312,31 +1438,53 @@ impl<'s, 'o, S: CustomSchema> SchemaComparisonKernel<'s, 'o, S> {
     }
 
     fn check_for_completeness(&mut self) {
-        if !self.settings.completeness.allow_root_unreachable_types_in_base_schema {
-            if self.base_local_types_reachable_from_a_root.len() < self.base_schema.type_metadata.len() {
-                for (local_type_index, metadata) in self.base_schema.type_metadata.iter().enumerate() {
-                    if !self.base_local_types_reachable_from_a_root.contains_key(&local_type_index) {
+        if !self
+            .settings
+            .completeness
+            .allow_root_unreachable_types_in_base_schema
+        {
+            if self.base_local_types_reachable_from_a_root.len()
+                < self.base_schema.type_metadata.len()
+            {
+                for (local_type_index, metadata) in
+                    self.base_schema.type_metadata.iter().enumerate()
+                {
+                    if !self
+                        .base_local_types_reachable_from_a_root
+                        .contains_key(&local_type_index)
+                    {
                         let type_name = metadata.type_name.as_ref().map(|n| n.clone().into_owned());
                         self.errors.record_error_with_unvisited_location(
                             SchemaComparisonErrorDetail::TypeUnreachableFromRootInBaseSchema {
                                 local_type_index,
                                 type_name,
-                            }
+                            },
                         )
                     }
                 }
             }
         }
-        if !self.settings.completeness.allow_root_unreachable_types_in_compared_schema {
-            if self.compared_local_types_reachable_from_a_root.len() < self.compared_schema.type_metadata.len() {
-                for (local_type_index, metadata) in self.compared_schema.type_metadata.iter().enumerate() {
-                    if !self.compared_local_types_reachable_from_a_root.contains_key(&local_type_index) {
+        if !self
+            .settings
+            .completeness
+            .allow_root_unreachable_types_in_compared_schema
+        {
+            if self.compared_local_types_reachable_from_a_root.len()
+                < self.compared_schema.type_metadata.len()
+            {
+                for (local_type_index, metadata) in
+                    self.compared_schema.type_metadata.iter().enumerate()
+                {
+                    if !self
+                        .compared_local_types_reachable_from_a_root
+                        .contains_key(&local_type_index)
+                    {
                         let type_name = metadata.type_name.as_ref().map(|n| n.clone().into_owned());
                         self.errors.record_error_with_unvisited_location(
                             SchemaComparisonErrorDetail::TypeUnreachableFromRootInComparedSchema {
                                 local_type_index,
                                 type_name,
-                            }
+                            },
                         )
                     }
                 }
@@ -1370,7 +1518,7 @@ fn visit_type_kind_children<T: CustomTypeKind<LocalTypeId>>(
         | TypeKind::U32
         | TypeKind::U64
         | TypeKind::U128
-        | TypeKind::String => {},
+        | TypeKind::String => {}
         TypeKind::Array { element_type } => {
             visitor(ChildTypeLocator::Array {}, *element_type);
         }
@@ -1383,7 +1531,10 @@ fn visit_type_kind_children<T: CustomTypeKind<LocalTypeId>>(
             for (discriminator, field_types) in variants {
                 for (field_index, field_type) in field_types.iter().enumerate() {
                     visitor(
-                        ChildTypeLocator::EnumVariant { discriminator: *discriminator, field_index, },
+                        ChildTypeLocator::EnumVariant {
+                            discriminator: *discriminator,
+                            field_index,
+                        },
                         *field_type,
                     )
                 }
@@ -1393,14 +1544,23 @@ fn visit_type_kind_children<T: CustomTypeKind<LocalTypeId>>(
             key_type,
             value_type,
         } => {
-            visitor(ChildTypeLocator::Map { entry_part: MapEntryPart::Key }, *key_type);
-            visitor(ChildTypeLocator::Map { entry_part: MapEntryPart::Value }, *value_type);
+            visitor(
+                ChildTypeLocator::Map {
+                    entry_part: MapEntryPart::Key,
+                },
+                *key_type,
+            );
+            visitor(
+                ChildTypeLocator::Map {
+                    entry_part: MapEntryPart::Value,
+                },
+                *value_type,
+            );
         }
         // At present, assume that custom types are leaf types.
-        TypeKind::Custom(_) => {},
+        TypeKind::Custom(_) => {}
     };
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct PendingComparisonRequest {
@@ -1475,7 +1635,8 @@ impl<E: CustomExtension, C: ComparisonSchema<E>> NamedSchemaVersions<E, C> {
         name: impl AsRef<str>,
         version: impl IntoSchema<C, E>,
     ) -> Self {
-        self.ordered_versions.insert(name.as_ref().to_string(), version.into_schema());
+        self.ordered_versions
+            .insert(name.as_ref().to_string(), version.into_schema());
         self
     }
 
@@ -1521,9 +1682,10 @@ pub fn assert_type_backwards_compatibility<
     E: CustomExtension,
     T: Describe<<E::CustomSchema as CustomSchema>::CustomTypeKind<RustTypeId>>,
 >(
-    versions_builder: impl FnOnce(NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>) -> NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>,
-)
-where
+    versions_builder: impl FnOnce(
+        NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>,
+    ) -> NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>,
+) where
     SingleTypeSchema<E::CustomSchema>: ComparisonSchema<E>,
 {
     assert_type_compatibility::<E, T>(
@@ -1537,35 +1699,40 @@ pub fn assert_type_compatibility<
     T: Describe<<E::CustomSchema as CustomSchema>::CustomTypeKind<RustTypeId>>,
 >(
     comparison_settings: &SchemaComparisonSettings,
-    versions_builder: impl FnOnce(NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>) -> NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>,
-)
-where
+    versions_builder: impl FnOnce(
+        NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>,
+    ) -> NamedSchemaVersions<E, SingleTypeSchema<E::CustomSchema>>,
+) where
     SingleTypeSchema<E::CustomSchema>: ComparisonSchema<E>,
 {
     let current = {
         let (type_id, schema) = generate_full_schema_from_single_type::<T, E::CustomSchema>();
         SingleTypeSchema { schema, type_id }
     };
-    assert_schema_compatibility(comparison_settings, &current, &versions_builder(NamedSchemaVersions::new()))
+    assert_schema_compatibility(
+        comparison_settings,
+        &current,
+        &versions_builder(NamedSchemaVersions::new()),
+    )
 }
 
-pub fn assert_type_collection_backwards_compatibility<
-    E: CustomExtension
->(
+pub fn assert_type_collection_backwards_compatibility<E: CustomExtension>(
     comparison_settings: &SchemaComparisonSettings,
     current: NamedTypesSchema<E::CustomSchema>,
-    versions_builder: impl FnOnce(NamedSchemaVersions<E, NamedTypesSchema<E::CustomSchema>>) -> NamedSchemaVersions<E, NamedTypesSchema<E::CustomSchema>>,
-)
-where
+    versions_builder: impl FnOnce(
+        NamedSchemaVersions<E, NamedTypesSchema<E::CustomSchema>>,
+    ) -> NamedSchemaVersions<E, NamedTypesSchema<E::CustomSchema>>,
+) where
     NamedTypesSchema<E::CustomSchema>: ComparisonSchema<E>,
 {
-    assert_schema_compatibility(comparison_settings, &current, &versions_builder(NamedSchemaVersions::new()))
+    assert_schema_compatibility(
+        comparison_settings,
+        &current,
+        &versions_builder(NamedSchemaVersions::new()),
+    )
 }
 
-fn assert_schema_compatibility<
-    E: CustomExtension,
-    C: ComparisonSchema<E>,
->(
+fn assert_schema_compatibility<E: CustomExtension, C: ComparisonSchema<E>>(
     schema_comparison_settings: &SchemaComparisonSettings,
     current: &C,
     named_versions: &NamedSchemaVersions<E, C>,
@@ -1576,15 +1743,19 @@ fn assert_schema_compatibility<
     //          if not, output latest encoded.
     let Some((latest_version_name, latest_schema_version)) = named_versions.last() else {
         let mut error = String::new();
-        writeln!(&mut error, "You must provide at least one named versioned schema to use this method.").unwrap();
+        writeln!(
+            &mut error,
+            "You must provide at least one named versioned schema to use this method."
+        )
+        .unwrap();
         writeln!(&mut error, "Use a relevant name (for example, the current software version name), and save the current schema as follows:").unwrap();
         writeln!(&mut error, "{}", current.encode_to_hex()).unwrap();
         panic!("{error}");
     };
 
     // Part 1 - Check that latest is equal to the last historic schema version
-    let result = latest_schema_version
-        .compare_with(&current, &SchemaComparisonSettings::require_equality());
+    let result =
+        latest_schema_version.compare_with(&current, &SchemaComparisonSettings::require_equality());
 
     if let Some(error_message) = result.error_message(latest_version_name, "current") {
         let mut error = String::new();
@@ -1593,8 +1764,16 @@ fn assert_schema_compatibility<
         write!(&mut error, "{error_message}").unwrap();
         writeln!(&mut error).unwrap();
         writeln!(&mut error, "You will either want to:").unwrap();
-        writeln!(&mut error, "(A) Add a new named version to the list, to be supported going forward.").unwrap();
-        writeln!(&mut error, "(B) Replace the latest version. ONLY do this if the version has not yet been in use.").unwrap();
+        writeln!(
+            &mut error,
+            "(A) Add a new named version to the list, to be supported going forward."
+        )
+        .unwrap();
+        writeln!(
+            &mut error,
+            "(B) Replace the latest version. ONLY do this if the version has not yet been in use."
+        )
+        .unwrap();
         writeln!(&mut error).unwrap();
         writeln!(&mut error, "The latest version is:").unwrap();
         writeln!(&mut error, "{}", current.encode_to_hex()).unwrap();
@@ -1612,7 +1791,6 @@ fn assert_schema_compatibility<
     }
 }
 
-
 /// A serializable record of the schema of a single type.
 /// Intended for historical backwards compatibility checking of a single type.
 #[derive(Debug, Clone, Sbor)]
@@ -1624,10 +1802,7 @@ pub struct SingleTypeSchema<S: CustomSchema> {
 
 impl<S: CustomSchema> SingleTypeSchema<S> {
     pub fn new(schema: VersionedSchema<S>, type_id: LocalTypeId) -> Self {
-        Self {
-            schema,
-            type_id,
-        }
+        Self { schema, type_id }
     }
 
     pub fn from<T: Describe<S::CustomTypeKind<RustTypeId>> + ?Sized>() -> Self {
@@ -1636,11 +1811,15 @@ impl<S: CustomSchema> SingleTypeSchema<S> {
 }
 
 impl<E: CustomExtension> ComparisonSchema<E> for SingleTypeSchema<E::CustomSchema>
-    where
-        <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>: VecSbor<E>,
-        <E::CustomSchema as CustomSchema>::CustomTypeValidation: VecSbor<E>,
+where
+    <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>: VecSbor<E>,
+    <E::CustomSchema as CustomSchema>::CustomTypeValidation: VecSbor<E>,
 {
-    fn compare_with<'s>(&'s self, compared: &'s Self, settings: &SchemaComparisonSettings) -> SchemaComparisonResult<'s, E::CustomSchema> {
+    fn compare_with<'s>(
+        &'s self,
+        compared: &'s Self,
+        settings: &SchemaComparisonSettings,
+    ) -> SchemaComparisonResult<'s, E::CustomSchema> {
         SchemaComparisonKernel::new(
             &self.schema.as_unique_version(),
             &compared.schema.as_unique_version(),
@@ -1655,7 +1834,8 @@ impl<E: CustomExtension> ComparisonSchema<E> for SingleTypeSchema<E::CustomSchem
 }
 
 impl<E: CustomExtension> IntoSchema<Self, E> for SingleTypeSchema<E::CustomSchema>
-    where Self: ComparisonSchema<E>
+where
+    Self: ComparisonSchema<E>,
 {
     fn into_schema(&self) -> Self {
         self.clone()
@@ -1676,10 +1856,7 @@ pub struct NamedTypesSchema<S: CustomSchema> {
 
 impl<S: CustomSchema> NamedTypesSchema<S> {
     pub fn new(schema: VersionedSchema<S>, type_ids: IndexMap<String, LocalTypeId>) -> Self {
-        Self {
-            schema,
-            type_ids,
-        }
+        Self { schema, type_ids }
     }
 
     pub fn from(aggregator: TypeAggregator<S::CustomTypeKind<RustTypeId>>) -> Self {
@@ -1688,24 +1865,27 @@ impl<S: CustomSchema> NamedTypesSchema<S> {
 }
 
 impl<E: CustomExtension> ComparisonSchema<E> for NamedTypesSchema<E::CustomSchema>
-    where
-        <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>: VecSbor<E>,
-        <E::CustomSchema as CustomSchema>::CustomTypeValidation: VecSbor<E>,
+where
+    <E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>: VecSbor<E>,
+    <E::CustomSchema as CustomSchema>::CustomTypeValidation: VecSbor<E>,
 {
-    fn compare_with<'s>(&'s self, compared: &'s Self, settings: &SchemaComparisonSettings) -> SchemaComparisonResult<'s, E::CustomSchema> {
+    fn compare_with<'s>(
+        &'s self,
+        compared: &'s Self,
+        settings: &SchemaComparisonSettings,
+    ) -> SchemaComparisonResult<'s, E::CustomSchema> {
         SchemaComparisonKernel::new(
             &self.schema.as_unique_version(),
             &compared.schema.as_unique_version(),
             settings,
-        ).compare_using_named_type_roots(
-            &self.type_ids,
-            &compared.type_ids,
         )
+        .compare_using_named_type_roots(&self.type_ids, &compared.type_ids)
     }
 }
 
 impl<E: CustomExtension> IntoSchema<Self, E> for NamedTypesSchema<E::CustomSchema>
-    where Self: ComparisonSchema<E>
+where
+    Self: ComparisonSchema<E>,
 {
     fn into_schema(&self) -> Self {
         self.clone()
@@ -1730,14 +1910,20 @@ pub trait ComparisonSchema<E: CustomExtension>: Clone + VecSbor<E> {
         Self::decode_from_bytes(&hex::decode(hex).unwrap())
     }
 
-    fn compare_with<'s>(&'s self, compared: &'s Self, settings: &SchemaComparisonSettings) -> SchemaComparisonResult<'s, E::CustomSchema>;
+    fn compare_with<'s>(
+        &'s self,
+        compared: &'s Self,
+        settings: &SchemaComparisonSettings,
+    ) -> SchemaComparisonResult<'s, E::CustomSchema>;
 }
 
 pub trait IntoSchema<C: ComparisonSchema<E>, E: CustomExtension> {
     fn into_schema(&self) -> C;
 }
 
-impl<'a, C: ComparisonSchema<E>, E: CustomExtension, T: IntoSchema<C, E> + ?Sized> IntoSchema<C, E> for &'a T {
+impl<'a, C: ComparisonSchema<E>, E: CustomExtension, T: IntoSchema<C, E> + ?Sized> IntoSchema<C, E>
+    for &'a T
+{
     fn into_schema(&self) -> C {
         <T as IntoSchema<C, E>>::into_schema(*self)
     }

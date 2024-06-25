@@ -30,7 +30,7 @@ pub fn generate_full_schema<S: CustomSchema>(
 }
 
 fn generate_schema_from_types<S: CustomSchema>(
-    types: IndexMap<TypeHash, TypeData<S::CustomTypeKind<RustTypeId>, RustTypeId>>
+    types: IndexMap<TypeHash, TypeData<S::CustomTypeKind<RustTypeId>, RustTypeId>>,
 ) -> VersionedSchema<S> {
     let type_count = types.len();
     let type_indices = IndexSet::from_iter(types.keys().map(|k| k.clone()));
@@ -166,7 +166,10 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
     ///
     /// This is only intended for use when adding root types to schemas,
     /// /and should not be called from inside Describe macros.
-    pub fn add_named_root_type_and_descendents<T: Describe<C> + ?Sized>(&mut self, name: impl Into<String>) -> LocalTypeId {
+    pub fn add_named_root_type_and_descendents<T: Describe<C> + ?Sized>(
+        &mut self,
+        name: impl Into<String>,
+    ) -> LocalTypeId {
         let local_type_id = self.add_child_type_and_descendents::<T>();
         self.named_root_types.insert(name.into(), local_type_id);
         local_type_id
@@ -236,8 +239,9 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
         return true;
     }
 
-    pub fn generate_named_types_schema<S: CustomSchema<CustomTypeKind<RustTypeId> = C>>(self)
-    -> NamedTypesSchema<S> {
+    pub fn generate_named_types_schema<S: CustomSchema<CustomTypeKind<RustTypeId> = C>>(
+        self,
+    ) -> NamedTypesSchema<S> {
         NamedTypesSchema::new(
             generate_schema_from_types(self.types),
             self.named_root_types,

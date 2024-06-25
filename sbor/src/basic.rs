@@ -183,7 +183,7 @@ impl CustomTypeValidation for NoCustomTypeValidation {
 impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
     type CustomTypeValidation = NoCustomTypeValidation;
     type CustomTypeKindLabel = NoCustomTypeKindLabel;
-    
+
     fn label(&self) -> Self::CustomTypeKindLabel {
         unreachable!("No custom type kinds exist")
     }

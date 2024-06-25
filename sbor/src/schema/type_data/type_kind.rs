@@ -92,7 +92,6 @@ pub enum TypeKindLabel<T: CustomTypeKindLabel> {
     Custom(T),
 }
 
-
 impl<C: CustomTypeKindLabel> TypeKindLabel<C> {
     pub fn name(&self) -> &'static str {
         match self {

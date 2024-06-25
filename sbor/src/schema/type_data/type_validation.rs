@@ -63,10 +63,7 @@ pub struct NumericValidation<T: NumericValidationBound> {
 
 impl<T: NumericValidationBound> NumericValidation<T> {
     pub const fn with_bounds(min: Option<T>, max: Option<T>) -> Self {
-        Self {
-            min,
-            max,
-        }
+        Self { min, max }
     }
 
     pub const fn none() -> Self {

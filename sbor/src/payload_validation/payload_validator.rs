@@ -628,8 +628,12 @@ mod tests {
         check_location_path_with_depth_limit::<MyStruct2>(
             basic_encode(&MyStruct2 {
                 field1: 3,
-                field2: MyStruct2Inner { inner1: 1, inner2: 2 },
-            }).unwrap(),
+                field2: MyStruct2Inner {
+                    inner1: 1,
+                    inner2: 2,
+                },
+            })
+            .unwrap(),
             2,
             "MyStruct2.[1|field2]->MyStruct2Inner.[0|inner1]",
             "DecodeError(MaxDepthExceeded(2))",
@@ -664,7 +668,10 @@ mod tests {
             basic_encode(&BasicValue::Tuple {
                 fields: vec![
                     BasicValue::U16 { value: 1 },
-                    BasicValue::Array { element_value_kind: ValueKind::U8, elements: vec![], },
+                    BasicValue::Array {
+                        element_value_kind: ValueKind::U8,
+                        elements: vec![],
+                    },
                 ],
             })
             .unwrap(),

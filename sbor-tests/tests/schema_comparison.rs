@@ -1,17 +1,18 @@
 use sbor::prelude::*;
 use sbor::schema::*;
 use sbor::BasicValue;
+use sbor::ComparisonSchema;
 use sbor::NoCustomExtension;
 use sbor::NoCustomSchema;
 use sbor::NoCustomTypeKind;
-use sbor::ComparisonSchema;
 
 //=====================
 // HELPER CODE / TRAITS
 //=====================
 trait DerivableTypeSchema: Describe<NoCustomTypeKind> {
     fn single_type_schema_version() -> String {
-        let single_type_schema_version: SingleTypeSchema<NoCustomSchema> = SingleTypeSchema::<NoCustomSchema>::from::<Self>();
+        let single_type_schema_version: SingleTypeSchema<NoCustomSchema> =
+            SingleTypeSchema::<NoCustomSchema>::from::<Self>();
         ComparisonSchema::<NoCustomExtension>::encode_to_hex(&single_type_schema_version)
     }
 }
@@ -29,10 +30,10 @@ impl<E: CustomExtension, C: ComparisonSchema<E>> RegisterType for NamedSchemaVer
 }
 
 fn assert_extension<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
-    assert_type_backwards_compatibility::<NoCustomExtension, T2>(|v| v
-        .register_schema_of::<T1>("base")
-        .register_schema_of::<T2>("latest")
-    )
+    assert_type_backwards_compatibility::<NoCustomExtension, T2>(|v| {
+        v.register_schema_of::<T1>("base")
+            .register_schema_of::<T2>("latest")
+    })
 }
 
 fn assert_extension_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
@@ -51,13 +52,13 @@ fn assert_equality_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableT
     assert_comparison_succeeds::<T1, T2>(&settings);
 }
 
-fn assert_comparison_succeeds<T1: DerivableTypeSchema, T2: DerivableTypeSchema>(settings: &SchemaComparisonSettings) {
-    assert_type_compatibility::<NoCustomExtension, T2>(
-        settings,
-        |v| v
-            .register_schema_of::<T1>("base")
+fn assert_comparison_succeeds<T1: DerivableTypeSchema, T2: DerivableTypeSchema>(
+    settings: &SchemaComparisonSettings,
+) {
+    assert_type_compatibility::<NoCustomExtension, T2>(settings, |v| {
+        v.register_schema_of::<T1>("base")
             .register_schema_of::<T2>("latest")
-    )
+    })
 }
 
 fn assert_extension_multi(
@@ -84,9 +85,10 @@ fn assert_multi_comparison_succeeds(
     assert_type_collection_backwards_compatibility::<NoCustomExtension>(
         settings,
         latest.clone(),
-        |v| v
-            .register_version("base", base)
-            .register_version("latest", latest),
+        |v| {
+            v.register_version("base", base)
+                .register_version("latest", latest)
+        },
     )
 }
 
@@ -132,7 +134,7 @@ enum MyEnum {
     Variant1,
     Variant2,
     Variant3(u8, u16),
-    Variant4 { my_val: i32, my_struct: MyStruct, },
+    Variant4 { my_val: i32, my_struct: MyStruct },
 }
 
 #[derive(Sbor)]
@@ -141,7 +143,7 @@ enum MyEnumVariantRenamed {
     Variant1,
     Variant2V2,
     Variant3(u8, u16),
-    Variant4 { my_val: i32, my_struct: MyStruct, },
+    Variant4 { my_val: i32, my_struct: MyStruct },
 }
 
 #[derive(Sbor)]
@@ -150,7 +152,10 @@ enum MyEnumVariantFieldRenamed {
     Variant1,
     Variant2,
     Variant3(u8, u16),
-    Variant4 { my_val_renamed: i32, my_struct: MyStruct, },
+    Variant4 {
+        my_val_renamed: i32,
+        my_struct: MyStruct,
+    },
 }
 
 #[derive(Sbor)]
@@ -159,7 +164,7 @@ enum MyEnumNewVariant {
     Variant1,
     Variant2,
     Variant3(u8, u16),
-    Variant4 { my_val: i32, my_struct: MyStruct, },
+    Variant4 { my_val: i32, my_struct: MyStruct },
     Variant5,
 }
 
@@ -169,7 +174,7 @@ enum MyEnumVariantFieldAdded {
     Variant1,
     Variant2,
     Variant3(u8, u16, u32),
-    Variant4 { my_val: i32, my_struct: MyStruct, },
+    Variant4 { my_val: i32, my_struct: MyStruct },
 }
 
 #[derive(BasicDescribe)]
@@ -187,7 +192,7 @@ enum MyMultiRecursiveTypeForm1 {
     Nothing,
     Opposite(Option<Box<MyMultiRecursiveTypeForm2>>),
     Me(Option<Box<MyMultiRecursiveTypeForm1>>),
-    Form1(Option<Box<MyMultiRecursiveTypeForm1>>), 
+    Form1(Option<Box<MyMultiRecursiveTypeForm1>>),
 }
 
 #[derive(Sbor)]
@@ -209,17 +214,17 @@ fn asserting_backwards_compatibility_requires_a_named_schema() {
 
 #[test]
 fn asserting_backwards_compatibility_with_a_single_latest_schema_version_succeeds() {
-    assert_type_backwards_compatibility::<NoCustomExtension, MyStruct>(|v| v
-        .register_schema_of::<MyStruct>("latest")
-    )
+    assert_type_backwards_compatibility::<NoCustomExtension, MyStruct>(|v| {
+        v.register_schema_of::<MyStruct>("latest")
+    })
 }
 
 #[test]
 #[should_panic]
 fn asserting_backwards_compatibility_with_incorrect_latest_schema_version_succeeds() {
-    assert_type_backwards_compatibility::<NoCustomExtension, MyStruct>(|v| v
-        .register_schema_of::<MyStructFieldRenamed>("latest")
-    )
+    assert_type_backwards_compatibility::<NoCustomExtension, MyStruct>(|v| {
+        v.register_schema_of::<MyStructFieldRenamed>("latest")
+    })
 }
 
 #[test]
@@ -329,7 +334,12 @@ fn all_name_changes_allowed_succeeds() {
     assert_equality_ignoring_name_changes::<MyEnum, MyEnumVariantFieldRenamed>();
     assert_equality_ignoring_name_changes::<
         (MyStruct, MyStruct, MyEnum, MyEnum),
-        (MyStructFieldRenamed, MyStructTypeRenamed, MyEnumVariantRenamed, MyEnumVariantFieldRenamed),
+        (
+            MyStructFieldRenamed,
+            MyStructTypeRenamed,
+            MyEnumVariantRenamed,
+            MyEnumVariantFieldRenamed,
+        ),
     >();
 }
 

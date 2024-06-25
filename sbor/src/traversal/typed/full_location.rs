@@ -35,11 +35,10 @@ impl<'s, 'a, E: CustomExtension> PathAnnotate
                     let container = match header {
                         ContainerHeader::EnumVariant(variant_header) => {
                             let discriminator = variant_header.variant;
-                            let variant_data = metadata
-                                .and_then(|m| m.get_enum_variant_data(discriminator));
-                            let variant_name = variant_data
-                                .and_then(|d| d.get_name())
-                                .map(Cow::Borrowed);
+                            let variant_data =
+                                metadata.and_then(|m| m.get_enum_variant_data(discriminator));
+                            let variant_name =
+                                variant_data.and_then(|d| d.get_name()).map(Cow::Borrowed);
                             let field_index = current_child_index;
                             let field_name = variant_data
                                 .and_then(|d| d.get_field_name(field_index))
