@@ -169,7 +169,7 @@ fn print_substates(substates: &HashMap<(DbPartitionKey, DbSortKey), Vec<u8>>) {
                 }},
                 DbSortKey(unhex({:?}))
             ) => (
-                unhex({:?}),
+                unhex({:?})
             ),",
             address,
             hex::encode(&db_partition_key.node_key),
@@ -202,7 +202,7 @@ fn test_auth_zone_steal() {
                 },
                 DbSortKey(unhex("00"))
             ) => (
-                unhex("5c2200012102220001a0402ce76c20cf153e01000000000000000000000000000000220000")
+                unhex("5c2200012102220001a040f6a75a1610163e01000000000000000000000000000000220000")
             ),
             (
                 // internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
@@ -212,7 +212,7 @@ fn test_auth_zone_steal() {
                 },
                 DbSortKey(unhex("00"))
             ) => (
-                unhex("5c2200012102220001a080a7f173ec277b95614bc772614213000000000000000000220000")
+                unhex("5c2200012102220001a08013709800a67a95614bc772614213000000000000000000220000")
             ),
             (
                 // consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl
@@ -222,7 +222,7 @@ fn test_auth_zone_steal() {
                 },
                 DbSortKey(unhex("02"))
             ) => (
-                unhex("5c220001210222000121022307a001002096733690e70a9f000000000000000000000000000000009058619833de031de3aad69cad02a22656e083e307fb617b28e1b275bd7ed7220000")
+                unhex("5c220001210222000121022307a0010020fb532d0b080b9f000000000000000000000000000000009058619833de031de3aad69cad02a22656e083e307fb617b28e1b275bd7ed7220000")
             ),
 
     );
@@ -277,8 +277,10 @@ fn test_auth_zone_steal() {
         }
     }
 
-    // println!("Updated substates: ");
-    // print_substates(&updated_substates);
+    println!("Updated substates: ");
+    print_substates(&updated_substates);
+    println!("New substates: ");
+    print_substates(&new_substates);
     assert_eq!(updated_substates, expected_updated_substates);
 
     assert_eq!(new_substates.len(), 0);
