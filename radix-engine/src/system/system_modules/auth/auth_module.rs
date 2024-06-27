@@ -288,7 +288,7 @@ impl AuthModule {
                                 Self::copy_global_caller(system, &self_auth_zone)?;
                             (
                                 caller.map(|_| {
-                                    (TRANSACTION_TRACKER.into(), Reference(self_auth_zone))
+                                    (FRAME_OWNED_GLOBAL_MARKER.into(), Reference(self_auth_zone))
                                 }),
                                 lock_handle,
                             )
