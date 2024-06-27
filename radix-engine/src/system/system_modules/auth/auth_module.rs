@@ -278,12 +278,19 @@ impl AuthModule {
                         (ReferenceOrigin::SubstateNonGlobalReference(..), _) => (None, None),
                         // Actor is a frame-owned object
                         (ReferenceOrigin::FrameOwned, _) => {
-                            let caller = Self::copy_global_caller(system, &self_auth_zone)?;
+                            // In the past frame-owned objects were inheriting the AuthZone of the caller.
+                            // It was a critical issue, which could allow called components to eg.
+                            // withdraw resources from the signing account.
+                            // To prevent this we use TRANSACTION_TRACKER NodeId as a marker, that we are dealing with a frame-owned object.
+                            // It is checked later on when virtual proofs for AuthZone are verified.
+                            // Approach with such marker allows to keep backward compatibility with substate database.
+                            let (caller, lock_handle) =
+                                Self::copy_global_caller(system, &self_auth_zone)?;
                             (
-                                caller.0.map(|_| {
+                                caller.map(|_| {
                                     (TRANSACTION_TRACKER.into(), Reference(self_auth_zone))
                                 }),
-                                caller.1,
+                                lock_handle,
                             )
                         }
                     }
