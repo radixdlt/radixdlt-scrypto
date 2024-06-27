@@ -3,7 +3,7 @@ use crate::schema::*;
 
 pub fn validate_custom_type_validation<'a, S: CustomSchema>(
     context: &SchemaContext,
-    type_kind: &SchemaTypeKind<S>,
+    type_kind: &LocalTypeKind<S>,
     type_validation: &TypeValidation<S::CustomTypeValidation>,
 ) -> Result<(), SchemaValidationError> {
     // It's always possible to opt into no additional validation.

@@ -1,9 +1,15 @@
 use crate::internal_prelude::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
+pub type ScryptoLocalTypeKind = LocalTypeKind<ScryptoCustomSchema>;
+pub type ScryptoAggregatorTypeKind = AggregatorTypeKind<ScryptoCustomSchema>;
 pub type VersionedScryptoSchema = VersionedSchema<ScryptoCustomSchema>;
 pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
+pub type ScryptoLocalTypeData = LocalTypeData<ScryptoCustomSchema>;
+pub type ScryptoAggregatorTypeData = AggregatorTypeData<ScryptoCustomSchema>;
+pub type ScryptoTypeValidation = TypeValidation<ScryptoCustomTypeValidation>;
+pub type ScryptoTypeAggregator = TypeAggregator<ScryptoCustomTypeKind>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
@@ -217,32 +223,28 @@ lazy_static::lazy_static! {
 }
 
 impl CustomSchema for ScryptoCustomSchema {
-    type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind;
+    type CustomLocalTypeKind = ScryptoCustomTypeKind;
+    type CustomAggregatorTypeKind = ScryptoCustomTypeKind;
     type CustomTypeKindLabel = ScryptoCustomTypeKindLabel;
     type CustomTypeValidation = ScryptoCustomTypeValidation;
+    type DefaultCustomExtension = ScryptoCustomExtension;
 
     fn linearize_type_kind(
-        type_kind: Self::CustomTypeKind<RustTypeId>,
+        type_kind: Self::CustomLocalTypeKind,
         _type_indices: &IndexSet<TypeHash>,
-    ) -> Self::CustomTypeKind<LocalTypeId> {
-        match type_kind {
-            ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
-            ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
-            ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
-            ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
-            ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
-        }
+    ) -> Self::CustomAggregatorTypeKind {
+        type_kind
     }
 
     fn resolve_well_known_type(
         well_known_id: WellKnownTypeId,
-    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeId>, LocalTypeId>> {
+    ) -> Option<&'static LocalTypeData<Self>> {
         resolve_scrypto_well_known_type(well_known_id)
     }
 
     fn validate_custom_type_kind(
         _context: &SchemaContext,
-        type_kind: &Self::CustomTypeKind<LocalTypeId>,
+        type_kind: &Self::CustomLocalTypeKind,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
             ScryptoCustomTypeKind::Reference
@@ -258,7 +260,7 @@ impl CustomSchema for ScryptoCustomSchema {
 
     fn validate_type_metadata_with_custom_type_kind(
         _: &SchemaContext,
-        type_kind: &Self::CustomTypeKind<LocalTypeId>,
+        type_kind: &Self::CustomLocalTypeKind,
         type_metadata: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {
         // Even though they all map to the same thing, we keep the explicit match statement so that
@@ -277,7 +279,7 @@ impl CustomSchema for ScryptoCustomSchema {
 
     fn validate_custom_type_validation(
         _context: &SchemaContext,
-        custom_type_kind: &Self::CustomTypeKind<LocalTypeId>,
+        custom_type_kind: &Self::CustomLocalTypeKind,
         custom_type_validation: &Self::CustomTypeValidation,
     ) -> Result<(), SchemaValidationError> {
         match custom_type_kind {
