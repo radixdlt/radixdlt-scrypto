@@ -31,7 +31,6 @@ mod steal_child {
 
 #[blueprint]
 mod steal {
-    use steal_child::*;
 
     struct Steal {
         vault: Vault,
@@ -47,10 +46,15 @@ mod steal {
             .globalize()
         }
 
+        // Try to withdraw from the account.
+        // It is assumed that the same account signed the transaction.
         pub fn steal_from_account(&mut self, address: ComponentAddress) {
-            let child_component = StealChild::child_create();
+            // Instantiate owned component and call it's methods while they are still owned.
+            let child_component = steal_child::StealChild::child_create();
+
             let bucket = child_component.child_steal_from_account(address);
             self.vault.put(bucket);
+            // Globalize to avoid error
             child_component
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize();

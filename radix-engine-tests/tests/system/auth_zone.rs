@@ -184,15 +184,10 @@ fn unhex(input: &'static str) -> Vec<u8> {
     hex::decode(input).unwrap()
 }
 
-#[test]
-fn test_auth_zone_steal() {
-    use radix_engine_tests::common::*;
-
-    // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().build();
-    let (public_key, _, account) = ledger.new_allocated_account();
-    let package_address = ledger.publish_package_simple(PackageLoader::get("steal"));
-
+fn assert_updated_substates(
+    pre_transaction_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>>,
+    post_transaction_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>>,
+) {
     let expected_updated_substates = hashmap!(
             (
                 // internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
@@ -227,6 +222,40 @@ fn test_auth_zone_steal() {
 
     );
 
+    let mut updated_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>> = hashmap!();
+    let mut new_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>> = hashmap!();
+    for (full_key, post_value) in post_transaction_substates {
+        if let Some(pre_value) = pre_transaction_substates.get(&full_key) {
+            if !pre_value.eq(&post_value) {
+                updated_substates.insert(full_key, post_value);
+            }
+        } else {
+            new_substates.insert(full_key, post_value);
+        }
+    }
+
+    // println!("Updated substates: ");
+    // print_substates(&updated_substates);
+    // println!("New substates: ");
+    // print_substates(&new_substates);
+    assert_eq!(updated_substates, expected_updated_substates);
+
+    assert_eq!(new_substates.len(), 0);
+}
+
+#[test]
+// Here we are trying to exploit an issue, that was present in Radix Engine.
+// Calls to owned components were possesing transaction processor's AuthZone,
+// which effectively allowed to withdraw resources from the account that signed the
+// transaction.
+fn test_auth_zone_try_to_steal_from_account() {
+    use radix_engine_tests::common::*;
+
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("steal"));
+
     // Act
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
@@ -251,6 +280,8 @@ fn test_auth_zone_steal() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
+    let post_transaction_substates = get_transaction_substates(&mut ledger);
+
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
@@ -262,26 +293,5 @@ fn test_auth_zone_steal() {
         _ => false,
     });
 
-    // Check if updates substates are expected
-    let post_transaction_substates = get_transaction_substates(&mut ledger);
-
-    let mut updated_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>> = hashmap!();
-    let mut new_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>> = hashmap!();
-    for (full_key, post_value) in post_transaction_substates {
-        if let Some(pre_value) = pre_transaction_substates.get(&full_key) {
-            if !pre_value.eq(&post_value) {
-                updated_substates.insert(full_key, post_value);
-            }
-        } else {
-            new_substates.insert(full_key, post_value);
-        }
-    }
-
-    println!("Updated substates: ");
-    print_substates(&updated_substates);
-    println!("New substates: ");
-    print_substates(&new_substates);
-    assert_eq!(updated_substates, expected_updated_substates);
-
-    assert_eq!(new_substates.len(), 0);
+    assert_updated_substates(pre_transaction_substates, post_transaction_substates);
 }
