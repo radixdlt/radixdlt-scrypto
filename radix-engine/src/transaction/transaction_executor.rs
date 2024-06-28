@@ -159,6 +159,7 @@ pub struct ExecutionConfig {
     pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
+    pub enable_debug_information: bool,
 
     pub system_overrides: Option<SystemOverrides>,
 }
@@ -170,6 +171,7 @@ impl Default for ExecutionConfig {
             enable_cost_breakdown: false,
             execution_trace: None,
             system_overrides: None,
+            enable_debug_information: false,
         }
     }
 }
@@ -220,6 +222,13 @@ impl ExecutionConfig {
             enable_kernel_trace: true,
             enable_cost_breakdown: true,
             ..Self::with_network(NetworkDefinition::simulator())
+        }
+    }
+
+    pub fn for_debug_transaction() -> Self {
+        Self {
+            enable_debug_information: true,
+            ..Self::for_test_transaction()
         }
     }
 
@@ -319,6 +328,7 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
         SystemInit {
             enable_kernel_trace: execution_config.enable_kernel_trace,
             enable_cost_breakdown: execution_config.enable_cost_breakdown,
+            enable_debug_information: execution_config.enable_debug_information,
             execution_trace: execution_config.execution_trace,
             callback_init: vms,
             system_overrides: execution_config.system_overrides.clone(),

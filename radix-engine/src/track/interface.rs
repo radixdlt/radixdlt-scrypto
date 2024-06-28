@@ -195,7 +195,7 @@ pub struct CanonicalPartition {
     pub partition_number: PartitionNumber,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct CanonicalSubstateKey {
     pub node_id: NodeId,
     pub partition_number: PartitionNumber,
@@ -224,7 +224,7 @@ impl CanonicalSubstateKey {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum IOAccess {
     /// Some substate was read from database.
     ReadFromDb(CanonicalSubstateKey, usize),

@@ -52,12 +52,7 @@ use crate::track::{
     to_state_updates, BootStore, CanonicalSubstateKey, CommitableSubstateStore, IOAccess,
     StoreCommitInfo, Track, TrackFinalizeError,
 };
-use crate::transaction::{
-    reconcile_resource_state_and_events, AbortResult, CommitResult, CostingParameters,
-    FeeDestination, FeeSource, LimitParameters, RejectResult, StateUpdateSummary, SystemOverrides,
-    SystemStructure, TransactionFeeDetails, TransactionOutcome, TransactionReceipt,
-    TransactionResult, TransactionResultType,
-};
+use crate::transaction::*;
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::SystemObjectApi;
@@ -148,6 +143,7 @@ pub struct SystemInit<C> {
     pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
+    pub enable_debug_information: bool,
 
     // Higher layer initialization object
     pub callback_init: C,
@@ -884,6 +880,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             } else {
                 None
             },
+            detailed_cost_breakdown: if init_input.enable_debug_information {
+                Some(Default::default())
+            } else {
+                None
+            },
             on_apply_cost: Default::default(),
         };
 
@@ -1125,6 +1126,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             None
         };
 
+        let debug_information = match (costing_module.detailed_cost_breakdown,) {
+            (Some(detailed_cost_breakdown),) => Some(TransactionDebugInformation {
+                detailed_execution_cost_breakdown: detailed_cost_breakdown
+                    .detailed_execution_cost_breakdown,
+            }),
+            _ => None,
+        };
+
         let result_type =
             Self::determine_result_type(interpretation_result, &mut costing_module.fee_reserve);
         let (fee_summary, fee_details, result) = match result_type {
@@ -1244,6 +1253,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             fee_details,
             result,
             resources_usage: None,
+            debug_information,
         };
 
         // Dump summary
@@ -1255,8 +1265,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         receipt
     }
 
-    fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_pin_node(self, node_id)
+    fn on_pin_node(&mut self, depth: usize, node_id: &NodeId) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_pin_node(self, depth, node_id)
     }
 
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
@@ -1308,27 +1318,40 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         SystemModuleMixer::on_write_substate(api, &event)
     }
 
-    fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_set_substate(self, &event)
+    fn on_set_substate(
+        &mut self,
+        depth: usize,
+        event: SetSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_set_substate(self, depth, &event)
     }
 
-    fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_remove_substate(self, &event)
+    fn on_remove_substate(
+        &mut self,
+        depth: usize,
+        event: RemoveSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_remove_substate(self, depth, &event)
     }
 
-    fn on_scan_keys(&mut self, event: ScanKeysEvent) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_scan_keys(self, &event)
+    fn on_scan_keys(&mut self, depth: usize, event: ScanKeysEvent) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_scan_keys(self, depth, &event)
     }
 
-    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_drain_substates(self, &event)
+    fn on_drain_substates(
+        &mut self,
+        depth: usize,
+        event: DrainSubstatesEvent,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_drain_substates(self, depth, &event)
     }
 
     fn on_scan_sorted_substates(
         &mut self,
+        depth: usize,
         event: ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_scan_sorted_substates(self, &event)
+        SystemModuleMixer::on_scan_sorted_substates(self, depth, &event)
     }
 
     fn before_invoke<Y>(
@@ -1603,12 +1626,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
     fn on_mark_substate_as_transient(
         &mut self,
+        depth: usize,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_mark_substate_as_transient(
             self,
+            depth,
             node_id,
             partition_number,
             substate_key,

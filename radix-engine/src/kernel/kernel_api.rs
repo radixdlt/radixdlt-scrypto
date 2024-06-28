@@ -151,7 +151,7 @@ pub trait KernelSubstateApi<L> {
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct KernelInvocation<C> {
     pub call_frame_data: C,
     pub args: IndexedScryptoValue,

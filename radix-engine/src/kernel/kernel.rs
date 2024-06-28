@@ -358,7 +358,8 @@ where
 {
     #[trace_resources]
     fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        self.callback.on_pin_node(&node_id)?;
+        let depth = self.kernel_get_current_depth();
+        self.callback.on_pin_node(depth, &node_id)?;
 
         self.current_frame
             .pin_node(&mut self.substate_io, node_id)
@@ -754,8 +755,9 @@ where
         partition_num: PartitionNumber,
         key: SubstateKey,
     ) -> Result<(), RuntimeError> {
+        let depth = self.kernel_get_current_depth();
         self.callback
-            .on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
+            .on_mark_substate_as_transient(depth, &node_id, &partition_num, &key)?;
 
         self.current_frame
             .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
@@ -975,19 +977,18 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        self.callback.on_set_substate(SetSubstateEvent::Start(
-            node_id,
-            &partition_num,
-            &substate_key,
-            &value,
-        ))?;
+        let depth = self.kernel_get_current_depth();
+        self.callback.on_set_substate(
+            depth,
+            SetSubstateEvent::Start(node_id, &partition_num, &substate_key, &value),
+        )?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_set_substate(SetSubstateEvent::IOAccess(&io_access))
+                    .on_set_substate(depth, SetSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -1017,19 +1018,18 @@ where
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        self.callback
-            .on_remove_substate(RemoveSubstateEvent::Start(
-                node_id,
-                &partition_num,
-                substate_key,
-            ))?;
+        let depth = self.kernel_get_current_depth();
+        self.callback.on_remove_substate(
+            depth,
+            RemoveSubstateEvent::Start(node_id, &partition_num, substate_key),
+        )?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_remove_substate(RemoveSubstateEvent::IOAccess(&io_access))
+                    .on_remove_substate(depth, RemoveSubstateEvent::IOAccess(&io_access))
             },
         };
 
@@ -1059,14 +1059,15 @@ where
         partition_num: PartitionNumber,
         limit: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
-        self.callback.on_scan_keys(ScanKeysEvent::Start)?;
+        let depth = self.kernel_get_current_depth();
+        self.callback.on_scan_keys(depth, ScanKeysEvent::Start)?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_scan_keys(ScanKeysEvent::IOAccess(&io_access))
+                    .on_scan_keys(depth, ScanKeysEvent::IOAccess(&io_access))
             },
         };
 
@@ -1096,15 +1097,16 @@ where
         partition_num: PartitionNumber,
         limit: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        let depth = self.kernel_get_current_depth();
         self.callback
-            .on_drain_substates(DrainSubstatesEvent::Start(limit))?;
+            .on_drain_substates(depth, DrainSubstatesEvent::Start(limit))?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_drain_substates(DrainSubstatesEvent::IOAccess(&io_access))
+                    .on_drain_substates(depth, DrainSubstatesEvent::IOAccess(&io_access))
             },
         };
 
@@ -1134,15 +1136,16 @@ where
         partition_num: PartitionNumber,
         limit: u32,
     ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
+        let depth = self.kernel_get_current_depth();
         self.callback
-            .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
+            .on_scan_sorted_substates(depth, ScanSortedSubstatesEvent::Start)?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
                 api.callback
-                    .on_scan_sorted_substates(ScanSortedSubstatesEvent::IOAccess(&io_access))
+                    .on_scan_sorted_substates(depth, ScanSortedSubstatesEvent::IOAccess(&io_access))
             },
         };
 

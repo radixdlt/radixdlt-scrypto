@@ -18,8 +18,9 @@ use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::LinkedList;
+use sbor::Sbor;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SubstateDevice {
     Heap,
     Store,
