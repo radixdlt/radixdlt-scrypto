@@ -258,7 +258,6 @@ where
                 let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
 
                 let costing_module = CostingModule {
-                    current_depth: 0,
                     fee_reserve: SystemLoanFeeReserve::default(),
                     fee_table: FeeTable::new(),
                     tx_payload_len: 0,

@@ -334,6 +334,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
 
     fn on_set_substate(
         system: &mut System<V>,
+        _depth: usize,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -354,6 +355,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
 
     fn on_remove_substate(
         system: &mut System<V>,
+        _depth: usize,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -368,7 +370,11 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_scan_keys(system: &mut System<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
+    fn on_scan_keys(
+        system: &mut System<V>,
+        _depth: usize,
+        event: &ScanKeysEvent,
+    ) -> Result<(), RuntimeError> {
         match event {
             ScanKeysEvent::IOAccess(io_access) => {
                 system.modules.limits.process_io_access(io_access)?;
@@ -381,6 +387,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
 
     fn on_drain_substates(
         system: &mut System<V>,
+        _depth: usize,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -395,6 +402,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for LimitsModule {
 
     fn on_scan_sorted_substates(
         system: &mut System<V>,
+        _depth: usize,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         match event {

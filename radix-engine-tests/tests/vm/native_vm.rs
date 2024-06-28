@@ -91,7 +91,6 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             }),
             LimitsModule::babylon_genesis(),
             CostingModule {
-                current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: 0,
@@ -172,7 +171,6 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             }),
             LimitsModule::babylon_genesis(),
             CostingModule {
-                current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: 0,
