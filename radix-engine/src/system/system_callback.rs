@@ -867,7 +867,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         let limits_module = { LimitsModule::from_params(system_parameters.limit_parameters) };
 
         let costing_module = CostingModule {
-            current_depth: 0, // TODO: Is it correct to assume that the current depth is zero here?
+            // The current depth is set to zero since at the start of the execution of transactions
+            // there are no callframes expect for the root callframe.
+            current_depth: 0,
             fee_reserve: SystemLoanFeeReserve::new(
                 &system_parameters.costing_parameters,
                 executable.costing_parameters(),
@@ -1127,11 +1129,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             None
         };
 
-        let debug_information = match (&costing_module.detailed_cost_breakdown,) {
+        let debug_information = match (costing_module.detailed_cost_breakdown,) {
             (Some(detailed_cost_breakdown),) => Some(TransactionDebugInformation {
                 detailed_execution_cost_breakdown: detailed_cost_breakdown
-                    .detailed_execution_cost_breakdown
-                    .clone(),
+                    .detailed_execution_cost_breakdown,
             }),
             _ => None,
         };
