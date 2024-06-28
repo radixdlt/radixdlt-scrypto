@@ -54,10 +54,7 @@ mod vault_proof {
                 self.vault.as_non_fungible().non_fungible_local_ids(100),
                 non_fungible_local_ids
             );
-            assert_eq!(
-                proof.as_non_fungible().non_fungible_local_ids(),
-                proof_non_fungible_local_ids
-            );
+            assert_eq!(proof.non_fungible_local_ids(), proof_non_fungible_local_ids);
             assert_eq!(clone.non_fungible_local_ids(), proof_non_fungible_local_ids);
 
             clone.drop();
@@ -137,7 +134,7 @@ mod vault_proof {
                         )
                         .skip_checking();
                         assert_eq!(proof.resource_address(), self.vault.resource_address());
-                        assert_eq!(proof.as_non_fungible().non_fungible_local_ids(), ids);
+                        assert_eq!(proof.non_fungible_local_ids(), ids);
                         proof.drop();
                     })
                 });
