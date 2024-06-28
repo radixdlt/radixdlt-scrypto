@@ -71,6 +71,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             AuthModule::new(executable.auth_zone_params().clone()),
             LimitsModule::babylon_genesis(),
             CostingModule {
+                current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: executable.payload_size(),

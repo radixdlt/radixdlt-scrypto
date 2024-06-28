@@ -1,24 +1,13 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{
-    BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError,
-    TransactionExecutionError,
-};
-use radix_engine::kernel::call_frame::{
-    CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError,
-    PassMessageError, ProcessSubstateError, StableReferenceType, TakeNodeError, WriteSubstateError,
-};
+use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
+use radix_engine::kernel::call_frame::{CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, StableReferenceType, TakeNodeError, WriteSubstateError};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
 };
-use radix_engine::kernel::kernel_callback_api::{
-    CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
-    ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
-    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
-    WriteSubstateEvent,
-};
+use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use radix_engine::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
 use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
@@ -58,7 +47,8 @@ impl ExecutionReceipt for TestReceipt {
         Self
     }
 
-    fn set_resource_usage(&mut self, _resources_usage: ResourcesUsage) {}
+    fn set_resource_usage(&mut self, _resources_usage: ResourcesUsage) {
+    }
 }
 
 struct TestCallbackObject;
@@ -69,19 +59,11 @@ impl KernelCallbackObject for TestCallbackObject {
     type ExecutionOutput = ();
     type Receipt = TestReceipt;
 
-    fn init<S: BootStore + CommitableSubstateStore>(
-        _store: &mut S,
-        _executable: &Executable,
-        _init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
+    fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::Init) -> Result<Self, RejectionReason> {
         Ok(Self)
     }
 
-    fn verify_boot_ref_value(
-        &mut self,
-        _node_id: &NodeId,
-        _value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
+    fn verify_boot_ref_value(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
         Ok(StableReferenceType::Global)
     }
 
@@ -102,16 +84,11 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn create_receipt<S: SubstateDatabase>(
-        self,
-        _track: Track<S, SpreadPrefixKeyMapper>,
-        _executable: &Executable,
-        _result: Result<(), TransactionExecutionError>,
-    ) -> TestReceipt {
+    fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _executable: &Executable, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
         TestReceipt
     }
 
-    fn on_pin_node(&mut self, _depth: usize, _node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -164,37 +141,24 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn on_set_substate(
-        &mut self,
-        _depth: usize,
-        _event: SetSubstateEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_set_substate(&mut self, _event: SetSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_remove_substate(
-        &mut self,
-        _depth: usize,
-        _event: RemoveSubstateEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_remove_substate(&mut self, _event: RemoveSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_scan_keys(&mut self, _depth: usize, _event: ScanKeysEvent) -> Result<(), RuntimeError> {
+    fn on_scan_keys(&mut self, _event: ScanKeysEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_drain_substates(
-        &mut self,
-        _depth: usize,
-        _event: DrainSubstatesEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_drain_substates(&mut self, _event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     fn on_scan_sorted_substates(
         &mut self,
-        _depth: usize,
         _event: ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -257,7 +221,6 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn on_mark_substate_as_transient(
         &mut self,
-        _depth: usize,
         _node_id: &NodeId,
         _partition_number: &PartitionNumber,
         _substate_key: &SubstateKey,
