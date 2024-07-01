@@ -15,11 +15,12 @@ pub struct Sandwich {
 #[blueprint]
 mod non_fungible_test {
     struct NonFungibleTest {
-        vault: Vault,
+        vault: NonFungibleVault,
     }
 
     impl NonFungibleTest {
-        pub fn create_non_fungible_mutable() -> (Bucket, ResourceManager, Bucket) {
+        pub fn create_non_fungible_mutable(
+        ) -> (Bucket, NonFungibleResourceManager, NonFungibleBucket) {
             // Create a mint badge
             let mint_badge: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
@@ -66,21 +67,21 @@ mod non_fungible_test {
             (mint_badge, resource_manager, non_fungible)
         }
 
-        pub fn update_nft(mint_badge: Bucket, proof: Proof) -> Bucket {
+        pub fn update_nft(mint_badge: FungibleBucket, proof: NonFungibleProof) -> Bucket {
             let proof = proof.skip_checking();
-            mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
+            mint_badge.authorize_with_amount(dec!(1), || {
                 let resource_manager = proof.resource_manager();
                 resource_manager.update_non_fungible_data(
-                    &proof.as_non_fungible().non_fungible_local_id(),
+                    &proof.non_fungible_local_id(),
                     "available",
                     true,
                 )
             });
 
-            mint_badge
+            mint_badge.into()
         }
 
-        pub fn create_burnable_non_fungible() -> Bucket {
+        pub fn create_burnable_non_fungible() -> NonFungibleBucket {
             ResourceBuilder::new_ruid_non_fungible(OwnerRole::None)
                 .metadata(metadata! {
                     init {
@@ -107,10 +108,9 @@ mod non_fungible_test {
                         own: None,
                     },
                 ])
-                .into()
         }
 
-        pub fn create_non_fungible_fixed() -> Bucket {
+        pub fn create_non_fungible_fixed() -> NonFungibleBucket {
             ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .metadata(metadata! {
                     init {
@@ -149,18 +149,20 @@ mod non_fungible_test {
                         },
                     ),
                 ])
-                .into()
         }
 
         pub fn verify_does_not_exist(non_fungible_global_id: NonFungibleGlobalId) {
-            let manager: ResourceManager = non_fungible_global_id.resource_address().into();
+            let manager: NonFungibleResourceManager =
+                non_fungible_global_id.resource_address().into();
             assert_eq!(
                 manager.non_fungible_exists(&non_fungible_global_id.local_id()),
                 false
             );
         }
 
-        pub fn create_non_fungible_reference(address: ComponentAddress) -> (Bucket, Bucket) {
+        pub fn create_non_fungible_reference(
+            address: ComponentAddress,
+        ) -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
 
             mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
@@ -174,7 +176,7 @@ mod non_fungible_test {
             (mint_badge, bucket)
         }
 
-        pub fn call_non_fungible_reference(resource_manager: ResourceManager) -> String {
+        pub fn call_non_fungible_reference(resource_manager: NonFungibleResourceManager) -> String {
             let data: Sandwich =
                 resource_manager.get_non_fungible_data(&NonFungibleLocalId::integer(0));
             let address = data.reference.unwrap();
@@ -186,7 +188,7 @@ mod non_fungible_test {
         pub fn update_non_fungible_with_ownership() -> Bucket {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
 
-            let vault = Vault::with_bucket(bucket);
+            let vault = NonFungibleVault::with_bucket(bucket);
 
             mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.update_non_fungible_data(
@@ -196,10 +198,14 @@ mod non_fungible_test {
                 );
             });
 
-            mint_badge
+            mint_badge.into()
         }
 
-        pub fn update_non_fungible(id: u64, field: String, value: bool) -> (Bucket, Bucket) {
+        pub fn update_non_fungible(
+            id: u64,
+            field: String,
+            value: bool,
+        ) -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
 
             mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
@@ -224,7 +230,7 @@ mod non_fungible_test {
 
         pub fn update_and_get_non_fungible_reference(
             reference: ComponentAddress,
-        ) -> (Bucket, Bucket) {
+        ) -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
 
             mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
@@ -241,7 +247,7 @@ mod non_fungible_test {
             (mint_badge, bucket)
         }
 
-        pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
+        pub fn update_and_get_non_fungible() -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
             let data: Sandwich =
                 resource_manager.get_non_fungible_data(&NonFungibleLocalId::integer(0));
@@ -296,7 +302,7 @@ mod non_fungible_test {
             assert_eq!(resource_manager.total_supply().unwrap(), Decimal::zero(),);
         }
 
-        pub fn non_fungible_exists() -> (Bucket, Bucket) {
+        pub fn non_fungible_exists() -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(
                 resource_manager.non_fungible_exists(&NonFungibleLocalId::integer(0)),
@@ -309,7 +315,7 @@ mod non_fungible_test {
             (mint_badge, bucket)
         }
 
-        pub fn mint_non_fungible_with_different_id_type() -> (Bucket, Bucket) {
+        pub fn mint_non_fungible_with_different_id_type() -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
             // Mint a non-fungible
             let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
@@ -327,7 +333,7 @@ mod non_fungible_test {
             (mint_badge, non_fungible)
         }
 
-        pub fn mint_non_fungible_with_ruid_id_type() -> (Bucket, Bucket) {
+        pub fn mint_non_fungible_with_ruid_id_type() -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
             // Mint a non-fungible
             let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
@@ -345,7 +351,8 @@ mod non_fungible_test {
             (mint_badge, non_fungible)
         }
 
-        pub fn mint_ruid_non_fungible_for_non_ruid_non_fungible_resource() -> (Bucket, Bucket) {
+        pub fn mint_ruid_non_fungible_for_non_ruid_non_fungible_resource(
+        ) -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
             // Mint a non-fungible
             let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
@@ -360,7 +367,7 @@ mod non_fungible_test {
             (mint_badge, non_fungible)
         }
 
-        pub fn mint_non_fungible_that_already_exists() -> (Bucket, Bucket) {
+        pub fn mint_non_fungible_that_already_exists() -> (Bucket, NonFungibleBucket) {
             let (mint_badge, resource_manager, _bucket) = Self::create_non_fungible_mutable();
             // Mint a non-fungible
             let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
@@ -378,7 +385,7 @@ mod non_fungible_test {
             (mint_badge, non_fungible)
         }
 
-        pub fn take_and_put_bucket() -> Bucket {
+        pub fn take_and_put_bucket() -> NonFungibleBucket {
             let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
@@ -390,8 +397,8 @@ mod non_fungible_test {
             bucket
         }
 
-        pub fn take_non_fungible_and_put_bucket() -> Bucket {
-            let mut bucket = Self::create_non_fungible_fixed().as_non_fungible();
+        pub fn take_non_fungible_and_put_bucket() -> NonFungibleBucket {
+            let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
             let non_fungible = bucket.take_non_fungible(&NonFungibleLocalId::integer(1));
@@ -402,14 +409,14 @@ mod non_fungible_test {
             bucket.into()
         }
 
-        pub fn take_non_fungibles_and_put_bucket() -> Bucket {
+        pub fn take_non_fungibles_and_put_bucket() -> NonFungibleBucket {
             let mut bucket = Self::create_non_fungible_fixed();
             assert_eq!(bucket.amount(), 3.into());
 
             let mut non_fungibles = index_set_new();
             non_fungibles.insert(NonFungibleLocalId::integer(1));
 
-            let non_fungible = bucket.as_non_fungible().take_non_fungibles(&non_fungibles);
+            let non_fungible = bucket.take_non_fungibles(&non_fungibles);
             assert_eq!(bucket.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
@@ -417,8 +424,8 @@ mod non_fungible_test {
             bucket
         }
 
-        pub fn take_and_put_vault() -> Bucket {
-            let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
+        pub fn take_and_put_vault() -> NonFungibleBucket {
+            let mut vault = NonFungibleVault::with_bucket(Self::create_non_fungible_fixed());
             assert_eq!(vault.amount(), 3.into());
 
             let non_fungible = vault.take(1);
@@ -433,17 +440,15 @@ mod non_fungible_test {
             non_fungible
         }
 
-        pub fn get_non_fungible_local_ids_bucket() -> (Bucket, Bucket) {
+        pub fn get_non_fungible_local_ids_bucket() -> (NonFungibleBucket, NonFungibleBucket) {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
-                non_fungible_bucket
-                    .as_non_fungible()
-                    .non_fungible_local_ids(),
+                non_fungible_bucket.non_fungible_local_ids(),
                 IndexSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
-                bucket.as_non_fungible().non_fungible_local_ids(),
+                bucket.non_fungible_local_ids(),
                 IndexSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
@@ -452,33 +457,29 @@ mod non_fungible_test {
             (bucket, non_fungible_bucket)
         }
 
-        pub fn get_non_fungible_local_id_bucket() -> (Bucket, Bucket) {
+        pub fn get_non_fungible_local_id_bucket() -> (NonFungibleBucket, NonFungibleBucket) {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
-                non_fungible_bucket
-                    .as_non_fungible()
-                    .non_fungible_local_id(),
+                non_fungible_bucket.non_fungible_local_id(),
                 NonFungibleLocalId::integer(1)
             );
             assert_eq!(
-                bucket.as_non_fungible().non_fungible_local_id(),
+                bucket.non_fungible_local_id(),
                 NonFungibleLocalId::integer(2)
             );
             (bucket, non_fungible_bucket)
         }
 
-        pub fn get_non_fungible_local_ids_vault() -> Bucket {
-            let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
+        pub fn get_non_fungible_local_ids_vault() -> NonFungibleBucket {
+            let mut vault = NonFungibleVault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
-                non_fungible_bucket
-                    .as_non_fungible()
-                    .non_fungible_local_ids(),
+                non_fungible_bucket.non_fungible_local_ids(),
                 IndexSet::from([NonFungibleLocalId::integer(1)])
             );
             assert_eq!(
-                vault.as_non_fungible().non_fungible_local_ids(100),
+                vault.non_fungible_local_ids(100),
                 IndexSet::from([
                     NonFungibleLocalId::integer(2),
                     NonFungibleLocalId::integer(3)
@@ -494,48 +495,42 @@ mod non_fungible_test {
         }
 
         pub fn contains_non_fungible_vault() {
-            let vault = Vault::with_bucket(Self::create_non_fungible_fixed());
-            let vault = vault.as_non_fungible();
+            let vault = NonFungibleVault::with_bucket(Self::create_non_fungible_fixed());
             assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(1)));
             assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(2)));
             assert!(vault.contains_non_fungible(&NonFungibleLocalId::integer(3)));
             assert!(!vault.contains_non_fungible(&NonFungibleLocalId::integer(4)));
 
-            NonFungibleTest {
-                vault: vault.into(),
-            }
-            .instantiate()
-            .prepare_to_globalize(OwnerRole::None)
-            .globalize();
+            NonFungibleTest { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
         }
 
         pub fn contains_non_fungible_bucket() {
             let bucket = Self::create_non_fungible_fixed();
-            let bucket = bucket.as_non_fungible();
             assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(1)));
             assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(2)));
             assert!(bucket.contains_non_fungible(&NonFungibleLocalId::integer(3)));
             assert!(!bucket.contains_non_fungible(&NonFungibleLocalId::integer(4)));
 
             NonFungibleTest {
-                vault: Vault::with_bucket(bucket.into()),
+                vault: NonFungibleVault::with_bucket(bucket),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .globalize();
         }
 
-        pub fn get_non_fungible_local_id_vault() -> Bucket {
-            let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
+        pub fn get_non_fungible_local_id_vault() -> NonFungibleBucket {
+            let mut vault = NonFungibleVault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
-                non_fungible_bucket
-                    .as_non_fungible()
-                    .non_fungible_local_id(),
+                non_fungible_bucket.non_fungible_local_id(),
                 NonFungibleLocalId::integer(1)
             );
             assert_eq!(
-                vault.as_non_fungible().non_fungible_local_id(),
+                vault.non_fungible_local_id(),
                 NonFungibleLocalId::integer(2)
             );
 
@@ -553,19 +548,18 @@ mod non_fungible_test {
 
             // read singleton bucket
             let singleton = bucket.take(1);
-            let _: Sandwich = singleton.as_non_fungible().non_fungible().data();
+            let _: Sandwich = singleton.non_fungible().data();
 
             // read singleton vault
-            let mut vault = Vault::with_bucket(singleton);
-            let _: Sandwich = vault.as_non_fungible().non_fungible().data();
+            let mut vault = NonFungibleVault::with_bucket(singleton);
+            let _: Sandwich = vault.non_fungible().data();
 
             // read singleton proof
             let proof = vault
-                .as_non_fungible()
                 .create_proof_of_non_fungibles(&indexset!(NonFungibleLocalId::integer(1)))
                 .skip_checking();
             assert_eq!(proof.resource_address(), vault.resource_address());
-            let _: Sandwich = proof.as_non_fungible().non_fungible().data();
+            let _: Sandwich = proof.non_fungible().data();
             proof.drop();
 
             // clean up
@@ -581,7 +575,7 @@ mod non_fungible_test {
             id_type: NonFungibleIdType,
             entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
             address_reservation: Option<GlobalAddressReservation>,
-        ) -> Bucket {
+        ) -> NonFungibleBucket {
             let rtn = match func_name {
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT => {
                     // convert entries to vector of values
@@ -631,10 +625,10 @@ mod non_fungible_test {
             let (_resource_address, bucket): (ResourceAddress, Bucket) =
                 scrypto_decode(&rtn).unwrap();
 
-            bucket
+            NonFungibleBucket(bucket)
         }
 
-        pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
+        pub fn create_wrong_non_fungible_local_id_type() -> NonFungibleBucket {
             let mut entries = index_map_new();
             entries.insert(
                 NonFungibleLocalId::integer(0),
@@ -649,7 +643,7 @@ mod non_fungible_test {
             )
         }
 
-        pub fn create_non_fungible_integer_with_address_reservation() -> Bucket {
+        pub fn create_non_fungible_integer_with_address_reservation() -> NonFungibleBucket {
             let (reservation, _address) = Runtime::allocate_non_fungible_address();
             let mut entries = index_map_new();
             entries.insert(
@@ -665,7 +659,7 @@ mod non_fungible_test {
             )
         }
 
-        pub fn create_non_fungible_integer() -> Bucket {
+        pub fn create_non_fungible_integer() -> NonFungibleBucket {
             let mut entries = index_map_new();
             entries.insert(
                 NonFungibleLocalId::integer(0),
@@ -680,7 +674,7 @@ mod non_fungible_test {
             )
         }
 
-        pub fn create_non_fungible_ruid_with_address_reservation() -> Bucket {
+        pub fn create_non_fungible_ruid_with_address_reservation() -> NonFungibleBucket {
             let (reservation, _address) = Runtime::allocate_non_fungible_address();
             let mut entries = index_map_new();
             entries.insert(
@@ -696,7 +690,7 @@ mod non_fungible_test {
             )
         }
 
-        pub fn create_non_fungible_ruid() -> Bucket {
+        pub fn create_non_fungible_ruid() -> NonFungibleBucket {
             let mut entries = index_map_new();
             entries.insert(
                 NonFungibleLocalId::ruid([0x11; 32]),
@@ -711,7 +705,7 @@ mod non_fungible_test {
             )
         }
 
-        pub fn create_non_fungible_with_id_type_does_not_match() -> Bucket {
+        pub fn create_non_fungible_with_id_type_does_not_match() -> NonFungibleBucket {
             let mut entries = index_map_new();
             entries.insert(
                 NonFungibleLocalId::integer(0),
@@ -726,7 +720,7 @@ mod non_fungible_test {
             )
         }
 
-        pub fn create_string_non_fungible() -> Bucket {
+        pub fn create_string_non_fungible() -> NonFungibleBucket {
             // creating non-fungible id with id type set to default (RUID)
             ResourceBuilder::new_string_non_fungible::<Sandwich>(OwnerRole::None)
                 .mint_initial_supply([
@@ -751,10 +745,9 @@ mod non_fungible_test {
                         },
                     ),
                 ])
-                .into()
         }
 
-        pub fn create_bytes_non_fungible() -> Bucket {
+        pub fn create_bytes_non_fungible() -> NonFungibleBucket {
             ResourceBuilder::new_bytes_non_fungible::<Sandwich>(OwnerRole::None)
                 .mint_initial_supply([
                     (
@@ -778,22 +771,21 @@ mod non_fungible_test {
                         },
                     ),
                 ])
-                .into()
         }
 
-        pub fn create_ruid_non_fungible() -> Bucket {
-            ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
-                .mint_initial_supply([Sandwich {
+        pub fn create_ruid_non_fungible() -> NonFungibleBucket {
+            ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None).mint_initial_supply(
+                [Sandwich {
                     name: "Zero".to_owned(),
                     available: true,
                     tastes_great: true,
                     reference: None,
                     own: None,
-                }])
-                .into()
+                }],
+            )
         }
 
-        pub fn create_mintable_ruid_non_fungible() -> ResourceManager {
+        pub fn create_mintable_ruid_non_fungible() -> NonFungibleResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
                 .mint_roles(mint_roles! {
                     minter => rule!(allow_all);
@@ -802,7 +794,7 @@ mod non_fungible_test {
                 .create_with_no_initial_supply()
         }
 
-        pub fn create_ruid_non_fungible_and_mint() -> Bucket {
+        pub fn create_ruid_non_fungible_and_mint() -> NonFungibleBucket {
             // creating non-fungible id with id type set to default (RUID)
             let resource_manager =
                 ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
@@ -826,7 +818,7 @@ mod non_fungible_test {
             })
         }
 
-        pub fn create_ruid_non_fungible_and_mint_non_ruid() -> Bucket {
+        pub fn create_ruid_non_fungible_and_mint_non_ruid() -> NonFungibleBucket {
             // creating non-fungible id with id type set to default (RUID)
             let resource_manager =
                 ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)

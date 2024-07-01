@@ -1,4 +1,4 @@
-use crate::prelude::ResourceManager;
+use crate::prelude::NonFungibleResourceManager;
 use radix_common::data::scrypto::model::*;
 use radix_common::traits::NonFungibleData;
 use radix_engine_interface::types::*;
@@ -38,7 +38,7 @@ impl<T: NonFungibleData> NonFungible<T> {
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        let manager: ResourceManager = self.resource_address().into();
+        let manager: NonFungibleResourceManager = self.resource_address().into();
         manager.get_non_fungible_data(self.local_id())
     }
 }

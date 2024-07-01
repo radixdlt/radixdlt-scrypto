@@ -73,6 +73,7 @@ members = [
     "oracles/oracle_v1",
     "oracles/oracle_v2",
     "oracles/oracle_v3",
+    "steal",
 ]
 resolver = "2"
 

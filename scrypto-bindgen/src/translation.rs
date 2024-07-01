@@ -1,6 +1,7 @@
 //! This module converts the models from `schema.rs` to the `ast.rs` models which are eventually
 //! converted to a TokenStream.
 
+use super::types::{BlueprintFunctionSignaturesReplacementMap, FunctionSignaturesReplacementMap};
 use super::{ast, schema};
 use crate::{ident, token_stream_from_str};
 use radix_blueprint_schema_init::*;
@@ -22,6 +23,7 @@ pub fn package_schema_interface_to_ast_interface<S>(
     schema_interface: schema::PackageInterface,
     package_address: PackageAddress,
     schema_resolver: &S,
+    blueprint_replacement_map: &BlueprintFunctionSignaturesReplacementMap,
 ) -> Result<ast::PackageStub, schema::SchemaError>
 where
     S: schema::PackageSchemaResolver,
@@ -36,6 +38,7 @@ where
                     package_address,
                     blueprint_name,
                     schema_resolver,
+                    blueprint_replacement_map,
                 )
             })
             .collect::<Result<_, _>>()?,
@@ -51,6 +54,7 @@ pub fn blueprint_schema_interface_to_ast_interface<S>(
     package_address: PackageAddress,
     blueprint_name: String,
     schema_resolver: &S,
+    blueprint_replacement_map: &BlueprintFunctionSignaturesReplacementMap,
 ) -> Result<ast::BlueprintStub, schema::SchemaError>
 where
     S: schema::PackageSchemaResolver,
@@ -59,7 +63,13 @@ where
         fn_signatures: schema_interface
             .functions
             .into_iter()
-            .map(|func| function_schema_interface_to_ast_interface(func, schema_resolver))
+            .map(|func| {
+                function_schema_interface_to_ast_interface(
+                    func,
+                    schema_resolver,
+                    blueprint_replacement_map.get(&blueprint_name),
+                )
+            })
             .collect::<Result<_, _>>()?,
         blueprint_name,
         package_address,
@@ -69,6 +79,7 @@ where
 pub fn function_schema_interface_to_ast_interface<S>(
     schema_interface: schema::Function,
     schema_resolver: &S,
+    func_sig_replacements_map: Option<&FunctionSignaturesReplacementMap>,
 ) -> Result<ast::FnSignature, schema::SchemaError>
 where
     S: schema::PackageSchemaResolver,
@@ -91,15 +102,33 @@ where
     };
     let function_ident = ident!(&schema_interface.ident);
 
+    // Check if there are some replacements for particular method name
+    let func_sig_replacements = func_sig_replacements_map
+        .and_then(|replacements_map| replacements_map.get(&schema_interface.ident));
+
     let inputs = schema_interface
         .arguments
         .into_iter()
-        .map(|(arg_name, arg_type_index)| {
-            type_name(&arg_type_index, schema_resolver)
-                .map(|type_name| (ident!(&arg_name), token_stream_from_str!(&type_name)))
+        .enumerate()
+        .map(|(idx, (arg_name, arg_type_index))| {
+            // Get type replacement if exists for argument idx
+            let ty = func_sig_replacements.and_then(|func| func.arg.get(&idx));
+
+            let ty_name = match ty {
+                Some(ty) => ty.clone(),
+                None => type_name(&arg_type_index, schema_resolver)?,
+            };
+            Ok((ident!(&arg_name), token_stream_from_str!(&ty_name)))
         })
         .collect::<Result<_, _>>()?;
-    let output = token_stream_from_str!(&type_name(&schema_interface.returns, schema_resolver)?);
+
+    // Get type replacement if exists for return type
+    let ty = func_sig_replacements.and_then(|func| func.output.clone());
+    let ty_name = match ty {
+        Some(ty) => ty,
+        None => type_name(&schema_interface.returns, schema_resolver)?,
+    };
+    let output = token_stream_from_str!(&ty_name);
 
     Ok(ast::FnSignature {
         inputs,

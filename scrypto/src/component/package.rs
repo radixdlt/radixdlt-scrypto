@@ -4,7 +4,7 @@ use radix_common::prelude::PACKAGE_PACKAGE;
 use radix_engine_interface::blueprints::package::{
     PackageClaimRoyaltiesInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
 };
-use radix_engine_interface::blueprints::resource::Bucket;
+use radix_engine_interface::blueprints::resource::FungibleBucket;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
 
@@ -40,7 +40,7 @@ impl ObjectStub for PackageStub {
 }
 
 impl PackageStub {
-    pub fn claim_royalties(&self) -> Bucket {
+    pub fn claim_royalties(&self) -> FungibleBucket {
         self.call(
             PACKAGE_CLAIM_ROYALTIES_IDENT,
             &PackageClaimRoyaltiesInput {},

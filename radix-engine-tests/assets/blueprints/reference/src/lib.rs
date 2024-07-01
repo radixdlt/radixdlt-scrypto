@@ -10,7 +10,7 @@ mod reference_test {
 
     impl ReferenceTest {
         pub fn create_global_node_with_local_ref() {
-            let bucket = Bucket::new(XRD);
+            let bucket = Bucket::new(XRD.into());
 
             Self {
                 reference: Some(Reference(bucket.0.as_node_id().clone())),
@@ -47,7 +47,7 @@ mod reference_test {
         }
 
         pub fn add_local_ref_to_stored_substate(&mut self) {
-            let bucket = Bucket::new(XRD);
+            let bucket = Bucket::new(XRD.into());
 
             self.reference = Some(Reference(bucket.0.as_node_id().clone()));
         }

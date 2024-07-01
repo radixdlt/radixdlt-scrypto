@@ -10,7 +10,7 @@ pub struct TestNFData {
 #[blueprint]
 mod resource_test {
     struct ResourceTest {
-        vault: Vault,
+        vault: NonFungibleVault,
         data: String,
     }
 
@@ -51,18 +51,16 @@ mod resource_test {
         }
 
         pub fn take_from_vault_after_mint() {
-            let bucket: Bucket =
-                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
-                    .mint_initial_supply(vec![(
-                        0u64.into(),
-                        TestNFData {
-                            name: "name".to_string(),
-                            available: false,
-                        },
-                    )])
-                    .into();
+            let bucket = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                .mint_initial_supply(vec![(
+                    0u64.into(),
+                    TestNFData {
+                        name: "name".to_string(),
+                        available: false,
+                    },
+                )]);
             let global = Self {
-                vault: Vault::new(bucket.resource_address()),
+                vault: NonFungibleVault::new(bucket.resource_address()),
                 data: "hi".to_string(),
             }
             .instantiate()
@@ -72,7 +70,7 @@ mod resource_test {
             global.take_from_vault_after_mint_helper(bucket);
         }
 
-        pub fn take_from_vault_after_mint_helper(&mut self, bucket: Bucket) {
+        pub fn take_from_vault_after_mint_helper(&mut self, bucket: NonFungibleBucket) {
             self.vault.put(bucket);
             let bucket = self.vault.take(dec!(1));
             self.vault.put(bucket);
@@ -93,7 +91,7 @@ mod resource_test {
                     .create_with_no_initial_supply();
 
             let global = Self {
-                vault: Vault::new(resource_manager.address()),
+                vault: NonFungibleVault::new(resource_manager.address()),
                 data: "hi".to_string(),
             }
             .instantiate()
@@ -105,7 +103,6 @@ mod resource_test {
 
         pub fn query_nonexistent_and_mint_helper(&mut self) {
             self.vault
-                .as_non_fungible()
                 .contains_non_fungible(&NonFungibleLocalId::integer(0));
             let bucket = self.vault.resource_manager().mint_non_fungible(
                 &NonFungibleLocalId::integer(0),
@@ -118,7 +115,7 @@ mod resource_test {
         }
 
         pub fn set_mintable_with_self_resource_address() {
-            let super_admin_manager: ResourceManager =
+            let super_admin_manager =
                 ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
                     .metadata(metadata! {
                         init {
@@ -134,7 +131,7 @@ mod resource_test {
             super_admin_manager.set_mintable(rule!(require(super_admin_manager.address())));
         }
 
-        pub fn create_fungible() -> (Bucket, ResourceManager) {
+        pub fn create_fungible() -> (Bucket, FungibleResourceManager) {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
@@ -162,7 +159,7 @@ mod resource_test {
         pub fn create_fungible_and_mint(
             divisibility: u8,
             amount: Decimal,
-        ) -> (Bucket, Bucket, ResourceManager) {
+        ) -> (Bucket, Bucket, FungibleResourceManager) {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
@@ -184,9 +181,7 @@ mod resource_test {
                 burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
-            let tokens = badge
-                .as_fungible()
-                .authorize_with_amount(dec!(1), || resource_manager.mint(amount));
+            let tokens = badge.authorize_with_amount(dec!(1), || resource_manager.mint(amount));
             (badge.into(), tokens.into(), resource_manager)
         }
 
@@ -214,8 +209,8 @@ mod resource_test {
             bucket.into()
         }
 
-        pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceManager)
-        {
+        pub fn create_fungible_wrong_resource_permissions_should_fail(
+        ) -> (Bucket, FungibleResourceManager) {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
@@ -252,7 +247,7 @@ mod resource_test {
         pub fn burn() -> Bucket {
             let (badge, resource_manager) = Self::create_fungible();
             badge.as_fungible().authorize_with_amount(dec!(1), || {
-                let bucket: Bucket = resource_manager.mint(1);
+                let bucket = resource_manager.mint(1);
                 resource_manager.burn(bucket)
             });
             badge
@@ -308,12 +303,12 @@ mod auth_resource {
                 .globalize()
         }
 
-        pub fn mint(&self, resource_manager: ResourceManager) -> Bucket {
+        pub fn mint(&self, resource_manager: FungibleResourceManager) -> FungibleBucket {
             let bucket = resource_manager.mint(1);
             bucket
         }
 
-        pub fn burn(&self, bucket: Bucket) {
+        pub fn burn(&self, bucket: FungibleBucket) {
             bucket.burn();
         }
     }
@@ -488,9 +483,8 @@ mod resource_types {
         }
 
         pub fn produce_fungible_things() -> (FungibleBucket, FungibleProof, FungibleVault) {
-            let mut bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-                .mint_initial_supply(100)
-                .as_fungible();
+            let mut bucket =
+                ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
             let proof = bucket.create_proof_of_amount(dec!(1));
             let vault = FungibleVault::with_bucket(bucket.take(5));
 
@@ -532,8 +526,7 @@ mod resource_types {
                                 available: true,
                             },
                         ),
-                    ])
-                    .as_non_fungible();
+                    ]);
             let proof =
                 bucket.create_proof_of_non_fungibles(&indexset!(NonFungibleLocalId::integer(0)));
             let vault = NonFungibleVault::with_bucket(bucket.take(1));

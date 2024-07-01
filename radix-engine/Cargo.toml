@@ -31,6 +31,9 @@ paste = { workspace = true }
 radix-common-derive = { workspace = true }
 const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
 
+inferno = { workspace = true }
+tempfile = { workspace = true }
+
 # WASM validation
 wasmparser = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits"] }
