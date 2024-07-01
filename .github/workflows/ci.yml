@@ -312,18 +312,18 @@ jobs:
           shared-key: radix-clis-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
-      - name: Install rustc 1.78.0-nightly
+      - name: Install rustc 1.81.0-nightly
         run: |
-          rustup toolchain install nightly-2024-02-08
-          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-02-08
-          rustup default nightly-2024-02-08
+          rustup toolchain install nightly-2024-06-28
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-06-28
+          rustup default nightly-2024-06-28
           rustup show
-      - name: Install LLVM 17
+      - name: Install LLVM 18
         run: |
           sudo apt install lsb-release wget software-properties-common gnupg
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 17
+          sudo ./llvm.sh 18
       - name: Run tests
         working-directory: radix-clis
         run: bash ./tests/scrypto_coverage.sh

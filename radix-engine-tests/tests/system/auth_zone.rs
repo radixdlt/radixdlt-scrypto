@@ -129,3 +129,50 @@ fn test_auth_zone_create_proof_of_all_for_non_fungible() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+// Here we are trying to exploit an issue, that was present in Radix Engine.
+// Calls to owned components were possesing transaction processor's AuthZone,
+// which effectively allowed to withdraw resources from the account that signed the
+// transaction.
+fn test_auth_zone_try_to_steal_from_account() {
+    use radix_engine_tests::common::*;
+
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("steal"));
+
+    // Act
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_function(package_address, "Steal", "instantiate", manifest_args!())
+            .build(),
+        vec![],
+    );
+    let steal_component_address = receipt.expect_commit_success().new_component_addresses()[0];
+
+    let receipt = ledger.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(
+                steal_component_address,
+                "steal_from_account",
+                manifest_args!(account),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+            err,
+        ))) => err.fn_identifier.eq(&FnIdentifier {
+            blueprint_id: BlueprintId::new(&ACCOUNT_PACKAGE, "Account"),
+            ident: "withdraw".to_owned(),
+        }),
+        _ => false,
+    });
+}

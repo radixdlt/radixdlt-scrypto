@@ -48,11 +48,13 @@ pub trait ScryptoBucket {
 
     fn is_empty(&self) -> bool;
 
+    fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O;
+}
+
+pub trait ScryptoGenericBucket {
     fn as_fungible(&self) -> FungibleBucket;
 
     fn as_non_fungible(&self) -> NonFungibleBucket;
-
-    fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O;
 }
 
 pub trait ScryptoFungibleBucket {
@@ -200,6 +202,17 @@ impl ScryptoBucket for Bucket {
         self.amount() == 0.into()
     }
 
+    fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        LocalAuthZone::push(self.create_proof_of_all());
+        let output = f();
+        LocalAuthZone::pop()
+            .expect("Authorized closure changed auth zone proof stack")
+            .drop();
+        output
+    }
+}
+
+impl ScryptoGenericBucket for Bucket {
     fn as_fungible(&self) -> FungibleBucket {
         assert!(
             self.resource_address()
@@ -207,7 +220,7 @@ impl ScryptoBucket for Bucket {
                 .is_global_fungible_resource_manager(),
             "Not a fungible bucket"
         );
-        FungibleBucket(Bucket(self.0))
+        FungibleBucket(Self(self.0))
     }
 
     fn as_non_fungible(&self) -> NonFungibleBucket {
@@ -217,16 +230,7 @@ impl ScryptoBucket for Bucket {
                 .is_global_non_fungible_resource_manager(),
             "Not a non-fungible bucket"
         );
-        NonFungibleBucket(Bucket(self.0))
-    }
-
-    fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        LocalAuthZone::push(self.create_proof_of_all());
-        let output = f();
-        LocalAuthZone::pop()
-            .expect("Authorized closure changed auth zone proof stack")
-            .drop();
-        output
+        NonFungibleBucket(Self(self.0))
     }
 }
 
@@ -287,14 +291,6 @@ impl ScryptoBucket for FungibleBucket {
 
     fn is_empty(&self) -> bool {
         self.0.is_empty()
-    }
-
-    fn as_fungible(&self) -> FungibleBucket {
-        self.0.as_fungible()
-    }
-
-    fn as_non_fungible(&self) -> NonFungibleBucket {
-        self.0.as_non_fungible()
     }
 
     fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O {
@@ -382,14 +378,6 @@ impl ScryptoBucket for NonFungibleBucket {
 
     fn is_empty(&self) -> bool {
         self.0.is_empty()
-    }
-
-    fn as_fungible(&self) -> FungibleBucket {
-        self.0.as_fungible()
-    }
-
-    fn as_non_fungible(&self) -> NonFungibleBucket {
-        self.0.as_non_fungible()
     }
 
     fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O {

@@ -234,6 +234,10 @@ pub const TRANSACTION_TRACKER: ComponentAddress = ComponentAddress::new_or_panic
     174, 143, 74, 150, 166, 49, 140, 99, 24, 198,
 ]);
 
+// Use TRANSACTION_TRACKER's NodeId as frame-owned object marker
+pub const FRAME_OWNED_GLOBAL_MARKER: GlobalAddress =
+    GlobalAddress::new_or_panic(TRANSACTION_TRACKER.into_node_id().0);
+
 //=========================================================================
 //=========================================================================
 

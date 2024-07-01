@@ -40,7 +40,7 @@ mod big_vault {
         }
 
         pub fn non_fungibles(&mut self, count: u32) -> IndexSet<NonFungibleLocalId> {
-            self.vault.as_non_fungible().non_fungible_local_ids(count)
+            self.vault.non_fungible_local_ids(count)
         }
     }
 }

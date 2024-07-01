@@ -110,9 +110,11 @@ impl From<BlueprintId> for GlobalCaller {
 }
 
 impl GlobalCaller {
-    pub fn is_none(&self) -> bool {
+    // Check if actor is a frame-owned object.
+    // See auth_module.rs for details.
+    pub fn is_frame_owned(&self) -> bool {
         match self {
-            GlobalCaller::GlobalObject(x) => x.as_node_id().eq(TRANSACTION_TRACKER.as_node_id()),
+            GlobalCaller::GlobalObject(x) => x.eq(&FRAME_OWNED_GLOBAL_MARKER),
             GlobalCaller::PackageBlueprint(_) => false,
         }
     }
