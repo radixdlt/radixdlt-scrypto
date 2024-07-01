@@ -547,10 +547,12 @@ where
         event_data: Vec<u8>,
         event_flags: EventFlags,
     ) -> Result<(), RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api.kernel_get_system().modules.apply_execution_cost(
             ExecutionCostingEntry::EmitEvent {
                 size: event_data.len(),
             },
+            depth,
         )?;
 
         // Locking the package info substate associated with the emitter's package
@@ -2201,14 +2203,13 @@ where
         costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
         // Skip client-side costing requested by TransactionProcessor
-        if self.api.kernel_get_current_depth() == 1 {
+        let depth = self.api.kernel_get_current_depth();
+        if depth == 1 {
             return Ok(());
         }
 
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(match costing_entry {
+        self.api.kernel_get_system().modules.apply_execution_cost(
+            match costing_entry {
                 ClientCostingEntry::RunNativeCode {
                     package_address,
                     export_name,
@@ -2245,7 +2246,9 @@ where
                 ClientCostingEntry::Keccak256Hash { size } => {
                     ExecutionCostingEntry::Keccak256Hash { size }
                 }
-            })
+            },
+            depth,
+        )
     }
 
     #[trace_resources]
@@ -2257,11 +2260,13 @@ where
             .enabled_modules
             .contains(EnabledModules::COSTING);
 
+        let depth = self.api.kernel_get_current_depth();
+
         // We do costing up front
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::LockFee)?;
+            .apply_execution_cost(ExecutionCostingEntry::LockFee, depth)?;
 
         let event_data = {
             let lock_fee_event = LockFeeEvent { amount };
@@ -2279,6 +2284,7 @@ where
                 ExecutionCostingEntry::EmitEvent {
                     size: event_data.len(),
                 },
+                depth,
             )?;
         } else {
             self.emit_event_internal(
@@ -2332,10 +2338,11 @@ where
     }
 
     fn execution_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve, depth)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.execution_cost_unit_limit())
@@ -2347,10 +2354,11 @@ where
     }
 
     fn execution_cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve, depth)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.execution_cost_unit_price())
@@ -2362,10 +2370,11 @@ where
     }
 
     fn finalization_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve, depth)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.finalization_cost_unit_limit())
@@ -2377,10 +2386,11 @@ where
     }
 
     fn finalization_cost_unit_price(&mut self) -> Result<Decimal, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve, depth)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.finalization_cost_unit_price())
@@ -2392,9 +2402,10 @@ where
     }
 
     fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_2(ExecutionCostingEntry::QueryFeeReserve)
+                .apply_execution_cost_2(ExecutionCostingEntry::QueryFeeReserve, depth)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
         }
 
@@ -2408,9 +2419,10 @@ where
     }
 
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_2(ExecutionCostingEntry::QueryCostingModule)
+                .apply_execution_cost_2(ExecutionCostingEntry::QueryCostingModule, depth)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
             Ok(costing.config.max_per_function_royalty_in_xrd)
         } else {
@@ -2421,10 +2433,11 @@ where
     }
 
     fn tip_percentage(&mut self) -> Result<u32, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve, depth)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.tip_percentage())
@@ -2436,10 +2449,11 @@ where
     }
 
     fn fee_balance(&mut self) -> Result<Decimal, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve, depth)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.fee_balance())
@@ -2462,10 +2476,11 @@ where
 {
     #[trace_resources]
     fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor, depth)?;
 
         self.current_actor()
             .blueprint_id()
@@ -2474,10 +2489,11 @@ where
 
     #[trace_resources]
     fn actor_get_node_id(&mut self, ref_handle: ActorRefHandle) -> Result<NodeId, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor, depth)?;
 
         let actor_ref: ActorObjectRef = ref_handle.try_into()?;
 
@@ -2548,10 +2564,11 @@ where
         object_handle: ActorStateHandle,
         feature: &str,
     ) -> Result<bool, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryActor)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryActor, depth)?;
 
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
@@ -2796,10 +2813,11 @@ where
 {
     #[trace_resources]
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::QueryTransactionHash)?;
+            .apply_execution_cost(ExecutionCostingEntry::QueryTransactionHash, depth)?;
 
         if let Some(hash) = self.api.kernel_get_system().modules.transaction_hash() {
             Ok(hash)
@@ -2812,10 +2830,11 @@ where
 
     #[trace_resources]
     fn generate_ruid(&mut self) -> Result<[u8; 32], RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api
             .kernel_get_system()
             .modules
-            .apply_execution_cost(ExecutionCostingEntry::GenerateRuid)?;
+            .apply_execution_cost(ExecutionCostingEntry::GenerateRuid, depth)?;
 
         if let Some(ruid) = self.api.kernel_get_system().modules.generate_ruid() {
             Ok(ruid)
@@ -2828,9 +2847,10 @@ where
 
     #[trace_resources]
     fn bech32_encode_address(&mut self, address: GlobalAddress) -> Result<String, RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         if let Some(costing) = self.api.kernel_get_system().modules.costing_mut() {
             costing
-                .apply_execution_cost_2(ExecutionCostingEntry::EncodeBech32Address)
+                .apply_execution_cost_2(ExecutionCostingEntry::EncodeBech32Address, depth)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
         }
 
@@ -2848,10 +2868,12 @@ where
 
     #[trace_resources]
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api.kernel_get_system().modules.apply_execution_cost(
             ExecutionCostingEntry::EmitLog {
                 size: message.len(),
             },
+            depth,
         )?;
 
         self.api
@@ -2863,10 +2885,12 @@ where
     }
 
     fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        let depth = self.api.kernel_get_current_depth();
         self.api.kernel_get_system().modules.apply_execution_cost(
             ExecutionCostingEntry::Panic {
                 size: message.len(),
             },
+            depth,
         )?;
 
         self.api

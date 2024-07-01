@@ -115,7 +115,7 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(StableReferenceType::Global)
     }
 
-    fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn on_pin_node(&mut self, _depth: usize, _node_id: &NodeId) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -168,24 +168,37 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn on_set_substate(&mut self, _event: SetSubstateEvent) -> Result<(), RuntimeError> {
+    fn on_set_substate(
+        &mut self,
+        _depth: usize,
+        _event: SetSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_remove_substate(&mut self, _event: RemoveSubstateEvent) -> Result<(), RuntimeError> {
+    fn on_remove_substate(
+        &mut self,
+        _depth: usize,
+        _event: RemoveSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_scan_keys(&mut self, _event: ScanKeysEvent) -> Result<(), RuntimeError> {
+    fn on_scan_keys(&mut self, _depth: usize, _event: ScanKeysEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_drain_substates(&mut self, _event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
+    fn on_drain_substates(
+        &mut self,
+        _depth: usize,
+        _event: DrainSubstatesEvent,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     fn on_scan_sorted_substates(
         &mut self,
+        _depth: usize,
         _event: ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -248,6 +261,7 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn on_mark_substate_as_transient(
         &mut self,
+        _depth: usize,
         _node_id: &NodeId,
         _partition_number: &PartitionNumber,
         _substate_key: &SubstateKey,

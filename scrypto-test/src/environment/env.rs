@@ -174,9 +174,9 @@ impl<D> TestEnvironment<D>
 where
     D: SubstateDatabase + CommittableSubstateDatabase + 'static,
 {
-    //=============
-    // Invocations
-    //=============
+    // ===================
+    // region:invocations
+    // ===================
 
     /// Invokes a function on the provided blueprint and package with the given arguments.
     ///
@@ -365,9 +365,29 @@ where
             .map(|rtn| scrypto_decode(&rtn).expect("Scrypto decoding of returns failed"))
     }
 
-    //====================================
-    // Manipulation of the Kernel Modules
-    //====================================
+    //=======================
+    // endregion:invocations
+    // region:kernel-access
+    //=======================
+
+    pub fn with_kernel<F, O>(&mut self, callback: F) -> O
+    where
+        F: FnOnce(&TestKernel<'_, D>) -> O,
+    {
+        self.0.with_kernel(callback)
+    }
+
+    pub fn with_kernel_mut<F, O>(&mut self, callback: F) -> O
+    where
+        F: FnOnce(&mut TestKernel<'_, D>) -> O,
+    {
+        self.0.with_kernel_mut(callback)
+    }
+
+    //=========================
+    // endregion:kernel-access
+    // region:kernel-modules
+    //=========================
 
     /// Enables the kernel trace kernel module of the Radix Engine.
     pub fn enable_kernel_trace_module(&mut self) {
@@ -612,9 +632,10 @@ where
         })
     }
 
-    //=======
-    // State
-    //=======
+    //==========================
+    // endregion:kernel-modules
+    // region:state
+    //==========================
 
     /// Reads the state of a component and allows for a callback to be executed over the decoded
     /// state.
@@ -689,9 +710,10 @@ where
         Ok(rtn)
     }
 
-    //===================
-    // Epoch & Timestamp
-    //===================
+    //========================
+    // endregion:state
+    // region:epoch&timestamp
+    //========================
 
     /// Gets the current epoch from the Consensus Manager.
     pub fn get_current_epoch(&mut self) -> Epoch {
@@ -757,9 +779,10 @@ where
         .unwrap();
     }
 
-    //=========
-    // Helpers
-    //=========
+    //===========================
+    // endregion:epoch&timestamp
+    // region:helpers
+    //===========================
 
     /// Allows us to perform some action as another actor.
     ///
@@ -869,6 +892,10 @@ where
 
         Ok(rtn)
     }
+
+    //===================
+    // endregion:helpers
+    //===================
 }
 
 impl Default for TestEnvironment<InMemorySubstateDatabase> {

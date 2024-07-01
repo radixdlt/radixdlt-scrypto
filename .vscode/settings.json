@@ -24,6 +24,7 @@
         "descendents",
         "eddsa",
         "endregion",
+        "flamechart",
         "flamegraph",
         "Formattable",
         "generification",
