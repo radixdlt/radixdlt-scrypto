@@ -173,7 +173,7 @@ impl BucketFactory {
                     let mut iter = non_fungibles
                         .keys()
                         .map(|id| id.id_type())
-                        .collect::<HashSet<NonFungibleIdType>>()
+                        .collect::<IndexSet<NonFungibleIdType>>()
                         .into_iter();
                     let Some(id_type) = iter.next() else {
                         return Ok(true);
