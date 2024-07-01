@@ -64,7 +64,9 @@ pub trait ScryptoProof {
     fn clone(&self) -> Self;
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+}
 
+pub trait ScryptoGenericProof {
     fn as_fungible(&self) -> CheckedFungibleProof;
 
     fn as_non_fungible(&self) -> CheckedNonFungibleProof;
@@ -343,7 +345,9 @@ impl ScryptoProof for CheckedProof {
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         self.0.authorize(f)
     }
+}
 
+impl ScryptoGenericProof for CheckedProof {
     fn as_fungible(&self) -> CheckedFungibleProof {
         assert!(
             self.resource_address()
@@ -351,7 +355,7 @@ impl ScryptoProof for CheckedProof {
                 .is_global_fungible_resource_manager(),
             "Not a fungible proof"
         );
-        CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
+        CheckedFungibleProof(Self(Proof(self.0 .0)))
     }
 
     fn as_non_fungible(&self) -> CheckedNonFungibleProof {
@@ -361,7 +365,7 @@ impl ScryptoProof for CheckedProof {
                 .is_global_non_fungible_resource_manager(),
             "Not a non-fungible proof"
         );
-        CheckedNonFungibleProof(CheckedProof(Proof(self.0 .0)))
+        CheckedNonFungibleProof(Self(Proof(self.0 .0)))
     }
 }
 
@@ -398,14 +402,6 @@ impl ScryptoProof for CheckedFungibleProof {
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         self.0.authorize(f)
-    }
-
-    fn as_fungible(&self) -> CheckedFungibleProof {
-        self.0.as_fungible()
-    }
-
-    fn as_non_fungible(&self) -> CheckedNonFungibleProof {
-        self.0.as_non_fungible()
     }
 }
 
@@ -444,14 +440,6 @@ impl ScryptoProof for CheckedNonFungibleProof {
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         self.0.authorize(f)
-    }
-
-    fn as_fungible(&self) -> CheckedFungibleProof {
-        self.0.as_fungible()
-    }
-
-    fn as_non_fungible(&self) -> CheckedNonFungibleProof {
-        self.0.as_non_fungible()
     }
 }
 
