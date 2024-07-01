@@ -58,7 +58,7 @@ impl AuthZone {
 
         // Global Caller
         if let Some((global_caller, _global_caller_reference)) = &self.global_caller {
-            if !global_caller.is_none() {
+            if !global_caller.is_frame_owned() {
                 let non_fungible_global_id =
                     NonFungibleGlobalId::global_caller_badge(global_caller.clone());
                 virtual_proofs.insert(non_fungible_global_id);
