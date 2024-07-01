@@ -42,11 +42,13 @@ pub trait ScryptoVault {
         withdraw_strategy: WithdrawStrategy,
     ) -> Self::BucketType;
 
+    fn burn<A: Into<Decimal>>(&mut self, amount: A);
+}
+
+pub trait ScryptoGenericVault {
     fn as_fungible(&self) -> FungibleVault;
 
     fn as_non_fungible(&self) -> NonFungibleVault;
-
-    fn burn<A: Into<Decimal>>(&mut self, amount: A);
 }
 
 pub trait ScryptoFungibleVault {
@@ -187,22 +189,6 @@ impl ScryptoVault for Vault {
         self.amount() == 0.into()
     }
 
-    fn as_fungible(&self) -> FungibleVault {
-        assert!(
-            self.0.as_node_id().is_internal_fungible_vault(),
-            "Not a fungible vault"
-        );
-        FungibleVault(Vault(self.0))
-    }
-
-    fn as_non_fungible(&self) -> NonFungibleVault {
-        assert!(
-            self.0.as_node_id().is_internal_non_fungible_vault(),
-            "Not a non-fungible vault"
-        );
-        NonFungibleVault(Vault(self.0))
-    }
-
     fn burn<A: Into<Decimal>>(&mut self, amount: A) {
         let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
@@ -213,6 +199,24 @@ impl ScryptoVault for Vault {
             .unwrap(),
         );
         scrypto_decode(&rtn).unwrap()
+    }
+}
+
+impl ScryptoGenericVault for Vault {
+    fn as_fungible(&self) -> FungibleVault {
+        assert!(
+            self.0.as_node_id().is_internal_fungible_vault(),
+            "Not a fungible vault"
+        );
+        FungibleVault(Self(self.0))
+    }
+
+    fn as_non_fungible(&self) -> NonFungibleVault {
+        assert!(
+            self.0.as_node_id().is_internal_non_fungible_vault(),
+            "Not a non-fungible vault"
+        );
+        NonFungibleVault(Self(self.0))
     }
 }
 
@@ -269,14 +273,6 @@ impl ScryptoVault for FungibleVault {
         withdraw_strategy: WithdrawStrategy,
     ) -> Self::BucketType {
         FungibleBucket(self.0.take_advanced(amount, withdraw_strategy))
-    }
-
-    fn as_fungible(&self) -> FungibleVault {
-        self.0.as_fungible()
-    }
-
-    fn as_non_fungible(&self) -> NonFungibleVault {
-        self.0.as_non_fungible()
     }
 
     fn burn<A: Into<Decimal>>(&mut self, amount: A) {
@@ -391,14 +387,6 @@ impl ScryptoVault for NonFungibleVault {
         withdraw_strategy: WithdrawStrategy,
     ) -> Self::BucketType {
         NonFungibleBucket(self.0.take_advanced(amount, withdraw_strategy))
-    }
-
-    fn as_fungible(&self) -> FungibleVault {
-        self.0.as_fungible()
-    }
-
-    fn as_non_fungible(&self) -> NonFungibleVault {
-        self.0.as_non_fungible()
     }
 
     fn burn<A: Into<Decimal>>(&mut self, amount: A) {

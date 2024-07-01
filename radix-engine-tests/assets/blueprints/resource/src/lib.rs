@@ -181,9 +181,7 @@ mod resource_test {
                 burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
-            let tokens = badge
-                .as_fungible()
-                .authorize_with_amount(dec!(1), || resource_manager.mint(amount));
+            let tokens = badge.authorize_with_amount(dec!(1), || resource_manager.mint(amount));
             (badge.into(), tokens.into(), resource_manager)
         }
 
@@ -485,9 +483,8 @@ mod resource_types {
         }
 
         pub fn produce_fungible_things() -> (FungibleBucket, FungibleProof, FungibleVault) {
-            let mut bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-                .mint_initial_supply(100)
-                .as_fungible();
+            let mut bucket =
+                ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
             let proof = bucket.create_proof_of_amount(dec!(1));
             let vault = FungibleVault::with_bucket(bucket.take(5));
 
@@ -529,8 +526,7 @@ mod resource_types {
                                 available: true,
                             },
                         ),
-                    ])
-                    .as_non_fungible();
+                    ]);
             let proof =
                 bucket.create_proof_of_non_fungibles(&indexset!(NonFungibleLocalId::integer(0)));
             let vault = NonFungibleVault::with_bucket(bucket.take(1));
