@@ -106,93 +106,155 @@ impl AttributeMap for BTreeMap<String, AttributeValue> {
 pub fn extract_sbor_typed_attributes(
     attributes: &[Attribute],
 ) -> Result<BTreeMap<String, AttributeValue>> {
-    extract_typed_attributes(attributes, "sbor")
+    extract_wrapped_typed_attributes(attributes, "sbor")
 }
 
-/// Permits attribute of the form #[{name}(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.
-pub fn extract_typed_attributes(
+pub fn extract_wrapped_root_attributes(
     attributes: &[Attribute],
-    name: &str,
-) -> Result<BTreeMap<String, AttributeValue>> {
+    wrapping_prefix: &str,
+) -> Result<Vec<Meta>> {
+    let inner_attributes = attributes.iter()
+        .filter(|attribute| attribute.path.is_ident(wrapping_prefix))
+        .map(|attribute| -> Result<_> {
+            let Ok(meta) = attribute.parse_meta() else {
+                return Err(Error::new(
+                    attribute.span(),
+                    format!("Attribute content is not parsable as meta content"),
+                ));
+            };
+
+            let Meta::List(MetaList {
+                nested, ..
+            }) = meta
+            else {
+                return Err(Error::new(
+                    attribute.span(),
+                    format!("Expected list-based attribute as #[{wrapping_prefix}(..)]"),
+                ));
+            };
+
+            Ok(nested)
+        })
+        .flatten_ok()
+        .map_ok(|nested_meta| -> Result<_> {
+            let NestedMeta::Meta(meta) = nested_meta
+            else {
+                return Err(Error::new(
+                    nested_meta.span(),
+                    format!("Expected list-based attribute as #[{wrapping_prefix}(...inner_attributes...)]"),
+                ));
+            };
+            Ok(meta)
+        })
+        .collect::<Result<Result<_>>>()??;
+
+    Ok(inner_attributes)
+}
+
+pub fn extract_wrapped_inner_attributes<'m>(
+    inner_attributes: &'m [Meta],
+    error_message: &str,
+) -> Result<BTreeMap<String, (Ident, Option<Vec<&'m NestedMeta>>)>> {
     let mut fields = BTreeMap::new();
-    for attribute in attributes {
-        if !attribute.path.is_ident(name) {
-            continue;
+    for meta in inner_attributes {
+        let (name, inner) = extract_wrapping_inner_attribute(meta, error_message)?;
+        fields.insert(name.to_string(), (name.clone(), inner));
+    }
+    Ok(fields)
+}
+
+/// Only matches xyz OR xyz() OR xyz(INNER1) OR xyz(INNER1, INNER2, ..)
+pub fn extract_wrapping_inner_attribute<'m>(
+    meta: &'m Meta,
+    error_message: &str,
+) -> Result<(&'m Ident, Option<Vec<&'m NestedMeta>>)> {
+    match meta {
+        Meta::Path(path) => {
+            if let Some(ident) = path.get_ident() {
+                Ok((ident, None))
+            } else {
+                Err(Error::new(path.span(), error_message))
+            }
         }
-        let Ok(meta) = attribute.parse_meta() else {
-            return Err(Error::new(
-                attribute.span(),
-                format!("Attribute content is not valid"),
-            ));
-        };
-        let Meta::List(MetaList {
-            nested: options, ..
-        }) = meta
-        else {
-            return Err(Error::new(
-                attribute.span(),
-                format!("Expected list-based attribute as #[{name}(..)]"),
-            ));
-        };
-        let error_message = format!("Expected attribute of the form #[{name}(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.");
-        for option in options.into_iter() {
-            match option {
-                NestedMeta::Meta(m) => match m {
-                    Meta::Path(path) => {
-                        if let Some(ident) = path.get_ident() {
-                            fields.insert(ident.to_string(), AttributeValue::None(path.span()));
-                        } else {
-                            return Err(Error::new(path.span(), error_message));
-                        }
-                    }
-                    Meta::NameValue(name_value) => {
-                        if let Some(ident) = name_value.path.get_ident() {
-                            fields.insert(ident.to_string(), AttributeValue::Lit(name_value.lit));
-                        } else {
-                            return Err(Error::new(name_value.path.span(), error_message));
-                        }
-                    }
-                    Meta::List(MetaList { nested, path, .. }) => {
-                        if let Some(ident) = path.get_ident() {
-                            if nested.len() == 1 {
-                                match nested.into_iter().next().unwrap() {
-                                    NestedMeta::Meta(inner_meta) => match inner_meta {
-                                        Meta::Path(path) => {
-                                            fields.insert(
-                                                ident.to_string(),
-                                                AttributeValue::Path(path.clone()),
-                                            );
-                                        }
-                                        _ => {
-                                            return Err(Error::new(
-                                                inner_meta.span(),
-                                                error_message,
-                                            ));
-                                        }
-                                    },
-                                    NestedMeta::Lit(lit) => {
-                                        fields.insert(
-                                            ident.to_string(),
-                                            AttributeValue::Lit(lit.clone()),
-                                        );
-                                    }
-                                }
-                            } else {
-                                return Err(Error::new(nested.span(), error_message));
+        Meta::List(MetaList { nested, path, .. }) => {
+            if let Some(ident) = path.get_ident() {
+                Ok((ident, Some(nested.iter().collect())))
+            } else {
+                Err(Error::new(path.span(), error_message))
+            }
+        }
+        _ => Err(Error::new(meta.span(), error_message)),
+    }
+}
+
+pub fn extract_typed_inner_attribute(
+    meta: &Meta,
+    error_message: &str,
+) -> Result<(String, AttributeValue)> {
+    match meta {
+        Meta::Path(path) => {
+            if let Some(ident) = path.get_ident() {
+                Ok((ident.to_string(), AttributeValue::None(path.span())))
+            } else {
+                Err(Error::new(path.span(), error_message))
+            }
+        }
+        Meta::NameValue(name_value) => {
+            if let Some(ident) = name_value.path.get_ident() {
+                Ok((
+                    ident.to_string(),
+                    AttributeValue::Lit(name_value.lit.clone()),
+                ))
+            } else {
+                Err(Error::new(name_value.path.span(), error_message))
+            }
+        }
+        Meta::List(MetaList { nested, path, .. }) => {
+            if let Some(ident) = path.get_ident() {
+                if nested.len() == 1 {
+                    match nested.into_iter().next().unwrap() {
+                        NestedMeta::Meta(inner_meta) => match inner_meta {
+                            Meta::Path(path) => {
+                                Ok((ident.to_string(), AttributeValue::Path(path.clone())))
                             }
-                        } else {
-                            return Err(Error::new(path.span(), error_message));
+                            _ => Err(Error::new(inner_meta.span(), error_message)),
+                        },
+                        NestedMeta::Lit(lit) => {
+                            Ok((ident.to_string(), AttributeValue::Lit(lit.clone())))
                         }
                     }
-                },
-                _ => {
-                    return Err(Error::new(option.span(), error_message));
+                } else {
+                    Err(Error::new(nested.span(), error_message))
                 }
+            } else {
+                Err(Error::new(path.span(), error_message))
             }
         }
     }
+}
 
+pub fn extract_inner_typed_attributes<'m>(
+    inner_attributes: impl Iterator<Item = &'m Meta>,
+    error_message: &str,
+) -> Result<BTreeMap<String, AttributeValue>> {
+    let mut fields = BTreeMap::new();
+    for meta in inner_attributes {
+        let (name, value) = extract_typed_inner_attribute(meta, error_message)?;
+        fields.insert(name, value);
+    }
     Ok(fields)
+}
+
+/// Permits attribute of the form #[{name}(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y.
+pub fn extract_wrapped_typed_attributes(
+    attributes: &[Attribute],
+    name: &str,
+) -> Result<BTreeMap<String, AttributeValue>> {
+    let inner_attributes = extract_wrapped_root_attributes(attributes, name)?;
+    extract_inner_typed_attributes(
+        inner_attributes.iter(),
+        &format!("Expected attribute of the form #[{name}(opt1, opt2 = X, opt3(Y))] for some literal X or some path or literal Y."),
+    )
 }
 
 pub(crate) enum SourceVariantData {
@@ -241,7 +303,7 @@ pub(crate) fn process_enum_variants(
         .iter()
         .enumerate()
         .map(|(i, variant)| -> Result<_> {
-            let mut variant_attributes = extract_typed_attributes(&variant.attrs, "sbor")?;
+            let mut variant_attributes = extract_wrapped_typed_attributes(&variant.attrs, "sbor")?;
             let fields_data = process_fields(&variant.fields)?;
             let source_variant = variant.clone();
             if let Some(_) = variant_attributes.remove("unreachable") {
@@ -1056,7 +1118,7 @@ mod tests {
         let attr2: Attribute = parse_quote! {
             #[sbor(skip3)]
         };
-        let extracted = extract_typed_attributes(&[attr, attr2], "sbor").unwrap();
+        let extracted = extract_wrapped_typed_attributes(&[attr, attr2], "sbor").unwrap();
         assert_eq!(extracted.get_bool_value("skip").unwrap().value(), true);
         assert_eq!(extracted.get_bool_value("skip2").unwrap().value(), false);
         assert_eq!(extracted.get_bool_value("skip3").unwrap().value(), true);

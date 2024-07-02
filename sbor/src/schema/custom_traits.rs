@@ -34,7 +34,7 @@ pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
     type CustomTypeKindLabel: CustomTypeKindLabel;
     /// Should only be used for default encoding of a schema, where it's required.
     /// Typically you should start from a CustomExtension and not use this.
-    type DefaultCustomExtension: CustomExtension<CustomSchema = Self>;
+    type DefaultCustomExtension: ValidatableCustomExtension<(), CustomSchema = Self>;
 
     fn linearize_type_kind(
         type_kind: Self::CustomAggregatorTypeKind,

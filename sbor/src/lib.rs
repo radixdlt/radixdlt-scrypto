@@ -68,8 +68,8 @@ pub use versioned::*;
 // Re-export derives
 extern crate sbor_derive;
 pub use sbor_derive::{
-    eager_replace, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor, Categorize,
-    Decode, Describe, Encode, PermitSborAttributes, Sbor,
+    eager_replace, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode, BasicSbor,
+    BasicSborAssertion, Categorize, Decode, Describe, Encode, PermitSborAttributes, Sbor,
 };
 
 // extern crate self as X; in lib.rs allows ::X and X to resolve to this crate inside this crate.
@@ -108,11 +108,10 @@ pub mod prelude {
     pub use crate::schema::prelude::*;
     pub use crate::value::{CustomValue as SborCustomValue, Value as SborValue};
     pub use crate::value_kind::*;
-    pub use crate::vec_traits::*;
     pub use crate::versioned::*;
     pub use crate::{
         basic_decode, basic_encode, BasicCategorize, BasicDecode, BasicDescribe, BasicEncode,
-        BasicSbor,
+        BasicSbor, BasicSborAssertion,
     };
     pub use crate::{define_single_versioned, define_versioned};
     pub use crate::{Categorize, Decode, Encode, Sbor, SborEnum, SborTuple};
@@ -121,4 +120,7 @@ pub mod prelude {
 
 pub(crate) mod internal_prelude {
     pub use crate::prelude::*;
+    // These are mostly used for more advanced use cases,
+    // so aren't included in the general prelude
+    pub use crate::vec_traits::*;
 }

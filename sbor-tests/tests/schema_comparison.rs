@@ -1,6 +1,6 @@
 use sbor::prelude::*;
 use sbor::schema::*;
-use sbor::{BasicTypeAggregator, BasicValue, ComparisonSchema, NoCustomSchema, NoCustomTypeKind};
+use sbor::{BasicTypeAggregator, BasicValue, ComparableSchema, NoCustomSchema, NoCustomTypeKind};
 
 //=====================
 // HELPER CODE / TRAITS
@@ -19,62 +19,68 @@ impl<T: Describe<NoCustomTypeKind>> DerivableTypeSchema for T {}
 
 fn assert_equality<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
     let settings = SchemaComparisonSettings::require_equality();
-    assert_single_type_comparison::<NoCustomSchema>(
+    compare_single_type_schemas::<NoCustomSchema>(
         &settings,
         &T1::single_type_schema_version(),
         &T2::single_type_schema_version(),
     )
+    .assert_valid("base", "compared")
 }
 
 fn assert_equality_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
     let settings = SchemaComparisonSettings::require_equality()
         .metadata_settings(SchemaComparisonMetadataSettings::allow_all_changes());
-    assert_single_type_comparison::<NoCustomSchema>(
+    compare_single_type_schemas::<NoCustomSchema>(
         &settings,
         &T1::single_type_schema_version(),
         &T2::single_type_schema_version(),
     )
+    .assert_valid("base", "compared")
 }
 
 fn assert_extension<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
     let settings = SchemaComparisonSettings::allow_extension();
-    assert_single_type_comparison::<NoCustomSchema>(
+    compare_single_type_schemas::<NoCustomSchema>(
         &settings,
         &T1::single_type_schema_version(),
         &T2::single_type_schema_version(),
     )
+    .assert_valid("base", "compared")
 }
 
 fn assert_extension_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
     let settings = SchemaComparisonSettings::allow_extension()
         .metadata_settings(SchemaComparisonMetadataSettings::allow_all_changes());
-    assert_single_type_comparison::<NoCustomSchema>(
+    compare_single_type_schemas::<NoCustomSchema>(
         &settings,
         &T1::single_type_schema_version(),
         &T2::single_type_schema_version(),
     )
+    .assert_valid("base", "compared")
 }
 
 fn assert_type_collection_equality(
-    base: NamedTypesSchema<NoCustomSchema>,
-    compared: NamedTypesSchema<NoCustomSchema>,
+    base: TypeCollectionSchema<NoCustomSchema>,
+    compared: TypeCollectionSchema<NoCustomSchema>,
 ) {
-    assert_type_collection_comparison(
+    compare_type_collection_schemas(
         &SchemaComparisonSettings::require_equality(),
         &base,
         &compared,
-    );
+    )
+    .assert_valid("base", "compared");
 }
 
 fn assert_type_collection_extension(
-    base: NamedTypesSchema<NoCustomSchema>,
-    compared: NamedTypesSchema<NoCustomSchema>,
+    base: TypeCollectionSchema<NoCustomSchema>,
+    compared: TypeCollectionSchema<NoCustomSchema>,
 ) {
-    assert_type_collection_comparison(
+    compare_type_collection_schemas(
         &SchemaComparisonSettings::allow_extension(),
         &base,
         &compared,
-    );
+    )
+    .assert_valid("base", "compared");
 }
 
 //=============
@@ -359,12 +365,12 @@ fn base_schema_not_covered_by_root_types_fails() {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
         aggregator.add_root_type::<MyEnum>("enum");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
     let compared_schema = {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
     // Forget about a root type - this leaves the schema not fully covered.
     base_schema.type_ids.swap_remove("enum");
@@ -378,13 +384,13 @@ fn compared_schema_not_covered_by_root_types_fails() {
     let base_schema = {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
     let mut compared_schema = {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
         aggregator.add_root_type::<MyEnum>("enum");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
     // Forget about a root type - this leaves the schema not fully covered.
     compared_schema.type_ids.swap_remove("enum");
@@ -402,12 +408,12 @@ fn removed_root_type_fails_comparison() {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
         aggregator.add_root_type::<MyEnum>("enum");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
     let compared_schema = {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
 
     assert_type_collection_extension(base_schema, compared_schema);
@@ -418,13 +424,13 @@ fn under_extension_added_root_type_succeeds() {
     let base_schema = {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
     let compared_schema = {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
         aggregator.add_root_type::<MyEnum>("enum");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
 
     assert_type_collection_extension(base_schema, compared_schema);
@@ -436,13 +442,13 @@ fn under_equality_added_root_type_fails() {
     let base_schema = {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
     let compared_schema = {
         let mut aggregator = BasicTypeAggregator::new();
         aggregator.add_root_type::<MyStruct>("struct");
         aggregator.add_root_type::<MyEnum>("enum");
-        aggregator.generate_named_types_schema()
+        aggregator.generate_type_collection_schema()
     };
 
     assert_type_collection_equality(base_schema, compared_schema);

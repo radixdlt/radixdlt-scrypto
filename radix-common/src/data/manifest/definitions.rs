@@ -1,3 +1,5 @@
+use vec_traits::vec_decode_with_nice_error;
+
 use crate::internal_prelude::*;
 
 pub use crate::constants::MANIFEST_SBOR_V1_MAX_DEPTH;
@@ -103,44 +105,40 @@ pub fn manifest_decode<T: ManifestDecode>(buf: &[u8]) -> Result<T, DecodeError> 
     manifest_decode_with_depth_limit(buf, MANIFEST_SBOR_V1_MAX_DEPTH)
 }
 
+pub fn manifest_decode_with_depth_limit<T: ManifestDecode>(
+    buf: &[u8],
+    depth_limit: usize,
+) -> Result<T, DecodeError> {
+    ManifestDecoder::new(buf, depth_limit).decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
+}
+
 /// Decodes a data structure from a byte array.
 ///
 /// If an error occurs, the type's schema is exported and used to give a better error message.
 ///
 /// NOTE:
 /// * The error path runs very slowly. This should only be used where errors are NOT expected.
+/// * This should not be used where the size of compiled code is an issue, as it will pull
+///   in the schema aggregation code which is large.
 pub fn manifest_decode_with_nice_error<T: ManifestDecode + ScryptoDescribe>(
     buf: &[u8],
 ) -> Result<T, String> {
-    match manifest_decode(buf) {
-        Ok(value) => Ok(value),
-        Err(err) => {
-            let (local_type_id, schema) =
-                generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
-            let schema = schema.as_unique_version();
-            match validate_payload_against_schema::<ManifestCustomExtension, _>(
-                buf,
-                schema,
-                local_type_id,
-                &(),
-                SCRYPTO_SBOR_V1_MAX_DEPTH,
-            ) {
-                Ok(()) => {
-                    // This case is unexpected. We got a decode error, but it's valid against the schema.
-                    // In this case, let's just debug-print the DecodeError.
-                    Err(format!("{err:?}"))
-                }
-                Err(err) => Err(err.error_message(schema)),
-            }
-        }
-    }
+    vec_decode_with_nice_error::<ManifestCustomExtension, T>(buf, MANIFEST_SBOR_V1_MAX_DEPTH)
 }
 
-pub fn manifest_decode_with_depth_limit<T: ManifestDecode>(
+/// Decodes a data structure from a byte array.
+///
+/// If an error occurs, the type's schema is exported and used to give a better error message.
+///
+/// NOTE:
+/// * The error path runs very slowly. This should only be used where errors are NOT expected.
+/// * This should not be used where the size of compiled code is an issue, as it will pull
+///   in the schema aggregation code which is large.
+pub fn manifest_decode_with_depth_limit_and_nice_error<T: ManifestDecode + ScryptoDescribe>(
     buf: &[u8],
     depth_limit: usize,
-) -> Result<T, DecodeError> {
-    ManifestDecoder::new(buf, depth_limit).decode_payload(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)
+) -> Result<T, String> {
+    vec_decode_with_nice_error::<ManifestCustomExtension, T>(buf, depth_limit)
 }
 
 pub fn to_manifest_value<T: ManifestEncode + ?Sized>(

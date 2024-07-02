@@ -1,6 +1,6 @@
 use crate::{
-    internal_prelude::*, CustomExtension, CustomSchema, Decoder as _, Describe, Encoder as _,
-    VecDecoder, VecEncoder,
+    internal_prelude::*, validate_payload_against_schema, CustomExtension, CustomSchema,
+    Decoder as _, Describe, Encoder as _, ValidatableCustomExtension, VecDecoder, VecEncoder,
 };
 
 pub trait VecEncode<X: CustomValueKind>: for<'a> Encode<X, VecEncoder<'a, X>> {}
@@ -24,6 +24,38 @@ pub fn vec_decode<E: CustomExtension, T: VecDecode<E::CustomValueKind>>(
     max_depth: usize,
 ) -> Result<T, DecodeError> {
     VecDecoder::<'_, E::CustomValueKind>::new(buf, max_depth).decode_payload(E::PAYLOAD_PREFIX)
+}
+
+pub fn vec_decode_with_nice_error<
+    E: ValidatableCustomExtension<()>,
+    T: VecDecode<E::CustomValueKind>
+        + Describe<<E::CustomSchema as CustomSchema>::CustomAggregatorTypeKind>,
+>(
+    buf: &[u8],
+    max_depth: usize,
+) -> Result<T, String> {
+    vec_decode::<E, T>(buf, max_depth)
+        .map_err(|err| create_nice_error_following_decode_error::<E, T>(buf, err, max_depth))
+}
+
+pub fn create_nice_error_following_decode_error<
+    E: ValidatableCustomExtension<()>,
+    T: Describe<<E::CustomSchema as CustomSchema>::CustomAggregatorTypeKind>,
+>(
+    buf: &[u8],
+    decode_error: DecodeError,
+    max_depth: usize,
+) -> String {
+    let (local_type_id, schema) = generate_full_schema_from_single_type::<T, E::CustomSchema>();
+    let schema = schema.as_unique_version();
+    match validate_payload_against_schema::<E, _>(buf, schema, local_type_id, &(), max_depth) {
+        Ok(()) => {
+            // This case is unexpected. We got a decode error, but it's valid against the schema.
+            // In this case, let's just debug-print the DecodeError.
+            format!("{decode_error:?}")
+        }
+        Err(err) => err.error_message(schema),
+    }
 }
 
 pub trait VecSbor<E: CustomExtension>:

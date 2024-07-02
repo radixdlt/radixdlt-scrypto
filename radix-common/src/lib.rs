@@ -35,7 +35,7 @@ pub use sbor::{Categorize, Decode, Encode, Sbor};
 extern crate radix_sbor_derive;
 pub use radix_sbor_derive::{
     ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
-    ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
+    ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor, ScryptoSborAssertion,
 };
 
 // extern crate self as X; in lib.rs allows ::X and X to resolve to this crate inside this crate.
@@ -60,7 +60,7 @@ pub mod prelude {
     // Exports from upstream libraries
     pub use radix_sbor_derive::{
         ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
-        ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
+        ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor, ScryptoSborAssertion,
     };
     pub use sbor::prelude::*;
     pub use sbor::*;
