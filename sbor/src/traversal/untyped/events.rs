@@ -4,22 +4,22 @@ use crate::*;
 use super::CustomTraversal;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LocatedTraversalEvent<'t, 'de, C: CustomTraversal> {
-    pub location: Location<'t, C>,
-    pub event: TraversalEvent<'de, C>,
+pub struct LocatedTraversalEvent<'t, 'de, T: CustomTraversal> {
+    pub location: Location<'t, T>,
+    pub event: TraversalEvent<'de, T>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TraversalEvent<'de, C: CustomTraversal> {
-    ContainerStart(ContainerHeader<C>),
-    ContainerEnd(ContainerHeader<C>),
-    TerminalValue(TerminalValueRef<'de, C>),
+pub enum TraversalEvent<'de, T: CustomTraversal> {
+    ContainerStart(ContainerHeader<T>),
+    ContainerEnd(ContainerHeader<T>),
+    TerminalValue(TerminalValueRef<'de, T>),
     TerminalValueBatch(TerminalValueBatchRef<'de>),
     End,
     DecodeError(DecodeError),
 }
 
-impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
+impl<'de, T: CustomTraversal> TraversalEvent<'de, T> {
     pub fn is_error(&self) -> bool {
         match self {
             TraversalEvent::DecodeError(_) => true,
@@ -31,7 +31,7 @@ impl<'de, C: CustomTraversal> TraversalEvent<'de, C> {
 /// The Location of the encoding - capturing both the byte offset in the payload, and also
 /// the container-path-based location in the SBOR value model.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Location<'t, C: CustomTraversal> {
+pub struct Location<'t, T: CustomTraversal> {
     /// An offset in the payload, where this `Location` starts.
     /// The meaning of this offset depends on the context of the event, eg:
     /// * For ContainerStart, this is the start of the value
@@ -44,12 +44,20 @@ pub struct Location<'t, C: CustomTraversal> {
     /// * For ContainerEnd, this is the end of the whole container value
     /// * For DecodeError, this is the location where the error occurred
     pub end_offset: usize,
-    /// The path of containers from the root to the current value.
-    /// If the event is ContainerStart/ContainerEnd, this does not include the newly started/ended container.
-    pub ancestor_path: &'t [ContainerState<C>],
+    /// The path of containers from the root to the current value. All containers in this list have `current_child_index` set.
+    /// Note that for certain events:
+    /// * For ContainerStart/ContainerEnd, this does NOT include the newly started/ended container.
+    /// * For TerminalValue/TerminalValueBatch, this includes all ancestors of that value/value batch.
+    /// * For DecodeError, it only includes ancestors where we have started to read their children.
+    /// * For End, this is an empty slice
+    pub ancestor_path: &'t [AncestorState<T>],
 }
 
-impl<'t, C: CustomTraversal> Location<'t, C> {
+impl<'t, T: CustomTraversal> Location<'t, T> {
+    pub fn get_latest_ancestor(&self) -> Option<&AncestorState<T>> {
+        self.ancestor_path.last()
+    }
+
     /// Gives the offset of the start of the value body (ignoring the value kind byte).
     /// The result is only valid if this location corresponds to a ContainerStart/TerminalValue/ContainerEnd event.
     pub fn get_start_offset_of_value_body(&self) -> usize {
@@ -71,11 +79,11 @@ impl<'t, C: CustomTraversal> Location<'t, C> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ContainerHeader<C: CustomTraversal> {
+pub enum ContainerHeader<T: CustomTraversal> {
     Tuple(TupleHeader),
     EnumVariant(EnumVariantHeader),
-    Array(ArrayHeader<C::CustomValueKind>),
-    Map(MapHeader<C::CustomValueKind>),
+    Array(ArrayHeader<T::CustomValueKind>),
+    Map(MapHeader<T::CustomValueKind>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -102,8 +110,8 @@ pub struct MapHeader<X: CustomValueKind> {
     pub length: usize,
 }
 
-impl<C: CustomTraversal> ContainerHeader<C> {
-    pub fn get_own_value_kind(&self) -> ValueKind<C::CustomValueKind> {
+impl<T: CustomTraversal> ContainerHeader<T> {
+    pub fn get_own_value_kind(&self) -> ValueKind<T::CustomValueKind> {
         match self {
             ContainerHeader::Tuple(_) => ValueKind::Tuple,
             ContainerHeader::EnumVariant(_) => ValueKind::Enum,
@@ -133,7 +141,7 @@ impl<C: CustomTraversal> ContainerHeader<C> {
     pub fn get_implicit_child_value_kind(
         &self,
         index: usize,
-    ) -> Option<ValueKind<C::CustomValueKind>> {
+    ) -> Option<ValueKind<T::CustomValueKind>> {
         match self {
             ContainerHeader::Tuple(_) => None,
             ContainerHeader::EnumVariant(_) => None,

@@ -14,14 +14,7 @@ impl<'t, 's, 'de, E: CustomExtension> TypedLocatedTraversalEvent<'t, 's, 'de, E>
         FullLocation {
             start_offset: self.location.location.start_offset,
             end_offset: self.location.location.end_offset,
-            ancestor_path: self
-                .location
-                .location
-                .ancestor_path
-                .iter()
-                .cloned()
-                .zip(self.location.typed_ancestor_path.iter().cloned())
-                .collect(),
+            ancestor_path: self.location.typed_ancestor_path(),
             current_value_info: self.event.current_value_info(),
         }
     }
@@ -77,7 +70,10 @@ impl<'de, E: CustomExtension> TypedTraversalEvent<'de, E> {
             TypedTraversalEvent::Error(TypedTraversalError::ValueMismatchWithType(
                 type_mismatch_error,
             )) => match type_mismatch_error {
-                // For these, we have a type mismatch - so we can't return accurate information on "current value"
+                // For these, we have a type mismatch - so it's not 100% clear what we should display as "current value".
+                // It probably makes sense to show the expected type name in the error message, but this will require some
+                // refactoring (e.g. adding the parent type to the Mismatching Child errors, and replacing CurrentValueInfo
+                // with something like AnnotatedSborPartialLeaf)
                 // Instead, let's handle these when we print the full location
                 TypeMismatchError::MismatchingType { .. }
                 | TypeMismatchError::MismatchingChildElementType { .. }
@@ -144,11 +140,30 @@ impl<E: CustomExtension> CurrentValueInfo<E> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedLocation<'t, 's, C: CustomTraversal> {
-    pub location: Location<'t, C>,
+pub struct TypedLocation<'t, 's, T: CustomTraversal> {
+    pub location: Location<'t, T>,
     /// The path of container types from the root to the current value.
     /// If the event is ContainerStart/End, this does not include the newly started/ended container.
-    pub typed_ancestor_path: &'t [ContainerType<'s>],
+    ///
+    /// NOTE: This list includes types for newly read container headers _before_ any children are read,
+    /// which is before the Location adds them to `ancestor_path`. So in some instances this `typed_container_path`
+    /// may be strictly longer than `location.ancestor_path`.
+    pub typed_container_path: &'t [ContainerType<'s>],
+}
+
+impl<'t, 's, T: CustomTraversal> TypedLocation<'t, 's, T> {
+    pub fn typed_ancestor_path(&self) -> Vec<(AncestorState<T>, ContainerType<'s>)> {
+        let untyped_ancestor_path = self.location.ancestor_path;
+
+        // As per the note on `typed_container_path`, it can be longer than the ancestor list.
+        // But zip will end when the shortest iterator ends, so this will correct only return the types of
+        // the full ancestors.
+        untyped_ancestor_path
+            .iter()
+            .cloned()
+            .zip(self.typed_container_path.iter().cloned())
+            .collect()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -161,27 +176,23 @@ pub enum TypedTraversalError<E: CustomExtension> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeMismatchError<E: CustomExtension> {
     MismatchingType {
-        expected_type_id: LocalTypeId,
-        expected_type_kind:
-            TypeKind<<E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>, LocalTypeId>,
+        type_id: LocalTypeId,
+        expected_type_kind: TypeKindLabel<<E::CustomSchema as CustomSchema>::CustomTypeKindLabel>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildElementType {
-        expected_type_id: LocalTypeId,
-        expected_type_kind:
-            TypeKind<<E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>, LocalTypeId>,
+        type_id: LocalTypeId,
+        expected_type_kind: TypeKindLabel<<E::CustomSchema as CustomSchema>::CustomTypeKindLabel>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildKeyType {
-        expected_type_id: LocalTypeId,
-        expected_type_kind:
-            TypeKind<<E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>, LocalTypeId>,
+        type_id: LocalTypeId,
+        expected_type_kind: TypeKindLabel<<E::CustomSchema as CustomSchema>::CustomTypeKindLabel>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingChildValueType {
-        expected_type_id: LocalTypeId,
-        expected_type_kind:
-            TypeKind<<E::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>, LocalTypeId>,
+        type_id: LocalTypeId,
+        expected_type_kind: TypeKindLabel<<E::CustomSchema as CustomSchema>::CustomTypeKindLabel>,
         actual_value_kind: ValueKind<E::CustomValueKind>,
     },
     MismatchingTupleLength {

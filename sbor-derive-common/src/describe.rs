@@ -178,7 +178,7 @@ fn handle_normal_describe(
             // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
             // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
             // which the compiler will throw out for other reasons.
-            &[#(<#child_types>::TYPE_ID,)*],
+            &[#(<#child_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*],
             &#code_hash
         )
     };
@@ -555,7 +555,7 @@ mod tests {
                 {
                     const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "Test",
-                        &[<T>::TYPE_ID, <T2>::TYPE_ID,],
+                        &[<T as sbor::Describe<C>>::TYPE_ID, <T2 as sbor::Describe<C>>::TYPE_ID,],
                         &#code_hash
                     );
 

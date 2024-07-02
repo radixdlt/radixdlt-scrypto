@@ -5,7 +5,7 @@ pub const MAX_NUMBER_OF_FIELDS: usize = 1024;
 
 pub fn validate_type_kind<'a, S: CustomSchema>(
     context: &SchemaContext,
-    type_kind: &SchemaTypeKind<S>,
+    type_kind: &LocalTypeKind<S>,
 ) -> Result<(), SchemaValidationError> {
     match type_kind {
         TypeKind::Any

@@ -465,11 +465,11 @@ fn native_blueprints_with_typed_addresses_have_expected_schema() {
 
     assert!(matches!(
         type_kind,
-        TypeKind::<ScryptoCustomTypeKind, LocalTypeId>::Custom(ScryptoCustomTypeKind::Reference)
+        ScryptoLocalTypeKind::Custom(ScryptoCustomTypeKind::Reference)
     ));
     assert!(matches!(
         type_validation,
-        TypeValidation::<ScryptoCustomTypeValidation>::Custom(
+        ScryptoTypeValidation::Custom(
             ScryptoCustomTypeValidation::Reference(ReferenceValidation::IsGlobalTyped(
                 Some(ACCOUNT_PACKAGE),
                 bp_name

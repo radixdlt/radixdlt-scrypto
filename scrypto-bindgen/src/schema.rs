@@ -10,7 +10,7 @@ pub trait PackageSchemaResolver {
     fn resolve_type_kind(
         &self,
         type_identifier: &ScopedTypeId,
-    ) -> Result<SchemaTypeKind<ScryptoCustomSchema>, SchemaError>;
+    ) -> Result<LocalTypeKind<ScryptoCustomSchema>, SchemaError>;
 
     fn resolve_type_metadata(
         &self,

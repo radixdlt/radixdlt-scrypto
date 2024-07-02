@@ -70,7 +70,7 @@ mod tests {
     use super::*;
     use crate::rust::prelude::*;
 
-    fn create_schema(type_data: Vec<TypeData<NoCustomTypeKind, LocalTypeId>>) -> BasicSchema {
+    fn create_schema(type_data: Vec<BasicLocalTypeData>) -> BasicSchema {
         let mut type_kinds = vec![];
         let mut type_metadata = vec![];
         let mut type_validations = vec![];

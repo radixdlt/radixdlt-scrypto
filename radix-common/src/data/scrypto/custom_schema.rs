@@ -1,13 +1,28 @@
 use crate::internal_prelude::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeKind, L>;
+pub type ScryptoLocalTypeKind = LocalTypeKind<ScryptoCustomSchema>;
+pub type ScryptoAggregatorTypeKind = AggregatorTypeKind<ScryptoCustomSchema>;
 pub type VersionedScryptoSchema = VersionedSchema<ScryptoCustomSchema>;
 pub type ScryptoSchema = Schema<ScryptoCustomSchema>;
 pub type ScryptoTypeData<L> = TypeData<ScryptoCustomTypeKind, L>;
+pub type ScryptoLocalTypeData = LocalTypeData<ScryptoCustomSchema>;
+pub type ScryptoAggregatorTypeData = AggregatorTypeData<ScryptoCustomSchema>;
+pub type ScryptoTypeValidation = TypeValidation<ScryptoCustomTypeValidation>;
+pub type ScryptoTypeAggregator = TypeAggregator<ScryptoCustomTypeKind>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
 pub enum ScryptoCustomTypeKind {
+    Reference,
+    Own,
+    Decimal,
+    PreciseDecimal,
+    NonFungibleLocalId,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
+pub enum ScryptoCustomTypeKindLabel {
     Reference,
     Own,
     Decimal,
@@ -32,6 +47,51 @@ pub enum ReferenceValidation {
     IsInternalTyped(Option<PackageAddress>, String),
 }
 
+impl ReferenceValidation {
+    fn compare(base: &Self, compared: &Self) -> ValidationChange {
+        match (base, compared) {
+            (base, compared) if base == compared => ValidationChange::Unchanged,
+            (ReferenceValidation::IsGlobal, compared) if compared.requires_global() => {
+                ValidationChange::Strengthened
+            }
+            (base, ReferenceValidation::IsGlobal) if base.requires_global() => {
+                ValidationChange::Weakened
+            }
+            (ReferenceValidation::IsInternal, compared) if compared.requires_internal() => {
+                ValidationChange::Strengthened
+            }
+            (base, ReferenceValidation::IsInternal) if base.requires_internal() => {
+                ValidationChange::Weakened
+            }
+            (_, _) => ValidationChange::Incomparable,
+        }
+    }
+
+    fn requires_global(&self) -> bool {
+        match self {
+            ReferenceValidation::IsGlobal => true,
+            ReferenceValidation::IsGlobalPackage => true,
+            ReferenceValidation::IsGlobalComponent => true,
+            ReferenceValidation::IsGlobalResourceManager => true,
+            ReferenceValidation::IsGlobalTyped(_, _) => true,
+            ReferenceValidation::IsInternal => false,
+            ReferenceValidation::IsInternalTyped(_, _) => false,
+        }
+    }
+
+    fn requires_internal(&self) -> bool {
+        match self {
+            ReferenceValidation::IsGlobal => false,
+            ReferenceValidation::IsGlobalPackage => false,
+            ReferenceValidation::IsGlobalComponent => false,
+            ReferenceValidation::IsGlobalResourceManager => false,
+            ReferenceValidation::IsGlobalTyped(_, _) => false,
+            ReferenceValidation::IsInternal => true,
+            ReferenceValidation::IsInternalTyped(_, _) => true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoSbor)]
 pub enum OwnValidation {
     IsBucket,
@@ -43,6 +103,16 @@ pub enum OwnValidation {
 }
 
 impl OwnValidation {
+    fn compare(base: &Self, compared: &Self) -> ValidationChange {
+        // This is strictly a little hard - if we get issues, we may wish to match
+        // IsTypedObject(ResourcePackage, "FungibleBucket") as a strengthening of IsBucket and so on.
+        if base == compared {
+            ValidationChange::Unchanged
+        } else {
+            ValidationChange::Incomparable
+        }
+    }
+
     pub fn could_match_manifest_bucket(&self) -> bool {
         match self {
             OwnValidation::IsBucket => true,
@@ -95,9 +165,53 @@ impl ReferenceValidation {
 
 impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind {
     type CustomTypeValidation = ScryptoCustomTypeValidation;
+    type CustomTypeKindLabel = ScryptoCustomTypeKindLabel;
+
+    fn label(&self) -> Self::CustomTypeKindLabel {
+        match self {
+            ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKindLabel::Reference,
+            ScryptoCustomTypeKind::Own => ScryptoCustomTypeKindLabel::Own,
+            ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKindLabel::Decimal,
+            ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKindLabel::PreciseDecimal,
+            ScryptoCustomTypeKind::NonFungibleLocalId => {
+                ScryptoCustomTypeKindLabel::NonFungibleLocalId
+            }
+        }
+    }
 }
 
-impl CustomTypeValidation for ScryptoCustomTypeValidation {}
+impl CustomTypeKindLabel for ScryptoCustomTypeKindLabel {
+    fn name(&self) -> &'static str {
+        match self {
+            ScryptoCustomTypeKindLabel::Reference => "Reference",
+            ScryptoCustomTypeKindLabel::Own => "Own",
+            ScryptoCustomTypeKindLabel::Decimal => "Decimal",
+            ScryptoCustomTypeKindLabel::PreciseDecimal => "PreciseDecimal",
+            ScryptoCustomTypeKindLabel::NonFungibleLocalId => "NonFungibleLocalId",
+        }
+    }
+}
+
+impl CustomTypeValidation for ScryptoCustomTypeValidation {
+    fn compare(base: &Self, compared: &Self) -> ValidationChange {
+        match (base, compared) {
+            (
+                ScryptoCustomTypeValidation::Reference(base),
+                ScryptoCustomTypeValidation::Reference(compared),
+            ) => ReferenceValidation::compare(base, compared),
+            (ScryptoCustomTypeValidation::Reference(_), ScryptoCustomTypeValidation::Own(_)) => {
+                ValidationChange::Incomparable
+            }
+            (ScryptoCustomTypeValidation::Own(_), ScryptoCustomTypeValidation::Reference(_)) => {
+                ValidationChange::Incomparable
+            }
+            (
+                ScryptoCustomTypeValidation::Own(base),
+                ScryptoCustomTypeValidation::Own(compared),
+            ) => OwnValidation::compare(base, compared),
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ScryptoCustomSchema {}
@@ -109,31 +223,28 @@ lazy_static::lazy_static! {
 }
 
 impl CustomSchema for ScryptoCustomSchema {
-    type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind;
+    type CustomLocalTypeKind = ScryptoCustomTypeKind;
+    type CustomAggregatorTypeKind = ScryptoCustomTypeKind;
+    type CustomTypeKindLabel = ScryptoCustomTypeKindLabel;
     type CustomTypeValidation = ScryptoCustomTypeValidation;
+    type DefaultCustomExtension = ScryptoCustomExtension;
 
     fn linearize_type_kind(
-        type_kind: Self::CustomTypeKind<RustTypeId>,
+        type_kind: Self::CustomLocalTypeKind,
         _type_indices: &IndexSet<TypeHash>,
-    ) -> Self::CustomTypeKind<LocalTypeId> {
-        match type_kind {
-            ScryptoCustomTypeKind::Reference => ScryptoCustomTypeKind::Reference,
-            ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
-            ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
-            ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
-            ScryptoCustomTypeKind::NonFungibleLocalId => ScryptoCustomTypeKind::NonFungibleLocalId,
-        }
+    ) -> Self::CustomAggregatorTypeKind {
+        type_kind
     }
 
     fn resolve_well_known_type(
         well_known_id: WellKnownTypeId,
-    ) -> Option<&'static TypeData<Self::CustomTypeKind<LocalTypeId>, LocalTypeId>> {
+    ) -> Option<&'static LocalTypeData<Self>> {
         resolve_scrypto_well_known_type(well_known_id)
     }
 
     fn validate_custom_type_kind(
         _context: &SchemaContext,
-        type_kind: &Self::CustomTypeKind<LocalTypeId>,
+        type_kind: &Self::CustomLocalTypeKind,
     ) -> Result<(), SchemaValidationError> {
         match type_kind {
             ScryptoCustomTypeKind::Reference
@@ -149,7 +260,7 @@ impl CustomSchema for ScryptoCustomSchema {
 
     fn validate_type_metadata_with_custom_type_kind(
         _: &SchemaContext,
-        type_kind: &Self::CustomTypeKind<LocalTypeId>,
+        type_kind: &Self::CustomLocalTypeKind,
         type_metadata: &TypeMetadata,
     ) -> Result<(), SchemaValidationError> {
         // Even though they all map to the same thing, we keep the explicit match statement so that
@@ -168,7 +279,7 @@ impl CustomSchema for ScryptoCustomSchema {
 
     fn validate_custom_type_validation(
         _context: &SchemaContext,
-        custom_type_kind: &Self::CustomTypeKind<LocalTypeId>,
+        custom_type_kind: &Self::CustomLocalTypeKind,
         custom_type_validation: &Self::CustomTypeValidation,
     ) -> Result<(), SchemaValidationError> {
         match custom_type_kind {

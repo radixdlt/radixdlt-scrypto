@@ -3,7 +3,7 @@ use crate::schema::*;
 
 pub fn validate_custom_type_validation<'a, S: CustomSchema>(
     context: &SchemaContext,
-    type_kind: &SchemaTypeKind<S>,
+    type_kind: &LocalTypeKind<S>,
     type_validation: &TypeValidation<S::CustomTypeValidation>,
 ) -> Result<(), SchemaValidationError> {
     // It's always possible to opt into no additional validation.
@@ -103,7 +103,7 @@ pub fn validate_custom_type_validation<'a, S: CustomSchema>(
     Ok(())
 }
 
-fn validate_numeric_validation<T: Ord + Copy>(
+fn validate_numeric_validation<T: NumericValidationBound>(
     numeric_validation: &NumericValidation<T>,
 ) -> Result<(), SchemaValidationError> {
     if let Some(min) = numeric_validation.min {

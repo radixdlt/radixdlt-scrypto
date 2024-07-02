@@ -64,7 +64,7 @@ mod tests {
                 {
                     const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "Thing",
-                        &[<T>::TYPE_ID,],
+                        &[<T as sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind >>::TYPE_ID,],
                         &#code_hash
                     );
                     fn type_data() -> sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, sbor::RustTypeId> {
@@ -100,7 +100,7 @@ mod tests {
                 {
                     const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::novel_with_code(
                         "MyEnum",
-                        &[<T>::TYPE_ID,],
+                        &[<T as sbor::Describe<radix_common::data::scrypto::ScryptoCustomTypeKind >>::TYPE_ID,],
                         &#code_hash
                     );
                     fn type_data() -> sbor::TypeData<radix_common::data::scrypto::ScryptoCustomTypeKind, sbor::RustTypeId> {

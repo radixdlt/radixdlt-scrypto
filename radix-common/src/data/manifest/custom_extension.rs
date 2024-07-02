@@ -14,10 +14,7 @@ impl CustomExtension for ManifestCustomExtension {
     fn custom_value_kind_matches_type_kind(
         schema: &Schema<Self::CustomSchema>,
         custom_value_kind: Self::CustomValueKind,
-        type_kind: &TypeKind<
-            <Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
-            LocalTypeId,
-        >,
+        type_kind: &LocalTypeKind<Self::CustomSchema>,
     ) -> bool {
         match custom_value_kind {
             ManifestCustomValueKind::Address => matches!(
@@ -67,7 +64,7 @@ impl CustomExtension for ManifestCustomExtension {
 
     fn custom_type_kind_matches_non_custom_value_kind(
         _: &Schema<Self::CustomSchema>,
-        _: &<Self::CustomSchema as CustomSchema>::CustomTypeKind<LocalTypeId>,
+        _: &<Self::CustomSchema as CustomSchema>::CustomLocalTypeKind,
         _: ValueKind<Self::CustomValueKind>,
     ) -> bool {
         // No custom type kinds can match non-custom value kinds

@@ -1,6 +1,7 @@
 use super::*;
 use crate::decoder::BorrowingDecoder;
 use crate::rust::prelude::*;
+use crate::rust::str;
 use crate::value_kind::*;
 use crate::*;
 
@@ -13,9 +14,11 @@ pub fn calculate_value_tree_body_byte_length<'de, 's, E: CustomExtension>(
 ) -> Result<usize, DecodeError> {
     let mut traverser = VecTraverser::<E::CustomTraversal>::new(
         partial_payload,
-        depth_limit - current_depth,
         ExpectedStart::ValueBody(value_kind),
-        false,
+        VecTraverserConfig {
+            max_depth: depth_limit - current_depth,
+            check_exact_end: false,
+        },
     );
     loop {
         let next_event = traverser.next_event();
@@ -33,7 +36,7 @@ pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
         CustomValueKind = Self::CustomValueKind,
     >;
 
-    fn decode_custom_value_body<'de, R>(
+    fn read_custom_value_body<'de, R>(
         custom_value_kind: Self::CustomValueKind,
         reader: &mut R,
     ) -> Result<Self::CustomTerminalValueRef<'de>, DecodeError>
@@ -48,42 +51,23 @@ pub trait CustomTerminalValueRef: Debug + Clone + PartialEq + Eq {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ContainerState<C: CustomTraversal> {
-    pub container_header: ContainerHeader<C>,
+pub struct AncestorState<T: CustomTraversal> {
+    pub container_header: ContainerHeader<T>,
+    /// The byte offset of the start of the container in the input buffer
     pub container_start_offset: usize,
-    pub container_child_count: usize,
-    pub current_child_index: Option<usize>,
+    /// Goes from 0,... container_header.child_count() - 1 as children in the container are considered.
+    /// NOTE: For maps, container_header.child_count() = 2 * Map length
+    ///
+    /// The `current_child_index` does NOT necessarily point at a valid value which can be decoded,
+    /// - the index is updated before the child is read, to record errors against it.
+    pub current_child_index: usize,
 }
 
-impl<C: CustomTraversal> ContainerState<C> {
-    pub fn is_complete(&self) -> bool {
-        if self.container_child_count == 0 {
-            return true;
-        }
-
-        if let Some(index) = self.current_child_index {
-            if index >= self.container_child_count - 1 {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    pub fn advance_current_child_index(&mut self) {
-        self.advance_current_child_index_by(1)
-    }
-
-    pub fn advance_current_child_index_by(&mut self, n: usize) {
-        if n == 0 {
-            return;
-        }
-
-        if let Some(index) = self.current_child_index {
-            self.current_child_index = Some(index + n)
-        } else {
-            self.current_child_index = Some(n - 1)
-        }
+impl<T: CustomTraversal> AncestorState<T> {
+    #[inline]
+    fn get_implicit_value_kind_of_current_child(&self) -> Option<ValueKind<T::CustomValueKind>> {
+        self.container_header
+            .get_implicit_child_value_kind(self.current_child_index)
     }
 }
 
@@ -91,60 +75,38 @@ impl<C: CustomTraversal> ContainerState<C> {
 /// It turns payload decoding into a pull-based event stream.
 ///
 /// The caller is responsible for stopping calling `next_event` after an Error or End event.
-pub struct VecTraverser<'de, C: CustomTraversal> {
-    max_depth: usize,
-    check_exact_end: bool,
-    decoder: VecDecoder<'de, C::CustomValueKind>,
-    container_stack: Vec<ContainerState<C>>,
-    next_event_override: NextEventOverride<C::CustomValueKind>,
+pub struct VecTraverser<'de, T: CustomTraversal> {
+    decoder: VecDecoder<'de, T::CustomValueKind>,
+    ancestor_path: Vec<AncestorState<T>>,
+    next_action: NextAction<T>,
+    config: VecTraverserConfig,
+}
+
+pub struct VecTraverserConfig {
+    pub max_depth: usize,
+    pub check_exact_end: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum NextEventOverride<X: CustomValueKind> {
-    ReadPrefix(u8),
+pub enum NextAction<T: CustomTraversal> {
+    ReadPrefix {
+        expected_prefix: u8,
+    },
     ReadRootValue,
-    ReadRootValueWithValueKind(ValueKind<X>),
-    ReadBytes(usize),
-    None,
-}
-
-#[macro_export]
-macro_rules! terminal_value_from_body {
-    ($self: expr, $value_type: ident, $type: ident, $start_offset: expr, $value_kind: expr) => {{
-        terminal_value!(
-            $self,
-            $value_type,
-            $start_offset,
-            $type::decode_body_with_value_kind(&mut $self.decoder, $value_kind)
-        )
-    }};
-}
-
-#[macro_export]
-macro_rules! terminal_value {
-    ($self: expr, $value_type: ident, $start_offset: expr, $decoded: expr) => {{
-        match $decoded {
-            Ok(value) => LocatedTraversalEvent {
-                event: TraversalEvent::TerminalValue(TerminalValueRef::$value_type(value)),
-                location: Location {
-                    start_offset: $start_offset,
-                    end_offset: $self.get_offset(),
-                    ancestor_path: &$self.container_stack,
-                },
-            },
-            Err(error) => $self.map_error($start_offset, error),
-        }
-    }};
-}
-
-#[macro_export]
-macro_rules! return_if_error {
-    ($self: expr, $result: expr) => {{
-        match $result {
-            Ok(value) => value,
-            Err(error) => return $self.map_error($self.get_offset(), error),
-        }
-    }};
+    ReadRootValueBody {
+        implicit_value_kind: ValueKind<T::CustomValueKind>,
+    },
+    ReadContainerContentStart {
+        container_header: ContainerHeader<T>,
+        container_start_offset: usize,
+    },
+    /// The state which is put into after entering parent, and
+    /// the default state to return to from below
+    ReadNextChildOrExitContainer,
+    Errored,
+    Ended,
+    /// Impossible to observe this value
+    InProgressPlaceholder,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -157,313 +119,393 @@ pub enum ExpectedStart<X: CustomValueKind> {
 impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     pub fn new(
         input: &'de [u8],
-        max_depth: usize,
         expected_start: ExpectedStart<T::CustomValueKind>,
-        check_exact_end: bool,
+        config: VecTraverserConfig,
     ) -> Self {
         Self {
-            decoder: VecDecoder::new(input, max_depth),
-            container_stack: Vec::with_capacity(max_depth),
-            max_depth,
-            next_event_override: match expected_start {
-                ExpectedStart::PayloadPrefix(prefix) => NextEventOverride::ReadPrefix(prefix),
-                ExpectedStart::Value => NextEventOverride::ReadRootValue,
-                ExpectedStart::ValueBody(value_kind) => {
-                    NextEventOverride::ReadRootValueWithValueKind(value_kind)
-                }
+            // Note that the VecTraverser needs to be very low level for performance,
+            // so purposefully doesn't use the depth tracking in the decoder itself.
+            // But we set a max depth anyway, for safety.
+            decoder: VecDecoder::new(input, config.max_depth),
+            ancestor_path: Vec::with_capacity(config.max_depth),
+            next_action: match expected_start {
+                ExpectedStart::PayloadPrefix(prefix) => NextAction::ReadPrefix {
+                    expected_prefix: prefix,
+                },
+                ExpectedStart::Value => NextAction::ReadRootValue,
+                ExpectedStart::ValueBody(value_kind) => NextAction::ReadRootValueBody {
+                    implicit_value_kind: value_kind,
+                },
             },
-            check_exact_end,
+            config,
         }
     }
 
     pub fn next_event<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
-        match self.next_event_override {
-            NextEventOverride::ReadPrefix(expected_prefix) => {
-                self.next_event_override = NextEventOverride::ReadRootValue;
-                return_if_error!(
-                    self,
-                    self.decoder.read_and_check_payload_prefix(expected_prefix)
-                );
-                self.next_event()
-            }
-            NextEventOverride::ReadRootValue => {
-                self.next_event_override = NextEventOverride::None;
-                self.read_root_value(None)
-            }
-            NextEventOverride::ReadRootValueWithValueKind(value_kind) => {
-                self.next_event_override = NextEventOverride::None;
-                self.read_root_value(Some(value_kind))
-            }
-            NextEventOverride::ReadBytes(size) => {
-                self.next_event_override = NextEventOverride::None;
-                self.read_bytes_event_override(size)
-            }
-            NextEventOverride::None => {
-                let parent = self.container_stack.last();
-                match parent {
-                    Some(parent) => {
-                        if parent.is_complete() {
-                            self.exit_container()
-                        } else {
-                            self.read_child_value()
-                        }
+        let (event, next_action) = Self::step(
+            core::mem::replace(&mut self.next_action, NextAction::InProgressPlaceholder),
+            &self.config,
+            &mut self.decoder,
+            &mut self.ancestor_path,
+        );
+        self.next_action = next_action;
+        event
+    }
+
+    #[inline]
+    fn step<'t, 'd>(
+        action: NextAction<T>,
+        config: &VecTraverserConfig,
+        decoder: &'d mut VecDecoder<'de, T::CustomValueKind>,
+        ancestor_path: &'t mut Vec<AncestorState<T>>,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        match action {
+            NextAction::ReadPrefix { expected_prefix } => {
+                // The reading of the prefix has no associated event, so we perform the prefix check first,
+                // and then proceed to read the root value if it succeeds.
+                let start_offset = decoder.get_offset();
+                match decoder.read_and_check_payload_prefix(expected_prefix) {
+                    Ok(()) => {
+                        // Prefix read successfully. Now read root value.
+                        ActionHandler::new_from_current_offset(ancestor_path, decoder)
+                            .read_value(None)
                     }
-                    None => self.read_end(),
+                    Err(error) => {
+                        ActionHandler::new_with_fixed_offset(ancestor_path, decoder, start_offset)
+                            .complete_with_error(error)
+                    }
                 }
             }
-        }
-    }
+            NextAction::ReadRootValue => {
+                ActionHandler::new_from_current_offset(ancestor_path, decoder).read_value(None)
+            }
+            NextAction::ReadRootValueBody {
+                implicit_value_kind,
+            } => ActionHandler::new_from_current_offset(ancestor_path, decoder)
+                .read_value(Some(implicit_value_kind)),
+            NextAction::ReadContainerContentStart {
+                container_header,
+                container_start_offset,
+            } => {
+                let container_child_size = container_header.get_child_count();
+                if container_child_size == 0 {
+                    // If the container has no children, we immediately container end without ever bothering
+                    // adding it as an ancestor.
+                    return ActionHandler::new_with_fixed_offset(
+                        ancestor_path,
+                        decoder,
+                        container_start_offset,
+                    )
+                    .complete_container_end(container_header);
+                }
 
-    fn enter_container<'t>(
-        &'t mut self,
-        start_offset: usize,
-        container_header: ContainerHeader<T>,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let child_count = container_header.get_child_count();
+                // Add ancestor before checking for max depth so that the ancestor stack is
+                // correct if the depth check returns an error
+                ancestor_path.push(AncestorState {
+                    container_header,
+                    container_start_offset,
+                    current_child_index: 0,
+                });
+                // We know we're about to read a child at depth ancestor_path.len() + 1 - so
+                // it's an error if ancestor_path.len() >= config.max_depth.
+                // (We avoid the +1 so that we don't need to worry about overflow).
+                if ancestor_path.len() >= config.max_depth {
+                    return ActionHandler::new_from_current_offset(ancestor_path, decoder)
+                        .complete_with_error(DecodeError::MaxDepthExceeded(config.max_depth));
+                }
 
-        self.container_stack.push(ContainerState {
-            container_header,
-            container_start_offset: start_offset,
-            container_child_count: child_count,
-            current_child_index: None,
-        });
+                let parent = ancestor_path.last_mut().unwrap();
+                let parent_container = &parent.container_header;
+                let is_byte_array = matches!(
+                    parent_container,
+                    ContainerHeader::Array(ArrayHeader {
+                        element_value_kind: ValueKind::U8,
+                        ..
+                    })
+                );
+                // If it's a byte array, we do a batch-read optimisation
+                if is_byte_array {
+                    // We know this is >= 1 from the above check
+                    let array_length = container_child_size;
+                    let max_index_which_would_be_read = array_length - 1;
+                    // Set current child index before we read so that if we get an error on read
+                    // then it comes through at the max child index we attempted to read.
+                    parent.current_child_index = max_index_which_would_be_read;
+                    ActionHandler::new_from_current_offset(ancestor_path, decoder)
+                        .read_byte_array(array_length)
+                } else {
+                    // NOTE: parent.current_child_index is already 0, so no need to change it
+                    let implicit_value_kind = parent.get_implicit_value_kind_of_current_child();
+                    ActionHandler::new_from_current_offset(ancestor_path, decoder)
+                        .read_value(implicit_value_kind)
+                }
+            }
+            NextAction::ReadNextChildOrExitContainer => {
+                let parent = ancestor_path.last_mut();
+                match parent {
+                    Some(parent) => {
+                        let next_child_index = parent.current_child_index + 1;
+                        let is_complete =
+                            next_child_index >= parent.container_header.get_child_count();
+                        if is_complete {
+                            // We pop the completed parent from the ancestor list
+                            let AncestorState {
+                                container_header,
+                                container_start_offset,
+                                ..
+                            } = ancestor_path.pop().expect("Parent has just been read");
 
-        // Check depth: either container stack overflows or children of this container will overflow.
-        if self.container_stack.len() > self.max_depth
-            || self.container_stack.len() == self.max_depth && child_count > 0
-        {
-            return self.map_error(start_offset, DecodeError::MaxDepthExceeded(self.max_depth));
-        }
-
-        LocatedTraversalEvent {
-            event: TraversalEvent::ContainerStart(container_header),
-            location: Location {
-                start_offset,
-                end_offset: self.get_offset(),
-                ancestor_path: &self.container_stack[0..self.container_stack.len() - 1],
-            },
-        }
-    }
-
-    fn exit_container<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
-        let container = self.container_stack.pop().unwrap();
-        LocatedTraversalEvent {
-            event: TraversalEvent::ContainerEnd(container.container_header),
-            location: Location {
-                start_offset: container.container_start_offset,
-                end_offset: self.get_offset(),
-                ancestor_path: &self.container_stack,
-            },
-        }
-    }
-
-    fn read_root_value<'t>(
-        &'t mut self,
-        value_kind: Option<ValueKind<T::CustomValueKind>>,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let start_offset = self.decoder.get_offset();
-        let value_kind = match value_kind {
-            Some(value_kind) => value_kind,
-            None => return_if_error!(self, self.decoder.read_value_kind()),
-        };
-        self.next_value(start_offset, value_kind)
-    }
-
-    fn read_child_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
-        let start_offset = self.decoder.get_offset();
-        let parent = self.container_stack.last_mut().unwrap();
-        parent.advance_current_child_index();
-        let value_kind = parent
-            .container_header
-            .get_implicit_child_value_kind(parent.current_child_index.unwrap());
-        let value_kind = match value_kind {
-            Some(value_kind) => value_kind,
-            None => return_if_error!(self, self.decoder.read_value_kind()),
-        };
-        self.next_value(start_offset, value_kind)
-    }
-
-    fn next_value<'t>(
-        &'t mut self,
-        start_offset: usize,
-        value_kind: ValueKind<T::CustomValueKind>,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        match value_kind {
-            ValueKind::Bool => {
-                terminal_value_from_body!(self, Bool, bool, start_offset, value_kind)
-            }
-            ValueKind::I8 => {
-                terminal_value_from_body!(self, I8, i8, start_offset, value_kind)
-            }
-            ValueKind::I16 => {
-                terminal_value_from_body!(self, I16, i16, start_offset, value_kind)
-            }
-            ValueKind::I32 => {
-                terminal_value_from_body!(self, I32, i32, start_offset, value_kind)
-            }
-            ValueKind::I64 => {
-                terminal_value_from_body!(self, I64, i64, start_offset, value_kind)
-            }
-            ValueKind::I128 => {
-                terminal_value_from_body!(self, I128, i128, start_offset, value_kind)
-            }
-            ValueKind::U8 => {
-                terminal_value_from_body!(self, U8, u8, start_offset, value_kind)
-            }
-            ValueKind::U16 => {
-                terminal_value_from_body!(self, U16, u16, start_offset, value_kind)
-            }
-            ValueKind::U32 => {
-                terminal_value_from_body!(self, U32, u32, start_offset, value_kind)
-            }
-            ValueKind::U64 => {
-                terminal_value_from_body!(self, U64, u64, start_offset, value_kind)
-            }
-            ValueKind::U128 => {
-                terminal_value_from_body!(self, U128, u128, start_offset, value_kind)
-            }
-            ValueKind::String => {
-                terminal_value!(self, String, start_offset, self.decode_string_body())
-            }
-            ValueKind::Array => self.decode_array_header(start_offset),
-            ValueKind::Map => self.decode_map_header(start_offset),
-            ValueKind::Enum => self.decode_enum_variant_header(start_offset),
-            ValueKind::Tuple => self.decode_tuple_header(start_offset),
-            ValueKind::Custom(custom_value_kind) => {
-                let result = T::decode_custom_value_body(custom_value_kind, &mut self.decoder);
-                let location = Location {
-                    start_offset: start_offset,
-                    end_offset: self.get_offset(),
-                    ancestor_path: &self.container_stack,
-                };
-                let event = match result {
-                    Ok(custom_value) => {
-                        TraversalEvent::TerminalValue(TerminalValueRef::Custom(custom_value))
+                            ActionHandler::new_with_fixed_offset(
+                                ancestor_path,
+                                decoder,
+                                container_start_offset,
+                            )
+                            .complete_container_end(container_header)
+                        } else {
+                            parent.current_child_index = next_child_index;
+                            let implicit_value_kind =
+                                parent.get_implicit_value_kind_of_current_child();
+                            ActionHandler::new_from_current_offset(ancestor_path, decoder)
+                                .read_value(implicit_value_kind)
+                        }
                     }
-                    Err(decode_error) => TraversalEvent::DecodeError(decode_error),
-                };
-                LocatedTraversalEvent { location, event }
+                    None => {
+                        ActionHandler::new_from_current_offset(ancestor_path, decoder).end(config)
+                    }
+                }
+            }
+            NextAction::Errored => {
+                panic!("It is unsupported to call `next_event` on a traverser which has returned an error.")
+            }
+            NextAction::Ended => {
+                panic!("It is unsupported to call `next_event` on a traverser which has already emitted an end event.")
+            }
+            NextAction::InProgressPlaceholder => {
+                unreachable!("It is not possible to observe this value - it is a placeholder for rust memory safety.")
             }
         }
     }
+}
 
-    fn map_error<'t>(
-        &'t self,
-        start_offset: usize,
-        error: DecodeError,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        LocatedTraversalEvent {
-            event: TraversalEvent::DecodeError(error),
-            location: Location {
-                start_offset,
-                end_offset: self.get_offset(),
-                ancestor_path: &self.container_stack,
-            },
+macro_rules! handle_error {
+    ($action_handler: expr, $result: expr$(,)?) => {{
+        match $result {
+            Ok(value) => value,
+            Err(error) => {
+                return $action_handler.complete_with_error(error);
+            }
+        }
+    }};
+}
+
+/// This is just an encapsulation to improve code quality by:
+/// * Removing code duplication by capturing the ancestor_path/decoder/start_offset in one place
+/// * Ensuring code correctness by fixing the ancestor path
+struct ActionHandler<'t, 'd, 'de, T: CustomTraversal> {
+    ancestor_path: &'t [AncestorState<T>],
+    decoder: &'d mut VecDecoder<'de, T::CustomValueKind>,
+    start_offset: usize,
+}
+
+impl<'t, 'd, 'de, T: CustomTraversal> ActionHandler<'t, 'd, 'de, T> {
+    #[inline]
+    fn new_from_current_offset(
+        ancestor_path: &'t [AncestorState<T>],
+        decoder: &'d mut VecDecoder<'de, T::CustomValueKind>,
+    ) -> Self {
+        let start_offset = decoder.get_offset();
+        Self {
+            ancestor_path,
+            decoder,
+            start_offset,
         }
     }
 
     #[inline]
-    fn get_offset(&self) -> usize {
-        self.decoder.get_offset()
-    }
-
-    fn decode_string_body(&mut self) -> Result<&'de str, DecodeError> {
-        let size = self.decoder.read_size()?;
-        let bytes_slices = self.decoder.read_slice_from_payload(size)?;
-        sbor::rust::str::from_utf8(bytes_slices).map_err(|_| DecodeError::InvalidUtf8)
-    }
-
-    fn decode_enum_variant_header<'t>(
-        &'t mut self,
+    fn new_with_fixed_offset(
+        ancestor_path: &'t [AncestorState<T>],
+        decoder: &'d mut VecDecoder<'de, T::CustomValueKind>,
         start_offset: usize,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let variant = return_if_error!(self, self.decoder.read_byte());
-        let length = return_if_error!(self, self.decoder.read_size());
-        self.enter_container(
+    ) -> Self {
+        Self {
+            ancestor_path,
+            decoder,
             start_offset,
-            ContainerHeader::EnumVariant(EnumVariantHeader { variant, length }),
-        )
-    }
-
-    fn decode_tuple_header<'t>(
-        &'t mut self,
-        start_offset: usize,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let length = return_if_error!(self, self.decoder.read_size());
-        self.enter_container(start_offset, ContainerHeader::Tuple(TupleHeader { length }))
-    }
-
-    fn decode_array_header<'t>(
-        &'t mut self,
-        start_offset: usize,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let element_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let length = return_if_error!(self, self.decoder.read_size());
-        if element_value_kind == ValueKind::U8 && length > 0 {
-            self.next_event_override = NextEventOverride::ReadBytes(length);
         }
-        self.enter_container(
-            start_offset,
-            ContainerHeader::Array(ArrayHeader {
-                element_value_kind,
-                length,
-            }),
+    }
+
+    #[inline]
+    fn read_value(
+        self,
+        implicit_value_kind: Option<ValueKind<T::CustomValueKind>>,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        let value_kind = match implicit_value_kind {
+            Some(value_kind) => value_kind,
+            None => handle_error!(self, self.decoder.read_value_kind()),
+        };
+        self.read_value_body(value_kind)
+    }
+
+    #[inline]
+    fn read_byte_array(
+        self,
+        array_length: usize,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        let bytes = handle_error!(self, self.decoder.read_slice_from_payload(array_length));
+        self.complete(
+            TraversalEvent::TerminalValueBatch(TerminalValueBatchRef::U8(bytes)),
+            // This is the correct action to ensure we exit the container on the next step
+            NextAction::ReadNextChildOrExitContainer,
         )
     }
 
-    fn decode_map_header<'t>(
-        &'t mut self,
-        start_offset: usize,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let key_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let value_value_kind = return_if_error!(self, self.decoder.read_value_kind());
-        let length = return_if_error!(self, self.decoder.read_size());
-        self.enter_container(
-            start_offset,
-            ContainerHeader::Map(MapHeader {
-                key_value_kind,
-                value_value_kind,
-                length,
-            }),
-        )
-    }
-
-    fn read_end<'t>(&'t self) -> LocatedTraversalEvent<'t, 'de, T> {
-        if self.check_exact_end {
-            return_if_error!(self, self.decoder.check_end());
+    #[inline]
+    fn end(
+        self,
+        config: &VecTraverserConfig,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        if config.check_exact_end {
+            handle_error!(self, self.decoder.check_end());
         }
-        let offset = self.decoder.get_offset();
+        self.complete(TraversalEvent::End, NextAction::Ended)
+    }
 
-        LocatedTraversalEvent {
-            event: TraversalEvent::End,
+    fn read_value_body(
+        self,
+        value_kind: ValueKind<T::CustomValueKind>,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        match value_kind {
+            ValueKind::Bool => self.read_terminal_value(value_kind, TerminalValueRef::Bool),
+            ValueKind::I8 => self.read_terminal_value(value_kind, TerminalValueRef::I8),
+            ValueKind::I16 => self.read_terminal_value(value_kind, TerminalValueRef::I16),
+            ValueKind::I32 => self.read_terminal_value(value_kind, TerminalValueRef::I32),
+            ValueKind::I64 => self.read_terminal_value(value_kind, TerminalValueRef::I64),
+            ValueKind::I128 => self.read_terminal_value(value_kind, TerminalValueRef::I128),
+            ValueKind::U8 => self.read_terminal_value(value_kind, TerminalValueRef::U8),
+            ValueKind::U16 => self.read_terminal_value(value_kind, TerminalValueRef::U16),
+            ValueKind::U32 => self.read_terminal_value(value_kind, TerminalValueRef::U32),
+            ValueKind::U64 => self.read_terminal_value(value_kind, TerminalValueRef::U64),
+            ValueKind::U128 => self.read_terminal_value(value_kind, TerminalValueRef::U128),
+            ValueKind::String => {
+                let length = handle_error!(self, self.decoder.read_size());
+                let bytes = handle_error!(self, self.decoder.read_slice_from_payload(length));
+                let string_body = handle_error!(
+                    self,
+                    str::from_utf8(bytes).map_err(|_| DecodeError::InvalidUtf8)
+                );
+                self.complete(
+                    TraversalEvent::TerminalValue(TerminalValueRef::String(string_body)),
+                    NextAction::ReadNextChildOrExitContainer,
+                )
+            }
+            ValueKind::Array => {
+                let element_value_kind = handle_error!(self, self.decoder.read_value_kind());
+                let length = handle_error!(self, self.decoder.read_size());
+                self.complete_container_start(ContainerHeader::Array(ArrayHeader {
+                    element_value_kind,
+                    length,
+                }))
+            }
+            ValueKind::Map => {
+                let key_value_kind = handle_error!(self, self.decoder.read_value_kind());
+                let value_value_kind = handle_error!(self, self.decoder.read_value_kind());
+                let length = handle_error!(self, self.decoder.read_size());
+                self.complete_container_start(ContainerHeader::Map(MapHeader {
+                    key_value_kind,
+                    value_value_kind,
+                    length,
+                }))
+            }
+            ValueKind::Enum => {
+                let variant = handle_error!(self, self.decoder.read_byte());
+                let length = handle_error!(self, self.decoder.read_size());
+                self.complete_container_start(ContainerHeader::EnumVariant(EnumVariantHeader {
+                    variant,
+                    length,
+                }))
+            }
+            ValueKind::Tuple => {
+                let length = handle_error!(self, self.decoder.read_size());
+                self.complete_container_start(ContainerHeader::Tuple(TupleHeader { length }))
+            }
+            ValueKind::Custom(custom_value_kind) => {
+                let custom_value_ref = handle_error!(
+                    self,
+                    T::read_custom_value_body(custom_value_kind, self.decoder)
+                );
+                self.complete(
+                    TraversalEvent::TerminalValue(TerminalValueRef::Custom(custom_value_ref)),
+                    NextAction::ReadNextChildOrExitContainer,
+                )
+            }
+        }
+    }
+
+    #[inline]
+    fn read_terminal_value<V: Decode<T::CustomValueKind, VecDecoder<'de, T::CustomValueKind>>>(
+        self,
+        value_kind: ValueKind<T::CustomValueKind>,
+        value_ref_constructor: impl Fn(V) -> TerminalValueRef<'de, T>,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        match V::decode_body_with_value_kind(self.decoder, value_kind) {
+            Ok(value) => self.complete(
+                TraversalEvent::TerminalValue(value_ref_constructor(value)),
+                NextAction::ReadNextChildOrExitContainer,
+            ),
+            Err(error) => self.complete_with_error(error),
+        }
+    }
+
+    #[inline]
+    fn complete_container_start(
+        self,
+        container_header: ContainerHeader<T>,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        let next_action = NextAction::ReadContainerContentStart {
+            container_header: container_header.clone(),
+            container_start_offset: self.start_offset,
+        };
+        self.complete(
+            TraversalEvent::ContainerStart(container_header),
+            next_action,
+        )
+    }
+
+    #[inline]
+    fn complete_container_end(
+        self,
+        container_header: ContainerHeader<T>,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        self.complete(
+            TraversalEvent::ContainerEnd(container_header),
+            // Continue interating the parent
+            NextAction::ReadNextChildOrExitContainer,
+        )
+    }
+
+    #[inline]
+    fn complete_with_error(
+        self,
+        error: DecodeError,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        self.complete(TraversalEvent::DecodeError(error), NextAction::Errored)
+    }
+
+    #[inline]
+    fn complete(
+        self,
+        traversal_event: TraversalEvent<'de, T>,
+        next_action: NextAction<T>,
+    ) -> (LocatedTraversalEvent<'t, 'de, T>, NextAction<T>) {
+        let located_event = LocatedTraversalEvent {
+            event: traversal_event,
             location: Location {
-                start_offset: offset,
-                end_offset: offset,
-                ancestor_path: &self.container_stack,
+                start_offset: self.start_offset,
+                end_offset: self.decoder.get_offset(),
+                ancestor_path: self.ancestor_path,
             },
-        }
-    }
-
-    fn read_bytes_event_override<'t>(
-        &'t mut self,
-        size: usize,
-    ) -> LocatedTraversalEvent<'t, 'de, T> {
-        let start_offset = self.get_offset();
-        let bytes = return_if_error!(self, self.decoder.read_slice_from_payload(size));
-        // Set it up so that we jump to the end of the child iteration
-        self.container_stack
-            .last_mut()
-            .unwrap()
-            .advance_current_child_index_by(size);
-        self.next_event_override = NextEventOverride::None;
-        LocatedTraversalEvent {
-            event: TraversalEvent::TerminalValueBatch(TerminalValueBatchRef::U8(bytes)),
-            location: Location {
-                start_offset,
-                end_offset: self.get_offset(),
-                ancestor_path: &self.container_stack,
-            },
-        }
+        };
+        (located_event, next_action)
     }
 }
 

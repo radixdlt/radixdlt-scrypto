@@ -1,3 +1,5 @@
+use borrow::Borrow;
+
 use crate::rust::prelude::*;
 use crate::*;
 
@@ -78,6 +80,22 @@ impl TypeMetadata {
     pub fn get_field_names<'a>(&'a self) -> Option<&'a [Cow<'static, str>]> {
         match &self.child_names {
             Some(ChildNames::NamedFields(field_names)) => Some(field_names.as_slice()),
+            _ => None,
+        }
+    }
+
+    pub fn get_field_name<'a>(&'a self, field_index: usize) -> Option<&'a str> {
+        match &self.child_names {
+            Some(ChildNames::NamedFields(field_names)) => {
+                Some(field_names.get(field_index)?.borrow())
+            }
+            _ => None,
+        }
+    }
+
+    pub fn get_enum_variant_data<'a>(&'a self, discriminator: u8) -> Option<&'a TypeMetadata> {
+        match &self.child_names {
+            Some(ChildNames::EnumVariants(variants)) => variants.get(&discriminator),
             _ => None,
         }
     }

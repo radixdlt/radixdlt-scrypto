@@ -9,6 +9,10 @@ pub use type_kind::*;
 pub use type_metadata::*;
 pub use type_validation::*;
 
+pub type LocalTypeData<S> = TypeData<<S as CustomSchema>::CustomLocalTypeKind, LocalTypeId>;
+pub type AggregatorTypeData<S> =
+    TypeData<<S as CustomSchema>::CustomAggregatorTypeKind, RustTypeId>;
+
 /// Combines all data about a Type:
 /// * `kind` - The type's [`TypeKind`] - this is essentially the definition of the structure of the type,
 ///   and includes the type's `ValueKind` as well as the [`TypeKind`] of any child types.
