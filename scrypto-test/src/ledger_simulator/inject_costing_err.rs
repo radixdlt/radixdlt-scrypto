@@ -149,9 +149,9 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         self.system.create_receipt(track, executable, result)
     }
 
-    fn on_pin_node(&mut self, depth: usize, node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.system.on_pin_node(depth, node_id)
+        self.system.on_pin_node(node_id)
     }
 
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
@@ -217,45 +217,32 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         System::on_write_substate(&mut api, event)
     }
 
-    fn on_set_substate(
-        &mut self,
-        depth: usize,
-        event: SetSubstateEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.system.on_set_substate(depth, event)
+        self.system.on_set_substate(event)
     }
 
-    fn on_remove_substate(
-        &mut self,
-        depth: usize,
-        event: RemoveSubstateEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.system.on_remove_substate(depth, event)
+        self.system.on_remove_substate(event)
     }
 
-    fn on_scan_keys(&mut self, depth: usize, event: ScanKeysEvent) -> Result<(), RuntimeError> {
+    fn on_scan_keys(&mut self, event: ScanKeysEvent) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.system.on_scan_keys(depth, event)
+        self.system.on_scan_keys(event)
     }
 
-    fn on_drain_substates(
-        &mut self,
-        depth: usize,
-        event: DrainSubstatesEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.system.on_drain_substates(depth, event)
+        self.system.on_drain_substates(event)
     }
 
     fn on_scan_sorted_substates(
         &mut self,
-        depth: usize,
         event: ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         self.maybe_err()?;
-        self.system.on_scan_sorted_substates(depth, event)
+        self.system.on_scan_sorted_substates(event)
     }
 
     fn before_invoke<Y>(
@@ -329,14 +316,13 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
 
     fn on_mark_substate_as_transient(
         &mut self,
-        depth: usize,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<(), RuntimeError> {
         self.maybe_err()?;
         self.system
-            .on_mark_substate_as_transient(depth, node_id, partition_number, substate_key)
+            .on_mark_substate_as_transient(node_id, partition_number, substate_key)
     }
 
     fn on_substate_lock_fault<Y>(

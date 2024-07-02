@@ -69,7 +69,7 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     //======================
 
     #[inline(always)]
-    fn on_pin_node(_system: &mut M, _depth: usize, _node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn on_pin_node(_system: &mut M, _node_id: &NodeId) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -111,7 +111,6 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     #[inline(always)]
     fn on_mark_substate_as_transient(
         _system: &mut M,
-        _depth: usize,
         _node_id: &NodeId,
         _partition_number: &PartitionNumber,
         _substate_key: &SubstateKey,
@@ -152,36 +151,26 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     }
 
     #[inline(always)]
-    fn on_set_substate(
-        _system: &mut M,
-        _depth: usize,
-        _event: &SetSubstateEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_set_substate(_system: &mut M, _event: &SetSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
     fn on_remove_substate(
         _system: &mut M,
-        _depth: usize,
         _event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_scan_keys(
-        _system: &mut M,
-        _depth: usize,
-        _event: &ScanKeysEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_keys(_system: &mut M, _event: &ScanKeysEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
     fn on_drain_substates(
         _system: &mut M,
-        _depth: usize,
         _event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -190,7 +179,6 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     #[inline(always)]
     fn on_scan_sorted_substates(
         _system: &mut M,
-        _depth: usize,
         _event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
