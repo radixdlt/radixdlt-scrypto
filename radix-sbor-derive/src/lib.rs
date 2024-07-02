@@ -169,6 +169,17 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
         .into()
 }
 
+/// A macro for outputting tests and marker traits to assert that a type has maintained its shape over time.
+#[proc_macro_derive(ScryptoSborAssertion, attributes(sbor_assert))]
+pub fn scrypto_sbor_assertion(input: TokenStream) -> TokenStream {
+    sbor_derive_common::sbor_assert::handle_sbor_assert_derive(
+        proc_macro2::TokenStream::from(input),
+        "radix_common::data::scrypto::ScryptoCustomSchema",
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
+}
+
 /// Derive code for implementing the required logic to mark a type as being an event.
 ///
 /// # Example

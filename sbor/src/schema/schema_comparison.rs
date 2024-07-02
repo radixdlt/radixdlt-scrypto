@@ -330,10 +330,11 @@ impl<'s, S: CustomSchema> SchemaComparisonResult<'s, S> {
         let mut output = String::new();
         writeln!(
             &mut output,
-            "Schema comparison FAILED between base schema ({}) and compared schema ({}) with {} errors:",
+            "Schema comparison FAILED between base schema ({}) and compared schema ({}) with {} {}:",
             base_schema_name,
             compared_schema_name,
             self.errors.len(),
+            if self.errors.len() == 1 { "error" } else { "errors" },
         ).unwrap();
         for error in &self.errors {
             write!(&mut output, "- ").unwrap();
@@ -1617,15 +1618,27 @@ pub struct ComparisonTypeRoot {
     compared_type_id: LocalTypeId,
 }
 
-pub struct NamedSchemaVersions<S: CustomSchema, C: ComparisonSchema<S>> {
+pub struct NamedSchemaVersions<S: CustomSchema, C: ComparableSchema<S>> {
     ordered_versions: IndexMap<String, C>,
     custom_schema: PhantomData<S>,
 }
 
-impl<S: CustomSchema, C: ComparisonSchema<S>> NamedSchemaVersions<S, C> {
+impl<S: CustomSchema, C: ComparableSchema<S>> NamedSchemaVersions<S, C> {
     pub fn new() -> Self {
         Self {
             ordered_versions: Default::default(),
+            custom_schema: Default::default(),
+        }
+    }
+
+    pub fn from<F: IntoIterator<Item = (K, V)>, K: AsRef<str>, V: IntoSchema<C, S>>(
+        from: F,
+    ) -> Self {
+        Self {
+            ordered_versions: from
+                .into_iter()
+                .map(|(name, version)| (name.as_ref().to_string(), version.into_schema()))
+                .collect(),
             custom_schema: Default::default(),
         }
     }
@@ -1655,20 +1668,19 @@ impl<S: CustomSchema, C: ComparisonSchema<S>> NamedSchemaVersions<S, C> {
 /// # type ScryptoCustomSchema = NoCustomSchema;
 /// # struct MyType;
 /// let base = SingleTypeSchema::from("5b....");
-/// let current = SingleTypeSchema::of_type::<MyType>();
-/// assert_single_type_comparison::<ScryptoCustomSchema>(
-///     SchemaComparisonSettings::equality(),
+/// let current = SingleTypeSchema::for_type::<MyType>();
+/// compare_single_type_schema::<ScryptoCustomSchema>(
+///     &SchemaComparisonSettings::require_equality(),
 ///     &base,
 ///     &current,
-/// );
+/// ).assert_valid("base", "compared");
 /// ```
-pub fn assert_single_type_comparison<S: CustomSchema>(
+pub fn compare_single_type_schemas<'s, S: CustomSchema>(
     comparison_settings: &SchemaComparisonSettings,
-    base: &SingleTypeSchema<S>,
-    compared: &SingleTypeSchema<S>,
-) {
+    base: &'s SingleTypeSchema<S>,
+    compared: &'s SingleTypeSchema<S>,
+) -> SchemaComparisonResult<'s, S> {
     base.compare_with(compared, comparison_settings)
-        .assert_valid("base", "compared");
 }
 
 /// Designed for ensuring a type is only altered in ways which ensure
@@ -1764,20 +1776,19 @@ pub fn assert_type_compatibility<S: CustomSchema, T: Describe<S::CustomAggregato
     )
 }
 
-pub fn assert_type_collection_comparison<S: CustomSchema>(
+pub fn compare_type_collection_schemas<'s, S: CustomSchema>(
     comparison_settings: &SchemaComparisonSettings,
-    base: &NamedTypesSchema<S>,
-    compared: &NamedTypesSchema<S>,
-) {
+    base: &'s TypeCollectionSchema<S>,
+    compared: &'s TypeCollectionSchema<S>,
+) -> SchemaComparisonResult<'s, S> {
     base.compare_with(compared, comparison_settings)
-        .assert_valid("base", "compared");
 }
 
 pub fn assert_type_collection_backwards_compatibility<S: CustomSchema>(
-    current: NamedTypesSchema<S>,
+    current: TypeCollectionSchema<S>,
     versions_builder: impl FnOnce(
-        NamedSchemaVersions<S, NamedTypesSchema<S>>,
-    ) -> NamedSchemaVersions<S, NamedTypesSchema<S>>,
+        NamedSchemaVersions<S, TypeCollectionSchema<S>>,
+    ) -> NamedSchemaVersions<S, TypeCollectionSchema<S>>,
 ) {
     assert_type_collection_compatibility(
         &SchemaComparisonSettings::allow_extension(),
@@ -1788,10 +1799,10 @@ pub fn assert_type_collection_backwards_compatibility<S: CustomSchema>(
 
 pub fn assert_type_collection_compatibility<S: CustomSchema>(
     comparison_settings: &SchemaComparisonSettings,
-    current: NamedTypesSchema<S>,
+    current: TypeCollectionSchema<S>,
     versions_builder: impl FnOnce(
-        NamedSchemaVersions<S, NamedTypesSchema<S>>,
-    ) -> NamedSchemaVersions<S, NamedTypesSchema<S>>,
+        NamedSchemaVersions<S, TypeCollectionSchema<S>>,
+    ) -> NamedSchemaVersions<S, TypeCollectionSchema<S>>,
 ) {
     assert_schema_compatibility(
         comparison_settings,
@@ -1800,7 +1811,7 @@ pub fn assert_type_collection_compatibility<S: CustomSchema>(
     )
 }
 
-fn assert_schema_compatibility<S: CustomSchema, C: ComparisonSchema<S>>(
+fn assert_schema_compatibility<S: CustomSchema, C: ComparableSchema<S>>(
     schema_comparison_settings: &SchemaComparisonSettings,
     current: &C,
     named_versions: &NamedSchemaVersions<S, C>,
@@ -1813,7 +1824,7 @@ fn assert_schema_compatibility<S: CustomSchema, C: ComparisonSchema<S>>(
         let mut error = String::new();
         writeln!(
             &mut error,
-            "You must provide at least one named versioned schema to use this method."
+            "You must provide at least one named schema version."
         )
         .unwrap();
         writeln!(&mut error, "Use a relevant name (for example, the current software version name), and save the current schema as follows:").unwrap();
@@ -1873,7 +1884,7 @@ impl<S: CustomSchema> SingleTypeSchema<S> {
         Self { schema, type_id }
     }
 
-    pub fn from<T: IntoSchema<Self, S>>(from: &T) -> Self {
+    pub fn from<T: IntoSchema<Self, S>>(from: T) -> Self {
         from.into_schema()
     }
 
@@ -1882,7 +1893,7 @@ impl<S: CustomSchema> SingleTypeSchema<S> {
     }
 }
 
-impl<S: CustomSchema> ComparisonSchema<S> for SingleTypeSchema<S> {
+impl<S: CustomSchema> ComparableSchema<S> for SingleTypeSchema<S> {
     fn compare_with<'s>(
         &'s self,
         compared: &'s Self,
@@ -1914,12 +1925,12 @@ impl<S: CustomSchema> IntoSchema<Self, S> for SingleTypeSchema<S> {
 /// For example, traits, or blueprint interfaces.
 #[derive(Debug, Clone, Sbor)]
 #[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
-pub struct NamedTypesSchema<S: CustomSchema> {
+pub struct TypeCollectionSchema<S: CustomSchema> {
     pub schema: VersionedSchema<S>,
     pub type_ids: IndexMap<String, LocalTypeId>,
 }
 
-impl<S: CustomSchema> NamedTypesSchema<S> {
+impl<S: CustomSchema> TypeCollectionSchema<S> {
     pub fn new(schema: VersionedSchema<S>, type_ids: IndexMap<String, LocalTypeId>) -> Self {
         Self { schema, type_ids }
     }
@@ -1929,11 +1940,11 @@ impl<S: CustomSchema> NamedTypesSchema<S> {
     }
 
     pub fn from_aggregator(aggregator: TypeAggregator<S::CustomAggregatorTypeKind>) -> Self {
-        aggregator.generate_named_types_schema::<S>()
+        aggregator.generate_type_collection_schema::<S>()
     }
 }
 
-impl<S: CustomSchema> ComparisonSchema<S> for NamedTypesSchema<S> {
+impl<S: CustomSchema> ComparableSchema<S> for TypeCollectionSchema<S> {
     fn compare_with<'s>(
         &'s self,
         compared: &'s Self,
@@ -1948,14 +1959,15 @@ impl<S: CustomSchema> ComparisonSchema<S> for NamedTypesSchema<S> {
     }
 }
 
-impl<S: CustomSchema> IntoSchema<Self, S> for NamedTypesSchema<S> {
+impl<S: CustomSchema> IntoSchema<Self, S> for TypeCollectionSchema<S> {
     fn into_schema(&self) -> Self {
         self.clone()
     }
 }
 
-// Marker trait
-pub trait ComparisonSchema<S: CustomSchema>: Clone + VecSbor<S::DefaultCustomExtension> {
+/// Marker trait for SingleTypeSchema and NamedTypesSchema which includes named pointers to types,
+/// which can be used for comparisons of different versions of the same schema.
+pub trait ComparableSchema<S: CustomSchema>: Clone + VecSbor<S::DefaultCustomExtension> {
     fn encode_to_bytes(&self) -> Vec<u8> {
         vec_encode::<S::DefaultCustomExtension, Self>(self, BASIC_SBOR_V1_MAX_DEPTH).unwrap()
     }
@@ -1965,11 +1977,24 @@ pub trait ComparisonSchema<S: CustomSchema>: Clone + VecSbor<S::DefaultCustomExt
     }
 
     fn decode_from_bytes(bytes: &[u8]) -> Self {
-        vec_decode::<S::DefaultCustomExtension, Self>(bytes, BASIC_SBOR_V1_MAX_DEPTH).unwrap()
+        vec_decode_with_nice_error::<S::DefaultCustomExtension, Self>(
+            bytes,
+            BASIC_SBOR_V1_MAX_DEPTH,
+        )
+        .unwrap_or_else(|err| {
+            panic!(
+                "Could not SBOR decode bytes into {} with {}: {:?}",
+                core::any::type_name::<Self>(),
+                core::any::type_name::<S::DefaultCustomExtension>(),
+                err,
+            )
+        })
     }
 
     fn decode_from_hex(hex: &str) -> Self {
-        Self::decode_from_bytes(&hex::decode(hex).unwrap())
+        let bytes = hex::decode(hex)
+            .unwrap_or_else(|err| panic!("Provided string was not valid hex: {err}"));
+        Self::decode_from_bytes(&bytes)
     }
 
     fn compare_with<'s>(
@@ -1979,11 +2004,11 @@ pub trait ComparisonSchema<S: CustomSchema>: Clone + VecSbor<S::DefaultCustomExt
     ) -> SchemaComparisonResult<'s, S>;
 }
 
-pub trait IntoSchema<C: ComparisonSchema<S>, S: CustomSchema> {
+pub trait IntoSchema<C: ComparableSchema<S>, S: CustomSchema> {
     fn into_schema(&self) -> C;
 }
 
-impl<'a, C: ComparisonSchema<S>, S: CustomSchema, T: IntoSchema<C, S> + ?Sized> IntoSchema<C, S>
+impl<'a, C: ComparableSchema<S>, S: CustomSchema, T: IntoSchema<C, S> + ?Sized> IntoSchema<C, S>
     for &'a T
 {
     fn into_schema(&self) -> C {
@@ -1991,28 +2016,32 @@ impl<'a, C: ComparisonSchema<S>, S: CustomSchema, T: IntoSchema<C, S> + ?Sized> 
     }
 }
 
-impl<C: ComparisonSchema<S>, S: CustomSchema> IntoSchema<C, S> for [u8] {
+impl<C: ComparableSchema<S>, S: CustomSchema> IntoSchema<C, S> for [u8] {
     fn into_schema(&self) -> C {
         C::decode_from_bytes(self)
     }
 }
 
-impl<C: ComparisonSchema<S>, S: CustomSchema> IntoSchema<C, S> for Vec<u8> {
+impl<C: ComparableSchema<S>, S: CustomSchema> IntoSchema<C, S> for Vec<u8> {
     fn into_schema(&self) -> C {
         C::decode_from_bytes(self)
     }
 }
 
-impl<C: ComparisonSchema<S>, S: CustomSchema> IntoSchema<C, S> for String {
+impl<C: ComparableSchema<S>, S: CustomSchema> IntoSchema<C, S> for String {
     fn into_schema(&self) -> C {
         C::decode_from_hex(self)
     }
 }
 
-impl<C: ComparisonSchema<S>, S: CustomSchema> IntoSchema<C, S> for str {
+impl<C: ComparableSchema<S>, S: CustomSchema> IntoSchema<C, S> for str {
     fn into_schema(&self) -> C {
         C::decode_from_hex(self)
     }
 }
+
+/// Marker traits intended to be implemented by the SborAssert macros
+pub trait CheckedFixedSchema<S: CustomSchema>: CheckedBackwardsCompatibleSchema<S> {}
+pub trait CheckedBackwardsCompatibleSchema<S: CustomSchema> {}
 
 // NOTE: Types are in sbor-tests/tests/schema_comparison.rs

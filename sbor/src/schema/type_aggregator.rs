@@ -236,10 +236,10 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
         return true;
     }
 
-    pub fn generate_named_types_schema<S: CustomSchema<CustomAggregatorTypeKind = C>>(
+    pub fn generate_type_collection_schema<S: CustomSchema<CustomAggregatorTypeKind = C>>(
         self,
-    ) -> NamedTypesSchema<S> {
-        NamedTypesSchema::new(
+    ) -> TypeCollectionSchema<S> {
+        TypeCollectionSchema::new(
             generate_schema_from_types(self.types),
             self.named_root_types,
         )

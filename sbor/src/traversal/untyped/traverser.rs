@@ -370,6 +370,7 @@ impl<'t, 'd, 'de, T: CustomTraversal> ActionHandler<'t, 'd, 'de, T> {
         self.complete(TraversalEvent::End, NextAction::Ended)
     }
 
+    #[inline]
     fn read_value_body(
         self,
         value_kind: ValueKind<T::CustomValueKind>,

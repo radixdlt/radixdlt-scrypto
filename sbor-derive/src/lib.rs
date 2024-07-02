@@ -155,6 +155,7 @@ pub fn eager_replace(token_stream: TokenStream) -> TokenStream {
 
 const BASIC_CUSTOM_VALUE_KIND: &str = "sbor::NoCustomValueKind";
 const BASIC_CUSTOM_TYPE_KIND: &str = "sbor::NoCustomTypeKind";
+const BASIC_CUSTOM_SCHEMA: &str = "sbor::NoCustomSchema";
 
 /// Derive code that returns the value kind - specifically for Basic SBOR.
 #[proc_macro_derive(BasicCategorize, attributes(sbor))]
@@ -208,6 +209,17 @@ pub fn basic_sbor(input: TokenStream) -> TokenStream {
         proc_macro2::TokenStream::from(input),
         Some(BASIC_CUSTOM_VALUE_KIND),
         Some(BASIC_CUSTOM_TYPE_KIND),
+    )
+    .unwrap_or_else(|err| err.to_compile_error())
+    .into()
+}
+
+/// A macro for outputting tests and marker traits to assert that a type has maintained its shape over time.
+#[proc_macro_derive(BasicSborAssertion, attributes(sbor_assert))]
+pub fn basic_sbor_assertion(input: TokenStream) -> TokenStream {
+    sbor_derive_common::sbor_assert::handle_sbor_assert_derive(
+        proc_macro2::TokenStream::from(input),
+        BASIC_CUSTOM_SCHEMA,
     )
     .unwrap_or_else(|err| err.to_compile_error())
     .into()
