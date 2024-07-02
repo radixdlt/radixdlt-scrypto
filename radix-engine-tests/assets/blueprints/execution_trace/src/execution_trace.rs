@@ -9,6 +9,7 @@ mod execution_trace_test {
     impl ExecutionTraceBp {
         pub fn transfer_resource_between_two_components(
             amount: u8,
+            use_take_advanced: bool,
         ) -> (
             ResourceAddress,
             Global<ExecutionTraceBp>,
@@ -34,7 +35,11 @@ mod execution_trace_test {
             .prepare_to_globalize(OwnerRole::None)
             .globalize();
 
-            let transfer_bucket: Bucket = source_component.take(amount);
+            let transfer_bucket: Bucket = if use_take_advanced {
+                source_component.take_advanced(amount)
+            } else {
+                source_component.take(amount)
+            };
             target_component.put(transfer_bucket);
 
             (resource_address, source_component, target_component)
@@ -42,6 +47,10 @@ mod execution_trace_test {
 
         pub fn take(&mut self, amount: u8) -> Bucket {
             self.vault.take(amount)
+        }
+
+        pub fn take_advanced(&mut self, amount: u8) -> Bucket {
+            self.vault.take_advanced(amount, WithdrawStrategy::Exact)
         }
 
         pub fn put(&mut self, b: Bucket) {
