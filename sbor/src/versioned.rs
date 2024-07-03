@@ -112,7 +112,8 @@ pub trait UniqueVersioned: Versioned {
 /// This macro is just a simpler wrapper around the [`define_versioned`] macro,
 /// for use when there's just a single version.
 ///
-/// Example usage:
+/// ## Example usage
+///
 /// ```rust
 /// use sbor::prelude::*;
 ///
@@ -123,7 +124,11 @@ pub trait UniqueVersioned: Versioned {
 ///
 /// define_single_versioned! {
 ///    #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
-///    pub VersionedFoo(FooVersions) => Foo = FooV1
+///    pub VersionedFoo(FooVersions) => Foo = FooV1,
+///    outer_attributes: [
+///    ],
+///    inner_attributes: [
+///    ],
 /// }
 ///
 /// // `Foo` is created as an alias for `FooV1`
@@ -135,14 +140,41 @@ pub trait UniqueVersioned: Versioned {
 /// assert_eq!(a2, a3);
 /// assert_eq!(42, a.as_unique_version().bar);
 /// ```
+///
+/// ## Advanced attribute handling
+///
+/// Note that the provided attributes get applied to _both_ the outer "Versioned" type,
+/// and the inner "Versions" type. To only apply to one type, you can include the
+/// `outer_attributes` optional argument and/or the `inner_attributes` optional argument:
+/// ```
+/// define_single_versioned! {
+///    #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+///    pub VersionedFoo(FooVersions) => Foo = FooV1,
+///    outer_attributes: [
+///        #[sbor(type_name = "MyVersionedFoo")]
+///    ],
+///    inner_attributes: [
+///        #[sbor(type_name = "MyFooVersions")]
+///    ],
+/// }
+/// ```
 #[macro_export]
 macro_rules! define_single_versioned {
     (
         $(#[$attributes:meta])*
-        $vis:vis $versioned_name:ident($versions_name:ident)
+        $vis:vis $versioned_name:ident(
+            $versions_name:ident
+        )
         $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
         =>
         $latest_version_alias:ty = $latest_version_type:ty
+        $(, outer_attributes: [
+            $(#[$outer_attributes:meta])*
+        ])?
+        $(, inner_attributes: [
+            $(#[$inner_attributes:meta])*
+        ])?
+        $(,)?
     ) => {
         $crate::define_versioned!(
             $(#[$attributes])*
@@ -154,6 +186,12 @@ macro_rules! define_single_versioned {
                     1 => $latest_version_alias = $latest_version_type
                 },
             }
+            $(, outer_attributes: [
+                $(#[$outer_attributes])*
+            ])?
+            $(, inner_attributes: [
+                $(#[$inner_attributes])*
+            ])?
         );
 
         $crate::paste::paste! {
@@ -197,7 +235,8 @@ macro_rules! define_single_versioned {
 /// In the future, this may become a programmatic macro to support better error handling /
 /// edge case detection, and opting into more explicit SBOR handling.
 ///
-/// Example usage:
+/// ## Example usage
+///
 /// ```rust
 /// use sbor::prelude::*;
 ///
@@ -247,6 +286,30 @@ macro_rules! define_single_versioned {
 /// // After a call to `a.in_place_fully_update_and_as_latest_version_mut()`, `a` has now been updated:
 /// assert_eq!(a, b);
 /// ```
+///
+/// ## Advanced attribute handling
+///
+/// The provided attributes get applied to _both_ the outer "Versioned" type,
+/// and the inner "Versions" type. To only apply to one type, you can include the
+/// `outer_attributes` optional argument and/or the `inner_attributes` optional argument:
+/// ```
+/// define_versioned! {
+///     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+///     VersionedFoo(FooVersions) {
+///         previous_versions: [
+///             1 => FooV1: { updates_to: 2 },
+///         ],
+///         latest_version: {
+///             2 => Foo = FooV2,
+///         },
+///     }
+///     outer_attributes: [
+///         #[sbor(type_name = "MyVersionedFoo")]
+///     ],
+///     inner_attributes: [
+///         #[sbor(type_name = "MyFooVersions")]
+///     ],
+/// }
 #[macro_export]
 macro_rules! define_versioned {
     (
@@ -268,6 +331,13 @@ macro_rules! define_versioned {
             }
             $(,)? // Optional trailing comma
         }
+        $(, outer_attributes: [
+            $(#[$outer_attributes:meta])*
+        ])?
+        $(, inner_attributes: [
+            $(#[$inner_attributes:meta])*
+        ])?
+        $(,)?
     ) => {
         $crate::eager_replace! {
             [!SET! #FullGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?]
@@ -286,6 +356,7 @@ macro_rules! define_versioned {
 
             #[derive(#PermitSborAttributesAlias)]
             $(#[$attributes])*
+            $($(#[$outer_attributes])*)?
             // Needs to go below $attributes so that a #[derive(Sbor)] in the attributes can see it.
             #[sbor(as_type = [!stringify! #VersionsType])]
             /// If you wish to get access to match on the versions, use `.as_ref()` or `.as_mut()`.
@@ -396,6 +467,7 @@ macro_rules! define_versioned {
 
             #[derive(#PermitSborAttributesAlias)]
             $(#[$attributes])*
+            $($(#[$inner_attributes])*)?
             $vis enum $versions_name #FullGenerics
             {
                 $($(

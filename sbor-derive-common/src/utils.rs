@@ -13,6 +13,11 @@ use quote::format_ident;
 use quote::quote;
 use syn::*;
 
+// See https://github.com/bluss/indexmap/pull/207
+// By defining an alias with a default `DefaultHashBuilder`, we ensure that this type works as `IndexMap<K, V>` and that the `FromIter` impl works in no-std.
+type DefaultHashBuilder = std::collections::hash_map::RandomState;
+type IndexMap<K, V, S = DefaultHashBuilder> = indexmap::IndexMap<K, V, S>;
+
 #[allow(dead_code)]
 pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
     if let Ok(mut proc) = Command::new("rustfmt")
@@ -154,8 +159,8 @@ pub fn extract_wrapped_root_attributes(
 pub fn extract_wrapped_inner_attributes<'m>(
     inner_attributes: &'m [Meta],
     error_message: &str,
-) -> Result<BTreeMap<String, (Ident, Option<Vec<&'m NestedMeta>>)>> {
-    let mut fields = BTreeMap::new();
+) -> Result<IndexMap<String, (Ident, Option<Vec<&'m NestedMeta>>)>> {
+    let mut fields = IndexMap::default();
     for meta in inner_attributes {
         let (name, inner) = extract_wrapping_inner_attribute(meta, error_message)?;
         fields.insert(name.to_string(), (name.clone(), inner));
@@ -593,6 +598,11 @@ pub fn get_generic_types(generics: &Generics) -> Vec<Type> {
             parse_quote!(#ident)
         })
         .collect()
+}
+
+pub fn parse_str_with_span<T: syn::parse::Parse>(source_string: &str, span: Span) -> Result<T> {
+    // https://github.com/dtolnay/syn/issues/559
+    LitStr::new(source_string, span).parse()
 }
 
 pub fn parse_single_type(source_string: &LitStr) -> syn::Result<Type> {

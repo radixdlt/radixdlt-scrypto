@@ -170,6 +170,98 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 }
 
 /// A macro for outputting tests and marker traits to assert that a type has maintained its shape over time.
+///
+/// There are two types of assertion modes:
+/// * "fixed" mode is used to ensure that a type is unchanged.
+/// * "backwards_compatible" mode is used when multiple versions of the type are permissible, but
+///   newer versions of the type must be compatible with the older version where they align.
+///   This mode (A) ensures that the type's current schema is equivalent to the latest version, and
+///   (B) ensures that each of the schemas is a strict extension of the previous mode.
+///
+/// There is also a "generate" mode which can be used to export the current schema. Upon running the generated test,
+/// the schema is either written to a file, or output in a panic message.
+///
+/// ## Initial schema generation
+///
+/// To output the generated schema to a file path relative to the source file, add an attribute like this -
+/// and then run the test which gets generated. If using Rust Analyzer this can be run from the IDE,
+/// or it can be run via `cargo test`.
+///
+/// ```no_run
+/// #[derive(ScryptoSbor, ScryptoSborAssertion)]
+/// #[sbor_assert(generate("FILE:MyType-schema-v1.txt"))]
+/// struct MyType {
+///     // ...
+/// }
+/// ```
+///
+/// The test should generate the given file and then panic. If you wish to only generate the schema
+/// in the panic message, you can with `#[sbor_assert(generate("INLINE"))]`.
+///
+/// ## Fixed schema verification
+///
+/// To verify the type's schema is unchanged, do:
+/// ```no_run
+/// #[derive(ScryptoSbor, ScryptoSborAssertion)]
+/// #[sbor_assert(fixed("FILE:MyType-schema-v1.txt"))]
+/// struct MyType {
+///     // ...
+/// }
+/// ```
+///
+/// Other supported options are `fixed("INLINE:<hex>")` and `fixed("CONST:<Constant>")`.
+///
+/// ## Backwards compatibility verification
+///
+/// To allow multiple backwards-compatible versions, you can do this:
+/// ```no_run
+/// #[derive(ScryptoSbor, ScryptoSborAssertion)]
+/// #[sbor_assert(backwards_compatible(
+///     version1 = "FILE:MyType-schema-v1.txt",
+///     version2 = "FILE:MyType-schema-v2.txt",
+/// ))]
+/// struct MyType {
+///     // ...
+/// }
+/// ```
+///
+/// Instead of `"FILE:X"`, you can also use `"INLINE:<hex>"` and `"CONST:<Constant>"`.
+///
+/// ## Custom settings
+/// By default, the `fixed` mode will use `SchemaComparisonSettings::require_equality()` and
+/// the `backwards_compatible` mode will use `SchemaComparisonSettings::allow_extension()`.
+///
+/// You may wish to change these:
+/// * If you just wish to ignore the equality of metadata such as names, you can use the
+///   `allow_name_changes` flag.
+/// * If you wish to override any settings, you can provide a constant containing your
+///   own SchemaComparisonSettings.
+///
+/// For example:
+/// ```no_run
+/// #[derive(ScryptoSbor, ScryptoSborAssertion)]
+/// #[sbor_assert(
+///     fixed("FILE:MyType-schema-v1.txt"),
+///     settings(allow_name_changes),
+/// )]
+/// struct MyType {
+///     // ...
+/// }
+///
+/// const CUSTOM_COMPARISON_SETTINGS: sbor::schema::SchemaComparisonSettings = sbor::schema::SchemaComparisonSettings::require_equality();
+///
+/// #[derive(ScryptoSbor, ScryptoSborAssertion)]
+/// #[sbor_assert(
+///     backwards_compatible(
+///         version1 = "FILE:MyType-schema-v1.txt",
+///         version2 = "FILE:MyType-schema-v2.txt",
+///     ),
+///     settings(CUSTOM_COMPARISON_SETTINGS),
+/// )]
+/// struct MyOtherType {
+///     // ...
+/// }
+/// ```
 #[proc_macro_derive(ScryptoSborAssertion, attributes(sbor_assert))]
 pub fn scrypto_sbor_assertion(input: TokenStream) -> TokenStream {
     sbor_derive_common::sbor_assert::handle_sbor_assert_derive(
