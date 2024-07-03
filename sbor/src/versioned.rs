@@ -124,11 +124,7 @@ pub trait UniqueVersioned: Versioned {
 ///
 /// define_single_versioned! {
 ///    #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
-///    pub VersionedFoo(FooVersions) => Foo = FooV1,
-///    outer_attributes: [
-///    ],
-///    inner_attributes: [
-///    ],
+///    pub VersionedFoo(FooVersions) => Foo = FooV1
 /// }
 ///
 /// // `Foo` is created as an alias for `FooV1`
