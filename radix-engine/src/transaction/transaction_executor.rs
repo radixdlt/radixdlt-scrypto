@@ -7,6 +7,8 @@ use crate::system::system_callback::{System, SystemInit};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::{BootStore, Track};
 use crate::transaction::*;
+use crate::updates::DefaultForNetwork;
+use crate::vm::wasm::DefaultWasmEngine;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVmExtension, Vm, VmInit};
 use radix_common::constants::*;
@@ -344,7 +346,16 @@ pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmEx
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
+    static SCRYPTO_VM: std::sync::OnceLock<crate::vm::ScryptoVm<DefaultWasmEngine>> =
+        std::sync::OnceLock::new();
+    let vm_init = VmInit {
+        scrypto_vm: SCRYPTO_VM.get_or_init(|| {
+            crate::vm::ScryptoVm::default_for_network(&NetworkDefinition::mainnet())
+        }),
+        native_vm_extension: vm_init.native_vm_extension,
+    };
+
+    execute_transaction_with_configuration::<S, Vm<'s, DefaultWasmEngine, E>>(
         substate_db,
         vm_init,
         execution_config,
