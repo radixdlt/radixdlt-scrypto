@@ -999,7 +999,7 @@ impl Default for WasmerEngine {
 
 impl WasmerEngine {
     pub fn new(options: WasmerEngineOptions) -> Self {
-        let compiler = Singlepass::new();
+        let compiler = wasmer::Cranelift::new();
 
         #[cfg(all(not(feature = "fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
