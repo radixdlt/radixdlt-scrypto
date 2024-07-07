@@ -1,15 +1,21 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
 extern crate core;
-#[cfg(not(any(feature = "std", feature = "alloc")))]
-compile_error!("Either feature `std` or `alloc` must be enabled for this crate.");
-#[cfg(all(feature = "std", feature = "alloc"))]
-compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
-#[cfg(not(any(feature = "moka", feature = "lru")))]
-compile_error!("Either feature `moka` or `lru` must be enabled for this crate.");
-#[cfg(all(feature = "moka", feature = "lru"))]
-compile_error!("Feature `moka` and `lru` can't be enabled at the same time.");
+#[macro_export]
+macro_rules! assert_unique_feature {
+    () => {};
+    ($first:tt $(,$rest:tt)*) => {
+        $(
+            #[cfg(all(feature = $first, feature = $rest))]
+            compile_error!(concat!("features \"", $first, "\" and \"", $rest, "\" cannot be used together"));
+        )*
+        assert_unique_feature!($($rest),*);
+    }
+}
+
+assert_unique_feature!("wasmi", "wasmer");
+assert_unique_feature!("moka", "lru");
+assert_unique_feature!("std", "alloc");
 
 /// Radix Engine kernel, defining state, ownership and (low-level) invocation semantics.
 pub mod kernel;

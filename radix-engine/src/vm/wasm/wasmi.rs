@@ -1897,7 +1897,7 @@ impl WasmEngine for WasmiEngine {
 //  more details:
 //  - https://github.com/rust-lang/rust/issues/60825
 //  - https://github.com/rust-lang/rust/issues/65987
-#[cfg(not(feature = "wasmer"))]
+#[cfg(feature = "wasmi")]
 #[cfg(test)]
 mod tests {
     use super::*;

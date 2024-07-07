@@ -25,7 +25,7 @@ pub type DefaultWasmEngine = WasmerEngine;
 #[cfg(feature = "wasmer")]
 pub type DefaultWasmInstance = WasmerInstance;
 
-#[cfg(not(feature = "wasmer"))]
+#[cfg(feature = "wasmi")]
 pub type DefaultWasmEngine = WasmiEngine;
-#[cfg(not(feature = "wasmer"))]
+#[cfg(feature = "wasmi")]
 pub type DefaultWasmInstance = WasmiInstance;

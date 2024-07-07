@@ -45,7 +45,7 @@ radix-wasm-instrument = { workspace = true,  features = ["ignore_custom_section"
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
 # - Wasmer is a WASM engine with multiple backends: `singlepass` (linear time), `LLVM` and `cranelift`
 
-radix-wasmi = {  workspace = true  }
+radix-wasmi = { workspace = true, optional = true }
 wasmer = { workspace = true, optional = true }
 wasmer-compiler-singlepass = { workspace = true, optional = true }
 
@@ -66,7 +66,7 @@ harness = false
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std", "moka"]
+default = ["std", "moka", "wasmi"]
 std = ["sbor/std", "radix-native-sdk/std", "radix-wasmi/std", "radix-transactions/std", "radix-blueprint-schema-init/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "radix-common-derive/std", "radix-rust/std", "serde_json?/std", "radix-wasm-instrument/std" ]
 alloc = ["sbor/alloc", "radix-native-sdk/alloc", "radix-transactions/alloc", "radix-blueprint-schema-init/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc", "radix-common-derive/alloc", "radix-rust/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
@@ -74,7 +74,8 @@ alloc = ["sbor/alloc", "radix-native-sdk/alloc", "radix-transactions/alloc", "ra
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
 cpu_ram_metrics = ["std", "perfcnt", "radix-engine-profiling/ram_metrics"]
 
-# Use `wasmer` as WASM engine, otherwise `wasmi`
+# The various WASM runtimes that we can use.
+wasmi = ["dep:radix-wasmi"]
 wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 
 # Two features for the two possible libraries to use for caching. Moka is not WASM friendly while LRU is. One of these
