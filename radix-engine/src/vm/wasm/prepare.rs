@@ -12,7 +12,6 @@ use wasm_instrument::{
 };
 use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
 
-use super::WasmiModule;
 use crate::vm::ScryptoVmVersion;
 
 #[derive(Debug)]
@@ -1172,7 +1171,7 @@ impl WasmModule {
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
         // we're using the `wasmi` logic as a shortcut.
         let code = self.module.bytes();
-        WasmiModule::new(&code[..]).map_err(|e| PrepareError::NotInstantiatable {
+        super::wasmi::WasmiModule::new(&code[..]).map_err(|e| PrepareError::NotInstantiatable {
             reason: format!("{:?}", e),
         })?;
 

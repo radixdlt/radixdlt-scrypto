@@ -124,6 +124,7 @@ wabt = { version = "0.10.0" }
 walkdir = { version = "2.3.3", default-features = false }
 wasm-opt = { version = "0.114.1" }
 wasmer = { version = "2.2.1" }
+latest-wasmer = { package = "wasmer", version = "4.3.3" }
 wasmer-compiler-singlepass = { version = "2.2.1" }
 wasmparser = { version = "0.107.0", default-features = false }
 extend = { version = "1.2.0" }

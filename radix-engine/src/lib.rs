@@ -13,7 +13,7 @@ macro_rules! assert_unique_feature {
     }
 }
 
-assert_unique_feature!("wasmi", "wasmer");
+assert_unique_feature!("wasmi", "wasmer", "wasmer-latest");
 assert_unique_feature!("moka", "lru");
 assert_unique_feature!("std", "alloc");
 

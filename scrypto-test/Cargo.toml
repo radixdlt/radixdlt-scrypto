@@ -12,7 +12,7 @@ repository = "https://github.com/radixdlt/radixdlt-scrypto"
 sbor = { workspace = true }
 radix-native-sdk = { workspace = true }
 radix-transactions = { workspace = true }
-radix-engine = { workspace = true, features = ["radix_engine_tests", "db_checker"] }
+radix-engine = { workspace = true, features = ["radix_engine_tests", "db_checker", "latest-wasmer"] }
 radix-substate-store-impls = { workspace = true }
 radix-common = { workspace = true }
 radix-engine-interface = { workspace = true }

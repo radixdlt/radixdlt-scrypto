@@ -47,6 +47,7 @@ radix-wasm-instrument = { workspace = true,  features = ["ignore_custom_section"
 
 radix-wasmi = { workspace = true, optional = true }
 wasmer = { workspace = true, optional = true }
+latest-wasmer = { workspace = true, features = ["cranelift", "singlepass", "llvm"] }
 wasmer-compiler-singlepass = { workspace = true, optional = true }
 
 serde_json = { workspace = true, optional = true }
@@ -66,7 +67,7 @@ harness = false
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std", "moka", "wasmi"]
+default = ["std", "moka", "latest-wasmer"]
 std = ["sbor/std", "radix-native-sdk/std", "radix-wasmi/std", "radix-transactions/std", "radix-blueprint-schema-init/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "radix-common-derive/std", "radix-rust/std", "serde_json?/std", "radix-wasm-instrument/std" ]
 alloc = ["sbor/alloc", "radix-native-sdk/alloc", "radix-transactions/alloc", "radix-blueprint-schema-init/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc", "radix-common-derive/alloc", "radix-rust/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
@@ -77,6 +78,7 @@ cpu_ram_metrics = ["std", "perfcnt", "radix-engine-profiling/ram_metrics"]
 # The various WASM runtimes that we can use.
 wasmi = ["dep:radix-wasmi"]
 wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
+latest-wasmer = []
 
 # Two features for the two possible libraries to use for caching. Moka is not WASM friendly while LRU is. One of these
 # two features must be enabled.
