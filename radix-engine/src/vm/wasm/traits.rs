@@ -367,6 +367,17 @@ pub trait WasmInstance {
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
 }
 
+impl WasmInstance for Box<dyn WasmInstance> {
+    fn invoke_export<'r>(
+        &mut self,
+        func_name: &str,
+        args: Vec<Buffer>,
+        runtime: &mut Box<dyn WasmRuntime + 'r>,
+    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
+        self.as_mut().invoke_export(func_name, args, runtime)
+    }
+}
+
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
 pub trait WasmEngine {
     type WasmInstance: WasmInstance;
@@ -375,4 +386,12 @@ pub trait WasmEngine {
     ///
     /// The code must have been validated and instrumented!
     fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> Self::WasmInstance;
+}
+
+impl WasmEngine for Box<dyn WasmEngine<WasmInstance = Box<dyn WasmInstance>>> {
+    type WasmInstance = Box<dyn WasmInstance>;
+
+    fn instantiate(&self, code_hash: CodeHash, instrumented_code: &[u8]) -> Self::WasmInstance {
+        self.as_ref().instantiate(code_hash, instrumented_code)
+    }
 }

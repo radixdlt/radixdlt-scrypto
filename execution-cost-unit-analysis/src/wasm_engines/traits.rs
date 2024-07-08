@@ -1,8 +1,11 @@
+use crate::configuration::*;
+use radix_engine::blueprints::package::*;
 use std::num::NonZero;
 
-use radix_engine::blueprints::package::*;
-
-pub trait ModuleCache<T> {
+pub trait ModuleCache<T>
+where
+    Self: IntoDescriptor<Descriptor = Cache>,
+{
     fn new(cache_size: CacheSize) -> Self;
     fn store(&self, key: CodeHash, module: T);
     fn load<F, O>(&self, key: &CodeHash, callback: F) -> Option<O>

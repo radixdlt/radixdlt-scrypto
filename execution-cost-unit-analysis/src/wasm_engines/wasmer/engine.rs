@@ -1,5 +1,6 @@
 use super::instance::*;
 use super::module::*;
+use crate::configuration::*;
 use crate::wasm_engines::cache::*;
 use crate::wasm_engines::traits::*;
 use radix_common::constants::*;
@@ -23,16 +24,30 @@ pub struct WasmerEngine<M, C> {
     compiler: PhantomData<C>,
 }
 
-impl Default
-    for WasmerEngine<MokaModuleCache<WasmerModule>, wasmer_compiler_singlepass::Singlepass>
+impl<M, C> Default for WasmerEngine<M, C>
+where
+    M: ModuleCache<WasmerModule>,
+    C: Into<Box<dyn CompilerConfig>> + Default,
 {
     fn default() -> Self {
         Self::new(
             WasmerEngineOptions {
                 max_cache_size: WASM_ENGINE_CACHE_SIZE,
             },
-            Singlepass::new(),
+            Default::default(),
         )
+    }
+}
+
+impl<M, C> IntoDescriptor for WasmerEngine<M, C>
+where
+    M: IntoDescriptor<Descriptor = Cache>,
+    C: IntoDescriptor<Descriptor = Compiler>,
+{
+    type Descriptor = (WasmRuntime, Cache, Compiler);
+
+    fn descriptor() -> Self::Descriptor {
+        (WasmRuntime::WasmerV2, M::descriptor(), C::descriptor())
     }
 }
 
@@ -79,5 +94,21 @@ where
                 instance
             }
         }
+    }
+}
+
+impl IntoDescriptor for wasmer_compiler_singlepass::Singlepass {
+    type Descriptor = Compiler;
+
+    fn descriptor() -> Self::Descriptor {
+        Compiler::SinglePass
+    }
+}
+
+impl IntoDescriptor for wasmer_compiler_cranelift::Cranelift {
+    type Descriptor = Compiler;
+
+    fn descriptor() -> Self::Descriptor {
+        Compiler::Cranelift
     }
 }

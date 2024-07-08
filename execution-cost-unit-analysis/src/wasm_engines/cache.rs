@@ -1,3 +1,4 @@
+use crate::configuration::*;
 use crate::wasm_engines::traits::*;
 use radix_common::prelude::*;
 use radix_engine_interface::blueprints::package::CodeHash;
@@ -24,6 +25,14 @@ impl<Module> ModuleCache<Module> for NoCache<Module> {
     }
 }
 
+impl<Module> IntoDescriptor for NoCache<Module> {
+    type Descriptor = Cache;
+
+    fn descriptor() -> Self::Descriptor {
+        Cache::None
+    }
+}
+
 pub struct LruModuleCache<Module>(RefCell<lru::LruCache<CodeHash, Arc<Module>>>);
 
 impl<Module> ModuleCache<Module> for LruModuleCache<Module> {
@@ -40,6 +49,14 @@ impl<Module> ModuleCache<Module> for LruModuleCache<Module> {
         F: FnOnce(&Module) -> O,
     {
         self.0.borrow_mut().get(key).map(|item| callback(item))
+    }
+}
+
+impl<Module> IntoDescriptor for LruModuleCache<Module> {
+    type Descriptor = Cache;
+
+    fn descriptor() -> Self::Descriptor {
+        Cache::PersistentLru
     }
 }
 
@@ -62,5 +79,13 @@ where
         F: FnOnce(&Module) -> O,
     {
         self.0.get(key).map(|item| callback(&item))
+    }
+}
+
+impl<Module> IntoDescriptor for MokaModuleCache<Module> {
+    type Descriptor = Cache;
+
+    fn descriptor() -> Self::Descriptor {
+        Cache::PersistentMoka
     }
 }
