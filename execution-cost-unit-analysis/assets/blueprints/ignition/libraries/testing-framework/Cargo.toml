@@ -1,0 +1,39 @@
+[package]
+name = "testing-framework"
+version = "0.1.0"
+edition = "2021"
+description = "A crate with unit and integration tests for Ignition"
+build = "build.rs"
+
+[dependencies]
+sbor = { workspace = true }
+radix-transactions = { workspace = true }
+scrypto-test = { workspace = true }
+
+radix-engine = { workspace = true }
+radix-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+
+common = { path = "../common" }
+ignition = { path = "../../packages/ignition" }
+simple-oracle = { path = "../../packages/simple-oracle" }
+ports-interface = { path = "../ports-interface" }
+ociswap-v1-adapter-v1 = { path = "../../packages/ociswap-v1-adapter-v1", features = [
+    "manifest-builder-stubs",
+] }
+ociswap-v2-adapter-v1 = { path = "../../packages/ociswap-v2-adapter-v1", features = [
+    "manifest-builder-stubs",
+] }
+defiplaza-v2-adapter-v1 = { path = "../../packages/defiplaza-v2-adapter-v1", features = [
+    "manifest-builder-stubs",
+] }
+caviarnine-v1-adapter-v2 = { path = "../../packages/caviarnine-v1-adapter-v2", features = [
+    "manifest-builder-stubs",
+] }
+
+paste = { version = "1.0.14" }
+extend = { version = "1.2.0" }
+lazy_static = "1.4.0"
+
+[build-dependencies]
+flate2 = { version = "1.0.28" }

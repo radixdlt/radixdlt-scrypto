@@ -1,0 +1,20 @@
+[package]
+name = "ignition"
+version = "0.1.0"
+edition = "2021"
+description = "The implementation of the Ignition protocol"
+
+[dependencies]
+sbor = { workspace = true }
+scrypto = { workspace = true, default-features = true }
+radix-common-derive = { workspace = true }
+
+ports-interface = { path = "../../libraries/ports-interface" }
+common = { path = "../../libraries/common" }
+
+[features]
+default = []
+test = []
+
+[lib]
+crate-type = ["cdylib", "lib"]

@@ -1,0 +1,31 @@
+[package]
+name = "ports-interface"
+version = "0.1.0"
+edition = "2021"
+description = "Defines the interface of the various adapters."
+
+[dependencies]
+sbor = { workspace = true }
+scrypto = { workspace = true }
+radix-transactions = { workspace = true, default-features = true, optional = true }
+radix-common = { workspace = true }
+radix-common-derive = { workspace = true }
+radix-engine-interface = { workspace = true }
+
+common = { path = "../common" }
+scrypto-interface = { path = "../scrypto-interface" }
+
+[features]
+default = [
+    "trait",
+    "scrypto-stubs",
+    "scrypto-test-stubs",
+    "manifest-builder-stubs",
+]
+trait = []
+scrypto-stubs = []
+scrypto-test-stubs = []
+manifest-builder-stubs = ["dep:radix-transactions"]
+
+[lib]
+crate-type = ["cdylib", "lib"]

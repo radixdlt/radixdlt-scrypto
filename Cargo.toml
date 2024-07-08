@@ -45,6 +45,19 @@ members = [
     # Execution cost unit analysis & friends
     "execution-cost-unit-analysis",
     "execution-cost-unit-analysis/assets/blueprints/radiswap",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/libraries/address-macros",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/libraries/common",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/libraries/testing-framework",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/libraries/ports-interface",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/libraries/scrypto-interface",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/libraries/scrypto-math",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/packages/caviarnine-v1-adapter-v1",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/packages/caviarnine-v1-adapter-v2",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/packages/defiplaza-v2-adapter-v1",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/packages/ignition",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/packages/ociswap-v1-adapter-v1",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/packages/ociswap-v2-adapter-v1",
+    "execution-cost-unit-analysis/assets/blueprints/ignition/packages/simple-oracle",
 ]
 
 [workspace.dependencies]

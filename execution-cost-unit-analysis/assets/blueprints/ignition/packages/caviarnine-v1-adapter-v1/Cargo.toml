@@ -1,0 +1,26 @@
+[package]
+name = "caviarnine-v1-adapter-v1"
+version = "0.1.0"
+edition = "2021"
+description = "Defines the adapter for Caviarnine"
+
+[dependencies]
+sbor = { workspace = true }
+scrypto = { workspace = true, default-features = true }
+radix-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+radix-transactions = { workspace = true, default-features = true, optional = true }
+
+scrypto-interface = { path = "../../libraries/scrypto-interface" }
+scrypto-math = { path = "../../libraries/scrypto-math" }
+ports-interface = { path = "../../libraries/ports-interface" }
+common = { path = "../../libraries/common" }
+
+[features]
+default = []
+test = []
+
+manifest-builder-stubs = ["dep:radix-transactions"]
+
+[lib]
+crate-type = ["cdylib", "lib"]

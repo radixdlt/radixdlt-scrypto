@@ -1,0 +1,15 @@
+[package]
+name = "scrypto-math"
+version = "0.4.0"
+edition = "2021"
+license = "MIT"
+description = "Math library extending Radix Scrypto with more advanced mathematical operations"
+repository = "https://github.com/ociswap/scrypto-math"
+
+[dependencies]
+radix-rust = { workspace = true }
+radix-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+
+num-traits = { version = "0.2.15" }
+pretty_assertions = { version = "1.4.0" }

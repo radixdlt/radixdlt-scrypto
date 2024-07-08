@@ -1,0 +1,15 @@
+[package]
+name = "scrypto-interface"
+description = "A library that provides a set of macros for writing and using Scrypto interfaces"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+heck = { version = "0.4.1" }
+proc-macro2 = { version = "1.0.76" }
+quote = { version = "1.0.35" }
+syn = { version = "2.0.48", features = ["full", "extra-traits"] }
+
+[lib]
+doctest = false
+proc-macro = true
