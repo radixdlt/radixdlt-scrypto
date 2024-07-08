@@ -146,6 +146,7 @@ impl PreciseDecimal {
     ///
     /// # Panics
     /// - Panic if the number of decimal places is not within [0..SCALE]
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     pub fn checked_round<T: Into<i32>>(
         &self,
         decimal_places: T,
@@ -210,7 +211,31 @@ impl PreciseDecimal {
         Some(Self(rounded_subunits))
     }
 
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    pub fn checked_round<T: Into<i32>>(
+        &self,
+        decimal_places: T,
+        mode: RoundingMode,
+    ) -> Option<Self> {
+        let this = scrypto_encode(&self).unwrap();
+        let decimal_places = scrypto_encode(&decimal_places.into()).unwrap();
+        let mode = scrypto_encode(&mode).unwrap();
+
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_round(
+                this.as_ptr(),
+                this.len(),
+                decimal_places.as_ptr(),
+                decimal_places.len(),
+                mode.as_ptr(),
+                mode.len(),
+            )
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
+
     /// Calculates power using exponentiation by squaring.
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     pub fn checked_powi(&self, exp: i64) -> Option<Self> {
         let one_384 = I384::from(Self::ONE.0);
         let base_384 = I384::from(self.0);
@@ -245,7 +270,19 @@ impl PreciseDecimal {
         }
     }
 
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    pub fn checked_powi(&self, exp: i64) -> Option<Self> {
+        let this = scrypto_encode(&self).unwrap();
+        let exp = scrypto_encode(&exp).unwrap();
+
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_powi(this.as_ptr(), this.len(), exp.as_ptr(), exp.len())
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
+
     /// Square root of a PreciseDecimal
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     pub fn checked_sqrt(&self) -> Option<Self> {
         if self.is_negative() {
             return None;
@@ -263,7 +300,17 @@ impl PreciseDecimal {
         Some(Self(sqrt))
     }
 
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    pub fn checked_sqrt(&self) -> Option<Self> {
+        let this = scrypto_encode(&self).unwrap();
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_sqrt(this.as_ptr(), this.len())
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
+
     /// Cubic root of a PreciseDecimal
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     pub fn checked_cbrt(&self) -> Option<Self> {
         if self.is_zero() {
             return Some(Self::ZERO);
@@ -276,7 +323,17 @@ impl PreciseDecimal {
         Some(Self(cbrt))
     }
 
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    pub fn checked_cbrt(&self) -> Option<Self> {
+        let this = scrypto_encode(&self).unwrap();
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_cbrt(this.as_ptr(), this.len())
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
+
     /// Nth root of a PreciseDecimal
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     pub fn checked_nth_root(&self, n: u32) -> Option<Self> {
         if (self.is_negative() && n % 2 == 0) || n == 0 {
             None
@@ -294,6 +351,16 @@ impl PreciseDecimal {
             let nth_root = I256::try_from(correct_nb.nth_root(n)).unwrap();
             Some(Self(nth_root))
         }
+    }
+
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    pub fn checked_nth_root(&self, n: u32) -> Option<Self> {
+        let this = scrypto_encode(&self).unwrap();
+        let n = scrypto_encode(&n).unwrap();
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_nth_root(this.as_ptr(), this.len(), n.as_ptr(), n.len())
+        });
+        scrypto_decode(&bytes).unwrap()
     }
 }
 
@@ -371,16 +438,30 @@ impl From<bool> for PreciseDecimal {
 impl CheckedNeg<PreciseDecimal> for PreciseDecimal {
     type Output = Self;
 
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     #[inline]
     fn checked_neg(self) -> Option<Self::Output> {
         let c = self.0.checked_neg();
         c.map(Self)
+    }
+
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    #[inline]
+    fn checked_neg(self) -> Option<Self::Output> {
+        let this = scrypto_encode(&self).unwrap();
+
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_neg(this.as_ptr(), this.len())
+        });
+
+        scrypto_decode(&bytes).unwrap()
     }
 }
 
 impl CheckedAdd<PreciseDecimal> for PreciseDecimal {
     type Output = Self;
 
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     #[inline]
     fn checked_add(self, other: Self) -> Option<Self::Output> {
         let a = self.0;
@@ -388,11 +469,24 @@ impl CheckedAdd<PreciseDecimal> for PreciseDecimal {
         let c = a.checked_add(b);
         c.map(Self)
     }
+
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    #[inline]
+    fn checked_add(self, other: Self) -> Option<Self::Output> {
+        let this = scrypto_encode(&self).unwrap();
+        let other = scrypto_encode(&other).unwrap();
+
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_add(this.as_ptr(), this.len(), other.as_ptr(), other.len())
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
 }
 
 impl CheckedSub<PreciseDecimal> for PreciseDecimal {
     type Output = Self;
 
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     #[inline]
     fn checked_sub(self, other: Self) -> Option<Self::Output> {
         let a = self.0;
@@ -400,11 +494,24 @@ impl CheckedSub<PreciseDecimal> for PreciseDecimal {
         let c = a.checked_sub(b);
         c.map(Self)
     }
+
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    #[inline]
+    fn checked_sub(self, other: Self) -> Option<Self::Output> {
+        let this = scrypto_encode(&self).unwrap();
+        let other = scrypto_encode(&other).unwrap();
+
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_sub(this.as_ptr(), this.len(), other.as_ptr(), other.len())
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
 }
 
 impl CheckedMul<PreciseDecimal> for PreciseDecimal {
     type Output = Self;
 
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     #[inline]
     fn checked_mul(self, other: Self) -> Option<Self> {
         // Use I384 (BInt<6>) to not overflow.
@@ -417,11 +524,24 @@ impl CheckedMul<PreciseDecimal> for PreciseDecimal {
         let c_256 = I256::try_from(c).ok();
         c_256.map(Self)
     }
+
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    #[inline]
+    fn checked_mul(self, other: Self) -> Option<Self> {
+        let this = scrypto_encode(&self).unwrap();
+        let other = scrypto_encode(&other).unwrap();
+
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_mul(this.as_ptr(), this.len(), other.as_ptr(), other.len())
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
 }
 
 impl CheckedDiv<PreciseDecimal> for PreciseDecimal {
     type Output = Self;
 
+    #[cfg(not(feature = "outsource-decimal-arithmetic"))]
     #[inline]
     fn checked_div(self, other: Self) -> Option<Self> {
         // Use I384 (BInt<6>) to not overflow.
@@ -433,6 +553,18 @@ impl CheckedDiv<PreciseDecimal> for PreciseDecimal {
 
         let c_256 = I256::try_from(c).ok();
         c_256.map(Self)
+    }
+
+    #[cfg(feature = "outsource-decimal-arithmetic")]
+    #[inline]
+    fn checked_div(self, other: Self) -> Option<Self> {
+        let this = scrypto_encode(&self).unwrap();
+        let other = scrypto_encode(&other).unwrap();
+
+        let bytes = radix_common::types::copy_buffer(unsafe {
+            precise_decimal_checked_div(this.as_ptr(), this.len(), other.as_ptr(), other.len())
+        });
+        scrypto_decode(&bytes).unwrap()
     }
 }
 
@@ -959,6 +1091,75 @@ macro_rules! try_from_integer {
 
 try_from_integer!(I192, I256, I320, I384, I448, I512);
 try_from_integer!(U192, U256, U320, U384, U448, U512);
+
+#[cfg(feature = "outsource-decimal-arithmetic")]
+wasm_extern_c! {
+    pub fn precise_decimal_checked_add(
+        num1_ptr: *const u8,
+        num1_len: usize,
+        num2_ptr: *const u8,
+        num2_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_sub(
+        num1_ptr: *const u8,
+        num1_len: usize,
+        num2_ptr: *const u8,
+        num2_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_mul(
+        num1_ptr: *const u8,
+        num1_len: usize,
+        num2_ptr: *const u8,
+        num2_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_div(
+        num1_ptr: *const u8,
+        num1_len: usize,
+        num2_ptr: *const u8,
+        num2_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_neg(
+        num_ptr: *const u8,
+        num_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_round(
+        num_ptr: *const u8,
+        num_len: usize,
+        decimal_places_ptr: *const u8,
+        decimal_places_len: usize,
+        mode_ptr: *const u8,
+        mode_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_powi(
+        num_ptr: *const u8,
+        num_len: usize,
+        exp_ptr: *const u8,
+        exp_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_sqrt(
+        num_ptr: *const u8,
+        num_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_cbrt(
+        num_ptr: *const u8,
+        num_len: usize,
+    ) -> radix_common::types::Buffer;
+
+    pub fn precise_decimal_checked_nth_root(
+        num_ptr: *const u8,
+        num_len: usize,
+        n_ptr: *const u8,
+        n_len: usize,
+    ) -> radix_common::types::Buffer;
+}
 
 #[cfg(test)]
 mod tests {

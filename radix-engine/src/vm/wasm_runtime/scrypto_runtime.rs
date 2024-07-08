@@ -811,4 +811,146 @@ where
 
         self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode Decimal"))
     }
+
+    fn precise_decimal_checked_add(
+        &mut self,
+        num1: Vec<u8>,
+        num2: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal1 = scrypto_decode::<PreciseDecimal>(&num1)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+        let decimal2 = scrypto_decode::<PreciseDecimal>(&num2)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+
+        let result = decimal1.checked_add(decimal2);
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_sub(
+        &mut self,
+        num1: Vec<u8>,
+        num2: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal1 = scrypto_decode::<PreciseDecimal>(&num1)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+        let decimal2 = scrypto_decode::<PreciseDecimal>(&num2)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+
+        let result = decimal1.checked_sub(decimal2);
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_mul(
+        &mut self,
+        num1: Vec<u8>,
+        num2: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal1 = scrypto_decode::<PreciseDecimal>(&num1)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+        let decimal2 = scrypto_decode::<PreciseDecimal>(&num2)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+
+        let result = decimal1.checked_mul(decimal2);
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_div(
+        &mut self,
+        num1: Vec<u8>,
+        num2: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal1 = scrypto_decode::<PreciseDecimal>(&num1)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+        let decimal2 = scrypto_decode::<PreciseDecimal>(&num2)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+
+        let result = decimal1.checked_div(decimal2);
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_neg(
+        &mut self,
+        num: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal = scrypto_decode::<PreciseDecimal>(&num)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+
+        let result = decimal.checked_neg();
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_round(
+        &mut self,
+        num: Vec<u8>,
+        decimal_places: Vec<u8>,
+        mode: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal = scrypto_decode::<PreciseDecimal>(&num)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+        let decimal_places =
+            scrypto_decode::<i32>(&decimal_places).map_err(|_| WasmRuntimeError::InvalidI32)?;
+        let rounding_mode = scrypto_decode::<RoundingMode>(&mode)
+            .map_err(|_| WasmRuntimeError::InvalidRoundingMode)?;
+
+        let result = decimal.checked_round(decimal_places, rounding_mode);
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_powi(
+        &mut self,
+        num: Vec<u8>,
+        exp: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal = scrypto_decode::<PreciseDecimal>(&num)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+        let exp = scrypto_decode::<i64>(&exp).map_err(|_| WasmRuntimeError::InvalidI64)?;
+
+        let result = decimal.checked_powi(exp);
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_sqrt(
+        &mut self,
+        num: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal = scrypto_decode::<PreciseDecimal>(&num)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+
+        let result = decimal.checked_sqrt();
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_cbrt(
+        &mut self,
+        num: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal = scrypto_decode::<PreciseDecimal>(&num)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+
+        let result = decimal.checked_cbrt();
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
+
+    fn precise_decimal_checked_nth_root(
+        &mut self,
+        num: Vec<u8>,
+        n: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let decimal = scrypto_decode::<PreciseDecimal>(&num)
+            .map_err(|_| WasmRuntimeError::InvalidPreciseDecimal)?;
+        let n = scrypto_decode::<u32>(&n).map_err(|_| WasmRuntimeError::InvalidU32)?;
+
+        let result = decimal.checked_nth_root(n);
+
+        self.allocate_buffer(scrypto_encode(&result).expect("Failed to encode PreciseDecimal"))
+    }
 }

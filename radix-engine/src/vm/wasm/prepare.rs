@@ -897,6 +897,163 @@ impl WasmModule {
                             ));
                         }
                     }
+                    PRECISE_DECIMAL_CHECKED_ADD_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_SUB_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_MUL_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_DIV_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_NEG_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_ROUND_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                    ValType::I32,
+                                ],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_POWI_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_SQRT_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_CBRT_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
+                    PRECISE_DECIMAL_CHECKED_NTH_ROOT_FUNCTION_NAME => {
+                        if let TypeRef::Func(type_index) = entry.ty {
+                            if Self::function_type_matches(
+                                &self.module,
+                                type_index,
+                                vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+                                vec![ValType::I64],
+                            ) {
+                                continue;
+                            }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(entry.name.to_string()),
+                            ));
+                        }
+                    }
                     CRYPTO_UTILS_BLS12381_V1_VERIFY_FUNCTION_NAME => {
                         if version < ScryptoVmVersion::crypto_utils_added() {
                             return Err(PrepareError::InvalidImport(

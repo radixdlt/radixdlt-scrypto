@@ -103,6 +103,17 @@ pub const DECIMAL_CHECKED_SQRT_FUNCTION_NAME: &str = "decimal_checked_sqrt";
 pub const DECIMAL_CHECKED_CBRT_FUNCTION_NAME: &str = "decimal_checked_cbrt";
 pub const DECIMAL_CHECKED_NTH_ROOT_FUNCTION_NAME: &str = "decimal_checked_nth_root";
 
+pub const PRECISE_DECIMAL_CHECKED_ADD_FUNCTION_NAME: &str = "precise_decimal_checked_add";
+pub const PRECISE_DECIMAL_CHECKED_SUB_FUNCTION_NAME: &str = "precise_decimal_checked_sub";
+pub const PRECISE_DECIMAL_CHECKED_MUL_FUNCTION_NAME: &str = "precise_decimal_checked_mul";
+pub const PRECISE_DECIMAL_CHECKED_DIV_FUNCTION_NAME: &str = "precise_decimal_checked_div";
+pub const PRECISE_DECIMAL_CHECKED_NEG_FUNCTION_NAME: &str = "precise_decimal_checked_neg";
+pub const PRECISE_DECIMAL_CHECKED_ROUND_FUNCTION_NAME: &str = "precise_decimal_checked_round";
+pub const PRECISE_DECIMAL_CHECKED_POWI_FUNCTION_NAME: &str = "precise_decimal_checked_powi";
+pub const PRECISE_DECIMAL_CHECKED_SQRT_FUNCTION_NAME: &str = "precise_decimal_checked_sqrt";
+pub const PRECISE_DECIMAL_CHECKED_CBRT_FUNCTION_NAME: &str = "precise_decimal_checked_cbrt";
+pub const PRECISE_DECIMAL_CHECKED_NTH_ROOT_FUNCTION_NAME: &str = "precise_decimal_checked_nth_root";
+
 //=================
 // WASM Shim
 //=================
