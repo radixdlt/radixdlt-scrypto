@@ -230,6 +230,66 @@ pub trait WasmRuntime {
         &mut self,
         data: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    // region:Decimal Arithmetic
+    fn decimal_checked_add(
+        &mut self,
+        num1: Vec<u8>,
+        num2: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_sub(
+        &mut self,
+        num1: Vec<u8>,
+        num2: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_mul(
+        &mut self,
+        num1: Vec<u8>,
+        num2: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_div(
+        &mut self,
+        num1: Vec<u8>,
+        num2: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_neg(
+        &mut self,
+        num: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_round(
+        &mut self,
+        num: Vec<u8>,
+        decimal_places: Vec<u8>,
+        mode: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_powi(
+        &mut self,
+        num: Vec<u8>,
+        exp: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_sqrt(
+        &mut self,
+        num: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_cbrt(
+        &mut self,
+        num: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn decimal_checked_nth_root(
+        &mut self,
+        num: Vec<u8>,
+        n: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+    // endregion:Decimal Arithmetic
 }
 
 /// Represents an instantiated, invocable Scrypto module.

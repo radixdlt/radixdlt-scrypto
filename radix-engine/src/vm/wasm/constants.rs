@@ -89,6 +89,20 @@ pub const CRYPTO_UTILS_BLS12381_G2_SIGNATURE_AGGREGATE_FUNCTION_NAME: &str =
     "crypto_utils_bls12381_g2_signature_aggregate";
 pub const CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME: &str = "crypto_utils_keccak256_hash";
 
+//====================
+// Decimal Arithmetic
+//====================
+pub const DECIMAL_CHECKED_ADD_FUNCTION_NAME: &str = "decimal_checked_add";
+pub const DECIMAL_CHECKED_SUB_FUNCTION_NAME: &str = "decimal_checked_sub";
+pub const DECIMAL_CHECKED_MUL_FUNCTION_NAME: &str = "decimal_checked_mul";
+pub const DECIMAL_CHECKED_DIV_FUNCTION_NAME: &str = "decimal_checked_div";
+pub const DECIMAL_CHECKED_NEG_FUNCTION_NAME: &str = "decimal_checked_neg";
+pub const DECIMAL_CHECKED_ROUND_FUNCTION_NAME: &str = "decimal_checked_round";
+pub const DECIMAL_CHECKED_POWI_FUNCTION_NAME: &str = "decimal_checked_powi";
+pub const DECIMAL_CHECKED_SQRT_FUNCTION_NAME: &str = "decimal_checked_sqrt";
+pub const DECIMAL_CHECKED_CBRT_FUNCTION_NAME: &str = "decimal_checked_cbrt";
+pub const DECIMAL_CHECKED_NTH_ROOT_FUNCTION_NAME: &str = "decimal_checked_nth_root";
+
 //=================
 // WASM Shim
 //=================

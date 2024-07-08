@@ -4,7 +4,7 @@ version = "1.0.0-rc1"
 edition = "2021"
 
 [dependencies]
-scrypto = { path = "../../../../scrypto" }
+scrypto = { path = "../../../../scrypto", features = ["outsource-decimal-arithmetic-to-engine"] }
 
 [dev-dependencies]
 radix-engine = { path = "../../../../radix-engine" }

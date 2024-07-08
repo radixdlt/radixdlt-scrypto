@@ -778,6 +778,169 @@ fn keccak256_hash(
         .map(|buffer| buffer.0)
 }
 
+fn decimal_checked_add(
+    mut caller: Caller<'_, HostState>,
+    num1_ptr: u32,
+    num1_len: u32,
+    num2_ptr: u32,
+    num2_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num1 = read_memory(caller.as_context_mut(), memory, num1_ptr, num1_len)?;
+    let num2 = read_memory(caller.as_context_mut(), memory, num2_ptr, num2_len)?;
+
+    runtime
+        .decimal_checked_add(num1, num2)
+        .map(|buffer| buffer.0)
+}
+
+fn decimal_checked_sub(
+    mut caller: Caller<'_, HostState>,
+    num1_ptr: u32,
+    num1_len: u32,
+    num2_ptr: u32,
+    num2_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num1 = read_memory(caller.as_context_mut(), memory, num1_ptr, num1_len)?;
+    let num2 = read_memory(caller.as_context_mut(), memory, num2_ptr, num2_len)?;
+
+    runtime
+        .decimal_checked_sub(num1, num2)
+        .map(|buffer| buffer.0)
+}
+
+fn decimal_checked_mul(
+    mut caller: Caller<'_, HostState>,
+    num1_ptr: u32,
+    num1_len: u32,
+    num2_ptr: u32,
+    num2_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num1 = read_memory(caller.as_context_mut(), memory, num1_ptr, num1_len)?;
+    let num2 = read_memory(caller.as_context_mut(), memory, num2_ptr, num2_len)?;
+
+    runtime
+        .decimal_checked_mul(num1, num2)
+        .map(|buffer| buffer.0)
+}
+
+fn decimal_checked_div(
+    mut caller: Caller<'_, HostState>,
+    num1_ptr: u32,
+    num1_len: u32,
+    num2_ptr: u32,
+    num2_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num1 = read_memory(caller.as_context_mut(), memory, num1_ptr, num1_len)?;
+    let num2 = read_memory(caller.as_context_mut(), memory, num2_ptr, num2_len)?;
+
+    runtime
+        .decimal_checked_div(num1, num2)
+        .map(|buffer| buffer.0)
+}
+
+fn decimal_checked_neg(
+    mut caller: Caller<'_, HostState>,
+    num_ptr: u32,
+    num_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num = read_memory(caller.as_context_mut(), memory, num_ptr, num_len)?;
+
+    runtime.decimal_checked_neg(num).map(|buffer| buffer.0)
+}
+
+fn decimal_checked_round(
+    mut caller: Caller<'_, HostState>,
+    num_ptr: u32,
+    num_len: u32,
+    decimal_places_ptr: u32,
+    decimal_places_len: u32,
+    mode_ptr: u32,
+    mode_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num = read_memory(caller.as_context_mut(), memory, num_ptr, num_len)?;
+    let decimal_places = read_memory(
+        caller.as_context_mut(),
+        memory,
+        decimal_places_ptr,
+        decimal_places_len,
+    )?;
+    let mode = read_memory(caller.as_context_mut(), memory, mode_ptr, mode_len)?;
+
+    runtime
+        .decimal_checked_round(num, decimal_places, mode)
+        .map(|buffer| buffer.0)
+}
+
+fn decimal_checked_powi(
+    mut caller: Caller<'_, HostState>,
+    num_ptr: u32,
+    num_len: u32,
+    exp_ptr: u32,
+    exp_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num = read_memory(caller.as_context_mut(), memory, num_ptr, num_len)?;
+    let exp = read_memory(caller.as_context_mut(), memory, exp_ptr, exp_len)?;
+
+    runtime
+        .decimal_checked_powi(num, exp)
+        .map(|buffer| buffer.0)
+}
+
+fn decimal_checked_sqrt(
+    mut caller: Caller<'_, HostState>,
+    num_ptr: u32,
+    num_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num = read_memory(caller.as_context_mut(), memory, num_ptr, num_len)?;
+
+    runtime.decimal_checked_sqrt(num).map(|buffer| buffer.0)
+}
+
+fn decimal_checked_cbrt(
+    mut caller: Caller<'_, HostState>,
+    num_ptr: u32,
+    num_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num = read_memory(caller.as_context_mut(), memory, num_ptr, num_len)?;
+
+    runtime.decimal_checked_cbrt(num).map(|buffer| buffer.0)
+}
+
+fn decimal_checked_nth_root(
+    mut caller: Caller<'_, HostState>,
+    num_ptr: u32,
+    num_len: u32,
+    n_ptr: u32,
+    n_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    let num = read_memory(caller.as_context_mut(), memory, num_ptr, num_len)?;
+    let n = read_memory(caller.as_context_mut(), memory, n_ptr, n_len)?;
+
+    runtime
+        .decimal_checked_nth_root(num, n)
+        .map(|buffer| buffer.0)
+}
+
 #[cfg(feature = "radix_engine_tests")]
 fn test_host_read_memory(
     mut caller: Caller<'_, HostState>,
@@ -1424,6 +1587,126 @@ impl WasmiModule {
             },
         );
 
+        let decimal_checked_add = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             num1_ptr: u32,
+             num1_len: u32,
+             num2_ptr: u32,
+             num2_len: u32|
+             -> Result<u64, Trap> {
+                decimal_checked_add(caller, num1_ptr, num1_len, num2_ptr, num2_len)
+                    .map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_sub = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             num1_ptr: u32,
+             num1_len: u32,
+             num2_ptr: u32,
+             num2_len: u32|
+             -> Result<u64, Trap> {
+                decimal_checked_sub(caller, num1_ptr, num1_len, num2_ptr, num2_len)
+                    .map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_mul = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             num1_ptr: u32,
+             num1_len: u32,
+             num2_ptr: u32,
+             num2_len: u32|
+             -> Result<u64, Trap> {
+                decimal_checked_mul(caller, num1_ptr, num1_len, num2_ptr, num2_len)
+                    .map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_div = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             num1_ptr: u32,
+             num1_len: u32,
+             num2_ptr: u32,
+             num2_len: u32|
+             -> Result<u64, Trap> {
+                decimal_checked_div(caller, num1_ptr, num1_len, num2_ptr, num2_len)
+                    .map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_neg = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, num_ptr: u32, num_len: u32| -> Result<u64, Trap> {
+                decimal_checked_neg(caller, num_ptr, num_len).map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_round = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             num_ptr: u32,
+             num_len: u32,
+             decimal_places_ptr: u32,
+             decimal_places_len: u32,
+             mode_ptr: u32,
+             mode_len: u32|
+             -> Result<u64, Trap> {
+                decimal_checked_round(
+                    caller,
+                    num_ptr,
+                    num_len,
+                    decimal_places_ptr,
+                    decimal_places_len,
+                    mode_ptr,
+                    mode_len,
+                )
+                .map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_powi = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             num_ptr: u32,
+             num_len: u32,
+             exp_ptr: u32,
+             exp_len: u32|
+             -> Result<u64, Trap> {
+                decimal_checked_powi(caller, num_ptr, num_len, exp_ptr, exp_len).map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_sqrt = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, num_ptr: u32, num_len: u32| -> Result<u64, Trap> {
+                decimal_checked_sqrt(caller, num_ptr, num_len).map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_cbrt = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, num_ptr: u32, num_len: u32| -> Result<u64, Trap> {
+                decimal_checked_cbrt(caller, num_ptr, num_len).map_err(Trap::from)
+            },
+        );
+
+        let decimal_checked_nth_root = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             num_ptr: u32,
+             num_len: u32,
+             n_ptr: u32,
+             n_len: u32|
+             -> Result<u64, Trap> {
+                decimal_checked_nth_root(caller, num_ptr, num_len, n_ptr, n_len).map_err(Trap::from)
+            },
+        );
+
         let mut linker = <Linker<HostState>>::new();
 
         linker_define!(linker, BUFFER_CONSUME_FUNCTION_NAME, host_consume_buffer);
@@ -1606,6 +1889,57 @@ impl WasmiModule {
             linker,
             CRYPTO_UTILS_KECCAK256_HASH_FUNCTION_NAME,
             host_keccak256_hash
+        );
+
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_ADD_FUNCTION_NAME,
+            decimal_checked_add
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_SUB_FUNCTION_NAME,
+            decimal_checked_sub
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_MUL_FUNCTION_NAME,
+            decimal_checked_mul
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_DIV_FUNCTION_NAME,
+            decimal_checked_div
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_NEG_FUNCTION_NAME,
+            decimal_checked_neg
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_ROUND_FUNCTION_NAME,
+            decimal_checked_round
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_POWI_FUNCTION_NAME,
+            decimal_checked_powi
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_SQRT_FUNCTION_NAME,
+            decimal_checked_sqrt
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_CBRT_FUNCTION_NAME,
+            decimal_checked_cbrt
+        );
+        linker_define!(
+            linker,
+            DECIMAL_CHECKED_NTH_ROOT_FUNCTION_NAME,
+            decimal_checked_nth_root
         );
 
         #[cfg(feature = "radix_engine_tests")]

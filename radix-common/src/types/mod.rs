@@ -7,6 +7,7 @@ mod node_and_substate;
 mod non_fungible_global_id;
 mod royalty_amount;
 mod type_identifier;
+mod wasm;
 
 pub use addresses::*;
 pub use blueprint_id::*;
@@ -17,3 +18,4 @@ pub use node_and_substate::*;
 pub use non_fungible_global_id::*;
 pub use royalty_amount::*;
 pub use type_identifier::*;
+pub use wasm::*;

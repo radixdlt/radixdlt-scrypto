@@ -148,6 +148,7 @@ fn test_pdec_macro_valid() {
         pdec!("-57896044618658097711785492504343953926634.992332820282019728792003956564819968");
     assert_eq!(X13, PreciseDecimal::MIN);
 }
+
 #[test]
 fn test_dec_macro_in_scrypto() {
     // Arrange

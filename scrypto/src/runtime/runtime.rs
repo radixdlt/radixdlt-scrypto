@@ -1,5 +1,5 @@
 use crate::component::ObjectStubHandle;
-use crate::engine::wasm_api::{addr, copy_buffer};
+use crate::engine::wasm_api::addr;
 use crate::prelude::{AnyComponent, Global};
 use radix_common::constants::CONSENSUS_MANAGER;
 use radix_common::crypto::Hash;
@@ -10,6 +10,7 @@ use radix_common::prelude::*;
 use radix_common::traits::ScryptoEvent;
 use radix_common::types::GlobalAddressReservation;
 use radix_common::types::NonFungibleGlobalId;
+use radix_common::types::*;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{

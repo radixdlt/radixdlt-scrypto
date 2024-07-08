@@ -165,6 +165,13 @@ pub enum WasmRuntimeError {
     InvalidBlsPublicKeyOrMessage(DecodeError),
 
     InputDataEmpty,
+
+    InvalidI32,
+    InvalidI64,
+    InvalidU32,
+    InvalidDecimal,
+    InvalidPreciseDecimal,
+    InvalidRoundingMode,
 }
 
 impl SelfError for WasmRuntimeError {

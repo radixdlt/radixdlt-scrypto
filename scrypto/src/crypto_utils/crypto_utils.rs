@@ -1,7 +1,8 @@
-use crate::engine::wasm_api::{copy_buffer, crypto_utils};
+use crate::engine::wasm_api::crypto_utils;
 use radix_common::prelude::{
     scrypto_decode, scrypto_encode, Bls12381G1PublicKey, Bls12381G2Signature, Hash,
 };
+use radix_common::types::*;
 use sbor::prelude::Vec;
 
 /// Crypto utilities.

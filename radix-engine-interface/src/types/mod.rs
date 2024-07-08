@@ -8,7 +8,6 @@ mod node_layout;
 mod object_and_kvstore;
 mod package_code;
 mod royalty_config;
-mod wasm;
 
 pub use costing_reason::*;
 pub use event_id::*;
@@ -21,7 +20,6 @@ pub use object_and_kvstore::*;
 pub use package_code::*;
 pub use royalty_config::*;
 pub use strum::*;
-pub use wasm::*;
 
 pub type SubstateHandle = u32;
 

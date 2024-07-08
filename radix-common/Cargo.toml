@@ -61,9 +61,17 @@ secp256k1_sign_and_validate = ["secp256k1"]
 fuzzing = ["arbitrary", "serde", "bnum/arbitrary", "bnum/serde", "sbor/fuzzing", "radix-rust/fuzzing"]
 
 resource_tracker = []
-full_math_benches = [ "dep:rug", "dep:ethnum"]
+full_math_benches = ["dep:rug", "dep:ethnum"]
 
 coverage = []
+
+# If enabled then certain functions will be defined that are only useful in the Scrypto environment.
+scrypto = []
+
+# If this flag is enabled then all of the decimal and precise decimal computations will not happen 
+# in the compiled binary and will instead happen by calling extern functions which would typically
+# mean that they would happen in the Engine instead of the compiled binary.
+outsource-decimal-arithmetic = ["scrypto"]
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]
