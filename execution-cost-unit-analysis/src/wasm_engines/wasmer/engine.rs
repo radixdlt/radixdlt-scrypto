@@ -1,6 +1,6 @@
-use super::cache::*;
 use super::instance::*;
 use super::module::*;
+use crate::wasm_engines::cache::*;
 use crate::wasm_engines::traits::*;
 use radix_common::constants::*;
 use radix_engine::vm::wasm::WasmEngine;
@@ -23,7 +23,9 @@ pub struct WasmerEngine<M, C> {
     compiler: PhantomData<C>,
 }
 
-impl Default for WasmerEngine<WasmerMokaModuleCache, wasmer_compiler_singlepass::Singlepass> {
+impl Default
+    for WasmerEngine<MokaModuleCache<WasmerModule>, wasmer_compiler_singlepass::Singlepass>
+{
     fn default() -> Self {
         Self::new(
             WasmerEngineOptions {

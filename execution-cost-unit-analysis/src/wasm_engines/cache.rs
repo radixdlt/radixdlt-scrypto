@@ -1,4 +1,3 @@
-use super::module::*;
 use crate::wasm_engines::traits::*;
 use radix_common::prelude::*;
 use radix_engine_interface::blueprints::package::CodeHash;

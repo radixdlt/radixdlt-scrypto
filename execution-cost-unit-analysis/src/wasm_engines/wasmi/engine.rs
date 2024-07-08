@@ -1,6 +1,6 @@
-use super::cache::*;
 use super::instance::*;
 use super::module::*;
+use crate::wasm_engines::cache::*;
 use crate::wasm_engines::traits::*;
 use radix_common::constants::*;
 use radix_engine::vm::wasm::WasmEngine;
@@ -17,7 +17,7 @@ pub struct WasmiEngine<C> {
     modules_cache: C,
 }
 
-impl Default for WasmiEngine<WasmiMokaModuleCache> {
+impl Default for WasmiEngine<MokaModuleCache<WasmiModule>> {
     fn default() -> Self {
         Self::new(WasmiEngineOptions {
             max_cache_size: WASM_ENGINE_CACHE_SIZE,
