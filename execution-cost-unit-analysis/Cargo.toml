@@ -4,3 +4,18 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+radix-wasmi = { workspace = true }
+
+wasmer = { workspace = true, features = ["singlepass", "cranelift"] }
+wasmer-compiler-cranelift = { workspace = true }
+wasmer-compiler-singlepass = { workspace = true }
+
+lru = { workspace = true }
+moka = { workspace = true }
+
+sbor = { workspace = true, default-features = true }
+radix-common = { workspace = true, default-features = true }
+radix-engine = { workspace = true, default-features = true }
+radix-engine-interface = { workspace = true, default-features = true }
+radix-blueprint-schema-init = { workspace = true, default-features = true }
+radix-substate-store-interface = { workspace = true, default-features = true }
