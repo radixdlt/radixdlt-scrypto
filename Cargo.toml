@@ -42,6 +42,9 @@ members = [
     "scrypto-derive",
     "scrypto-test",
     "scrypto",
+    # Execution cost unit analysis & friends
+    "execution-cost-unit-analysis",
+    "execution-cost-unit-analysis/assets/blueprints/radiswap",
 ]
 
 [workspace.dependencies]

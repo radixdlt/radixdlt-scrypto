@@ -1,0 +1,12 @@
+[package]
+name = "radiswap"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+sbor = { workspace = true, default-features = true }
+scrypto = { workspace = true, default-features = true }
+
+[lib]
+doctest = false
+crate-type = ["cdylib", "lib"]
