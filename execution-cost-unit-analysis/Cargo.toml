@@ -14,8 +14,15 @@ lru = { workspace = true }
 moka = { workspace = true }
 
 sbor = { workspace = true, default-features = true }
+scrypto-test = { workspace = true, default-features = true }
 radix-common = { workspace = true, default-features = true }
 radix-engine = { workspace = true, default-features = true }
+scrypto-compiler = { workspace = true, default-features = true }
 radix-engine-interface = { workspace = true, default-features = true }
 radix-blueprint-schema-init = { workspace = true, default-features = true }
 radix-substate-store-interface = { workspace = true, default-features = true }
+
+ignition-testing-framework = { path = "./assets/blueprints/ignition/libraries/testing-framework", package = "testing-framework" }
+
+clap = { version = "4.5.9", features = ["derive"] }
+tempfile = { workspace = true }

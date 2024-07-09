@@ -519,7 +519,8 @@ impl ScryptoCompiler {
         manifest_path: &Path,
     ) -> Result<Option<Vec<(PathBuf, String, Option<cargo_toml::Value>)>>, ScryptoCompilerError>
     {
-        let manifest = Manifest::from_path(&manifest_path).map_err(|_| {
+        let manifest = Manifest::from_path(&manifest_path).map_err(|e| {
+            eprintln!("{e:?}");
             ScryptoCompilerError::CargoManifestLoadFailure(manifest_path.display().to_string())
         })?;
         if let Some(workspace) = manifest.workspace {

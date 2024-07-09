@@ -5,12 +5,12 @@ edition = "2021"
 description = "A crate that defines types used by the other crates."
 
 [dependencies]
-sbor = { workspace = true }
-scrypto = { workspace = true }
-radix-native-sdk = { workspace = true }
-radix-common = { workspace = true }
-radix-common-derive = { workspace = true }
-radix-engine-interface = { workspace = true }
+sbor = { workspace = true, default-features = true }
+scrypto = { workspace = true, default-features = true }
+radix-native-sdk = { workspace = true, default-features = true }
+radix-common = { workspace = true, default-features = true }
+radix-common-derive = { workspace = true, default-features = true }
+radix-engine-interface = { workspace = true, default-features = true }
 
 # Used to print the lockup period in a readable format.
 humantime = { version = "2.1.0" }

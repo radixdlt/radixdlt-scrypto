@@ -5,10 +5,10 @@ edition = "2021"
 description = "Defines the adapter for Ociswap"
 
 [dependencies]
-sbor = { workspace = true }
+sbor = { workspace = true, default-features = true }
 scrypto = { workspace = true, default-features = true }
-radix-common = { workspace = true }
-radix-engine-interface = { workspace = true }
+radix-common = { workspace = true, default-features = true }
+radix-engine-interface = { workspace = true, default-features = true }
 radix-transactions = { workspace = true, default-features = true, optional = true }
 
 common = { path = "../../libraries/common" }

@@ -57,7 +57,7 @@ impl WasmInstance for WasmiInstance {
 
         let result = match call_result {
             Ok(_) => match i64::try_from(ret[0]) {
-                Ok(ret) => read_slice(
+                Ok(ret) => super::host_functions::read_slice(
                     self.store.as_context_mut(),
                     self.memory,
                     Slice::transmute_i64(ret),

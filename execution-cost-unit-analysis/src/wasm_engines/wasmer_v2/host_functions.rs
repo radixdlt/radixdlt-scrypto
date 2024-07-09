@@ -16,7 +16,7 @@ macro_rules! grab_runtime {
 
 // native functions starts
 pub(super) fn buffer_consume(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     buffer_id: BufferId,
     destination_ptr: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -34,7 +34,7 @@ pub(super) fn buffer_consume(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn blueprint_call(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     package_address_ptr: u32,
     package_address_len: u32,
     blueprint_name_ptr: u32,
@@ -57,7 +57,7 @@ pub(super) fn blueprint_call(
 }
 
 pub(super) fn address_allocate(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     package_address_ptr: u32,
     package_address_len: u32,
     blueprint_name_ptr: u32,
@@ -74,7 +74,7 @@ pub(super) fn address_allocate(
 }
 
 pub(super) fn address_get_reservation_address(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     node_id_ptr: u32,
     node_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -86,7 +86,7 @@ pub(super) fn address_get_reservation_address(
 }
 
 pub(super) fn object_call(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     receiver_ptr: u32,
     receiver_len: u32,
     ident_ptr: u32,
@@ -107,7 +107,7 @@ pub(super) fn object_call(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn object_call_module(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     receiver_ptr: u32,
     receiver_len: u32,
     module: u32,
@@ -128,7 +128,7 @@ pub(super) fn object_call_module(
 }
 
 pub(super) fn object_call_direct(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     receiver_ptr: u32,
     receiver_len: u32,
     ident_ptr: u32,
@@ -148,7 +148,7 @@ pub(super) fn object_call_direct(
 }
 
 pub(super) fn object_new(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     blueprint_name_ptr: u32,
     blueprint_name_len: u32,
     object_states_ptr: u32,
@@ -165,7 +165,7 @@ pub(super) fn object_new(
 }
 
 pub(super) fn object_globalize(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     obj_ptr: u32,
     obj_len: u32,
     modules_ptr: u32,
@@ -185,7 +185,7 @@ pub(super) fn object_globalize(
 }
 
 pub(super) fn object_instance_of(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     component_id_ptr: u32,
     component_id_len: u32,
     package_address_ptr: u32,
@@ -203,7 +203,7 @@ pub(super) fn object_instance_of(
 }
 
 pub(super) fn object_get_blueprint_id(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     component_id_ptr: u32,
     component_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -215,7 +215,7 @@ pub(super) fn object_get_blueprint_id(
 }
 
 pub(super) fn object_get_outer_object(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     component_id_ptr: u32,
     component_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -227,7 +227,7 @@ pub(super) fn object_get_outer_object(
 }
 
 pub(super) fn key_value_store_new(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     schema_id_ptr: u32,
     schema_id_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -239,7 +239,7 @@ pub(super) fn key_value_store_new(
 }
 
 pub(super) fn key_value_store_open_entry(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     node_id_ptr: u32,
     node_id_len: u32,
     key_ptr: u32,
@@ -256,7 +256,7 @@ pub(super) fn key_value_store_open_entry(
 }
 
 pub(super) fn key_value_store_remove_entry(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     node_id_ptr: u32,
     node_id_len: u32,
     key_ptr: u32,
@@ -273,7 +273,7 @@ pub(super) fn key_value_store_remove_entry(
 }
 
 pub(super) fn key_value_entry_read(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
@@ -282,7 +282,7 @@ pub(super) fn key_value_entry_read(
 }
 
 pub(super) fn key_value_entry_write(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     handle: u32,
     data_ptr: u32,
     data_len: u32,
@@ -295,7 +295,7 @@ pub(super) fn key_value_entry_write(
 }
 
 pub(super) fn key_value_entry_remove(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
@@ -306,7 +306,7 @@ pub(super) fn key_value_entry_remove(
 }
 
 pub(super) fn key_value_entry_close(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
@@ -315,7 +315,7 @@ pub(super) fn key_value_entry_close(
 }
 
 pub(super) fn field_entry_read(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
@@ -324,7 +324,7 @@ pub(super) fn field_entry_read(
 }
 
 pub(super) fn field_entry_write(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     handle: u32,
     data_ptr: u32,
     data_len: u32,
@@ -337,7 +337,7 @@ pub(super) fn field_entry_write(
 }
 
 pub(super) fn field_entry_close(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
@@ -346,7 +346,7 @@ pub(super) fn field_entry_close(
 }
 
 pub(super) fn actor_open_field(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     object_handle: u32,
     field: u8,
     flags: u32,
@@ -357,7 +357,7 @@ pub(super) fn actor_open_field(
 }
 
 pub(super) fn actor_get_node_id(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     actor_ref_handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
@@ -368,7 +368,7 @@ pub(super) fn actor_get_node_id(
 }
 
 pub(super) fn actor_get_package_address(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -376,7 +376,7 @@ pub(super) fn actor_get_package_address(
 }
 
 pub(super) fn actor_get_blueprint_name(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -384,7 +384,7 @@ pub(super) fn actor_get_blueprint_name(
 }
 
 pub(super) fn actor_emit_event(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     event_name_ptr: u32,
     event_name_len: u32,
     event_data_ptr: u32,
@@ -403,7 +403,7 @@ pub(super) fn actor_emit_event(
 }
 
 pub(super) fn costing_get_execution_cost_unit_limit(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -411,7 +411,7 @@ pub(super) fn costing_get_execution_cost_unit_limit(
 }
 
 pub(super) fn costing_get_execution_cost_unit_price(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -421,7 +421,7 @@ pub(super) fn costing_get_execution_cost_unit_price(
 }
 
 pub(super) fn costing_get_finalization_cost_unit_limit(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -429,7 +429,7 @@ pub(super) fn costing_get_finalization_cost_unit_limit(
 }
 
 pub(super) fn costing_get_finalization_cost_unit_price(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -439,7 +439,7 @@ pub(super) fn costing_get_finalization_cost_unit_price(
 }
 
 pub(super) fn costing_get_tip_percentage(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -447,7 +447,7 @@ pub(super) fn costing_get_tip_percentage(
 }
 
 pub(super) fn costing_get_fee_balance(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -455,7 +455,7 @@ pub(super) fn costing_get_fee_balance(
 }
 
 pub(super) fn costing_get_usd_price(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -463,7 +463,7 @@ pub(super) fn costing_get_usd_price(
 }
 
 pub(super) fn consume_wasm_execution_units(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     n: u64,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
@@ -473,7 +473,7 @@ pub(super) fn consume_wasm_execution_units(
 }
 
 pub(super) fn sys_log(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     level_ptr: u32,
     level_len: u32,
     message_ptr: u32,
@@ -488,7 +488,7 @@ pub(super) fn sys_log(
 }
 
 pub(super) fn sys_bech32_encode_address(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     address_ptr: u32,
     address_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -502,7 +502,7 @@ pub(super) fn sys_bech32_encode_address(
 }
 
 pub(super) fn sys_panic(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     message_ptr: u32,
     message_len: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -514,7 +514,7 @@ pub(super) fn sys_panic(
 }
 
 pub(super) fn sys_get_transaction_hash(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -522,7 +522,7 @@ pub(super) fn sys_get_transaction_hash(
 }
 
 pub(super) fn sys_generate_ruid(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
     let (_instance, runtime) = grab_runtime!(env);
 
@@ -530,7 +530,7 @@ pub(super) fn sys_generate_ruid(
 }
 
 pub(super) fn bls12381_v1_verify(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     message_ptr: u32,
     message_len: u32,
     public_key_ptr: u32,
@@ -549,7 +549,7 @@ pub(super) fn bls12381_v1_verify(
 }
 
 pub(super) fn bls12381_v1_aggregate_verify(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     pub_keys_and_msgs_ptr: u32,
     pub_keys_and_msgs_len: u32,
     signature_ptr: u32,
@@ -564,7 +564,7 @@ pub(super) fn bls12381_v1_aggregate_verify(
 }
 
 pub(super) fn bls12381_v1_fast_aggregate_verify(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     message_ptr: u32,
     message_len: u32,
     public_keys_ptr: u32,
@@ -583,7 +583,7 @@ pub(super) fn bls12381_v1_fast_aggregate_verify(
 }
 
 pub(super) fn bls12381_g2_signature_aggregate(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     signatures_ptr: u32,
     signatures_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -597,7 +597,7 @@ pub(super) fn bls12381_g2_signature_aggregate(
 }
 
 pub(super) fn keccak256_hash(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     data_ptr: u32,
     data_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -611,7 +611,7 @@ pub(super) fn keccak256_hash(
 }
 
 pub(super) fn decimal_checked_add(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num1_ptr: u32,
     num1_len: u32,
     num2_ptr: u32,
@@ -628,7 +628,7 @@ pub(super) fn decimal_checked_add(
 }
 
 pub(super) fn decimal_checked_sub(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num1_ptr: u32,
     num1_len: u32,
     num2_ptr: u32,
@@ -645,7 +645,7 @@ pub(super) fn decimal_checked_sub(
 }
 
 pub(super) fn decimal_checked_mul(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num1_ptr: u32,
     num1_len: u32,
     num2_ptr: u32,
@@ -662,7 +662,7 @@ pub(super) fn decimal_checked_mul(
 }
 
 pub(super) fn decimal_checked_div(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num1_ptr: u32,
     num1_len: u32,
     num2_ptr: u32,
@@ -679,7 +679,7 @@ pub(super) fn decimal_checked_div(
 }
 
 pub(super) fn decimal_checked_neg(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -691,7 +691,7 @@ pub(super) fn decimal_checked_neg(
 }
 
 pub(super) fn decimal_checked_round(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
     decimal_places_ptr: u32,
@@ -711,7 +711,7 @@ pub(super) fn decimal_checked_round(
 }
 
 pub(super) fn decimal_checked_powi(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
     exp_ptr: u32,
@@ -728,7 +728,7 @@ pub(super) fn decimal_checked_powi(
 }
 
 pub(super) fn decimal_checked_sqrt(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -740,7 +740,7 @@ pub(super) fn decimal_checked_sqrt(
 }
 
 pub(super) fn decimal_checked_cbrt(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -752,7 +752,7 @@ pub(super) fn decimal_checked_cbrt(
 }
 
 pub(super) fn decimal_checked_nth_root(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
     n_ptr: u32,
@@ -769,7 +769,7 @@ pub(super) fn decimal_checked_nth_root(
 }
 
 pub(super) fn precise_decimal_checked_add(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num1_ptr: u32,
     num1_len: u32,
     num2_ptr: u32,
@@ -786,7 +786,7 @@ pub(super) fn precise_decimal_checked_add(
 }
 
 pub(super) fn precise_decimal_checked_sub(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num1_ptr: u32,
     num1_len: u32,
     num2_ptr: u32,
@@ -803,7 +803,7 @@ pub(super) fn precise_decimal_checked_sub(
 }
 
 pub(super) fn precise_decimal_checked_mul(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num1_ptr: u32,
     num1_len: u32,
     num2_ptr: u32,
@@ -820,7 +820,7 @@ pub(super) fn precise_decimal_checked_mul(
 }
 
 pub(super) fn precise_decimal_checked_div(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num1_ptr: u32,
     num1_len: u32,
     num2_ptr: u32,
@@ -837,7 +837,7 @@ pub(super) fn precise_decimal_checked_div(
 }
 
 pub(super) fn precise_decimal_checked_neg(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -851,7 +851,7 @@ pub(super) fn precise_decimal_checked_neg(
 }
 
 pub(super) fn precise_decimal_checked_round(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
     precise_decimal_places_ptr: u32,
@@ -875,7 +875,7 @@ pub(super) fn precise_decimal_checked_round(
 }
 
 pub(super) fn precise_decimal_checked_powi(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
     exp_ptr: u32,
@@ -892,7 +892,7 @@ pub(super) fn precise_decimal_checked_powi(
 }
 
 pub(super) fn precise_decimal_checked_sqrt(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -906,7 +906,7 @@ pub(super) fn precise_decimal_checked_sqrt(
 }
 
 pub(super) fn precise_decimal_checked_cbrt(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -920,7 +920,7 @@ pub(super) fn precise_decimal_checked_cbrt(
 }
 
 pub(super) fn precise_decimal_checked_nth_root(
-    env: &WasmerInstanceEnv,
+    env: &WasmerV2InstanceEnv,
     num_ptr: u32,
     num_len: u32,
     n_ptr: u32,

@@ -5,10 +5,10 @@ edition = "2021"
 description = "A simple oracle used in tests."
 
 [dependencies]
-sbor = { workspace = true }
+sbor = { workspace = true, default-features = true }
 scrypto = { workspace = true, default-features = true }
-radix-common = { workspace = true }
-radix-common-derive = { workspace = true }
+radix-common = { workspace = true, default-features = true }
+radix-common-derive = { workspace = true, default-features = true }
 
 scrypto-interface = { path = "../../libraries/scrypto-interface" }
 ports-interface = { path = "../../libraries/ports-interface" }

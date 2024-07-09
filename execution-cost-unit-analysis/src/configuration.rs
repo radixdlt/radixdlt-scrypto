@@ -6,94 +6,10 @@ use crate::wasm_engines::cache::*;
 use crate::wasm_engines::wasmi::engine::WasmiEngine;
 use crate::wasm_engines::wasmi::module::WasmiModule;
 
-use crate::wasm_engines::wasmer::engine::WasmerEngine;
-use crate::wasm_engines::wasmer::module::WasmerModule;
+use crate::wasm_engines::wasmer_v2::engine::WasmerV2Engine;
+use crate::wasm_engines::wasmer_v2::module::WasmerV2Module;
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_compiler_singlepass::Singlepass;
-
-macro_rules! define_configuration_list {
-    (
-        $($config: expr),* $(,)?
-    ) => {
-        pub fn all_configurations() -> Vec<(
-            ScryptoVm<Box<dyn WasmEngine<WasmInstance = Box<dyn WasmInstance>>>>,
-            CompilationFeatures,
-            ConfigurationDescriptor,
-        )> {
-            vec![
-                $(
-                    {
-                        let config = $config;
-                        let descriptor = config.configuration_descriptor();
-                        let features = config.compilation_features;
-                        let scrypto_vm = config.scrypto_vm();
-
-                        (scrypto_vm, features, descriptor)
-                    }
-                ),*
-            ]
-        }
-    };
-}
-
-define_configuration_list![
-    // WASMI with different caches
-    Configuration {
-        wasm_engine: WasmiEngine::<NoCache<WasmiModule>>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-    Configuration {
-        wasm_engine: WasmiEngine::<MokaModuleCache<WasmiModule>>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-    Configuration {
-        wasm_engine: WasmiEngine::<LruModuleCache<WasmiModule>>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-    // Wasmer with different caches and compilers
-    Configuration {
-        wasm_engine: WasmerEngine::<NoCache<WasmerModule>, Singlepass>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-    Configuration {
-        wasm_engine: WasmerEngine::<MokaModuleCache<WasmerModule>, Singlepass>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-    Configuration {
-        wasm_engine: WasmerEngine::<LruModuleCache<WasmerModule>, Singlepass>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-    Configuration {
-        wasm_engine: WasmerEngine::<NoCache<WasmerModule>, Cranelift>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-    Configuration {
-        wasm_engine: WasmerEngine::<MokaModuleCache<WasmerModule>, Cranelift>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-    Configuration {
-        wasm_engine: WasmerEngine::<LruModuleCache<WasmerModule>, Cranelift>::default(),
-        compilation_features: CompilationFeatures {
-            decimal_in_engine: false
-        }
-    },
-];
 
 /// The configuration that is used for the various test scenarios, this is, more or less, the
 /// configuration under test.

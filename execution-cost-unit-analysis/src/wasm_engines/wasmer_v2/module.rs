@@ -1,5 +1,5 @@
 use super::env::*;
-use super::instance::WasmerInstance;
+use super::instance::WasmerV2Instance;
 use radix_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use sbor::rust::sync::*;
@@ -9,20 +9,18 @@ use wasmer::*;
 // The below integration of Wasmer is not yet checked rigorously enough for production use
 // TODO: Address the below issues before considering production use.
 
-/// A `WasmerModule` defines a parsed WASM module, which is a template which can be instantiated.
+/// A `WasmerV2Module` defines a parsed WASM module, which is a template which can be instantiated.
 ///
-/// Unlike `WasmerInstance`, this is correctly `Send + Sync` - which is good, because this is the
+/// Unlike `WasmerV2Instance`, this is correctly `Send + Sync` - which is good, because this is the
 /// thing which is cached in the ScryptoInterpreter caches.
-pub struct WasmerModule {
+pub struct WasmerV2Module {
     pub(super) module: Module,
-    #[allow(dead_code)]
-    pub(super) code_size_bytes: usize,
 }
 
-impl WasmerModule {
-    pub fn instantiate(&self) -> WasmerInstance {
+impl WasmerV2Module {
+    pub fn instantiate(&self) -> WasmerV2Instance {
         // env
-        let env = WasmerInstanceEnv {
+        let env = WasmerV2InstanceEnv {
             instance: LazyInit::new(),
             runtime_ptr: Arc::new(Mutex::new(0)),
         };
@@ -362,7 +360,7 @@ impl WasmerModule {
         let instance =
             Instance::new(&self.module, &import_object).expect("Failed to instantiate module");
 
-        WasmerInstance {
+        WasmerV2Instance {
             instance,
             runtime_ptr: env.runtime_ptr,
         }

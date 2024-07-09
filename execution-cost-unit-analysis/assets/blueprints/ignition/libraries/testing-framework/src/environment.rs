@@ -89,8 +89,6 @@ pub struct Environment<S>
 where
     S: EnvironmentSpecifier,
 {
-    /* Test Environment */
-    pub environment: S::Environment,
     /* Various entities */
     pub resources: ResourceInformation<ResourceAddress>,
     pub protocol: ProtocolEntities<S>,
@@ -125,13 +123,17 @@ where
 }
 
 impl ScryptoUnitEnv {
-    pub fn new(package_loader: impl Fn(&std::path::Path) -> (Vec<u8>, PackageDefinition)) -> Self {
-        Self::new_with_configuration(Configuration::default(), package_loader)
+    pub fn new(
+        package_loader: impl FnMut(&std::path::Path) -> (Vec<u8>, PackageDefinition),
+        ledger: &mut DefaultLedgerSimulator,
+    ) -> Self {
+        Self::new_with_configuration(Configuration::default(), package_loader, ledger)
     }
 
     pub fn new_with_configuration(
         configuration: Configuration,
-        package_loader: impl Fn(&std::path::Path) -> (Vec<u8>, PackageDefinition),
+        mut package_loader: impl FnMut(&std::path::Path) -> (Vec<u8>, PackageDefinition),
+        ledger: &mut DefaultLedgerSimulator,
     ) -> Self {
         // Flash the substates to the ledger so that they can be used in tests.
         let (addresses, db_flash) =
@@ -140,41 +142,34 @@ impl ScryptoUnitEnv {
         let caviarnine_v1_package = PackageAddress::try_from(addresses[0]).unwrap();
         let ociswap_v1_package = PackageAddress::try_from(addresses[1]).unwrap();
 
-        let mut ledger = {
-            let mut in_memory_substate_database = InMemorySubstateDatabase::standard();
-            in_memory_substate_database.commit(&DatabaseUpdates {
-                node_updates: db_flash
-                    .into_iter()
-                    .map(|(db_node_key, partition_num_to_updates_mapping)| {
-                        (
-                            db_node_key,
-                            NodeDatabaseUpdates {
-                                partition_updates: partition_num_to_updates_mapping
-                                    .into_iter()
-                                    .map(|(partition_num, substates)| {
-                                        (
-                                            partition_num,
-                                            PartitionDatabaseUpdates::Delta {
-                                                substate_updates: substates
-                                                    .into_iter()
-                                                    .map(|(db_sort_key, value)| {
-                                                        (db_sort_key, DatabaseUpdate::Set(value))
-                                                    })
-                                                    .collect(),
-                                            },
-                                        )
-                                    })
-                                    .collect(),
-                            },
-                        )
-                    })
-                    .collect(),
-            });
-            LedgerSimulatorBuilder::new()
-                .with_custom_database(in_memory_substate_database)
-                .without_kernel_trace()
-                .build()
-        };
+        ledger.substate_db_mut().commit(&DatabaseUpdates {
+            node_updates: db_flash
+                .into_iter()
+                .map(|(db_node_key, partition_num_to_updates_mapping)| {
+                    (
+                        db_node_key,
+                        NodeDatabaseUpdates {
+                            partition_updates: partition_num_to_updates_mapping
+                                .into_iter()
+                                .map(|(partition_num, substates)| {
+                                    (
+                                        partition_num,
+                                        PartitionDatabaseUpdates::Delta {
+                                            substate_updates: substates
+                                                .into_iter()
+                                                .map(|(db_sort_key, value)| {
+                                                    (db_sort_key, DatabaseUpdate::Set(value))
+                                                })
+                                                .collect(),
+                                        },
+                                    )
+                                })
+                                .collect(),
+                        },
+                    )
+                })
+                .collect(),
+        });
 
         // The account that everything gets deposited into throughout the tests.
         let (public_key, private_key, account) = ledger.new_account(false);
@@ -189,10 +184,11 @@ impl ScryptoUnitEnv {
             Self::PACKAGE_NAMES.map(|package_name| {
                 let (code, definition) = package_loader(
                     std::path::PathBuf::from(std::env!("CARGO_MANIFEST_DIR"))
-                        .join("assets")
-                        .join("blueprints")
-                        .join("ignition")
+                        .join("..")
+                        .join("..")
+                        .join("packages")
                         .join(package_name)
+                        .join("Cargo.toml")
                         .as_path(),
                 );
                 ledger.publish_package((code, definition), Default::default(), OwnerRole::None)
@@ -397,10 +393,11 @@ impl ScryptoUnitEnv {
 
             let (code, definition) = package_loader(
                 std::path::PathBuf::from(std::env!("CARGO_MANIFEST_DIR"))
-                    .join("assets")
-                    .join("blueprints")
-                    .join("ignition")
-                    .join("ociswap-v2-adapter-v2")
+                    .join("..")
+                    .join("..")
+                    .join("packages")
+                    .join("ociswap-v2-adapter-v1")
+                    .join("Cargo.toml")
                     .as_path(),
             );
             let ociswap_v2_adapter_v1_package =
@@ -487,10 +484,11 @@ impl ScryptoUnitEnv {
 
             let (code, definition) = package_loader(
                 std::path::PathBuf::from(std::env!("CARGO_MANIFEST_DIR"))
-                    .join("assets")
-                    .join("blueprints")
-                    .join("ignition")
+                    .join("..")
+                    .join("..")
+                    .join("packages")
                     .join("defiplaza-v2-adapter-v1")
+                    .join("Cargo.toml")
                     .as_path(),
             );
             let defiplaza_v2_adapter_v1_package =
@@ -866,7 +864,6 @@ impl ScryptoUnitEnv {
         }
 
         Self {
-            environment: ledger,
             resources: resource_addresses,
             protocol: ProtocolEntities {
                 ignition_package_address: ignition_package,

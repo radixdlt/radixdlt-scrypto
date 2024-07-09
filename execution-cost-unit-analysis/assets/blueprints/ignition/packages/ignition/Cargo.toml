@@ -5,9 +5,9 @@ edition = "2021"
 description = "The implementation of the Ignition protocol"
 
 [dependencies]
-sbor = { workspace = true }
+sbor = { workspace = true, default-features = true }
 scrypto = { workspace = true, default-features = true }
-radix-common-derive = { workspace = true }
+radix-common-derive = { workspace = true, default-features = true }
 
 ports-interface = { path = "../../libraries/ports-interface" }
 common = { path = "../../libraries/common" }

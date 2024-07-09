@@ -6,13 +6,13 @@ description = "A crate with unit and integration tests for Ignition"
 build = "build.rs"
 
 [dependencies]
-sbor = { workspace = true }
-radix-transactions = { workspace = true }
-scrypto-test = { workspace = true }
+sbor = { workspace = true, default-features = true }
+radix-transactions = { workspace = true, default-features = true }
+scrypto-test = { workspace = true, default-features = true }
 
-radix-engine = { workspace = true }
-radix-common = { workspace = true }
-radix-engine-interface = { workspace = true }
+radix-engine = { workspace = true, default-features = true }
+radix-common = { workspace = true, default-features = true }
+radix-engine-interface = { workspace = true, default-features = true }
 
 common = { path = "../common" }
 ignition = { path = "../../packages/ignition" }

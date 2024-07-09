@@ -7,9 +7,9 @@ description = "Math library extending Radix Scrypto with more advanced mathemati
 repository = "https://github.com/ociswap/scrypto-math"
 
 [dependencies]
-radix-rust = { workspace = true }
-radix-common = { workspace = true }
-radix-engine-interface = { workspace = true }
+radix-rust = { workspace = true, default-features = true }
+radix-common = { workspace = true, default-features = true }
+radix-engine-interface = { workspace = true, default-features = true }
 
 num-traits = { version = "0.2.15" }
 pretty_assertions = { version = "1.4.0" }

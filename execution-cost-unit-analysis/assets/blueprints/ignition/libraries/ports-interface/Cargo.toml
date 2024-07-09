@@ -5,12 +5,12 @@ edition = "2021"
 description = "Defines the interface of the various adapters."
 
 [dependencies]
-sbor = { workspace = true }
-scrypto = { workspace = true }
+sbor = { workspace = true, default-features = true }
+scrypto = { workspace = true, default-features = true }
 radix-transactions = { workspace = true, default-features = true, optional = true }
-radix-common = { workspace = true }
-radix-common-derive = { workspace = true }
-radix-engine-interface = { workspace = true }
+radix-common = { workspace = true, default-features = true }
+radix-common-derive = { workspace = true, default-features = true }
+radix-engine-interface = { workspace = true, default-features = true }
 
 common = { path = "../common" }
 scrypto-interface = { path = "../scrypto-interface" }
