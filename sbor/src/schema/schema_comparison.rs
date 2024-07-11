@@ -5,6 +5,7 @@ use crate::schema::*;
 use crate::traversal::AnnotatedSborAncestor;
 use crate::traversal::AnnotatedSborAncestorContainer;
 use crate::traversal::AnnotatedSborPartialLeaf;
+use crate::traversal::AnnotatedSborPartialLeafLocator;
 use crate::traversal::MapEntryPart;
 use crate::traversal::PathAnnotate;
 use crate::BASIC_SBOR_V1_MAX_DEPTH;
@@ -367,12 +368,22 @@ impl<S: CustomSchema> SchemaComparisonError<S> {
         compared_schema: &Schema<S>,
     ) -> core::fmt::Result {
         if let Some(location) = &self.example_location {
-            write!(
+            let (base_type_kind, base_metadata, _) = base_schema
+                .resolve_type_data(location.leaf_base_type_id)
+                .expect("Invalid base schema - Could not find data for base type");
+            let (compared_type_kind, compared_metadata, _) = compared_schema
+                .resolve_type_data(location.leaf_compared_type_id)
+                .expect("Invalid compared schema - Could not find data for compared type");
+
+            self.error_detail.write_with_context(
                 f,
-                "{:?} under {} at type path ",
-                &self.error_detail, location.root_type_identifier,
+                base_metadata,
+                base_type_kind,
+                compared_metadata,
+                compared_type_kind,
             )?;
-            (location, base_schema, compared_schema).write_path(f)?;
+            write!(f, " under {} at path ", location.root_type_identifier)?;
+            (location, base_schema, compared_schema, &self.error_detail).write_path(f)?;
         } else {
             write!(f, "{:?}", &self.error_detail)?;
         }
@@ -380,7 +391,7 @@ impl<S: CustomSchema> SchemaComparisonError<S> {
     }
 }
 
-fn combine_names(base_name: Option<&str>, compared_name: Option<&str>) -> Option<String> {
+fn combine_optional_names(base_name: Option<&str>, compared_name: Option<&str>) -> Option<String> {
     match (base_name, compared_name) {
         (Some(base_name), Some(compared_name)) if base_name == compared_name => {
             Some(base_name.to_string())
@@ -392,42 +403,58 @@ fn combine_names(base_name: Option<&str>, compared_name: Option<&str>) -> Option
     }
 }
 
-impl<'s, 'a, S: CustomSchema> PathAnnotate for (&'a TypeFullPath, &'a Schema<S>, &'a Schema<S>) {
+fn combine_type_names<S: CustomSchema>(
+    base_metadata: &TypeMetadata,
+    base_type_kind: &LocalTypeKind<S>,
+    compared_metadata: &TypeMetadata,
+    compared_type_kind: &LocalTypeKind<S>,
+) -> String {
+    if let Some(combined_name) =
+        combine_optional_names(base_metadata.get_name(), compared_metadata.get_name())
+    {
+        return combined_name;
+    }
+    let base_category_name = base_type_kind.category_name();
+    let compared_category_name = compared_type_kind.category_name();
+    if base_category_name == compared_category_name {
+        base_category_name.to_string()
+    } else {
+        format!("{base_category_name}|{compared_category_name}")
+    }
+}
+
+impl<'s, 'a, S: CustomSchema> PathAnnotate
+    for (
+        &'a TypeFullPath,
+        &'a Schema<S>,
+        &'a Schema<S>,
+        &'a SchemaComparisonErrorDetail<S>,
+    )
+{
     fn iter_ancestor_path(&self) -> Box<dyn Iterator<Item = AnnotatedSborAncestor<'_>> + '_> {
-        let (full_path, base_schema, compared_schema) = *self;
+        let (full_path, base_schema, compared_schema, _error_detail) = *self;
 
         let iterator = full_path.ancestor_path.iter().map(|path_segment| {
-            let base_metadata = base_schema
-                .resolve_type_metadata(path_segment.parent_base_type_id)
-                .expect("Invalid base schema - Could not find metadata for base type");
-            let compared_metadata = compared_schema
-                .resolve_type_metadata(path_segment.parent_compared_type_id)
-                .expect("Invalid compared schema - Could not find metadata for compared type");
+            let base_type_id = path_segment.parent_base_type_id;
+            let compared_type_id = path_segment.parent_compared_type_id;
 
-            let name = Cow::Owned(
-                combine_names(base_metadata.get_name(), compared_metadata.get_name())
-                    .unwrap_or_else(|| {
-                        combine_names(
-                            Some(
-                                base_schema
-                                    .resolve_type_kind(path_segment.parent_base_type_id)
-                                    .unwrap()
-                                    .category_name(),
-                            ),
-                            Some(
-                                compared_schema
-                                    .resolve_type_kind(path_segment.parent_compared_type_id)
-                                    .unwrap()
-                                    .category_name(),
-                            ),
-                        )
-                        .unwrap()
-                    }),
-            );
+            let (base_type_kind, base_metadata, _) = base_schema
+                .resolve_type_data(base_type_id)
+                .expect("Invalid base schema - Could not find data for base type");
+            let (compared_type_kind, compared_metadata, _) = compared_schema
+                .resolve_type_data(compared_type_id)
+                .expect("Invalid compared schema - Could not find data for compared type");
+
+            let name = Cow::Owned(combine_type_names::<S>(
+                base_metadata,
+                base_type_kind,
+                compared_metadata,
+                compared_type_kind,
+            ));
 
             let container = match path_segment.child_locator {
                 ChildTypeLocator::Tuple { field_index } => {
-                    let field_name = combine_names(
+                    let field_name = combine_optional_names(
                         base_metadata.get_field_name(field_index),
                         compared_metadata.get_field_name(field_index),
                     )
@@ -447,12 +474,12 @@ impl<'s, 'a, S: CustomSchema> PathAnnotate for (&'a TypeFullPath, &'a Schema<S>,
                     let compared_variant_metadata = compared_metadata
                         .get_enum_variant_data(discriminator)
                         .expect("Compared schema has variant names");
-                    let variant_name = combine_names(
+                    let variant_name = combine_optional_names(
                         base_variant_metadata.get_name(),
                         compared_variant_metadata.get_name(),
                     )
                     .map(Cow::Owned);
-                    let field_name = combine_names(
+                    let field_name = combine_optional_names(
                         base_variant_metadata.get_field_name(field_index),
                         compared_variant_metadata.get_field_name(field_index),
                     )
@@ -478,43 +505,23 @@ impl<'s, 'a, S: CustomSchema> PathAnnotate for (&'a TypeFullPath, &'a Schema<S>,
     }
 
     fn annotated_leaf(&self) -> Option<AnnotatedSborPartialLeaf<'_>> {
-        let (full_path, base_schema, compared_schema) = *self;
+        let (full_path, base_schema, compared_schema, error_detail) = *self;
         let base_type_id = full_path.leaf_base_type_id;
         let compared_type_id = full_path.leaf_compared_type_id;
 
-        let base_metadata = base_schema
-            .resolve_type_metadata(base_type_id)
-            .expect("Invalid base schema - Could not find metadata for base type");
-        let compared_metadata = compared_schema
-            .resolve_type_metadata(compared_type_id)
-            .expect("Invalid compared schema - Could not find metadata for compared type");
+        let (base_type_kind, base_metadata, _) = base_schema
+            .resolve_type_data(base_type_id)
+            .expect("Invalid base schema - Could not find data for base type");
+        let (compared_type_kind, compared_metadata, _) = compared_schema
+            .resolve_type_data(compared_type_id)
+            .expect("Invalid compared schema - Could not find data for compared type");
 
-        let name = Cow::Owned(
-            combine_names(base_metadata.get_name(), compared_metadata.get_name()).unwrap_or_else(
-                || {
-                    combine_names(
-                        Some(
-                            base_schema
-                                .resolve_type_kind(base_type_id)
-                                .unwrap()
-                                .category_name(),
-                        ),
-                        Some(
-                            compared_schema
-                                .resolve_type_kind(compared_type_id)
-                                .unwrap()
-                                .category_name(),
-                        ),
-                    )
-                    .unwrap()
-                },
-            ),
-        );
-
-        Some(AnnotatedSborPartialLeaf {
-            name,
-            partial_leaf_locator: None,
-        })
+        Some(error_detail.resolve_annotated_leaf(
+            base_metadata,
+            base_type_kind,
+            compared_metadata,
+            compared_type_kind,
+        ))
     }
 }
 
@@ -595,6 +602,183 @@ pub enum SchemaComparisonErrorDetail<S: CustomSchema> {
         local_type_index: usize,
         type_name: Option<String>,
     },
+}
+
+impl<S: CustomSchema> SchemaComparisonErrorDetail<S> {
+    fn resolve_annotated_leaf(
+        &self,
+        base_metadata: &TypeMetadata,
+        base_type_kind: &LocalTypeKind<S>,
+        compared_metadata: &TypeMetadata,
+        compared_type_kind: &LocalTypeKind<S>,
+    ) -> AnnotatedSborPartialLeaf<'_> {
+        AnnotatedSborPartialLeaf {
+            name: Cow::Owned(combine_type_names::<S>(
+                base_metadata,
+                base_type_kind,
+                compared_metadata,
+                compared_type_kind,
+            )),
+            partial_leaf_locator: self
+                .resolve_partial_leaf_locator(base_metadata, compared_metadata),
+        }
+    }
+
+    fn resolve_partial_leaf_locator(
+        &self,
+        base_metadata: &TypeMetadata,
+        compared_metadata: &TypeMetadata,
+    ) -> Option<AnnotatedSborPartialLeafLocator<'static>> {
+        match *self {
+            SchemaComparisonErrorDetail::TypeKindMismatch { .. } => None,
+            SchemaComparisonErrorDetail::TupleFieldCountMismatch { .. } => None,
+            SchemaComparisonErrorDetail::EnumSupportedVariantsMismatch { .. } => {
+                // This error handles multiple variants, so we can't list them here - instead we handle it in the custom debug print
+                None
+            }
+            SchemaComparisonErrorDetail::EnumVariantFieldCountMismatch {
+                variant_discriminator,
+                ..
+            } => {
+                let base_variant = base_metadata
+                    .get_enum_variant_data(variant_discriminator)
+                    .expect("Invalid base schema - Could not find metadata for enum variant");
+                let compared_variant = compared_metadata
+                    .get_enum_variant_data(variant_discriminator)
+                    .expect("Invalid compared schema - Could not find metadata for enum variant");
+                Some(AnnotatedSborPartialLeafLocator::EnumVariant {
+                    variant_discriminator: Some(variant_discriminator),
+                    variant_name: combine_optional_names(
+                        base_variant.get_name(),
+                        compared_variant.get_name(),
+                    )
+                    .map(Cow::Owned),
+                    field_index: None,
+                    field_name: None,
+                })
+            }
+            SchemaComparisonErrorDetail::TypeNameChangeError(_) => None,
+            SchemaComparisonErrorDetail::FieldNameChangeError { field_index, .. } => {
+                let base_field_name = base_metadata.get_field_name(field_index);
+                let compared_field_name = compared_metadata.get_field_name(field_index);
+                Some(AnnotatedSborPartialLeafLocator::Tuple {
+                    field_index: Some(field_index),
+                    field_name: combine_optional_names(base_field_name, compared_field_name)
+                        .map(Cow::Owned),
+                })
+            }
+            SchemaComparisonErrorDetail::EnumVariantNameChangeError {
+                variant_discriminator,
+                ..
+            } => {
+                let base_variant = base_metadata
+                    .get_enum_variant_data(variant_discriminator)
+                    .expect("Invalid base schema - Could not find metadata for enum variant");
+                let compared_variant = compared_metadata
+                    .get_enum_variant_data(variant_discriminator)
+                    .expect("Invalid compared schema - Could not find metadata for enum variant");
+                Some(AnnotatedSborPartialLeafLocator::EnumVariant {
+                    variant_discriminator: Some(variant_discriminator),
+                    variant_name: combine_optional_names(
+                        base_variant.get_name(),
+                        compared_variant.get_name(),
+                    )
+                    .map(Cow::Owned),
+                    field_index: None,
+                    field_name: None,
+                })
+            }
+            SchemaComparisonErrorDetail::EnumVariantFieldNameChangeError {
+                variant_discriminator,
+                field_index,
+                ..
+            } => {
+                let base_variant = base_metadata
+                    .get_enum_variant_data(variant_discriminator)
+                    .expect("Invalid base schema - Could not find metadata for enum variant");
+                let compared_variant = compared_metadata
+                    .get_enum_variant_data(variant_discriminator)
+                    .expect("Invalid compared schema - Could not find metadata for enum variant");
+                let base_field_name = base_variant.get_field_name(field_index);
+                let compared_field_name = compared_variant.get_field_name(field_index);
+                Some(AnnotatedSborPartialLeafLocator::EnumVariant {
+                    variant_discriminator: Some(variant_discriminator),
+                    variant_name: combine_optional_names(
+                        base_variant.get_name(),
+                        compared_metadata.get_name(),
+                    )
+                    .map(Cow::Owned),
+                    field_index: Some(field_index),
+                    field_name: combine_optional_names(base_field_name, compared_field_name)
+                        .map(Cow::Owned),
+                })
+            }
+            SchemaComparisonErrorDetail::TypeValidationChangeError { .. } => None,
+            SchemaComparisonErrorDetail::NamedRootTypeMissingInComparedSchema { .. } => None,
+            SchemaComparisonErrorDetail::DisallowedNewRootTypeInComparedSchema { .. } => None,
+            SchemaComparisonErrorDetail::TypeUnreachableFromRootInBaseSchema { .. } => None,
+            SchemaComparisonErrorDetail::TypeUnreachableFromRootInComparedSchema { .. } => None,
+        }
+    }
+
+    fn write_with_context<F: Write>(
+        &self,
+        f: &mut F,
+        base_metadata: &TypeMetadata,
+        base_type_kind: &LocalTypeKind<S>,
+        compared_metadata: &TypeMetadata,
+        compared_type_kind: &LocalTypeKind<S>,
+    ) -> core::fmt::Result {
+        self.resolve_annotated_leaf(
+            base_metadata,
+            base_type_kind,
+            compared_metadata,
+            compared_type_kind,
+        )
+        .write(f, true)?;
+        write!(f, " - ")?;
+
+        match self {
+            // Handle any errors where we can add extra detail
+            SchemaComparisonErrorDetail::EnumSupportedVariantsMismatch {
+                base_variants_missing_in_compared,
+                compared_variants_missing_in_base,
+            } => {
+                write!(
+                    f,
+                    "EnumSupportedVariantsMismatch {{ base_variants_missing_in_compared: {{"
+                )?;
+                for variant_discriminator in base_variants_missing_in_compared {
+                    let variant_data = base_metadata
+                        .get_enum_variant_data(*variant_discriminator)
+                        .unwrap();
+                    write!(
+                        f,
+                        "{variant_discriminator}|{}",
+                        variant_data.get_name().unwrap_or("anon")
+                    )?;
+                }
+                write!(f, "}}, compared_variants_missing_in_base: {{")?;
+                for variant_discriminator in compared_variants_missing_in_base {
+                    let variant_data = compared_metadata
+                        .get_enum_variant_data(*variant_discriminator)
+                        .unwrap();
+                    write!(
+                        f,
+                        "{variant_discriminator}|{}",
+                        variant_data.get_name().unwrap_or("anon")
+                    )?;
+                }
+                write!(f, "}}, }}")?;
+            }
+            // All other errors already have their context added in printing the annotated leaf
+            _ => {
+                write!(f, "{self:?}")?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 struct TypeKindComparisonResult<S: CustomSchema> {

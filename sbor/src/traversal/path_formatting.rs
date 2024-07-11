@@ -8,6 +8,25 @@ pub struct AnnotatedSborAncestor<'a> {
     pub container: AnnotatedSborAncestorContainer<'a>,
 }
 
+impl<'a> AnnotatedSborAncestor<'a> {
+    pub fn write(
+        &self,
+        f: &mut impl core::fmt::Write,
+        is_start_of_path: bool,
+    ) -> core::fmt::Result {
+        let AnnotatedSborAncestor { name, container } = self;
+
+        if !is_start_of_path {
+            write!(f, "->")?;
+        }
+
+        write!(f, "{name}")?;
+        container.write(f)?;
+
+        Ok(())
+    }
+}
+
 pub enum AnnotatedSborAncestorContainer<'a> {
     Tuple {
         field_index: usize,
@@ -30,22 +49,96 @@ pub enum AnnotatedSborAncestorContainer<'a> {
     },
 }
 
+impl<'a> AnnotatedSborAncestorContainer<'a> {
+    pub fn write(&self, f: &mut impl core::fmt::Write) -> core::fmt::Result {
+        // This should align with AnnotatedSborPartialLeafLocator
+        match self {
+            Self::Tuple {
+                field_index,
+                field_name,
+            } => {
+                if let Some(field_name) = field_name {
+                    write!(f, ".[{field_index}|{field_name}]")?;
+                } else {
+                    write!(f, ".[{field_index}]")?;
+                }
+            }
+            Self::EnumVariant {
+                discriminator: variant_discriminator,
+                variant_name,
+                field_index,
+                field_name,
+            } => {
+                if let Some(variant_name) = variant_name {
+                    write!(f, "::{{{variant_discriminator}|{variant_name}}}")?;
+                } else {
+                    write!(f, "::{{{variant_discriminator}}}")?;
+                }
+                if let Some(field_name) = field_name {
+                    write!(f, ".[{field_index}|{field_name}]")?;
+                } else {
+                    write!(f, ".[{field_index}]")?;
+                }
+            }
+            Self::Array { index } => {
+                if let Some(index) = index {
+                    write!(f, ".[{index}]")?;
+                }
+            }
+            Self::Map { index, entry_part } => {
+                if let Some(index) = index {
+                    write!(f, ".[{index}]")?;
+                }
+                match entry_part {
+                    MapEntryPart::Key => write!(f, ".Key")?,
+                    MapEntryPart::Value => write!(f, ".Value")?,
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 pub struct AnnotatedSborPartialLeaf<'a> {
     /// Ideally the type's type name, else the value kind name or type name, depending on what's available
     pub name: Cow<'a, str>,
     pub partial_leaf_locator: Option<AnnotatedSborPartialLeafLocator<'a>>,
 }
 
+impl<'a> AnnotatedSborPartialLeaf<'a> {
+    pub fn write(
+        &self,
+        f: &mut impl core::fmt::Write,
+        is_start_of_path: bool,
+    ) -> core::fmt::Result {
+        let AnnotatedSborPartialLeaf {
+            name,
+            partial_leaf_locator: partial_kinded_data,
+        } = self;
+
+        if !is_start_of_path {
+            write!(f, "->")?;
+        }
+
+        write!(f, "{}", name.deref())?;
+        if let Some(partial_kinded_data) = partial_kinded_data {
+            partial_kinded_data.write(f)?;
+        }
+
+        Ok(())
+    }
+}
+
 pub enum AnnotatedSborPartialLeafLocator<'a> {
     Tuple {
-        field_offset: Option<usize>,
-        field_name: Option<&'a str>,
+        field_index: Option<usize>,
+        field_name: Option<Cow<'a, str>>,
     },
     EnumVariant {
         variant_discriminator: Option<u8>,
-        variant_name: Option<&'a str>,
-        field_offset: Option<usize>,
-        field_name: Option<&'a str>,
+        variant_name: Option<Cow<'a, str>>,
+        field_index: Option<usize>,
+        field_name: Option<Cow<'a, str>>,
     },
     Array {
         index: Option<usize>,
@@ -54,6 +147,64 @@ pub enum AnnotatedSborPartialLeafLocator<'a> {
         index: Option<usize>,
         entry_part: Option<MapEntryPart>,
     },
+}
+
+impl<'a> AnnotatedSborPartialLeafLocator<'a> {
+    pub fn write(&self, f: &mut impl core::fmt::Write) -> core::fmt::Result {
+        // This should align with AnnotatedSborAncestorContainer
+        match self {
+            Self::Tuple {
+                field_index,
+                field_name,
+            } => {
+                if let Some(field_index) = field_index {
+                    if let Some(field_name) = field_name {
+                        write!(f, ".[{field_index}|{field_name}]")?;
+                    } else {
+                        write!(f, ".[{field_index}]")?;
+                    }
+                }
+            }
+            Self::EnumVariant {
+                variant_discriminator,
+                variant_name,
+                field_index,
+                field_name,
+            } => {
+                if let Some(variant_discriminator) = variant_discriminator {
+                    if let Some(variant_name) = variant_name {
+                        write!(f, "::{{{variant_discriminator}|{variant_name}}}")?;
+                    } else {
+                        write!(f, "::{{{variant_discriminator}}}")?;
+                    }
+                    if let Some(field_index) = field_index {
+                        if let Some(field_name) = field_name {
+                            write!(f, ".[{field_index}|{field_name}]")?;
+                        } else {
+                            write!(f, ".[{field_index}]")?;
+                        }
+                    }
+                }
+            }
+            Self::Array { index } => {
+                if let Some(index) = index {
+                    write!(f, ".[{index}]")?;
+                }
+            }
+            Self::Map { index, entry_part } => {
+                if let Some(index) = index {
+                    write!(f, ".[{index}]")?;
+                }
+                if let Some(entry_part) = entry_part {
+                    match entry_part {
+                        MapEntryPart::Key => write!(f, ".Key")?,
+                        MapEntryPart::Value => write!(f, ".Value")?,
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -73,122 +224,16 @@ pub trait PathAnnotate {
         buf
     }
 
-    fn write_path(&self, buf: &mut impl core::fmt::Write) -> core::fmt::Result {
-        let mut is_first = true;
-        for AnnotatedSborAncestor { name, container } in self.iter_ancestor_path() {
-            if is_first {
-                is_first = false;
-            } else {
-                write!(buf, "->")?;
-            }
-            write!(buf, "{name}")?;
-            match container {
-                AnnotatedSborAncestorContainer::Tuple {
-                    field_index: field_offset,
-                    field_name,
-                } => {
-                    if let Some(field_name) = field_name {
-                        write!(buf, ".[{field_offset}|{field_name}]")?;
-                    } else {
-                        write!(buf, ".[{field_offset}]")?;
-                    }
-                }
-                AnnotatedSborAncestorContainer::EnumVariant {
-                    discriminator: variant_discriminator,
-                    variant_name,
-                    field_index: field_offset,
-                    field_name,
-                } => {
-                    if let Some(variant_name) = variant_name {
-                        write!(buf, "::{{{variant_discriminator}|{variant_name}}}")?;
-                    } else {
-                        write!(buf, "::{{{variant_discriminator}}}")?;
-                    }
-                    if let Some(field_name) = field_name {
-                        write!(buf, ".[{field_offset}|{field_name}]")?;
-                    } else {
-                        write!(buf, ".[{field_offset}]")?;
-                    }
-                }
-                AnnotatedSborAncestorContainer::Array { index } => {
-                    if let Some(index) = index {
-                        write!(buf, ".[{index}]")?;
-                    }
-                }
-                AnnotatedSborAncestorContainer::Map { index, entry_part } => {
-                    if let Some(index) = index {
-                        write!(buf, ".[{index}]")?;
-                    }
-                    match entry_part {
-                        MapEntryPart::Key => write!(buf, ".Key")?,
-                        MapEntryPart::Value => write!(buf, ".Value")?,
-                    }
-                }
-            }
+    fn write_path(&self, f: &mut impl core::fmt::Write) -> core::fmt::Result {
+        let mut is_start_of_path = true;
+        for ancestor in self.iter_ancestor_path() {
+            ancestor.write(f, is_start_of_path)?;
+            is_start_of_path = false;
         }
-        if let Some(AnnotatedSborPartialLeaf {
-            name,
-            partial_leaf_locator: partial_kinded_data,
-        }) = self.annotated_leaf()
-        {
-            if !is_first {
-                write!(buf, "->")?;
-            }
-            write!(buf, "{}", name.deref())?;
-            if let Some(partial_kinded_data) = partial_kinded_data {
-                match partial_kinded_data {
-                    AnnotatedSborPartialLeafLocator::Tuple {
-                        field_offset,
-                        field_name,
-                    } => {
-                        if let Some(field_offset) = field_offset {
-                            if let Some(field_name) = field_name {
-                                write!(buf, ".[{field_offset}|{field_name}]")?;
-                            } else {
-                                write!(buf, ".[{field_offset}]")?;
-                            }
-                        }
-                    }
-                    AnnotatedSborPartialLeafLocator::EnumVariant {
-                        variant_discriminator,
-                        variant_name,
-                        field_offset,
-                        field_name,
-                    } => {
-                        if let Some(variant_discriminator) = variant_discriminator {
-                            if let Some(variant_name) = variant_name {
-                                write!(buf, "::{{{variant_discriminator}|{variant_name}}}")?;
-                            } else {
-                                write!(buf, "::{{{variant_discriminator}}}")?;
-                            }
-                            if let Some(field_offset) = field_offset {
-                                if let Some(field_name) = field_name {
-                                    write!(buf, ".[{field_offset}|{field_name}]")?;
-                                } else {
-                                    write!(buf, ".[{field_offset}]")?;
-                                }
-                            }
-                        }
-                    }
-                    AnnotatedSborPartialLeafLocator::Array { index } => {
-                        if let Some(index) = index {
-                            write!(buf, ".[{index}]")?;
-                        }
-                    }
-                    AnnotatedSborPartialLeafLocator::Map { index, entry_part } => {
-                        if let Some(index) = index {
-                            write!(buf, ".[{index}]")?;
-                        }
-                        if let Some(entry_part) = entry_part {
-                            match entry_part {
-                                MapEntryPart::Key => write!(buf, ".Key")?,
-                                MapEntryPart::Value => write!(buf, ".Value")?,
-                            }
-                        }
-                    }
-                }
-            }
-        }
+
+        if let Some(leaf) = self.annotated_leaf() {
+            leaf.write(f, is_start_of_path)?;
+        };
 
         Ok(())
     }

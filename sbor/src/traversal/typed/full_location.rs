@@ -98,12 +98,12 @@ impl<'s, 'a, E: CustomExtension> PathAnnotate
                 if let Some(variant_discriminator) = current_value_info.variant {
                     let variant_data =
                         metadata.and_then(|v| v.get_enum_variant_data(variant_discriminator));
-                    let variant_name = variant_data.and_then(|d| d.get_name());
+                    let variant_name = variant_data.and_then(|d| d.get_name()).map(Cow::Borrowed);
 
                     Some(AnnotatedSborPartialLeafLocator::EnumVariant {
                         variant_discriminator: Some(variant_discriminator),
                         variant_name,
-                        field_offset: None,
+                        field_index: None,
                         field_name: None,
                     })
                 } else {
