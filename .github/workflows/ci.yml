@@ -19,6 +19,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
+  phylum-analyze:
+    if: ${{ github.event.pull_request }}
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/phylum-analyze.yml@main
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+      deployments: write
+    secrets:
+      phylum_api_key: ${{ secrets.PHYLUM_API_KEY }}
+    with:
+      phylum_pr_number: ${{ github.event.number }}
+      phylum_pr_name: ${{ github.head_ref }}
+      phylum_group_name: Protocol
+      phylum_project_id: 851c8804-e9f6-423c-be8e-c529d22f4abd
+      github_repository: ${{ github.repository }}
+      add_report_comment_to_pull_request: true
   check-code-format:
     name: Check code format
     runs-on: ubuntu-latest
