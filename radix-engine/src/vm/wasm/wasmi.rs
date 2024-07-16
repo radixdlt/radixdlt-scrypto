@@ -831,8 +831,7 @@ impl WasmiModule {
              buffer_id: BufferId,
              destination_ptr: u32|
              -> Result<(), Error> {
-                consume_buffer(caller, buffer_id, destination_ptr)
-                    .map_err(|e| Error::new(e.to_string()))
+                consume_buffer(caller, buffer_id, destination_ptr).map_err(|e| Error::host(e))
             },
         );
 
@@ -855,7 +854,7 @@ impl WasmiModule {
                     args_ptr,
                     args_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -880,7 +879,7 @@ impl WasmiModule {
                     args_ptr,
                     args_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -903,7 +902,7 @@ impl WasmiModule {
                     args_ptr,
                     args_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -930,7 +929,7 @@ impl WasmiModule {
                     args_ptr,
                     args_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -949,7 +948,7 @@ impl WasmiModule {
                     object_states_ptr,
                     object_states_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -959,8 +958,7 @@ impl WasmiModule {
              schema_ptr: u32,
              schema_len: u32|
              -> Result<u64, Error> {
-                new_key_value_store(caller, schema_ptr, schema_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                new_key_value_store(caller, schema_ptr, schema_len).map_err(|e| Error::host(e))
             },
         );
 
@@ -979,7 +977,7 @@ impl WasmiModule {
                     blueprint_name_ptr,
                     blueprint_name_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -990,56 +988,56 @@ impl WasmiModule {
              node_id_len: u32|
              -> Result<u64, Error> {
                 get_reservation_address(caller, node_id_ptr, node_id_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                    .map_err(|e| Error::host(e))
             },
         );
 
         let host_execution_cost_unit_limit = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u32, Error> {
-                execution_cost_unit_limit(caller).map_err(|e| Error::new(e.to_string()))
+                execution_cost_unit_limit(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_execution_cost_unit_price = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                execution_cost_unit_price(caller).map_err(|e| Error::new(e.to_string()))
+                execution_cost_unit_price(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_finalization_cost_unit_limit = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u32, Error> {
-                finalization_cost_unit_limit(caller).map_err(|e| Error::new(e.to_string()))
+                finalization_cost_unit_limit(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_finalization_cost_unit_price = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                finalization_cost_unit_price(caller).map_err(|e| Error::new(e.to_string()))
+                finalization_cost_unit_price(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_usd_price = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                usd_price(caller).map_err(|e| Error::new(e.to_string()))
+                usd_price(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_tip_percentage = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u32, Error> {
-                tip_percentage(caller).map_err(|e| Error::new(e.to_string()))
+                tip_percentage(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_fee_balance = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                fee_balance(caller).map_err(|e| Error::new(e.to_string()))
+                fee_balance(caller).map_err(|e| Error::host(e))
             },
         );
 
@@ -1062,7 +1060,7 @@ impl WasmiModule {
                     address_ptr,
                     address_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -1085,7 +1083,7 @@ impl WasmiModule {
                     blueprint_name_ptr,
                     blueprint_name_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -1095,8 +1093,7 @@ impl WasmiModule {
              object_id_ptr: u32,
              object_id_len: u32|
              -> Result<u64, Error> {
-                blueprint_id(caller, object_id_ptr, object_id_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                blueprint_id(caller, object_id_ptr, object_id_len).map_err(|e| Error::host(e))
             },
         );
 
@@ -1106,8 +1103,7 @@ impl WasmiModule {
              object_id_ptr: u32,
              object_id_len: u32|
              -> Result<u64, Error> {
-                get_outer_object(caller, object_id_ptr, object_id_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                get_outer_object(caller, object_id_ptr, object_id_len).map_err(|e| Error::host(e))
             },
         );
 
@@ -1128,14 +1124,14 @@ impl WasmiModule {
                     offset_len,
                     mutable,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
         let host_key_value_entry_get = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Error> {
-                key_value_entry_get(caller, handle).map_err(|e| Error::new(e.to_string()))
+                key_value_entry_get(caller, handle).map_err(|e| Error::host(e))
             },
         );
 
@@ -1147,21 +1143,21 @@ impl WasmiModule {
              buffer_len: u32|
              -> Result<(), Error> {
                 key_value_entry_set(caller, handle, buffer_ptr, buffer_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                    .map_err(|e| Error::host(e))
             },
         );
 
         let host_key_value_entry_remove = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Error> {
-                key_value_entry_remove(caller, handle).map_err(|e| Error::new(e.to_string()))
+                key_value_entry_remove(caller, handle).map_err(|e| Error::host(e))
             },
         );
 
         let host_unlock_key_value_entry = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Error> {
-                unlock_key_value_entry(caller, handle).map_err(|e| Error::new(e.to_string()))
+                unlock_key_value_entry(caller, handle).map_err(|e| Error::host(e))
             },
         );
 
@@ -1174,7 +1170,7 @@ impl WasmiModule {
              key_len: u32|
              -> Result<u64, Error> {
                 key_value_store_remove(caller, node_id_ptr, node_id_len, key_ptr, key_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                    .map_err(|e| Error::host(e))
             },
         );
 
@@ -1185,15 +1181,14 @@ impl WasmiModule {
              field: u32,
              lock_flags: u32|
              -> Result<u32, Error> {
-                lock_field(caller, object_handle, field, lock_flags)
-                    .map_err(|e| Error::new(e.to_string()))
+                lock_field(caller, object_handle, field, lock_flags).map_err(|e| Error::host(e))
             },
         );
 
         let host_field_lock_read = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Error> {
-                field_lock_read(caller, handle).map_err(|e| Error::new(e.to_string()))
+                field_lock_read(caller, handle).map_err(|e| Error::host(e))
             },
         );
 
@@ -1204,43 +1199,42 @@ impl WasmiModule {
              data_ptr: u32,
              data_len: u32|
              -> Result<(), Error> {
-                field_lock_write(caller, handle, data_ptr, data_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                field_lock_write(caller, handle, data_ptr, data_len).map_err(|e| Error::host(e))
             },
         );
 
         let host_field_lock_release = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Error> {
-                field_lock_release(caller, handle).map_err(|e| Error::new(e.to_string()))
+                field_lock_release(caller, handle).map_err(|e| Error::host(e))
             },
         );
 
         let host_actor_get_node_id = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Error> {
-                actor_get_node_id(caller, handle).map_err(|e| Error::new(e.to_string()))
+                actor_get_node_id(caller, handle).map_err(|e| Error::host(e))
             },
         );
 
         let host_get_package_address = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                get_package_address(caller).map_err(|e| Error::new(e.to_string()))
+                get_package_address(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_get_blueprint_name = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                get_blueprint_name(caller).map_err(|e| Error::new(e.to_string()))
+                get_blueprint_name(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_consume_wasm_execution_units = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, n: u64| -> Result<(), Error> {
-                consume_wasm_execution_units(caller, n).map_err(|e| Error::new(e.to_string()))
+                consume_wasm_execution_units(caller, n).map_err(|e| Error::host(e))
             },
         );
 
@@ -1261,7 +1255,7 @@ impl WasmiModule {
                     event_data_len,
                     flags,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -1274,7 +1268,7 @@ impl WasmiModule {
              message_len: u32|
              -> Result<(), Error> {
                 emit_log(caller, level_ptr, level_len, message_ptr, message_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                    .map_err(|e| Error::host(e))
             },
         );
 
@@ -1284,7 +1278,7 @@ impl WasmiModule {
              message_ptr: u32,
              message_len: u32|
              -> Result<(), Error> {
-                panic(caller, message_ptr, message_len).map_err(|e| Error::new(e.to_string()))
+                panic(caller, message_ptr, message_len).map_err(|e| Error::host(e))
             },
         );
 
@@ -1294,22 +1288,21 @@ impl WasmiModule {
              address_ptr: u32,
              address_len: u32|
              -> Result<u64, Error> {
-                bech32_encode_address(caller, address_ptr, address_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                bech32_encode_address(caller, address_ptr, address_len).map_err(|e| Error::host(e))
             },
         );
 
         let host_get_transaction_hash = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                get_transaction_hash(caller).map_err(|e| Error::new(e.to_string()))
+                get_transaction_hash(caller).map_err(|e| Error::host(e))
             },
         );
 
         let host_generate_ruid = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                generate_ruid(caller).map_err(|e| Error::new(e.to_string()))
+                generate_ruid(caller).map_err(|e| Error::host(e))
             },
         );
 
@@ -1332,7 +1325,7 @@ impl WasmiModule {
                     signature_ptr,
                     signature_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -1351,7 +1344,7 @@ impl WasmiModule {
                     signature_ptr,
                     signature_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -1374,7 +1367,7 @@ impl WasmiModule {
                     signature_ptr,
                     signature_len,
                 )
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::host(e))
             },
         );
 
@@ -1385,14 +1378,14 @@ impl WasmiModule {
              signatures_len: u32|
              -> Result<u64, Error> {
                 bls12381_g2_signature_aggregate(caller, signatures_ptr, signatures_len)
-                    .map_err(|e| Error::new(e.to_string()))
+                    .map_err(|e| Error::host(e))
             },
         );
 
         let host_keccak256_hash = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, data_ptr: u32, data_len: u32| -> Result<u64, Error> {
-                keccak256_hash(caller, data_ptr, data_len).map_err(|e| Error::new(e.to_string()))
+                keccak256_hash(caller, data_ptr, data_len).map_err(|e| Error::host(e))
             },
         );
 
@@ -1588,8 +1581,7 @@ impl WasmiModule {
                  memory_offs: u32,
                  data_len: u32|
                  -> Result<(), Error> {
-                    test_host_read_memory(caller, memory_offs, data_len)
-                        .map_err(|e| Error::new(e.to_string()))
+                    test_host_read_memory(caller, memory_offs, data_len).map_err(|e| Error::host(e))
                 },
             );
             let host_write_memory = Func::wrap(
@@ -1599,13 +1591,13 @@ impl WasmiModule {
                  data_len: u32|
                  -> Result<(), Error> {
                     test_host_write_memory(caller, memory_offs, data_len)
-                        .map_err(|e| Error::new(e.to_string()))
+                        .map_err(|e| Error::host(e))
                 },
             );
             let host_check_memory_is_clean = Func::wrap(
                 store.as_context_mut(),
                 |caller: Caller<'_, HostState>| -> Result<u64, Error> {
-                    test_host_check_memory_is_clean(caller).map_err(|e| Error::new(e.to_string()))
+                    test_host_check_memory_is_clean(caller).map_err(|e| Error::host(e))
                 },
             );
             linker_define!(linker, "test_host_read_memory", host_read_memory);
@@ -1702,10 +1694,15 @@ impl HostError for InvokeError<WasmRuntimeError> {}
 
 impl From<Error> for InvokeError<WasmRuntimeError> {
     fn from(err: Error) -> Self {
-        // InvokeError::SelfError(WasmRuntimeError::ExecutionError(err.to_string()))
-        InvokeError::SelfError(WasmRuntimeError::NotImplemented)
+        InvokeError::SelfError(WasmRuntimeError::ExecutionError(err.to_string()))
     }
 }
+
+// impl From<InvokeError<WasmRuntimeError>> for Error {
+//     fn from(err: InvokeError<WasmRuntimeError>) -> Self {
+//         Error::new(err.to_string())
+//     }
+// }
 
 impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
