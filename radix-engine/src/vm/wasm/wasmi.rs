@@ -811,7 +811,7 @@ pub enum WasmiInstantiationError {
 impl WasmiModule {
     pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
         let mut config = wasmi::Config::default();
-        config.compilation_mode(wasmi::CompilationMode::LazyTranslation);
+        config.compilation_mode(wasmi::CompilationMode::Lazy);
         let engine = Engine::new(&config);
 
         let module =
@@ -1953,7 +1953,7 @@ mod tests {
         let code = wat2wasm(MODULE_MUTABLE_GLOBALS).unwrap();
 
         let mut config = wasmi::Config::default();
-        config.compilation_mode(wasmi::CompilationMode::LazyTranslation);
+        config.compilation_mode(wasmi::CompilationMode::Lazy);
         let engine = Engine::new(&config);
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
