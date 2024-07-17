@@ -1758,12 +1758,14 @@ impl WasmInstance for WasmiInstance {
                 dump_coverage
                     .call(self.store.as_context_mut(), &[], &mut ret)
                     .unwrap();
-                let coverage_data = read_slice(
-                    self.store.as_context_mut(),
-                    self.memory,
-                    Slice::transmute_i64(i64::try_from(ret[0]).unwrap()),
-                )
-                .unwrap();
+                let coverage_data = match ret[0] {
+                    Val::I64(ret) => read_slice(
+                        self.store.as_context_mut(),
+                        self.memory,
+                        Slice::transmute_i64(ret),
+                    ),
+                    _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
+                };
                 save_coverage_data(&blueprint_name, &coverage_data);
             }
         }
