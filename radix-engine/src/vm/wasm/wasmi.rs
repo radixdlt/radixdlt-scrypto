@@ -1694,15 +1694,14 @@ impl HostError for InvokeError<WasmRuntimeError> {}
 
 impl From<Error> for InvokeError<WasmRuntimeError> {
     fn from(err: Error) -> Self {
-        InvokeError::SelfError(WasmRuntimeError::ExecutionError(err.to_string()))
+        let e_str = format!("{:?}", err);
+        if let Some(invoke_err) = err.downcast::<InvokeError<WasmRuntimeError>>() {
+            invoke_err.clone()
+        } else {
+            InvokeError::SelfError(WasmRuntimeError::ExecutionError(e_str))
+        }
     }
 }
-
-// impl From<InvokeError<WasmRuntimeError>> for Error {
-//     fn from(err: InvokeError<WasmRuntimeError>) -> Self {
-//         Error::new(err.to_string())
-//     }
-// }
 
 impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
