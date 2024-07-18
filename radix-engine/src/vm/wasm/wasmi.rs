@@ -1772,7 +1772,8 @@ impl WasmInstance for WasmiInstance {
                         Slice::transmute_i64(ret),
                     ),
                     _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
-                };
+                }
+                .unwrap();
                 save_coverage_data(&blueprint_name, &coverage_data);
             }
         }
