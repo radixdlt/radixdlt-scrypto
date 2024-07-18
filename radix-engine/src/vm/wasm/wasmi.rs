@@ -811,7 +811,15 @@ pub enum WasmiInstantiationError {
 impl WasmiModule {
     pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
         let mut config = wasmi::Config::default();
-        config.compilation_mode(wasmi::CompilationMode::Lazy);
+
+        // In order to speed compilation we deliberately
+        // - use LazyTranslation compilation mode
+        // - compiling without WASM validation (Module::new_checked())
+        // (for more details see: https://github.com/wasmi-labs/wasmi/releases/tag/v0.32.0)
+        //
+        // It is assumed that WASM code passed here is already WASM validated,
+        // so above combination should be fine.
+        config.compilation_mode(wasmi::CompilationMode::LazyTranslation);
         let engine = Engine::new(&config);
 
         let module = unsafe {
@@ -825,10 +833,7 @@ impl WasmiModule {
         })
     }
 
-    pub fn host_funcs_set(
-        module: &Module,
-        store: &mut Store<HostState>,
-    ) -> Result<InstancePre, Error> {
+    fn host_funcs_set(module: &Module, store: &mut Store<HostState>) -> Result<InstancePre, Error> {
         let host_consume_buffer = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -1919,17 +1924,14 @@ mod tests {
         )
     }
     pub fn run_module_with_mutable_global(
-        engine: &Engine,
+        module: &Module,
         mut store: StoreContextMut<WasmiInstanceEnv>,
-        code: &[u8],
         func_name: &str,
         global_name: &str,
         global_value: &Global,
         step: i32,
     ) {
-        let module = Module::new(&engine, code).unwrap();
-
-        let mut linker = <Linker<HostState>>::new(engine);
+        let mut linker = <Linker<HostState>>::new(module.engine());
         linker_define!(linker, global_name, *global_value);
 
         let instance = linker
@@ -1954,18 +1956,17 @@ mod tests {
         // wat2wasm has "mutable-globals" enabled by default
         let code = wat2wasm(MODULE_MUTABLE_GLOBALS).unwrap();
 
-        let mut config = wasmi::Config::default();
-        config.compilation_mode(wasmi::CompilationMode::Lazy);
-        let engine = Engine::new(&config);
-        let mut store = Store::new(&engine, WasmiInstanceEnv::new());
+        let wasmi_module = WasmiModule::new(&code).unwrap();
+        let module = wasmi_module.module;
+
+        let mut store = Store::new(&module.engine(), WasmiInstanceEnv::new());
 
         // Value of this Global shall be updated by the below WASM module calls
         let global_value = Global::new(store.as_context_mut(), Val::I32(100), Mutability::Var);
 
         run_module_with_mutable_global(
-            &engine,
+            &module,
             store.as_context_mut(),
-            &code,
             "increase_global_value",
             "global_mutable_value",
             &global_value,
@@ -1979,9 +1980,8 @@ mod tests {
         assert_eq!(val, 1100);
 
         run_module_with_mutable_global(
-            &engine,
+            &module,
             store.as_context_mut(),
-            &code,
             "increase_global_value",
             "global_mutable_value",
             &global_value,
