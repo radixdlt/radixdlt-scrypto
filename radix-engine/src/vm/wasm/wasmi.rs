@@ -17,30 +17,24 @@ use wasmi::*;
 
 type HostState = WasmiInstanceEnv;
 
-/// A `WasmiModule` defines a parsed WASM module "template" Instance (with imports already defined)
-/// and Store, which keeps user data.
-/// "Template" (Store, Instance) tuple are cached together, and never to be invoked.
-/// Upon instantiation Instance and Store are cloned, so the state is not shared between instances.
-/// It is safe to clone an `Instance` and a `Store`, since they don't use pointers, but `Arena`
-/// allocator. `Instance` is owned by `Store`, it is basically some offset within `Store`'s vector
-/// of `Instance`s. So after clone we receive the same `Store`, where we are able to set different
-/// data, more specifically a `runtime_ptr`.
-/// Also, it is correctly `Send + Sync` (under the assumption that the data in the Store is set to
-/// a valid value upon invocation , because this is the thing which is cached in the
-/// ScryptoInterpreter caches.
+/// A `WasmiModule` defines a compiled WASM module
 pub struct WasmiModule {
     module: Module,
     #[allow(dead_code)]
     code_size_bytes: usize,
 }
 
+/// A `WasmiModule` defines
+/// - an instantiated WASM module
+/// - a Store , which keeps user data
+/// - a Memory - linear memory reference to the Store
 pub struct WasmiInstance {
     store: Store<HostState>,
     instance: Instance,
     memory: Memory,
 }
 
-/// This is to construct a real `Store<WasmiInstanceEnv>
+/// This is to construct a `Store<WasmiInstanceEnv>
 pub struct WasmiInstanceEnv {
     runtime_ptr: MaybeUninit<*mut Box<dyn WasmRuntime>>,
 }
