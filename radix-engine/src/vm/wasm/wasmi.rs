@@ -797,7 +797,7 @@ macro_rules! linker_define {
 
 #[derive(Debug)]
 pub enum WasmiInstantiationError {
-    ValidationError(Error),
+    CompilationError(Error),
     PreInstantiationError(Error),
     InstantiationError(InstantiationError),
 }
@@ -818,7 +818,7 @@ impl WasmiModule {
 
         let module = unsafe {
             Module::new_unchecked(&engine, code)
-                .map_err(WasmiInstantiationError::ValidationError)?
+                .map_err(WasmiInstantiationError::CompilationError)?
         };
 
         Ok(Self {
