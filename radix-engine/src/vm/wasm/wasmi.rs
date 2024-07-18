@@ -1615,24 +1615,28 @@ impl WasmiModule {
         linker.instantiate(store.as_context_mut(), &module)
     }
 
-    fn instantiate(&self) -> WasmiInstance {
+    pub fn instantiate(&self) -> Result<WasmiInstance, WasmiInstantiationError> {
         let mut store = Store::new(self.module.engine(), WasmiInstanceEnv::new());
 
         let instance = Self::host_funcs_set(&self.module, &mut store)
-            .expect("Failed to preinstantiate module") // WasmiInstantiationError::PreInstantiationError
+            .map_err(WasmiInstantiationError::PreInstantiationError)?
             .ensure_no_start(store.as_context_mut())
-            .expect("Failed to instantiate module"); // WasmiInstantiationError::InstantiationError
+            .map_err(WasmiInstantiationError::InstantiationError)?;
 
         let memory = match instance.get_export(store.as_context_mut(), EXPORT_MEMORY) {
             Some(Extern::Memory(memory)) => memory,
             _ => panic!("Failed to find memory export"),
         };
 
-        WasmiInstance {
+        Ok(WasmiInstance {
             instance,
             store,
             memory,
-        }
+        })
+    }
+
+    fn instantiate_unchecked(&self) -> WasmiInstance {
+        self.instantiate().expect("Failed to instantiate")
     }
 }
 
@@ -1832,17 +1836,17 @@ impl WasmEngine for WasmiEngine {
             #[cfg(not(feature = "moka"))]
             {
                 if let Some(cached_module) = self.modules_cache.borrow_mut().get(&code_hash) {
-                    return cached_module.instantiate();
+                    return cached_module.instantiate_unchecked();
                 }
             }
             #[cfg(feature = "moka")]
             if let Some(cached_module) = self.modules_cache.get(&code_hash) {
-                return cached_module.as_ref().instantiate();
+                return cached_module.as_ref().instantiate_unchecked();
             }
         }
 
-        let module = WasmiModule::new(instrumented_code).expect("Failed to instantiate module");
-        let instance = module.instantiate();
+        let module = WasmiModule::new(instrumented_code).expect("Failed to compile module");
+        let instance = module.instantiate_unchecked();
 
         #[cfg(not(feature = "fuzzing"))]
         {
