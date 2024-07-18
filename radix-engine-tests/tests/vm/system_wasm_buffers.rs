@@ -249,7 +249,7 @@ fn test_wasm_buffer_read_memory_instruction_trap() {
         // This error is really nasty and we should somehow prevent it from occurring.
         // Especially that we know that transaction will fail for smaller sizes...
         RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(message))) => {
-            message == "Trap(Trap { reason: InstructionTrap(UnreachableCodeReached) })"
+            message == "Error { kind: TrapCode(UnreachableCodeReached) }"
         }
         _ => false,
     });
@@ -268,7 +268,7 @@ fn test_wasm_buffer_read_memory_instruction_trap() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(message))) => {
-            message == "Trap(Trap { reason: InstructionTrap(UnreachableCodeReached) })"
+            message == "Error { kind: TrapCode(UnreachableCodeReached) }"
         }
         _ => false,
     });
