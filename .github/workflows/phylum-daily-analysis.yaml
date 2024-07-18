@@ -1,0 +1,46 @@
+name: Daily Analysis Phylum
+
+on:
+  schedule:
+    # Runs at 14:00 UTC every day
+    - cron: '0 14 * * *'
+jobs:
+  analyze_branch_phylum:
+    name: Analyze dependencies with Phylum
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch: [main, develop, release/babylon, release/anemone, release/bottlenose]
+        include:
+          - branch: main
+          - branch: develop
+          - branch: release/babylon
+          - branch: release/anemone
+          - branch: release/bottlenose
+      fail-fast: false 
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+      - uses: RDXWorks-actions/setup-python@main
+        with:
+          python-version: 3.10.6
+      - name: Install Phylum
+        run: |
+          curl https://sh.phylum.io/ | sh -s -- --yes
+          # Add the Python user base binary directory to PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Run Phylum Analysis
+        env: 
+          PHYLUM_API_KEY: ${{ secrets.PHYLUM_API_KEY }}         
+        run: phylum analyze --quiet --label ${{ matrix.branch }}_branch_daily_schedule > /dev/null 2>&1 || 
+          if [ $? -eq 100 ]; then 
+            echo "Phylum Analysis returned exit code 100, but continuing."; 
+            exit 0; 
+          else 
+            exit $?; 
+          fi
