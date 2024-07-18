@@ -810,9 +810,7 @@ pub enum WasmiInstantiationError {
 
 impl WasmiModule {
     pub fn new(code: &[u8]) -> Result<Self, WasmiInstantiationError> {
-        let mut config = wasmi::Config::default();
-        config.compilation_mode(wasmi::CompilationMode::LazyTranslation);
-        let engine = Engine::new(&config);
+        let engine = Engine::default();
 
         let module = unsafe {
             Module::new_unchecked(&engine, code)
@@ -1954,9 +1952,7 @@ mod tests {
         // wat2wasm has "mutable-globals" enabled by default
         let code = wat2wasm(MODULE_MUTABLE_GLOBALS).unwrap();
 
-        let mut config = wasmi::Config::default();
-        config.compilation_mode(wasmi::CompilationMode::LazyTranslation);
-        let engine = Engine::new(&config);
+        let engine = Engine::default();
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
         // Value of this Global shall be updated by the below WASM module calls
