@@ -814,8 +814,10 @@ impl WasmiModule {
         config.compilation_mode(wasmi::CompilationMode::LazyTranslation);
         let engine = Engine::new(&config);
 
-        let module =
-            Module::new(&engine, code).map_err(WasmiInstantiationError::ValidationError)?;
+        let module = unsafe {
+            Module::new_unchecked(&engine, code)
+                .map_err(WasmiInstantiationError::ValidationError)?
+        };
 
         Ok(Self {
             module,
