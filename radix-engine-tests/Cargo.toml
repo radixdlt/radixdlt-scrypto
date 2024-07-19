@@ -116,7 +116,6 @@ alloc = [
     "scrypto-test/alloc",
     "scrypto-test/lru",
 ]
-wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
 resource_tracker = [

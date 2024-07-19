@@ -230,9 +230,6 @@ fn test_wasm_buffer_read_memory_substate_size_exceeded() {
 }
 
 #[test]
-#[cfg(not(feature = "wasmer"))]
-// 'wasmer' produces following panic:
-//  misaligned pointer dereference: address must be a multiple of 0x10 but is ...
 fn test_wasm_buffer_read_memory_instruction_trap() {
     // Arrange
     let (mut ledger, component_address) = get_ledger();

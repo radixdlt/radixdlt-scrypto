@@ -1788,7 +1788,7 @@ pub struct WasmiEngineOptions {
 }
 
 pub struct WasmiEngine {
-    // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
+    // This flag disables cache in wasm_instrumenter/wasmi to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "fuzzing"), not(feature = "moka")))]
     modules_cache: RefCell<lru::LruCache<CodeHash, Arc<WasmiModule>>>,
     #[cfg(all(not(feature = "fuzzing"), feature = "moka"))]
@@ -1873,7 +1873,6 @@ impl WasmEngine for WasmiEngine {
 //  more details:
 //  - https://github.com/rust-lang/rust/issues/60825
 //  - https://github.com/rust-lang/rust/issues/65987
-#[cfg(not(feature = "wasmer"))]
 #[cfg(test)]
 mod tests {
     use super::*;
