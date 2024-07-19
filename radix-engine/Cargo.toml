@@ -43,11 +43,8 @@ radix-wasm-instrument = { workspace = true,  features = ["ignore_custom_section"
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
-# - Wasmer is a WASM engine with multiple backends: `singlepass` (linear time), `LLVM` and `cranelift`
 
 radix-wasmi = {  workspace = true  }
-wasmer = { workspace = true, optional = true }
-wasmer-compiler-singlepass = { workspace = true, optional = true }
 
 serde_json = { workspace = true, optional = true }
 lazy_static = { workspace = true }
@@ -56,9 +53,6 @@ lazy_static = { workspace = true }
 wabt = { workspace = true }
 criterion = { workspace = true, features = ["html_reports"] }
 wasm-benchmarks-lib = { path = "./wasm-benchmarks-lib", default-features = false }
-
-wasmer = { workspace = true}
-wasmer-compiler-singlepass = { workspace = true }
 
 [[bench]]
 name = "wasm_benchmarks"
@@ -74,9 +68,6 @@ alloc = ["sbor/alloc", "radix-native-sdk/alloc", "radix-transactions/alloc", "ra
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
 cpu_ram_metrics = ["std", "perfcnt", "radix-engine-profiling/ram_metrics"]
 
-# Use `wasmer` as WASM engine, otherwise `wasmi`
-wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
-
 # Two features for the two possible libraries to use for caching. Moka is not WASM friendly while LRU is. One of these
 # two features must be enabled.
 moka = ["dep:moka"]
@@ -87,7 +78,7 @@ resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling/resour
 # System/Application Database Checker
 db_checker = []
 
-# This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
+# This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi
 # to prevent non-determinism when fuzzing
 fuzzing = [
     "radix-common/fuzzing",
