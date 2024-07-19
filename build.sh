@@ -18,7 +18,7 @@ echo "Building the radix-clis packages..."
 echo "Building the engine in different configurations..."
 
 (set -x; cd radix-engine; cargo build --no-default-features --features alloc,lru)
-(set -x; cd radix-engine; cargo build --features wasmer,resource_tracker)
+(set -x; cd radix-engine; cargo build --features resource_tracker)
 
 # We use a globally loaded scrypto CLI so that this script works even if the code doesn't compile at present
 # It's also a little faster. If you wish to use the local version instead, swap out the below line.
@@ -48,5 +48,5 @@ echo "Building assets and examples..."
 (
     find "examples" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
-    | xargs -I '{}' bash -c "set -x; cd '{}'; $scrypto build" 
+    | xargs -I '{}' bash -c "set -x; cd '{}'; $scrypto build"
 )

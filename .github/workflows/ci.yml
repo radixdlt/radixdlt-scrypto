@@ -188,23 +188,6 @@ jobs:
             -p radix-engine \
             -p radix-engine-tests
 
-  radix-engine-wasmer:
-    name: Run Radix Engine tests (wasmer)
-    runs-on: ubuntu-16-cores-selfhosted
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: |
-          cargo nextest run \
-            --features wasmer \
-            -p radix-common \
-            -p radix-sbor-derive \
-            -p radix-engine-interface \
-            -p radix-engine \
-            -p radix-engine-tests
-
   radix-engine-bench:
     name: Run Radix Engine benchmarks
     runs-on: ubuntu-latest
