@@ -105,7 +105,6 @@ plotters = { version = "0.3.4" }
 proc-macro2 = { version = "1.0.38" }
 quote = { version = "1.0.18" }
 radix-wasm-instrument = { version = "1.0.0", default-features = false,  features = ["ignore_custom_section"]}
-radix-wasmi = {  version = "1.0.0" }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
 rayon =  { version = "1.5.3" }
@@ -122,6 +121,7 @@ syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 trybuild = { version = "1.0.85" }
 wabt = { version = "0.10.0" }
 walkdir = { version = "2.3.3", default-features = false }
+wasmi = { version = "0.35.0" }
 wasm-opt = { version = "0.114.1" }
 wasmparser = { version = "0.107.0", default-features = false }
 extend = { version = "1.2.0" }
