@@ -568,20 +568,20 @@ mod tests {
                         sbor::TypeData::enum_variants(
                             "Test",
                             sbor::rust::prelude::indexmap![
-                                0u8 => sbor::TypeData::struct_with_unit_fields("A"),
-                                1u8 => sbor::TypeData::struct_with_unnamed_fields(
+                                0u8 => { sbor::TypeData::struct_with_unit_fields("A") },
+                                1u8 => { sbor::TypeData::struct_with_unnamed_fields(
                                     "B",
                                     sbor::rust::vec![
                                         <T as sbor::Describe<C>>::TYPE_ID,
                                         <Vec<T2> as sbor::Describe<C>>::TYPE_ID,
                                     ],
-                                ),
-                                2u8 => sbor::TypeData::struct_with_named_fields(
+                                ) },
+                                2u8 => { sbor::TypeData::struct_with_named_fields(
                                     "C",
                                     sbor::rust::vec![
                                         ("x", <[u8; 5] as sbor::Describe<C>>::TYPE_ID),
                                     ],
-                                ),
+                                ) },
                             ],
                         )
                     }
