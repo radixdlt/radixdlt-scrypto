@@ -72,9 +72,9 @@ mod tests {
 
                     fn get_length(&self) -> usize {
                         match self {
-                            Self::A { .. } => 1,
-                            Self::B(_) => 1,
-                            Self::C => 0,
+                            Self::A { .. } => 1usize,
+                            Self::B(_) => 1usize,
+                            Self::C => 0usize,
                         }
                     }
                 }

@@ -46,55 +46,23 @@ pub fn handle_transparent_decode(
 
     match data {
         Data::Struct(s) => {
-            let FieldsData {
-                unskipped_field_names,
-                unskipped_field_types,
-                skipped_field_names,
-                skipped_field_types,
-                ..
-            } = process_fields(&s.fields)?;
-            if unskipped_field_names.len() != 1 {
-                return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
-            }
-            let field_name = &unskipped_field_names[0];
-            let field_type = &unskipped_field_types[0];
+            let fields_data = process_fields(&s.fields)?;
+            let single_field = fields_data
+                .unique_unskipped_field()
+                .map_err(|()| Error::new(
+                    Span::call_site(),
+                    "The transparent attribute is only supported for structs with a single unskipped field.",
+                ))?;
 
-            let decode_content = match &s.fields {
-                syn::Fields::Named(_) => {
-                    quote! {
-                        Self {
-                            #field_name: value,
-                            #(#skipped_field_names: <#skipped_field_types>::default(),)*
-                        }
-                    }
-                }
-                syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                    let mut field_values = Vec::<Expr>::new();
-                    for field in unnamed {
-                        if is_skipped(field)? {
-                            let field_type = &field.ty;
-                            field_values.push(parse_quote! {<#field_type>::default()})
-                        } else {
-                            field_values.push(parse_quote! {value})
-                        }
-                    }
-                    quote! {
-                        Self(
-                            #(#field_values,)*
-                        )
-                    }
-                }
-                syn::Fields::Unit => {
-                    quote! {
-                        Self {}
-                    }
-                }
-            };
+            let decode_content = decode_unique_unskipped_field_from_value(
+                quote!{ Self },
+                &fields_data,
+            )?;
 
             handle_decode_as(
                 parsed,
                 context_custom_value_kind,
-                field_type,
+                single_field.field_type(),
                 &decode_content,
             )
         }
@@ -152,7 +120,8 @@ pub fn handle_normal_decode(
 
     let output = match data {
         Data::Struct(s) => {
-            let decode_fields_content = decode_fields_content(quote! { Self }, &s.fields)?;
+            let fields_data = process_fields(&s.fields)?;
+            let decode_fields_content = decode_fields_content(quote! { Self }, &fields_data)?;
 
             quote! {
                 impl #impl_generics sbor::Decode <#custom_value_kind_generic, #decoder_generic> for #ident #ty_generics #where_clause {
@@ -169,19 +138,39 @@ pub fn handle_normal_decode(
             let EnumVariantsData { sbor_variants, .. } = process_enum_variants(&attrs, &variants)?;
             let match_arms = sbor_variants
                 .iter()
-                .map(
-                    |VariantData {
-                         source_variant,
-                         discriminator_pattern,
-                         ..
-                     }|
-                     -> Result<_> {
-                        let v_id = &source_variant.ident;
-                        let decode_fields_content =
-                            decode_fields_content(quote! { Self::#v_id }, &source_variant.fields)?;
+                .map(|VariantData {
+                        variant_name,
+                        discriminator_pattern,
+                        fields_handling,
+                        ..
+                    }| -> Result<_> {
+                        let content = match fields_handling {
+                            FieldsHandling::Standard(fields_data) => {
+                                decode_fields_content(
+                                    quote! { Self::#variant_name },
+                                    fields_data,
+                                )?
+                            },
+                            FieldsHandling::Flatten { unique_field, fields_data } => {
+                                let field_type = unique_field.field_type();
+                                let construct_variant = decode_unique_unskipped_field_from_value(
+                                    quote! { Self::#variant_name },
+                                    fields_data,
+                                )?;
+                                let tuple_assertion = output_flatten_type_is_sbor_tuple_assertion(
+                                    &custom_value_kind_generic,
+                                    field_type,
+                                );
+                                quote! {
+                                    #tuple_assertion
+                                    let value = <#field_type as sbor::Decode<#custom_value_kind_generic, #decoder_generic>>::decode_body_with_value_kind(decoder, ValueKind::Tuple)?;
+                                    Ok(#construct_variant)
+                                }
+                            },
+                        };
                         Ok(quote! {
                             #discriminator_pattern => {
-                                #decode_fields_content
+                                #content
                             }
                         })
                     },
@@ -214,54 +203,124 @@ pub fn handle_normal_decode(
     Ok(output)
 }
 
-pub fn decode_fields_content(
+fn decode_fields_content(
     self_constructor: TokenStream,
-    fields: &syn::Fields,
+    fields_data: &FieldsData,
 ) -> Result<TokenStream> {
-    let FieldsData {
-        unskipped_field_names,
-        unskipped_field_types,
-        skipped_field_names,
-        skipped_field_types,
-        unskipped_field_count,
-        ..
-    } = process_fields(fields)?;
+    let unskipped_field_count = fields_data.unskipped_field_count();
 
-    Ok(match fields {
-        syn::Fields::Named(_) => {
+    Ok(match fields_data {
+        FieldsData::Named(fields) => {
+            let assignments = fields.iter().map(
+                |NamedField {
+                     name,
+                     field_type,
+                     is_skipped,
+                 }| {
+                    if *is_skipped {
+                        quote! { #name: <#field_type>::default() }
+                    } else {
+                        quote! { #name: decoder.decode::<#field_type>()? }
+                    }
+                },
+            );
             quote! {
                 decoder.read_and_check_size(#unskipped_field_count)?;
                 Ok(#self_constructor {
-                    #(#unskipped_field_names: decoder.decode::<#unskipped_field_types>()?,)*
-                    #(#skipped_field_names: <#skipped_field_types>::default(),)*
+                    #(#assignments,)*
                 })
             }
         }
-        syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-            let mut fields = Vec::<Expr>::new();
-            for f in unnamed {
-                let ty = &f.ty;
-                if is_skipped(f)? {
-                    fields.push(parse_quote! {<#ty>::default()})
-                } else {
-                    fields.push(parse_quote! {decoder.decode::<#ty>()?})
-                }
-            }
+        FieldsData::Unnamed(fields) => {
+            let values = fields.iter().map(
+                |UnnamedField {
+                     field_type,
+                     is_skipped,
+                     ..
+                 }| {
+                    if *is_skipped {
+                        quote! { <#field_type>::default() }
+                    } else {
+                        quote! { decoder.decode::<#field_type>()? }
+                    }
+                },
+            );
             quote! {
                 decoder.read_and_check_size(#unskipped_field_count)?;
                 Ok(#self_constructor
                 (
-                    #(#fields,)*
+                    #(#values,)*
                 ))
             }
         }
-        syn::Fields::Unit => {
+        FieldsData::Unit => {
             quote! {
                 decoder.read_and_check_size(#unskipped_field_count)?;
                 Ok(#self_constructor)
             }
         }
     })
+}
+
+fn decode_unique_unskipped_field_from_value(
+    self_constructor: TokenStream,
+    fields_data: &FieldsData,
+) -> Result<TokenStream> {
+    if fields_data.unique_unskipped_field().is_err() {
+        panic!("Should already have checked that there is only one unique unskipped field before calling this method");
+    }
+
+    let output = match &fields_data {
+        FieldsData::Named(fields) => {
+            let assignments = fields.iter().map(
+                |NamedField {
+                     name,
+                     field_type,
+                     is_skipped,
+                 }| {
+                    if *is_skipped {
+                        quote! { #name: <#field_type>::default() }
+                    } else {
+                        // Have already checked there's only one of these
+                        quote! { #name: value }
+                    }
+                },
+            );
+            quote! {
+                #self_constructor {
+                    #(#assignments,)*
+                }
+            }
+        }
+        FieldsData::Unnamed(fields) => {
+            let field_values = fields.iter().map(
+                |UnnamedField {
+                     field_type,
+                     is_skipped,
+                     ..
+                 }| {
+                    if *is_skipped {
+                        quote! { <#field_type>::default() }
+                    } else {
+                        // Have already checked there's only one of these
+                        quote! { value }
+                    }
+                },
+            );
+            quote! {
+                #self_constructor(
+                    #(#field_values,)*
+                )
+            }
+        }
+        FieldsData::Unit => {
+            quote! {
+                #self_constructor
+            }
+        }
+    };
+
+    Ok(output)
 }
 
 #[cfg(test)]
@@ -288,7 +347,7 @@ mod tests {
                     fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
-                        decoder.read_and_check_size(1)?;
+                        decoder.read_and_check_size(1usize)?;
                         Ok(Self {
                             a: decoder.decode::<u32>()?,
                         })
@@ -315,7 +374,7 @@ mod tests {
                     fn decode_body_with_value_kind(decoder: &mut D0, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
-                        decoder.read_and_check_size(2)?;
+                        decoder.read_and_check_size(2usize)?;
                         Ok(Self {
                             a: decoder.decode::<T>()?,
                             b: decoder.decode::<D>()?,
@@ -342,7 +401,7 @@ mod tests {
                     fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<NoCustomValueKind>) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
-                        decoder.read_and_check_size(1)?;
+                        decoder.read_and_check_size(1usize)?;
                         Ok(Self {
                             a: decoder.decode::<u32>()?,
                         })
@@ -372,7 +431,7 @@ mod tests {
                     fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
-                        decoder.read_and_check_size(4)?;
+                        decoder.read_and_check_size(4usize)?;
                         Ok(Self {
                             a: decoder.decode::<&'a u32>()?,
                             b: decoder.decode::<S>()?,
@@ -402,15 +461,15 @@ mod tests {
                         #[deny(unreachable_patterns)]
                         match discriminator {
                             0u8 => {
-                                decoder.read_and_check_size(0)?;
+                                decoder.read_and_check_size(0usize)?;
                                 Ok(Self::A)
                             },
                             1u8 => {
-                                decoder.read_and_check_size(1)?;
+                                decoder.read_and_check_size(1usize)?;
                                 Ok(Self::B(decoder.decode::<u32>()?,))
                             },
                             2u8 => {
-                                decoder.read_and_check_size(1)?;
+                                decoder.read_and_check_size(1usize)?;
                                 Ok(Self::C {
                                     x: decoder.decode::<u8>()?,
                                 })
@@ -436,7 +495,7 @@ mod tests {
                     fn decode_body_with_value_kind(decoder: &mut D, value_kind: sbor::ValueKind<X>) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
-                        decoder.read_and_check_size(0)?;
+                        decoder.read_and_check_size(0usize)?;
                         Ok(Self {
                             a: <u32>::default(),
                         })

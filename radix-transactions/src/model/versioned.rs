@@ -36,30 +36,14 @@ const V1_FLASH_TRANSACTION: u8 = 8;
 /// These represent the different transaction types.
 #[derive(Clone, Debug, Eq, PartialEq, ManifestSbor)]
 pub enum VersionedTransactionPayload {
-    #[sbor(discriminator(V1_INTENT))]
-    IntentV1 {
-        header: TransactionHeaderV1,
-        instructions: InstructionsV1,
-        blobs: BlobsV1,
-        message: MessageV1,
-    },
-    #[sbor(discriminator(V1_SIGNED_INTENT))]
-    SignedIntentV1 {
-        intent: IntentV1,
-        intent_signatures: IntentSignaturesV1,
-    },
-    #[sbor(discriminator(V1_NOTARIZED_TRANSACTION))]
-    NotarizedTransactionV1 {
-        signed_intent: SignedIntentV1,
-        notary_signature: NotarySignatureV1,
-    },
-    #[sbor(discriminator(V1_SYSTEM_TRANSACTION))]
-    SystemTransactionV1 {
-        instructions: InstructionsV1,
-        blobs: BlobsV1,
-        pre_allocated_addresses: Vec<PreAllocatedAddress>,
-        hash_for_execution: Hash,
-    },
+    #[sbor(flatten, discriminator(V1_INTENT))]
+    IntentV1(IntentV1),
+    #[sbor(flatten, discriminator(V1_SIGNED_INTENT))]
+    SignedIntentV1(SignedIntentV1),
+    #[sbor(flatten, discriminator(V1_NOTARIZED_TRANSACTION))]
+    NotarizedTransactionV1(NotarizedTransactionV1),
+    #[sbor(flatten, discriminator(V1_SYSTEM_TRANSACTION))]
+    SystemTransactionV1(SystemTransactionV1),
 }
 
 #[cfg(test)]
@@ -153,12 +137,7 @@ mod tests {
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
         assert_eq!(
             intent_as_versioned,
-            VersionedTransactionPayload::IntentV1 {
-                header: header_v1,
-                instructions: instructions_v1,
-                blobs: blobs_v1,
-                message: message_v1,
-            }
+            VersionedTransactionPayload::IntentV1(intent_v1.clone())
         );
 
         let prepared_intent =
@@ -212,10 +191,7 @@ mod tests {
             manifest_decode::<VersionedTransactionPayload>(&signed_intent_payload_bytes).unwrap();
         assert_eq!(
             signed_intent_as_versioned,
-            VersionedTransactionPayload::SignedIntentV1 {
-                intent: intent_v1,
-                intent_signatures: intent_signatures_v1,
-            }
+            VersionedTransactionPayload::SignedIntentV1(signed_intent_v1.clone())
         );
 
         let prepared_signed_intent =
@@ -272,10 +248,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             notarized_transaction_as_versioned,
-            VersionedTransactionPayload::NotarizedTransactionV1 {
-                signed_intent: signed_intent_v1,
-                notary_signature: notary_signature_v1,
-            }
+            VersionedTransactionPayload::NotarizedTransactionV1(notarized_transaction_v1)
         );
 
         let prepared_notarized_transaction = PreparedNotarizedTransactionV1::prepare_from_payload(
@@ -364,12 +337,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             system_transaction_as_versioned,
-            VersionedTransactionPayload::SystemTransactionV1 {
-                instructions: instructions_v1,
-                blobs: blobs_v1,
-                pre_allocated_addresses: pre_allocated_addresses_v1,
-                hash_for_execution
-            }
+            VersionedTransactionPayload::SystemTransactionV1(system_transaction_v1)
         );
 
         let prepared_system_transaction =

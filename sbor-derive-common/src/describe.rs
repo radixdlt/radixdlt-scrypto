@@ -1,3 +1,4 @@
+use itertools::Itertools as _;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
@@ -48,21 +49,17 @@ fn handle_transparent_describe(
     let DeriveInput { data, .. } = &parsed;
     match &data {
         Data::Struct(s) => {
-            let FieldsData {
-                unskipped_field_types,
-                ..
-            } = process_fields(&s.fields)?;
-
-            if unskipped_field_types.len() != 1 {
-                return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
-            }
-
-            let field_type = &unskipped_field_types[0];
+            let single_field = process_fields(&s.fields)?
+                .unique_unskipped_field()
+                .map_err(|()| Error::new(
+                    Span::call_site(),
+                    "The transparent attribute is only supported for structs with a single unskipped field.",
+                ))?;
 
             handle_describe_as(
                 parsed,
                 context_custom_type_kind,
-                field_type,
+                single_field.field_type(),
                 code_hash,
             )
         }
@@ -148,6 +145,12 @@ fn handle_describe_as(
     Ok(output)
 }
 
+#[derive(PartialEq, Eq, Hash)]
+enum TypeDependency {
+    Child(Type),
+    DescendentsOnly(Type),
+}
+
 fn handle_normal_describe(
     parsed: DeriveInput,
     code_hash: TokenStream,
@@ -183,143 +186,79 @@ fn handle_normal_describe(
         )
     };
 
-    let output = match data {
-        Data::Struct(s) => match &s.fields {
-            syn::Fields::Named(FieldsNamed { .. }) => {
-                let FieldsData {
-                    unskipped_field_types,
-                    unskipped_field_name_strings,
-                    ..
-                } = process_fields(&s.fields)?;
-                let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
-                quote! {
-                    impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: sbor::RustTypeId = #type_id;
+    let mut type_dependencies = vec![];
 
-                        fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
-                            sbor::TypeData::struct_with_named_fields(
-                                #type_name,
-                                sbor::rust::vec![
-                                    #((#unskipped_field_name_strings, <#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
-                                ],
-                            )
-                        }
+    let type_data = match data {
+        Data::Struct(s) => {
+            let fields_data = process_fields(&s.fields)?;
 
-                        fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<#custom_type_kind_generic>) {
-                            #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
-                        }
-                    }
-                }
+            for field_type in fields_data.unskipped_field_types() {
+                type_dependencies.push(TypeDependency::Child(field_type));
             }
-            syn::Fields::Unnamed(FieldsUnnamed { .. }) => {
-                let FieldsData {
-                    unskipped_field_types,
-                    ..
-                } = process_fields(&s.fields)?;
-                let unique_field_types: Vec<_> = get_unique_types(&unskipped_field_types);
 
-                quote! {
-                    impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: sbor::RustTypeId = #type_id;
-
-                        fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
-                            sbor::TypeData::struct_with_unnamed_fields(
-                                #type_name,
-                                sbor::rust::vec![
-                                    #(<#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
-                                ],
-                            )
-                        }
-
-                        fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<#custom_type_kind_generic>) {
-                            #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
-                        }
-                    }
-                }
-            }
-            syn::Fields::Unit => {
-                quote! {
-                    impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: sbor::RustTypeId = #type_id;
-
-                        fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
-                            sbor::TypeData::struct_with_unit_fields(#type_name)
-                        }
-                    }
-                }
-            }
-        },
+            fields_data_to_type_data(&custom_type_kind_generic, &type_name, &fields_data)?
+        }
         Data::Enum(DataEnum { variants, .. }) => {
             let EnumVariantsData { sbor_variants, .. } = process_enum_variants(&attrs, &variants)?;
 
-            let mut all_field_types = Vec::new();
-
             let match_arms = sbor_variants
                 .iter()
-                .map(|VariantData { discriminator, source_variant, fields_data, .. }| {
-                    let variant_name_str = source_variant.ident.to_string();
+                .map(|VariantData { variant_name, fields_handling, discriminator, .. }| {
+                    let variant_name_str = ident_to_lit_str(variant_name);
 
-                    let FieldsData {
-                        unskipped_field_types,
-                        unskipped_field_name_strings,
-                        ..
-                    } = fields_data;
-
-                    all_field_types.extend_from_slice(&unskipped_field_types);
-
-                    let variant_type_data = match &source_variant.fields {
-                        Fields::Named(FieldsNamed { .. }) => {
-                            quote! {
-                                sbor::TypeData::struct_with_named_fields(
-                                    #variant_name_str,
-                                    sbor::rust::vec![
-                                        #((#unskipped_field_name_strings, <#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
-                                    ],
-                                )
+                    let variant_type_data = match fields_handling {
+                        FieldsHandling::Standard(fields_data) => {
+                            for field_type in fields_data.unskipped_field_types() {
+                                type_dependencies.push(TypeDependency::Child(field_type));
                             }
+                            fields_data_to_type_data(
+                                &custom_type_kind_generic,
+                                &variant_name_str,
+                                &fields_data,
+                            )?
                         }
-                        Fields::Unnamed(FieldsUnnamed { .. }) => {
+                        FieldsHandling::Flatten { unique_field, .. } => {
+                            let flattened_type = unique_field.field_type();
+
+                            // We need to include the flattened type's descendents,
+                            // but not the flatenned type itself (we're taking its type details)
+                            // and mutating them effectively
+                            type_dependencies.push(TypeDependency::DescendentsOnly(flattened_type.clone()));
+
                             quote! {
-                                sbor::TypeData::struct_with_unnamed_fields(
-                                    #variant_name_str,
-                                    sbor::rust::vec![
-                                        #(<#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
-                                    ],
-                                )
-                            }
-                        }
-                        Fields::Unit => {
-                            quote! {
-                                sbor::TypeData::struct_with_unit_fields(#variant_name_str)
+                                let mut flattened_type_data = <#flattened_type as sbor::Describe<#custom_type_kind_generic>>::type_data();
+                                // Flatten is only valid if the child type is a Tuple, so we must
+                                // double-check that constraint.
+                                // We can't do an SborTuple<X> assertion here because we don't have a
+                                // specific X = custom value kind to check on (e.g. SborSchema is shared
+                                // by both ManifestSbor and ScryptoSbor). This assertion will almost certainly
+                                // be checked by an Encode/Decode/Categorize implementation, but on the off-chance
+                                // if isn't, let's check the type kind is correct in the type itself at
+                                // Describe run time.
+                                let sbor::schema::TypeKind::Tuple { .. } = &flattened_type_data.kind else {
+                                    panic!("The flatten attribute cannot be used with a non-tuple child");
+                                };
+                                // We rename the tuple type to be the enum variant name,
+                                // and this becomes the enum variant type data
+                                flattened_type_data.with_name(Some(sbor::rust::prelude::Cow::Borrowed(#variant_name_str)))
                             }
                         }
                     };
-                    Ok(Some(quote! {
-                        #discriminator => #variant_type_data,
-                    }))
+
+                    Ok(quote! {
+                        #discriminator => { #variant_type_data },
+                    })
                 })
                 .collect::<Result<Vec<_>>>()?;
 
-            let unique_field_types = get_unique_types(&all_field_types);
-
             quote! {
-                impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: sbor::RustTypeId = #type_id;
-
-                    fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
-                        use sbor::rust::borrow::ToOwned;
-                        sbor::TypeData::enum_variants(
-                            #type_name,
-                            sbor::rust::prelude::indexmap![
-                                #(#match_arms)*
-                            ],
-                        )
-                    }
-
-                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<#custom_type_kind_generic>) {
-                        #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
-                    }
-                }
+                use sbor::rust::borrow::ToOwned;
+                sbor::TypeData::enum_variants(
+                    #type_name,
+                    sbor::rust::prelude::indexmap![
+                        #(#match_arms)*
+                    ],
+                )
             }
         }
         Data::Union(_) => {
@@ -327,7 +266,70 @@ fn handle_normal_describe(
         }
     };
 
-    Ok(output)
+    let dependencies =
+        type_dependencies
+            .iter()
+            .unique()
+            .map(|type_dependency| match type_dependency {
+                TypeDependency::Child(child_type) => quote! {
+                    aggregator.add_child_type_and_descendents::<#child_type>();
+                },
+                TypeDependency::DescendentsOnly(descendent_only_type) => quote! {
+                    aggregator.add_schema_descendents::<#descendent_only_type>();
+                },
+            });
+
+    Ok(quote! {
+        impl #impl_generics sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
+            const TYPE_ID: sbor::RustTypeId = #type_id;
+
+            fn type_data() -> sbor::TypeData<#custom_type_kind_generic, sbor::RustTypeId> {
+                #type_data
+            }
+
+            fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<#custom_type_kind_generic>) {
+                #(#dependencies)*
+            }
+        }
+    })
+}
+
+fn fields_data_to_type_data(
+    custom_type_kind_generic: &Path,
+    type_name: &LitStr,
+    fields_data: &FieldsData,
+) -> Result<TokenStream> {
+    let unskipped_field_types = fields_data.unskipped_field_types();
+
+    let type_data = match fields_data {
+        FieldsData::Named(fields) => {
+            let unskipped_field_name_strings = fields.unskipped_field_name_strings();
+            quote! {
+                sbor::TypeData::struct_with_named_fields(
+                    #type_name,
+                    sbor::rust::vec![
+                        #((#unskipped_field_name_strings, <#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
+                    ],
+                )
+            }
+        }
+        FieldsData::Unnamed(_) => {
+            quote! {
+                sbor::TypeData::struct_with_unnamed_fields(
+                    #type_name,
+                    sbor::rust::vec![
+                        #(<#unskipped_field_types as sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
+                    ],
+                )
+            }
+        }
+        FieldsData::Unit => {
+            quote! {
+                sbor::TypeData::struct_with_unit_fields(#type_name)
+            }
+        }
+    };
+    Ok(type_data)
 }
 
 pub fn validate_type_name(type_name: &LitStr) -> Result<()> {
@@ -533,6 +535,8 @@ mod tests {
                     fn type_data() -> sbor::TypeData <C, sbor::RustTypeId> {
                         sbor::TypeData::struct_with_unit_fields("Test")
                     }
+
+                    fn add_all_dependencies(aggregator: &mut sbor::TypeAggregator<C>) { }
                 }
             },
         );
