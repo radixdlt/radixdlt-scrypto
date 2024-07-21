@@ -77,7 +77,7 @@ pub enum Mixed {
 
 #[derive(Debug, PartialEq, Eq, Sbor)]
 enum FlattenEnum {
-    #[sbor(flatten)]
+    #[sbor(flatten, impl_variant_trait)]
     A {
         #[sbor(skip)]
         skipped: u32,
@@ -85,9 +85,10 @@ enum FlattenEnum {
     },
     #[sbor(flatten)]
     B(#[sbor(skip)] u32, (u32,)),
-    #[sbor(flatten)]
+    #[sbor(flatten, impl_variant_trait)]
     C(MyInnerStruct),
     D,
+    #[sbor(impl_variant_trait)]
     E(MyOtherTypeTwo),
 }
 
@@ -194,6 +195,22 @@ fn test_encode_decode_and_schemas() {
     );
     check_encode_identically(&Abc::Variant1, &AbcV2::Variant1);
     check_encode_identically(&Abc::Variant2, &AbcV2::Variant2);
+}
+
+#[test]
+fn test_impl_variant_trait() {
+    assert_eq!(
+        <MyInnerStruct as SborEnumVariantFor<FlattenEnum, NoCustomValueKind>>::into_enum(
+            MyInnerStruct {
+                hello: "hi".to_string(),
+                world: MyInnerInnerType(31),
+            }
+        ),
+        FlattenEnum::C(MyInnerStruct {
+            hello: "hi".to_string(),
+            world: MyInnerInnerType(31),
+        })
+    )
 }
 
 #[test]

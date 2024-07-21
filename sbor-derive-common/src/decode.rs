@@ -262,7 +262,7 @@ fn decode_fields_content(
     })
 }
 
-fn decode_unique_unskipped_field_from_value(
+pub(crate) fn decode_unique_unskipped_field_from_value(
     self_constructor: TokenStream,
     fields_data: &FieldsData,
 ) -> Result<TokenStream> {

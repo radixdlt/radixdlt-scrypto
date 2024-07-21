@@ -279,6 +279,7 @@ pub(crate) struct VariantData {
     pub discriminator: Expr,
     pub discriminator_pattern: Pat,
     pub fields_handling: FieldsHandling,
+    pub impl_variant_trait: bool,
 }
 
 #[derive(Clone)]
@@ -313,6 +314,9 @@ pub(crate) fn process_enum_variants(
     let mut implicit_discriminators_count = 0usize;
     let mut reachable_variants_count = 0usize;
 
+    let impl_variant_traits =
+        get_sbor_attribute_bool_value(enum_attributes, "impl_variant_traits")?.value();
+
     let source_variants: Vec<SourceVariantData> = variants
         .iter()
         .enumerate()
@@ -326,6 +330,7 @@ pub(crate) fn process_enum_variants(
                     fields_data,
                 }));
             }
+            let impl_variant_trait = variant_attributes.get_bool_value("impl_variant_trait")?;
             let fields_handling = match variant_attributes.remove("flatten") {
                 Some(AttributeValue::None(span)) => {
                     let unique_field = fields_data.unique_unskipped_field()
@@ -357,6 +362,7 @@ pub(crate) fn process_enum_variants(
                 discriminator: discriminator.expression,
                 discriminator_pattern: discriminator.pattern,
                 fields_handling,
+                impl_variant_trait: impl_variant_traits || impl_variant_trait.value,
             }))
         })
         .collect::<Result<_>>()?;

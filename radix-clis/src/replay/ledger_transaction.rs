@@ -3,7 +3,7 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::prelude::system_execution;
 use radix_transactions::define_raw_transaction_payload;
 use radix_transactions::prelude::*;
-use sbor::FixedEnumVariant;
+use sbor::SborFixedEnumVariant;
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct RoundUpdateTransactionV1 {
@@ -58,9 +58,42 @@ impl RoundUpdateTransactionV1 {
 }
 
 impl TransactionPayload for RoundUpdateTransactionV1 {
-    type Versioned = FixedEnumVariant<{ TransactionDiscriminator::V1RoundUpdate as u8 }, Self>;
     type Prepared = PreparedRoundUpdateTransactionV1;
     type Raw = RawRoundUpdateTransactionV1;
+}
+
+// This shouldn't be implemented manually
+// Instead we should move/consolidate all transactions into the transaction crate,
+// including fixing VersionedTransactionPayload to be comprehensive
+impl SborEnumVariantFor<VersionedTransactionPayload, ManifestCustomValueKind>
+    for RoundUpdateTransactionV1
+{
+    const DISCRIMINATOR: u8 = { TransactionDiscriminator::V1Ledger as u8 };
+    const IS_FLATTENED: bool = true;
+
+    type VariantFields = Self;
+    type VariantFieldsRef<'a> = &'a Self;
+
+    fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
+        self
+    }
+
+    type DecodableVariant = sbor::SborFixedEnumVariant<
+        { TransactionDiscriminator::V1Ledger as u8 },
+        Self::VariantFields,
+    >;
+    type EncodableVariant<'a> = sbor::SborFixedEnumVariant<
+        { TransactionDiscriminator::V1Ledger as u8 },
+        Self::VariantFieldsRef<'a>,
+    >;
+
+    fn from_decodable_variant(variant: Self::DecodableVariant) -> Self {
+        variant.fields
+    }
+
+    fn into_enum(self) -> VersionedTransactionPayload {
+        unimplemented!()
+    }
 }
 
 pub struct PreparedRoundUpdateTransactionV1 {
@@ -83,8 +116,11 @@ impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
 
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let decoded = decoder
-            .decode::<<RoundUpdateTransactionV1 as TransactionPayload>::Versioned>()?
-            .fields;
+            .decode::<<RoundUpdateTransactionV1 as sbor::SborEnumVariantFor<
+                VersionedTransactionPayload,
+                ManifestCustomValueKind,
+            >>::DecodableVariant>()?
+            .into_fields();
         decoded.prepare()
     }
 }
@@ -204,7 +240,7 @@ impl LedgerTransaction {
     }
 
     pub fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&FixedEnumVariant::<
+        manifest_encode(&SborFixedEnumVariant::<
             { TransactionDiscriminator::V1Ledger as u8 },
             (&LedgerTransaction,),
         >::new((self,)))
@@ -222,7 +258,10 @@ impl LedgerTransaction {
 
     pub fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
         Ok(manifest_decode::<
-            FixedEnumVariant<{ TransactionDiscriminator::V1Ledger as u8 }, (LedgerTransaction,)>,
+            SborFixedEnumVariant<
+                { TransactionDiscriminator::V1Ledger as u8 },
+                (LedgerTransaction,),
+            >,
         >(payload_bytes)?
         .into_fields()
         .0)

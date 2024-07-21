@@ -498,11 +498,11 @@ impl NonFungibleResourceManagerBlueprint {
         Y: SystemApi<RuntimeError>,
     {
         match schema {
-            NonFungibleDataSchema::Local {
+            NonFungibleDataSchema::Local(LocalNonFungibleDataSchema {
                 schema,
                 type_id,
                 mutable_fields,
-            } => {
+            }) => {
                 let schema_hash = schema.generate_schema_hash();
                 let mutable_indices =
                     Self::validate_non_fungible_schema(schema, *type_id, mutable_fields, true)?;
@@ -517,10 +517,10 @@ impl NonFungibleResourceManagerBlueprint {
                     mutable_indices,
                 ))
             }
-            NonFungibleDataSchema::Remote {
+            NonFungibleDataSchema::Remote(RemoteNonFungibleDataSchema {
                 type_id,
                 mutable_fields,
-            } => {
+            }) => {
                 let (schema, scoped_type_id) = api.resolve_blueprint_type(&type_id)?;
                 let mutable_indices = Self::validate_non_fungible_schema(
                     &schema,

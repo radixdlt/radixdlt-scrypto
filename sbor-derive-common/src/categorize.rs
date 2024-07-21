@@ -2,7 +2,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::*;
 
-use crate::utils::*;
+use crate::{decode::decode_unique_unskipped_field_from_value, utils::*};
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -73,16 +73,33 @@ fn handle_normal_categorize(
             let EnumVariantsData {
                 source_variants, ..
             } = process_enum_variants(&attrs, &variants)?;
+
+            let mut variant_traits = vec![];
+
             let (discriminator_match_arms, field_count_match_arms): (Vec<_>, Vec<_>) = source_variants
                 .iter()
-                .map(|source_variant| {
-                    match source_variant {
+                .map(|source_variant| -> Result<_> {
+                    let output = match source_variant {
                         SourceVariantData::Reachable(VariantData {
                             variant_name,
                             discriminator,
                             fields_handling: FieldsHandling::Standard(fields_data),
+                            impl_variant_trait,
                             ..
                         }) => {
+                            if *impl_variant_trait {
+                                variant_traits.push(handle_impl_variant_trait(
+                                    &ident,
+                                    &impl_generics,
+                                    &sbor_cvk,
+                                    &ty_generics,
+                                    where_clause,
+                                    variant_name,
+                                    discriminator,
+                                    fields_data,
+                                    false,
+                                )?);
+                            }
                             let unskipped_field_count = fields_data.unskipped_field_count();
                             let empty_fields_unpacking = fields_data.empty_fields_unpacking();
                             (
@@ -97,8 +114,22 @@ fn handle_normal_categorize(
                                 unique_field,
                                 fields_data,
                             },
+                            impl_variant_trait,
                             ..
                         }) => {
+                            if *impl_variant_trait {
+                                variant_traits.push(handle_impl_variant_trait(
+                                    &ident,
+                                    &impl_generics,
+                                    &sbor_cvk,
+                                    &ty_generics,
+                                    where_clause,
+                                    variant_name,
+                                    discriminator,
+                                    fields_data,
+                                    true,
+                                )?);
+                            }
                             let empty_fields_unpacking = fields_data.empty_fields_unpacking();
                             let fields_unpacking = fields_data.fields_unpacking();
                             let unskipped_field_type = unique_field.field_type();
@@ -116,9 +147,10 @@ fn handle_normal_categorize(
                                 quote! { Self::#variant_name #empty_fields_unpacking => panic!(#panic_message), },
                             )
                         },
-                    }
+                    };
+                    Ok(output)
                 })
-                .collect::<Vec<_>>()
+                .collect::<Result<Vec<_>>>()?
                 .into_iter()
                 .unzip();
 
@@ -159,6 +191,8 @@ fn handle_normal_categorize(
                         #field_count_match
                     }
                 }
+
+                #(#variant_traits)*
             }
         }
         Data::Union(_) => {
@@ -166,6 +200,76 @@ fn handle_normal_categorize(
         }
     };
 
+    Ok(output)
+}
+
+fn handle_impl_variant_trait(
+    enum_name: &Ident,
+    impl_generics: &Generics,
+    sbor_cvk: &Path,
+    type_generics: &TypeGenerics,
+    where_clause: Option<&WhereClause>,
+    variant_name: &Ident,
+    discriminator: &Expr,
+    fields_data: &FieldsData,
+    is_flattened: bool,
+) -> Result<TokenStream> {
+    let unique_type = fields_data.unique_unskipped_field().map_err(|()| {
+        Error::new(
+            variant_name.span(),
+            "impl_variant_trait is active but this variant does not have a single unskipped field",
+        )
+    })?;
+    let variant_type_name = unique_type.field_type();
+    let middle = if is_flattened {
+        quote! {
+            const IS_FLATTENED: bool = true;
+
+            type VariantFields = Self;
+            type VariantFieldsRef<'a> = &'a Self;
+
+            fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
+                self
+            }
+
+            fn from_decodable_variant(variant: Self::DecodableVariant) -> Self {
+                variant.into_fields()
+            }
+        }
+    } else {
+        quote! {
+            const IS_FLATTENED: bool = false;
+
+            type VariantFields = (Self,);
+            type VariantFieldsRef<'a> = (&'a Self,);
+
+            fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
+                (self,)
+            }
+
+            fn from_decodable_variant(variant: Self::DecodableVariant) -> Self {
+                variant.into_fields().0
+            }
+        }
+    };
+    let into_enum = decode_unique_unskipped_field_from_value(
+        quote! { #enum_name::#variant_name },
+        fields_data,
+    )?;
+    let type_generics_turbofish = type_generics.as_turbofish();
+    let output = quote! {
+        impl #impl_generics sbor::SborEnumVariantFor<#enum_name #type_generics_turbofish, #sbor_cvk> for #variant_type_name #where_clause {
+            const DISCRIMINATOR: u8 = #discriminator;
+            #middle
+            type DecodableVariant = sbor::SborFixedEnumVariant<#discriminator, Self::VariantFields>;
+            type EncodableVariant<'a> = sbor::SborFixedEnumVariant<#discriminator, Self::VariantFieldsRef<'a>>;
+
+            fn into_enum(self) -> #enum_name {
+                let value = self;
+                #into_enum
+            }
+        }
+    };
     Ok(output)
 }
 

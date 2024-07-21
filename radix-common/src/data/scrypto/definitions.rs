@@ -30,6 +30,26 @@ impl<T: Categorize<ScryptoCustomValueKind> + ?Sized> ScryptoCategorize for T {}
 pub trait ScryptoSborEnum: SborEnum<ScryptoCustomValueKind> {}
 impl<T: SborEnum<ScryptoCustomValueKind> + ?Sized> ScryptoSborEnum for T {}
 
+pub trait IsScryptoSborFixedEnumVariant<F: ScryptoSborTuple + ScryptoEncode>:
+    IsSborFixedEnumVariant<ScryptoCustomValueKind, F>
+{
+}
+impl<
+        F: ScryptoSborTuple + ScryptoEncode,
+        T: IsSborFixedEnumVariant<ScryptoCustomValueKind, F> + ?Sized,
+    > IsScryptoSborFixedEnumVariant<F> for T
+{
+}
+
+pub trait ScryptoSborEnumVariantFor<E: ScryptoSborEnum>:
+    SborEnumVariantFor<E, ScryptoCustomValueKind>
+{
+}
+impl<E: ScryptoSborEnum, T: SborEnumVariantFor<E, ScryptoCustomValueKind> + ?Sized>
+    ScryptoSborEnumVariantFor<E> for T
+{
+}
+
 pub trait ScryptoSborTuple: SborTuple<ScryptoCustomValueKind> {}
 impl<T: SborTuple<ScryptoCustomValueKind> + ?Sized> ScryptoSborTuple for T {}
 

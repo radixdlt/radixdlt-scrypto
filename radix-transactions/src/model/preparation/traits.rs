@@ -3,13 +3,15 @@ use crate::internal_prelude::*;
 use sbor::*;
 
 pub trait TransactionPayload:
-    ManifestEncode + ManifestDecode + ManifestCategorize + ManifestSborTuple
+    ManifestEncode
+    + ManifestDecode
+    + ManifestCategorize
+    + ManifestSborTuple
+    + ManifestSborEnumVariantFor<VersionedTransactionPayload>
+where
+    Self::DecodableVariant: ManifestDecode,
+    for<'a> Self::EncodableVariant<'a>: ManifestEncode,
 {
-    // Note - really we just want to define Self::DISCRIMINATOR and use FixedEnumVariant<{ Self::DISCRIMINATOR }, X>,
-    // but that causes an issue because "type parameters may not be used in const expressions"
-    // See: https://github.com/rust-lang/rust/issues/76560
-    // Instead we use this helper-trait IsFixedEnumVariant which hides the DISCRIMINATOR
-    type Versioned: ManifestDecode + IsFixedEnumVariant<ManifestCustomValueKind, Self>;
     type Prepared: TransactionPayloadPreparable<Raw = Self::Raw>;
     type Raw: RawTransactionPayload;
 
@@ -18,7 +20,7 @@ pub trait TransactionPayload:
     }
 
     fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&Self::Versioned::for_encoding(self))
+        manifest_encode(&self.as_encodable_variant())
     }
 
     fn from_raw(raw: &Self::Raw) -> Result<Self, DecodeError> {
@@ -26,7 +28,8 @@ pub trait TransactionPayload:
     }
 
     fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
-        Ok(manifest_decode::<Self::Versioned>(payload_bytes)?.into_fields())
+        let decoded = manifest_decode::<Self::DecodableVariant>(payload_bytes)?;
+        Ok(Self::from_decodable_variant(decoded))
     }
 
     fn prepare(&self) -> Result<Self::Prepared, PrepareError> {

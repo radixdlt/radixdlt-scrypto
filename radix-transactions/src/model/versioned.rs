@@ -35,6 +35,7 @@ const V1_FLASH_TRANSACTION: u8 = 8;
 /// This might see use in (eg) the Node's transaction parse API.
 /// These represent the different transaction types.
 #[derive(Clone, Debug, Eq, PartialEq, ManifestSbor)]
+#[sbor(impl_variant_traits)]
 pub enum VersionedTransactionPayload {
     #[sbor(flatten, discriminator(V1_INTENT))]
     IntentV1(IntentV1),

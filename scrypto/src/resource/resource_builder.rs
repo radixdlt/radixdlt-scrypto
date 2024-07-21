@@ -16,7 +16,7 @@ use radix_engine_interface::object_modules::role_assignment::RoleDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::types::*;
 use sbor::rust::prelude::*;
-use sbor::FixedEnumVariant;
+use sbor::SborFixedEnumVariant;
 use scrypto::resource::ResourceManager;
 
 /// Not divisible.
@@ -53,12 +53,15 @@ impl ResourceBuilder {
         NonFungibleResourceType<
             StringNonFungibleLocalId,
             D,
-            FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL, LocalNonFungibleDataSchema>,
+            SborFixedEnumVariant<
+                NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL,
+                LocalNonFungibleDataSchema,
+            >,
         >,
     > {
         InProgressResourceBuilder::new(
             owner_role,
-            NonFungibleResourceType::new(FixedEnumVariant {
+            NonFungibleResourceType::new(SborFixedEnumVariant {
                 fields: LocalNonFungibleDataSchema::new_with_self_package_replacement::<D>(
                     Runtime::package_address(),
                 ),
@@ -73,12 +76,15 @@ impl ResourceBuilder {
         NonFungibleResourceType<
             IntegerNonFungibleLocalId,
             D,
-            FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL, LocalNonFungibleDataSchema>,
+            SborFixedEnumVariant<
+                NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL,
+                LocalNonFungibleDataSchema,
+            >,
         >,
     > {
         InProgressResourceBuilder::new(
             owner_role,
-            NonFungibleResourceType::new(FixedEnumVariant {
+            NonFungibleResourceType::new(SborFixedEnumVariant {
                 fields: LocalNonFungibleDataSchema::new_with_self_package_replacement::<D>(
                     Runtime::package_address(),
                 ),
@@ -93,12 +99,15 @@ impl ResourceBuilder {
         NonFungibleResourceType<
             BytesNonFungibleLocalId,
             D,
-            FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL, LocalNonFungibleDataSchema>,
+            SborFixedEnumVariant<
+                NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL,
+                LocalNonFungibleDataSchema,
+            >,
         >,
     > {
         InProgressResourceBuilder::new(
             owner_role,
-            NonFungibleResourceType::new(FixedEnumVariant {
+            NonFungibleResourceType::new(SborFixedEnumVariant {
                 fields: LocalNonFungibleDataSchema::new_with_self_package_replacement::<D>(
                     Runtime::package_address(),
                 ),
@@ -113,12 +122,15 @@ impl ResourceBuilder {
         NonFungibleResourceType<
             RUIDNonFungibleLocalId,
             D,
-            FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL, LocalNonFungibleDataSchema>,
+            SborFixedEnumVariant<
+                NON_FUNGIBLE_DATA_SCHEMA_VARIANT_LOCAL,
+                LocalNonFungibleDataSchema,
+            >,
         >,
     > {
         InProgressResourceBuilder::new(
             owner_role,
-            NonFungibleResourceType::new(FixedEnumVariant {
+            NonFungibleResourceType::new(SborFixedEnumVariant {
                 fields: LocalNonFungibleDataSchema::new_with_self_package_replacement::<D>(
                     Runtime::package_address(),
                 ),

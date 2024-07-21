@@ -53,6 +53,24 @@ impl<T: Categorize<NoCustomValueKind> + ?Sized> BasicCategorize for T {}
 pub trait BasicSborEnum: SborEnum<NoCustomValueKind> {}
 impl<T: SborEnum<NoCustomValueKind> + ?Sized> BasicSborEnum for T {}
 
+pub trait IsBasicSborFixedEnumVariant<F: BasicSborTuple + BasicEncode>:
+    IsSborFixedEnumVariant<NoCustomValueKind, F>
+{
+}
+impl<F: BasicSborTuple + BasicEncode, T: IsSborFixedEnumVariant<NoCustomValueKind, F> + ?Sized>
+    IsBasicSborFixedEnumVariant<F> for T
+{
+}
+
+pub trait BasicSborEnumVariantFor<E: BasicSborEnum>:
+    SborEnumVariantFor<E, NoCustomValueKind>
+{
+}
+impl<E: BasicSborEnum, T: SborEnumVariantFor<E, NoCustomValueKind> + ?Sized>
+    BasicSborEnumVariantFor<E> for T
+{
+}
+
 pub trait BasicSborTuple: SborTuple<NoCustomValueKind> {}
 impl<T: SborTuple<NoCustomValueKind> + ?Sized> BasicSborTuple for T {}
 

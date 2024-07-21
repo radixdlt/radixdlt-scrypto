@@ -110,14 +110,14 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                                         owner_role: OwnerRole::None,
                                         id_type: NonFungibleIdType::Integer,
                                         track_total_supply: true,
-                                        non_fungible_schema: NonFungibleDataSchema::Remote {
+                                        non_fungible_schema: NonFungibleDataSchema::Remote(RemoteNonFungibleDataSchema {
                                             type_id: BlueprintTypeIdentifier {
                                                 package_address: state.package_with_registered_types.unwrap(),
                                                 blueprint_name: state.blueprint_with_registered_types.clone().unwrap(),
                                                 type_name: "RemoveLiquidityEvent".to_owned(),
                                             },
                                             mutable_fields: index_set_new()
-                                        },
+                                        }),
                                         resource_roles: NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                                         metadata: metadata! {},
                                         address_reservation: None,
