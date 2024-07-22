@@ -9,6 +9,10 @@ impl<const DISCRIMINATOR: u8, T> SborFixedEnumVariant<DISCRIMINATOR, T> {
         Self { fields }
     }
 
+    pub fn discriminator() -> u8 {
+        DISCRIMINATOR
+    }
+
     pub fn for_encoding(fields: &T) -> SborFixedEnumVariant<DISCRIMINATOR, &T> {
         SborFixedEnumVariant { fields }
     }
@@ -76,38 +80,28 @@ impl<
 }
 
 //=======================================================================================
-// Now define a trait `IsSborFixedEnumVariant` - which hides the discriminator.
+// Now define a trait `IsSborFixedEnumVariant<T>` - this is intended to represent
+//  `SborFixedEnumVariant<?, T>` of unknown discriminator.
 // This is only really needed because of https://github.com/rust-lang/rust/issues/76560
-// In particular, see eg `TransactionPayload` where we couldn't define SborFixedEnumVariant<{ Self::DISCRIMINATOR }, X>
+//  and the explanation below "Why is this required as an associated type?".
+// In particular, see eg `TransactionPayload` where we couldn't define `SborFixedEnumVariant<{ Self::DISCRIMINATOR }, X>`
 //=======================================================================================
-
-pub trait IsSborFixedEnumVariant<X: CustomValueKind, T: SborTuple<X>>:
-    SborEnum<X> + Categorize<X>
-{
+pub trait IsSborFixedEnumVariant<F> {
     const DISCRIMINATOR: u8;
-    type EncodingSborFixedEnumVariant<'a>: IsSborFixedEnumVariant<X, &'a T>
-    where
-        T: 'a;
-    fn new(fields: T) -> Self;
-    fn for_encoding<'a>(fields: &'a T) -> Self::EncodingSborFixedEnumVariant<'a>;
-    fn into_fields(self) -> T;
+    fn new(fields: F) -> Self;
+    fn into_fields(self) -> F;
 }
 
-impl<X: CustomValueKind, const DISCRIMINATOR: u8, T: SborTuple<X>> IsSborFixedEnumVariant<X, T>
-    for SborFixedEnumVariant<DISCRIMINATOR, T>
+impl<const DISCRIMINATOR: u8, F> IsSborFixedEnumVariant<F>
+    for SborFixedEnumVariant<DISCRIMINATOR, F>
 {
     const DISCRIMINATOR: u8 = DISCRIMINATOR;
-    type EncodingSborFixedEnumVariant<'a> = SborFixedEnumVariant<DISCRIMINATOR, &'a T> where T: 'a;
 
-    fn new(fields: T) -> Self {
+    fn new(fields: F) -> Self {
         Self::new(fields)
     }
 
-    fn for_encoding<'a>(fields: &'a T) -> Self::EncodingSborFixedEnumVariant<'a> {
-        Self::for_encoding(fields)
-    }
-
-    fn into_fields(self) -> T {
+    fn into_fields(self) -> F {
         self.fields
     }
 }
@@ -116,12 +110,18 @@ impl<X: CustomValueKind, const DISCRIMINATOR: u8, T: SborTuple<X>> IsSborFixedEn
 /// `#[sbor(impl_variant_traits)]` is specified on an Enum or
 /// `#[sbor(impl_variant_trait)]` is specified on a single Enum variant.
 ///
-/// This trait pairs well with the `#[sbor(flatten)]` attribute, for implementing
-/// the "enum variant is singleton struct type" pattern, which allows handling a
-/// variant as its own type.
+/// It allows considering this type as representing an enum variant type
+/// under its parent enum. There are two flavours of how this embedding works in SBOR:
+/// * In unflattened variants, it is a variant with fields (Self,)
+/// * In flattened variants (only possible for tuple types) it is a variant with fields Self
 ///
-/// This trait allows the variant type to easily be considered part of its parent,
-/// or encoded as a variant under its parent enum.
+/// This trait pairs well with the `#[sbor(flatten)]` attribute, for implementing
+/// the "enum variant is singleton struct type" pattern, which allows a number of benefits:
+/// * A function can take or return a particular variant
+/// * If code size is important (e.g. when building Scrypto), we want to enable pruning of
+///   any serialization code we don't need. Using `as_encodable_variant` and `from_decoded_variant`
+///   avoids pulling in the parent `TEnum` serialization code; and the serialization code for any
+///   unused types in other discriminators
 ///
 /// ### Note on generic parameter ordering
 /// On this trait, we do not put `X` first, as is normal with the SBOR traits.
@@ -136,27 +136,49 @@ pub trait SborEnumVariantFor<TEnum: SborEnum<X>, X: CustomValueKind> {
     const DISCRIMINATOR: u8;
     const IS_FLATTENED: bool;
 
-    /// VariantFields is either Self if IS_FLATTENED else is (Self,)
+    /// VariantFields is either `Self` if `IS_FLATTENED` else is `(Self,)`
     type VariantFields: SborTuple<X>;
-    /// VariantFieldsRef is either &Self if IS_FLATTENED else is (&Self,)
+    fn from_variant_fields(variant_fields: Self::VariantFields) -> Self;
+
+    /// VariantFieldsRef is either `&Self` if `IS_FLATTENED` else is `(&Self,)`
     type VariantFieldsRef<'a>: SborTuple<X>
     where
         Self: 'a,
         Self::VariantFields: 'a;
     fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_>;
 
-    /// Should always be `SborFixedEnumVariant<{ Self::DISCRIMINATOR as u8 }, Self::VariantFields>`
-    type DecodableVariant: IsSborFixedEnumVariant<X, Self::VariantFields>;
-    fn from_decodable_variant(variant: Self::DecodableVariant) -> Self;
+    /// This should always be `SborFixedEnumVariant<{ [DISCRIMINATOR] as u8 }, Self::VariantFields>`
+    ///
+    /// ### Why is this required as an associated type?
+    /// Ideally we'd not need this and just have `as_encodable_variant` return
+    /// `SborFixedEnumVariant<{ Self::DISCRIMINATOR as u8 }, Self::VariantFieldsRef<'_>>`
+    /// But this gets "error: generic parameters may not be used in const operations"
+    type OwnedVariant: IsSborFixedEnumVariant<Self::VariantFields>;
 
-    /// Should always be `SborFixedEnumVariant<{ Self::DISCRIMINATOR }, &'a Self::VariantFields>`
-    type EncodableVariant<'a>: IsSborFixedEnumVariant<X, Self::VariantFieldsRef<'a>>
+    /// Should always be `SborFixedEnumVariant<{ [DISCRIMINATOR] as u8 }, &'a Self::VariantFields>`
+    ///
+    /// ### Why is this required as an associated type?
+    /// Ideally we'd not need this and just have `as_encodable_variant` return
+    /// `SborFixedEnumVariant<{ Self::DISCRIMINATOR as u8 }, Self::VariantFields>`
+    /// But this gets "error: generic parameters may not be used in const operations"
+    type BorrowedVariant<'a>: IsSborFixedEnumVariant<Self::VariantFieldsRef<'a>>
     where
         Self: 'a,
         Self::VariantFields: 'a;
 
-    fn as_encodable_variant(&self) -> Self::EncodableVariant<'_> {
-        Self::EncodableVariant::new(self.as_variant_fields_ref())
+    /// Can be used to encode the type as a variant under `TEnum`, like this:
+    /// `encoder.encode(x.as_encodable_variant())`.
+    fn as_encodable_variant(&self) -> Self::BorrowedVariant<'_> {
+        Self::BorrowedVariant::new(self.as_variant_fields_ref())
+    }
+
+    /// Can be used to decode the type from an encoded variant, like this:
+    /// `X::from_decoded_variant(decoder.decode()?)`.
+    fn from_decoded_variant(variant: Self::OwnedVariant) -> Self
+    where
+        Self: core::marker::Sized,
+    {
+        Self::from_variant_fields(variant.into_fields())
     }
 
     fn into_enum(self) -> TEnum;

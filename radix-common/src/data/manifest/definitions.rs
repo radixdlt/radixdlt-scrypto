@@ -18,17 +18,6 @@ impl<T: Categorize<ManifestCustomValueKind> + ?Sized> ManifestCategorize for T {
 pub trait ManifestSborEnum: SborEnum<ManifestCustomValueKind> {}
 impl<T: SborEnum<ManifestCustomValueKind> + ?Sized> ManifestSborEnum for T {}
 
-pub trait IsManifestSborFixedEnumVariant<F: ManifestSborTuple + ManifestEncode>:
-    IsSborFixedEnumVariant<ManifestCustomValueKind, F>
-{
-}
-impl<
-        F: ManifestSborTuple + ManifestEncode,
-        T: IsSborFixedEnumVariant<ManifestCustomValueKind, F> + ?Sized,
-    > IsManifestSborFixedEnumVariant<F> for T
-{
-}
-
 pub trait ManifestSborEnumVariantFor<E: ManifestSborEnum>:
     SborEnumVariantFor<E, ManifestCustomValueKind>
 {

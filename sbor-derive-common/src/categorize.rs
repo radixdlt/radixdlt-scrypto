@@ -226,14 +226,13 @@ fn handle_impl_variant_trait(
             const IS_FLATTENED: bool = true;
 
             type VariantFields = Self;
-            type VariantFieldsRef<'a> = &'a Self;
-
-            fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
-                self
+            fn from_variant_fields(variant_fields: Self::VariantFields) -> Self {
+                variant_fields
             }
 
-            fn from_decodable_variant(variant: Self::DecodableVariant) -> Self {
-                variant.into_fields()
+            type VariantFieldsRef<'a> = &'a Self;
+            fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
+                self
             }
         }
     } else {
@@ -241,14 +240,13 @@ fn handle_impl_variant_trait(
             const IS_FLATTENED: bool = false;
 
             type VariantFields = (Self,);
-            type VariantFieldsRef<'a> = (&'a Self,);
-
-            fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
-                (self,)
+            fn from_variant_fields(variant_fields: Self::VariantFields) -> Self {
+                variant_fields.0
             }
 
-            fn from_decodable_variant(variant: Self::DecodableVariant) -> Self {
-                variant.into_fields().0
+            type VariantFieldsRef<'a> = (&'a Self,);
+            fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
+                (self,)
             }
         }
     };
@@ -261,8 +259,8 @@ fn handle_impl_variant_trait(
         impl #impl_generics sbor::SborEnumVariantFor<#enum_name #type_generics_turbofish, #sbor_cvk> for #variant_type_name #where_clause {
             const DISCRIMINATOR: u8 = #discriminator;
             #middle
-            type DecodableVariant = sbor::SborFixedEnumVariant<#discriminator, Self::VariantFields>;
-            type EncodableVariant<'a> = sbor::SborFixedEnumVariant<#discriminator, Self::VariantFieldsRef<'a>>;
+            type OwnedVariant = sbor::SborFixedEnumVariant<#discriminator, Self::VariantFields>;
+            type BorrowedVariant<'a> = sbor::SborFixedEnumVariant<#discriminator, Self::VariantFieldsRef<'a>>;
 
             fn into_enum(self) -> #enum_name {
                 let value = self;

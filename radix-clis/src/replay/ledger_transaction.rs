@@ -72,24 +72,25 @@ impl SborEnumVariantFor<VersionedTransactionPayload, ManifestCustomValueKind>
     const IS_FLATTENED: bool = true;
 
     type VariantFields = Self;
-    type VariantFieldsRef<'a> = &'a Self;
+    fn from_variant_fields(variant_fields: Self::VariantFields) -> Self {
+        variant_fields
+    }
 
+    type VariantFieldsRef<'a> = &'a Self;
     fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
         self
     }
 
-    type DecodableVariant = sbor::SborFixedEnumVariant<
+    /// For use Decoding from the enum to its fields
+    type OwnedVariant = sbor::SborFixedEnumVariant<
         { TransactionDiscriminator::V1Ledger as u8 },
         Self::VariantFields,
     >;
-    type EncodableVariant<'a> = sbor::SborFixedEnumVariant<
+    /// For use Encoding to the enum from a reference to its fields
+    type BorrowedVariant<'a> = sbor::SborFixedEnumVariant<
         { TransactionDiscriminator::V1Ledger as u8 },
         Self::VariantFieldsRef<'a>,
     >;
-
-    fn from_decodable_variant(variant: Self::DecodableVariant) -> Self {
-        variant.fields
-    }
 
     fn into_enum(self) -> VersionedTransactionPayload {
         unimplemented!()
@@ -115,13 +116,8 @@ impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
     type Raw = RawRoundUpdateTransactionV1;
 
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let decoded = decoder
-            .decode::<<RoundUpdateTransactionV1 as sbor::SborEnumVariantFor<
-                VersionedTransactionPayload,
-                ManifestCustomValueKind,
-            >>::DecodableVariant>()?
-            .into_fields();
-        decoded.prepare()
+        let decoded_variant = decoder.decode()?;
+        RoundUpdateTransactionV1::from_decoded_variant(decoded_variant).prepare()
     }
 }
 

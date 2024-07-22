@@ -9,8 +9,8 @@ pub trait TransactionPayload:
     + ManifestSborTuple
     + ManifestSborEnumVariantFor<VersionedTransactionPayload>
 where
-    Self::DecodableVariant: ManifestDecode,
-    for<'a> Self::EncodableVariant<'a>: ManifestEncode,
+    Self::OwnedVariant: ManifestDecode,
+    for<'a> Self::BorrowedVariant<'a>: ManifestEncode,
 {
     type Prepared: TransactionPayloadPreparable<Raw = Self::Raw>;
     type Raw: RawTransactionPayload;
@@ -28,8 +28,7 @@ where
     }
 
     fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
-        let decoded = manifest_decode::<Self::DecodableVariant>(payload_bytes)?;
-        Ok(Self::from_decodable_variant(decoded))
+        Ok(Self::from_decoded_variant(manifest_decode(payload_bytes)?))
     }
 
     fn prepare(&self) -> Result<Self::Prepared, PrepareError> {

@@ -153,14 +153,14 @@ pub fn handle_normal_decode(
                             },
                             FieldsHandling::Flatten { unique_field, fields_data } => {
                                 let field_type = unique_field.field_type();
-                                let construct_variant = decode_unique_unskipped_field_from_value(
-                                    quote! { Self::#variant_name },
-                                    fields_data,
-                                )?;
                                 let tuple_assertion = output_flatten_type_is_sbor_tuple_assertion(
                                     &custom_value_kind_generic,
                                     field_type,
                                 );
+                                let construct_variant = decode_unique_unskipped_field_from_value(
+                                    quote! { Self::#variant_name },
+                                    fields_data,
+                                )?;
                                 quote! {
                                     #tuple_assertion
                                     let value = <#field_type as sbor::Decode<#custom_value_kind_generic, #decoder_generic>>::decode_body_with_value_kind(decoder, ValueKind::Tuple)?;
