@@ -46,7 +46,8 @@ jobs:
       - name: Run Phylum Analysis
         env: 
           PHYLUM_API_KEY: ${{ secrets.PHYLUM_API_KEY }}         
-        run: phylum analyze --quiet --label ${{ matrix.branch }}_branch_daily_schedule > /dev/null 2>&1 || exit_code=$?
+        run: | 
+          phylum analyze --quiet --label ${{ matrix.branch }}_branch_daily_schedule > /dev/null 2>&1 || exit_code=$?
           if [ $exit_code -eq 100 ]; then 
             echo "Phylum Analysis returned exit code 100, but continuing.";
             echo "phylum_analyze_status=failure" >> $GITHUB_ENV 
