@@ -1,94 +1,56 @@
 use radix_common::data::scrypto::model::*;
-use radix_common::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
-};
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_common::math::Decimal;
-use radix_engine_interface::api::SystemApi;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
-use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 pub trait NativeAuthZone {
-    fn drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn drain<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<Vec<Proof>, E>;
+
+    fn drop_proofs<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<(), E>;
+
+    fn drop_regular_proofs<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y)
+        -> Result<(), E>;
+
+    fn drop_signature_proofs<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<Vec<Proof>, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<(), E>;
 
-    fn drop_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>;
+    fn pop<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<Option<Proof>, E>;
 
-    fn drop_regular_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>;
-
-    fn drop_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>;
-
-    fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Option<Proof>, E>
-    where
-        Y: SystemApi<E>;
-
-    fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_amount<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         amount: Decimal,
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Proof, E>;
 
-    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_non_fungibles<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         ids: &IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Proof, E>;
 
-    fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_all<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Proof, E>;
 
-    fn push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn push<Y: SystemApi<E>, E: SystemApiError, P: Into<Proof>>(
         &self,
         proof: P,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<(), E>;
 }
 
 impl NativeAuthZone for AuthZoneRef {
-    fn drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Vec<Proof>, E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn drain<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<Vec<Proof>, E> {
         let rtn = api.call_method(
             &self.0,
             AUTH_ZONE_DRAIN_IDENT,
@@ -97,13 +59,7 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn drop_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn drop_proofs<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<(), E> {
         let rtn = api.call_method(
             &self.0,
             AUTH_ZONE_DROP_PROOFS_IDENT,
@@ -112,13 +68,10 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn drop_regular_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn drop_regular_proofs<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<(), E> {
         let rtn = api.call_method(
             &self.0,
             AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT,
@@ -127,13 +80,10 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn drop_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn drop_signature_proofs<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<(), E> {
         let rtn = api.call_method(
             &self.0,
             AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
@@ -142,13 +92,7 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn pop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Option<Proof>, E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn pop<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<Option<Proof>, E> {
         let rtn = api.call_method(
             &self.0,
             AUTH_ZONE_POP_IDENT,
@@ -158,15 +102,12 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_amount<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         amount: Decimal,
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Proof, E> {
         let rtn = api.call_method(
             &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT,
@@ -180,15 +121,12 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_non_fungibles<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         ids: &IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Proof, E> {
         let rtn = api.call_method(
             &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,
@@ -202,14 +140,11 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_all<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Proof, E> {
         let rtn = api.call_method(
             &self.0,
             AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT,
@@ -219,14 +154,11 @@ impl NativeAuthZone for AuthZoneRef {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn push<P: Into<Proof>, Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn push<Y: SystemApi<E>, E: SystemApiError, P: Into<Proof>>(
         &self,
         proof: P,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<(), E> {
         let proof: Proof = proof.into();
 
         let _rtn = api.call_method(

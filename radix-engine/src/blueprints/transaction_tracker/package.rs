@@ -113,14 +113,11 @@ impl TransactionTrackerNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             TRANSACTION_TRACKER_CREATE_EXPORT_NAME => {
                 let input: TransactionTrackerCreateInput = input.as_typed().map_err(|e| {
@@ -240,13 +237,10 @@ impl TransactionTrackerSubstateV1 {
 pub struct TransactionTrackerBlueprint;
 
 impl TransactionTrackerBlueprint {
-    pub fn create<Y>(
+    pub fn create<Y: SystemApi<RuntimeError>>(
         address_reservation: GlobalAddressReservation,
         api: &mut Y,
-    ) -> Result<GlobalAddress, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<GlobalAddress, RuntimeError> {
         let current_epoch = Runtime::current_epoch(api)?;
         let intent_store = api.new_simple_object(
             TRANSACTION_TRACKER_BLUEPRINT,

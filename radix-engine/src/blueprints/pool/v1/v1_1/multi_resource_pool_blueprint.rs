@@ -3,7 +3,6 @@ use crate::blueprints::pool::v1::errors::multi_resource_pool::*;
 use crate::blueprints::pool::v1::events::multi_resource_pool::*;
 use crate::blueprints::pool::v1::substates::multi_resource_pool::*;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::*;
 use radix_engine_interface::blueprints::component::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::prelude::*;
@@ -16,16 +15,13 @@ use radix_native_sdk::runtime::*;
 
 pub struct MultiResourcePoolBlueprint;
 impl MultiResourcePoolBlueprint {
-    pub fn instantiate<Y>(
+    pub fn instantiate<Y: SystemApi<RuntimeError>>(
         resource_addresses: IndexSet<ResourceAddress>,
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi,
-    {
+    ) -> Result<MultiResourcePoolInstantiateOutput, RuntimeError> {
         // A pool can't be created where one of the resources is non-fungible - error out if any of
         // them are
         for resource_address in resource_addresses.iter() {
@@ -192,13 +188,10 @@ impl MultiResourcePoolBlueprint {
 
     [`TwoResourcePool::contribute`]: super::TwoResourcePoolBlueprint::contribute
     */
-    pub fn contribute<Y>(
+    pub fn contribute<Y: SystemApi<RuntimeError>>(
         buckets: Vec<Bucket>,
         api: &mut Y,
-    ) -> Result<MultiResourcePoolContributeOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<MultiResourcePoolContributeOutput, RuntimeError> {
         Self::with_state(api, |mut substate, api| {
             let pool_unit_total_supply = substate
                 .pool_unit_resource_manager
@@ -385,13 +378,10 @@ impl MultiResourcePoolBlueprint {
         })
     }
 
-    pub fn redeem<Y>(
+    pub fn redeem<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<MultiResourcePoolRedeemOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<MultiResourcePoolRedeemOutput, RuntimeError> {
         Self::with_state(api, |mut substate, api| {
             // Ensure that the passed pool resources are indeed pool resources
             let bucket_resource_address = bucket.resource_address(api)?;
@@ -458,13 +448,10 @@ impl MultiResourcePoolBlueprint {
         })
     }
 
-    pub fn protected_deposit<Y>(
+    pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError> {
         Self::with_state(api, |mut substate, api| {
             let resource_address = bucket.resource_address(api)?;
             let vault = substate.vaults.get_mut(&resource_address);
@@ -482,15 +469,12 @@ impl MultiResourcePoolBlueprint {
         })
     }
 
-    pub fn protected_withdraw<Y>(
+    pub fn protected_withdraw<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<MultiResourcePoolProtectedWithdrawOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<MultiResourcePoolProtectedWithdrawOutput, RuntimeError> {
         Self::with_state(api, |mut substate, api| {
             let vault = substate.vaults.get_mut(&resource_address);
 
@@ -513,13 +497,10 @@ impl MultiResourcePoolBlueprint {
         })
     }
 
-    pub fn get_redemption_value<Y>(
+    pub fn get_redemption_value<Y: SystemApi<RuntimeError>>(
         amount_of_pool_units: Decimal,
         api: &mut Y,
-    ) -> Result<MultiResourcePoolGetRedemptionValueOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<MultiResourcePoolGetRedemptionValueOutput, RuntimeError> {
         Self::with_state(api, |substate, api| {
             let pool_units_to_redeem = amount_of_pool_units;
             let pool_units_total_supply = substate
@@ -559,12 +540,9 @@ impl MultiResourcePoolBlueprint {
         })
     }
 
-    pub fn get_vault_amounts<Y>(
+    pub fn get_vault_amounts<Y: SystemApi<RuntimeError>>(
         api: &mut Y,
-    ) -> Result<TwoResourcePoolGetVaultAmountsOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolGetVaultAmountsOutput, RuntimeError> {
         Self::with_state(api, |substate, api| {
             substate
                 .vaults
@@ -580,11 +558,10 @@ impl MultiResourcePoolBlueprint {
     // Utility Functions
     //===================
 
-    fn with_state<Y, F, O>(api: &mut Y, callback: F) -> Result<O, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        F: FnOnce(Substate, &mut Y) -> Result<O, RuntimeError>,
-    {
+    fn with_state<Y: SystemApi<RuntimeError>, O>(
+        api: &mut Y,
+        callback: impl FnOnce(Substate, &mut Y) -> Result<O, RuntimeError>,
+    ) -> Result<O, RuntimeError> {
         // Open
         let substate_key = MultiResourcePoolField::State.into();
         let handle =

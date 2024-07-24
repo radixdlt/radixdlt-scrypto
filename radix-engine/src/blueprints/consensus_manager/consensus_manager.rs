@@ -503,7 +503,7 @@ impl ConsensusManagerBlueprint {
         }
     }
 
-    pub(crate) fn create<Y>(
+    pub(crate) fn create<Y: SystemApi<RuntimeError>>(
         validator_token_address_reservation: GlobalAddressReservation,
         consensus_manager_address_reservation: GlobalAddressReservation,
         genesis_epoch: Epoch,
@@ -511,10 +511,7 @@ impl ConsensusManagerBlueprint {
         initial_time_milli: i64,
         initial_current_leader: Option<ValidatorIndex>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         if initial_config.max_validators > ValidatorIndex::MAX as u32 {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(
@@ -533,7 +530,7 @@ impl ConsensusManagerBlueprint {
             let consensus_manager_address =
                 api.get_reservation_address(consensus_manager_address_reservation.0.as_node_id())?;
 
-            ResourceManager::new_non_fungible::<ValidatorOwnerBadgeData, Y, RuntimeError, _>(
+            ResourceManager::new_non_fungible::<ValidatorOwnerBadgeData, _, _, _>(
                 OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,
@@ -630,10 +627,9 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn get_current_epoch<Y>(api: &mut Y) -> Result<Epoch, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn get_current_epoch<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Epoch, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ConsensusManagerField::State.into(),
@@ -647,10 +643,7 @@ impl ConsensusManagerBlueprint {
         Ok(consensus_manager.epoch)
     }
 
-    pub(crate) fn start<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn start<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let config_substate = {
             let config_handle = api.actor_open_field(
                 ACTOR_STATE_SELF,
@@ -702,13 +695,10 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    pub(crate) fn get_current_time_v1<Y>(
+    pub(crate) fn get_current_time_v1<Y: SystemApi<RuntimeError>>(
         precision: TimePrecisionV1,
         api: &mut Y,
-    ) -> Result<Instant, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Instant, RuntimeError> {
         match precision {
             TimePrecisionV1::Minute => {
                 let handle = api.actor_open_field(
@@ -730,13 +720,10 @@ impl ConsensusManagerBlueprint {
         }
     }
 
-    pub(crate) fn get_current_time_v2<Y>(
+    pub(crate) fn get_current_time_v2<Y: SystemApi<RuntimeError>>(
         precision: TimePrecisionV2,
         api: &mut Y,
-    ) -> Result<Instant, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Instant, RuntimeError> {
         match precision {
             TimePrecisionV2::Minute => {
                 let handle = api.actor_open_field(
@@ -773,15 +760,12 @@ impl ConsensusManagerBlueprint {
         }
     }
 
-    pub(crate) fn compare_current_time_v1<Y>(
+    pub(crate) fn compare_current_time_v1<Y: SystemApi<RuntimeError>>(
         other_arbitrary_precision_instant: Instant,
         precision: TimePrecisionV1,
         operator: TimeComparisonOperator,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<bool, RuntimeError> {
         match precision {
             TimePrecisionV1::Minute => {
                 let other_epoch_minute = other_arbitrary_precision_instant
@@ -822,15 +806,12 @@ impl ConsensusManagerBlueprint {
         }
     }
 
-    pub(crate) fn compare_current_time_v2<Y>(
+    pub(crate) fn compare_current_time_v2<Y: SystemApi<RuntimeError>>(
         other_arbitrary_precision_instant: Instant,
         precision: TimePrecisionV2,
         operator: TimeComparisonOperator,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<bool, RuntimeError> {
         match precision {
             TimePrecisionV2::Minute => {
                 let other_epoch_minute = other_arbitrary_precision_instant
@@ -904,15 +885,12 @@ impl ConsensusManagerBlueprint {
         i32::try_from(epoch_milli / MILLIS_IN_MINUTE).ok() // safe until A.D. 5700
     }
 
-    pub(crate) fn next_round<Y>(
+    pub(crate) fn next_round<Y: SystemApi<RuntimeError>>(
         round: Round,
         proposer_timestamp_milli: i64,
         proposal_history: LeaderProposalHistory,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         Self::check_non_decreasing_and_update_timestamps(proposer_timestamp_milli, api)?;
 
         let config_handle = api.actor_open_field(
@@ -988,10 +966,9 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    fn get_validator_xrd_cost<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn get_validator_xrd_cost<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Option<Decimal>, RuntimeError> {
         let manager_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ConsensusManagerField::State.field_index(),
@@ -1031,15 +1008,12 @@ impl ConsensusManagerBlueprint {
         Ok(validator_creation_xrd_cost)
     }
 
-    pub(crate) fn create_validator<Y>(
+    pub(crate) fn create_validator<Y: SystemApi<RuntimeError>>(
         key: Secp256k1PublicKey,
         fee_factor: Decimal,
         xrd_payment: Bucket,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError> {
         if !xrd_payment.resource_address(api)?.eq(&XRD) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(ConsensusManagerError::NotXrd),
@@ -1058,13 +1032,10 @@ impl ConsensusManagerBlueprint {
         Ok((validator_address, owner_token_bucket, xrd_payment))
     }
 
-    fn check_non_decreasing_and_update_timestamps<Y>(
+    fn check_non_decreasing_and_update_timestamps<Y: SystemApi<RuntimeError>>(
         current_time_ms: i64,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ConsensusManagerField::ProposerMilliTimestamp.into(),
@@ -1123,14 +1094,11 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    fn update_proposal_statistics<Y>(
+    fn update_proposal_statistics<Y: SystemApi<RuntimeError>>(
         progressed_rounds: u64,
         proposal_history: LeaderProposalHistory,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         if proposal_history.gap_round_leaders.len() as u64 != progressed_rounds - 1 {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ConsensusManagerError(
@@ -1170,14 +1138,11 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    fn epoch_change<Y>(
+    fn epoch_change<Y: SystemApi<RuntimeError>>(
         next_epoch: Epoch,
         config: &ConsensusManagerConfig,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         // Read previous validator set
         let validator_set_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1355,17 +1320,14 @@ impl ConsensusManagerBlueprint {
 
     /// Emits a configured XRD amount ([`ConsensusManagerConfigSubstate.total_emission_xrd_per_epoch`])
     /// and distributes it across the given validator set, according to their stake.
-    fn apply_validator_emissions_and_rewards<Y>(
+    fn apply_validator_emissions_and_rewards<Y: SystemApi<RuntimeError>>(
         validator_set: ActiveValidatorSet,
         validator_statistics: Vec<ProposalStatistic>,
         config: &ConsensusManagerConfig,
         validator_rewards: &mut ValidatorRewardsSubstate,
         epoch: Epoch, // the concluded epoch, for event creation
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let mut stake_sum_xrd = Decimal::ZERO;
 
         let mut validator_infos: IndexMap<ValidatorIndex, ValidatorInfo> = index_map_new();

@@ -53,10 +53,10 @@ impl TestUtilsBlueprint {
         }
     }
 
-    pub fn panic<Y>(message: &str, _api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn panic<Y: SystemApi<RuntimeError>>(
+        message: &str,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         panic!("{}", message);
     }
 }

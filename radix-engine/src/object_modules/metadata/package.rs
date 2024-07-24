@@ -185,14 +185,11 @@ impl MetadataNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             METADATA_CREATE_IDENT => {
                 let _input: MetadataCreateInput = input.as_typed().map_err(|e| {
@@ -253,10 +250,7 @@ impl MetadataNativePackage {
         }
     }
 
-    pub(crate) fn create<Y>(api: &mut Y) -> Result<Own, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn create<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Own, RuntimeError> {
         let node_id = api.new_object(
             METADATA_BLUEPRINT,
             vec![],
@@ -319,13 +313,10 @@ impl MetadataNativePackage {
         ))
     }
 
-    pub(crate) fn create_with_data<Y>(
+    pub(crate) fn create_with_data<Y: SystemApi<RuntimeError>>(
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<Own, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Own, RuntimeError> {
         for value in metadata_init.data.values() {
             if let Some(v) = &value.value {
                 validate_metadata_value(&v).map_err(|e| {
@@ -350,10 +341,11 @@ impl MetadataNativePackage {
         Ok(Own(node_id))
     }
 
-    pub(crate) fn set<Y>(key: String, value: MetadataValue, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn set<Y: SystemApi<RuntimeError>>(
+        key: String,
+        value: MetadataValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         validate_metadata_value(&value).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::MetadataError(
                 MetadataError::MetadataValidationError(e),
@@ -396,10 +388,10 @@ impl MetadataNativePackage {
         Ok(())
     }
 
-    pub(crate) fn lock<Y>(key: String, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn lock<Y: SystemApi<RuntimeError>>(
+        key: String,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
             MetadataCollection::EntryKeyValue.collection_index(),
@@ -412,10 +404,10 @@ impl MetadataNativePackage {
         Ok(())
     }
 
-    pub(crate) fn get<Y>(key: String, api: &mut Y) -> Result<Option<MetadataValue>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn get<Y: SystemApi<RuntimeError>>(
+        key: String,
+        api: &mut Y,
+    ) -> Result<Option<MetadataValue>, RuntimeError> {
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
             MetadataCollection::EntryKeyValue.collection_index(),
@@ -429,10 +421,10 @@ impl MetadataNativePackage {
         Ok(substate.map(|v: MetadataEntryEntryPayload| v.fully_update_and_into_latest_version()))
     }
 
-    pub(crate) fn remove<Y>(key: String, api: &mut Y) -> Result<bool, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn remove<Y: SystemApi<RuntimeError>>(
+        key: String,
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError> {
         let cur_value: Option<MetadataEntryEntryPayload> = api.actor_remove_key_value_entry_typed(
             ACTOR_STATE_SELF,
             0u8,

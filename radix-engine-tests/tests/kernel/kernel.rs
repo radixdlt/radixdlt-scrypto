@@ -59,7 +59,11 @@ impl KernelCallbackObject for TestCallbackObject {
     type ExecutionOutput = ();
     type Receipt = TestReceipt;
 
-    fn init<S: BootStore + CommitableSubstateStore>(_store: &mut S, _executable: &Executable, _init_input: Self::Init) -> Result<Self, RejectionReason> {
+    fn init<S: BootStore + CommitableSubstateStore>(
+        _store: &mut S,
+        _executable: &Executable,
+        _init_input: Self::Init,
+    ) -> Result<Self, RejectionReason> {
         Ok(Self)
     }
 
@@ -67,16 +71,13 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(StableReferenceType::Global)
     }
 
-    fn start<Y>(
+    fn start<Y: KernelApi<Self>>(
         _api: &mut Y,
         _manifest_encoded_instructions: &[u8],
         _pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         _references: &IndexSet<Reference>,
         _blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<(), RuntimeError> {
         unreachable!()
     }
 
@@ -92,52 +93,31 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn on_create_node<Y>(_api: &mut Y, _event: CreateNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_create_node<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: CreateNodeEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_drop_node<Y>(_api: &mut Y, _event: DropNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_drop_node<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: DropNodeEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_move_module<Y>(_api: &mut Y, _event: MoveModuleEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_move_module<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: MoveModuleEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_open_substate<Y>(_api: &mut Y, _event: OpenSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_open_substate<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: OpenSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_close_substate<Y>(_api: &mut Y, _event: CloseSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_close_substate<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: CloseSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_read_substate<Y>(_api: &mut Y, _event: ReadSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_read_substate<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: ReadSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_write_substate<Y>(_api: &mut Y, _event: WriteSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_write_substate<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: WriteSubstateEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -164,58 +144,37 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn before_invoke<Y>(
+    fn before_invoke<Y: KernelApi<Self>>(
         _invocation: &KernelInvocation<Self::CallFrameData>,
         _api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn after_invoke<Y>(_output: &IndexedScryptoValue, _api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn after_invoke<Y: KernelApi<Self>>(_output: &IndexedScryptoValue, _api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_execution_start<Y>(_api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_execution_start<Y: KernelApi<Self>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_execution_finish<Y>(_message: &CallFrameMessage, _api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_execution_finish<Y: KernelApi<Self>>(_message: &CallFrameMessage, _api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_allocate_node_id<Y>(_entity_type: EntityType, _api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_allocate_node_id<Y: KernelApi<Self>>(_entity_type: EntityType, _api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn invoke_upstream<Y>(
+    fn invoke_upstream<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         _api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         Ok(args.clone())
     }
 
-    fn auto_drop<Y>(_nodes: Vec<NodeId>, _api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn auto_drop<Y: KernelApi<Self>>(_nodes: Vec<NodeId>, _api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -228,22 +187,16 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn on_substate_lock_fault<Y>(
+    fn on_substate_lock_fault<Y: KernelApi<Self>>(
         _node_id: NodeId,
         _partition_num: PartitionNumber,
         _offset: &SubstateKey,
         _api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<bool, RuntimeError> {
         Ok(false)
     }
 
-    fn on_drop_node_mut<Y>(_node_id: &NodeId, _api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_drop_node_mut<Y: KernelApi<Self>>(_node_id: &NodeId, _api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 }

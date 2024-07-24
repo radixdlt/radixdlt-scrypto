@@ -98,19 +98,17 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
         })
     }
 
-    fn invoke<Y>(
-        address: &PackageAddress,
-        export: PackageExport,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
+    fn invoke<
         Y: SystemApi<RuntimeError>
             + KernelInternalApi<System<Self>>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
-        W: WasmEngine,
-    {
+    >(
+        address: &PackageAddress,
+        export: PackageExport,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let vm_type = {
             let handle = api.kernel_open_substate_with_default(
                 address.as_node_id(),
@@ -225,16 +223,16 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
 pub trait VmInvoke {
     // TODO: Remove KernelNodeAPI + KernelSubstateAPI from api, unify with VmApi
-    fn invoke<Y, V>(
+    fn invoke<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
+    >(
         &mut self,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi;
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
 pub struct VmPackageValidation;

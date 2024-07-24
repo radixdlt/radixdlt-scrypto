@@ -2,26 +2,22 @@ use radix_common::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_common::data::scrypto::model::Own;
 use radix_common::data::scrypto::*;
 use radix_engine_interface::api::object_api::ModuleId;
-use radix_engine_interface::api::{AttachedModuleId, SystemApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, OwnerRoleEntry, RoleAssignmentInit, RoleKey,
 };
 use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::types::NodeId;
-use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
 pub struct RoleAssignment(pub Own);
 
 impl RoleAssignment {
-    pub fn create<Y, R: Into<OwnerRoleEntry>, E: Debug + ScryptoDecode>(
+    pub fn create<Y: SystemApi<E>, E: SystemApiError, R: Into<OwnerRoleEntry>>(
         owner_role: R,
         roles: IndexMap<ModuleId, RoleAssignmentInit>,
         api: &mut Y,
-    ) -> Result<Self, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Self, E> {
         let rtn = api.call_function(
             ROLE_ASSIGNMENT_MODULE_PACKAGE,
             ROLE_ASSIGNMENT_BLUEPRINT,
@@ -56,7 +52,7 @@ impl RoleAssignmentObject for AttachedRoleAssignment {
 pub trait RoleAssignmentObject {
     fn self_id(&self) -> (&NodeId, Option<AttachedModuleId>);
 
-    fn set_owner_role<Y: SystemApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
+    fn set_owner_role<Y: SystemApi<E>, E: SystemApiError, A: Into<AccessRule>>(
         &self,
         rule: A,
         api: &mut Y,
@@ -83,10 +79,7 @@ pub trait RoleAssignmentObject {
         Ok(())
     }
 
-    fn lock_owner_role<Y: SystemApi<E>, E: Debug + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<(), E> {
+    fn lock_owner_role<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<(), E> {
         let (node_id, module_id) = self.self_id();
         match module_id {
             None => {
@@ -109,12 +102,7 @@ pub trait RoleAssignmentObject {
         Ok(())
     }
 
-    fn set_role<
-        Y: SystemApi<E>,
-        E: Debug + ScryptoDecode,
-        R: Into<RoleKey>,
-        A: Into<AccessRule>,
-    >(
+    fn set_role<Y: SystemApi<E>, E: SystemApiError, R: Into<RoleKey>, A: Into<AccessRule>>(
         &self,
         module: ModuleId,
         role_key: R,
@@ -153,7 +141,7 @@ pub trait RoleAssignmentObject {
         Ok(())
     }
 
-    fn get_role<Y: SystemApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
+    fn get_role<Y: SystemApi<E>, E: SystemApiError, R: Into<RoleKey>>(
         &self,
         module: ModuleId,
         role_key: R,
@@ -187,7 +175,7 @@ pub trait RoleAssignmentObject {
         }
     }
 
-    fn get_owner_role<Y: SystemApi<E>, E: Debug + ScryptoDecode, R: Into<RoleKey>>(
+    fn get_owner_role<Y: SystemApi<E>, E: SystemApiError, R: Into<RoleKey>>(
         &self,
         api: &mut Y,
     ) -> Result<RoleAssignmentGetOwnerRoleOutput, E> {

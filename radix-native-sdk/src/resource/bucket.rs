@@ -1,139 +1,86 @@
 use radix_common::data::scrypto::model::*;
-use radix_common::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
-};
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_common::math::Decimal;
-use radix_engine_interface::api::{SystemApi, SystemObjectApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
-use sbor::rust::fmt::Debug;
 
 use super::ResourceManager;
 
 // TODO: split impl
 
 pub trait NativeBucket {
-    fn create<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create<Y: SystemApi<E>, E: SystemApiError>(
         receiver: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Bucket, E>;
 
-    fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Decimal, E>
-    where
-        Y: SystemApi<E>;
+    fn amount<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<Decimal, E>;
 
-    fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        other: Self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>;
+    fn put<Y: SystemApi<E>, E: SystemApiError>(&self, other: Self, api: &mut Y) -> Result<(), E>;
 
-    fn take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Bucket, E>;
 
-    fn take_advanced<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take_advanced<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Bucket, E>;
 
-    fn burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
-    where
-        Y: SystemApi<E>;
+    fn burn<Y: SystemApi<E>, E: SystemApiError>(self, api: &mut Y) -> Result<(), E>;
 
-    fn package_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>;
+    fn package_burn<Y: SystemApi<E>, E: SystemApiError>(self, api: &mut Y) -> Result<(), E>;
 
-    fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
-    where
-        Y: SystemApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode;
-
-    fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn resource_address<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<ResourceAddress, E>;
 
-    fn is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_all<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<bool, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Proof, E>;
 
-    fn drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>;
+    fn is_empty<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<bool, E>;
+
+    fn drop_empty<Y: SystemApi<E>, E: SystemApiError>(self, api: &mut Y) -> Result<(), E>;
 }
 
 pub trait NativeFungibleBucket {
-    fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_amount<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Proof, E>;
 }
 
 pub trait NativeNonFungibleBucket {
-    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn non_fungible_local_ids<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<IndexSet<NonFungibleLocalId>, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<IndexSet<NonFungibleLocalId>, E>;
 
-    fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take_non_fungibles<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Bucket, E>;
 
-    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_non_fungibles<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>;
+    ) -> Result<Proof, E>;
 }
 
 impl NativeBucket for Bucket {
-    fn drop_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn drop_empty<Y: SystemApi<E>, E: SystemApiError>(self, api: &mut Y) -> Result<(), E> {
         let resource_address = self.resource_address(api)?;
         let rtn = api.call_method(
             resource_address.as_node_id(),
@@ -146,13 +93,10 @@ impl NativeBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn create<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create<Y: SystemObjectApi<E>, E: SystemApiError>(
         receiver: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             receiver.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
@@ -161,13 +105,7 @@ impl NativeBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Decimal, E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn amount<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<Decimal, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             BUCKET_GET_AMOUNT_IDENT,
@@ -177,14 +115,7 @@ impl NativeBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        other: Self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn put<Y: SystemApi<E>, E: SystemApiError>(&self, other: Self, api: &mut Y) -> Result<(), E> {
         let _rtn = api.call_method(
             self.0.as_node_id(),
             BUCKET_PUT_IDENT,
@@ -194,14 +125,11 @@ impl NativeBucket for Bucket {
         Ok(())
     }
 
-    fn take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             BUCKET_TAKE_IDENT,
@@ -211,15 +139,12 @@ impl NativeBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn take_advanced<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take_advanced<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             BUCKET_TAKE_ADVANCED_IDENT,
@@ -233,30 +158,20 @@ impl NativeBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn burn<Y: SystemApi<E>, E: SystemApiError>(self, api: &mut Y) -> Result<(), E> {
         let resource_address = self.resource_address(api)?;
         ResourceManager(resource_address).burn(Bucket(self.0), api)
     }
 
-    fn package_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        self,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn package_burn<Y: SystemApi<E>, E: SystemApiError>(self, api: &mut Y) -> Result<(), E> {
         let resource_address = self.resource_address(api)?;
         ResourceManager(resource_address).package_burn(Bucket(self.0), api)
     }
 
-    fn resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
-    where
-        Y: SystemApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+    fn resource_address<Y: SystemApi<E>, E: SystemApiError>(
+        &self,
+        api: &mut Y,
+    ) -> Result<ResourceAddress, E> {
         let resource_address = ResourceAddress::new_or_panic(
             api.get_outer_object(self.0.as_node_id())?.as_node_id().0,
         );
@@ -264,13 +179,10 @@ impl NativeBucket for Bucket {
         Ok(resource_address)
     }
 
-    fn create_proof_of_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_all<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Proof, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             BUCKET_CREATE_PROOF_OF_ALL_IDENT,
@@ -279,26 +191,17 @@ impl NativeBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn is_empty<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<bool, E>
-    where
-        Y: SystemApi<E>,
-    {
+    fn is_empty<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<bool, E> {
         Ok(self.amount(api)?.is_zero())
     }
 }
 
 impl NativeFungibleBucket for Bucket {
-    fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_amount<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Proof, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
@@ -309,13 +212,10 @@ impl NativeFungibleBucket for Bucket {
 }
 
 impl NativeNonFungibleBucket for Bucket {
-    fn non_fungible_local_ids<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn non_fungible_local_ids<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<IndexSet<NonFungibleLocalId>, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<IndexSet<NonFungibleLocalId>, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
@@ -325,14 +225,11 @@ impl NativeNonFungibleBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn take_non_fungibles<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT,
@@ -342,14 +239,11 @@ impl NativeNonFungibleBucket for Bucket {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn create_proof_of_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    fn create_proof_of_non_fungibles<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Proof, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT,

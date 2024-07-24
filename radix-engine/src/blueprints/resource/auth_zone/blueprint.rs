@@ -21,10 +21,7 @@ pub enum AuthZoneError {
 pub struct AuthZoneBlueprint;
 
 impl AuthZoneBlueprint {
-    pub fn pop<Y>(api: &mut Y) -> Result<Option<Proof>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn pop<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Option<Proof>, RuntimeError> {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
@@ -38,10 +35,7 @@ impl AuthZoneBlueprint {
         Ok(maybe_proof)
     }
 
-    pub fn push<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn push<Y: SystemApi<RuntimeError>>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError> {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
@@ -57,14 +51,13 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub fn create_proof_of_amount<Y>(
+    pub fn create_proof_of_amount<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    >(
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<Proof, RuntimeError> {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
@@ -125,14 +118,13 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
-    pub fn create_proof_of_non_fungibles<Y>(
+    pub fn create_proof_of_non_fungibles<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    >(
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<Proof, RuntimeError> {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
@@ -169,13 +161,12 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
-    pub fn create_proof_of_all<Y>(
+    pub fn create_proof_of_all<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    >(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<Proof, RuntimeError> {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
@@ -216,19 +207,15 @@ impl AuthZoneBlueprint {
         Ok(Proof(Own(node_id)))
     }
 
-    pub fn drop_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn drop_proofs<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         Self::drop_signature_proofs(api)?;
         Self::drop_regular_proofs(api)?;
         Ok(())
     }
 
-    pub fn drop_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn drop_signature_proofs<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
@@ -242,10 +229,9 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub fn drop_regular_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn drop_regular_proofs<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
@@ -263,10 +249,7 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub fn drain<Y>(api: &mut Y) -> Result<Vec<Proof>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn drain<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Vec<Proof>, RuntimeError> {
         let auth_zone_handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AuthZoneField::AuthZone.into(),
@@ -280,13 +263,10 @@ impl AuthZoneBlueprint {
         Ok(proofs)
     }
 
-    pub fn assert_access_rule<Y, L: Default>(
+    pub fn assert_access_rule<Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
         access_rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelSubstateApi<L> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let node_id = api.actor_get_node_id(ACTOR_REF_SELF)?;
         let auth_result =
             Authorization::check_authorization_against_access_rule(api, &node_id, &access_rule)?;

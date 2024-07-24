@@ -234,17 +234,16 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
     #[derive(Clone)]
     struct TestInvoke(AccessRuleCreation, AccessRule);
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "create_access_rule" => match self.0 {
                     AccessRuleCreation::OwnerCreation => {

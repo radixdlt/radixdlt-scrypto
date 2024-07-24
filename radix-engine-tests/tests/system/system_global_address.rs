@@ -20,17 +20,16 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap!())?;
@@ -98,17 +97,16 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
     #[derive(Clone)]
     struct ResourceOverride(HashSet<String>);
     impl VmInvoke for ResourceOverride {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             if self.0.contains(export_name) {
                 api.actor_get_node_id(ACTOR_REF_GLOBAL)
                     .expect_err("Direct method calls should never have global address");
