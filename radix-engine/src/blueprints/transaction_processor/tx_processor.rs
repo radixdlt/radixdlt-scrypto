@@ -250,14 +250,14 @@ impl TransactionProcessorBlueprint {
                 InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof_of_amount(amount, api)?;
-                    processor.create_manifest_proof(proof)?;
+                    processor.create_manifest_proof(proof.into())?;
                     InstructionOutput::None
                 }
                 InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof =
                         bucket.create_proof_of_non_fungibles(ids.into_iter().collect(), api)?;
-                    processor.create_manifest_proof(proof)?;
+                    processor.create_manifest_proof(proof.into())?;
                     InstructionOutput::None
                 }
                 InstructionV1::CreateProofFromBucketOfAll { bucket_id } => {
