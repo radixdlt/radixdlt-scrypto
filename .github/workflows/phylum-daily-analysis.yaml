@@ -1,14 +1,10 @@
 name: Daily Analysis Phylum
 
-# on:
-#   schedule:
-#     # Runs at 13:00 UTC every day
-#     - cron: '0 13 * * *'
-
 on:
-  push:
-    branches:
-      - DO-2613
+  schedule:
+    # Runs at 13:00 UTC every day
+    - cron: '0 13 * * *'
+
 env:
   PHYLUM_PROJECT_ID: 851c8804-e9f6-423c-be8e-c529d22f4abd
   PHYLUM_GROUP_NAME: Protocol
