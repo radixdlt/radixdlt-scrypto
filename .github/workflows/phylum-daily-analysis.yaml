@@ -63,15 +63,3 @@ jobs:
           footer: "Linked Repository <{repo_url}|{repo}> | <https://app.phylum.io/projects/${{ env.PHYLUM_PROJECT_ID }}?label=${{ matrix.branch }}_branch_daily_schedule&group=${{ env.PHYLUM_GROUP_NAME }}|View Report> "
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_PHYLUM_PROTOCOL_TEAM_WEBHOOK }}
-
-      - name: Analysis Status Success notification
-        if: always()
-        uses: RDXWorks-actions/notify-slack-action@master
-        with:
-          status: ${{ env.phylum_analyze_status }}
-          notify_when: 'success'
-          notification_title: ':clock3: Phylum Scheduled Daily Analysis:'
-          message_format: 'Automatic phylum analysis has not found vulnerabilities on ${{ env.PHYLUM_NAME }} in ${{ matrix.branch }} branch :rocket: '
-          footer: "Linked Repository <{repo_url}|{repo}> | <https://app.phylum.io/projects/${{ env.PHYLUM_PROJECT_ID }}?label=${{ matrix.branch }}_branch_daily_schedule&group=${{ env.PHYLUM_GROUP_NAME }}|View Report> "
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_PHYLUM_PROTOCOL_TEAM_WEBHOOK }}
