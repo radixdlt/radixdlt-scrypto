@@ -467,19 +467,19 @@ impl NonFungibleVaultBlueprint {
         }
 
         // TODO: Replace with better index api
-        let key = scrypto_encode(&id).unwrap();
+        let key = scrypto_encode_to_value(&id).unwrap();
         let removed = api.actor_index_remove(
             ACTOR_STATE_SELF,
             NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
-            key.clone(),
+            key.as_unvalidated(),
         )?;
         let exists = removed.is_some();
         if let Some(removed) = removed {
             api.actor_index_insert(
                 ACTOR_STATE_SELF,
                 NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
-                key,
-                removed,
+                key.as_unvalidated(),
+                removed.as_unvalidated(),
             )?;
         }
 
@@ -948,7 +948,7 @@ impl NonFungibleVaultBlueprint {
             let removed = api.actor_index_remove(
                 ACTOR_STATE_SELF,
                 NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
-                scrypto_encode(id).unwrap(),
+                scrypto_encode_to_value(id).unwrap().into_unvalidated(),
             )?;
 
             if removed.is_none() {

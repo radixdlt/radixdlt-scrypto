@@ -38,14 +38,14 @@ impl WorktopBlueprint {
     pub(crate) fn drop<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
     {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
         let input: WorktopDropInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Detach buckets from worktop
@@ -58,7 +58,7 @@ impl WorktopBlueprint {
         )?;
         let mut worktop = api
             .kernel_read_substate(handle)?
-            .as_typed::<FieldSubstate<WorktopSubstate>>()
+            .into_typed::<FieldSubstate<WorktopSubstate>>()
             .unwrap()
             .into_payload();
         let resources = core::mem::replace(&mut worktop.resources, index_map_new());
@@ -83,12 +83,12 @@ impl WorktopBlueprint {
     pub(crate) fn put<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopPutInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let resource_address = input.bucket.resource_address(api)?;
@@ -118,12 +118,12 @@ impl WorktopBlueprint {
     pub(crate) fn take<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopTakeInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let resource_address = input.resource_address;
@@ -167,12 +167,12 @@ impl WorktopBlueprint {
     pub(crate) fn take_non_fungibles<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopTakeNonFungiblesInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let resource_address = input.resource_address;
@@ -217,12 +217,12 @@ impl WorktopBlueprint {
     pub(crate) fn take_all<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopTakeAllInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
@@ -246,12 +246,12 @@ impl WorktopBlueprint {
     pub(crate) fn assert_contains<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopAssertContainsInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
@@ -277,12 +277,12 @@ impl WorktopBlueprint {
     pub(crate) fn assert_contains_amount<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopAssertContainsAmountInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
@@ -308,12 +308,12 @@ impl WorktopBlueprint {
     pub(crate) fn assert_contains_non_fungibles<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let input: WorktopAssertContainsNonFungiblesInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(
@@ -340,12 +340,12 @@ impl WorktopBlueprint {
     pub(crate) fn drain<Y>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + SystemApi<RuntimeError>,
     {
         let _input: WorktopDrainInput = input
-            .as_typed()
+            .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         let worktop_handle = api.actor_open_field(

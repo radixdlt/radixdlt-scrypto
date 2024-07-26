@@ -88,7 +88,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 BOOT_LOADER_PARTITION,
                 &SubstateKey::Field(BOOT_LOADER_VM_BOOT_FIELD_KEY),
             )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .map(|v| v.into_typed().unwrap())
             .unwrap_or(VmBoot::babylon());
 
         Ok(Self {
@@ -103,7 +103,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
         export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>
             + KernelInternalApi<System<Self>>
@@ -117,7 +117,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_VM_TYPE_PARTITION_OFFSET)
                     .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
+                &SubstateKey::Map(scrypto_encode_to_payload(&export.code_hash).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
                     let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -126,7 +126,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 SystemLockData::default(),
             )?;
             let vm_type = api.kernel_read_substate(handle)?;
-            let vm_type: PackageCodeVmTypeEntrySubstate = vm_type.as_typed().unwrap();
+            let vm_type: PackageCodeVmTypeEntrySubstate = vm_type.into_typed().unwrap();
             api.kernel_close_substate(handle)?;
             vm_type
                 .into_value()
@@ -148,7 +148,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         MAIN_BASE_PARTITION
                             .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
                             .unwrap(),
-                        &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
+                        &SubstateKey::Map(scrypto_encode_to_payload(&export.code_hash).unwrap()),
                         LockFlags::read_only(),
                         Some(|| {
                             let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -158,7 +158,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     )?;
                     let original_code = api.kernel_read_substate(handle)?;
                     let original_code: PackageCodeOriginalCodeEntrySubstate =
-                        original_code.as_typed().unwrap();
+                        original_code.into_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     original_code
                         .into_value()
@@ -181,7 +181,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         MAIN_BASE_PARTITION
                             .at_offset(PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET)
                             .unwrap(),
-                        &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
+                        &SubstateKey::Map(scrypto_encode_to_payload(&export.code_hash).unwrap()),
                         LockFlags::read_only(),
                         Some(|| {
                             let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -191,7 +191,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     )?;
                     let instrumented_code = api.kernel_read_substate(handle)?;
                     let instrumented_code: PackageCodeInstrumentedCodeEntrySubstate =
-                        instrumented_code.as_typed().unwrap();
+                        instrumented_code.into_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     instrumented_code
                         .into_value()
@@ -231,7 +231,7 @@ pub trait VmInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi;

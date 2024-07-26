@@ -323,7 +323,7 @@ pub enum NativeRuntimeError {
     /// A panic was encountered in Native code.
     Trap {
         export_name: String,
-        input: ScryptoValue,
+        input: ScryptoOwnedRawValue,
         error: String,
     },
 }

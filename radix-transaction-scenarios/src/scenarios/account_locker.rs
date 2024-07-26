@@ -719,7 +719,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     DepositEvent::EVENT_NAME.to_owned(),
                                 )
                         })
-                        .map(|(_, data)| scrypto_decode::<DepositEvent>(data).expect("Can't fail"))
+                        .map(|(_, data)| data.decode_as::<DepositEvent>().expect("Can't fail"))
                         .expect("The resources were not deposited into the account?");
                     assert_eq!(
                         event,

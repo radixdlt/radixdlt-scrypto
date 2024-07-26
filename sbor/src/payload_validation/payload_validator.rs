@@ -104,16 +104,13 @@ macro_rules! numeric_validation_match {
     }};
 }
 
-pub fn validate_payload_against_schema<'s, E: ValidatableCustomExtension<T>, T>(
-    payload: &[u8],
-    schema: &'s Schema<E::CustomSchema>,
-    id: LocalTypeId,
+pub fn validate_typed_traverser<'de, 's, E: ValidatableCustomExtension<T>, T>(
+    typed_traverser: &mut TypedTraverser<'de, 's, E>,
     context: &T,
-    depth_limit: usize,
 ) -> Result<(), LocatedValidationError<'s, E>> {
-    let mut traverser = traverse_payload_with_types::<E>(payload, &schema, id, depth_limit);
+    let schema = typed_traverser.schema();
     loop {
-        let typed_event = traverser.next_event();
+        let typed_event = typed_traverser.next_event();
         if validate_event_with_type::<E, T>(&schema, &typed_event.event, context).map_err(
             |error| LocatedValidationError {
                 error,
@@ -325,18 +322,12 @@ mod tests {
     pub fn identical_length_vec_and_array_are_interchangeable() {
         let (type_id, schema) =
             generate_full_schema_from_single_type::<TestStructArray, NoCustomSchema>();
-        let payload = basic_encode(&TestStructVec {
+        let payload = basic_encode_to_payload(&TestStructVec {
             x: Vec::from([0; 16]),
         })
         .unwrap();
 
-        let result = validate_payload_against_schema::<NoCustomExtension, ()>(
-            &payload,
-            schema.v1(),
-            type_id,
-            &mut (),
-            64,
-        );
+        let result = payload.validate_against_type(schema.v1(), type_id, &());
         assert!(result.is_ok())
     }
 
@@ -344,18 +335,12 @@ mod tests {
     pub fn longer_length_vec_is_not_interchangeable_with_array() {
         let (type_id, schema) =
             generate_full_schema_from_single_type::<TestStructArray, NoCustomSchema>();
-        let payload = basic_encode(&TestStructVec {
+        let payload = basic_encode_to_payload(&TestStructVec {
             x: Vec::from([0; 17]),
         })
         .unwrap();
 
-        let result = validate_payload_against_schema::<NoCustomExtension, ()>(
-            &payload,
-            schema.v1(),
-            type_id,
-            &mut (),
-            64,
-        );
+        let result = payload.validate_against_type(schema.v1(), type_id, &());
         assert!(matches!(
             result,
             Err(LocatedValidationError {
@@ -430,16 +415,12 @@ mod tests {
         };
         x.recursive_struct = Some(Box::new(x.clone()));
 
-        let bytes = basic_encode(&x).unwrap();
         let (type_id, schema) =
             generate_full_schema_from_single_type::<SimpleStruct, NoCustomSchema>();
-        let result = validate_payload_against_schema::<NoCustomExtension, _>(
-            &bytes,
-            schema.v1(),
-            type_id,
-            &mut (),
-            64,
-        );
+        let result =
+            basic_encode_to_payload(&x)
+                .unwrap()
+                .validate_against_type(schema.v1(), type_id, &());
         assert!(result.is_ok())
     }
 
@@ -469,26 +450,17 @@ mod tests {
             type_validations: vec![t0.validation, t1.validation],
         };
 
+        let payload = basic_encode_to_payload(&vec![5u8]).unwrap();
         assert_eq!(
-            validate_payload_against_schema::<NoCustomExtension, _>(
-                &basic_encode(&vec![5u8]).unwrap(),
-                &schema,
-                LocalTypeId::SchemaLocalIndex(0),
-                &mut (),
-                64
-            ),
+            payload.validate_against_type(&schema, LocalTypeId::SchemaLocalIndex(0), &(),),
             Ok(())
         );
 
+        let payload = basic_encode_to_payload(&vec![8u8]).unwrap();
         assert_eq!(
-            validate_payload_against_schema::<NoCustomExtension, _>(
-                &basic_encode(&vec![8u8]).unwrap(),
-                &schema,
-                LocalTypeId::SchemaLocalIndex(0),
-                &mut (),
-                64
-            )
-            .map_err(|e| e.error),
+            payload
+                .validate_against_type(&schema, LocalTypeId::SchemaLocalIndex(0), &(),)
+                .map_err(|e| e.error),
             Err(PayloadValidationError::ValidationError(
                 ValidationError::U8ValidationError {
                     required: NumericValidation {
@@ -500,15 +472,11 @@ mod tests {
             ))
         );
 
+        let payload = basic_encode_to_payload(&vec![5u8, 5u8]).unwrap();
         assert_eq!(
-            validate_payload_against_schema::<NoCustomExtension, _>(
-                &basic_encode(&vec![5u8, 5u8]).unwrap(),
-                &schema,
-                LocalTypeId::SchemaLocalIndex(0),
-                &mut (),
-                64
-            )
-            .map_err(|e| e.error),
+            payload
+                .validate_against_type(&schema, LocalTypeId::SchemaLocalIndex(0), &(),)
+                .map_err(|e| e.error),
             Err(PayloadValidationError::ValidationError(
                 ValidationError::LengthValidationError {
                     required: LengthValidation {
@@ -562,17 +530,12 @@ mod tests {
         };
         let payload = basic_encode(&value).unwrap();
         // We cut off the payload to get a decode error near the end of the encoding!
-        let cut_off_payload = &payload[0..payload.len() - 2];
+        let cut_off_payload =
+            BasicRawPayload::from_valid_payload_slice(&payload[0..payload.len() - 2]);
 
         let (type_id, schema) = generate_full_schema_from_single_type::<MyStruct, NoCustomSchema>();
 
-        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
-            &cut_off_payload,
-            schema.v1(),
-            type_id,
-            &mut (),
-            64,
-        ) else {
+        let Err(error) = cut_off_payload.validate_against_type(schema.v1(), type_id, &()) else {
             panic!("Validation did not error with too short a payload");
         };
         let path_message = error.location.path_to_string(schema.v1());
@@ -601,12 +564,10 @@ mod tests {
     ) {
         let (type_id, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
 
-        let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
-            &payload,
+        let Err(error) = BasicRawPayload::from_valid_payload(payload).validate_against_type(
             schema.v1(),
             type_id,
-            &mut (),
-            64,
+            &(),
         ) else {
             panic!("Validation did not error with too short a payload");
         };

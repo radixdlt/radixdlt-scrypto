@@ -272,7 +272,7 @@ mod tests {
 
     #[test]
     fn valid_manifest_composite_value_passes_validation_against_radix_blueprint_schema_init() {
-        let payload = manifest_encode(&(
+        let payload = manifest_encode_to_payload(&(
             ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Static(
                     XRD.as_node_id().clone(),
@@ -312,20 +312,14 @@ mod tests {
         let (type_id, schema) =
             generate_full_schema_from_single_type::<MyScryptoTuple, ScryptoCustomSchema>();
 
-        let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
-            &payload,
-            schema.v1(),
-            type_id,
-            &(),
-            MANIFEST_SBOR_V1_MAX_DEPTH,
-        );
+        let result = payload.validate_against_type(schema.v1(), type_id, &());
 
         result.expect("Validation check failed");
     }
 
     #[test]
     fn manifest_address_fails_validation_against_mismatching_radix_blueprint_schema_init() {
-        let payload = manifest_encode(&ManifestValue::Custom {
+        let payload = manifest_encode_to_payload(&ManifestValue::Custom {
             value: ManifestCustomValue::Address(ManifestAddress::Static(XRD.as_node_id().clone())),
         })
         .unwrap();
@@ -339,7 +333,7 @@ mod tests {
 
     #[test]
     fn manifest_blob_fails_validation_against_mismatching_radix_blueprint_schema_init() {
-        let payload = manifest_encode(&ManifestValue::Custom {
+        let payload = manifest_encode_to_payload(&ManifestValue::Custom {
             value: ManifestCustomValue::Blob(ManifestBlobRef([0; 32])),
         })
         .unwrap();
@@ -355,7 +349,7 @@ mod tests {
     #[test]
     fn manifest_entire_worktop_expression_fails_validation_against_mismatching_radix_blueprint_schema_init(
     ) {
-        let payload = manifest_encode(&ManifestValue::Custom {
+        let payload = manifest_encode_to_payload(&ManifestValue::Custom {
             value: ManifestCustomValue::Expression(ManifestExpression::EntireWorktop),
         })
         .unwrap();
@@ -371,7 +365,7 @@ mod tests {
     #[test]
     fn manifest_entire_auth_zone_expression_fails_validation_against_mismatching_radix_blueprint_schema_init(
     ) {
-        let payload = manifest_encode(&ManifestValue::Custom {
+        let payload = manifest_encode_to_payload(&ManifestValue::Custom {
             value: ManifestCustomValue::Expression(ManifestExpression::EntireAuthZone),
         })
         .unwrap();
@@ -384,30 +378,18 @@ mod tests {
         expect_does_not_match::<u8>(&payload);
     }
 
-    fn expect_matches<T: ScryptoDescribe>(payload: &[u8]) {
+    fn expect_matches<T: ScryptoDescribe>(payload: &ManifestOwnedRawPayload) {
         let (type_id, schema) = generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
 
-        let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
-            &payload,
-            schema.v1(),
-            type_id,
-            &(),
-            MANIFEST_SBOR_V1_MAX_DEPTH,
-        );
+        let result = payload.validate_against_type(schema.v1(), type_id, &());
 
         result.expect("Expected validation to succeed");
     }
 
-    fn expect_does_not_match<T: ScryptoDescribe>(payload: &[u8]) {
+    fn expect_does_not_match<T: ScryptoDescribe>(payload: &ManifestOwnedRawPayload) {
         let (type_id, schema) = generate_full_schema_from_single_type::<T, ScryptoCustomSchema>();
 
-        let result = validate_payload_against_schema::<ManifestCustomExtension, _>(
-            &payload,
-            schema.v1(),
-            type_id,
-            &(),
-            MANIFEST_SBOR_V1_MAX_DEPTH,
-        );
+        let result = payload.validate_against_type(schema.v1(), type_id, &());
 
         matches!(
             result,

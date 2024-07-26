@@ -700,7 +700,7 @@ impl ExecutionTraceModule {
         args: &IndexedScryptoValue,
     ) {
         let actor = TraceActor::from_actor(caller);
-        let FungibleVaultLockFeeInput { amount, contingent } = args.as_typed().unwrap();
+        let FungibleVaultLockFeeInput { amount, contingent } = args.into_typed().unwrap();
         self.vault_ops.push((
             actor,
             vault_id.clone(),

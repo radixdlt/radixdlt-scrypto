@@ -1,11 +1,7 @@
 use crate::{ResourceComponentMeta, SystemTestFuzzer};
 use radix_common::data::manifest::ManifestArgs;
 use radix_common::manifest_args;
-use radix_common::prelude::IndexMap;
-use radix_common::prelude::{
-    manifest_decode, manifest_encode, scrypto_decode, scrypto_encode, ManifestValue,
-    NonFungibleLocalId, ScryptoValue,
-};
+use radix_common::prelude::*;
 use radix_common::types::{ComponentAddress, ResourceAddress};
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -39,7 +35,7 @@ impl VmInvoke for ResourceTestInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,
@@ -51,23 +47,22 @@ impl VmInvoke for ResourceTestInvoke {
                     .unwrap();
                 let vault: Vault = api.field_read_typed(handle).unwrap();
 
-                let input: (String, ScryptoValue) = scrypto_decode(input.as_slice()).unwrap();
+                let input: (String, ScryptoValue) = input.into_typed().unwrap();
 
                 let rtn = api.call_method(
                     vault.0.as_node_id(),
                     input.0.as_str(),
                     scrypto_encode(&input.1).unwrap(),
                 )?;
-                return Ok(IndexedScryptoValue::from_vec(rtn).unwrap());
+                return Ok(IndexedScryptoValue::from_untrusted_payload_vec(rtn).unwrap());
             }
             "combine_buckets" => {
-                let input: (Bucket, Bucket) = scrypto_decode(input.as_slice()).unwrap();
+                let input: (Bucket, Bucket) = input.into_typed().unwrap();
                 input.0.put(input.1, api)?;
                 return Ok(IndexedScryptoValue::from_typed(&input.0));
             }
             "new" => {
-                let resource_address: (ResourceAddress,) =
-                    scrypto_decode(input.as_slice()).unwrap();
+                let resource_address: (ResourceAddress,) = input.into_typed().unwrap();
                 let vault = Vault::create(resource_address.0, api).unwrap();
 
                 let metadata = Metadata::create(api)?;
@@ -85,7 +80,7 @@ impl VmInvoke for ResourceTestInvoke {
                 )?;
             }
             "new_with_bucket" => {
-                let bucket: (Bucket,) = scrypto_decode(input.as_slice()).unwrap();
+                let bucket: (Bucket,) = input.into_typed().unwrap();
                 let resource_address = bucket.0.resource_address(api).unwrap();
                 let mut vault = Vault::create(resource_address, api).unwrap();
                 vault.put(bucket.0, api).unwrap();

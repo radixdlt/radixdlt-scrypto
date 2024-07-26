@@ -841,7 +841,7 @@ impl<D: NonFungibleData>
                     entries: entries
                         .into_iter()
                         .map(|data| {
-                            let value: ScryptoValue =
+                            let value: ScryptoOwnedRawValue =
                                 scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
                             (value,)
                         })
@@ -864,11 +864,12 @@ impl<D: NonFungibleData>
 
 fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungibleLocalId>(
     entries: T,
-) -> IndexMap<NonFungibleLocalId, (ScryptoValue,)> {
+) -> IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)> {
     entries
         .into_iter()
         .map(|(id, data)| {
-            let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+            let value: ScryptoOwnedRawValue =
+                scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
             (id.into(), (value,))
         })
         .collect()

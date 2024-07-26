@@ -26,7 +26,7 @@ fn cannot_lock_fee_on_new_global_vault() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
         where
             Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,

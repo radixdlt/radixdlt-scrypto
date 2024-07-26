@@ -26,7 +26,7 @@ fn claiming_royalties_on_native_packages_should_be_unauthorized() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
         where
             Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,

@@ -168,20 +168,20 @@ impl RoyaltyNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
     {
         match export_name {
             COMPONENT_ROYALTY_CREATE_IDENT => {
-                let input: ComponentRoyaltyCreateInput = input.as_typed().map_err(|e| {
+                let input: ComponentRoyaltyCreateInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ComponentRoyaltyBlueprint::create(input.royalty_config, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT => {
-                let input: ComponentRoyaltySetInput = input.as_typed().map_err(|e| {
+                let input: ComponentRoyaltySetInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ComponentRoyaltyBlueprint::set_royalty(input.method, input.amount, api)?;
@@ -189,7 +189,7 @@ impl RoyaltyNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT => {
-                let input: ComponentRoyaltyLockInput = input.as_typed().map_err(|e| {
+                let input: ComponentRoyaltyLockInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ComponentRoyaltyBlueprint::lock_royalty(input.method, api)?;
@@ -197,7 +197,7 @@ impl RoyaltyNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT => {
-                let _input: ComponentClaimRoyaltiesInput = input.as_typed().map_err(|e| {
+                let _input: ComponentClaimRoyaltiesInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ComponentRoyaltyBlueprint::claim_royalties(api)?;
@@ -383,10 +383,10 @@ impl ComponentRoyaltyBlueprint {
     {
         RoyaltyUtil::verify_royalty_amounts(vec![amount.clone()].iter(), true, api)?;
 
-        let handle = api.actor_open_key_value_entry(
+        let handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             ComponentRoyaltyCollection::MethodAmountKeyValue.collection_index(),
-            &scrypto_encode(&method).unwrap(),
+            &method,
             LockFlags::MUTABLE,
         )?;
         api.key_value_entry_set_typed(
@@ -402,10 +402,10 @@ impl ComponentRoyaltyBlueprint {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let handle = api.actor_open_key_value_entry(
+        let handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             ComponentRoyaltyCollection::MethodAmountKeyValue.collection_index(),
-            &scrypto_encode(&method).unwrap(),
+            &method,
             LockFlags::MUTABLE,
         )?;
         api.key_value_entry_lock(handle)?;
@@ -454,7 +454,7 @@ impl ComponentRoyaltyBlueprint {
         )?;
         let component_royalty: FieldSubstate<ComponentRoyaltyAccumulatorFieldPayload> = api
             .kernel_read_substate(accumulator_handle)?
-            .as_typed()
+            .into_typed()
             .unwrap();
 
         let component_royalty = component_royalty
@@ -467,7 +467,7 @@ impl ComponentRoyaltyBlueprint {
                 ROYALTY_BASE_PARTITION
                     .at_offset(ROYALTY_CONFIG_PARTITION_OFFSET)
                     .unwrap(),
-                &SubstateKey::Map(scrypto_encode(ident).unwrap()),
+                &SubstateKey::Map(scrypto_encode_to_payload(ident).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
                     let kv_entry =
@@ -479,7 +479,7 @@ impl ComponentRoyaltyBlueprint {
             )?;
 
             let substate: KeyValueEntrySubstate<ComponentRoyaltyMethodAmountEntryPayload> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
+                api.kernel_read_substate(handle)?.into_typed().unwrap();
             api.kernel_close_substate(handle)?;
             substate
                 .into_value()

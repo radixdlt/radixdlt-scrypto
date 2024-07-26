@@ -23,7 +23,7 @@ fn call_method_with_owned_actor_should_fail() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
         where
             Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,

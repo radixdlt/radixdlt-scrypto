@@ -24,13 +24,13 @@ impl AccountNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
     {
         match export_name {
             ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME => {
-                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
+                let input: OnVirtualizeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -39,7 +39,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_ADVANCED_IDENT => {
-                let input: AccountCreateAdvancedInput = input.as_typed().map_err(|e| {
+                let input: AccountCreateAdvancedInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -52,7 +52,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_IDENT => {
-                let _input: AccountCreateInput = input.as_typed().map_err(|e| {
+                let _input: AccountCreateInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -61,7 +61,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_SECURIFY_IDENT => {
-                let _input: AccountSecurifyInput = input.as_typed().map_err(|e| {
+                let _input: AccountSecurifyInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = AccountBlueprint::securify(api)?;
@@ -69,14 +69,14 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_IDENT => {
-                let input: AccountLockFeeInput = input.as_typed().map_err(|e| {
+                let input: AccountLockFeeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = AccountBlueprint::lock_fee(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
-                let input: AccountLockContingentFeeInput = input.as_typed().map_err(|e| {
+                let input: AccountLockContingentFeeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -84,7 +84,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_DEPOSIT_IDENT => {
-                let input: AccountDepositInput = input.as_typed().map_err(|e| {
+                let input: AccountDepositInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -92,7 +92,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_DEPOSIT_BATCH_IDENT => {
-                let input: AccountDepositBatchInput = input.as_typed().map_err(|e| {
+                let input: AccountDepositBatchInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -103,7 +103,7 @@ impl AccountNativePackage {
                 let AccountTryDepositOrRefundInput {
                     bucket,
                     authorized_depositor_badge,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -118,7 +118,7 @@ impl AccountNativePackage {
                 let AccountTryDepositBatchOrRefundInput {
                     buckets,
                     authorized_depositor_badge,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -133,7 +133,7 @@ impl AccountNativePackage {
                 let AccountTryDepositOrAbortInput {
                     bucket,
                     authorized_depositor_badge,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -148,7 +148,7 @@ impl AccountNativePackage {
                 let AccountTryDepositBatchOrAbortInput {
                     buckets,
                     authorized_depositor_badge,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -160,7 +160,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {
-                let input: AccountWithdrawInput = input.as_typed().map_err(|e| {
+                let input: AccountWithdrawInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -168,7 +168,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
-                let input: AccountWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
+                let input: AccountWithdrawNonFungiblesInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = AccountBlueprint::withdraw_non_fungibles(
@@ -179,7 +179,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_BURN_IDENT => {
-                let input: AccountBurnInput = input.as_typed().map_err(|e| {
+                let input: AccountBurnInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -187,7 +187,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_BURN_NON_FUNGIBLES_IDENT => {
-                let input: AccountBurnNonFungiblesInput = input.as_typed().map_err(|e| {
+                let input: AccountBurnNonFungiblesInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
@@ -195,7 +195,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
-                let input: AccountLockFeeAndWithdrawInput = input.as_typed().map_err(|e| {
+                let input: AccountLockFeeAndWithdrawInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = AccountBlueprint::lock_fee_and_withdraw(
@@ -208,7 +208,7 @@ impl AccountNativePackage {
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
                 let input: AccountLockFeeAndWithdrawNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = AccountBlueprint::lock_fee_and_withdraw_non_fungibles(
@@ -220,7 +220,7 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => {
-                let input: AccountCreateProofOfAmountInput = input.as_typed().map_err(|e| {
+                let input: AccountCreateProofOfAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = AccountBlueprint::create_proof_of_amount(
@@ -232,7 +232,7 @@ impl AccountNativePackage {
             }
             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 let input: AccountCreateProofOfNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = AccountBlueprint::create_proof_of_non_fungibles(
@@ -244,7 +244,7 @@ impl AccountNativePackage {
             }
             ACCOUNT_SET_DEFAULT_DEPOSIT_RULE_IDENT => {
                 let AccountSetDefaultDepositRuleInput { default } =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = AccountBlueprint::set_default_deposit_rule(default, api)?;
@@ -254,7 +254,7 @@ impl AccountNativePackage {
                 let AccountSetResourcePreferenceInput {
                     resource_address,
                     resource_preference,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = AccountBlueprint::set_resource_preference(
@@ -266,7 +266,7 @@ impl AccountNativePackage {
             }
             ACCOUNT_REMOVE_RESOURCE_PREFERENCE_IDENT => {
                 let AccountRemoveResourcePreferenceInput { resource_address } =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = AccountBlueprint::remove_resource_preference(resource_address, api)?;
@@ -274,7 +274,7 @@ impl AccountNativePackage {
             }
             ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => {
                 let AccountAddAuthorizedDepositorInput { badge } =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = AccountBlueprint::add_authorized_depositor(badge, api)?;
@@ -282,7 +282,7 @@ impl AccountNativePackage {
             }
             ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR => {
                 let AccountRemoveAuthorizedDepositorInput { badge } =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = AccountBlueprint::remove_authorized_depositor(badge, api)?;

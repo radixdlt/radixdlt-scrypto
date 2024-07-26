@@ -269,7 +269,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     fn invoke_upstream<Y>(
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -399,7 +399,7 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
             .kernel_mark_substate_as_transient(node_id, partition_num, key)
     }
 
-    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedOwnedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -432,14 +432,14 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
     fn kernel_read_substate(
         &mut self,
         lock_handle: SubstateHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError> {
+    ) -> Result<&IndexedOwnedScryptoValue, RuntimeError> {
         self.api.kernel_read_substate(lock_handle)
     }
 
     fn kernel_write_substate(
         &mut self,
         lock_handle: SubstateHandle,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_write_substate(lock_handle, value)
     }
@@ -449,7 +449,7 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api
             .kernel_set_substate(node_id, partition_num, substate_key, value)
@@ -460,7 +460,7 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Option<IndexedOwnedScryptoValue>, RuntimeError> {
         self.api
             .kernel_remove_substate(node_id, partition_num, substate_key)
     }
@@ -470,7 +470,7 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, IndexedOwnedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_scan_sorted_substates(node_id, partition_num, count)
     }
@@ -490,7 +490,7 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SubstateKey, IndexedOwnedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_drain_substates::<K>(node_id, partition_num, count)
     }

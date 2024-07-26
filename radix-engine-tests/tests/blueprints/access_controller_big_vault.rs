@@ -74,15 +74,15 @@ impl VmInvoke for TestInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,
     {
         match export_name {
             "new" => {
-                let size: (usize,) = input.as_typed().unwrap();
-                let entries = iter::repeat((ScryptoValue::Tuple { fields: vec![] },))
+                let size: (usize,) = input.into_typed().unwrap();
+                let entries = iter::repeat((ScryptoOwnedRawValue::unit(),))
                     .take(size.0)
                     .collect();
                 let result = api.call_function(

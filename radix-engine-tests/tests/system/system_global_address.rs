@@ -26,7 +26,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
         where
             Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
@@ -104,7 +104,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
         where
             Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,

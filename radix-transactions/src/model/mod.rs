@@ -34,9 +34,8 @@ mod tests {
             custom_context: Default::default(),
             depth_limit: 64,
         };
-        let actual = ManifestRawPayload::new_from_valid_slice_with_checks(&payload)
-            .unwrap()
-            .to_string(display_context);
+        let actual =
+            ManifestRawPayload::from_valid_payload_slice(payload).to_string(display_context);
         let actual_clean: String = actual
             .trim()
             .split('\n')

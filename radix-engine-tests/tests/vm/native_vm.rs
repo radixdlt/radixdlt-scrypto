@@ -246,7 +246,7 @@ impl VmInvoke for NonStringPanicExtensionInstance {
         _: &IndexedScryptoValue,
         _: &mut Y,
         _: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,

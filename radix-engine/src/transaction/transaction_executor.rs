@@ -279,7 +279,7 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
         let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
         self.boot_store
             .get_substate(&db_partition_key, &db_sort_key)
-            .map(|v| IndexedScryptoValue::from_vec(v.to_vec()).unwrap())
+            .map(|v| IndexedScryptoValue::from_untrusted_payload_vec(v.to_vec()).unwrap())
     }
 }
 

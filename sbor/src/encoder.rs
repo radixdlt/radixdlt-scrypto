@@ -113,9 +113,13 @@ pub trait Encoder<X: CustomValueKind>: Sized {
         Ok(())
     }
 
+    fn write_deeper_byte(&mut self, b: u8) -> Result<(), EncodeError>;
+
     fn write_byte(&mut self, n: u8) -> Result<(), EncodeError>;
 
     fn write_slice(&mut self, slice: &[u8]) -> Result<(), EncodeError>;
+
+    fn write_deeper_slice(&mut self, slice: &[u8]) -> Result<(), EncodeError>;
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
@@ -163,6 +167,13 @@ impl<'a, X: CustomValueKind> Encoder<X> for VecEncoder<'a, X> {
     }
 
     #[inline]
+    fn write_deeper_byte(&mut self, n: u8) -> Result<(), EncodeError> {
+        self.track_stack_depth_increase()?;
+        self.buf.push(n);
+        self.track_stack_depth_decrease()
+    }
+
+    #[inline]
     fn write_byte(&mut self, n: u8) -> Result<(), EncodeError> {
         self.buf.push(n);
         Ok(())
@@ -172,6 +183,13 @@ impl<'a, X: CustomValueKind> Encoder<X> for VecEncoder<'a, X> {
     fn write_slice(&mut self, slice: &[u8]) -> Result<(), EncodeError> {
         self.buf.extend(slice);
         Ok(())
+    }
+
+    #[inline]
+    fn write_deeper_slice(&mut self, slice: &[u8]) -> Result<(), EncodeError> {
+        self.track_stack_depth_increase()?;
+        self.write_slice(slice)?;
+        self.track_stack_depth_decrease()
     }
 }
 

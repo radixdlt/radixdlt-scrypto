@@ -49,7 +49,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
         args: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
         V: VmApi,
@@ -64,14 +64,14 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
             let mut input = Vec::new();
             input.push(
                 runtime
-                    .allocate_buffer(args.as_slice().to_vec())
+                    .allocate_buffer(args.as_payload().into_bytes())
                     .expect("Failed to allocate buffer"),
             );
             self.instance
                 .invoke_export(export_name, input, &mut runtime)?
         };
 
-        let output = IndexedScryptoValue::from_vec(rtn).map_err(|e| {
+        let output = IndexedScryptoValue::from_untrusted_payload_vec(rtn).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
         })?;
 

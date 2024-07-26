@@ -110,10 +110,10 @@ impl LimitsModule {
     }
 
     pub fn process_substate_value(&self, value: &IndexedScryptoValue) -> Result<(), RuntimeError> {
-        if value.len() > self.config.max_substate_value_size {
+        if value.payload_len() > self.config.max_substate_value_size {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
+                    TransactionLimitsError::MaxSubstateSizeExceeded(value.payload_len()),
                 ),
             ));
         }

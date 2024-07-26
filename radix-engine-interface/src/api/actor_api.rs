@@ -4,9 +4,6 @@ use crate::internal_prelude::*;
 use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_interface::api::{ActorStateHandle, LockFlags};
-use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 bitflags! {
     #[derive(Sbor)]
@@ -43,7 +40,7 @@ pub trait SystemActorApi<E: Debug> {
     fn actor_emit_event(
         &mut self,
         event_name: String,
-        event_data: Vec<u8>,
+        event_data: ScryptoUnvalidatedRawPayload,
         event_flags: EventFlags,
     ) -> Result<(), E>;
 }

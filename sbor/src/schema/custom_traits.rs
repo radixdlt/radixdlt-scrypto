@@ -58,6 +58,7 @@ pub trait CustomSchema: Debug + Clone + Copy + PartialEq + Eq + 'static {
 
 pub trait CustomExtension: Debug + Clone + PartialEq + Eq + 'static {
     const PAYLOAD_PREFIX: u8;
+    const DEFAULT_DEPTH_LIMIT: usize;
 
     type CustomValueKind: CustomValueKind;
 

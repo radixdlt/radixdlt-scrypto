@@ -26,7 +26,7 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
         where
             Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,

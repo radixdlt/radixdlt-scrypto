@@ -219,14 +219,14 @@ fn validate_package_schema(
                 FieldTransience::NotTransient => {}
                 FieldTransience::TransientStatic { default_value } => match field.field {
                     TypeRef::Static(local_index) => {
-                        validate_payload_against_schema::<ScryptoCustomExtension, ()>(
-                            default_value,
-                            bp_schema.schema.v1(),
-                            local_index,
-                            &mut (),
-                            TRANSIENT_SUBSTATE_DEFAULT_VALUE_MAX_DEPTH,
-                        )
-                        .map_err(|_| PackageError::InvalidTransientField)?;
+                        ScryptoUnvalidatedRawPayload::from_payload_slice(default_value)
+                            .validate_against_type_with_max_depth(
+                                TRANSIENT_SUBSTATE_DEFAULT_VALUE_MAX_DEPTH,
+                                bp_schema.schema.v1(),
+                                local_index,
+                                &(),
+                            )
+                            .map_err(|_| PackageError::InvalidTransientField)?;
                     }
                     TypeRef::Generic(..) => return Err(PackageError::InvalidTransientField),
                 },
@@ -951,7 +951,7 @@ impl PackageNativePackage {
         version: PackageV1MinorVersion,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
         V: VmApi,
@@ -963,7 +963,7 @@ impl PackageNativePackage {
 
         match export_name {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
-                let input: PackagePublishNativeInput = input.as_typed().map_err(|e| {
+                let input: PackagePublishNativeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -980,7 +980,7 @@ impl PackageNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PACKAGE_PUBLISH_WASM_IDENT => {
-                let input: PackagePublishWasmInput = input.as_typed().map_err(|e| {
+                let input: PackagePublishWasmInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -996,7 +996,7 @@ impl PackageNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT => {
-                let input: PackagePublishWasmAdvancedInput = input.as_typed().map_err(|e| {
+                let input: PackagePublishWasmAdvancedInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1014,7 +1014,7 @@ impl PackageNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             PACKAGE_CLAIM_ROYALTIES_IDENT => {
-                let _input: PackageClaimRoyaltiesInput = input.as_typed().map_err(|e| {
+                let _input: PackageClaimRoyaltiesInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = PackageRoyaltyNativeBlueprint::claim_royalties(api)?;
@@ -1509,7 +1509,7 @@ impl PackageRoyaltyNativeBlueprint {
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
                 .unwrap(),
-            &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
+            &SubstateKey::Map(scrypto_encode_to_payload(&bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
                 let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -1519,7 +1519,7 @@ impl PackageRoyaltyNativeBlueprint {
         )?;
 
         let substate: PackageBlueprintVersionRoyaltyConfigEntrySubstate =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_read_substate(handle)?.into_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
         let royalty_charge = substate
@@ -1547,7 +1547,7 @@ impl PackageRoyaltyNativeBlueprint {
             )?;
 
             let substate: PackageRoyaltyAccumulatorFieldSubstate =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
+                api.kernel_read_substate(handle)?.into_typed().unwrap();
 
             let vault_id = substate
                 .into_payload()
@@ -1667,7 +1667,7 @@ impl PackageAuthNativeBlueprint {
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
                 .unwrap(),
-            &SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()),
+            &SubstateKey::Map(scrypto_encode_to_payload(&bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
                 let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -1677,7 +1677,7 @@ impl PackageAuthNativeBlueprint {
         )?;
 
         let auth_template: PackageBlueprintVersionAuthConfigEntrySubstate =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_read_substate(handle)?.into_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
         let template = match auth_template.into_value() {

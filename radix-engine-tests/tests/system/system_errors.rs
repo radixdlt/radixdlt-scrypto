@@ -22,7 +22,7 @@ impl VmInvoke for TestInvoke {
         _input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,
@@ -42,7 +42,7 @@ impl VmInvoke for TestInvoke {
                 let self_node_id = api.actor_get_node_id(ACTOR_REF_SELF)?;
                 api.key_value_store_open_entry(
                     &self_node_id,
-                    &scrypto_encode(&()).unwrap(),
+                    scrypto_encode_to_value(&()).unwrap().into_unvalidated(),
                     LockFlags::read_only(),
                 )?;
             }
@@ -57,10 +57,10 @@ impl VmInvoke for TestInvoke {
                 api.actor_open_field(ACTOR_STATE_SELF, 4, LockFlags::read_only())?;
             }
             "invalid_collection" => {
-                api.actor_open_key_value_entry(
+                api.actor_open_key_value_entry_typed(
                     ACTOR_STATE_SELF,
                     4,
-                    &scrypto_encode(&()).unwrap(),
+                    &(),
                     LockFlags::read_only(),
                 )?;
             }
@@ -77,7 +77,7 @@ impl VmInvoke for TestInvoke {
             "invalid_event_flags" => {
                 api.actor_emit_event(
                     "event".to_string(),
-                    scrypto_encode(&()).unwrap(),
+                    scrypto_encode_to_payload(&()).unwrap().into_unvalidated(),
                     EventFlags::FORCE_WRITE,
                 )?;
             }

@@ -798,8 +798,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
         let epoch_change_event = events
             .into_iter()
             .filter(|(id, _data)| self.ledger.is_event_name_equal::<EpochChangeEvent>(id))
-            .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
-            .collect::<Vec<_>>()
+            .map(|(_id, data)| data.decode_as().unwrap())
+            .collect::<Vec<EpochChangeEvent>>()
             .into_iter()
             .next();
 

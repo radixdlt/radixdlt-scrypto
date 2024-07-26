@@ -189,13 +189,13 @@ impl MetadataNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
     {
         match export_name {
             METADATA_CREATE_IDENT => {
-                let _input: MetadataCreateInput = input.as_typed().map_err(|e| {
+                let _input: MetadataCreateInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -204,7 +204,7 @@ impl MetadataNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             METADATA_CREATE_WITH_DATA_IDENT => {
-                let input: MetadataCreateWithDataInput = input.as_typed().map_err(|e| {
+                let input: MetadataCreateWithDataInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -213,7 +213,7 @@ impl MetadataNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             METADATA_SET_IDENT => {
-                let input: MetadataSetInput = input.as_typed().map_err(|e| {
+                let input: MetadataSetInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -222,7 +222,7 @@ impl MetadataNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             METADATA_LOCK_IDENT => {
-                let input: MetadataLockInput = input.as_typed().map_err(|e| {
+                let input: MetadataLockInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -231,7 +231,7 @@ impl MetadataNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             METADATA_GET_IDENT => {
-                let input: MetadataGetInput = input.as_typed().map_err(|e| {
+                let input: MetadataGetInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -240,7 +240,7 @@ impl MetadataNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             METADATA_REMOVE_IDENT => {
-                let input: MetadataRemoveInput = input.as_typed().map_err(|e| {
+                let input: MetadataRemoveInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -369,26 +369,26 @@ impl MetadataNativePackage {
             ));
         }
 
-        let sbor_value = scrypto_encode(&MetadataEntryEntryPayload::from_content_source(
+        let sbor_value = scrypto_encode_to_value(&MetadataEntryEntryPayload::from_content_source(
             value.clone(),
         ))
         .unwrap();
-        if sbor_value.len() > MAX_METADATA_VALUE_SBOR_LEN {
+        if sbor_value.payload_len() > MAX_METADATA_VALUE_SBOR_LEN {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::MetadataError(MetadataError::ValueSborExceedsMaxLength {
                     max: MAX_METADATA_VALUE_SBOR_LEN,
-                    actual: sbor_value.len(),
+                    actual: sbor_value.payload_len(),
                 }),
             ));
         }
 
-        let handle = api.actor_open_key_value_entry(
+        let handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             MetadataCollection::EntryKeyValue.collection_index(),
-            &scrypto_encode(&key).unwrap(),
+            &key,
             LockFlags::MUTABLE,
         )?;
-        api.key_value_entry_set(handle, sbor_value)?;
+        api.key_value_entry_set(handle, sbor_value.into_unvalidated())?;
         api.key_value_entry_close(handle)?;
 
         Runtime::emit_event(api, SetMetadataEvent { key, value })?;
@@ -400,10 +400,10 @@ impl MetadataNativePackage {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let handle = api.actor_open_key_value_entry(
+        let handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             MetadataCollection::EntryKeyValue.collection_index(),
-            &scrypto_encode(&key).unwrap(),
+            &key,
             LockFlags::MUTABLE,
         )?;
         api.key_value_entry_lock(handle)?;
@@ -416,15 +416,14 @@ impl MetadataNativePackage {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let handle = api.actor_open_key_value_entry(
+        let handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             MetadataCollection::EntryKeyValue.collection_index(),
-            &scrypto_encode(&key).unwrap(),
+            &key,
             LockFlags::read_only(),
         )?;
 
-        let data = api.key_value_entry_get(handle)?;
-        let substate: Option<MetadataEntryEntryPayload> = scrypto_decode(&data).unwrap();
+        let substate: Option<MetadataEntryEntryPayload> = api.key_value_entry_get_typed(handle)?;
 
         Ok(substate.map(|v: MetadataEntryEntryPayload| v.fully_update_and_into_latest_version()))
     }
@@ -433,11 +432,8 @@ impl MetadataNativePackage {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let cur_value: Option<MetadataEntryEntryPayload> = api.actor_remove_key_value_entry_typed(
-            ACTOR_STATE_SELF,
-            0u8,
-            &scrypto_encode(&key).unwrap(),
-        )?;
+        let cur_value: Option<MetadataEntryEntryPayload> =
+            api.actor_remove_key_value_entry_typed(ACTOR_STATE_SELF, 0u8, &key)?;
         let rtn = cur_value.is_some();
 
         Runtime::emit_event(api, RemoveMetadataEvent { key })?;

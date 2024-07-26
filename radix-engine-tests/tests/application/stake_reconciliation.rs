@@ -2,7 +2,18 @@ use radix_common::prelude::*;
 use radix_engine::updates::*;
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use scrypto_test::prelude::*;
+use core::fmt::Write;
 
+// HELP DEBUGGING:
+// If this test diverges, it's often because of a change to genesis, which has made a substate
+// bigger and changed the costing.
+//
+// The best way to debug this is to run the following to dump a new trace.
+// cargo test --package radix-engine-tests --test application -- application::stake_reconciliation::test_stake_reconciliation --exact --show-output > radix-engine-tests/tests/application/reconciliation_log.txt
+//
+// And look for line/s which are different. Likely it'll be some substate write.
+// Then look further down this test for a block of code to uncomment, which can be used to read that
+// value from the database.
 #[test]
 fn test_stake_reconciliation() {
     // Arrange
@@ -29,8 +40,7 @@ fn test_stake_reconciliation() {
     receipt.expect_commit_success();
 
     // Store current DB substate value hashes for comparision after staking execution
-    let mut pre_transaction_substates: HashMap<(DbPartitionKey, DbSortKey), Vec<u8>> =
-        HashMap::new();
+    let mut pre_transaction_substates: IndexMap<(DbPartitionKey, DbSortKey), Vec<u8>> = IndexMap::new();
     let db = ledger.substate_db();
     let old_keys: Vec<DbPartitionKey> = db.list_partition_keys().collect();
     for key in old_keys {
@@ -57,6 +67,48 @@ fn test_stake_reconciliation() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&account_pk)],
     );
+
+    let address_encoder = AddressBech32Encoder::for_simulator();
+    let receipt_display_context = TransactionReceiptDisplayContextBuilder::new()
+        .encoder(&address_encoder)
+        .display_state_updates(true)
+        .use_ansi_colors(false)
+        .schema_lookup_from_db(ledger.substate_db())
+        .set_max_substate_length_to_display(1000000)
+        .build();
+
+    // UNCOMMENT THESE LINES TO PRINT OUT A NICE DISPLAY OF A SINGLE SUBSTATE
+    // {
+    //     let mut error_message = String::new();
+    //     let node_id = NodeId(hex::decode("0d906318c6318c6c4e1b40cc6318c6318cf7bfd5d45f48c686318c6318c6").unwrap().try_into().unwrap());
+    //     let partition_num = PartitionNumber(1);
+    //     let substate_key = SubstateKey::Map(ScryptoRawPayload::from_valid_payload(vec![92, 32, 7, 32, 220, 0, 156, 5, 6, 83, 96, 189, 222, 100, 29, 145, 160, 147, 193, 127, 71, 54, 135, 62, 103, 35, 126, 168, 230, 117, 203, 71, 36, 132, 155, 157]));
+    //     let value_from_database: ScryptoRawValue = ledger.substate_db()
+    //         .get_mapped::<SpreadPrefixKeyMapper, _>(&node_id, partition_num, &substate_key)
+    //         .unwrap();
+    //     let substate_value = value_from_database.into_payload_bytes();
+    //     let state_updates = StateUpdates {
+    //         by_node: indexmap! {
+    //             node_id => NodeStateUpdates::Delta {
+    //                 by_partition: indexmap! {
+    //                     partition_num => PartitionStateUpdates::Delta {
+    //                         by_substate: indexmap! {
+    //                             substate_key.clone() => DatabaseUpdate::Set(substate_value.clone())
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     };
+    //     let system_structure = SystemStructure::resolve(ledger.substate_db(), &state_updates, &vec![]);
+    //     format_substate_value(
+    //         &mut error_message,
+    //         &system_structure.substate_system_structures[&node_id][&partition_num][&substate_key],
+    //         &receipt_display_context,
+    //         &substate_value,
+    //     ).unwrap();
+    //     panic!(error_message)
+    // }
 
     // Assert
     println!("{:-^120}", "Application Events");
@@ -210,20 +262,36 @@ fn test_stake_reconciliation() {
     };
 
     let post_transaction_partitions: Vec<_> = post_transaction_partitions.collect();
+
+    let mut error_message = String::new();
+
     for (full_key, (expected_old_value, _)) in expected_updated_substates.iter() {
         let database_value = &pre_transaction_substates[full_key];
+        let (node_id, partition) = SpreadPrefixKeyMapper::from_db_partition_key(&full_key.0);
+        // Luckily they're all fields
+        let substate_key = SpreadPrefixKeyMapper::from_db_sort_key::<FieldKey>(&full_key.1);
         let address = AddressBech32Encoder::for_simulator()
-            .encode(
-                &SpreadPrefixKeyMapper::from_db_partition_key(&full_key.0)
-                    .0
-                     .0,
-            )
+            .encode(&node_id.0)
             .unwrap();
-        assert_eq!(
-            database_value, expected_old_value,
-            "The pre-transaction value of updated substate under {} is not expected: {:?}",
-            address, full_key
-        );
+        if database_value != expected_old_value {
+            let substate_structure = &commit_result.system_structure.substate_system_structures[&node_id][&partition][&substate_key];
+            write!(&mut error_message, "\nThe pre-transaction value of updated substate under {address} {partition:?} {substate_key:?} has changed.").unwrap();
+            write!(&mut error_message, "\n\nEXPECTED:").unwrap();
+            format_receipt_substate_value(
+                &mut error_message,
+                &substate_structure,
+                &receipt_display_context,
+                &expected_old_value,
+            ).unwrap();
+            write!(&mut error_message, "\nACTUAL:").unwrap();
+            format_receipt_substate_value(
+                &mut error_message,
+                &substate_structure,
+                &receipt_display_context,
+                &database_value,
+            ).unwrap();
+            write!(&mut error_message, "\n").unwrap();
+        }
         // For printing:
         // let (db_partition_key, db_sort_key) = full_key;
         // println!(
@@ -245,6 +313,9 @@ fn test_stake_reconciliation() {
         //     hex::encode(database_value),
         //     hex::encode(new_value)
         // );
+    }
+    if error_message.len() > 0 {
+        panic!("{}", error_message);
     }
 
     for key in post_transaction_partitions {

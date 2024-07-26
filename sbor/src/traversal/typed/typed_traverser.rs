@@ -133,6 +133,10 @@ impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
         }
     }
 
+    pub fn schema(&self) -> &'s Schema<E::CustomSchema> {
+        self.state.schema
+    }
+
     pub fn next_event(&mut self) -> TypedLocatedTraversalEvent<'_, 's, 'de, E> {
         let (typed_event, location) =
             Self::next_event_internal(&mut self.traverser, &mut self.state);

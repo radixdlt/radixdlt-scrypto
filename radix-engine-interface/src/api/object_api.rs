@@ -275,7 +275,7 @@ pub trait SystemObjectApi<E> {
         inner_object_blueprint: &str,
         inner_object_fields: IndexMap<u8, FieldValue>,
         event_name: &str,
-        event_data: Vec<u8>,
+        event_data: ScryptoUnvalidatedOwnedRawPayload,
     ) -> Result<(GlobalAddress, NodeId), E>;
 
     /// Calls a method on an object

@@ -108,7 +108,7 @@ impl SystemStructure {
     pub fn resolve<S: SubstateDatabase>(
         substate_db: &S,
         state_updates: &StateUpdates,
-        application_events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
+        application_events: &Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
     ) -> Self {
         let mut substate_schema_mapper = SubstateSchemaMapper::new(
             SystemDatabaseReader::new_with_overlay(substate_db, state_updates),
@@ -384,14 +384,14 @@ impl<'a, S: SubstateDatabase> SubstateSchemaMapper<'a, S> {
 /// from a substate.
 pub struct EventSchemaMapper<'a, S: SubstateDatabase> {
     system_reader: SystemDatabaseReader<'a, S>,
-    application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
+    application_events: &'a Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
 }
 
 impl<'a, S: SubstateDatabase> EventSchemaMapper<'a, S> {
     pub fn new(
         substate_db: &'a S,
         state_updates: &'a StateUpdates,
-        application_events: &'a Vec<(EventTypeIdentifier, Vec<u8>)>,
+        application_events: &'a Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
     ) -> Self {
         Self {
             system_reader: SystemDatabaseReader::new_with_overlay(substate_db, state_updates),

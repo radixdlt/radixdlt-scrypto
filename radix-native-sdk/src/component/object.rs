@@ -1,21 +1,12 @@
 use crate::modules::metadata::Metadata;
 use crate::modules::role_assignment::RoleAssignment;
-use radix_common::data::scrypto::{scrypto_encode, ScryptoDecode};
-use radix_common::prelude::ScryptoEncode;
-use radix_common::types::GlobalAddress;
-use radix_engine_interface::api::{AttachedModuleId, FieldIndex, ModuleId, SystemApi};
+use radix_common::prelude::*;
+use radix_engine_interface::api::{AttachedModuleId, FieldIndex, SystemApi};
 use radix_engine_interface::object_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
 };
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::prelude::GlobalAddressReservation;
-use radix_engine_interface::prelude::OwnerRole;
-use radix_engine_interface::prelude::RoleAssignmentInit;
-use radix_engine_interface::prelude::{FieldValue, MetadataInit};
-use radix_engine_interface::types::NodeId;
-use radix_rust::indexmap;
-use sbor::rust::prelude::*;
-use sbor::rust::prelude::{Debug, ToOwned};
+use radix_engine_interface::prelude::*;
 
 #[derive(Debug)]
 pub struct BorrowedObject(pub NodeId);
@@ -121,7 +112,9 @@ where
             inner_object_bp,
             inner_object_fields,
             event_name,
-            scrypto_encode(&event).unwrap(),
+            scrypto_encode_to_payload(&event)
+                .unwrap()
+                .into_unvalidated(),
         )?;
 
     Ok((address, inner_object))

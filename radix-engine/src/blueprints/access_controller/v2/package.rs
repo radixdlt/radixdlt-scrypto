@@ -390,9 +390,9 @@ impl AccessControllerV2NativePackage {
 
     pub fn invoke_export<Y>(
         export_name: &str,
-        input: &IndexedScryptoValue,
+        input: &IndexedScryptoValue<'_>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
     {

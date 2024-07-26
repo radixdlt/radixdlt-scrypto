@@ -67,7 +67,7 @@ pub enum OpenSubstateEvent<'a> {
 pub enum ReadSubstateEvent<'a> {
     OnRead {
         handle: SubstateHandle,
-        value: &'a IndexedScryptoValue,
+        value: &'a IndexedScryptoValue<'a>,
         device: SubstateDevice,
     },
     IOAccess(&'a IOAccess),
@@ -91,7 +91,7 @@ impl<'a> ReadSubstateEvent<'a> {
 pub enum WriteSubstateEvent<'a> {
     Start {
         handle: SubstateHandle,
-        value: &'a IndexedScryptoValue,
+        value: &'a IndexedScryptoValue<'a>,
     },
     IOAccess(&'a IOAccess),
 }
@@ -107,7 +107,7 @@ pub enum SetSubstateEvent<'a> {
         &'a NodeId,
         &'a PartitionNumber,
         &'a SubstateKey,
-        &'a IndexedScryptoValue,
+        &'a IndexedScryptoValue<'a>,
     ),
     IOAccess(&'a IOAccess),
 }
@@ -263,9 +263,9 @@ pub trait KernelCallbackObject: Sized {
 
     /// Callback on invocation. This is where the callback object should execute application logic.
     fn invoke_upstream<Y>(
-        args: &IndexedScryptoValue,
+        args: &IndexedScryptoValue<'_>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelApi<Self>;
 

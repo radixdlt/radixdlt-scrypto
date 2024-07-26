@@ -590,7 +590,7 @@ mod tests {
                 ],
             },
         );
-        let payload = basic_encode(&value).unwrap();
+        let payload = basic_encode_to_payload(&value).unwrap();
 
         let expected_annotated_single_line = r###"MyComplexTupleStruct([1u16, 2u16, 3u16], [], hex(""), hex("010203"), { TestEnum::UnitVariant => MyFieldStruct { field1: 1u64, field2: ["hello"] }, TestEnum::SingleFieldVariant { field: 1u8 } => MyFieldStruct { field1: 2u64, field2: ["world"] }, TestEnum::DoubleStructVariant { field1: 1u8, field2: 2u8 } => MyFieldStruct { field1: 3u64, field2: ["!"] } }, { "hello" => MyUnitStruct, "world" => MyUnitStruct }, TestEnum::UnitVariant, TestEnum::SingleFieldVariant { field: 1u8 }, TestEnum::DoubleStructVariant { field1: 3u8, field2: 5u8 }, MyFieldStruct { field1: 21u64, field2: ["hello", "world!"] }, [MyUnitStruct, MyUnitStruct], Tuple(Enum::[32], Enum::[21](-3i32)))"###;
         let display_context = ValueDisplayParameters::Annotated {
@@ -602,9 +602,7 @@ mod tests {
             depth_limit: 64,
         };
         assert_eq!(
-            &BasicRawPayload::new_from_valid_slice_with_checks(&payload)
-                .unwrap()
-                .to_string(display_context),
+            &payload.to_string(display_context),
             expected_annotated_single_line,
         );
 
@@ -685,9 +683,7 @@ mod tests {
             depth_limit: 64,
         };
         assert_eq!(
-            &BasicRawPayload::new_from_valid_slice_with_checks(&payload)
-                .unwrap()
-                .to_string(display_context),
+            &payload.to_string(display_context),
             expected_annotated_multi_line,
         );
     }

@@ -21,6 +21,8 @@ pub trait TransformHandler<E> {
     fn replace_blob(&mut self, b: ManifestBlobRef) -> Result<Vec<u8>, E>;
 }
 
+// TODO: For better efficiency, change this to work in a streaming fashion
+// on top of RawValues and a Traverser
 pub fn transform<T: TransformHandler<E>, E>(
     value: ManifestValue,
     handler: &mut T,

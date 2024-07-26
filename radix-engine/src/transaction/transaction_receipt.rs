@@ -266,7 +266,7 @@ pub struct CommitResult {
     /// Transaction execution outcome
     pub outcome: TransactionOutcome,
     /// Events emitted
-    pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
+    pub application_events: Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
     /// Logs emitted
     pub application_logs: Vec<(Level, String)>,
     /// Additional annotation on substates and events
@@ -394,7 +394,7 @@ impl CommitResult {
             };
 
             if is_consensus_manager {
-                if let Ok(epoch_change_event) = scrypto_decode::<EpochChangeEvent>(&event_data) {
+                if let Ok(epoch_change_event) = event_data.decode_as() {
                     return Some(epoch_change_event);
                 }
             }
@@ -476,6 +476,8 @@ impl CommitResult {
         updates
     }
 
+    /// Note - there is a better display of these on the receipt, which uses the schemas
+    /// to display clear details
     pub fn state_updates_string(&self) -> String {
         let mut buffer = String::new();
         for (node_id, x) in &self.state_updates() {
@@ -488,11 +490,11 @@ impl CommitResult {
                         match substate_key {
                             SubstateKey::Field(x) => format!("Field: {}", x),
                             SubstateKey::Map(x) =>
-                                format!("Map: {:?}", scrypto_decode::<ScryptoValue>(&x).unwrap()),
+                                format!("Map: {:?}", x.decode_as::<ScryptoValue>().unwrap()),
                             SubstateKey::Sorted(x) => format!(
                                 "Sorted: {:?}, {:?}",
                                 x.0,
-                                scrypto_decode::<ScryptoValue>(&x.1).unwrap()
+                                x.1.decode_as::<ScryptoValue>().unwrap()
                             ),
                         },
                     ));
@@ -769,6 +771,7 @@ pub struct TransactionReceiptDisplayContext<'a> {
     pub system_database_reader: Option<SystemDatabaseReader<'a, dyn SubstateDatabase + 'a>>,
     pub display_state_updates: bool,
     pub use_ansi_colors: bool,
+    pub max_substate_length_to_display: usize,
 }
 
 impl<'a> Default for TransactionReceiptDisplayContext<'a> {
@@ -778,6 +781,7 @@ impl<'a> Default for TransactionReceiptDisplayContext<'a> {
             system_database_reader: None,
             display_state_updates: true,
             use_ansi_colors: true,
+            max_substate_length_to_display: 1024,
         }
     }
 }
@@ -791,6 +795,10 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
         AddressDisplayContext {
             encoder: self.encoder,
         }
+    }
+
+    pub fn max_substate_length_to_display(&self) -> usize {
+        self.max_substate_length_to_display
     }
 
     pub fn lookup_schema<T: AsRef<NodeId>>(
@@ -940,6 +948,11 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
         self
     }
 
+    pub fn set_max_substate_length_to_display(mut self, setting: usize) -> Self {
+        self.0.max_substate_length_to_display = setting;
+        self
+    }
+
     pub fn build(self) -> TransactionReceiptDisplayContext<'a> {
         self.0
     }
@@ -1028,95 +1041,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
             }
 
             if context.display_state_updates {
-                // The state updates are bizarrely full of lots of partitions with empty updates,
-                // so we remove them to avoid polluting the output.
-                let state_updates = c.state_updates.rebuild_without_empty_entries();
-                context.format_top_level_title_with_detail(
-                    f,
-                    "State Updates",
-                    format!(
-                        "{} {}",
-                        state_updates.by_node.len(),
-                        if state_updates.by_node.len() == 1 {
-                            "entity"
-                        } else {
-                            "entities"
-                        },
-                    ),
-                )?;
-                for (i, (node_id, node_updates)) in state_updates.by_node.iter().enumerate() {
-                    let by_partition = match node_updates {
-                        NodeStateUpdates::Delta { by_partition } => by_partition,
-                    };
-                    write!(
-                        f,
-                        "\n{} {} across {} partitions",
-                        prefix!(i, c.state_updates.by_node),
-                        node_id.display(address_display_context),
-                        by_partition.len(),
-                    )?;
-
-                    for (j, (partition_number, partition_updates)) in
-                        by_partition.iter().enumerate()
-                    {
-                        // NOTE: This could be improved by mapping partition numbers back to a system-focused name
-                        //       This would require either adding partition descriptions into SystemStructure, or
-                        //       having some inverse entity-type specific descriptors.
-                        match partition_updates {
-                            PartitionStateUpdates::Delta { by_substate } => {
-                                write!(
-                                    f,
-                                    "\n  {} Partition({}): {} {}",
-                                    prefix!(j, by_partition),
-                                    partition_number.0,
-                                    by_substate.len(),
-                                    if by_substate.len() == 1 {
-                                        "change"
-                                    } else {
-                                        "changes"
-                                    },
-                                )?;
-                                for (k, (substate_key, update)) in by_substate.iter().enumerate() {
-                                    display_substate_change(
-                                        f,
-                                        prefix!(k, by_substate),
-                                        &c.system_structure,
-                                        context,
-                                        node_id,
-                                        partition_number,
-                                        substate_key,
-                                        update.as_change(),
-                                    )?;
-                                }
-                            }
-                            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
-                                new_substate_values,
-                            }) => {
-                                write!(
-                                    f,
-                                    "\n {} Partition({}): RESET ({} new values)",
-                                    prefix!(j, by_partition),
-                                    partition_number.0,
-                                    new_substate_values.len()
-                                )?;
-                                for (k, (substate_key, value)) in
-                                    new_substate_values.iter().enumerate()
-                                {
-                                    display_substate_change(
-                                        f,
-                                        prefix!(k, new_substate_values),
-                                        &c.system_structure,
-                                        context,
-                                        node_id,
-                                        partition_number,
-                                        substate_key,
-                                        SubstateChange::Upsert(value),
-                                    )?;
-                                }
-                            }
-                        }
-                    }
-                }
+                (&c.state_updates, &c.system_structure).contextual_format(f, context)?;
             }
 
             if let TransactionOutcome::Success(outputs) = &c.outcome {
@@ -1127,18 +1052,19 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                         "\n{} {}",
                         prefix!(i, outputs),
                         match output {
-                            InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
-                                .expect("Impossible case! Instruction output can't be decoded")
-                                .to_string(ValueDisplayParameters::Schemaless {
-                                    display_mode: DisplayMode::RustLike,
-                                    print_mode: PrintMode::MultiLine {
-                                        indent_size: 2,
-                                        base_indent: 3,
-                                        first_line_indent: 0
-                                    },
-                                    custom_context: scrypto_value_display_context,
-                                    depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH
-                                }),
+                            InstructionOutput::CallReturn(x) =>
+                                IndexedScryptoValue::from_untrusted_payload_slice(&x)
+                                    .expect("Impossible case! Instruction output can't be decoded")
+                                    .to_string(ValueDisplayParameters::Schemaless {
+                                        display_mode: DisplayMode::RustLike,
+                                        print_mode: PrintMode::MultiLine {
+                                            indent_size: 2,
+                                            base_indent: 3,
+                                            first_line_indent: 0
+                                        },
+                                        custom_context: scrypto_value_display_context,
+                                        depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH
+                                    }),
                             InstructionOutput::None => "None".to_string(),
                         }
                     )?;
@@ -1206,6 +1132,106 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
     }
 }
 
+impl<'a, 'b> ContextualDisplay<TransactionReceiptDisplayContext<'a>>
+    for (&'b StateUpdates, &'b SystemStructure)
+{
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &TransactionReceiptDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        // The state updates are bizarrely full of lots of partitions with empty updates,
+        // so we remove them to avoid polluting the output.
+        let state_updates = self.0.rebuild_without_empty_entries();
+        let system_structure = self.1;
+        context.format_top_level_title_with_detail(
+            f,
+            "State Updates",
+            format!(
+                "{} {}",
+                state_updates.by_node.len(),
+                if state_updates.by_node.len() == 1 {
+                    "entity"
+                } else {
+                    "entities"
+                },
+            ),
+        )?;
+        for (i, (node_id, node_updates)) in state_updates.by_node.iter().enumerate() {
+            let by_partition = match node_updates {
+                NodeStateUpdates::Delta { by_partition } => by_partition,
+            };
+            write!(
+                f,
+                "\n{} {} across {} partitions",
+                prefix!(i, state_updates.by_node),
+                node_id.display(context.address_display_context()),
+                by_partition.len(),
+            )?;
+
+            for (j, (partition_number, partition_updates)) in by_partition.iter().enumerate() {
+                // NOTE: This could be improved by mapping partition numbers back to a system-focused name
+                //       This would require either adding partition descriptions into SystemStructure, or
+                //       having some inverse entity-type specific descriptors.
+                match partition_updates {
+                    PartitionStateUpdates::Delta { by_substate } => {
+                        write!(
+                            f,
+                            "\n  {} Partition({}): {} {}",
+                            prefix!(j, by_partition),
+                            partition_number.0,
+                            by_substate.len(),
+                            if by_substate.len() == 1 {
+                                "change"
+                            } else {
+                                "changes"
+                            },
+                        )?;
+                        for (k, (substate_key, update)) in by_substate.iter().enumerate() {
+                            display_substate_change(
+                                f,
+                                prefix!(k, by_substate),
+                                system_structure,
+                                context,
+                                node_id,
+                                partition_number,
+                                substate_key,
+                                update.as_change(),
+                            )?;
+                        }
+                    }
+                    PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
+                        new_substate_values,
+                    }) => {
+                        write!(
+                            f,
+                            "\n {} Partition({}): RESET ({} new values)",
+                            prefix!(j, by_partition),
+                            partition_number.0,
+                            new_substate_values.len()
+                        )?;
+                        for (k, (substate_key, value)) in new_substate_values.iter().enumerate() {
+                            display_substate_change(
+                                f,
+                                prefix!(k, new_substate_values),
+                                system_structure,
+                                context,
+                                node_id,
+                                partition_number,
+                                substate_key,
+                                SubstateChange::Upsert(value),
+                            )?;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 fn display_substate_change<'a, F: fmt::Write>(
     f: &mut F,
     prefix: &str,
@@ -1227,19 +1253,24 @@ fn display_substate_change<'a, F: fmt::Write>(
     match change {
         SubstateChange::Upsert(substate_value) => {
             write!(f, "\n    {prefix} Set: ")?;
-            format_substate_key(f, substate_structure, receipt_context, substate_key)?;
+            format_receipt_substate_key(f, substate_structure, receipt_context, substate_key)?;
             write!(f, "\n       Value: ")?;
-            format_substate_value(f, substate_structure, receipt_context, substate_value)?;
+            format_receipt_substate_value(
+                f,
+                substate_structure,
+                receipt_context,
+                substate_value,
+            )?;
         }
         SubstateChange::Delete => {
             write!(f, "\n    {prefix} Delete: ")?;
-            format_substate_key(f, substate_structure, receipt_context, substate_key)?;
+            format_receipt_substate_key(f, substate_structure, receipt_context, substate_key)?;
         }
     }
     Ok(())
 }
 
-fn format_substate_key<'a, F: fmt::Write>(
+fn format_receipt_substate_key<'a, F: fmt::Write>(
     f: &mut F,
     substate_structure: &SubstateSystemStructure,
     receipt_context: &TransactionReceiptDisplayContext<'a>,
@@ -1252,15 +1283,14 @@ fn format_substate_key<'a, F: fmt::Write>(
         }
         SubstateSystemStructure::SystemSchema => {
             let key_contents = substate_key.for_map().unwrap();
-            let hash = scrypto_decode::<SchemaHash>(&*key_contents).unwrap();
+            let hash: SchemaHash = key_contents.decode_as().unwrap();
             write!(f, "SchemaHash({})", hash.0)
         }
         SubstateSystemStructure::KeyValueStoreEntry(structure) => {
-            let value = scrypto_decode(substate_key.for_map().unwrap()).unwrap();
             format_scrypto_value_with_full_type_id(
                 f,
                 print_mode,
-                value,
+                substate_key.for_map().unwrap().as_value(),
                 receipt_context,
                 &structure.key_full_type_id,
             )
@@ -1270,36 +1300,33 @@ fn format_substate_key<'a, F: fmt::Write>(
             write!(f, "Field({})", key_contents)
         }
         SubstateSystemStructure::ObjectKeyValuePartitionEntry(structure) => {
-            let value = scrypto_decode(substate_key.for_map().unwrap()).unwrap();
             let full_type_id = extract_object_type_id(&structure.key_schema);
             format_scrypto_value_with_full_type_id(
                 f,
                 print_mode,
-                value,
+                substate_key.for_map().unwrap().as_value(),
                 receipt_context,
                 &full_type_id,
             )
         }
         SubstateSystemStructure::ObjectIndexPartitionEntry(structure) => {
-            let value = scrypto_decode(substate_key.for_map().unwrap()).unwrap();
             let full_type_id = extract_object_type_id(&structure.key_schema);
             format_scrypto_value_with_full_type_id(
                 f,
                 print_mode,
-                value,
+                substate_key.for_map().unwrap().as_value(),
                 receipt_context,
                 &full_type_id,
             )
         }
         SubstateSystemStructure::ObjectSortedIndexPartitionEntry(structure) => {
             let (sort_bytes, key_contents) = substate_key.for_sorted().unwrap();
-            let value = scrypto_decode(key_contents).unwrap();
             let full_type_id = extract_object_type_id(&structure.key_schema);
             write!(f, "SortKey({}, ", u16::from_be_bytes(sort_bytes.clone()))?;
             format_scrypto_value_with_full_type_id(
                 f,
                 print_mode,
-                value,
+                key_contents.as_value(),
                 receipt_context,
                 &full_type_id,
             )?;
@@ -1308,7 +1335,7 @@ fn format_substate_key<'a, F: fmt::Write>(
     }
 }
 
-fn format_substate_value<'a, F: fmt::Write>(
+pub fn format_receipt_substate_value<'a, F: fmt::Write>(
     f: &mut F,
     substate_structure: &SubstateSystemStructure,
     receipt_context: &TransactionReceiptDisplayContext<'a>,
@@ -1319,10 +1346,11 @@ fn format_substate_value<'a, F: fmt::Write>(
         base_indent: 7,
         first_line_indent: 0,
     };
-    if substate_value.len() > 1024 {
+    if substate_value.len() > receipt_context.max_substate_length_to_display() {
         write!(
             f,
-            "(Hidden as longer than 1024 bytes. Hash: {})",
+            "(Hidden as longer than {} bytes. Hash: {})",
+            receipt_context.max_substate_length_to_display(),
             hash(substate_value)
         )
     } else {
@@ -1368,13 +1396,13 @@ fn format_substate_value<'a, F: fmt::Write>(
             }
             SubstateSystemStructure::KeyValueStoreEntry(structure) => {
                 let payload =
-                    scrypto_decode::<KeyValueEntrySubstate<RawScryptoValue>>(substate_value)
+                    scrypto_decode::<KeyValueEntrySubstate<ScryptoRawValue>>(substate_value)
                         .unwrap();
                 (payload.into_value(), structure.value_full_type_id.clone())
             }
             SubstateSystemStructure::ObjectField(structure) => {
                 let payload =
-                    scrypto_decode::<FieldSubstate<RawScryptoValue>>(substate_value).unwrap();
+                    scrypto_decode::<FieldSubstate<ScryptoRawValue>>(substate_value).unwrap();
                 write_lock_status(f, payload.lock_status())?;
                 (
                     Some(payload.into_payload()),
@@ -1383,7 +1411,7 @@ fn format_substate_value<'a, F: fmt::Write>(
             }
             SubstateSystemStructure::ObjectKeyValuePartitionEntry(structure) => {
                 let payload =
-                    scrypto_decode::<KeyValueEntrySubstate<RawScryptoValue>>(substate_value)
+                    scrypto_decode::<KeyValueEntrySubstate<ScryptoRawValue>>(substate_value)
                         .unwrap();
                 write_lock_status(f, payload.lock_status())?;
                 (
@@ -1393,7 +1421,7 @@ fn format_substate_value<'a, F: fmt::Write>(
             }
             SubstateSystemStructure::ObjectIndexPartitionEntry(structure) => {
                 let payload =
-                    scrypto_decode::<IndexEntrySubstate<RawScryptoValue>>(substate_value).unwrap();
+                    scrypto_decode::<IndexEntrySubstate<ScryptoRawValue>>(substate_value).unwrap();
                 (
                     Some(payload.into_value()),
                     extract_object_type_id(&structure.value_schema),
@@ -1401,7 +1429,7 @@ fn format_substate_value<'a, F: fmt::Write>(
             }
             SubstateSystemStructure::ObjectSortedIndexPartitionEntry(structure) => {
                 let payload =
-                    scrypto_decode::<SortedIndexEntrySubstate<RawScryptoValue>>(substate_value)
+                    scrypto_decode::<SortedIndexEntrySubstate<ScryptoRawValue>>(substate_value)
                         .unwrap();
                 (
                     Some(payload.into_value()),
@@ -1441,7 +1469,7 @@ fn display_event<'a, F: fmt::Write>(
     prefix: &str,
     event_type_identifier: &EventTypeIdentifier,
     system_structure: &SystemStructure,
-    event_data: &Vec<u8>,
+    event_data: &ScryptoRawPayload,
     receipt_context: &TransactionReceiptDisplayContext<'a>,
 ) -> Result<(), fmt::Error> {
     let event_system_structure = system_structure
@@ -1457,7 +1485,6 @@ fn display_event<'a, F: fmt::Write>(
         base_indent: 3,
         first_line_indent: 0,
     };
-    let raw_value = scrypto_decode::<RawScryptoValue>(event_data).unwrap();
     if let Some(_) = schema_lookup {
         write!(
             f,
@@ -1468,7 +1495,7 @@ fn display_event<'a, F: fmt::Write>(
         format_scrypto_value_with_full_type_id(
             f,
             print_mode,
-            raw_value,
+            event_data.as_value(),
             receipt_context,
             &full_type_id,
         )?;
@@ -1483,7 +1510,7 @@ fn display_event<'a, F: fmt::Write>(
         format_scrypto_value_with_full_type_id(
             f,
             print_mode,
-            raw_value,
+            event_data.as_value(),
             receipt_context,
             &full_type_id,
         )?;

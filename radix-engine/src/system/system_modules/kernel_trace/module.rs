@@ -64,7 +64,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for KernelTraceModule {
         api: &mut Y,
         output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Exiting: output size = {}", output.len());
+        log!(api, "Exiting: output size = {}", output.payload_len());
         Ok(())
     }
 
@@ -173,7 +173,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for KernelTraceModule {
                     api,
                     "Reading substate: handle = {}, size = {}, device = {:?}",
                     handle,
-                    value.len(),
+                    value.payload_len(),
                     device
                 );
             }
@@ -193,7 +193,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for KernelTraceModule {
                     api,
                     "Writing substate: handle = {}, size = {}",
                     handle,
-                    value.len()
+                    value.payload_len()
                 );
             }
             _ => {}

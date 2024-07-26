@@ -132,14 +132,10 @@ fn check_encode_decode_schema<T: BasicEncode + BasicDecode + BasicDescribe + Eq 
     );
 
     let (type_id, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
-    validate_payload_against_schema::<NoCustomExtension, ()>(
-        &basic_encode(value).unwrap(),
-        schema.v1(),
-        type_id,
-        &(),
-        64,
-    )
-    .unwrap();
+    basic_encode_to_payload(value)
+        .unwrap()
+        .validate_against_type(schema.v1(), type_id, &())
+        .unwrap();
 }
 
 fn check_encode_identically<T1: BasicEncode, T2: BasicEncode>(value1: &T1, value2: &T2) {

@@ -34,7 +34,7 @@ impl Heap {
         partition_number: PartitionNumber,
         on_io_access: &mut F,
     ) -> Result<
-        BTreeMap<SubstateKey, IndexedScryptoValue>,
+        BTreeMap<SubstateKey, IndexedOwnedScryptoValue>,
         CallbackError<HeapRemovePartitionError, E>,
     > {
         if let Some(substates) = self.nodes.get_mut(node_id) {
@@ -53,7 +53,7 @@ impl Heap {
                             partition_number,
                             substate_key: substate_key.clone(),
                         },
-                        old_size: Some(substate_value.len()),
+                        old_size: Some(substate_value.payload_len()),
                         new_size: None,
                     },
                 )
@@ -74,7 +74,7 @@ impl Heap {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Option<&IndexedScryptoValue> {
+    ) -> Option<&IndexedOwnedScryptoValue> {
         self.nodes
             .get(node_id)
             .and_then(|node| node.get(&partition_num))
@@ -82,12 +82,12 @@ impl Heap {
     }
 
     /// Inserts or overwrites a substate
-    pub fn set_substate<E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
+    pub fn set_substate<'v, E, F: FnMut(&Heap, IOAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         partition_number: PartitionNumber,
         substate_key: SubstateKey,
-        substate_value: IndexedScryptoValue,
+        substate_value: IndexedOwnedScryptoValue,
         on_io_access: &mut F,
     ) -> Result<(), E> {
         let entry = self
@@ -99,14 +99,14 @@ impl Heap {
             .entry(substate_key.clone());
 
         let old_size;
-        let new_size = Some(substate_value.len());
+        let new_size = Some(substate_value.payload_len());
         match entry {
             btree_map::Entry::Vacant(e) => {
                 old_size = None;
                 e.insert(substate_value);
             }
             btree_map::Entry::Occupied(mut e) => {
-                old_size = Some(e.get().len());
+                old_size = Some(e.get().payload_len());
                 e.insert(substate_value);
             }
         }
@@ -133,7 +133,7 @@ impl Heap {
         partition_number: PartitionNumber,
         substate_key: &SubstateKey,
         on_io_access: &mut F,
-    ) -> Result<Option<IndexedScryptoValue>, E> {
+    ) -> Result<Option<IndexedOwnedScryptoValue>, E> {
         let substate_value = self
             .nodes
             .get_mut(node_id)
@@ -149,7 +149,7 @@ impl Heap {
                         partition_number,
                         substate_key: substate_key.clone(),
                     },
-                    old_size: Some(value.len()),
+                    old_size: Some(value.payload_len()),
                     new_size: None,
                 },
             )?;
@@ -188,7 +188,7 @@ impl Heap {
         partition_number: PartitionNumber,
         count: u32,
         on_io_access: &mut F,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
+    ) -> Result<Vec<(SubstateKey, IndexedOwnedScryptoValue)>, E> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
@@ -216,7 +216,7 @@ impl Heap {
                             partition_number,
                             substate_key: key.clone(),
                         },
-                        old_size: Some(value.len()),
+                        old_size: Some(value.payload_len()),
                         new_size: None,
                     },
                 )?;
@@ -242,7 +242,9 @@ impl Heap {
             .map(|(k, v)| {
                 (
                     k.clone(),
-                    v.iter().map(|(k, v)| (k.clone(), v.len())).collect(),
+                    v.iter()
+                        .map(|(k, v)| (k.clone(), v.payload_len()))
+                        .collect(),
                 )
             })
             .collect();
@@ -292,7 +294,7 @@ impl Heap {
                             partition_number: *partition_number,
                             substate_key: substate_key.clone(),
                         },
-                        old_size: Some(substate_value.len()),
+                        old_size: Some(substate_value.payload_len()),
                         new_size: None,
                     },
                 )
@@ -339,8 +341,8 @@ mod tests {
         let node_id = NodeId([0u8; NodeId::LENGTH]);
         let partition_number1 = PartitionNumber(5);
         let partition_number2 = PartitionNumber(6);
-        let key1 = SubstateKey::Map(scrypto_encode(&"1").unwrap());
-        let key2 = SubstateKey::Map(scrypto_encode(&"2").unwrap());
+        let key1 = SubstateKey::Map(scrypto_encode_to_payload(&"1").unwrap());
+        let key2 = SubstateKey::Map(scrypto_encode_to_payload(&"2").unwrap());
         heap.create_node(
             NodeId([0u8; NodeId::LENGTH]),
             btreemap!(

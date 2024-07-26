@@ -1,9 +1,8 @@
 use radix_common::constants::RESOURCE_PACKAGE;
 use radix_common::data::scrypto::model::*;
-use radix_common::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode, ScryptoValue,
-};
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_common::math::Decimal;
+use radix_common::prelude::ScryptoOwnedRawValue;
 use radix_common::traits::NonFungibleData;
 use radix_common::ScryptoSbor;
 use radix_engine_interface::api::{SystemBlueprintApi, SystemObjectApi};
@@ -144,7 +143,7 @@ impl ResourceManager {
     where
         Y: SystemObjectApi<E>,
     {
-        let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
+        let value: ScryptoOwnedRawValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
 
         let rtn = api.call_method(
             self.0.as_node_id(),

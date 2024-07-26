@@ -81,13 +81,13 @@ impl TransactionProcessorNativePackage {
         input: &IndexedScryptoValue,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
     {
         match export_name {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
-                let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
+                let input: TransactionProcessorRunInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 

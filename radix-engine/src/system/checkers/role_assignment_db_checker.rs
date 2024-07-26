@@ -29,7 +29,7 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
         node_id: NodeId,
         module_id: ModuleId,
         field_index: FieldIndex,
-        value: &Vec<u8>,
+        value: &ScryptoRawValue,
     ) {
         // The method responsible for the addition of errors to the checker state. This method will
         // add the location information.
@@ -40,7 +40,7 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
                     node_id,
                     module_id,
                     field_index,
-                    value: value.clone(),
+                    value: value.ref_into_owned(),
                 },
                 error,
             })
@@ -60,7 +60,7 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
 
         match typed_field_index {
             RoleAssignmentField::Owner => {
-                let owner_role = scrypto_decode::<RoleAssignmentOwnerFieldPayload>(&value)
+                let owner_role: RoleAssignmentOwnerFieldPayload = value.decode_as()
                     .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
                 Self::check_owner_role_entry(owner_role, &mut add_error)
             }
@@ -73,8 +73,8 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
         node_id: NodeId,
         module_id: ModuleId,
         collection_index: CollectionIndex,
-        key: &Vec<u8>,
-        value: &Vec<u8>,
+        key: &ScryptoRawValue,
+        value: &ScryptoRawValue,
     ) {
         // The method responsible for the addition of errors to the checker state. This method will
         // add the location information.
@@ -85,8 +85,8 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
                     node_id,
                     module_id,
                     collection_index,
-                    key: key.clone(),
-                    value: value.clone(),
+                    key: key.as_value_ref().into_owned(),
+                    value: value.as_value_ref().into_owned(),
                 },
                 error,
             })
@@ -106,9 +106,9 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
 
         match typed_collection_index {
             RoleAssignmentCollection::AccessRuleKeyValue => {
-                let module_role_key = scrypto_decode::<RoleAssignmentAccessRuleKeyPayload>(&key)
+                let module_role_key: RoleAssignmentAccessRuleKeyPayload = key.decode_as()
                     .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
-                let access_rule = scrypto_decode::<RoleAssignmentAccessRuleEntryPayload>(&value)
+                let access_rule: RoleAssignmentAccessRuleEntryPayload = value.decode_as()
                     .expect("The application database checker does not check for this and assumes that other layers have checked for it.");
 
                 Self::check_role_assignment(

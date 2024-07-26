@@ -85,20 +85,16 @@ pub fn validate_call_arguments_to_native_components(
         })?;
 
         if let Some((TypeRef::Static(local_type_id), schema)) = schema {
-            validate_payload_against_schema::<ManifestCustomExtension, _>(
-                &manifest_encode(&args).unwrap(),
-                schema,
-                local_type_id,
-                &(),
-                MANIFEST_SBOR_V1_MAX_DEPTH,
-            )
-            .map_err(|error| LocatedInstructionSchemaValidationError {
-                instruction_index: index,
-                cause: InstructionSchemaValidationError::SchemaValidationError(format!(
-                    "{:?}",
-                    error
-                )),
-            })
+            manifest_encode_to_payload(&args)
+                .unwrap()
+                .validate_against_type(schema, local_type_id, &())
+                .map_err(|error| LocatedInstructionSchemaValidationError {
+                    instruction_index: index,
+                    cause: InstructionSchemaValidationError::SchemaValidationError(format!(
+                        "{:?}",
+                        error
+                    )),
+                })
         } else {
             Ok(())
         }?;

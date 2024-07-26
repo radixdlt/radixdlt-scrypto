@@ -163,7 +163,7 @@ impl RoleAssignmentNativePackage {
     ) -> Result<ResolvedPermission, RuntimeError> {
         let permission = match ident {
             ROLE_ASSIGNMENT_SET_IDENT => {
-                let input: RoleAssignmentSetInput = input.as_typed().map_err(|e| {
+                let input: RoleAssignmentSetInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let role_list = Self::resolve_update_role_method_permission(
@@ -207,13 +207,13 @@ impl RoleAssignmentNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
     {
         match export_name {
             ROLE_ASSIGNMENT_CREATE_IDENT => {
-                let input: RoleAssignmentCreateInput = input.as_typed().map_err(|e| {
+                let input: RoleAssignmentCreateInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -221,7 +221,7 @@ impl RoleAssignmentNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ROLE_ASSIGNMENT_SET_OWNER_IDENT => {
-                let input: RoleAssignmentSetOwnerInput = input.as_typed().map_err(|e| {
+                let input: RoleAssignmentSetOwnerInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -229,7 +229,7 @@ impl RoleAssignmentNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ROLE_ASSIGNMENT_LOCK_OWNER_IDENT => {
-                let _input: RoleAssignmentLockOwnerInput = input.as_typed().map_err(|e| {
+                let _input: RoleAssignmentLockOwnerInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -237,7 +237,7 @@ impl RoleAssignmentNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ROLE_ASSIGNMENT_SET_IDENT => {
-                let input: RoleAssignmentSetInput = input.as_typed().map_err(|e| {
+                let input: RoleAssignmentSetInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -245,7 +245,7 @@ impl RoleAssignmentNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ROLE_ASSIGNMENT_GET_IDENT => {
-                let input: RoleAssignmentGetInput = input.as_typed().map_err(|e| {
+                let input: RoleAssignmentGetInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -318,7 +318,7 @@ impl RoleAssignmentNativePackage {
         )?;
 
         let owner_role_substate: FieldSubstate<RoleAssignmentOwnerFieldPayload> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_read_substate(handle)?.into_typed().unwrap();
         api.kernel_close_substate(handle)?;
 
         let owner_role = owner_role_substate
@@ -573,10 +573,10 @@ impl RoleAssignmentNativePackage {
                 _ => e,
             })?;
 
-        let handle = api.actor_open_key_value_entry(
+        let handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             RoleAssignmentCollection::AccessRuleKeyValue.collection_index(),
-            &scrypto_encode(&module_role_key).unwrap(),
+            &module_role_key,
             LockFlags::MUTABLE,
         )?;
 
@@ -602,10 +602,10 @@ impl RoleAssignmentNativePackage {
     {
         let module_role_key = ModuleRoleKey::new(module, role_key);
 
-        let handle = api.actor_open_key_value_entry(
+        let handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             RoleAssignmentCollection::AccessRuleKeyValue.collection_index(),
-            &scrypto_encode(&module_role_key).unwrap(),
+            &module_role_key,
             LockFlags::read_only(),
         )?;
 
@@ -647,14 +647,14 @@ impl RoleAssignmentBottlenoseExtension {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
     {
         match export_name {
             ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT => {
                 input
-                    .as_typed::<RoleAssignmentGetOwnerRoleInput>()
+                    .into_typed::<RoleAssignmentGetOwnerRoleInput>()
                     .map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;

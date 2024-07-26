@@ -11,20 +11,13 @@ pub fn calculate_value_tree_body_byte_length<'de, 's, E: CustomExtension>(
     current_depth: usize,
     depth_limit: usize,
 ) -> Result<usize, DecodeError> {
-    let mut traverser = VecTraverser::<E::CustomTraversal>::new(
+    VecTraverser::<E::CustomTraversal>::new(
         partial_payload,
         depth_limit - current_depth,
         ExpectedStart::ValueBody(value_kind),
         false,
-    );
-    loop {
-        let next_event = traverser.next_event();
-        match next_event.event {
-            TraversalEvent::End => return Ok(next_event.location.end_offset),
-            TraversalEvent::DecodeError(decode_error) => return Err(decode_error),
-            _ => {}
-        }
-    }
+    )
+    .traverse_to_end()
 }
 
 pub trait CustomTraversal: Copy + Debug + Clone + PartialEq + Eq {
@@ -173,6 +166,22 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                 }
             },
             check_exact_end,
+        }
+    }
+
+    /// Returns the end's offset relative to the start of the input slice
+    pub fn traverse_to_end(mut self) -> Result<usize, DecodeError> {
+        loop {
+            let event = self.next_event();
+            match event.event {
+                TraversalEvent::DecodeError(e) => {
+                    return Err(e);
+                }
+                TraversalEvent::End => {
+                    return Ok(event.location.end_offset);
+                }
+                _ => {}
+            }
         }
     }
 

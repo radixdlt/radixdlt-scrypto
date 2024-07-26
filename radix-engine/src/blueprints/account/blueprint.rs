@@ -941,12 +941,10 @@ impl AccountBlueprint {
     {
         // Read the account's authorized depositors to ensure that this badge is on the list of
         // permitted depositors
-        let encoded_key =
-            scrypto_encode(badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
-        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             AccountCollection::AuthorizedDepositorKeyValue.collection_index(),
-            &encoded_key,
+            badge,
             LockFlags::read_only(),
         )?;
         let entry = api.key_value_entry_get_typed::<VersionedAccountAuthorizedDepositor>(
@@ -1172,11 +1170,10 @@ impl AccountBlueprint {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             AccountCollection::ResourcePreferenceKeyValue.collection_index(),
-            &encoded_key,
+            &resource_address,
             LockFlags::MUTABLE,
         )?;
         api.key_value_entry_set_typed(
@@ -1203,11 +1200,10 @@ impl AccountBlueprint {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-        api.actor_remove_key_value_entry(
+        api.actor_remove_key_value_entry_typed_ignore_return(
             ACTOR_STATE_SELF,
             AccountCollection::ResourcePreferenceKeyValue.collection_index(),
-            &encoded_key,
+            &resource_address,
         )?;
 
         Runtime::emit_event(api, RemoveResourcePreferenceEvent { resource_address })?;
@@ -1222,12 +1218,10 @@ impl AccountBlueprint {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let encoded_key =
-            scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
-        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             AccountCollection::AuthorizedDepositorKeyValue.collection_index(),
-            &encoded_key,
+            &badge,
             LockFlags::MUTABLE,
         )?;
         api.key_value_entry_set_typed(
@@ -1253,12 +1247,10 @@ impl AccountBlueprint {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let encoded_key =
-            scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
-        api.actor_remove_key_value_entry(
+        api.actor_remove_key_value_entry_typed_ignore_return(
             ACTOR_STATE_SELF,
             AccountCollection::AuthorizedDepositorKeyValue.collection_index(),
-            &encoded_key,
+            &badge,
         )?;
 
         Runtime::emit_event(
@@ -1299,12 +1291,10 @@ impl AccountBlueprint {
         Y: SystemApi<RuntimeError>,
         F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
     {
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-
-        let mut kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+        let mut kv_store_entry_lock_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             AccountCollection::ResourceVaultKeyValue.collection_index(),
-            &encoded_key,
+            &resource_address,
             LockFlags::read_only(),
         )?;
 
@@ -1322,10 +1312,10 @@ impl AccountBlueprint {
                 None => {
                     if create {
                         api.key_value_entry_close(kv_store_entry_lock_handle)?;
-                        kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+                        kv_store_entry_lock_handle = api.actor_open_key_value_entry_typed(
                             ACTOR_STATE_SELF,
                             AccountCollection::ResourceVaultKeyValue.collection_index(),
-                            &encoded_key,
+                            &resource_address,
                             LockFlags::MUTABLE,
                         )?;
                         let vault = Vault::create(resource_address, api)?;
@@ -1387,12 +1377,10 @@ impl AccountBlueprint {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
-
-        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             AccountCollection::ResourceVaultKeyValue.collection_index(),
-            &encoded_key,
+            &resource_address,
             LockFlags::read_only(),
         )?;
 
@@ -1415,12 +1403,10 @@ impl AccountBlueprint {
     where
         Y: SystemApi<RuntimeError>,
     {
-        let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
-
-        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             AccountCollection::ResourcePreferenceKeyValue.collection_index(),
-            &encoded_key,
+            &resource_address,
             LockFlags::read_only(),
         )?;
 
@@ -1451,7 +1437,7 @@ impl AccountBlueprintBottlenoseExtension {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
     {
@@ -1460,7 +1446,7 @@ impl AccountBlueprintBottlenoseExtension {
                 let AccountTryDepositOrRefundInput {
                     bucket,
                     authorized_depositor_badge,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1471,7 +1457,7 @@ impl AccountBlueprintBottlenoseExtension {
                 let AccountTryDepositBatchOrRefundInput {
                     buckets,
                     authorized_depositor_badge,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 

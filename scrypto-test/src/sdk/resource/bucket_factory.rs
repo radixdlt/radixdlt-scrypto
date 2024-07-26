@@ -104,10 +104,10 @@ impl BucketFactory {
                     NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
                     |env| {
                         for (local_id, data) in non_fungibles.iter() {
-                            let non_fungible_handle = env.actor_open_key_value_entry(
+                            let non_fungible_handle = env.actor_open_key_value_entry_typed(
                                 ACTOR_STATE_SELF,
                                 NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
-                                &local_id.to_key(),
+                                &local_id,
                                 LockFlags::MUTABLE,
                             )?;
 

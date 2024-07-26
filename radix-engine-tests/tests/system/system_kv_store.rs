@@ -21,7 +21,7 @@ impl VmInvoke for TestInvoke {
         _input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         V: VmApi,
@@ -37,7 +37,7 @@ impl VmInvoke for TestInvoke {
                 let long_key = "a".repeat(MAX_SUBSTATE_KEY_SIZE + 1);
                 api.key_value_store_open_entry(
                     &kv_store,
-                    &scrypto_encode(&long_key).unwrap(),
+                    scrypto_encode_to_value(&long_key).unwrap().into_unvalidated(),
                     LockFlags::read_only(),
                 )?;
             }

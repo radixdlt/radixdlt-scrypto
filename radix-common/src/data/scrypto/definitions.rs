@@ -8,8 +8,8 @@ pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoTraverser<'a> = VecTraverser<'a, ScryptoCustomTraversal>;
 pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
 pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
-pub type RawScryptoValue<'a> = RawValue<'a, ScryptoCustomExtension>;
-pub type RawScryptoPayload<'a> = RawPayload<'a, ScryptoCustomExtension>;
+// NOTE: ScryptoRawValue, ScryptoOwnedRawValue, ScryptoRawPayload, ScryptoOwnedRawPayload
+// are defined in another file
 
 // The following trait "aliases" are to be used in parameters.
 //
@@ -46,6 +46,22 @@ impl<T: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe> Scr
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
     scrypto_encode_with_depth_limit(value, SCRYPTO_SBOR_V1_MAX_DEPTH)
+}
+
+pub fn scrypto_encode_to_payload<T: ScryptoEncode + ?Sized>(
+    value: &T,
+) -> Result<ScryptoOwnedRawPayload, EncodeError> {
+    Ok(ScryptoOwnedRawPayload::from_valid_payload(scrypto_encode(
+        value,
+    )?))
+}
+
+pub fn scrypto_encode_to_value<T: ScryptoEncode + ?Sized>(
+    value: &T,
+) -> Result<ScryptoOwnedRawValue, EncodeError> {
+    Ok(ScryptoOwnedRawValue::from_valid_payload(scrypto_encode(
+        value,
+    )?))
 }
 
 pub fn scrypto_encode_with_depth_limit<T: ScryptoEncode + ?Sized>(

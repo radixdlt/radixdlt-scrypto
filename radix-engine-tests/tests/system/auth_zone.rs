@@ -22,7 +22,7 @@ fn should_not_be_able_to_move_auth_zone() {
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
         where
             Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
             V: VmApi,
@@ -39,7 +39,7 @@ fn should_not_be_able_to_move_auth_zone() {
                     )?;
                 }
                 "hi" => {
-                    return Ok(input.clone());
+                    return Ok(input.ref_into_owned());
                 }
                 _ => {}
             }

@@ -4,6 +4,7 @@ use crate::interface::{
 };
 use radix_common::crypto::hash;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
+use radix_common::prelude::ScryptoOwnedRawPayload;
 use radix_common::types::{FieldKey, MapKey, PartitionNumber, SortedKey};
 use radix_common::types::{NodeId, SubstateKey};
 use radix_rust::copy_u8_array;
@@ -120,28 +121,30 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
     }
 
     fn map_to_db_sort_key(map_key: &MapKey) -> DbSortKey {
-        DbSortKey(SpreadPrefixKeyMapper::to_hash_prefixed(map_key))
+        DbSortKey(SpreadPrefixKeyMapper::to_hash_prefixed(map_key.as_slice()))
     }
 
+    /// Assumes the passed DbSortKey is a representation of a valid Scrypto SBOR MapKey.
     fn map_from_db_sort_key(db_sort_key: &DbSortKey) -> MapKey {
-        SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0).to_vec()
+        let bytes = SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0).to_vec();
+        MapKey::from_valid_payload(bytes)
     }
 
     fn sorted_to_db_sort_key(sorted_key: &SortedKey) -> DbSortKey {
         DbSortKey(
             [
                 sorted_key.0.as_slice(),
-                &SpreadPrefixKeyMapper::to_hash_prefixed(&sorted_key.1),
+                &SpreadPrefixKeyMapper::to_hash_prefixed(&sorted_key.1.as_slice()),
             ]
             .concat(),
         )
     }
 
     fn sorted_from_db_sort_key(db_sort_key: &DbSortKey) -> SortedKey {
-        (
-            copy_u8_array(&db_sort_key.0[..2]),
-            SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0[2..]).to_vec(),
-        )
+        (copy_u8_array(&db_sort_key.0[..2]), {
+            let bytes = SpreadPrefixKeyMapper::from_hash_prefixed(&db_sort_key.0[2..]).to_vec();
+            ScryptoOwnedRawPayload::from_valid_payload(bytes)
+        })
     }
 }
 

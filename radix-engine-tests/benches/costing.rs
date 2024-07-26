@@ -49,26 +49,18 @@ fn bench_validate_sbor_payload(c: &mut Criterion) {
         "radiswap.rpd"
     ))
     .unwrap();
-    let payload = scrypto_encode(&package_definition).unwrap();
+    let payload = scrypto_encode_to_payload(&package_definition).unwrap();
     println!("Payload size: {}", payload.len());
     let (index, schema) =
         generate_full_schema_from_single_type::<PackageDefinition, ScryptoCustomSchema>();
 
     c.bench_function("costing::validate_sbor_payload", |b| {
-        b.iter(|| {
-            validate_payload_against_schema::<ScryptoCustomExtension, _>(
-                &payload,
-                schema.v1(),
-                index,
-                &(),
-                SCRYPTO_SBOR_V1_MAX_DEPTH,
-            )
-        })
+        b.iter(|| payload.validate_against_type(schema.v1(), index, &()))
     });
 }
 
 fn bench_validate_sbor_payload_bytes(c: &mut Criterion) {
-    let payload = scrypto_encode(include_workspace_asset_bytes!(
+    let payload = scrypto_encode_to_payload(include_workspace_asset_bytes!(
         "radix-transaction-scenarios",
         "radiswap.rpd"
     ))
@@ -77,15 +69,7 @@ fn bench_validate_sbor_payload_bytes(c: &mut Criterion) {
     let (index, schema) = generate_full_schema_from_single_type::<Vec<u8>, ScryptoCustomSchema>();
 
     c.bench_function("costing::validate_sbor_payload_bytes", |b| {
-        b.iter(|| {
-            validate_payload_against_schema::<ScryptoCustomExtension, _>(
-                &payload,
-                schema.v1(),
-                index,
-                &(),
-                SCRYPTO_SBOR_V1_MAX_DEPTH,
-            )
-        })
+        b.iter(|| payload.validate_against_type(schema.v1(), index, &()))
     });
 }
 

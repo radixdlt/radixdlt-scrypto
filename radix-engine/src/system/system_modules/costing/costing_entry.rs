@@ -408,7 +408,7 @@ pub mod owned {
     pub enum CreateNodeEventOwned {
         Start(
             NodeId,
-            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, (ScryptoValue,)>>,
+            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, (ScryptoOwnedRawValue,)>>,
         ),
         IOAccess(IOAccess),
         End(NodeId),
@@ -421,7 +421,7 @@ pub mod owned {
         IOAccess(IOAccess),
         End(
             NodeId,
-            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, (ScryptoValue,)>>,
+            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, (ScryptoOwnedRawValue,)>>,
         ),
     }
 
@@ -459,7 +459,7 @@ pub mod owned {
     pub enum ReadSubstateEventOwned {
         OnRead {
             handle: SubstateHandle,
-            value: (ScryptoValue,),
+            value: (ScryptoOwnedRawValue,),
             device: SubstateDevice,
         },
         IOAccess(IOAccess),
@@ -470,7 +470,7 @@ pub mod owned {
     pub enum WriteSubstateEventOwned {
         Start {
             handle: SubstateHandle,
-            value: (ScryptoValue,),
+            value: (ScryptoOwnedRawValue,),
         },
         IOAccess(IOAccess),
     }
@@ -484,7 +484,12 @@ pub mod owned {
     /// An owned model equivalent of [`SetSubstateEvent`].
     #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
     pub enum SetSubstateEventOwned {
-        Start(NodeId, PartitionNumber, SubstateKey, (ScryptoValue,)),
+        Start(
+            NodeId,
+            PartitionNumber,
+            SubstateKey,
+            (ScryptoOwnedRawValue,),
+        ),
         IOAccess(IOAccess),
     }
 
@@ -641,7 +646,7 @@ pub mod owned {
                                 value
                                     .iter()
                                     .map(|(key, value)| {
-                                        (key.clone(), (value.as_scrypto_value().to_owned(),))
+                                        (key.clone(), (value.value().ref_into_owned(),))
                                     })
                                     .collect(),
                             )
@@ -669,7 +674,7 @@ pub mod owned {
                                 value
                                     .iter()
                                     .map(|(key, value)| {
-                                        (key.clone(), (value.as_scrypto_value().to_owned(),))
+                                        (key.clone(), (value.value().ref_into_owned(),))
                                     })
                                     .collect(),
                             )
@@ -733,7 +738,7 @@ pub mod owned {
                     device,
                 } => Self::OnRead {
                     handle: *handle,
-                    value: (value.as_scrypto_value().to_owned(),),
+                    value: (value.value().ref_into_owned(),),
                     device: *device,
                 },
                 ReadSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
@@ -746,7 +751,7 @@ pub mod owned {
             match value {
                 WriteSubstateEvent::Start { handle, value } => Self::Start {
                     handle: *handle,
-                    value: (value.as_scrypto_value().to_owned(),),
+                    value: (value.value().ref_into_owned(),),
                 },
                 WriteSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
             }
@@ -768,7 +773,7 @@ pub mod owned {
                     **item1,
                     **item2,
                     (*item3).clone(),
-                    (item4.as_scrypto_value().to_owned(),),
+                    (item4.value().ref_into_owned(),),
                 ),
                 SetSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
             }

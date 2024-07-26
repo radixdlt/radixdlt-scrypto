@@ -1,11 +1,13 @@
-use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
-use sbor::rust::prelude::*;
+use radix_common::prelude::*;
 
 pub type KeyValueEntryHandle = u32;
 
 pub trait SystemKeyValueEntryApi<E> {
     /// Reads the value of a key value entry
-    fn key_value_entry_get(&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, E>;
+    fn key_value_entry_get(
+        &mut self,
+        handle: KeyValueEntryHandle,
+    ) -> Result<Option<ScryptoOwnedRawValue>, E>;
 
     /// Reads the value of a key value entry and decodes it into a specific type
     fn key_value_entry_get_typed<S: ScryptoDecode>(
@@ -13,7 +15,7 @@ pub trait SystemKeyValueEntryApi<E> {
         handle: KeyValueEntryHandle,
     ) -> Result<Option<S>, E> {
         let buffer = self.key_value_entry_get(handle)?;
-        let value: Option<S> = scrypto_decode(&buffer).unwrap();
+        let value: Option<S> = buffer.map(|value| value.decode_as().unwrap());
         Ok(value)
     }
 
@@ -21,7 +23,7 @@ pub trait SystemKeyValueEntryApi<E> {
     fn key_value_entry_set(
         &mut self,
         handle: KeyValueEntryHandle,
-        buffer: Vec<u8>,
+        buffer: ScryptoUnvalidatedRawValue,
     ) -> Result<(), E>;
 
     /// Set the value of a key value entry
@@ -30,12 +32,15 @@ pub trait SystemKeyValueEntryApi<E> {
         handle: KeyValueEntryHandle,
         value: S,
     ) -> Result<(), E> {
-        let buffer = scrypto_encode(&value).unwrap();
-        self.key_value_entry_set(handle, buffer)
+        let buffer = scrypto_encode_to_value(&value).unwrap();
+        self.key_value_entry_set(handle, buffer.into_unvalidated())
     }
 
     /// Remove the value of a key value entry
-    fn key_value_entry_remove(&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, E>;
+    fn key_value_entry_remove(
+        &mut self,
+        handle: KeyValueEntryHandle,
+    ) -> Result<Option<ScryptoOwnedRawValue>, E>;
 
     /// Lock the value of a key value entry making the value immutable
     fn key_value_entry_lock(&mut self, handle: KeyValueEntryHandle) -> Result<(), E>;

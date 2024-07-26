@@ -23,10 +23,10 @@ pub struct PoolNativePackage;
 impl PoolNativePackage {
     pub fn invoke_export<Y>(
         export_name: &str,
-        input: &IndexedScryptoValue,
+        input: &IndexedScryptoValue<'_>,
         minor_version: PoolV1MinorVersion,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
     {
@@ -37,7 +37,7 @@ impl PoolNativePackage {
                     pool_manager_rule,
                     owner_role,
                     address_reservation,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -61,9 +61,10 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
-                let OneResourcePoolContributeInput { bucket } = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let OneResourcePoolContributeInput { bucket } =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::OneResourcePoolBlueprint::contribute(bucket, api)?
@@ -76,7 +77,7 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME => {
-                let OneResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
+                let OneResourcePoolRedeemInput { bucket } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -92,7 +93,7 @@ impl PoolNativePackage {
 
             ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME => {
                 let OneResourcePoolProtectedDepositInput { bucket } =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = match minor_version {
@@ -110,7 +111,7 @@ impl PoolNativePackage {
                 let OneResourcePoolProtectedWithdrawInput {
                     amount,
                     withdraw_strategy,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -135,7 +136,7 @@ impl PoolNativePackage {
             ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME => {
                 let OneResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -156,7 +157,7 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME => {
-                let OneResourcePoolGetVaultAmountInput {} = input.as_typed().map_err(|e| {
+                let OneResourcePoolGetVaultAmountInput {} = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -176,7 +177,7 @@ impl PoolNativePackage {
                     pool_manager_rule,
                     owner_role,
                     address_reservation,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -200,9 +201,10 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
-                let TwoResourcePoolContributeInput { buckets } = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let TwoResourcePoolContributeInput { buckets } =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn = match minor_version {
                     PoolV1MinorVersion::Zero => {
                         super::v1_0::TwoResourcePoolBlueprint::contribute(buckets, api)?
@@ -215,7 +217,7 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME => {
-                let TwoResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
+                let TwoResourcePoolRedeemInput { bucket } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -231,7 +233,7 @@ impl PoolNativePackage {
 
             TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME => {
                 let TwoResourcePoolProtectedDepositInput { bucket } =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = match minor_version {
@@ -250,7 +252,7 @@ impl PoolNativePackage {
                     amount,
                     resource_address,
                     withdraw_strategy,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -277,7 +279,7 @@ impl PoolNativePackage {
             TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME => {
                 let TwoResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -298,7 +300,7 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME => {
-                let TwoResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
+                let TwoResourcePoolGetVaultAmountsInput {} = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -318,7 +320,7 @@ impl PoolNativePackage {
                     owner_role,
                     pool_manager_rule,
                     address_reservation,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -347,7 +349,7 @@ impl PoolNativePackage {
 
             MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
                 let MultiResourcePoolContributeInput { buckets } =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = match minor_version {
@@ -362,7 +364,7 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME => {
-                let MultiResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
+                let MultiResourcePoolRedeemInput { bucket } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -378,7 +380,7 @@ impl PoolNativePackage {
 
             MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME => {
                 let MultiResourcePoolProtectedDepositInput { bucket } =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = match minor_version {
@@ -397,7 +399,7 @@ impl PoolNativePackage {
                     amount,
                     resource_address,
                     withdraw_strategy,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -424,7 +426,7 @@ impl PoolNativePackage {
             MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME => {
                 let MultiResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
-                } = input.as_typed().map_err(|e| {
+                } = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {
@@ -445,7 +447,7 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME => {
-                let MultiResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
+                let MultiResourcePoolGetVaultAmountsInput {} = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = match minor_version {

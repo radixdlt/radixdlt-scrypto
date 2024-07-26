@@ -20,7 +20,7 @@ impl AccessControllerV1Blueprint {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
     where
         Y: SystemApi<RuntimeError>,
     {
@@ -625,15 +625,16 @@ impl AccessControllerV1Blueprint {
             access_controller.recovery_badge
         };
 
-        let non_fungibles: IndexMap<NonFungibleLocalId, (ScryptoValue,)> = non_fungible_local_ids
-            .into_iter()
-            .map(|local_id| {
-                (
-                    local_id,
-                    (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
-                )
-            })
-            .collect();
+        let non_fungibles: IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)> =
+            non_fungible_local_ids
+                .into_iter()
+                .map(|local_id| {
+                    (
+                        local_id,
+                        (scrypto_decode(&scrypto_encode(&()).unwrap()).unwrap(),),
+                    )
+                })
+                .collect();
 
         let bucket = api
             .call_method(

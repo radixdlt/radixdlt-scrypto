@@ -46,7 +46,7 @@ impl TypeInfoBlueprint {
             LockFlags::read_only(),
             L::default(),
         )?;
-        let info: TypeInfoSubstate = api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let info: TypeInfoSubstate = api.kernel_read_substate(handle)?.into_typed().unwrap();
         api.kernel_close_substate(handle)?;
         Ok(info)
     }

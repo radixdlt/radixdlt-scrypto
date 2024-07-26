@@ -147,7 +147,7 @@ where
                         }
                     })
                     .flat_map(|value| {
-                        IndexedScryptoValue::from_slice(value)
+                        IndexedScryptoValue::from_untrusted_payload_slice(value)
                             .unwrap()
                             .references()
                             .clone()

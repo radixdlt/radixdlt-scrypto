@@ -312,7 +312,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
             .fetch_substate::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<VersionedMetadataEntry>>(
                 created_owner_badge.as_node_id(),
                 METADATA_BASE_PARTITION,
-                &SubstateKey::Map(scrypto_encode("tags").unwrap()),
+                &SubstateKey::Map(scrypto_encode_to_payload("tags").unwrap()),
             )
             .unwrap();
         assert!(substate.is_locked());
@@ -674,7 +674,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
                 "MintFungibleResourceEvent" => {
                     total_mint_amount = total_mint_amount
                         .checked_add(
-                            scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                            event.1.decode_as::<MintFungibleResourceEvent>()
                                 .unwrap()
                                 .amount,
                         )
@@ -683,7 +683,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
                 "BurnFungibleResourceEvent" => {
                     total_burn_amount = total_burn_amount
                         .checked_add(
-                            scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                            event.1.decode_as::<BurnFungibleResourceEvent>()
                                 .unwrap()
                                 .amount,
                         )
