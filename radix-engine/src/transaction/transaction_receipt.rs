@@ -1255,12 +1255,7 @@ fn display_substate_change<'a, F: fmt::Write>(
             write!(f, "\n    {prefix} Set: ")?;
             format_receipt_substate_key(f, substate_structure, receipt_context, substate_key)?;
             write!(f, "\n       Value: ")?;
-            format_receipt_substate_value(
-                f,
-                substate_structure,
-                receipt_context,
-                substate_value,
-            )?;
+            format_receipt_substate_value(f, substate_structure, receipt_context, substate_value)?;
         }
         SubstateChange::Delete => {
             write!(f, "\n    {prefix} Delete: ")?;
