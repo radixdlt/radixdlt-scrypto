@@ -119,7 +119,7 @@ STATE UPDATES: 7 entities
        Value: (Hidden as longer than 1024 bytes. Hash: cfb1c64f9a2eeb2cb269dcb81cefa3edc16d1a1d5768c8903e461a9bd89c0f5c)
     └─ Set: 13u32
        Value: (Hidden as longer than 1024 bytes. Hash: cfb1c64f9a2eeb2cb269dcb81cefa3edc16d1a1d5768c8903e461a9bd89c0f5c)
-├─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
