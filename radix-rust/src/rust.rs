@@ -366,20 +366,14 @@ pub mod collections {
         pub use hashset;
     }
 
-    /// The methods and macros provided directly in this `index_map` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
-    /// corresponding methods on `IndexMap` itself.
+    /// The recommended way to use [`IndexMap`] is to add `use radix_rust::prelude::*` and then
+    /// create new maps using `index_map_new`, `index_map_with_capacity`, or the `indexmap!()` macro.
     ///
-    /// Unfortunately `IndexMap` is very hard to use from no-std (see [docs](https://docs.rs/indexmap/latest/indexmap/#no-standard-library-targets)
-    /// and [relevant github issue](https://github.com/bluss/indexmap/issues/184)). It uses a weird build flag to detect if no-std is present, which
-    /// is hard to force unless you explicitly do eg a WASM build and see that it's missing.
+    /// Note that `IndexMap::new` does not function correctly when the `alloc` and `fuzzing` features
+    /// are enabled, so use `index_map_new` or `indexmap!()` instead.
     ///
-    /// The recommended way to use IndexMap is to add `use sbor::rust::collections::*` and then reference the type inline as `index_map::IndexMap`
-    /// and create new sets using `index_map::new`, `index_map::with_capacity`, or the `index_map::indexmap!` macro. Always putting the `index_map`
-    /// mod will help enforce the use of these methods instead of the methods on `IndexMap` itself.
-    ///
-    /// You can use these exports as follows:
     /// ```
-    /// use sbor::rust::collections::*;
+    /// use radix_rust::prelude::*;
     ///
     /// # type K = u32;
     /// # type V = u32;
@@ -397,7 +391,14 @@ pub mod collections {
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         // See https://github.com/bluss/indexmap/pull/207
-        // By defining an alias with a default `DefaultHashBuilder`, we ensure that this type works as `IndexMap<K, V>` and that the `FromIter` impl works in no-std.
+        // By defining an alias with a default `DefaultHashBuilder`, we ensure that this type works as `IndexMap<K, V>`
+        // and that the `FromIter` impl works in no-std.
+        //
+        // NOTE: `IndexMap::new()` only exists in `std`, and always creates an
+        // `indexmap::IndexMap::<K, V, std::collections::hash_map::RandomState>`.
+        // This breaks when the `alloc` and `fuzzing` features are enabled.
+        //
+        // Instead, prefer `indexmap!()`, `index_map_new()` or `IndexMap::default()`.
         pub type IndexMap<K, V, S = DefaultHashBuilder> = indexmap::IndexMap<K, V, S>;
 
         /// This is safe for std and no-std use cases (unlike `IndexMap::new` which disappears when std is not in the toolchain - see
@@ -433,16 +434,14 @@ pub mod collections {
         pub use indexmap;
     }
 
-    /// The methods and macros provided directly in this `index_set` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
-    /// corresponding methods on `IndexSet` itself.
+    /// The recommended way to use [`IndexSet`] is to add `use radix_rust::prelude::*` and then
+    /// create new maps using `index_set_new`, `index_set_with_capacity`, or the `indexset!()` macro.
     ///
-    /// Unfortunately `IndexSet` is very hard to use from no-std (see [docs](https://docs.rs/indexmap/latest/indexmap/#no-standard-library-targets)
-    /// and [relevant github issue](https://github.com/bluss/indexmap/issues/184)). It uses a weird build.rs script to detect if no-std is present, which
-    /// is hard to force unless you explicitly do eg a WASM build and see that it's missing.
+    /// Note that `IndexSet::new` does not function correctly when the `alloc` and `fuzzing` features
+    /// are enabled, so use `index_set_new` or `indexset!()` instead.
     ///
-    /// You can use these methods as follows:
     /// ```
-    /// use sbor::rust::collections::*;
+    /// use radix_rust::prelude::*;
     ///
     /// # type K = u32;
     /// # let n: usize = 1;
@@ -459,7 +458,14 @@ pub mod collections {
         pub type DefaultHashBuilder = std::collections::hash_map::RandomState;
 
         // See https://github.com/bluss/indexmap/pull/207
-        // By defining an alias with a default `DefaultHashBuilder`, we ensure that this type works as `IndexSet<K>` and that the `FromIter` impl works in no-std.
+        // By defining an alias with a default `DefaultHashBuilder`, we ensure that this type works as
+        // `IndexSet<K>` and that the `FromIter` impl works in no-std.
+        //
+        // NOTE: `IndexSet::new()` only exists in `std`, and always creates an
+        // `indexmap::IndexSet::<K, std::collections::hash_map::RandomState>`.
+        // This breaks when the `alloc` and `fuzzing` features are enabled.
+        //
+        // Instead, prefer `indexset!()`, `index_set_new()` or `IndexSet::default()`.
         pub type IndexSet<K, S = DefaultHashBuilder> = indexmap::IndexSet<K, S>;
 
         /// This is safe for std and no-std use cases (unlike `IndexSet::new` which disappears when std is not in the toolchain - see

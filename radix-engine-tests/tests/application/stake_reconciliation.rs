@@ -40,7 +40,7 @@ fn test_stake_reconciliation() {
     receipt.expect_commit_success();
 
     // Store current DB substate value hashes for comparision after staking execution
-    let mut pre_transaction_substates: IndexMap<(DbPartitionKey, DbSortKey), Vec<u8>> = IndexMap::new();
+    let mut pre_transaction_substates: IndexMap<(DbPartitionKey, DbSortKey), Vec<u8>> = indexmap!();
     let db = ledger.substate_db();
     let old_keys: Vec<DbPartitionKey> = db.list_partition_keys().collect();
     for key in old_keys {
