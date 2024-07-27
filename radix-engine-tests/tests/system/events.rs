@@ -2106,7 +2106,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             account::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
-            vault_withdraw_event.1.decode_as::<account::WithdrawEvent>().unwrap(),
+            account_withdraw_event.1.decode_as::<account::WithdrawEvent>().unwrap(),
             account::WithdrawEvent::Fungible(XRD, dec!("1"))
         )
     }
@@ -2116,7 +2116,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             fungible_vault::DepositEvent::EVENT_NAME
         );
         assert_eq!(
-            vault_withdraw_event.1.decode_as::<fungible_vault::DepositEvent>().unwrap(),
+            vault_deposit_event.1.decode_as::<fungible_vault::DepositEvent>().unwrap(),
             fungible_vault::DepositEvent::new(dec!("1"))
         )
     }
@@ -2126,7 +2126,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             account::DepositEvent::EVENT_NAME
         );
         assert_eq!(
-            vault_withdraw_event.1.decode_as::<account::DepositEvent>().unwrap(),
+            account_deposit_event.1.decode_as::<account::DepositEvent>().unwrap(),
             account::DepositEvent::Fungible(XRD, dec!("1"))
         )
     }
