@@ -912,4 +912,21 @@ mod tests {
     pub fn test_env_can_be_created() {
         let _ = TestEnvironment::new();
     }
+
+    #[test]
+    pub fn timec_set() {
+        // Arrange
+        let mut env = TestEnvironment::new();
+        let mut current_time = env.get_current_time();
+        current_time.seconds_since_unix_epoch += 60; // add 1 minute
+
+        // Act
+        env.set_current_time(current_time);
+
+        // Assert
+        let t1 = Runtime::current_time(&mut env, TimePrecision::Second).unwrap();
+        let t2 = Runtime::current_time(&mut env, TimePrecision::Minute).unwrap();
+
+        assert_eq!(t1, t2)
+    }
 }
