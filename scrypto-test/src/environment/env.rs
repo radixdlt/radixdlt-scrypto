@@ -938,7 +938,7 @@ mod tests {
     }
 
     #[test]
-    pub fn timec_set() {
+    pub fn test_time_set() {
         // Arrange
         let mut env = TestEnvironment::new();
         let mut current_time = env.get_current_time();
