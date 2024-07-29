@@ -761,6 +761,29 @@ where
             |env| -> Result<(), RuntimeError> {
                 let handle = env.actor_open_field(
                     ACTOR_STATE_SELF,
+                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut proposer_minute_timestamp =
+                    env.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+                        handle,
+                    )?;
+                proposer_minute_timestamp
+                    .as_unique_version_mut()
+                    .epoch_minute =
+                    i32::try_from(instant.seconds_since_unix_epoch / 60).map_err(|_| {
+                        RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                            ConsensusManagerError::InvalidProposerTimestampUpdate {
+                                from_millis: env.get_current_time().seconds_since_unix_epoch * 1000,
+                                to_millis: instant.seconds_since_unix_epoch * 1000,
+                            },
+                        ))
+                    })?;
+                env.field_write_typed(handle, &proposer_minute_timestamp)?;
+                env.field_close(handle)?;
+
+                let handle = env.actor_open_field(
+                    ACTOR_STATE_SELF,
                     ConsensusManagerField::ProposerMilliTimestamp.into(),
                     LockFlags::MUTABLE,
                 )?;
@@ -772,6 +795,7 @@ where
                     instant.seconds_since_unix_epoch * 1000;
                 env.field_write_typed(handle, &proposer_milli_timestamp)?;
                 env.field_close(handle)?;
+
                 Ok(())
             },
         )
