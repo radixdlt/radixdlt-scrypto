@@ -1,0 +1,65 @@
+name: Daily Analysis Phylum
+
+on:
+  schedule:
+    # Runs at 13:00 UTC every day
+    - cron: '0 13 * * *'
+
+env:
+  PHYLUM_PROJECT_ID: 851c8804-e9f6-423c-be8e-c529d22f4abd
+  PHYLUM_GROUP_NAME: Protocol
+  PHYLUM_NAME: radixdlt-scrypto
+jobs:
+  analyze_branch_phylum:
+    name: Analyze dependencies with Phylum
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch: [main, develop, release/babylon, release/anemone, release/bottlenose]
+        include:
+          - branch: main
+          - branch: develop
+          - branch: release/babylon
+          - branch: release/anemone
+          - branch: release/bottlenose
+      fail-fast: false 
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+      - uses: RDXWorks-actions/setup-python@main
+        with:
+          python-version: 3.10.6
+      - name: Install Phylum
+        run: |
+          curl https://sh.phylum.io/ | sh -s -- --yes
+          # Add the Python user base binary directory to PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Run Phylum Analysis
+        env: 
+          PHYLUM_API_KEY: ${{ secrets.PHYLUM_API_KEY }}         
+        run: | 
+          phylum analyze --quiet --label ${{ matrix.branch }}_branch_daily_schedule > /dev/null 2>&1 || exit_code=$?
+          if [ $exit_code -eq 100 ]; then 
+            echo "Phylum Analysis returned exit code 100, but continuing.";
+            echo "phylum_analyze_status=failure" >> $GITHUB_ENV 
+            exit 0; 
+          else 
+            echo "phylum_analyze_status=success" >> $GITHUB_ENV 
+            exit $?; 
+          fi
+      - name: Analysis Status Failure notification
+        if: always()
+        uses: RDXWorks-actions/notify-slack-action@master
+        with:
+          status: ${{ env.phylum_analyze_status }}
+          notify_when: 'failure'
+          notification_title: ':clock3: Phylum Scheduled Daily Analysis:'
+          message_format: 'Automatic phylum analysis has found vulnerabilities on ${{ env.PHYLUM_NAME }} in ${{ matrix.branch }} branch:boom:'
+          footer: "Linked Repository <{repo_url}|{repo}> | <https://app.phylum.io/projects/${{ env.PHYLUM_PROJECT_ID }}?label=${{ matrix.branch }}_branch_daily_schedule&group=${{ env.PHYLUM_GROUP_NAME }}|View Report> "
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_PHYLUM_PROTOCOL_TEAM_WEBHOOK }}
