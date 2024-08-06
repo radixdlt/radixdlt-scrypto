@@ -434,7 +434,7 @@ impl FungibleVaultBlueprint {
         // At this point the vault fee take is guaranteed to be force-written
         // so we must take care not to error out before crediting the cost units
         // and emitting an event
-        api.lock_fee(fee, contingent);
+        api.lock_fee(fee, contingent)?;
 
         Ok(())
     }

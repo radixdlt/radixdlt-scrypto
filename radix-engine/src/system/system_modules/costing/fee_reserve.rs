@@ -71,7 +71,12 @@ pub trait ExecutionFeeReserve {
         recipient: RoyaltyRecipient,
     ) -> Result<(), FeeReserveError>;
 
-    fn lock_fee(&mut self, vault_id: NodeId, fee: LiquidFungibleResource, contingent: bool);
+    fn lock_fee(
+        &mut self,
+        vault_id: NodeId,
+        fee: LiquidFungibleResource,
+        contingent: bool,
+    ) -> Result<(), FeeReserveError>;
 }
 
 pub trait FinalizingFeeReserve {
@@ -386,6 +391,33 @@ impl SystemLoanFeeReserve {
         }
     }
 
+    pub fn is_deferred_costs_and_loan_covered(&self) -> Result<bool, FeeReserveError> {
+        let deferred_execution_cost = self
+            .effective_execution_cost_unit_price
+            .checked_mul(self.execution_cost_units_deferred)
+            .ok_or(FeeReserveError::Overflow)?;
+
+        let mut deferred_storage_cost = Decimal::ZERO;
+        for (t, size) in &self.storage_cost_deferred {
+            let cost = match t {
+                StorageType::State => self.state_storage_price,
+                StorageType::Archive => self.archive_storage_price,
+            }
+            .checked_mul(*size)
+            .ok_or(FeeReserveError::Overflow)?;
+            deferred_storage_cost = deferred_storage_cost
+                .checked_add(cost)
+                .ok_or(FeeReserveError::Overflow)?;
+        }
+
+        let sum = deferred_execution_cost
+            .checked_add(deferred_storage_cost)
+            .and_then(|x| x.checked_add(self.xrd_owed))
+            .ok_or(FeeReserveError::Overflow)?;
+
+        return Ok(self.xrd_balance > sum);
+    }
+
     pub fn repay_all(&mut self) -> Result<(), FeeReserveError> {
         // Apply deferred execution cost
         self.consume_execution_internal(self.execution_cost_units_deferred)?;
@@ -522,7 +554,12 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         }
     }
 
-    fn lock_fee(&mut self, vault_id: NodeId, mut fee: LiquidFungibleResource, contingent: bool) {
+    fn lock_fee(
+        &mut self,
+        vault_id: NodeId,
+        mut fee: LiquidFungibleResource,
+        contingent: bool,
+    ) -> Result<(), FeeReserveError> {
         // Update balance
         if !contingent {
             self.xrd_balance = self
@@ -534,6 +571,15 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         // Move resource
         self.locked_fees
             .push((vault_id, fee.take_all(), contingent));
+
+        if self.abort_when_loan_repaid && self.is_deferred_costs_and_loan_covered().unwrap_or(false)
+        {
+            return Err(FeeReserveError::Abort(
+                AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
+            ));
+        }
+
+        Ok(())
     }
 }
 
@@ -619,7 +665,7 @@ mod tests {
     fn test_consume_and_repay() {
         let mut fee_reserve = create_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 5, false);
         fee_reserve.consume_execution(2).unwrap();
-        fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false);
+        fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false).unwrap();
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
@@ -653,7 +699,9 @@ mod tests {
     fn test_lock_fee() {
         let mut fee_reserve =
             create_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 500, false);
-        fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(100), false)
+            .unwrap();
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
@@ -667,7 +715,9 @@ mod tests {
     fn test_xrd_cost_unit_conversion() {
         let mut fee_reserve =
             create_test_fee_reserve(dec!(5), dec!(1), dec!(0), 0, 100, 500, false);
-        fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(100), false)
+            .unwrap();
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
@@ -714,7 +764,9 @@ mod tests {
                 RoyaltyRecipient::Package(PACKAGE_PACKAGE, TEST_VAULT_ID),
             )
             .unwrap();
-        fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(100), false)
+            .unwrap();
         fee_reserve.repay_all().unwrap();
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
@@ -736,7 +788,9 @@ mod tests {
     fn test_royalty_insufficient_balance() {
         let mut fee_reserve =
             create_test_fee_reserve(dec!(1), dec!(1), dec!(0), 0, 1000, 50, false);
-        fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(100), false)
+            .unwrap();
         fee_reserve
             .consume_royalty(
                 RoyaltyAmount::Xrd(90.into()),
