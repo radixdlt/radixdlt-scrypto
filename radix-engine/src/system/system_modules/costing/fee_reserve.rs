@@ -572,8 +572,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         self.locked_fees
             .push((vault_id, fee.take_all(), contingent));
 
-        if self.abort_when_loan_repaid && self.is_deferred_costs_and_loan_covered().unwrap_or(false)
-        {
+        if self.abort_when_loan_repaid && self.is_deferred_costs_and_loan_covered()? {
             return Err(FeeReserveError::Abort(
                 AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
             ));
@@ -659,6 +658,18 @@ mod tests {
         transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 
         SystemLoanFeeReserve::new(&costing_parameters, &transaction_costing_parameters)
+    }
+
+    #[test]
+    fn test_abort_early() {
+        let mut fee_reserve = create_test_fee_reserve(dec!(1), dec!(1), dec!(1), 2, 100, 5, true);
+        fee_reserve.consume_deferred_execution(1).unwrap();
+        assert_eq!(
+            fee_reserve.lock_fee(TEST_VAULT_ID, LiquidFungibleResource::new(dec!(2)), false),
+            Err(FeeReserveError::Abort(
+                AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment
+            ))
+        );
     }
 
     #[test]
