@@ -2279,7 +2279,11 @@ where
 
     #[trace_resources]
     #[cfg_attr(feature = "std", catch_unwind_ignore)]
-    fn lock_fee(&mut self, locked_fee: LiquidFungibleResource, contingent: bool) {
+    fn lock_fee(
+        &mut self,
+        locked_fee: LiquidFungibleResource,
+        contingent: bool,
+    ) -> Result<(), RuntimeError> {
         // Credit cost units
         let vault_id = self
             .current_actor()
@@ -2288,7 +2292,8 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .lock_fee(vault_id, locked_fee.clone(), contingent);
+            .lock_fee(vault_id, locked_fee.clone(), contingent)
+            .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
         // Emit Locked Fee event
         {
@@ -2314,6 +2319,8 @@ where
                 .add_event_unchecked(event)
                 .expect("Event should never exceed size.");
         }
+
+        Ok(())
     }
 
     fn execution_cost_unit_limit(&mut self) -> Result<u32, RuntimeError> {

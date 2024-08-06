@@ -304,7 +304,7 @@ implement_client_api! {
             &mut self,
             locked_fee: LiquidFungibleResource,
             contingent: bool,
-        ) -> (),
+        ) -> Result<(), RuntimeError>,
         consume_cost_units: (&mut self, costing_entry: ClientCostingEntry) -> Result<(), RuntimeError>,
         execution_cost_unit_limit: (&mut self) -> Result<u32, RuntimeError>,
         execution_cost_unit_price: (&mut self) -> Result<Decimal, RuntimeError>,

@@ -669,9 +669,9 @@ impl SystemModuleMixer {
         vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
-    ) {
+    ) -> Result<(), CostingError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing.lock_fee(vault_id, locked_fee, contingent);
+            self.costing.lock_fee(vault_id, locked_fee, contingent)
         } else {
             panic!("Fungible Vault Application layer should prevent call to credit if costing not enabled");
         }

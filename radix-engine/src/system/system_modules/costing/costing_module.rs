@@ -257,8 +257,10 @@ impl CostingModule {
         vault_id: NodeId,
         locked_fee: LiquidFungibleResource,
         contingent: bool,
-    ) {
-        self.fee_reserve.lock_fee(vault_id, locked_fee, contingent);
+    ) -> Result<(), CostingError> {
+        self.fee_reserve
+            .lock_fee(vault_id, locked_fee, contingent)
+            .map_err(|e| CostingError::FeeReserveError(e))
     }
 }
 

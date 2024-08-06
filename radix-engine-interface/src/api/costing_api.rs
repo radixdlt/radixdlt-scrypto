@@ -7,7 +7,7 @@ pub trait ClientCostingApi<E> {
     fn start_lock_fee(&mut self, amount: Decimal) -> Result<bool, E>;
 
     /// Add cost units to the reserve. This should never fail.
-    fn lock_fee(&mut self, locked_fee: LiquidFungibleResource, contingent: bool);
+    fn lock_fee(&mut self, locked_fee: LiquidFungibleResource, contingent: bool) -> Result<(), E>;
 
     fn consume_cost_units(&mut self, costing_entry: ClientCostingEntry) -> Result<(), E>;
 
