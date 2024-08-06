@@ -572,9 +572,11 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         self.locked_fees
             .push((vault_id, fee.take_all(), contingent));
 
+        // Abort if deferred costs and loan are fully covered.
+        // We can further relax the rule to if deferred and accrued costs are covered.
         if self.abort_when_loan_repaid && self.is_deferred_costs_and_loan_covered()? {
             return Err(FeeReserveError::Abort(
-                AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
+                AbortReason::ConfiguredAbortTriggeredOnLockFee,
             ));
         }
 
@@ -667,7 +669,7 @@ mod tests {
         assert_eq!(
             fee_reserve.lock_fee(TEST_VAULT_ID, LiquidFungibleResource::new(dec!(2)), false),
             Err(FeeReserveError::Abort(
-                AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment
+                AbortReason::ConfiguredAbortTriggeredOnLockFee
             ))
         );
     }

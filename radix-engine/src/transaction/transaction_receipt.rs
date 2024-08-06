@@ -166,6 +166,7 @@ pub struct AbortResult {
 
 #[derive(Debug, Clone, Display, PartialEq, Eq, Sbor)]
 pub enum AbortReason {
+    ConfiguredAbortTriggeredOnLockFee,
     ConfiguredAbortTriggeredOnFeeLoanRepayment,
 }
 
