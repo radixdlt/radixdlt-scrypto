@@ -270,6 +270,9 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
                         }
                     }
                     None => {
+                        // We are due to read another element and exit but have no parent
+                        // This is because we have finished reading the `root` value.
+                        // Therefore we call `end`.
                         ActionHandler::new_from_current_offset(ancestor_path, decoder).end(config)
                     }
                 }
