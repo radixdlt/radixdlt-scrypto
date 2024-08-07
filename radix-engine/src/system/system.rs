@@ -1146,7 +1146,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemFieldApi<Runtim
             }) => self.validate_blueprint_payload(
                 &target,
                 BlueprintPayloadIdentifier::Field(field_index),
-                buffer.as_value_ref(),
+                buffer.as_value(),
             )?,
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
@@ -1814,7 +1814,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreAp
             meta: *node_id,
         };
 
-        let key = self.validate_kv_store_payload(&target, KeyOrValue::Key, key.as_value_ref())?;
+        let key = self.validate_kv_store_payload(&target, KeyOrValue::Key, key.as_value())?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite {

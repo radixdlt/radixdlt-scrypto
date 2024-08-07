@@ -198,7 +198,7 @@ impl<'a, E: CustomExtension> UnvalidatedRawPayload<'a, E> {
 /// ## Conversion between forms
 ///
 /// The following conversions are all useful:
-/// * `as_payload_ref<'b>(&'b self) > RawPayload<'b, E>` - Cheaply creates an owned `RawPayload`,
+/// * `as_payload<'b>(&'b self) > RawPayload<'b, E>` - Cheaply creates an owned `RawPayload`,
 ///   referring to a slice of the underlying bytes from `&self`.
 /// * `into_owned(self) > RawPayload<'static, E>` - Converts the underlying bytes into an owned
 ///    `Vec<u8>` - either moving out of `self` if possible, if not, creating a `Vec<u8>` of the
@@ -308,12 +308,13 @@ impl<'a, E: CustomExtension> RawPayload<'a, E> {
         self.0.into_owned()
     }
 
-    pub fn as_payload_ref<'b>(&'b self) -> RawPayload<'b, E> {
+    /// Cheaply returns an owned [`RawPayload`] which internally is a reference to the underlying content.
+    pub fn as_payload<'b>(&'b self) -> RawPayload<'b, E> {
         RawPayload::from_valid_payload_slice(self.as_slice())
     }
 
     pub fn ref_into_owned(&self) -> RawPayload<'static, E> {
-        self.as_payload_ref().into_owned()
+        self.as_payload().into_owned()
     }
 
     pub fn into_owned(self) -> RawPayload<'static, E> {
@@ -473,7 +474,7 @@ impl<'a, E: CustomExtension> UnvalidatedRawValue<'a, E> {
     }
 
     /// Cheaply returns an owned [`UnvalidatedRawValue`] which internally is a reference to the underlying content.
-    pub fn as_value_ref(&self) -> UnvalidatedRawValue<E> {
+    pub fn as_value(&self) -> UnvalidatedRawValue<E> {
         UnvalidatedRawValue(self.0.as_content_ref())
     }
 
@@ -601,7 +602,7 @@ impl<'a, E: CustomExtension> UnvalidatedRawValue<'a, E> {
 /// ## Conversion between forms
 ///
 /// The following are common conversions between different forms:
-/// * `as_value_ref<'b>(&'b self) > RawValue<'b, E>` - Cheaply creates an owned `RawValue`,
+/// * `as_value<'b>(&'b self) > RawValue<'b, E>` - Cheaply creates an owned `RawValue`,
 ///   referring to a slice of the underlying bytes from `&self`.
 /// * `into_owned(self) > RawValue<'static, E>` - Converts the underlying bytes into an owned
 ///    `Vec<u8>` - either moving out of `self` if possible, if not, creating a `Vec<u8>` of the
@@ -703,12 +704,12 @@ impl<'a, E: CustomExtension> RawValue<'a, E> {
     }
 
     /// Cheaply returns an owned [`RawValue`] which internally is a reference to the underlying content.
-    pub fn as_value_ref(&self) -> RawValue<E> {
+    pub fn as_value(&self) -> RawValue<E> {
         RawValue(self.0.as_content_ref())
     }
 
     pub fn ref_into_owned(&self) -> RawValue<'static, E> {
-        self.as_value_ref().into_owned()
+        self.as_value().into_owned()
     }
 
     pub fn into_owned(self) -> RawValue<'static, E> {
@@ -725,6 +726,7 @@ impl<'a, E: CustomExtension> RawValue<'a, E> {
         RawValue(content)
     }
 
+    /// Cheaply returns an owned [`RawPayload`] which internally is a reference to the underlying content.
     pub fn as_payload<'b>(&'b self) -> RawPayload<'b, E> {
         RawPayload::from_valid_payload_cow(self.as_payload_cow())
     }

@@ -85,8 +85,8 @@ impl ApplicationChecker for RoleAssignmentDatabaseChecker {
                     node_id,
                     module_id,
                     collection_index,
-                    key: key.as_value_ref().into_owned(),
-                    value: value.as_value_ref().into_owned(),
+                    key: key.as_value().into_owned(),
+                    value: value.as_value().into_owned(),
                 },
                 error,
             })

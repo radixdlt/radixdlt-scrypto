@@ -100,7 +100,7 @@ impl<'v> IndexedScryptoValue<'v> {
     }
 
     pub fn as_value(&self) -> ScryptoRawValue {
-        self.value.as_value_ref()
+        self.value.as_value()
     }
 
     pub fn as_unvalidated(&self) -> ScryptoUnvalidatedRawValue {
