@@ -51,6 +51,9 @@ pub fn test_open_substate_of_invisible_package_address() {
         false,
     );
 
+    let tx_num_of_signature_validations =
+        executable.auth_zone_params().thread_params.iter().map(|param| param.initial_proofs.len()).sum();
+
     // Create kernel
     let mut system = System {
         blueprint_cache: NonIterMap::new(),
@@ -75,7 +78,7 @@ pub fn test_open_substate_of_invisible_package_address() {
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: executable.payload_size(),
-                tx_num_of_signature_validations: executable.auth_zone_params().initial_proofs.len(),
+                tx_num_of_signature_validations,
                 config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
                 detailed_cost_breakdown: None,

@@ -79,10 +79,7 @@ impl ValidatedPreviewIntent {
                 },
                 payload_size: self.intent.summary.effective_length,
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources,
-                },
+                auth_zone_params: AuthZoneParams::single_thread(initial_proofs, virtual_resources),
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],
             },

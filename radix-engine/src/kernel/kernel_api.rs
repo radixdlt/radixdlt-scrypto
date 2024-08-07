@@ -191,6 +191,8 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
 
+    fn kernel_get_current_thread(&self) -> usize;
+
     /// Returns the visibility of a node
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 

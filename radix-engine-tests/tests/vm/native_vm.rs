@@ -85,10 +85,10 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
-            AuthModule::new(AuthZoneParams {
-                initial_proofs: Default::default(),
-                virtual_resources: Default::default(),
-            }),
+            AuthModule::new(AuthZoneParams::single_thread(
+                Default::default(),
+                Default::default(),
+            )),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,
@@ -166,10 +166,10 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
-            AuthModule::new(AuthZoneParams {
-                initial_proofs: Default::default(),
-                virtual_resources: Default::default(),
-            }),
+            AuthModule::new(AuthZoneParams::single_thread(
+                Default::default(),
+                Default::default(),
+            )),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,

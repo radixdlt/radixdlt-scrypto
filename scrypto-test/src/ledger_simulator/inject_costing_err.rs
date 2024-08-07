@@ -505,6 +505,10 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInt
         self.api.kernel_get_current_depth()
     }
 
+    fn kernel_get_current_thread(&self) -> usize {
+        self.api.kernel_get_current_thread()
+    }
+
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.api.kernel_get_node_visibility(node_id)
     }
@@ -546,6 +550,10 @@ impl<'a, M: SystemCallbackObject, K: KernelInternalApi<InjectCostingError<M>>>
 
     fn kernel_get_current_depth(&self) -> usize {
         self.api.kernel_get_current_depth()
+    }
+
+    fn kernel_get_current_thread(&self) -> usize {
+        self.api.kernel_get_current_thread()
     }
 
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {

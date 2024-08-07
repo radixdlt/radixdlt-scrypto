@@ -213,13 +213,13 @@ Enum<3u8>(
                     // * Enum variant header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
                     payload_size: payload.len() - 3,
                     num_of_signature_validations: 3,
-                    auth_zone_params: AuthZoneParams {
-                        initial_proofs: btreeset!(
+                    auth_zone_params: AuthZoneParams::single_thread(
+                        btreeset!(
                             NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
                             NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
                         ),
-                        virtual_resources: btreeset!()
-                    },
+                        btreeset!()
+                    ),
                     costing_parameters: TransactionCostingParameters {
                         tip_percentage: 4,
                         free_credit_in_xrd: dec!(0),

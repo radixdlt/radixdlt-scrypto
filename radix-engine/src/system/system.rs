@@ -3018,6 +3018,10 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelInternalApi<Sys
         self.api.kernel_get_current_depth()
     }
 
+    fn kernel_get_current_thread(&self) -> usize {
+        self.api.kernel_get_current_thread()
+    }
+
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.api.kernel_get_node_visibility(node_id)
     }

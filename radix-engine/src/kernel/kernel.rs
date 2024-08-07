@@ -290,6 +290,7 @@ struct KernelHandler<
     M: KernelCallbackObject,
     F: FnMut(&mut KernelReadOnly<M>, IOAccess) -> Result<(), RuntimeError>,
 > {
+    current_thread: usize,
     callback: &'a mut M,
     prev_frame: Option<&'a CallFrame<M::CallFrameData, M::LockData>>,
     on_io_access: F,
@@ -308,6 +309,7 @@ impl<
         io_access: IOAccess,
     ) -> Result<(), RuntimeError> {
         let mut read_only = KernelReadOnly {
+            current_thread: self.current_thread,
             current_frame,
             prev_frame: self.prev_frame,
             heap,
@@ -333,6 +335,7 @@ impl<
         device: SubstateDevice,
     ) -> Result<(), Self::Error> {
         let mut read_only = KernelReadOnly {
+            current_thread: self.current_thread,
             current_frame,
             prev_frame: self.prev_frame,
             heap,
@@ -354,6 +357,7 @@ macro_rules! as_read_only {
     ($kernel:expr) => {{
         let thread = $kernel.threads.get($kernel.cur_thread).unwrap();
         KernelReadOnly {
+            current_thread: $kernel.cur_thread,
             current_frame: &thread.current_frame,
             prev_frame: thread.prev_frames.last(),
             heap: &$kernel.substate_io.heap,
@@ -405,6 +409,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -445,6 +450,7 @@ where
             let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
             let mut handler = KernelHandler {
+                current_thread: self.cur_thread,
                 callback: self.callback,
                 prev_frame: thread.prev_frames.last(),
                 on_io_access: |api, io_access| {
@@ -475,6 +481,7 @@ where
             let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
             let mut handler = KernelHandler {
+                current_thread: self.cur_thread,
                 callback: self.callback,
                 prev_frame: thread.prev_frames.last(),
                 on_io_access: |api, io_access| {
@@ -515,6 +522,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -559,6 +567,10 @@ where
         self.threads.get(self.cur_thread).unwrap().current_frame.depth()
     }
 
+    fn kernel_get_current_thread(&self) -> usize {
+        self.cur_thread
+    }
+
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
         let caller_actor = match thread.prev_frames.last() {
@@ -590,6 +602,7 @@ struct KernelReadOnly<'g, M>
 where
     M: KernelCallbackObject,
 {
+    current_thread: usize,
     current_frame: &'g CallFrame<M::CallFrameData, M::LockData>,
     prev_frame: Option<&'g CallFrame<M::CallFrameData, M::LockData>>,
     heap: &'g Heap,
@@ -606,6 +619,10 @@ where
 
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth()
+    }
+
+    fn kernel_get_current_thread(&self) -> usize {
+        self.current_thread
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
@@ -823,6 +840,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -852,6 +870,7 @@ where
                     let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
                     let mut handler = KernelHandler {
+                        current_thread: self.cur_thread,
                         callback: self.callback,
                         prev_frame: thread.prev_frames.last(),
                         on_io_access: |api, io_access| {
@@ -935,6 +954,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -973,6 +993,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -1034,6 +1055,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -1079,6 +1101,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -1118,6 +1141,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -1158,6 +1182,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {
@@ -1198,6 +1223,7 @@ where
         let thread = self.threads.get_mut(self.cur_thread).unwrap();
 
         let mut handler = KernelHandler {
+            current_thread: self.cur_thread,
             callback: self.callback,
             prev_frame: thread.prev_frames.last(),
             on_io_access: |api, io_access| {

@@ -64,10 +64,7 @@ impl PreparedTestTransaction {
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),
                 // For testing purpose, assume `num_of_signature_validations = num_of_initial_proofs + 1`
                 num_of_signature_validations: initial_proofs.len() + 1,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_params: AuthZoneParams::single_thread(initial_proofs, BTreeSet::new()),
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: DEFAULT_TIP_PERCENTAGE,
                     free_credit_in_xrd: Decimal::ZERO,

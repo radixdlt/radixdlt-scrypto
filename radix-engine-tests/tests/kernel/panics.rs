@@ -181,6 +181,10 @@ impl<'g> KernelInternalApi<System<Vm<'g, DefaultWasmEngine, NoExtension>>> for M
         panic1!()
     }
 
+    fn kernel_get_current_thread(&self) -> usize {
+        panic1!()
+    }
+
     fn kernel_get_node_visibility(&self, _: &NodeId) -> NodeVisibility {
         panic1!()
     }

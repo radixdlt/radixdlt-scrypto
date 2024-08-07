@@ -109,10 +109,10 @@ impl PreparedRoundUpdateTransactionV1 {
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs: btreeset!(system_execution(SystemExecution::Validator)),
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_params: AuthZoneParams::single_thread(
+                    btreeset!(system_execution(SystemExecution::Validator)),
+                    BTreeSet::new(),
+                ),
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: 0,
                     free_credit_in_xrd: Decimal::ZERO,

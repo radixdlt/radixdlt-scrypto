@@ -49,10 +49,7 @@ impl ValidatedNotarizedTransactionV1 {
                 }),
                 payload_size: summary.effective_length,
                 num_of_signature_validations: self.num_of_signature_validations,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_params: AuthZoneParams::single_thread(AuthAddresses::signer_set(&self.signer_keys), BTreeSet::new()),
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: intent.header.inner.tip_percentage,
                     free_credit_in_xrd: Decimal::ZERO,

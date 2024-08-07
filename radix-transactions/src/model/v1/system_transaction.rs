@@ -111,10 +111,7 @@ impl PreparedSystemTransactionV1 {
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_params: AuthZoneParams::single_thread(initial_proofs, BTreeSet::new()),
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: 0,
                     free_credit_in_xrd: Decimal::ZERO,

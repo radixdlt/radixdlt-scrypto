@@ -1,9 +1,33 @@
 use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub struct AuthZoneParams {
+pub struct AuthZoneThreadParams {
     pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
     pub virtual_resources: BTreeSet<ResourceAddress>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct AuthZoneParams {
+    pub thread_params: Vec<AuthZoneThreadParams>,
+}
+
+impl Default for AuthZoneParams {
+    fn default() -> Self {
+        Self {
+            thread_params: vec![AuthZoneThreadParams::default()]
+        }
+    }
+}
+
+impl AuthZoneParams {
+    pub fn single_thread(initial_proofs: BTreeSet<NonFungibleGlobalId>, virtual_resources: BTreeSet<ResourceAddress>) -> Self {
+        Self {
+            thread_params: vec![AuthZoneThreadParams {
+                initial_proofs,
+                virtual_resources,
+            }]
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -131,12 +155,15 @@ impl<'a> Executable<'a> {
     ) -> Self {
         let mut references = references.clone();
 
-        for proof in &context.auth_zone_params.initial_proofs {
-            references.insert(proof.resource_address().clone().into());
+        for auth_zone_params in &context.auth_zone_params.thread_params {
+            for proof in &auth_zone_params.initial_proofs {
+                references.insert(proof.resource_address().clone().into());
+            }
+            for resource in &auth_zone_params.virtual_resources {
+                references.insert(resource.clone().into());
+            }
         }
-        for resource in &context.auth_zone_params.virtual_resources {
-            references.insert(resource.clone().into());
-        }
+
         for preallocated_address in &context.pre_allocated_addresses {
             references.insert(
                 preallocated_address
