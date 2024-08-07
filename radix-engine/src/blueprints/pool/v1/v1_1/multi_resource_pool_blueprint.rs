@@ -374,7 +374,7 @@ impl MultiResourcePoolBlueprint {
                 },
             )?;
 
-            Ok((pool_units, change_buckets))
+            Ok((pool_units.into(), change_buckets))
         })
     }
 

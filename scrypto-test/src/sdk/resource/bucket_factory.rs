@@ -9,15 +9,16 @@ impl BucketFactory {
         amount: Decimal,
         creation_strategy: CreationStrategy,
         env: &mut TestEnvironment<S>,
-    ) -> Result<Bucket, RuntimeError>
+    ) -> Result<FungibleBucket, RuntimeError>
     where
         S: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
-        Self::create_bucket(
+        let bucket = Self::create_bucket(
             FactoryResourceSpecifier::Amount(resource_address, amount),
             creation_strategy,
             env,
-        )
+        )?;
+        Ok(FungibleBucket(bucket))
     }
 
     pub fn create_non_fungible_bucket<I, D, S>(
@@ -25,13 +26,13 @@ impl BucketFactory {
         non_fungibles: I,
         creation_strategy: CreationStrategy,
         env: &mut TestEnvironment<S>,
-    ) -> Result<Bucket, RuntimeError>
+    ) -> Result<NonFungibleBucket, RuntimeError>
     where
         I: IntoIterator<Item = (NonFungibleLocalId, D)>,
         D: ScryptoEncode,
         S: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
-        Self::create_bucket(
+        let bucket = Self::create_bucket(
             FactoryResourceSpecifier::Ids(
                 resource_address,
                 non_fungibles
@@ -47,7 +48,8 @@ impl BucketFactory {
             ),
             creation_strategy,
             env,
-        )
+        )?;
+        Ok(NonFungibleBucket(bucket))
     }
 
     pub fn create_bucket<S>(
@@ -63,13 +65,15 @@ impl BucketFactory {
                 FactoryResourceSpecifier::Amount(resource_address, amount),
                 CreationStrategy::DisableAuthAndMint,
             ) => env.with_auth_module_disabled(|env| {
-                ResourceManager(*resource_address).mint_fungible(*amount, env)
+                let bucket = ResourceManager(*resource_address).mint_fungible(*amount, env)?;
+                Ok(bucket.into())
             }),
             (
                 FactoryResourceSpecifier::Ids(resource_address, ids),
                 CreationStrategy::DisableAuthAndMint,
             ) => env.with_auth_module_disabled(|env| {
-                ResourceManager(*resource_address).mint_non_fungible(ids.clone(), env)
+                let bucket = ResourceManager(*resource_address).mint_non_fungible(ids.clone(), env)?;
+                Ok(bucket.into())
             }),
             (
                 FactoryResourceSpecifier::Amount(resource_address, amount),

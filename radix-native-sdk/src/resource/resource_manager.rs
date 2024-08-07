@@ -64,7 +64,7 @@ impl ResourceManager {
         metadata: M,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<(Self, Bucket), E> {
+    ) -> Result<(Self, FungibleBucket), E> {
         let metadata = ModuleConfig {
             init: metadata.into(),
             roles: RoleAssignmentInit::default(),
@@ -85,7 +85,7 @@ impl ResourceManager {
             })
             .unwrap(),
         )?;
-        let (resource_address, bucket): (ResourceAddress, Bucket) =
+        let (resource_address, bucket): (ResourceAddress, FungibleBucket) =
             scrypto_decode(result.as_slice()).unwrap();
         Ok((ResourceManager(resource_address), bucket))
     }
@@ -141,7 +141,7 @@ impl ResourceManager {
         &self,
         data: T,
         api: &mut Y,
-    ) -> Result<(Bucket, NonFungibleLocalId), E> {
+    ) -> Result<(NonFungibleBucket, NonFungibleLocalId), E> {
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
 
         let rtn = api.call_method(
@@ -159,7 +159,7 @@ impl ResourceManager {
         &self,
         data: IndexMap<NonFungibleLocalId, T>,
         api: &mut Y,
-    ) -> Result<NonFungibleResourceManagerMintOutput, E> {
+    ) -> Result<NonFungibleBucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
@@ -185,7 +185,7 @@ impl ResourceManager {
         &mut self,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Bucket, E> {
+    ) -> Result<FungibleBucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
@@ -225,9 +225,10 @@ impl ResourceManager {
 
     pub fn burn<Y: SystemObjectApi<E>, E: SystemApiError>(
         &mut self,
-        bucket: Bucket,
+        bucket: impl Into<Bucket>,
         api: &mut Y,
     ) -> Result<(), E> {
+        let bucket = bucket.into();
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_BURN_IDENT,
@@ -238,9 +239,10 @@ impl ResourceManager {
 
     pub fn package_burn<Y: SystemObjectApi<E>, E: SystemApiError>(
         &mut self,
-        bucket: Bucket,
+        bucket: impl Into<Bucket>,
         api: &mut Y,
     ) -> Result<(), E> {
+        let bucket = bucket.into();
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_PACKAGE_BURN_IDENT,
@@ -259,6 +261,20 @@ impl ResourceManager {
             scrypto_encode(&ResourceManagerGetTotalSupplyInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    pub fn new_empty_fungible_bucket<Y: SystemObjectApi<E>, E: SystemApiError>(
+        &self,
+        api: &mut Y,
+    ) -> Result<FungibleBucket, E> {
+        Ok(FungibleBucket(self.new_empty_bucket(api)?.into()))
+    }
+
+    pub fn new_empty_non_fungible_bucket<Y: SystemObjectApi<E>, E: SystemApiError>(
+        &self,
+        api: &mut Y,
+    ) -> Result<NonFungibleBucket, E> {
+        Ok(NonFungibleBucket(self.new_empty_bucket(api)?.into()))
     }
 
     pub fn new_empty_bucket<Y: SystemObjectApi<E>, E: SystemApiError>(

@@ -8,7 +8,7 @@ pub fn with_multi_resource_pool<const N: usize, F, O>(divisibility: [u8; N], cal
 where
     F: FnOnce(
         &mut TestEnvironment<InMemorySubstateDatabase>,
-        [(Cloneable<Bucket>, ResourceAddress); N],
+        [(Cloneable<FungibleBucket>, ResourceAddress); N],
         MultiResourcePool<N>,
     ) -> O,
 {
@@ -61,6 +61,12 @@ impl Clone for Cloneable<Bucket> {
     }
 }
 
+impl Clone for Cloneable<FungibleBucket> {
+    fn clone(&self) -> Self {
+        Self(FungibleBucket(Bucket(self.0 .0 .0)))
+    }
+}
+
 pub struct OneResourcePool(NodeId);
 
 impl OneResourcePool {
@@ -88,9 +94,10 @@ impl OneResourcePool {
 
     pub fn contribute<Y: SystemApi<RuntimeError>>(
         &mut self,
-        bucket: Bucket,
+        bucket: FungibleBucket,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError> {
+        let bucket = bucket.into();
         typed_call_method::<OneResourcePoolContributeOutput>(
             &self.0,
             ONE_RESOURCE_POOL_CONTRIBUTE_IDENT,
@@ -101,9 +108,10 @@ impl OneResourcePool {
 
     pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
         &mut self,
-        bucket: Bucket,
+        bucket: FungibleBucket,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
+        let bucket = bucket.into();
         typed_call_method::<OneResourcePoolProtectedDepositOutput>(
             &self.0,
             ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
@@ -185,26 +193,30 @@ impl TwoResourcePool {
 
     pub fn contribute<Y: SystemApi<RuntimeError>>(
         &mut self,
-        buckets: (Bucket, Bucket),
+        buckets: (FungibleBucket, FungibleBucket),
         api: &mut Y,
     ) -> Result<TwoResourcePoolContributeOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-            &TwoResourcePoolContributeInput { buckets },
+            &TwoResourcePoolContributeInput {
+                buckets: (buckets.0.into(), buckets.1.into()),
+            },
             api,
         )
     }
 
     pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
         &mut self,
-        bucket: Bucket,
+        bucket: FungibleBucket,
         api: &mut Y,
     ) -> Result<TwoResourcePoolProtectedDepositOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-            &TwoResourcePoolProtectedDepositInput { bucket },
+            &TwoResourcePoolProtectedDepositInput {
+                bucket: bucket.into(),
+            },
             api,
         )
     }
@@ -284,24 +296,24 @@ impl<const N: usize> MultiResourcePool<N> {
 
     pub fn contribute<Y: SystemApi<RuntimeError>>(
         &mut self,
-        buckets: [Bucket; N],
+        buckets: [FungibleBucket; N],
         api: &mut Y,
     ) -> Result<MultiResourcePoolContributeOutput, RuntimeError> {
+        let buckets = buckets.into_iter().map(|b| b.into()).collect();
         typed_call_method(
             &self.0,
             MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
-            &MultiResourcePoolContributeInput {
-                buckets: buckets.into(),
-            },
+            &MultiResourcePoolContributeInput { buckets },
             api,
         )
     }
 
     pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
         &mut self,
-        bucket: Bucket,
+        bucket: FungibleBucket,
         api: &mut Y,
     ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError> {
+        let bucket = bucket.into();
         typed_call_method(
             &self.0,
             MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,

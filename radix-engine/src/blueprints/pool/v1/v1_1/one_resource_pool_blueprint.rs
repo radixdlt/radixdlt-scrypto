@@ -207,9 +207,11 @@ impl OneResourcePoolBlueprint {
             )?;
             substate.vault.put(bucket, api)?;
 
-            substate
+            let pool_units = substate
                 .pool_unit_resource_manager
-                .mint_fungible(pool_units_to_mint, api)
+                .mint_fungible(pool_units_to_mint, api)?;
+
+            Ok(pool_units.into())
         })
     }
 

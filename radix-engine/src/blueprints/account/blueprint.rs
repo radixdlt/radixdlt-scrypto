@@ -641,12 +641,13 @@ impl AccountBlueprint {
             name: "Account Owner Badge".into(),
             account: ComponentAddress::new_or_panic(receiver.0),
         };
-        SecurifiedAccount::securify(
+        let bucket = SecurifiedAccount::securify(
             &receiver,
             owner_badge_data,
             Some(NonFungibleLocalId::bytes(receiver.0).unwrap()),
             api,
-        )
+        )?;
+        Ok(bucket.into())
     }
 
     pub fn create_advanced<Y: SystemApi<RuntimeError>>(
