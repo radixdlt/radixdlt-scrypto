@@ -16,17 +16,16 @@ fn should_not_be_able_to_move_auth_zone() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let auth_zone_id = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE).unwrap();

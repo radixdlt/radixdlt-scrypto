@@ -3,7 +3,6 @@ use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::ExecutionReceipt;
-use crate::system::actor::*;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::*;
@@ -110,6 +109,9 @@ impl TransactionReceiptV1 {
         detailed_execution_cost_breakdown: &[DetailedExecutionCostBreakdownEntry],
         network_definition: &NetworkDefinition,
     ) -> String {
+        // Putting use in here so it doesn't cause unused import compile warning in no-std
+        use crate::system::actor::*;
+
         let address_bech32m_encoder = AddressBech32Encoder::new(&network_definition);
 
         let mut lines = Vec::<String>::new();

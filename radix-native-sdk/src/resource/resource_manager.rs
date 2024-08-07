@@ -6,7 +6,7 @@ use radix_common::data::scrypto::{
 use radix_common::math::Decimal;
 use radix_common::traits::NonFungibleData;
 use radix_common::ScryptoSbor;
-use radix_engine_interface::api::{SystemBlueprintApi, SystemObjectApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::MetadataInit;
 use radix_engine_interface::object_modules::ModuleConfig;
@@ -18,7 +18,7 @@ use sbor::rust::prelude::*;
 pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
-    pub fn new_fungible<Y, E: Debug + ScryptoDecode, M: Into<MetadataInit>>(
+    pub fn new_fungible<Y: SystemBlueprintApi<E>, E: SystemApiError, M: Into<MetadataInit>>(
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
@@ -26,10 +26,7 @@ impl ResourceManager {
         metadata: M,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<Self, E>
-    where
-        Y: SystemBlueprintApi<E>,
-    {
+    ) -> Result<Self, E> {
         let metadata = ModuleConfig {
             init: metadata.into(),
             roles: RoleAssignmentInit::default(),
@@ -54,7 +51,11 @@ impl ResourceManager {
         Ok(ResourceManager(resource_address))
     }
 
-    pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode, M: Into<MetadataInit>>(
+    pub fn new_fungible_with_initial_supply<
+        Y: SystemBlueprintApi<E>,
+        E: SystemApiError,
+        M: Into<MetadataInit>,
+    >(
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
@@ -63,10 +64,7 @@ impl ResourceManager {
         metadata: M,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<(Self, Bucket), E>
-    where
-        Y: SystemBlueprintApi<E>,
-    {
+    ) -> Result<(Self, Bucket), E> {
         let metadata = ModuleConfig {
             init: metadata.into(),
             roles: RoleAssignmentInit::default(),
@@ -93,9 +91,11 @@ impl ResourceManager {
     }
 
     pub fn new_non_fungible<
+        // NOTE: These are in a non-standard order, but the N is a required explicit parameter,
+        // so we keep them in this order for backwards compatibility for people using TestEnvironment
         N: NonFungibleData,
-        Y,
-        E: Debug + ScryptoDecode,
+        Y: SystemBlueprintApi<E>,
+        E: SystemApiError,
         M: Into<MetadataInit>,
     >(
         owner_role: OwnerRole,
@@ -105,10 +105,7 @@ impl ResourceManager {
         metadata: M,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<Self, E>
-    where
-        Y: SystemBlueprintApi<E>,
-    {
+    ) -> Result<Self, E> {
         let metadata = ModuleConfig {
             init: metadata.into(),
             roles: RoleAssignmentInit::default(),
@@ -136,14 +133,15 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible_single_ruid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
+    pub fn mint_non_fungible_single_ruid<
+        Y: SystemObjectApi<E>,
+        E: SystemApiError,
+        T: ScryptoEncode,
+    >(
         &self,
         data: T,
         api: &mut Y,
-    ) -> Result<(Bucket, NonFungibleLocalId), E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<(Bucket, NonFungibleLocalId), E> {
         let value: ScryptoValue = scrypto_decode(&scrypto_encode(&data).unwrap()).unwrap();
 
         let rtn = api.call_method(
@@ -157,14 +155,11 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
+    pub fn mint_non_fungible<Y: SystemObjectApi<E>, E: SystemApiError, T: ScryptoEncode>(
         &self,
         data: IndexMap<NonFungibleLocalId, T>,
         api: &mut Y,
-    ) -> Result<NonFungibleResourceManagerMintOutput, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<NonFungibleResourceManagerMintOutput, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
@@ -186,14 +181,11 @@ impl ResourceManager {
     }
 
     /// Mints fungible resources
-    pub fn mint_fungible<Y, E: Debug + ScryptoDecode>(
+    pub fn mint_fungible<Y: SystemObjectApi<E>, E: SystemApiError>(
         &mut self,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
@@ -203,14 +195,11 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn get_non_fungible_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
+    pub fn get_non_fungible_data<Y: SystemObjectApi<E>, E: SystemApiError, T: ScryptoDecode>(
         &self,
         id: NonFungibleLocalId,
         api: &mut Y,
-    ) -> Result<T, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<T, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT,
@@ -221,10 +210,10 @@ impl ResourceManager {
         Ok(data)
     }
 
-    pub fn resource_type<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<ResourceType, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    pub fn resource_type<Y: SystemObjectApi<E>, E: SystemApiError>(
+        &self,
+        api: &mut Y,
+    ) -> Result<ResourceType, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,
@@ -234,14 +223,11 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn burn<Y, E: Debug + ScryptoDecode>(
+    pub fn burn<Y: SystemObjectApi<E>, E: SystemApiError>(
         &mut self,
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<(), E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_BURN_IDENT,
@@ -250,14 +236,11 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn package_burn<Y, E: Debug + ScryptoDecode>(
+    pub fn package_burn<Y: SystemObjectApi<E>, E: SystemApiError>(
         &mut self,
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<(), E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_PACKAGE_BURN_IDENT,
@@ -266,13 +249,10 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn total_supply<Y, E: Debug + ScryptoDecode>(
+    pub fn total_supply<Y: SystemObjectApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<Option<Decimal>, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<Option<Decimal>, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
@@ -281,10 +261,10 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn new_empty_bucket<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Bucket, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    pub fn new_empty_bucket<Y: SystemObjectApi<E>, E: SystemApiError>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
@@ -293,10 +273,10 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn new_empty_vault<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Own, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    pub fn new_empty_vault<Y: SystemObjectApi<E>, E: SystemApiError>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Own, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,

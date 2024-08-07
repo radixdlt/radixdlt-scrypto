@@ -3,7 +3,6 @@ use crate::blueprints::pool::v1::errors::two_resource_pool::*;
 use crate::blueprints::pool::v1::events::two_resource_pool::*;
 use crate::blueprints::pool::v1::substates::two_resource_pool::*;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::*;
 use radix_engine_interface::blueprints::component::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::prelude::*;
@@ -16,16 +15,13 @@ use radix_native_sdk::runtime::*;
 
 pub struct TwoResourcePoolBlueprint;
 impl TwoResourcePoolBlueprint {
-    pub fn instantiate<Y>(
+    pub fn instantiate<Y: SystemApi<RuntimeError>>(
         (resource_address1, resource_address2): (ResourceAddress, ResourceAddress),
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi,
-    {
+    ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError> {
         // A pool can't be created between the same resources - error out if it's
         if resource_address1 == resource_address2 {
             return Err(Error::PoolCreationWithSameResource.into());
@@ -135,13 +131,10 @@ impl TwoResourcePoolBlueprint {
         )))
     }
 
-    pub fn contribute<Y>(
+    pub fn contribute<Y: SystemApi<RuntimeError>>(
         (bucket1, bucket2): (Bucket, Bucket),
         api: &mut Y,
-    ) -> Result<TwoResourcePoolContributeOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolContributeOutput, RuntimeError> {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let (resource_address1, resource_address2, mut vault1, mut vault2, bucket1, bucket2) = {
@@ -384,13 +377,10 @@ impl TwoResourcePoolBlueprint {
         Ok((pool_units, change_bucket))
     }
 
-    pub fn redeem<Y>(
+    pub fn redeem<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<TwoResourcePoolRedeemOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolRedeemOutput, RuntimeError> {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         // Ensure that the passed pool resources are indeed pool resources
@@ -456,13 +446,10 @@ impl TwoResourcePoolBlueprint {
         Ok(buckets)
     }
 
-    pub fn protected_deposit<Y>(
+    pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<TwoResourcePoolProtectedDepositOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolProtectedDepositOutput, RuntimeError> {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let resource_address = bucket.resource_address(api)?;
         let vault = substate.vault(resource_address);
@@ -480,15 +467,12 @@ impl TwoResourcePoolBlueprint {
         }
     }
 
-    pub fn protected_withdraw<Y>(
+    pub fn protected_withdraw<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<TwoResourcePoolProtectedWithdrawOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolProtectedWithdrawOutput, RuntimeError> {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let vault = substate.vault(resource_address);
 
@@ -511,13 +495,10 @@ impl TwoResourcePoolBlueprint {
         }
     }
 
-    pub fn get_redemption_value<Y>(
+    pub fn get_redemption_value<Y: SystemApi<RuntimeError>>(
         amount_of_pool_units: Decimal,
         api: &mut Y,
-    ) -> Result<TwoResourcePoolGetRedemptionValueOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolGetRedemptionValueOutput, RuntimeError> {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let pool_units_to_redeem = amount_of_pool_units;
@@ -562,12 +543,9 @@ impl TwoResourcePoolBlueprint {
         Ok(amounts_owed)
     }
 
-    pub fn get_vault_amounts<Y>(
+    pub fn get_vault_amounts<Y: SystemApi<RuntimeError>>(
         api: &mut Y,
-    ) -> Result<TwoResourcePoolGetVaultAmountsOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolGetVaultAmountsOutput, RuntimeError> {
         let (two_resource_pool_substate, handle) =
             Self::lock_and_read(api, LockFlags::read_only())?;
         let amounts = two_resource_pool_substate
@@ -586,13 +564,10 @@ impl TwoResourcePoolBlueprint {
     // Utility Functions
     //===================
 
-    fn lock_and_read<Y>(
+    fn lock_and_read<Y: SystemApi<RuntimeError>>(
         api: &mut Y,
         lock_flags: LockFlags,
-    ) -> Result<(Substate, SubstateHandle), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(Substate, SubstateHandle), RuntimeError> {
         let substate_key = TwoResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let two_resource_pool_substate = api

@@ -1,10 +1,8 @@
 use radix_common::constants::RESOURCE_PACKAGE;
 use radix_common::data::scrypto::model::*;
-use radix_common::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoCategorize, ScryptoDecode,
-};
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_common::math::Decimal;
-use radix_engine_interface::api::SystemApi;
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use sbor::rust::collections::IndexSet;
@@ -15,10 +13,7 @@ use sbor::rust::vec::Vec;
 pub struct Worktop(pub Own);
 
 impl Worktop {
-    pub fn drop<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    pub fn drop<Y: SystemApi<E>, E: SystemApiError>(self, api: &mut Y) -> Result<(), E> {
         let _rtn = api.call_function(
             RESOURCE_PACKAGE,
             WORKTOP_BLUEPRINT,
@@ -32,14 +27,11 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn put<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn put<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<(), E> {
         let _rtn = api.call_method(
             self.0.as_node_id(),
             WORKTOP_PUT_IDENT,
@@ -49,15 +41,12 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn take<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn take<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             WORKTOP_TAKE_IDENT,
@@ -71,15 +60,12 @@ impl Worktop {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn take_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn take_non_fungibles<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             WORKTOP_TAKE_NON_FUNGIBLES_IDENT,
@@ -93,14 +79,11 @@ impl Worktop {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn take_all<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn take_all<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             WORKTOP_TAKE_ALL_IDENT,
@@ -109,14 +92,11 @@ impl Worktop {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn assert_contains<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn assert_contains<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<(), E> {
         let _rtn = api.call_method(
             self.0.as_node_id(),
             WORKTOP_ASSERT_CONTAINS_IDENT,
@@ -125,15 +105,12 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn assert_contains_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn assert_contains_amount<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<(), E> {
         let _rtn = api.call_method(
             self.0.as_node_id(),
             WORKTOP_ASSERT_CONTAINS_AMOUNT_IDENT,
@@ -146,15 +123,12 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn assert_contains_non_fungibles<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn assert_contains_non_fungibles<Y: SystemApi<E>, E: SystemApiError>(
         &self,
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<(), E> {
         let _rtn = api.call_method(
             self.0.as_node_id(),
             WORKTOP_ASSERT_CONTAINS_NON_FUNGIBLES_IDENT,
@@ -167,13 +141,7 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn drain<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        &self,
-        api: &mut Y,
-    ) -> Result<Vec<Bucket>, E>
-    where
-        Y: SystemApi<E>,
-    {
+    pub fn drain<Y: SystemApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<Vec<Bucket>, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             WORKTOP_DRAIN_IDENT,

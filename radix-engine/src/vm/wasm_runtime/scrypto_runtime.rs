@@ -12,10 +12,7 @@ use radix_engine_profiling_derive::trace_resources;
 use sbor::rust::vec::Vec;
 
 /// A shim between SystemAPI and WASM, with buffer capability.
-pub struct ScryptoRuntime<'y, Y>
-where
-    Y: SystemApi<RuntimeError>,
-{
+pub struct ScryptoRuntime<'y, Y: SystemApi<RuntimeError>> {
     api: &'y mut Y,
     buffers: IndexMap<BufferId, Vec<u8>>,
     next_buffer_id: BufferId,
@@ -25,10 +22,7 @@ where
     max_number_of_buffers: usize,
 }
 
-impl<'y, Y> ScryptoRuntime<'y, Y>
-where
-    Y: SystemApi<RuntimeError>,
-{
+impl<'y, Y: SystemApi<RuntimeError>> ScryptoRuntime<'y, Y> {
     pub fn new(api: &'y mut Y, package_address: PackageAddress, export_name: String) -> Self {
         ScryptoRuntime {
             api,
@@ -53,10 +47,7 @@ where
     }
 }
 
-impl<'y, Y> WasmRuntime for ScryptoRuntime<'y, Y>
-where
-    Y: SystemApi<RuntimeError>,
-{
+impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
     fn allocate_buffer(
         &mut self,
         buffer: Vec<u8>,

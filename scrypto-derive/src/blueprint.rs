@@ -1720,13 +1720,9 @@ fn generate_test_bindings_fns(bp_name: &str, items: &[ImplItem]) -> Result<Vec<T
             };
 
             let func = quote! {
-                pub fn #func_ident<Y, E> (
+                pub fn #func_ident<Y: SystemApi<E>, E: SystemApiError> (
                     #(#args),*
-                ) -> Result<#rtn_type, E>
-                where
-                    Y: ::scrypto::api::SystemApi<E>,
-                    E: Debug
-                {
+                ) -> Result<#rtn_type, E> {
                     let rtn = env. #invocation_type ( #invocation_args )?;
                     Ok(::scrypto::prelude::scrypto_decode(&rtn).unwrap())
                 }
@@ -2513,11 +2509,7 @@ mod tests {
                     }
 
                     impl Test {
-                        pub fn x<Y, E>(&self, i: u32, env: &mut Y) -> Result<u32, E>
-                        where
-                            Y: ::scrypto::api::SystemApi<E>,
-                            E: Debug
-                        {
+                        pub fn x<Y: SystemApi<E>, E: SystemApiError>(&self, i: u32, env: &mut Y) -> Result<u32, E> {
                             let rtn = env.call_method(
                                 &self.0,
                                 stringify!(x),
@@ -2526,15 +2518,11 @@ mod tests {
                             Ok(::scrypto::prelude::scrypto_decode(&rtn).unwrap())
                         }
 
-                        pub fn y<Y, E>(
+                        pub fn y<Y: SystemApi<E>, E: SystemApiError>(
                             i: u32,
                             blueprint_package_address: ::scrypto::prelude::PackageAddress,
                             env: &mut Y
-                        ) -> Result<u32, E>
-                        where
-                            Y: ::scrypto::api::SystemApi<E>,
-                            E: Debug
-                        {
+                        ) -> Result<u32, E> {
                             let rtn = env.call_function(
                                 blueprint_package_address,
                                 "Test",

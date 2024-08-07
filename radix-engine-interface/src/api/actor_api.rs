@@ -4,7 +4,6 @@ use crate::internal_prelude::*;
 use crate::types::*;
 use bitflags::bitflags;
 use radix_engine_interface::api::{ActorStateHandle, LockFlags};
-use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -17,7 +16,7 @@ bitflags! {
 }
 
 /// Api which exposes methods in the context of the actor
-pub trait SystemActorApi<E: Debug> {
+pub trait SystemActorApi<E> {
     /// Retrieve the current blueprint id
     fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, E>;
 

@@ -16,14 +16,11 @@ use sbor::rust::prelude::*;
 pub struct AccessControllerV1Blueprint;
 
 impl AccessControllerV1Blueprint {
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         dispatch! {
             IDENT,
             export_name,
@@ -54,7 +51,7 @@ impl AccessControllerV1Blueprint {
         }
     }
 
-    pub fn create<Y>(
+    pub fn create<Y: SystemApi<RuntimeError>>(
         AccessControllerCreateInput {
             controlled_asset,
             rule_set,
@@ -62,10 +59,7 @@ impl AccessControllerV1Blueprint {
             address_reservation,
         }: AccessControllerCreateInput,
         api: &mut Y,
-    ) -> Result<AccessControllerCreateOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerCreateOutput, RuntimeError> {
         // Allocating the address of the access controller - this will be needed for the metadata
         // and access rules of the recovery badge
         let (address_reservation, address) = {
@@ -184,26 +178,20 @@ impl AccessControllerV1Blueprint {
         Ok(Global::new(ComponentAddress::try_from(address).unwrap()))
     }
 
-    pub fn create_proof<Y>(
+    pub fn create_proof<Y: SystemApi<RuntimeError>>(
         _: AccessControllerCreateProofInput,
         api: &mut Y,
-    ) -> Result<AccessControllerCreateProofOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerCreateProofOutput, RuntimeError> {
         transition(api, AccessControllerCreateProofStateMachineInput)
     }
 
-    pub fn initiate_recovery_as_primary<Y>(
+    pub fn initiate_recovery_as_primary<Y: SystemApi<RuntimeError>>(
         AccessControllerInitiateRecoveryAsPrimaryInput {
             rule_set,
             timed_recovery_delay_in_minutes,
         }: AccessControllerInitiateRecoveryAsPrimaryInput,
         api: &mut Y,
-    ) -> Result<AccessControllerInitiateRecoveryAsPrimaryOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerInitiateRecoveryAsPrimaryOutput, RuntimeError> {
         let proposal = RecoveryProposal {
             rule_set,
             timed_recovery_delay_in_minutes,
@@ -227,16 +215,13 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn initiate_recovery_as_recovery<Y>(
+    pub fn initiate_recovery_as_recovery<Y: SystemApi<RuntimeError>>(
         AccessControllerInitiateRecoveryAsRecoveryInput {
             rule_set,
             timed_recovery_delay_in_minutes,
         }: AccessControllerInitiateRecoveryAsRecoveryInput,
         api: &mut Y,
-    ) -> Result<AccessControllerInitiateRecoveryAsRecoveryOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerInitiateRecoveryAsRecoveryOutput, RuntimeError> {
         let proposal = RecoveryProposal {
             rule_set,
             timed_recovery_delay_in_minutes,
@@ -260,13 +245,10 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn initiate_badge_withdraw_attempt_as_primary<Y>(
+    pub fn initiate_badge_withdraw_attempt_as_primary<Y: SystemApi<RuntimeError>>(
         AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput { .. }: AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput,
         api: &mut Y,
-    ) -> Result<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryOutput, RuntimeError> {
         transition_mut(
             api,
             AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMachineInput,
@@ -282,13 +264,10 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn initiate_badge_withdraw_attempt_as_recovery<Y>(
+    pub fn initiate_badge_withdraw_attempt_as_recovery<Y: SystemApi<RuntimeError>>(
         _: AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput,
         api: &mut Y,
-    ) -> Result<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryOutput, RuntimeError> {
         transition_mut(
             api,
             AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMachineInput,
@@ -304,16 +283,13 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn quick_confirm_primary_role_recovery_proposal<Y>(
+    pub fn quick_confirm_primary_role_recovery_proposal<Y: SystemApi<RuntimeError>>(
         AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
             rule_set,
             timed_recovery_delay_in_minutes,
         }: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput,
         api: &mut Y,
-    ) -> Result<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalOutput, RuntimeError> {
         let proposal = RecoveryProposal {
             rule_set,
             timed_recovery_delay_in_minutes,
@@ -340,16 +316,13 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn quick_confirm_recovery_role_recovery_proposal<Y>(
+    pub fn quick_confirm_recovery_role_recovery_proposal<Y: SystemApi<RuntimeError>>(
         AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput {
             rule_set,
             timed_recovery_delay_in_minutes,
         }: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput,
         api: &mut Y,
-    ) -> Result<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalOutput, RuntimeError> {
         let proposal = RecoveryProposal {
             rule_set,
             timed_recovery_delay_in_minutes,
@@ -376,12 +349,10 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn quick_confirm_primary_role_badge_withdraw_attempt<Y>(
+    pub fn quick_confirm_primary_role_badge_withdraw_attempt<Y: SystemApi<RuntimeError>>(
         _: AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput,
         api: &mut Y,
     ) -> Result<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
     {
         let bucket = transition_mut(
             api,
@@ -401,12 +372,10 @@ impl AccessControllerV1Blueprint {
         Ok(bucket)
     }
 
-    pub fn quick_confirm_recovery_role_badge_withdraw_attempt<Y>(
+    pub fn quick_confirm_recovery_role_badge_withdraw_attempt<Y: SystemApi<RuntimeError>>(
         _: AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput,
         api: &mut Y,
     ) -> Result<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
     {
         let bucket = transition_mut(
             api,
@@ -426,16 +395,13 @@ impl AccessControllerV1Blueprint {
         Ok(bucket)
     }
 
-    pub fn timed_confirm_recovery<Y>(
+    pub fn timed_confirm_recovery<Y: SystemApi<RuntimeError>>(
         AccessControllerTimedConfirmRecoveryInput {
             rule_set,
             timed_recovery_delay_in_minutes,
         }: AccessControllerTimedConfirmRecoveryInput,
         api: &mut Y,
-    ) -> Result<AccessControllerTimedConfirmRecoveryOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerTimedConfirmRecoveryOutput, RuntimeError> {
         let proposal = RecoveryProposal {
             rule_set,
             timed_recovery_delay_in_minutes,
@@ -463,13 +429,10 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn cancel_primary_role_recovery_proposal<Y>(
+    pub fn cancel_primary_role_recovery_proposal<Y: SystemApi<RuntimeError>>(
         AccessControllerCancelPrimaryRoleRecoveryProposalInput { .. }: AccessControllerCancelPrimaryRoleRecoveryProposalInput,
         api: &mut Y,
-    ) -> Result<AccessControllerCancelPrimaryRoleRecoveryProposalOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerCancelPrimaryRoleRecoveryProposalOutput, RuntimeError> {
         transition_mut(
             api,
             AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput,
@@ -485,13 +448,10 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn cancel_recovery_role_recovery_proposal<Y>(
+    pub fn cancel_recovery_role_recovery_proposal<Y: SystemApi<RuntimeError>>(
         AccessControllerCancelRecoveryRoleRecoveryProposalInput { .. }: AccessControllerCancelRecoveryRoleRecoveryProposalInput,
         api: &mut Y,
-    ) -> Result<AccessControllerCancelRecoveryRoleRecoveryProposalOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerCancelRecoveryRoleRecoveryProposalOutput, RuntimeError> {
         transition_mut(
             api,
             AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput,
@@ -507,13 +467,10 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn cancel_primary_role_badge_withdraw_attempt<Y>(
+    pub fn cancel_primary_role_badge_withdraw_attempt<Y: SystemApi<RuntimeError>>(
         AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput { .. }: AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput,
         api: &mut Y,
-    ) -> Result<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptOutput, RuntimeError> {
         transition_mut(
             api,
             AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
@@ -529,13 +486,10 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn cancel_recovery_role_badge_withdraw_attempt<Y>(
+    pub fn cancel_recovery_role_badge_withdraw_attempt<Y: SystemApi<RuntimeError>>(
         AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput { .. }: AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput,
         api: &mut Y,
-    ) -> Result<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptOutput, RuntimeError> {
         transition_mut(
             api,
             AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
@@ -551,42 +505,33 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn lock_primary_role<Y>(
+    pub fn lock_primary_role<Y: SystemApi<RuntimeError>>(
         AccessControllerLockPrimaryRoleInput { .. }: AccessControllerLockPrimaryRoleInput,
         api: &mut Y,
-    ) -> Result<AccessControllerLockPrimaryRoleOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerLockPrimaryRoleOutput, RuntimeError> {
         transition_mut(api, AccessControllerLockPrimaryRoleStateMachineInput)?;
         Runtime::emit_event(api, LockPrimaryRoleEvent {})?;
 
         Ok(())
     }
 
-    pub fn unlock_primary_role<Y>(
+    pub fn unlock_primary_role<Y: SystemApi<RuntimeError>>(
         _: AccessControllerUnlockPrimaryRoleInput,
         api: &mut Y,
-    ) -> Result<AccessControllerUnlockPrimaryRoleOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerUnlockPrimaryRoleOutput, RuntimeError> {
         transition_mut(api, AccessControllerUnlockPrimaryRoleStateMachineInput)?;
         Runtime::emit_event(api, UnlockPrimaryRoleEvent {})?;
 
         Ok(())
     }
 
-    pub fn stop_timed_recovery<Y>(
+    pub fn stop_timed_recovery<Y: SystemApi<RuntimeError>>(
         AccessControllerStopTimedRecoveryInput {
             rule_set,
             timed_recovery_delay_in_minutes,
         }: AccessControllerStopTimedRecoveryInput,
         api: &mut Y,
-    ) -> Result<AccessControllerStopTimedRecoveryOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerStopTimedRecoveryOutput, RuntimeError> {
         transition_mut(
             api,
             AccessControllerStopTimedRecoveryStateMachineInput {
@@ -601,15 +546,12 @@ impl AccessControllerV1Blueprint {
         Ok(())
     }
 
-    pub fn mint_recovery_badges<Y>(
+    pub fn mint_recovery_badges<Y: SystemApi<RuntimeError>>(
         AccessControllerMintRecoveryBadgesInput {
             non_fungible_local_ids,
         }: AccessControllerMintRecoveryBadgesInput,
         api: &mut Y,
-    ) -> Result<AccessControllerMintRecoveryBadgesOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccessControllerMintRecoveryBadgesOutput, RuntimeError> {
         let resource_address = {
             let handle = api.actor_open_field(
                 ACTOR_STATE_SELF,
@@ -672,12 +614,11 @@ fn init_roles_from_rule_set(rule_set: RuleSet) -> RoleAssignmentInit {
     }
 }
 
-fn transition<Y, I>(
+fn transition<Y: SystemApi<RuntimeError>, I>(
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerV1Substate as Transition<I>>::Output, RuntimeError>
 where
-    Y: SystemApi<RuntimeError>,
     AccessControllerV1Substate: Transition<I>,
 {
     let handle = api.actor_open_field(
@@ -698,12 +639,11 @@ where
     Ok(rtn)
 }
 
-fn transition_mut<Y, I>(
+fn transition_mut<Y: SystemApi<RuntimeError>, I>(
     api: &mut Y,
     input: I,
 ) -> Result<<AccessControllerV1Substate as TransitionMut<I>>::Output, RuntimeError>
 where
-    Y: SystemApi<RuntimeError>,
     AccessControllerV1Substate: TransitionMut<I>,
 {
     let handle = api.actor_open_field(
@@ -731,14 +671,11 @@ where
     Ok(rtn)
 }
 
-fn update_role_assignment<Y>(
+fn update_role_assignment<Y: SystemApi<RuntimeError>>(
     api: &mut Y,
     receiver: &NodeId,
     rule_set: RuleSet,
-) -> Result<(), RuntimeError>
-where
-    Y: SystemApi<RuntimeError>,
-{
+) -> Result<(), RuntimeError> {
     let attached = AttachedRoleAssignment(*receiver);
     attached.set_role(
         ModuleId::Main,

@@ -546,42 +546,33 @@ impl ValidatorBlueprint {
         }
     }
 
-    pub fn register<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn register<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         Self::register_update(true, api)
     }
 
-    pub fn unregister<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn unregister<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         Self::register_update(false, api)
     }
 
-    pub fn stake_as_owner<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn stake_as_owner<Y: SystemApi<RuntimeError>>(
+        xrd_bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         Self::stake_internal(xrd_bucket, true, api)
     }
 
-    pub fn stake<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn stake<Y: SystemApi<RuntimeError>>(
+        xrd_bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         Self::stake_internal(xrd_bucket, false, api)
     }
 
-    fn stake_internal<Y>(
+    fn stake_internal<Y: SystemApi<RuntimeError>>(
         xrd_bucket: Bucket,
         is_owner: bool,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.field_index(),
@@ -643,10 +634,10 @@ impl ValidatorBlueprint {
         Ok(stake_unit_bucket)
     }
 
-    pub fn unstake<Y>(stake_unit_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn unstake<Y: SystemApi<RuntimeError>>(
+        stake_unit_bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         let stake_unit_bucket_amount = stake_unit_bucket.amount(api)?;
 
         let handle = api.actor_open_field(
@@ -738,13 +729,10 @@ impl ValidatorBlueprint {
         Ok(unstake_bucket)
     }
 
-    pub fn signal_protocol_update_readiness<Y>(
+    pub fn signal_protocol_update_readiness<Y: SystemApi<RuntimeError>>(
         protocol_version_name: String,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         if protocol_version_name.len() != VALIDATOR_PROTOCOL_VERSION_NAME_LEN {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ValidatorError(
@@ -781,10 +769,9 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
-    pub fn get_protocol_update_readiness<Y>(api: &mut Y) -> Result<Option<String>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn get_protocol_update_readiness<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Option<String>, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::ProtocolUpdateReadinessSignal.into(),
@@ -798,10 +785,10 @@ impl ValidatorBlueprint {
         Ok(signal.protocol_version_name)
     }
 
-    fn register_update<Y>(new_registered: bool, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn register_update<Y: SystemApi<RuntimeError>>(
+        new_registered: bool,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.field_index(),
@@ -839,15 +826,12 @@ impl ValidatorBlueprint {
         return Ok(());
     }
 
-    fn index_update<Y>(
+    fn index_update<Y: SystemApi<RuntimeError>>(
         validator: &ValidatorSubstate,
         new_registered: bool,
         new_stake_amount: Decimal,
         api: &mut Y,
-    ) -> Result<Option<SortedKey>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Option<SortedKey>, RuntimeError> {
         let validator_address: ComponentAddress =
             ComponentAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
         let new_sorted_key =
@@ -884,10 +868,10 @@ impl ValidatorBlueprint {
         Ok(new_sorted_key)
     }
 
-    pub fn claim_xrd<Y>(bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn claim_xrd<Y: SystemApi<RuntimeError>>(
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.field_index(),
@@ -950,10 +934,10 @@ impl ValidatorBlueprint {
         Ok(claimed_bucket)
     }
 
-    pub fn update_key<Y>(key: Secp256k1PublicKey, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn update_key<Y: SystemApi<RuntimeError>>(
+        key: Secp256k1PublicKey,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
@@ -984,10 +968,10 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
-    pub fn update_fee<Y>(new_fee_factor: Decimal, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn update_fee<Y: SystemApi<RuntimeError>>(
+        new_fee_factor: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         // check if new fee is valid
         check_validator_fee_factor(new_fee_factor)?;
 
@@ -1055,10 +1039,9 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
-    pub fn accepts_delegated_stake<Y>(api: &mut Y) -> Result<bool, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn accepts_delegated_stake<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<bool, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
@@ -1073,10 +1056,9 @@ impl ValidatorBlueprint {
         Ok(substate.accepts_delegated_stake)
     }
 
-    pub fn total_stake_xrd_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn total_stake_xrd_amount<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
@@ -1093,10 +1075,9 @@ impl ValidatorBlueprint {
         Ok(stake_amount)
     }
 
-    pub fn total_stake_unit_supply<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn total_stake_unit_supply<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
@@ -1113,13 +1094,10 @@ impl ValidatorBlueprint {
         Ok(total_stake_unit_supply)
     }
 
-    pub fn get_redemption_value<Y>(
+    pub fn get_redemption_value<Y: SystemApi<RuntimeError>>(
         amount_of_stake_units: Decimal,
         api: &mut Y,
-    ) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Decimal, RuntimeError> {
         if amount_of_stake_units.is_negative() || amount_of_stake_units.is_zero() {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::ValidatorError(ValidatorError::InvalidGetRedemptionAmount),
@@ -1152,13 +1130,10 @@ impl ValidatorBlueprint {
         Ok(redemption_value)
     }
 
-    pub fn update_accept_delegated_stake<Y>(
+    pub fn update_accept_delegated_stake<Y: SystemApi<RuntimeError>>(
         accept_delegated_stake: bool,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
@@ -1187,13 +1162,10 @@ impl ValidatorBlueprint {
     /// Locks the given stake units in an internal "delayed withdrawal" vault (which is the owner's
     /// way of showing their commitment to running this validator in an orderly fashion - see
     /// [`ValidatorSubstate.locked_owner_stake_unit_vault_id`]).
-    pub fn lock_owner_stake_units<Y>(
+    pub fn lock_owner_stake_units<Y: SystemApi<RuntimeError>>(
         stake_unit_bucket: Bucket,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.into(),
@@ -1213,13 +1185,10 @@ impl ValidatorBlueprint {
     /// The requested amount of stake units (if available) will be ready for withdrawal after the
     /// network-configured [`ConsensusManagerConfigSubstate.num_owner_stake_units_unlock_epochs`] via a
     /// call to [`finish_unlock_owner_stake_units()`].
-    pub fn start_unlock_owner_stake_units<Y>(
+    pub fn start_unlock_owner_stake_units<Y: SystemApi<RuntimeError>>(
         requested_stake_unit_amount: Decimal,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         // read the current epoch (needed for a drive-by "finish unlocking" of available withdrawals)
         let consensus_manager_handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
@@ -1294,10 +1263,9 @@ impl ValidatorBlueprint {
     /// Finishes the process of unlocking the owner's stake units by withdrawing *all* the pending
     /// amounts which have reached their target epoch and thus are already available (potentially
     /// none).
-    pub fn finish_unlock_owner_stake_units<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn finish_unlock_owner_stake_units<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         // read the current epoch
         let consensus_manager_handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
@@ -1377,16 +1345,13 @@ impl ValidatorBlueprint {
     /// value of all its stake units.
     /// Note: the validator's proposal statistics passed to this method are used only for creating
     /// an event (i.e. they are only informational and they do not drive any logic at this point).
-    pub fn apply_emission<Y>(
+    pub fn apply_emission<Y: SystemApi<RuntimeError>>(
         xrd_bucket: Bucket,
         concluded_epoch: Epoch,
         proposals_made: u64,
         proposals_missed: u64,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1474,14 +1439,11 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
-    pub fn apply_reward<Y>(
+    pub fn apply_reward<Y: SystemApi<RuntimeError>>(
         xrd_bucket: Bucket,
         concluded_epoch: Epoch,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -1554,10 +1516,10 @@ impl ValidatorBlueprint {
         }
     }
 
-    fn update_validator<Y>(update: UpdateSecondaryIndex, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn update_validator<Y: SystemApi<RuntimeError>>(
+        update: UpdateSecondaryIndex,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         match update {
             UpdateSecondaryIndex::Create {
                 index_key,
@@ -1725,13 +1687,10 @@ impl SecurifiedRoleAssignment for SecurifiedValidator {
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
-    fn create_stake_unit_resource<Y>(
+    fn create_stake_unit_resource<Y: SystemApi<RuntimeError>>(
         validator_address: GlobalAddress,
         api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<ResourceAddress, RuntimeError> {
         let stake_unit_resman = ResourceManager::new_fungible(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             true,
@@ -1761,13 +1720,10 @@ impl ValidatorCreator {
         Ok(stake_unit_resman.0)
     }
 
-    fn create_claim_nft<Y>(
+    fn create_claim_nft<Y: SystemApi<RuntimeError>>(
         validator_address: GlobalAddress,
         api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<ResourceAddress, RuntimeError> {
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError, _>(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             NonFungibleIdType::RUID,
@@ -1797,15 +1753,12 @@ impl ValidatorCreator {
         Ok(unstake_resman.0)
     }
 
-    pub fn create<Y>(
+    pub fn create<Y: SystemApi<RuntimeError>>(
         key: Secp256k1PublicKey,
         is_registered: bool,
         fee_factor: Decimal,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(ComponentAddress, Bucket), RuntimeError> {
         // check if validator fee is valid
         check_validator_fee_factor(fee_factor)?;
 
