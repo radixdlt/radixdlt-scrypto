@@ -1,5 +1,6 @@
 use scrypto_bindgen::schema;
 use scrypto_bindgen::translation;
+use scrypto_bindgen::types;
 
 use clap::Parser;
 use radix_common::prelude::*;
@@ -22,6 +23,9 @@ pub struct Args {
     /// the bindings.
     #[clap(short, long)]
     reset_ledger: bool,
+
+    #[clap(short, long)]
+    func_sig_change: Vec<types::FunctionSignatureReplacementsInput>,
 }
 
 #[derive(Debug)]
@@ -45,6 +49,8 @@ pub fn run() -> Result<(), Error> {
     }
     let db = env.db;
 
+    let blueprint_replacement_map = types::prepare_replacement_map(&args.func_sig_change);
+
     // Decode the package address without network context.
     let package_address = {
         let (_, _, bytes) =
@@ -66,6 +72,7 @@ pub fn run() -> Result<(), Error> {
             package_interface,
             package_address,
             &schema_resolver,
+            &blueprint_replacement_map,
         )
         .map_err(Error::SchemaError)?;
 

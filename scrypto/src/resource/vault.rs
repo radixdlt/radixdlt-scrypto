@@ -16,7 +16,7 @@ use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 pub trait ScryptoVault {
     type BucketType;
-    type ProofType;
+    type ResourceManagerType;
 
     fn with_bucket(bucket: Self::BucketType) -> Self;
 
@@ -28,9 +28,7 @@ pub trait ScryptoVault {
 
     fn resource_address(&self) -> ResourceAddress;
 
-    fn resource_manager(&self) -> ResourceManager {
-        self.resource_address().into()
-    }
+    fn resource_manager(&self) -> Self::ResourceManagerType;
 
     fn is_empty(&self) -> bool;
 
@@ -44,11 +42,13 @@ pub trait ScryptoVault {
         withdraw_strategy: WithdrawStrategy,
     ) -> Self::BucketType;
 
+    fn burn<A: Into<Decimal>>(&mut self, amount: A);
+}
+
+pub trait ScryptoGenericVault {
     fn as_fungible(&self) -> FungibleVault;
 
     fn as_non_fungible(&self) -> NonFungibleVault;
-
-    fn burn<A: Into<Decimal>>(&mut self, amount: A);
 }
 
 pub trait ScryptoFungibleVault {
@@ -104,11 +104,10 @@ pub trait ScryptoNonFungibleVault {
 
 impl ScryptoVault for Vault {
     type BucketType = Bucket;
-
-    type ProofType = Proof;
+    type ResourceManagerType = ResourceManager;
 
     /// Creates an empty vault and fills it with an initial bucket of resource.
-    fn with_bucket(bucket: Bucket) -> Self {
+    fn with_bucket(bucket: Self::BucketType) -> Self {
         let mut vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
         vault
@@ -123,7 +122,7 @@ impl ScryptoVault for Vault {
         scrypto_decode(&rtn).unwrap()
     }
 
-    fn put(&mut self, bucket: Bucket) -> () {
+    fn put(&mut self, bucket: Self::BucketType) -> () {
         let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
             VAULT_PUT_IDENT,
@@ -146,8 +145,12 @@ impl ScryptoVault for Vault {
         ResourceAddress::try_from(address).unwrap()
     }
 
+    fn resource_manager(&self) -> Self::ResourceManagerType {
+        self.resource_address().into()
+    }
+
     /// Takes some amount of resource from this vault into a bucket.
-    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType {
         let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
             VAULT_TAKE_IDENT,
@@ -160,7 +163,7 @@ impl ScryptoVault for Vault {
     }
 
     /// Takes all resource stored in this vault.
-    fn take_all(&mut self) -> Bucket {
+    fn take_all(&mut self) -> Self::BucketType {
         self.take(self.amount())
     }
 
@@ -168,7 +171,7 @@ impl ScryptoVault for Vault {
         &mut self,
         amount: A,
         withdraw_strategy: WithdrawStrategy,
-    ) -> Bucket {
+    ) -> Self::BucketType {
         let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
             VAULT_TAKE_ADVANCED_IDENT,
@@ -186,22 +189,6 @@ impl ScryptoVault for Vault {
         self.amount() == 0.into()
     }
 
-    fn as_fungible(&self) -> FungibleVault {
-        assert!(
-            self.0.as_node_id().is_internal_fungible_vault(),
-            "Not a fungible vault"
-        );
-        FungibleVault(Vault(self.0))
-    }
-
-    fn as_non_fungible(&self) -> NonFungibleVault {
-        assert!(
-            self.0.as_node_id().is_internal_non_fungible_vault(),
-            "Not a non-fungible vault"
-        );
-        NonFungibleVault(Vault(self.0))
-    }
-
     fn burn<A: Into<Decimal>>(&mut self, amount: A) {
         let rtn = ScryptoVmV1Api::object_call(
             self.0.as_node_id(),
@@ -215,14 +202,31 @@ impl ScryptoVault for Vault {
     }
 }
 
+impl ScryptoGenericVault for Vault {
+    fn as_fungible(&self) -> FungibleVault {
+        assert!(
+            self.0.as_node_id().is_internal_fungible_vault(),
+            "Not a fungible vault"
+        );
+        FungibleVault(Self(self.0))
+    }
+
+    fn as_non_fungible(&self) -> NonFungibleVault {
+        assert!(
+            self.0.as_node_id().is_internal_non_fungible_vault(),
+            "Not a non-fungible vault"
+        );
+        NonFungibleVault(Self(self.0))
+    }
+}
+
 //================
 // Fungible vault
 //================
 
 impl ScryptoVault for FungibleVault {
     type BucketType = FungibleBucket;
-
-    type ProofType = FungibleProof;
+    type ResourceManagerType = FungibleResourceManager;
 
     fn with_bucket(bucket: Self::BucketType) -> Self {
         Self(Vault::with_bucket(bucket.0))
@@ -247,6 +251,10 @@ impl ScryptoVault for FungibleVault {
         self.0.resource_address()
     }
 
+    fn resource_manager(&self) -> Self::ResourceManagerType {
+        self.resource_address().into()
+    }
+
     fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -265,14 +273,6 @@ impl ScryptoVault for FungibleVault {
         withdraw_strategy: WithdrawStrategy,
     ) -> Self::BucketType {
         FungibleBucket(self.0.take_advanced(amount, withdraw_strategy))
-    }
-
-    fn as_fungible(&self) -> FungibleVault {
-        self.0.as_fungible()
-    }
-
-    fn as_non_fungible(&self) -> NonFungibleVault {
-        self.0.as_non_fungible()
     }
 
     fn burn<A: Into<Decimal>>(&mut self, amount: A) {
@@ -340,8 +340,7 @@ impl ScryptoFungibleVault for FungibleVault {
 
 impl ScryptoVault for NonFungibleVault {
     type BucketType = NonFungibleBucket;
-
-    type ProofType = NonFungibleProof;
+    type ResourceManagerType = NonFungibleResourceManager;
 
     fn with_bucket(bucket: Self::BucketType) -> Self {
         Self(Vault::with_bucket(bucket.0))
@@ -366,6 +365,10 @@ impl ScryptoVault for NonFungibleVault {
         self.0.resource_address()
     }
 
+    fn resource_manager(&self) -> Self::ResourceManagerType {
+        self.resource_address().into()
+    }
+
     fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -386,14 +389,6 @@ impl ScryptoVault for NonFungibleVault {
         NonFungibleBucket(self.0.take_advanced(amount, withdraw_strategy))
     }
 
-    fn as_fungible(&self) -> FungibleVault {
-        self.0.as_fungible()
-    }
-
-    fn as_non_fungible(&self) -> NonFungibleVault {
-        self.0.as_non_fungible()
-    }
-
     fn burn<A: Into<Decimal>>(&mut self, amount: A) {
         self.0.burn(amount)
     }
@@ -404,7 +399,7 @@ impl ScryptoNonFungibleVault for NonFungibleVault {
         let rtn = ScryptoVmV1Api::object_call(
             self.0 .0.as_node_id(),
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit: limit }).unwrap(),
+            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit }).unwrap(),
         );
         scrypto_decode(&rtn).unwrap()
     }

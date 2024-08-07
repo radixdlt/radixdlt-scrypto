@@ -281,8 +281,8 @@ fn update_rule() {
     assert_eq!(
         ret[1],
         InstructionOutput::CallReturn(
-            scrypto_encode(&Some(AccessRule::Protected(AccessRuleNode::ProofRule(
-                ProofRule::Require(ResourceOrNonFungible::Resource(XRD))
+            scrypto_encode(&Some(AccessRule::Protected(CompositeRequirement::BasicRequirement(
+                BasicRequirement::Require(ResourceOrNonFungible::Resource(XRD))
             ))))
             .unwrap()
         )

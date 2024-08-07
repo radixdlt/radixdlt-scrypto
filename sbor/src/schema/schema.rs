@@ -29,6 +29,55 @@ impl<S: CustomSchema> Default for VersionedSchema<S> {
     }
 }
 
+/// A serializable record of the schema of a single type.
+/// Intended for historical backwards compatibility checking of a single type.
+#[derive(Debug, Clone, Sbor)]
+#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+pub struct SingleTypeSchema<S: CustomSchema> {
+    pub schema: VersionedSchema<S>,
+    pub type_id: LocalTypeId,
+}
+
+impl<S: CustomSchema> SingleTypeSchema<S> {
+    pub fn new(schema: VersionedSchema<S>, type_id: LocalTypeId) -> Self {
+        Self { schema, type_id }
+    }
+
+    pub fn from<T: IntoComparableSchema<Self, S>>(from: T) -> Self {
+        from.into_schema()
+    }
+
+    pub fn for_type<T: Describe<S::CustomAggregatorTypeKind> + ?Sized>() -> Self {
+        generate_single_type_schema::<T, S>()
+    }
+}
+
+/// A serializable record of the schema of a set of named types.
+/// Intended for historical backwards compatibility of a collection
+/// of types in a single schema.
+///
+/// For example, traits, or blueprint interfaces.
+#[derive(Debug, Clone, Sbor)]
+#[sbor(child_types = "S::CustomLocalTypeKind, S::CustomTypeValidation")]
+pub struct TypeCollectionSchema<S: CustomSchema> {
+    pub schema: VersionedSchema<S>,
+    pub type_ids: IndexMap<String, LocalTypeId>,
+}
+
+impl<S: CustomSchema> TypeCollectionSchema<S> {
+    pub fn new(schema: VersionedSchema<S>, type_ids: IndexMap<String, LocalTypeId>) -> Self {
+        Self { schema, type_ids }
+    }
+
+    pub fn from<T: IntoComparableSchema<Self, S>>(from: &T) -> Self {
+        from.into_schema()
+    }
+
+    pub fn from_aggregator(aggregator: TypeAggregator<S::CustomAggregatorTypeKind>) -> Self {
+        aggregator.generate_type_collection_schema::<S>()
+    }
+}
+
 /// An array of custom type kinds, and associated extra information which can attach to the type kinds
 #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 // NB - the generic parameter E isn't embedded in the value model itself - instead:

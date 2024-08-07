@@ -38,7 +38,7 @@ impl LocalAuthZone {
     pub fn create_proof_of_non_fungibles(
         ids: IndexSet<NonFungibleLocalId>,
         resource_address: ResourceAddress,
-    ) -> Proof {
+    ) -> NonFungibleProof {
         let node_id = ScryptoVmV1Api::actor_get_object_id(ACTOR_REF_AUTH_ZONE);
         AuthZoneRef(node_id).create_proof_of_non_fungibles(ids, resource_address)
     }

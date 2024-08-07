@@ -250,8 +250,12 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
     }
 
     #[trace_resources]
-    fn on_pin_node(system: &mut System<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_pin_node(system, node_id))
+    fn on_pin_node(
+        system: &mut System<V>,
+        depth: usize,
+        node_id: &NodeId,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(system, on_pin_node(system, depth, node_id))
     }
 
     #[trace_resources(log=entity_type)]
@@ -292,13 +296,14 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
     #[trace_resources]
     fn on_mark_substate_as_transient(
         system: &mut System<V>,
+        depth: usize,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             system,
-            on_mark_substate_as_transient(system, node_id, partition_number, substate_key)
+            on_mark_substate_as_transient(system, depth, node_id, partition_number, substate_key)
         )
     }
 
@@ -337,38 +342,46 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for SystemModuleMixer {
     #[trace_resources]
     fn on_set_substate(
         system: &mut System<V>,
+        depth: usize,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_set_substate(system, event))
+        internal_call_dispatch!(system, on_set_substate(system, depth, event))
     }
 
     #[trace_resources]
     fn on_remove_substate(
         system: &mut System<V>,
+        depth: usize,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_remove_substate(system, event))
+        internal_call_dispatch!(system, on_remove_substate(system, depth, event))
     }
 
     #[trace_resources]
-    fn on_scan_keys(system: &mut System<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_scan_keys(system, event))
+    fn on_scan_keys(
+        system: &mut System<V>,
+        depth: usize,
+        event: &ScanKeysEvent,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(system, on_scan_keys(system, depth, event))
     }
 
     #[trace_resources]
     fn on_drain_substates(
         system: &mut System<V>,
+        depth: usize,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_drain_substates(system, event))
+        internal_call_dispatch!(system, on_drain_substates(system, depth, event))
     }
 
     #[trace_resources]
     fn on_scan_sorted_substates(
         system: &mut System<V>,
+        depth: usize,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_scan_sorted_substates(system, event))
+        internal_call_dispatch!(system, on_scan_sorted_substates(system, depth, event))
     }
 }
 
@@ -631,10 +644,11 @@ impl SystemModuleMixer {
     pub fn apply_execution_cost(
         &mut self,
         costing_entry: ExecutionCostingEntry,
+        depth: usize,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing
-                .apply_execution_cost(costing_entry)
+                .apply_execution_cost(costing_entry, depth)
                 .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))
         } else {
             Ok(())

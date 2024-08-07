@@ -18,7 +18,7 @@ pub fn generate_single_type_schema<
     SingleTypeSchema::new(schema, type_id)
 }
 
-/// You may wish to use the newer `schema.generate_named_types_schema_version()`
+/// You may wish to use the newer `aggregator.generate_type_collection_schema()`
 /// which, in tandom with `add_named_root_type_and_descendents`
 /// also captures named root types to give more structure to enable schema
 /// comparisons over time.

@@ -2,7 +2,7 @@
 
 set -e
 
-PACKAGE=radix-engine-tests
+PACKAGES="-p radix-common -p radix-sbor-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests"
 TARGET=system
 FILE=arguments
 TEST=vector_of_buckets_argument_should_succeed
@@ -24,7 +24,7 @@ function get_stack_usage() {
         stack=$(( $low + ($high - $low) / 2))
         echo checking stack $stack
 
-        if RUST_MIN_STACK=$stack cargo test -p $PACKAGE --test $TARGET $FILE::$TEST -- >$output 2>&1 ; then
+        if RUST_MIN_STACK=$stack cargo test $PACKAGES --test $TARGET $FILE::$TEST -- >$output 2>&1 ; then
             if grep 'stack overflow' $output ; then
                 cat $output
                 echo "unexpected error occurred"

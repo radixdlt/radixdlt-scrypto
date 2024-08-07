@@ -267,3 +267,549 @@ impl<'a> FinalizationCostingEntry<'a> {
         }
     }
 }
+
+/// A module containing various models that do not use references and use owned objects instead.
+/// Keep in mind that using references is more efficient and that this is used in applications that
+/// are not performance critical.
+#[allow(clippy::large_enum_variant)]
+pub mod owned {
+    use super::*;
+    use crate::kernel::substate_io::*;
+    use crate::track::*;
+
+    /// An owned model equivalent of [`ExecutionCostingEntry`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum ExecutionCostingEntryOwned {
+        /* verify signature */
+        VerifyTxSignatures {
+            num_signatures: usize,
+        },
+        ValidateTxPayload {
+            size: usize,
+        },
+        RefCheck {
+            event: RefCheckEventOwned,
+        },
+
+        /* run code */
+        RunNativeCode {
+            package_address: PackageAddress,
+            export_name: String,
+            input_size: usize,
+        },
+        RunWasmCode {
+            package_address: PackageAddress,
+            export_name: String,
+            wasm_execution_units: u32,
+        },
+        PrepareWasmCode {
+            size: usize,
+        },
+
+        /* invoke */
+        BeforeInvoke {
+            actor: Actor,
+            input_size: usize,
+        },
+        AfterInvoke {
+            output_size: usize,
+        },
+
+        /* node */
+        AllocateNodeId,
+        CreateNode {
+            event: CreateNodeEventOwned,
+        },
+        DropNode {
+            event: DropNodeEventOwned,
+        },
+        PinNode {
+            node_id: NodeId,
+        },
+        MoveModule {
+            event: MoveModuleEventOwned,
+        },
+
+        /* Substate */
+        OpenSubstate {
+            event: OpenSubstateEventOwned,
+        },
+        ReadSubstate {
+            event: ReadSubstateEventOwned,
+        },
+        WriteSubstate {
+            event: WriteSubstateEventOwned,
+        },
+        CloseSubstate {
+            event: CloseSubstateEventOwned,
+        },
+        MarkSubstateAsTransient {
+            node_id: NodeId,
+            partition_number: PartitionNumber,
+            substate_key: SubstateKey,
+        },
+
+        /* unstable node apis */
+        SetSubstate {
+            event: SetSubstateEventOwned,
+        },
+        RemoveSubstate {
+            event: RemoveSubstateEventOwned,
+        },
+        ScanKeys {
+            event: ScanKeysEventOwned,
+        },
+        ScanSortedSubstates {
+            event: ScanSortedSubstatesEventOwned,
+        },
+        DrainSubstates {
+            event: DrainSubstatesEventOwned,
+        },
+
+        /* system */
+        LockFee,
+        QueryFeeReserve,
+        QueryCostingModule,
+        QueryActor,
+        QueryTransactionHash,
+        GenerateRuid,
+        EmitEvent {
+            size: usize,
+        },
+        EmitLog {
+            size: usize,
+        },
+        EncodeBech32Address,
+        Panic {
+            size: usize,
+        },
+
+        /* crypto utils */
+        Bls12381V1Verify {
+            size: usize,
+        },
+        Bls12381V1AggregateVerify {
+            sizes: Vec<usize>,
+        },
+        Bls12381V1FastAggregateVerify {
+            size: usize,
+            keys_cnt: usize,
+        },
+        Bls12381G2SignatureAggregate {
+            signatures_cnt: usize,
+        },
+        Keccak256Hash {
+            size: usize,
+        },
+    }
+
+    /// An owned model equivalent of [`CreateNodeEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum CreateNodeEventOwned {
+        Start(
+            NodeId,
+            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, (ScryptoValue,)>>,
+        ),
+        IOAccess(IOAccess),
+        End(NodeId),
+    }
+
+    /// An owned model equivalent of [`DropNodeEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum DropNodeEventOwned {
+        Start(NodeId),
+        IOAccess(IOAccess),
+        End(
+            NodeId,
+            BTreeMap<PartitionNumber, BTreeMap<SubstateKey, (ScryptoValue,)>>,
+        ),
+    }
+
+    /// An owned model equivalent of [`RefCheckEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum RefCheckEventOwned {
+        IOAccess(IOAccess),
+    }
+
+    /// An owned model equivalent of [`MoveModuleEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum MoveModuleEventOwned {
+        IOAccess(IOAccess),
+    }
+
+    /// An owned model equivalent of [`OpenSubstateEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum OpenSubstateEventOwned {
+        Start {
+            node_id: NodeId,
+            partition_num: PartitionNumber,
+            substate_key: SubstateKey,
+            flags: LockFlags,
+        },
+        IOAccess(IOAccess),
+        End {
+            handle: SubstateHandle,
+            node_id: NodeId,
+            size: usize,
+        },
+    }
+
+    /// An owned model equivalent of [`ReadSubstateEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum ReadSubstateEventOwned {
+        OnRead {
+            handle: SubstateHandle,
+            value: (ScryptoValue,),
+            device: SubstateDevice,
+        },
+        IOAccess(IOAccess),
+    }
+
+    /// An owned model equivalent of [`WriteSubstateEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum WriteSubstateEventOwned {
+        Start {
+            handle: SubstateHandle,
+            value: (ScryptoValue,),
+        },
+        IOAccess(IOAccess),
+    }
+
+    /// An owned model equivalent of [`CloseSubstateEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum CloseSubstateEventOwned {
+        Start(SubstateHandle),
+    }
+
+    /// An owned model equivalent of [`SetSubstateEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum SetSubstateEventOwned {
+        Start(NodeId, PartitionNumber, SubstateKey, (ScryptoValue,)),
+        IOAccess(IOAccess),
+    }
+
+    /// An owned model equivalent of [`RemoveSubstateEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum RemoveSubstateEventOwned {
+        Start(NodeId, PartitionNumber, SubstateKey),
+        IOAccess(IOAccess),
+    }
+
+    /// An owned model equivalent of [`ScanKeysEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum ScanKeysEventOwned {
+        Start,
+        IOAccess(IOAccess),
+    }
+
+    /// An owned model equivalent of [`DrainSubstatesEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum DrainSubstatesEventOwned {
+        Start(u32),
+        IOAccess(IOAccess),
+    }
+
+    /// An owned model equivalent of [`ScanSortedSubstatesEvent`].
+    #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+    pub enum ScanSortedSubstatesEventOwned {
+        Start,
+        IOAccess(IOAccess),
+    }
+
+    impl<'a> From<ExecutionCostingEntry<'a>> for ExecutionCostingEntryOwned {
+        fn from(value: ExecutionCostingEntry<'a>) -> Self {
+            match value {
+                ExecutionCostingEntry::VerifyTxSignatures { num_signatures } => {
+                    Self::VerifyTxSignatures { num_signatures }
+                }
+                ExecutionCostingEntry::ValidateTxPayload { size } => {
+                    Self::ValidateTxPayload { size }
+                }
+                ExecutionCostingEntry::RefCheck { event } => Self::RefCheck {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::RunNativeCode {
+                    package_address,
+                    export_name,
+                    input_size,
+                } => Self::RunNativeCode {
+                    package_address: *package_address,
+                    export_name: export_name.to_owned(),
+                    input_size,
+                },
+                ExecutionCostingEntry::RunWasmCode {
+                    package_address,
+                    export_name,
+                    wasm_execution_units,
+                } => Self::RunWasmCode {
+                    package_address: *package_address,
+                    export_name: export_name.to_owned(),
+                    wasm_execution_units,
+                },
+                ExecutionCostingEntry::PrepareWasmCode { size } => Self::PrepareWasmCode { size },
+                ExecutionCostingEntry::BeforeInvoke { actor, input_size } => Self::BeforeInvoke {
+                    actor: actor.clone(),
+                    input_size,
+                },
+                ExecutionCostingEntry::AfterInvoke { output_size } => {
+                    Self::AfterInvoke { output_size }
+                }
+                ExecutionCostingEntry::AllocateNodeId => Self::AllocateNodeId,
+                ExecutionCostingEntry::CreateNode { event } => Self::CreateNode {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::DropNode { event } => Self::DropNode {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::PinNode { node_id } => Self::PinNode { node_id: *node_id },
+                ExecutionCostingEntry::MoveModule { event } => Self::MoveModule {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::OpenSubstate { event } => Self::OpenSubstate {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::ReadSubstate { event } => Self::ReadSubstate {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::WriteSubstate { event } => Self::WriteSubstate {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::CloseSubstate { event } => Self::CloseSubstate {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::MarkSubstateAsTransient {
+                    node_id,
+                    partition_number,
+                    substate_key,
+                } => Self::MarkSubstateAsTransient {
+                    node_id: *node_id,
+                    partition_number: *partition_number,
+                    substate_key: substate_key.clone(),
+                },
+                ExecutionCostingEntry::SetSubstate { event } => Self::SetSubstate {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::RemoveSubstate { event } => Self::RemoveSubstate {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::ScanKeys { event } => Self::ScanKeys {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::ScanSortedSubstates { event } => Self::ScanSortedSubstates {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::DrainSubstates { event } => Self::DrainSubstates {
+                    event: event.into(),
+                },
+                ExecutionCostingEntry::LockFee => Self::LockFee,
+                ExecutionCostingEntry::QueryFeeReserve => Self::QueryFeeReserve,
+                ExecutionCostingEntry::QueryCostingModule => Self::QueryCostingModule,
+                ExecutionCostingEntry::QueryActor => Self::QueryActor,
+                ExecutionCostingEntry::QueryTransactionHash => Self::QueryTransactionHash,
+                ExecutionCostingEntry::GenerateRuid => Self::GenerateRuid,
+                ExecutionCostingEntry::EmitEvent { size } => Self::EmitEvent { size },
+                ExecutionCostingEntry::EmitLog { size } => Self::EmitLog { size },
+                ExecutionCostingEntry::EncodeBech32Address => Self::EncodeBech32Address,
+                ExecutionCostingEntry::Panic { size } => Self::Panic { size },
+                ExecutionCostingEntry::Bls12381V1Verify { size } => Self::Bls12381V1Verify { size },
+                ExecutionCostingEntry::Bls12381V1AggregateVerify { sizes } => {
+                    Self::Bls12381V1AggregateVerify {
+                        sizes: sizes.to_vec(),
+                    }
+                }
+                ExecutionCostingEntry::Bls12381V1FastAggregateVerify { size, keys_cnt } => {
+                    Self::Bls12381V1FastAggregateVerify { size, keys_cnt }
+                }
+                ExecutionCostingEntry::Bls12381G2SignatureAggregate { signatures_cnt } => {
+                    Self::Bls12381G2SignatureAggregate { signatures_cnt }
+                }
+                ExecutionCostingEntry::Keccak256Hash { size } => Self::Keccak256Hash { size },
+            }
+        }
+    }
+
+    impl<'a> From<&'a CreateNodeEvent<'a>> for CreateNodeEventOwned {
+        fn from(value: &'a CreateNodeEvent<'a>) -> Self {
+            match value {
+                CreateNodeEvent::Start(item1, item2) => Self::Start(
+                    **item1,
+                    item2
+                        .iter()
+                        .map(|(key, value)| {
+                            (
+                                key.clone(),
+                                value
+                                    .iter()
+                                    .map(|(key, value)| {
+                                        (key.clone(), (value.as_scrypto_value().to_owned(),))
+                                    })
+                                    .collect(),
+                            )
+                        })
+                        .collect(),
+                ),
+                CreateNodeEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+                CreateNodeEvent::End(item) => Self::End(**item),
+            }
+        }
+    }
+
+    impl<'a> From<&'a DropNodeEvent<'a>> for DropNodeEventOwned {
+        fn from(value: &'a DropNodeEvent<'a>) -> Self {
+            match value {
+                DropNodeEvent::Start(item) => Self::Start(**item),
+                DropNodeEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+                DropNodeEvent::End(item1, item2) => Self::End(
+                    **item1,
+                    item2
+                        .iter()
+                        .map(|(key, value)| {
+                            (
+                                key.clone(),
+                                value
+                                    .iter()
+                                    .map(|(key, value)| {
+                                        (key.clone(), (value.as_scrypto_value().to_owned(),))
+                                    })
+                                    .collect(),
+                            )
+                        })
+                        .collect(),
+                ),
+            }
+        }
+    }
+
+    impl<'a> From<&'a RefCheckEvent<'a>> for RefCheckEventOwned {
+        fn from(value: &'a RefCheckEvent<'a>) -> Self {
+            match value {
+                RefCheckEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+
+    impl<'a> From<&'a MoveModuleEvent<'a>> for MoveModuleEventOwned {
+        fn from(value: &'a MoveModuleEvent<'a>) -> Self {
+            match value {
+                MoveModuleEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+
+    impl<'a> From<&'a OpenSubstateEvent<'a>> for OpenSubstateEventOwned {
+        fn from(value: &'a OpenSubstateEvent<'a>) -> Self {
+            match value {
+                OpenSubstateEvent::Start {
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    flags,
+                } => Self::Start {
+                    node_id: **node_id,
+                    partition_num: **partition_num,
+                    substate_key: (*substate_key).clone(),
+                    flags: **flags,
+                },
+                OpenSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+                OpenSubstateEvent::End {
+                    handle,
+                    node_id,
+                    size,
+                } => Self::End {
+                    handle: *handle,
+                    node_id: **node_id,
+                    size: *size,
+                },
+            }
+        }
+    }
+
+    impl<'a> From<&'a ReadSubstateEvent<'a>> for ReadSubstateEventOwned {
+        fn from(value: &'a ReadSubstateEvent<'a>) -> Self {
+            match value {
+                ReadSubstateEvent::OnRead {
+                    handle,
+                    value,
+                    device,
+                } => Self::OnRead {
+                    handle: *handle,
+                    value: (value.as_scrypto_value().to_owned(),),
+                    device: *device,
+                },
+                ReadSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+
+    impl<'a> From<&'a WriteSubstateEvent<'a>> for WriteSubstateEventOwned {
+        fn from(value: &'a WriteSubstateEvent<'a>) -> Self {
+            match value {
+                WriteSubstateEvent::Start { handle, value } => Self::Start {
+                    handle: *handle,
+                    value: (value.as_scrypto_value().to_owned(),),
+                },
+                WriteSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+
+    impl From<&CloseSubstateEvent> for CloseSubstateEventOwned {
+        fn from(value: &CloseSubstateEvent) -> Self {
+            match value {
+                CloseSubstateEvent::Start(item) => Self::Start(*item),
+            }
+        }
+    }
+
+    impl<'a> From<&'a SetSubstateEvent<'a>> for SetSubstateEventOwned {
+        fn from(value: &'a SetSubstateEvent<'a>) -> Self {
+            match value {
+                SetSubstateEvent::Start(item1, item2, item3, item4) => Self::Start(
+                    **item1,
+                    **item2,
+                    (*item3).clone(),
+                    (item4.as_scrypto_value().to_owned(),),
+                ),
+                SetSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+
+    impl<'a> From<&'a RemoveSubstateEvent<'a>> for RemoveSubstateEventOwned {
+        fn from(value: &'a RemoveSubstateEvent<'a>) -> Self {
+            match value {
+                RemoveSubstateEvent::Start(item1, item2, item3) => {
+                    Self::Start(**item1, **item2, (*item3).clone())
+                }
+                RemoveSubstateEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+
+    impl<'a> From<&'a ScanKeysEvent<'a>> for ScanKeysEventOwned {
+        fn from(value: &'a ScanKeysEvent<'a>) -> Self {
+            match value {
+                ScanKeysEvent::Start => Self::Start,
+                ScanKeysEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+
+    impl<'a> From<&'a DrainSubstatesEvent<'a>> for DrainSubstatesEventOwned {
+        fn from(value: &'a DrainSubstatesEvent<'a>) -> Self {
+            match value {
+                DrainSubstatesEvent::Start(item) => Self::Start(*item),
+                DrainSubstatesEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+
+    impl<'a> From<&'a ScanSortedSubstatesEvent<'a>> for ScanSortedSubstatesEventOwned {
+        fn from(value: &'a ScanSortedSubstatesEvent<'a>) -> Self {
+            match value {
+                ScanSortedSubstatesEvent::Start => Self::Start,
+                ScanSortedSubstatesEvent::IOAccess(item) => Self::IOAccess((*item).clone()),
+            }
+        }
+    }
+}

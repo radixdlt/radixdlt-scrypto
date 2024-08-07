@@ -1,6 +1,6 @@
 use sbor::prelude::*;
 use sbor::schema::*;
-use sbor::{BasicTypeAggregator, BasicValue, ComparableSchema, NoCustomSchema, NoCustomTypeKind};
+use sbor::{BasicTypeAggregator, BasicValue, NoCustomSchema, NoCustomTypeKind};
 
 //=====================
 // HELPER CODE / TRAITS
@@ -8,10 +8,6 @@ use sbor::{BasicTypeAggregator, BasicValue, ComparableSchema, NoCustomSchema, No
 trait DerivableTypeSchema: Describe<NoCustomTypeKind> {
     fn single_type_schema_version() -> SingleTypeSchema<NoCustomSchema> {
         SingleTypeSchema::for_type::<Self>()
-    }
-
-    fn single_type_schema_version_hex() -> String {
-        Self::single_type_schema_version().encode_to_hex()
     }
 }
 

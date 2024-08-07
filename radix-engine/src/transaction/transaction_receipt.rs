@@ -3,6 +3,7 @@ use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::ExecutionReceipt;
+use crate::system::actor::*;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::*;
@@ -57,6 +58,159 @@ pub struct TransactionReceiptV1 {
     /// Hardware resources usage report
     /// Available if `resources_usage` feature flag is enabled
     pub resources_usage: Option<ResourcesUsage>,
+    /// This field contains debug information about the transaction which is extracted during the
+    /// transaction execution.
+    ///
+    /// To maintain backward compatibility this field is skipped in the SBOR encoding, decoding and
+    /// the schema generation. Meaning, the only way to get this field is to execute transactions
+    /// locally (through a ledger simulator) with the appropriate execution config for this field
+    /// to be populated.
+    #[sbor(skip)]
+    pub debug_information: Option<TransactionDebugInformation>,
+}
+
+#[cfg(feature = "std")]
+impl TransactionReceiptV1 {
+    pub fn generate_execution_breakdown_flamegraph(
+        &self,
+        path: impl AsRef<std::path::Path>,
+        title: impl AsRef<str>,
+        network_definition: &NetworkDefinition,
+    ) -> Result<(), FlamegraphError> {
+        let path = path.as_ref();
+        let title = title.as_ref().to_owned();
+
+        // The options to use when constructing the flamechart.
+        let mut opts = inferno::flamegraph::Options::default();
+        "Execution Cost Units".clone_into(&mut opts.count_name);
+        opts.title = title;
+
+        // Transforming the detailed execution cost breakdown into a string understood by the flamegraph
+        // library.
+        let Some(TransactionDebugInformation {
+            ref detailed_execution_cost_breakdown,
+            ..
+        }) = self.debug_information
+        else {
+            return Err(FlamegraphError::DetailedCostBreakdownNotAvailable);
+        };
+
+        let flamegraph_string = Self::transform_detailed_execution_breakdown_into_flamegraph_string(
+            detailed_execution_cost_breakdown,
+            network_definition,
+        );
+
+        // Writing the flamegraph string to a temporary file since its required by the flamegraph lib to
+        // have a path.
+        let result = {
+            let tempfile = tempfile::NamedTempFile::new().map_err(FlamegraphError::IOError)?;
+            std::fs::write(&tempfile, flamegraph_string).map_err(FlamegraphError::IOError)?;
+
+            let mut result = std::io::Cursor::new(Vec::new());
+            inferno::flamegraph::from_files(&mut opts, &[tempfile.path().to_owned()], &mut result)
+                .map_err(|_| FlamegraphError::CreationError)?;
+
+            result.set_position(0);
+            result.into_inner()
+        };
+
+        std::fs::write(path, result).map_err(FlamegraphError::IOError)?;
+
+        Ok(())
+    }
+
+    fn transform_detailed_execution_breakdown_into_flamegraph_string(
+        detailed_execution_cost_breakdown: &[DetailedExecutionCostBreakdownEntry],
+        network_definition: &NetworkDefinition,
+    ) -> String {
+        let address_bech32m_encoder = AddressBech32Encoder::new(&network_definition);
+
+        let mut lines = Vec::<String>::new();
+        let mut path_stack = vec![];
+        for (
+            index,
+            DetailedExecutionCostBreakdownEntry {
+                item: execution_item,
+                ..
+            },
+        ) in detailed_execution_cost_breakdown.iter().enumerate()
+        {
+            // Constructing the full path
+            match execution_item {
+                ExecutionCostBreakdownItem::Invocation { actor, .. } => {
+                    let actor_string = match actor {
+                        Actor::Root => "root".to_owned(),
+                        Actor::Method(MethodActor {
+                            node_id,
+                            ref ident,
+                            ref object_info,
+                            ..
+                        }) => {
+                            format!(
+                                "Method <{}>::{}::{}",
+                                address_bech32m_encoder
+                                    .encode(node_id.as_bytes())
+                                    .expect("Encoding of an address can't fail"),
+                                object_info.blueprint_info.blueprint_id.blueprint_name,
+                                ident
+                            )
+                        }
+                        Actor::Function(FunctionActor {
+                            ref blueprint_id,
+                            ref ident,
+                            ..
+                        }) => {
+                            format!(
+                                "Function <{}>::{}::{}",
+                                address_bech32m_encoder
+                                    .encode(blueprint_id.package_address.as_bytes())
+                                    .expect("Encoding of an address can't fail"),
+                                blueprint_id.blueprint_name,
+                                ident
+                            )
+                        }
+                        Actor::BlueprintHook(BlueprintHookActor {
+                            hook,
+                            ref blueprint_id,
+                            ..
+                        }) => {
+                            format!(
+                                "Blueprint Hook <{}>::{}::{:?}",
+                                address_bech32m_encoder
+                                    .encode(blueprint_id.package_address.as_bytes())
+                                    .expect("Encoding of an address can't fail"),
+                                blueprint_id.blueprint_name,
+                                hook
+                            )
+                        }
+                    };
+                    path_stack.push(format!("Invocation: {actor_string} ({index})"))
+                }
+                ExecutionCostBreakdownItem::InvocationComplete => {
+                    path_stack.pop();
+                }
+                ExecutionCostBreakdownItem::Execution {
+                    simple_name,
+                    cost_units,
+                    ..
+                } => {
+                    lines.push(format!(
+                        "{}{}({}) {}",
+                        if path_stack.join(";").is_empty() {
+                            "".to_owned()
+                        } else {
+                            format!("{};", path_stack.join(";"))
+                        },
+                        simple_name,
+                        index,
+                        cost_units
+                    ));
+                }
+            }
+        }
+
+        lines.join("\n")
+    }
 }
 
 impl ExecutionReceipt for TransactionReceipt {
@@ -64,10 +218,11 @@ impl ExecutionReceipt for TransactionReceipt {
         TransactionReceipt {
             costing_parameters: CostingParameters::babylon_genesis(),
             transaction_costing_parameters: executable.costing_parameters().clone().into(),
-            fee_summary: TransactionFeeSummary::default(),
-            fee_details: None,
+            fee_summary: Default::default(),
+            fee_details: Default::default(),
             result: TransactionResult::Reject(RejectResult { reason }),
-            resources_usage: None,
+            resources_usage: Default::default(),
+            debug_information: Default::default(),
         }
     }
 
@@ -187,6 +342,17 @@ pub struct ResourcesUsage {
     pub heap_allocations_sum: usize,
     pub heap_peak_memory: usize,
     pub cpu_cycles: u64,
+}
+
+/// A structure of debug information about the transaction execution.
+///
+/// This is intentionally not SBOR codable since we never want this data to be persisted or
+/// transmitted over the wire.
+#[derive(Clone, PartialEq, Eq)]
+pub struct TransactionDebugInformation {
+    /* Costing Breakdown */
+    /// A detailed trace of where execution cost units were consumed.
+    pub detailed_execution_cost_breakdown: Vec<DetailedExecutionCostBreakdownEntry>,
 }
 
 impl TransactionExecutionTrace {
@@ -398,6 +564,7 @@ impl TransactionReceipt {
             fee_details: Default::default(),
             result: TransactionResult::Commit(commit_result),
             resources_usage: Default::default(),
+            debug_information: Default::default(),
         }
     }
 
@@ -1478,4 +1645,12 @@ impl TransactionFeeSummary {
             )
             .unwrap()
     }
+}
+
+#[cfg(feature = "std")]
+#[derive(Debug)]
+pub enum FlamegraphError {
+    IOError(std::io::Error),
+    CreationError,
+    DetailedCostBreakdownNotAvailable,
 }
