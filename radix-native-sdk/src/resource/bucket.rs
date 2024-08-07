@@ -219,13 +219,13 @@ impl NativeBucket for Bucket {
     }
 }
 
-pub trait SpecializedBucket: AsRef<Bucket> + Into<Bucket> {
+pub trait SpecificBucket: AsRef<Bucket> + Into<Bucket> {
     type ResourceManager: From<ResourceManager>;
     type Proof: SpecializedProof;
     fn from_bucket_of_correct_type(bucket: Bucket) -> Self;
 }
 
-impl SpecializedBucket for NonFungibleBucket {
+impl SpecificBucket for NonFungibleBucket {
     type ResourceManager = ResourceManager; // Change when we have a native NonFungibleResourceManager
     type Proof = NonFungibleProof;
 
@@ -234,7 +234,7 @@ impl SpecializedBucket for NonFungibleBucket {
     }
 }
 
-impl SpecializedBucket for FungibleBucket {
+impl SpecificBucket for FungibleBucket {
     type ResourceManager = ResourceManager; // Change when we have a native FungibleResourceManager
     type Proof = FungibleProof;
 
@@ -243,9 +243,9 @@ impl SpecializedBucket for FungibleBucket {
     }
 }
 
-impl<T: SpecializedBucket> NativeBucket for T {
-    type Proof = <Self as SpecializedBucket>::Proof;
-    type ResourceManager = <Self as SpecializedBucket>::ResourceManager;
+impl<T: SpecificBucket> NativeBucket for T {
+    type Proof = <Self as SpecificBucket>::Proof;
+    type ResourceManager = <Self as SpecificBucket>::ResourceManager;
 
     fn create<Y: SystemApi<E>, E: SystemApiError>(
         receiver: ResourceAddress,
