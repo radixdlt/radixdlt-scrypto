@@ -52,11 +52,8 @@ fn handle_normal_categorize(
 
     let output = match data {
         Data::Struct(s) => {
-            let FieldsData {
-                unskipped_field_names,
-                ..
-            } = process_fields(&s.fields)?;
-            let field_count = unskipped_field_names.len();
+            let fields_data = process_fields(&s.fields)?;
+            let unskipped_field_count = fields_data.unskipped_field_count();
             quote! {
                 impl #impl_generics sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
                     #[inline]
@@ -67,7 +64,7 @@ fn handle_normal_categorize(
 
                 impl #impl_generics sbor::SborTuple <#sbor_cvk> for #ident #ty_generics #where_clause {
                     fn get_length(&self) -> usize {
-                        #field_count
+                        #unskipped_field_count
                     }
                 }
             }
@@ -80,28 +77,43 @@ fn handle_normal_categorize(
                 .iter()
                 .map(|source_variant| {
                     match source_variant {
-                        SourceVariantData::Reachable(VariantData { source_variant, discriminator, fields_data, .. }) => {
-                            let v_id = &source_variant.ident;
-                            let FieldsData {
-                                unskipped_field_count,
-                                empty_fields_unpacking,
-                                ..
-                            } = &fields_data;
+                        SourceVariantData::Reachable(VariantData {
+                            variant_name,
+                            discriminator,
+                            fields_handling: FieldsHandling::Standard(fields_data),
+                            ..
+                        }) => {
+                            let unskipped_field_count = fields_data.unskipped_field_count();
+                            let empty_fields_unpacking = fields_data.empty_fields_unpacking();
                             (
-                                quote! { Self::#v_id #empty_fields_unpacking => #discriminator, },
-                                quote! { Self::#v_id #empty_fields_unpacking => #unskipped_field_count, },
+                                quote! { Self::#variant_name #empty_fields_unpacking => #discriminator, },
+                                quote! { Self::#variant_name #empty_fields_unpacking => #unskipped_field_count, },
                             )
                         },
-                        SourceVariantData::Unreachable(UnreachableVariantData { source_variant, fields_data, ..}) => {
-                            let v_id = &source_variant.ident;
-                            let FieldsData {
-                                empty_fields_unpacking,
-                                ..
-                            } = &fields_data;
-                            let panic_message = format!("Variant {} ignored as unreachable", v_id.to_string());
+                        SourceVariantData::Reachable(VariantData {
+                            variant_name,
+                            discriminator,
+                            fields_handling: FieldsHandling::Flatten {
+                                unique_field,
+                                fields_data,
+                            },
+                            ..
+                        }) => {
+                            let empty_fields_unpacking = fields_data.empty_fields_unpacking();
+                            let fields_unpacking = fields_data.fields_unpacking();
+                            let unskipped_field_type = unique_field.field_type();
+                            let unpacking_variable_name = unique_field.variable_name_from_unpacking();
                             (
-                                quote! { Self::#v_id #empty_fields_unpacking => panic!(#panic_message), },
-                                quote! { Self::#v_id #empty_fields_unpacking => panic!(#panic_message), },
+                                quote! { Self::#variant_name #empty_fields_unpacking => #discriminator, },
+                                quote! { Self::#variant_name #fields_unpacking => <#unskipped_field_type as SborTuple<#sbor_cvk>>::get_length(#unpacking_variable_name), },
+                            )
+                        },
+                        SourceVariantData::Unreachable(UnreachableVariantData { variant_name, fields_data, ..}) => {
+                            let empty_fields_unpacking = fields_data.empty_fields_unpacking();
+                            let panic_message = format!("Variant {} ignored as unreachable", variant_name.to_string());
+                            (
+                                quote! { Self::#variant_name #empty_fields_unpacking => panic!(#panic_message), },
+                                quote! { Self::#variant_name #empty_fields_unpacking => panic!(#panic_message), },
                             )
                         },
                     }
@@ -164,22 +176,18 @@ fn handle_transparent_categorize(
     let DeriveInput { data, .. } = &parsed;
     match data {
         Data::Struct(s) => {
-            let FieldsData {
-                unskipped_field_names,
-                unskipped_field_types,
-                ..
-            } = process_fields(&s.fields)?;
-            if unskipped_field_types.len() != 1 {
-                return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
-            }
-            let field_type = &unskipped_field_types[0];
-            let field_name = &unskipped_field_names[0];
+            let single_field = process_fields(&s.fields)?
+                .unique_unskipped_field()
+                .map_err(|()| Error::new(
+                    Span::call_site(),
+                    "The transparent attribute is only supported for structs with a single unskipped field.",
+                ))?;
 
             handle_categorize_as(
                 parsed,
                 context_custom_value_kind,
-                field_type,
-                &quote! { &self.#field_name }
+                single_field.field_type(),
+                &single_field.self_field_reference(),
             )
         }
         Data::Enum(_) => {
@@ -458,9 +466,9 @@ mod tests {
 
                     fn get_length(&self) -> usize {
                         match self {
-                            Self::A => 0,
-                            Self::B(_) => 1,
-                            Self::C { .. } => 1,
+                            Self::A => 0usize,
+                            Self::B(_) => 1usize,
+                            Self::C { .. } => 1usize,
                         }
                     }
                 }

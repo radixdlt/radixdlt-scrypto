@@ -162,7 +162,7 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
     /// Also tracks it as a named root type, which can be used e.g. in schema comparisons.
     ///
     /// This is only intended for use when adding root types to schemas,
-    /// /and should not be called from inside Describe macros.
+    /// and should not be called from inside `Describe` implementations.
     pub fn add_root_type<T: Describe<C> + ?Sized>(
         &mut self,
         name: impl Into<String>,
@@ -183,7 +183,7 @@ impl<C: CustomTypeKind<RustTypeId>> TypeAggregator<C> {
     ///
     /// If the type is well known or already in the aggregator, this returns early with the existing index.
     ///
-    /// Typically you should use [`add_schema_descendents`], unless you're replacing/mutating
+    /// Typically you should use [`add_child_type_and_descendents`], unless you're replacing/mutating
     /// the child types somehow. In which case, you'll likely wish to call [`add_child_type`] and
     /// [`add_schema_descendents`] separately.
     ///

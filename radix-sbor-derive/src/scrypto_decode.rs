@@ -37,7 +37,7 @@ mod tests {
                     ) -> Result<Self, sbor::DecodeError> {
                         use sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, sbor::ValueKind::Tuple)?;
-                        decoder.read_and_check_size(0)?;
+                        decoder.read_and_check_size(0usize)?;
                         Ok(Self {})
                     }
                 }
@@ -72,17 +72,17 @@ mod tests {
                         #[deny(unreachable_patterns)]
                         match discriminator {
                             0u8 => {
-                                decoder.read_and_check_size(1)?;
+                                decoder.read_and_check_size(1usize)?;
                                 Ok(Self::A {
                                     named: decoder.decode::<T>()?,
                                 })
                             },
                             1u8 => {
-                                decoder.read_and_check_size(1)?;
+                                decoder.read_and_check_size(1usize)?;
                                 Ok(Self::B(decoder.decode::<String>()?,))
                             },
                             2u8 => {
-                                decoder.read_and_check_size(0)?;
+                                decoder.read_and_check_size(0usize)?;
                                 Ok(Self::C)
                             },
                             _ => Err(sbor::DecodeError::UnknownDiscriminator(discriminator))

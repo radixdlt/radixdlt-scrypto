@@ -37,7 +37,7 @@ mod tests {
                     #[inline]
                     fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
                         use sbor::{self, Encode};
-                        encoder.write_size(0)?;
+                        encoder.write_size(0usize)?;
                         Ok(())
                     }
                 }
@@ -71,17 +71,17 @@ mod tests {
                         match self {
                             Self::A { named, .. } => {
                                 encoder.write_discriminator(0u8)?;
-                                encoder.write_size(1)?;
+                                encoder.write_size(1usize)?;
                                 encoder.encode(named)?;
                             }
                             Self::B(a0) => {
                                 encoder.write_discriminator(1u8)?;
-                                encoder.write_size(1)?;
+                                encoder.write_size(1usize)?;
                                 encoder.encode(a0)?;
                             }
                             Self::C => {
                                 encoder.write_discriminator(2u8)?;
-                                encoder.write_size(0)?;
+                                encoder.write_size(0usize)?;
                             }
                         }
                         Ok(())

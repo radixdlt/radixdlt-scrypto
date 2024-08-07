@@ -3,6 +3,9 @@
 use sbor::*;
 
 #[derive(Sbor)]
+pub struct UnitStruct;
+
+#[derive(Sbor)]
 pub struct TestStructNamed {
     pub state: u32,
 }
