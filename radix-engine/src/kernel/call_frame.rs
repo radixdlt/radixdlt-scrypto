@@ -564,10 +564,7 @@ pub struct RootCallFrameInitRefs {
 }
 
 impl<C, L: Clone> CallFrame<C, L> {
-    pub fn new_root(
-        call_frame_data: C,
-        root_refs: RootCallFrameInitRefs,
-    ) -> Self {
+    pub fn new_root(call_frame_data: C, root_refs: RootCallFrameInitRefs) -> Self {
         let mut call_frame = Self {
             depth: 0,
             call_frame_data,

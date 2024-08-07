@@ -162,7 +162,7 @@ Enum<3u8>(
         assert_eq!(
             executable,
             Executable {
-                thread: ExecutableThread {
+                threads: vec![ExecutableThread {
                     encoded_instructions: &manifest_encode(&manifest.instructions).unwrap(),
                     references: indexset!(
                         Reference(FAUCET.into_node_id()),
@@ -174,7 +174,7 @@ Enum<3u8>(
                         hash(&[1, 2]) => vec![1, 2]
                     ),
                     pre_allocated_addresses: vec![],
-                },
+                }],
                 context: ExecutionContext {
                     intent_hash: TransactionIntentHash::ToCheck {
                         intent_hash: hash(

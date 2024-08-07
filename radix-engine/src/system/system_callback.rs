@@ -172,7 +172,7 @@ impl<C: SystemCallbackObject> System<C> {
             "Transaction costing parameters: {:?}",
             executable.costing_parameters()
         );
-        println!("Threads: {:?}", executable.thread());
+        println!("Threads: {:?}", executable.threads());
     }
 
     fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {

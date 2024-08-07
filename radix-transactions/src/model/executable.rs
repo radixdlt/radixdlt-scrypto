@@ -148,7 +148,7 @@ pub struct ExecutableThread<'a> {
 /// Executable form of transaction, post stateless validation.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Executable<'a> {
-    pub(crate) thread: ExecutableThread<'a>,
+    pub(crate) threads: Vec<ExecutableThread<'a>>,
     pub(crate) context: ExecutionContext,
     pub(crate) system: bool,
 }
@@ -183,13 +183,15 @@ impl<'a> Executable<'a> {
             );
         }
 
+        let threads = vec![ExecutableThread {
+            pre_allocated_addresses,
+            encoded_instructions,
+            references,
+            blobs,
+        }];
+
         Self {
-            thread: ExecutableThread {
-                pre_allocated_addresses,
-                encoded_instructions,
-                references,
-                blobs,
-            },
+            threads,
             context,
             system,
         }
@@ -240,8 +242,8 @@ impl<'a> Executable<'a> {
         &self.context.costing_parameters
     }
 
-    pub fn thread(&self) -> &ExecutableThread {
-        &self.thread
+    pub fn threads(&self) -> &Vec<ExecutableThread> {
+        &self.threads
     }
 
     pub fn auth_zone_params(&self) -> &AuthZoneParams {

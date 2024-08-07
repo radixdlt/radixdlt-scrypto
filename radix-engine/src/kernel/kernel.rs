@@ -1,4 +1,6 @@
-use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, RootCallFrameInitRefs, StableReferenceType};
+use super::call_frame::{
+    CallFrame, NodeVisibility, OpenSubstateError, RootCallFrameInitRefs, StableReferenceType,
+};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use crate::blueprints::resource::*;
@@ -86,45 +88,57 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     fn check_references(
         &mut self,
         callback: &mut M,
-        thread: &ExecutableThread,
-    ) -> Result<RootCallFrameInitRefs, BootloadingError> {
-        let mut global_addresses = indexset!();
-        let mut direct_accesses = indexset!();
+        threads: &Vec<ExecutableThread>,
+    ) -> Result<Vec<RootCallFrameInitRefs>, BootloadingError> {
+        let mut initial_call_frames = vec![];
 
-        for reference in thread.references.iter() {
-            let node_id = &reference.0;
+        for thread in threads {
+            let mut global_addresses = indexset!();
+            let mut direct_accesses = indexset!();
 
-            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-                // Allow always visible node and do not add reference
-                continue;
-            }
+            for reference in thread.references.iter() {
+                let node_id = &reference.0;
 
-            if node_id.is_global_virtual() {
-                // Allow global virtual and add reference
-                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                continue;
-            }
+                if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                    // Allow always visible node and do not add reference
+                    continue;
+                }
 
-            let ref_value = self
-                .track
-                .read_substate(
-                    node_id,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
-                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
-
-            match callback.verify_boot_ref_value(node_id, ref_value)? {
-                StableReferenceType::Global => {
+                if node_id.is_global_virtual() {
+                    // Allow global virtual and add reference
                     global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                    continue;
                 }
-                StableReferenceType::DirectAccess => {
-                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
+
+                let ref_value = self
+                    .track
+                    .read_substate(
+                        node_id,
+                        TYPE_INFO_FIELD_PARTITION,
+                        &TypeInfoField::TypeInfo.into(),
+                    )
+                    .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+
+                match callback.verify_boot_ref_value(node_id, ref_value)? {
+                    StableReferenceType::Global => {
+                        global_addresses
+                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                    }
+                    StableReferenceType::DirectAccess => {
+                        direct_accesses
+                            .insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                    }
                 }
             }
+
+            let init_refs = RootCallFrameInitRefs {
+                global_addresses,
+                direct_accesses,
+            };
+            initial_call_frames.push(init_refs);
         }
 
-        Ok(RootCallFrameInitRefs {global_addresses, direct_accesses })
+        Ok(initial_call_frames)
     }
 
     fn execute_internal<'a>(
@@ -154,22 +168,22 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         // Kernel Initialization
         let mut kernel = {
             // Check references
-            let root_call_frame_init = self
-                .check_references(&mut callback, executable.thread())
+            let init_call_frames = self
+                .check_references(&mut callback, executable.threads())
                 .map_err(RejectionReason::BootloadingError)?;
 
             Kernel::new(
                 &mut self.track,
                 &mut self.id_allocator,
                 &mut callback,
-                root_call_frame_init,
+                init_call_frames,
             )
         };
 
         // Execution
         let result = || -> Result<M::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let output = M::start(&mut kernel, executable.thread())?;
+            let output = M::start(&mut kernel, executable.threads().get(0).unwrap())?;
 
             // Sanity check call frame
             assert!(kernel
@@ -237,22 +251,22 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
     ) -> Self {
-        Self::new(
-            store,
-            id_allocator,
-            callback,
-            Default::default(),
-        )
+        Self::new(store, id_allocator, callback, Default::default())
     }
 
     pub fn new(
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
-        init_refs: RootCallFrameInitRefs,
+        init_call_frames: Vec<RootCallFrameInitRefs>,
     ) -> Self {
-        let call_frame =
-            CallFrame::new_root(M::CallFrameData::root(), init_refs);
+        let threads = init_call_frames
+            .into_iter()
+            .map(|init_refs| {
+                let call_frame = CallFrame::new_root(M::CallFrameData::root(), init_refs);
+                KernelStack::new(call_frame)
+            })
+            .collect();
 
         Kernel {
             substate_io: SubstateIO {
@@ -265,7 +279,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
             },
             id_allocator,
             cur_thread: 0,
-            threads: vec![KernelStack::new(call_frame)],
+            threads,
             callback,
         }
     }
