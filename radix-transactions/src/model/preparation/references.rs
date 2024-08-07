@@ -6,8 +6,14 @@ pub fn extract_references(
     expected_start: ExpectedStart<ManifestCustomValueKind>,
 ) -> IndexSet<Reference> {
     let mut references = index_set_new();
-    let mut traverser =
-        ManifestTraverser::new(&encoded, MANIFEST_SBOR_V1_MAX_DEPTH, expected_start, true);
+    let mut traverser = ManifestTraverser::new(
+        &encoded,
+        expected_start,
+        VecTraverserConfig {
+            max_depth: MANIFEST_SBOR_V1_MAX_DEPTH,
+            check_exact_end: true,
+        },
+    );
     loop {
         let event = traverser.next_event();
         match event.event {

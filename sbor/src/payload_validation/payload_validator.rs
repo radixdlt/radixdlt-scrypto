@@ -445,7 +445,7 @@ mod tests {
 
     #[test]
     pub fn test_vec_u8_with_min_max() {
-        let t0 = BasicTypeData {
+        let t0 = BasicLocalTypeData {
             kind: BasicTypeKind::Array {
                 element_type: LocalTypeId::SchemaLocalIndex(1),
             },
@@ -455,7 +455,7 @@ mod tests {
                 max: 1.into(),
             }),
         };
-        let t1 = BasicTypeData {
+        let t1 = BasicLocalTypeData {
             kind: BasicTypeKind::U8,
             metadata: TypeMetadata::unnamed(),
             validation: TypeValidation::U8(NumericValidation {
@@ -599,6 +599,15 @@ mod tests {
         expected_path: &str,
         expected_cause: &str,
     ) {
+        check_location_path_with_depth_limit::<T>(payload, 64, expected_path, expected_cause)
+    }
+
+    fn check_location_path_with_depth_limit<T: BasicDescribe>(
+        payload: Vec<u8>,
+        depth_limit: usize,
+        expected_path: &str,
+        expected_cause: &str,
+    ) {
         let (type_id, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
@@ -606,7 +615,7 @@ mod tests {
             schema.v1(),
             type_id,
             &mut (),
-            64,
+            depth_limit,
         ) else {
             panic!("Validation did not error with too short a payload");
         };
@@ -616,6 +625,19 @@ mod tests {
 
     #[test]
     pub fn mismatched_type_full_location_path_is_readable() {
+        check_location_path_with_depth_limit::<MyStruct2>(
+            basic_encode(&MyStruct2 {
+                field1: 3,
+                field2: MyStruct2Inner {
+                    inner1: 1,
+                    inner2: 2,
+                },
+            })
+            .unwrap(),
+            2,
+            "MyStruct2.[1|field2]->MyStruct2Inner.[0|inner1]",
+            "DecodeError(MaxDepthExceeded(2))",
+        );
         check_location_path::<MyStruct2>(
             basic_encode(&BasicValue::Tuple {
                 fields: vec![
@@ -641,6 +663,20 @@ mod tests {
             .unwrap(),
             "MyStruct2.[1|field2]->MyStruct2Inner.[0|inner1]",
             "{ expected_type: U16, found: U8 }",
+        );
+        check_location_path::<MyStruct2>(
+            basic_encode(&BasicValue::Tuple {
+                fields: vec![
+                    BasicValue::U16 { value: 1 },
+                    BasicValue::Array {
+                        element_value_kind: ValueKind::U8,
+                        elements: vec![],
+                    },
+                ],
+            })
+            .unwrap(),
+            "MyStruct2.[1|field2]",
+            "{ expected_type: Tuple, found: Array }",
         );
         check_location_path::<MyStruct2>(
             basic_encode(&BasicValue::Tuple {
@@ -696,7 +732,7 @@ mod tests {
         payload.pop(); // remove last byte
         check_location_path::<Vec<u8>>(
             payload,
-            "Array",
+            "Array.[2]",
             "DecodeError(BufferUnderflow { required: 3, remaining: 2 })",
         );
 

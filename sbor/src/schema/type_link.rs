@@ -7,6 +7,9 @@ use sbor::*;
 /// - [`LocalTypeId`]: A link in the context of a schema (a well known id, or a local type index)
 pub trait SchemaTypeLink: Debug + Clone + PartialEq + Eq + From<WellKnownTypeId> {}
 
+/// A newer alias for `RustTypeId`.
+pub type AggregatorTypeId = RustTypeId;
+
 /// This is a compile-time identifier for a given type, used by the type aggregator
 /// to uniquely identify a type.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Sbor)]
