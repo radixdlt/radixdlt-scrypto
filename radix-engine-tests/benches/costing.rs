@@ -248,6 +248,82 @@ fn bench_prepare_wasm(c: &mut Criterion) {
     });
 }
 
+fn bench_execute_transaction_creating_big_vec_substates(c: &mut Criterion) {
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+
+    let (code, definition) = PackageLoader::get("transaction_limits");
+    let package_address =
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+
+    let substate_sizes = [
+        1000,
+        100000,
+        MAX_SUBSTATE_VALUE_SIZE - 100,
+        MAX_SUBSTATE_VALUE_SIZE - 100,
+        MAX_SUBSTATE_VALUE_SIZE - 100,
+        MAX_SUBSTATE_VALUE_SIZE - 100,
+    ];
+
+    c.bench_function(
+        "costing::execute_transaction_creating_big_vec_substates",
+        |b| {
+            b.iter(|| {
+                ledger
+                    .call_function(
+                        package_address,
+                        "TransactionLimitSubstateTest",
+                        "write_large_values",
+                        manifest_args!(&substate_sizes),
+                    )
+                    .expect_commit_success();
+            })
+        },
+    );
+}
+
+fn bench_execute_transaction_reading_big_vec_substates(c: &mut Criterion) {
+    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+
+    let (code, definition) = PackageLoader::get("transaction_limits");
+    let package_address =
+        ledger.publish_package((code, definition), BTreeMap::new(), OwnerRole::None);
+
+    let substate_sizes = [
+        1000,
+        100000,
+        MAX_SUBSTATE_VALUE_SIZE - 100,
+        MAX_SUBSTATE_VALUE_SIZE - 100,
+        MAX_SUBSTATE_VALUE_SIZE - 100,
+        MAX_SUBSTATE_VALUE_SIZE - 100,
+    ];
+    let component_address = ledger
+        .call_function(
+            package_address,
+            "TransactionLimitSubstateTest",
+            "write_large_values",
+            manifest_args!(&substate_sizes),
+        )
+        .expect_commit_success()
+        .new_component_addresses()[0];
+
+    let substates_to_read = substate_sizes.len() as u32;
+
+    c.bench_function(
+        "costing::execute_transaction_reading_big_vec_substates",
+        |b| {
+            b.iter(|| {
+                ledger
+                    .call_method(
+                        component_address,
+                        "read_values",
+                        manifest_args!(substates_to_read),
+                    )
+                    .expect_commit_success();
+            })
+        },
+    );
+}
+
 criterion_group!(
     costing,
     bench_decode_rpd_to_manifest_value,
@@ -263,5 +339,7 @@ criterion_group!(
     bench_deserialize_wasm,
     bench_validate_wasm,
     bench_prepare_wasm,
+    bench_execute_transaction_creating_big_vec_substates,
+    bench_execute_transaction_reading_big_vec_substates,
 );
 criterion_main!(costing);
