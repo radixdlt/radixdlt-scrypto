@@ -573,12 +573,9 @@ mod tests {
     ) {
         let (type_id, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
 
-        let Err(error) = BasicRawPayload::from_valid_payload(payload).validate_against_type_with_max_depth(
-            depth_limit,
-            schema.v1(),
-            type_id,
-            &(),
-        ) else {
+        let Err(error) = BasicRawPayload::from_valid_payload(payload)
+            .validate_against_type_with_max_depth(depth_limit, schema.v1(), type_id, &())
+        else {
             panic!("Validation did not error with too short a payload");
         };
         assert_eq!(error.location.path_to_string(schema.v1()), expected_path);
