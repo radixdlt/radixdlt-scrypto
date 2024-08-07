@@ -29,7 +29,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::prelude::Executable;
+use radix_transactions::prelude::{Executable, ExecutableThread};
 use sbor::rust::mem;
 
 pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
@@ -86,12 +86,12 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     fn check_references(
         &mut self,
         callback: &mut M,
-        references: &IndexSet<Reference>,
+        thread: &ExecutableThread,
     ) -> Result<RootCallFrameInitRefs, BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
 
-        for reference in references.iter() {
+        for reference in thread.references.iter() {
             let node_id = &reference.0;
 
             if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
@@ -155,7 +155,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         let mut kernel = {
             // Check references
             let root_call_frame_init = self
-                .check_references(&mut callback, executable.references())
+                .check_references(&mut callback, executable.thread())
                 .map_err(RejectionReason::BootloadingError)?;
 
             Kernel::new(

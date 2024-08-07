@@ -240,20 +240,8 @@ impl<'a> Executable<'a> {
         &self.context.costing_parameters
     }
 
-    pub fn blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.thread.blobs
-    }
-
     pub fn thread(&self) -> &ExecutableThread {
         &self.thread
-    }
-
-    pub fn references(&self) -> &IndexSet<Reference> {
-        &self.thread.references
-    }
-
-    pub fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {
-        &self.thread.pre_allocated_addresses
     }
 
     pub fn auth_zone_params(&self) -> &AuthZoneParams {
