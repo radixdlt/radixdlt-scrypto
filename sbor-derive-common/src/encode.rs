@@ -42,21 +42,17 @@ pub fn handle_transparent_encode(
 ) -> Result<TokenStream> {
     let output = match &parsed.data {
         Data::Struct(s) => {
-            let FieldsData {
-                unskipped_field_types,
-                unskipped_field_names,
-                ..
-            } = process_fields(&s.fields)?;
-            if unskipped_field_types.len() != 1 {
-                return Err(Error::new(Span::call_site(), "The transparent attribute is only supported for structs with a single unskipped field."));
-            }
-            let field_type = &unskipped_field_types[0];
-            let field_name = &unskipped_field_names[0];
+            let single_field = process_fields(&s.fields)?
+                .unique_unskipped_field()
+                .map_err(|()| Error::new(
+                    Span::call_site(),
+                    "The transparent attribute is only supported for structs with a single unskipped field.",
+                ))?;
             handle_encode_as(
                 parsed,
                 context_custom_value_kind,
-                &field_type,
-                &quote! { &self.#field_name },
+                single_field.field_type(),
+                &single_field.self_field_reference(),
             )?
         }
         Data::Enum(_) => {
@@ -125,11 +121,9 @@ pub fn handle_normal_encode(
 
     let output = match data {
         Data::Struct(s) => {
-            let FieldsData {
-                unskipped_field_names,
-                unskipped_field_count,
-                ..
-            } = process_fields(&s.fields)?;
+            let fields_data = process_fields(&s.fields)?;
+            let unskipped_field_count = fields_data.unskipped_field_count();
+            let unskipped_self_field_references = fields_data.unskipped_self_field_references();
             quote! {
                 impl #impl_generics sbor::Encode <#custom_value_kind_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                     #[inline]
@@ -141,7 +135,7 @@ pub fn handle_normal_encode(
                     fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), sbor::EncodeError> {
                         use sbor::{self, Encode};
                         encoder.write_size(#unskipped_field_count)?;
-                        #(encoder.encode(&self.#unskipped_field_names)?;)*
+                        #(encoder.encode(#unskipped_self_field_references)?;)*
                         Ok(())
                     }
                 }
@@ -156,40 +150,62 @@ pub fn handle_normal_encode(
                 .map(|source_variant| {
                     Ok(match source_variant {
                         SourceVariantData::Reachable(VariantData {
-                            source_variant,
+                            variant_name,
                             discriminator,
-                            fields_data,
+                            fields_handling: FieldsHandling::Standard(fields_data),
                             ..
                         }) => {
-                            let v_id = &source_variant.ident;
-                            let FieldsData {
-                                unskipped_field_count,
-                                fields_unpacking,
-                                unskipped_unpacked_field_names,
-                                ..
-                            } = fields_data;
+                            let unskipped_field_count = fields_data.unskipped_field_count();
+                            let fields_unpacking = fields_data.fields_unpacking();
+                            let unskipped_unpacking_variable_names = fields_data.unskipped_unpacking_variable_names();
                             quote! {
-                                Self::#v_id #fields_unpacking => {
+                                Self::#variant_name #fields_unpacking => {
                                     encoder.write_discriminator(#discriminator)?;
                                     encoder.write_size(#unskipped_field_count)?;
-                                    #(encoder.encode(#unskipped_unpacked_field_names)?;)*
+                                    #(encoder.encode(#unskipped_unpacking_variable_names)?;)*
+                                }
+                            }
+                        }
+                        SourceVariantData::Reachable(VariantData {
+                            variant_name,
+                            discriminator,
+                            fields_handling: FieldsHandling::Flatten { unique_field, fields_data, },
+                            ..
+                        }) => {
+                            let fields_unpacking = fields_data.fields_unpacking();
+                            let field_type = unique_field.field_type();
+                            let unpacking_field_name = unique_field.variable_name_from_unpacking();
+                            let tuple_assertion = output_flatten_type_is_sbor_tuple_assertion(
+                                &custom_value_kind_generic,
+                                field_type,
+                            );
+                            quote! {
+                                Self::#variant_name #fields_unpacking => {
+                                    // Flatten is only valid if the single child type is an SBOR tuple, so do a
+                                    // zero-cost assertion on this so the user gets a good error message if they
+                                    // misuse this.
+                                    #tuple_assertion
+                                    // We make use of the fact that an enum body encodes as (discriminator, fields_count, ..fields)
+                                    // And a tuple body encodes as (fields_count, ..fields)
+                                    // So we can flatten by encoding the discriminator and then running `encode_body` on the child tuple
+                                    encoder.write_discriminator(#discriminator)?;
+                                    <#field_type as sbor::Encode <#custom_value_kind_generic, #encoder_generic>>::encode_body(
+                                        #unpacking_field_name,
+                                        encoder
+                                    )?;
                                 }
                             }
                         }
                         SourceVariantData::Unreachable(UnreachableVariantData {
-                            source_variant,
+                            variant_name,
                             fields_data,
                             ..
                         }) => {
-                            let v_id = &source_variant.ident;
-                            let FieldsData {
-                                empty_fields_unpacking,
-                                ..
-                            } = &fields_data;
+                            let empty_fields_unpacking = fields_data.empty_fields_unpacking();
                             let panic_message =
-                                format!("Variant {} ignored as unreachable", v_id.to_string());
+                                format!("Variant {} ignored as unreachable", variant_name.to_string());
                             quote! {
-                                Self::#v_id #empty_fields_unpacking => panic!(#panic_message),
+                                Self::#variant_name #empty_fields_unpacking => panic!(#panic_message),
                             }
                         }
                     })
@@ -262,7 +278,7 @@ mod tests {
                     #[inline]
                     fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
                         use sbor::{self, Encode};
-                        encoder.write_size(1)?;
+                        encoder.write_size(1usize)?;
                         encoder.encode(&self.a)?;
                         Ok(())
                     }
@@ -291,16 +307,16 @@ mod tests {
                         match self {
                             Self::A => {
                                 encoder.write_discriminator(0u8)?;
-                                encoder.write_size(0)?;
+                                encoder.write_size(0usize)?;
                             }
                             Self::B(a0) => {
                                 encoder.write_discriminator(1u8)?;
-                                encoder.write_size(1)?;
+                                encoder.write_size(1usize)?;
                                 encoder.encode(a0)?;
                             }
                             Self::C { x, .. } => {
                                 encoder.write_discriminator(2u8)?;
-                                encoder.write_size(1)?;
+                                encoder.write_size(1usize)?;
                                 encoder.encode(x)?;
                             }
                         }
@@ -328,7 +344,7 @@ mod tests {
                     #[inline]
                     fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
                         use sbor::{self, Encode};
-                        encoder.write_size(0)?;
+                        encoder.write_size(0usize)?;
                         Ok(())
                     }
                 }
@@ -357,7 +373,7 @@ mod tests {
                     #[inline]
                     fn encode_body(&self, encoder: &mut E0) -> Result<(), sbor::EncodeError> {
                         use sbor::{self, Encode};
-                        encoder.write_size(2)?;
+                        encoder.write_size(2usize)?;
                         encoder.encode(&self.a)?;
                         encoder.encode(&self.b)?;
                         Ok(())
@@ -387,7 +403,7 @@ mod tests {
                     #[inline]
                     fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
                         use sbor::{self, Encode};
-                        encoder.write_size(0)?;
+                        encoder.write_size(0usize)?;
                         Ok(())
                     }
                 }
@@ -415,7 +431,7 @@ mod tests {
                     #[inline]
                     fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
                         use sbor::{self, Encode};
-                        encoder.write_size(0)?;
+                        encoder.write_size(0usize)?;
                         Ok(())
                     }
                 }

@@ -269,16 +269,25 @@ pub(crate) enum SourceVariantData {
 
 #[derive(Clone)]
 pub(crate) struct UnreachableVariantData {
-    pub source_variant: Variant,
+    pub variant_name: Ident,
     pub fields_data: FieldsData,
 }
 
 #[derive(Clone)]
 pub(crate) struct VariantData {
-    pub source_variant: Variant,
+    pub variant_name: Ident,
     pub discriminator: Expr,
     pub discriminator_pattern: Pat,
-    pub fields_data: FieldsData,
+    pub fields_handling: FieldsHandling,
+}
+
+#[derive(Clone)]
+pub(crate) enum FieldsHandling {
+    Standard(FieldsData),
+    Flatten {
+        unique_field: SingleField,
+        fields_data: FieldsData,
+    },
 }
 
 pub(crate) struct EnumVariantsData {
@@ -310,13 +319,31 @@ pub(crate) fn process_enum_variants(
         .map(|(i, variant)| -> Result<_> {
             let mut variant_attributes = extract_wrapped_typed_attributes(&variant.attrs, "sbor")?;
             let fields_data = process_fields(&variant.fields)?;
-            let source_variant = variant.clone();
+            let variant_name = variant.ident.clone();
             if let Some(_) = variant_attributes.remove("unreachable") {
                 return Ok(SourceVariantData::Unreachable(UnreachableVariantData {
+                    variant_name,
                     fields_data,
-                    source_variant,
                 }));
             }
+            let fields_handling = match variant_attributes.remove("flatten") {
+                Some(AttributeValue::None(span)) => {
+                    let unique_field = fields_data.unique_unskipped_field()
+                        .map_err(|()| Error::new(
+                            span,
+                            "The flatten attribute can only be used by an enum variant with exactly one unskipped field, and that child must be an SBOR tuple.",
+                        ))?;
+                    FieldsHandling::Flatten {
+                        unique_field,
+                        fields_data,
+                    }
+                }
+                Some(unsupported_value) => return Err(Error::new(
+                    unsupported_value.span(),
+                    "The flatten attribute can't have any associated value.",
+                )),
+                None => FieldsHandling::Standard(fields_data),
+            };
             reachable_variants_count += 1;
             let discriminator =
                 resolve_discriminator(use_repr_discriminators, i, variant, variant_attributes)?;
@@ -326,10 +353,10 @@ pub(crate) fn process_enum_variants(
                 explicit_discriminators_count += 1;
             };
             Ok(SourceVariantData::Reachable(VariantData {
+                variant_name,
                 discriminator: discriminator.expression,
                 discriminator_pattern: discriminator.pattern,
-                source_variant,
-                fields_data,
+                fields_handling,
             }))
         })
         .collect::<Result<_>>()?;
@@ -487,6 +514,10 @@ fn parse_pattern_from_literal(literal: &Lit) -> Option<Pat> {
     }
 }
 
+pub fn ident_to_lit_str(ident: &Ident) -> LitStr {
+    LitStr::new(&ident.to_string(), ident.span())
+}
+
 pub fn get_sbor_attribute_string_value(
     attributes: &[Attribute],
     attribute_name: &str,
@@ -598,6 +629,18 @@ pub fn get_generic_types(generics: &Generics) -> Vec<Type> {
             parse_quote!(#ident)
         })
         .collect()
+}
+
+pub fn output_flatten_type_is_sbor_tuple_assertion(
+    custom_value_kind_generic: &Path,
+    type_to_assert: &Type,
+) -> TokenStream {
+    // We give it a specific name because it's this name that appears on error messages
+    // if the assertion fails
+    quote! {
+        fn assert_flattened_type_is_sbor_tuple<TypeToAssert: SborTuple<XToAssertWith>, XToAssertWith: sbor::CustomValueKind>() {}
+        assert_flattened_type_is_sbor_tuple::<#type_to_assert, #custom_value_kind_generic>();
+    }
 }
 
 pub fn parse_str_with_span<T: syn::parse::Parse>(source_string: &str, span: Span) -> Result<T> {
@@ -732,123 +775,271 @@ pub fn get_hash_of_code(input: &TokenStream) -> [u8; 20] {
     const_sha1::sha1(input.to_string().as_bytes()).as_bytes()
 }
 
-pub fn get_unique_types<'a>(types: &[syn::Type]) -> Vec<syn::Type> {
-    types.iter().unique().cloned().collect()
+#[derive(Clone)]
+pub(crate) enum FieldsData {
+    Named(NamedFieldsData),
+    Unnamed(UnnamedFieldsData),
+    Unit,
+}
+
+impl FieldsData {
+    pub fn unskipped(&self) -> Box<dyn Iterator<Item = Box<dyn FieldReference>> + '_> {
+        match self {
+            Self::Named(fields) => Box::new(fields.unskipped().map(NamedField::as_box_dyn)),
+            Self::Unnamed(fields) => Box::new(fields.unskipped().map(UnnamedField::as_box_dyn)),
+            Self::Unit => Box::new(std::iter::empty()),
+        }
+    }
+
+    pub fn unique_unskipped_field(&self) -> core::result::Result<SingleField, ()> {
+        match self {
+            Self::Named(fields) => {
+                if let Some((field,)) = fields.unskipped().collect_tuple() {
+                    Ok(SingleField::NamedField(field.clone()))
+                } else {
+                    Err(())
+                }
+            }
+            Self::Unnamed(fields) => {
+                if let Some((field,)) = fields.unskipped().collect_tuple() {
+                    Ok(SingleField::UnnamedField(field.clone()))
+                } else {
+                    Err(())
+                }
+            }
+            Self::Unit => Err(()),
+        }
+    }
+
+    pub fn unskipped_self_field_references(&self) -> Vec<TokenStream> {
+        self.unskipped().map(|f| f.self_field_reference()).collect()
+    }
+
+    pub fn unskipped_field_types(&self) -> Vec<Type> {
+        self.unskipped().map(|f| f.field_type().clone()).collect()
+    }
+
+    pub fn unskipped_field_count(&self) -> usize {
+        self.unskipped().count()
+    }
+
+    pub fn empty_fields_unpacking(&self) -> TokenStream {
+        match self {
+            Self::Named(_) => quote! {
+                { .. }
+            },
+            Self::Unnamed(UnnamedFieldsData(fields)) => {
+                let empty_idents = fields.iter().map(|_| format_ident!("_"));
+                quote! {
+                    (#(#empty_idents),*)
+                }
+            }
+            Self::Unit => quote! {},
+        }
+    }
+
+    pub fn fields_unpacking(&self) -> TokenStream {
+        match self {
+            Self::Named(fields) => {
+                let field_names = fields.unskipped_field_names();
+                quote! {
+                    { #(#field_names,)* ..}
+                }
+            }
+            Self::Unnamed(UnnamedFieldsData(fields)) => {
+                let variable_names = fields
+                    .iter()
+                    .map(|field| &field.variable_name_from_unpacking);
+                quote! {
+                    (#(#variable_names),*)
+                }
+            }
+            Self::Unit => quote! {},
+        }
+    }
+
+    pub fn unskipped_unpacking_variable_names(&self) -> Vec<Ident> {
+        match self {
+            Self::Named(fields) => fields.unskipped_field_names(),
+            Self::Unnamed(fields) => fields
+                .unskipped()
+                .map(|field| field.variable_name_from_unpacking.clone())
+                .collect(),
+            Self::Unit => vec![],
+        }
+    }
+}
+
+pub(crate) trait FieldReference {
+    fn self_field_reference(&self) -> TokenStream;
+    fn field_type(&self) -> &Type;
+    fn variable_name_from_unpacking(&self) -> &Ident;
 }
 
 #[derive(Clone)]
-pub(crate) struct FieldsData {
-    pub unskipped_field_names: Vec<TokenStream>,
-    pub unskipped_field_name_strings: Vec<String>,
-    pub unskipped_field_types: Vec<Type>,
-    pub skipped_field_names: Vec<TokenStream>,
-    pub skipped_field_types: Vec<Type>,
-    pub fields_unpacking: TokenStream,
-    pub empty_fields_unpacking: TokenStream,
-    pub unskipped_unpacked_field_names: Vec<TokenStream>,
-    pub unskipped_field_count: Index,
+pub(crate) enum SingleField {
+    NamedField(NamedField),
+    UnnamedField(UnnamedField),
+}
+
+impl FieldReference for SingleField {
+    fn self_field_reference(&self) -> TokenStream {
+        match self {
+            Self::NamedField(field) => field.self_field_reference(),
+            Self::UnnamedField(field) => field.self_field_reference(),
+        }
+    }
+
+    fn field_type(&self) -> &Type {
+        match self {
+            Self::NamedField(field) => field.field_type(),
+            Self::UnnamedField(field) => field.field_type(),
+        }
+    }
+
+    fn variable_name_from_unpacking(&self) -> &Ident {
+        match self {
+            Self::NamedField(field) => field.variable_name_from_unpacking(),
+            Self::UnnamedField(field) => field.variable_name_from_unpacking(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct NamedFieldsData(Vec<NamedField>);
+
+impl NamedFieldsData {
+    pub fn iter(&self) -> impl Iterator<Item = &NamedField> {
+        self.0.iter()
+    }
+
+    pub fn unskipped(&self) -> impl Iterator<Item = &NamedField> {
+        self.0.iter().filter(|f| !f.is_skipped)
+    }
+
+    pub fn unskipped_field_names(&self) -> Vec<Ident> {
+        self.unskipped().map(|f| f.name.clone()).collect()
+    }
+
+    pub fn unskipped_field_name_strings(&self) -> Vec<String> {
+        self.unskipped().map(|f| f.name.to_string()).collect()
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct UnnamedFieldsData(Vec<UnnamedField>);
+
+impl UnnamedFieldsData {
+    pub fn iter(&self) -> impl Iterator<Item = &UnnamedField> {
+        self.0.iter()
+    }
+
+    pub fn unskipped(&self) -> impl Iterator<Item = &UnnamedField> {
+        self.0.iter().filter(|f| !f.is_skipped)
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct NamedField {
+    pub name: Ident,
+    pub field_type: Type,
+    pub is_skipped: bool,
+}
+
+impl NamedField {
+    fn as_box_dyn(&self) -> Box<dyn FieldReference> {
+        Box::new(self.clone())
+    }
+}
+
+impl FieldReference for NamedField {
+    fn self_field_reference(&self) -> TokenStream {
+        let name = &self.name;
+        quote! { &self.#name }
+    }
+
+    fn field_type(&self) -> &Type {
+        &self.field_type
+    }
+
+    fn variable_name_from_unpacking(&self) -> &Ident {
+        &self.name
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct UnnamedField {
+    pub index: Index,
+    pub variable_name_from_unpacking: Ident,
+    pub field_type: Type,
+    pub is_skipped: bool,
+}
+
+impl UnnamedField {
+    fn as_box_dyn(&self) -> Box<dyn FieldReference> {
+        Box::new(self.clone())
+    }
+}
+
+impl FieldReference for UnnamedField {
+    fn self_field_reference(&self) -> TokenStream {
+        let index = &self.index;
+        quote! { &self.#index }
+    }
+
+    fn field_type(&self) -> &Type {
+        &self.field_type
+    }
+
+    fn variable_name_from_unpacking(&self) -> &Ident {
+        &self.variable_name_from_unpacking
+    }
 }
 
 pub(crate) fn process_fields(fields: &syn::Fields) -> Result<FieldsData> {
     Ok(match fields {
         Fields::Named(fields) => {
-            let mut unskipped_field_names = Vec::new();
-            let mut unskipped_field_name_strings = Vec::new();
-            let mut unskipped_field_types = Vec::new();
-            let mut skipped_field_names = Vec::new();
-            let mut skipped_field_types = Vec::new();
-            for f in fields.named.iter() {
-                let ident = &f.ident;
-                if !is_skipped(f)? {
-                    unskipped_field_names.push(quote! { #ident });
-                    unskipped_field_name_strings
-                        .push(ident.as_ref().map(|i| i.to_string()).unwrap_or_default());
-                    unskipped_field_types.push(f.ty.clone());
-                } else {
-                    skipped_field_names.push(quote! { #ident });
-                    skipped_field_types.push(f.ty.clone());
-                }
-            }
+            let fields = fields
+                .named
+                .iter()
+                .map(|f| -> Result<_> {
+                    let ident = f.ident.as_ref().unwrap().clone();
+                    let is_skipped = is_skipped(f)?;
+                    Ok(NamedField {
+                        name: ident,
+                        field_type: f.ty.clone(),
+                        is_skipped,
+                    })
+                })
+                .collect::<Result<_>>()?;
 
-            let fields_unpacking = quote! {
-                {#(#unskipped_field_names,)* ..}
-            };
-            let empty_fields_unpacking = quote! {
-                { .. }
-            };
-            let unskipped_unpacked_field_names = unskipped_field_names.clone();
-
-            let unskipped_field_count = Index::from(unskipped_field_names.len());
-
-            FieldsData {
-                unskipped_field_names,
-                unskipped_field_name_strings,
-                unskipped_field_types,
-                skipped_field_names,
-                skipped_field_types,
-                fields_unpacking,
-                empty_fields_unpacking,
-                unskipped_unpacked_field_names,
-                unskipped_field_count,
-            }
+            FieldsData::Named(NamedFieldsData(fields))
         }
         Fields::Unnamed(fields) => {
-            let mut unskipped_indices = Vec::new();
-            let mut unskipped_field_name_strings = Vec::new();
-            let mut unskipped_field_types = Vec::new();
-            let mut unskipped_unpacked_field_names = Vec::new();
-            let mut skipped_indices = Vec::new();
-            let mut skipped_field_types = Vec::new();
-            let mut unpacking_idents = Vec::new();
-            let mut empty_idents = Vec::new();
-            for (i, f) in fields.unnamed.iter().enumerate() {
-                let index = Index::from(i);
-                if !is_skipped(f)? {
-                    unskipped_indices.push(quote! { #index });
-                    unskipped_field_name_strings.push(i.to_string());
-                    unskipped_field_types.push(f.ty.clone());
-                    let unpacked_name_ident = format_ident!("a{}", i);
-                    unskipped_unpacked_field_names.push(quote! { #unpacked_name_ident });
-                    unpacking_idents.push(unpacked_name_ident);
-                } else {
-                    skipped_indices.push(quote! { #index });
-                    skipped_field_types.push(f.ty.clone());
-                    unpacking_idents.push(format_ident!("_"));
-                }
-                empty_idents.push(format_ident!("_"));
-            }
-            let fields_unpacking = quote! {
-                (#(#unpacking_idents),*)
-            };
-            let empty_fields_unpacking = quote! {
-                (#(#empty_idents),*)
-            };
+            let fields = fields
+                .unnamed
+                .iter()
+                .enumerate()
+                .map(|(i, f)| -> Result<_> {
+                    let index = Index::from(i);
+                    let is_skipped = is_skipped(f)?;
+                    let unpacked_variable_name = if is_skipped {
+                        format_ident!("_")
+                    } else {
+                        format_ident!("a{}", i)
+                    };
+                    Ok(UnnamedField {
+                        index,
+                        field_type: f.ty.clone(),
+                        is_skipped,
+                        variable_name_from_unpacking: unpacked_variable_name,
+                    })
+                })
+                .collect::<Result<_>>()?;
 
-            let unskipped_field_count = Index::from(unskipped_indices.len());
-
-            FieldsData {
-                unskipped_field_names: unskipped_indices,
-                unskipped_field_name_strings,
-                unskipped_field_types,
-                skipped_field_names: skipped_indices,
-                skipped_field_types,
-                fields_unpacking,
-                empty_fields_unpacking,
-                unskipped_unpacked_field_names,
-                unskipped_field_count,
-            }
+            FieldsData::Unnamed(UnnamedFieldsData(fields))
         }
-        Fields::Unit => FieldsData {
-            unskipped_field_names: vec![],
-            unskipped_field_name_strings: vec![],
-            unskipped_field_types: vec![],
-            skipped_field_names: vec![],
-            skipped_field_types: vec![],
-            fields_unpacking: quote! {},
-            empty_fields_unpacking: quote! {},
-            unskipped_unpacked_field_names: vec![],
-            unskipped_field_count: Index::from(0),
-        },
+        Fields::Unit => FieldsData::Unit,
     })
 }
 

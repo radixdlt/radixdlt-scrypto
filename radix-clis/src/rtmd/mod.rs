@@ -61,54 +61,55 @@ pub fn run() -> Result<(), String> {
         None => NetworkDefinition::simulator(),
     };
 
-    let (manifest_instructions, blobs) =
-        match manifest_decode::<TransactionManifestV1>(&content).map_err(Error::DecodeError) {
-            Ok(manifest) => {
-                let blobs: Vec<Vec<u8>> = manifest
-                    .blobs
-                    .values()
-                    .into_iter()
-                    .map(|item| item.to_owned())
-                    .collect();
-                (manifest.instructions, blobs)
-            }
-            Err(e) => {
-                // try to decode versioned transaction
-                match manifest_decode::<VersionedTransactionPayload>(&content) {
-                    Ok(manifest) => {
-                        let (manifest_instructions, blobs) = match manifest {
-                            VersionedTransactionPayload::IntentV1 {
-                                instructions,
-                                blobs,
-                                ..
-                            } => (instructions.0, blobs.blobs),
-                            VersionedTransactionPayload::SignedIntentV1 { intent, .. } => {
-                                (intent.instructions.0, intent.blobs.blobs)
-                            }
-                            VersionedTransactionPayload::NotarizedTransactionV1 {
-                                signed_intent,
-                                ..
-                            } => (
-                                signed_intent.intent.instructions.0,
-                                signed_intent.intent.blobs.blobs,
-                            ),
-                            VersionedTransactionPayload::SystemTransactionV1 {
-                                instructions,
-                                blobs,
-                                ..
-                            } => (instructions.0, blobs.blobs),
-                        };
+    let (manifest_instructions, blobs) = match manifest_decode::<TransactionManifestV1>(&content)
+        .map_err(Error::DecodeError)
+    {
+        Ok(manifest) => {
+            let blobs: Vec<Vec<u8>> = manifest
+                .blobs
+                .values()
+                .into_iter()
+                .map(|item| item.to_owned())
+                .collect();
+            (manifest.instructions, blobs)
+        }
+        Err(e) => {
+            // try to decode versioned transaction
+            match manifest_decode::<VersionedTransactionPayload>(&content) {
+                Ok(manifest) => {
+                    let (manifest_instructions, blobs) = match manifest {
+                        VersionedTransactionPayload::IntentV1(IntentV1 {
+                            instructions,
+                            blobs,
+                            ..
+                        }) => (instructions.0, blobs.blobs),
+                        VersionedTransactionPayload::SignedIntentV1(SignedIntentV1 {
+                            intent,
+                            ..
+                        }) => (intent.instructions.0, intent.blobs.blobs),
+                        VersionedTransactionPayload::NotarizedTransactionV1(
+                            NotarizedTransactionV1 { signed_intent, .. },
+                        ) => (
+                            signed_intent.intent.instructions.0,
+                            signed_intent.intent.blobs.blobs,
+                        ),
+                        VersionedTransactionPayload::SystemTransactionV1(SystemTransactionV1 {
+                            instructions,
+                            blobs,
+                            ..
+                        }) => (instructions.0, blobs.blobs),
+                    };
 
-                        let blobs: Vec<Vec<u8>> = blobs.into_iter().map(|item| item.0).collect();
-                        (manifest_instructions, blobs)
-                    }
-                    Err(_) => {
-                        // return original error
-                        return Err(e.into());
-                    }
+                    let blobs: Vec<Vec<u8>> = blobs.into_iter().map(|item| item.0).collect();
+                    (manifest_instructions, blobs)
+                }
+                Err(_) => {
+                    // return original error
+                    return Err(e.into());
                 }
             }
-        };
+        }
+    };
 
     validate_call_arguments_to_native_components(&manifest_instructions)
         .map_err(Error::InstructionSchemaValidationError)?;

@@ -75,8 +75,52 @@ pub enum Mixed {
     I = 0b11011,
 }
 
+#[derive(Debug, PartialEq, Eq, Sbor)]
+enum FlattenEnum {
+    #[sbor(flatten)]
+    A {
+        #[sbor(skip)]
+        skipped: u8,
+        y: (u32, MyOtherType),
+    },
+    #[sbor(flatten)]
+    B(#[sbor(skip)] u8, (u32,)),
+    #[sbor(flatten)]
+    C(MyInnerStruct),
+    D,
+    E(MyOtherTypeTwo),
+}
+
+#[derive(Debug, PartialEq, Eq, Sbor)]
+struct MyInnerStruct {
+    hello: String,
+    world: MyInnerInnerType, // This checks that we properly capture descendents in Describe
+}
+
+#[derive(Debug, PartialEq, Eq, Sbor)]
+struct MyOtherType(u8);
+
+#[derive(Debug, PartialEq, Eq, Sbor)]
+struct MyInnerInnerType(u8);
+
+#[derive(Debug, PartialEq, Eq, Sbor)]
+struct MyOtherTypeTwo(u8);
+
+#[derive(Debug, PartialEq, Eq, Sbor)]
+#[sbor(type_name = "FlattenEnum")]
+enum FlattenedEnum {
+    A(u32, MyOtherType),
+    B(u32),
+    C {
+        hello: String,
+        world: MyInnerInnerType,
+    },
+    D,
+    E(MyOtherTypeTwo),
+}
+
 #[test]
-fn can_encode_and_decode() {
+fn test_encode_decode_and_schemas() {
     check_encode_decode_schema(&Abc::Variant1);
     check_encode_decode_schema(&Abc::Variant2);
     check_encode_decode_schema(&AbcV2::Variant1);
@@ -92,8 +136,43 @@ fn can_encode_and_decode() {
     check_encode_decode_schema(&Mixed::G);
     check_encode_decode_schema(&Mixed::H);
     check_encode_decode_schema(&Mixed::I);
+    check_encode_decode_schema(&FlattenEnum::A {
+        skipped: 0,
+        y: (1, MyOtherType(5)),
+    });
+    check_encode_identically(
+        &FlattenEnum::A {
+            skipped: 0,
+            y: (1, MyOtherType(5)),
+        },
+        &FlattenedEnum::A(1, MyOtherType(5)),
+    );
+    check_encode_decode_schema(&FlattenEnum::B(0, (7,)));
+    check_encode_identically(&FlattenEnum::B(0, (7,)), &FlattenedEnum::B(7));
+    check_encode_decode_schema(&FlattenEnum::C(MyInnerStruct {
+        hello: "howdy".to_string(),
+        world: MyInnerInnerType(13),
+    }));
+    check_encode_identically(
+        &FlattenEnum::C(MyInnerStruct {
+            hello: "howdy".to_string(),
+            world: MyInnerInnerType(13),
+        }),
+        &FlattenedEnum::C {
+            hello: "howdy".to_string(),
+            world: MyInnerInnerType(13),
+        },
+    );
+    check_encode_decode_schema(&FlattenEnum::D);
+    check_encode_identically(&FlattenEnum::D, &FlattenedEnum::D);
+    check_encode_decode_schema(&FlattenEnum::E(MyOtherTypeTwo(7)));
+    check_encode_identically(
+        &FlattenEnum::E(MyOtherTypeTwo(7)),
+        &FlattenedEnum::E(MyOtherTypeTwo(7)),
+    );
 
     check_schema_equality::<Abc, AbcV2>();
+    check_schema_equality::<FlattenEnum, FlattenedEnum>();
 
     check_encode_identically(
         &Mixed::C {
