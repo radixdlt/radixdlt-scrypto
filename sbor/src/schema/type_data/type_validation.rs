@@ -44,80 +44,115 @@ impl LengthValidation {
     pub fn is_valid(&self, length: usize) -> bool {
         self.min.unwrap_or(0) as usize <= length && length <= self.max.unwrap_or(u32::MAX) as usize
     }
+
+    pub fn compare(base: &Self, compared: &Self) -> ValidationChange {
+        // Massage it into an equivalent numeric validation comparison
+        NumericValidation::compare(
+            &NumericValidation::with_bounds(base.min, base.max),
+            &NumericValidation::with_bounds(compared.min, compared.max),
+        )
+    }
 }
 
 /// Represents additional validation that should be performed on the numeric value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Sbor)]
-pub struct NumericValidation<T> {
+pub struct NumericValidation<T: NumericValidationBound> {
     pub min: Option<T>,
     pub max: Option<T>,
 }
 
-impl<T> NumericValidation<T> {
+impl<T: NumericValidationBound> NumericValidation<T> {
+    pub const fn with_bounds(min: Option<T>, max: Option<T>) -> Self {
+        Self { min, max }
+    }
+
     pub const fn none() -> Self {
         Self {
             min: None,
             max: None,
         }
     }
-}
 
-impl NumericValidation<i8> {
-    pub fn is_valid(&self, value: i8) -> bool {
-        self.min.unwrap_or(i8::MIN) <= value && value <= self.max.unwrap_or(i8::MAX)
+    pub fn compare(base: &Self, compared: &Self) -> ValidationChange {
+        // Slight warning - `compare` takes the opposite argument order to `cmp`.
+        // This is to be consistent with the schema comparison arg ordering.
+        let min_change = match compared.effective_min().cmp(&base.effective_min()) {
+            core::cmp::Ordering::Less => ValidationChange::Weakened, // Min has decreased
+            core::cmp::Ordering::Equal => ValidationChange::Unchanged,
+            core::cmp::Ordering::Greater => ValidationChange::Strengthened, // Min has increased
+        };
+        let max_change = match compared.effective_max().cmp(&base.effective_max()) {
+            core::cmp::Ordering::Less => ValidationChange::Strengthened, // Max has decreased
+            core::cmp::Ordering::Equal => ValidationChange::Unchanged,
+            core::cmp::Ordering::Greater => ValidationChange::Weakened, // Max has increased
+        };
+        ValidationChange::combine(min_change, max_change)
+    }
+
+    pub fn is_valid(&self, value: T) -> bool {
+        self.effective_min() <= value && value <= self.effective_max()
+    }
+
+    pub fn effective_min(&self) -> T {
+        self.min.unwrap_or(T::MIN_VALUE)
+    }
+
+    pub fn effective_max(&self) -> T {
+        self.max.unwrap_or(T::MAX_VALUE)
     }
 }
 
-impl NumericValidation<i16> {
-    pub fn is_valid(&self, value: i16) -> bool {
-        self.min.unwrap_or(i16::MIN) <= value && value <= self.max.unwrap_or(i16::MAX)
-    }
+pub trait NumericValidationBound: Ord + Copy {
+    const MAX_VALUE: Self;
+    const MIN_VALUE: Self;
 }
 
-impl NumericValidation<i32> {
-    pub fn is_valid(&self, value: i32) -> bool {
-        self.min.unwrap_or(i32::MIN) <= value && value <= self.max.unwrap_or(i32::MAX)
-    }
+impl NumericValidationBound for i8 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
 }
 
-impl NumericValidation<i64> {
-    pub fn is_valid(&self, value: i64) -> bool {
-        self.min.unwrap_or(i64::MIN) <= value && value <= self.max.unwrap_or(i64::MAX)
-    }
+impl NumericValidationBound for i16 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
 }
 
-impl NumericValidation<i128> {
-    pub fn is_valid(&self, value: i128) -> bool {
-        self.min.unwrap_or(i128::MIN) <= value && value <= self.max.unwrap_or(i128::MAX)
-    }
+impl NumericValidationBound for i32 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
 }
 
-impl NumericValidation<u8> {
-    pub fn is_valid(&self, value: u8) -> bool {
-        self.min.unwrap_or(u8::MIN) <= value && value <= self.max.unwrap_or(u8::MAX)
-    }
+impl NumericValidationBound for i64 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
 }
 
-impl NumericValidation<u16> {
-    pub fn is_valid(&self, value: u16) -> bool {
-        self.min.unwrap_or(u16::MIN) <= value && value <= self.max.unwrap_or(u16::MAX)
-    }
+impl NumericValidationBound for i128 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
 }
 
-impl NumericValidation<u32> {
-    pub fn is_valid(&self, value: u32) -> bool {
-        self.min.unwrap_or(u32::MIN) <= value && value <= self.max.unwrap_or(u32::MAX)
-    }
+impl NumericValidationBound for u8 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
 }
 
-impl NumericValidation<u64> {
-    pub fn is_valid(&self, value: u64) -> bool {
-        self.min.unwrap_or(u64::MIN) <= value && value <= self.max.unwrap_or(u64::MAX)
-    }
+impl NumericValidationBound for u16 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
 }
 
-impl NumericValidation<u128> {
-    pub fn is_valid(&self, value: u128) -> bool {
-        self.min.unwrap_or(u128::MIN) <= value && value <= self.max.unwrap_or(u128::MAX)
-    }
+impl NumericValidationBound for u32 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
+}
+
+impl NumericValidationBound for u64 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
+}
+
+impl NumericValidationBound for u128 {
+    const MAX_VALUE: Self = Self::MAX;
+    const MIN_VALUE: Self = Self::MIN;
 }

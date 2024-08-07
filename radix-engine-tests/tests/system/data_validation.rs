@@ -366,7 +366,7 @@ fn vec_of_u8_underflow_should_not_cause_panic() {
         RuntimeError::SystemError(SystemError::TypeCheckError(TypeCheckError::KeyValueStorePayloadValidationError(
                                                                   KeyOrValue::Value, e
                                                               )))
-            if e.eq("[ERROR] byte offset: 7-7, value path: Array, cause: DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })") => true,
+            if e.eq("[ERROR] byte offset: 7-7, value path: Array.[99999992], cause: DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })") => true,
         _ => false,
     })
 }

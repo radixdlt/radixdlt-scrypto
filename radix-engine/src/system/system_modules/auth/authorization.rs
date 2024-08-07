@@ -19,7 +19,7 @@ use sbor::rust::ops::Fn;
 pub struct Authorization;
 
 impl Authorization {
-    fn proof_matches<L: Default, Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>>(
+    fn proof_matches<Y: SystemObjectApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
         resource_rule: &ResourceOrNonFungible,
         proof: &Proof,
         api: &mut Y,
@@ -41,20 +41,16 @@ impl Authorization {
         }
     }
 
-    fn global_auth_zone_matches<L: Default, Y, P>(
+    fn global_auth_zone_matches<Y: KernelSubstateApi<L>, L: Default>(
         api: &mut Y,
         auth_zone_id: &NodeId,
-        check: &P,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: KernelSubstateApi<L>,
-        P: Fn(
+        check: &impl Fn(
             &[Proof],
             &BTreeSet<ResourceAddress>,
             BTreeSet<NonFungibleGlobalId>,
             &mut Y,
         ) -> Result<bool, RuntimeError>,
-    {
+    ) -> Result<bool, RuntimeError> {
         let mut pass = false;
         let mut current_auth_zone_id = *auth_zone_id;
         let mut handles = Vec::new();
@@ -108,21 +104,16 @@ impl Authorization {
         Ok(pass)
     }
 
-    fn auth_zone_stack_matches<P, L, Y>(
+    fn auth_zone_stack_matches<Y: KernelSubstateApi<L>, L: Default>(
         auth_zone: &NodeId,
         api: &mut Y,
-        check: P,
-    ) -> Result<bool, RuntimeError>
-    where
-        L: Default,
-        Y: KernelSubstateApi<L>,
-        P: Fn(
+        check: impl Fn(
             &[Proof],
             &BTreeSet<ResourceAddress>,
             BTreeSet<NonFungibleGlobalId>,
             &mut Y,
         ) -> Result<bool, RuntimeError>,
-    {
+    ) -> Result<bool, RuntimeError> {
         let handle = api.kernel_open_substate(
             &auth_zone,
             MAIN_BASE_PARTITION,
@@ -173,7 +164,7 @@ impl Authorization {
     }
 
     fn auth_zone_stack_has_amount<
-        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
+        Y: SystemObjectApi<RuntimeError> + KernelSubstateApi<L>,
         L: Default,
     >(
         auth_zone: &NodeId,
@@ -196,7 +187,7 @@ impl Authorization {
     }
 
     fn auth_zone_stack_matches_rule<
-        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
+        Y: SystemObjectApi<RuntimeError> + KernelSubstateApi<L>,
         L: Default,
     >(
         auth_zone: &NodeId,
@@ -229,7 +220,7 @@ impl Authorization {
     }
 
     pub fn verify_proof_rule<
-        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
+        Y: SystemObjectApi<RuntimeError> + KernelSubstateApi<L>,
         L: Default,
     >(
         auth_zone: &NodeId,
@@ -288,7 +279,7 @@ impl Authorization {
         }
     }
 
-    pub fn verify_auth_rule<Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>, L: Default>(
+    pub fn verify_auth_rule<Y: SystemObjectApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
         auth_zone: &NodeId,
         requirement_rule: &CompositeRequirement,
         api: &mut Y,
@@ -324,7 +315,7 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_role_key_internal<
-        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
+        Y: SystemObjectApi<RuntimeError> + KernelSubstateApi<L>,
         L: Default,
     >(
         auth_zone: &NodeId,
@@ -381,7 +372,7 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_access_rule<
-        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
+        Y: SystemObjectApi<RuntimeError> + KernelSubstateApi<L>,
         L: Default,
     >(
         api: &mut Y,
@@ -405,7 +396,7 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_role_list<
-        Y: KernelSubstateApi<L> + SystemObjectApi<RuntimeError>,
+        Y: SystemObjectApi<RuntimeError> + KernelSubstateApi<L>,
         L: Default,
     >(
         auth_zone: &NodeId,

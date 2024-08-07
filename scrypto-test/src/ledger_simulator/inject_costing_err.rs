@@ -115,16 +115,13 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         self.system.verify_boot_ref_value(node_id, value)
     }
 
-    fn start<Y>(
+    fn start<Y: KernelApi<Self>>(
         api: &mut Y,
         manifest_encoded_instructions: &[u8],
         pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
         System::start(
             &mut api,
@@ -154,64 +151,64 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         self.system.on_pin_node(node_id)
     }
 
-    fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_create_node<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: CreateNodeEvent,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
         System::on_create_node(&mut api, event)
     }
 
-    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_drop_node<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: DropNodeEvent,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
         System::on_drop_node(&mut api, event)
     }
 
-    fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_move_module<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: MoveModuleEvent,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
         System::on_move_module(&mut api, event)
     }
 
-    fn on_open_substate<Y>(api: &mut Y, event: OpenSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_open_substate<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: OpenSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
         System::on_open_substate(&mut api, event)
     }
 
-    fn on_close_substate<Y>(api: &mut Y, event: CloseSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_close_substate<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: CloseSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
         System::on_close_substate(&mut api, event)
     }
 
-    fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_read_substate<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: ReadSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
         System::on_read_substate(&mut api, event)
     }
 
-    fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_write_substate<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: WriteSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
         System::on_write_substate(&mut api, event)
@@ -245,70 +242,58 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         self.system.on_scan_sorted_substates(event)
     }
 
-    fn before_invoke<Y>(
+    fn before_invoke<Y: KernelApi<Self>>(
         invocation: &KernelInvocation<Self::CallFrameData>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::before_invoke(invocation, &mut api)
     }
 
-    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_execution_start<Y: KernelApi<Self>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_execution_start(&mut api)
     }
 
-    fn invoke_upstream<Y>(
+    fn invoke_upstream<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::invoke_upstream(args, &mut api)
     }
 
-    fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn auto_drop<Y: KernelApi<Self>>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::auto_drop(nodes, &mut api)
     }
 
-    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_execution_finish<Y: KernelApi<Self>>(
+        message: &CallFrameMessage,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_execution_finish(message, &mut api)
     }
 
-    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn after_invoke<Y: KernelApi<Self>>(
+        output: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::after_invoke(output, &mut api)
     }
 
-    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_allocate_node_id<Y: KernelApi<Self>>(
+        entity_type: EntityType,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_allocate_node_id(entity_type, &mut api)
@@ -325,24 +310,21 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
             .on_mark_substate_as_transient(node_id, partition_number, substate_key)
     }
 
-    fn on_substate_lock_fault<Y>(
+    fn on_substate_lock_fault<Y: KernelApi<Self>>(
         node_id: NodeId,
         partition_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<bool, RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_substate_lock_fault(node_id, partition_num, offset, &mut api)
     }
 
-    fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_drop_node_mut<Y: KernelApi<Self>>(
+        node_id: &NodeId,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
         System::on_drop_node_mut(node_id, &mut api)

@@ -1,7 +1,7 @@
 use crate::modules::metadata::Metadata;
 use crate::modules::role_assignment::RoleAssignment;
 use radix_common::prelude::*;
-use radix_engine_interface::api::{AttachedModuleId, FieldIndex, SystemApi};
+use radix_engine_interface::api::*;
 use radix_engine_interface::object_modules::metadata::{
     MetadataSetInput, MetadataVal, METADATA_SET_IDENT,
 };
@@ -19,13 +19,12 @@ impl BorrowedObject {
         Self(NodeId(node_id.into()))
     }
 
-    pub fn set_metadata<Y, E, S, V>(&mut self, key: S, value: V, api: &mut Y) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-        S: AsRef<str>,
-        V: MetadataVal,
-        E: Debug + ScryptoDecode,
-    {
+    pub fn set_metadata<Y: SystemApi<E>, E: SystemApiError, S: AsRef<str>, V: MetadataVal>(
+        &mut self,
+        key: S,
+        value: V,
+        api: &mut Y,
+    ) -> Result<(), E> {
         api.call_module_method(
             &self.0,
             AttachedModuleId::Metadata,
@@ -41,18 +40,14 @@ impl BorrowedObject {
     }
 }
 
-pub fn globalize_object<Y, E>(
+pub fn globalize_object<Y: SystemApi<E>, E: SystemApiError>(
     object_id: NodeId,
     owner_role: OwnerRole,
     address_reservation: GlobalAddressReservation,
     main_roles: RoleAssignmentInit,
     metadata: ModuleConfig<MetadataInit>,
     api: &mut Y,
-) -> Result<GlobalAddress, E>
-where
-    Y: SystemApi<E>,
-    E: Debug + ScryptoDecode,
-{
+) -> Result<GlobalAddress, E> {
     let role_assignment = {
         let roles = indexmap!(
             ModuleId::Main => main_roles,
@@ -75,7 +70,11 @@ where
     Ok(address)
 }
 
-pub fn globalize_object_with_inner_object_and_event<Y, E, V>(
+pub fn globalize_object_with_inner_object_and_event<
+    Y: SystemApi<E>,
+    E: SystemApiError,
+    V: ScryptoEncode,
+>(
     object_id: NodeId,
     owner_role: OwnerRole,
     address_reservation: GlobalAddressReservation,
@@ -86,12 +85,7 @@ pub fn globalize_object_with_inner_object_and_event<Y, E, V>(
     event_name: &str,
     event: V,
     api: &mut Y,
-) -> Result<(GlobalAddress, NodeId), E>
-where
-    Y: SystemApi<E>,
-    E: Debug + ScryptoDecode,
-    V: ScryptoEncode,
-{
+) -> Result<(GlobalAddress, NodeId), E> {
     let role_assignment = {
         let roles = indexmap!(
             ModuleId::Main => main_roles,

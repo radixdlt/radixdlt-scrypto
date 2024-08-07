@@ -15,15 +15,15 @@ pub trait SystemCallbackObject: Sized {
     fn init<S: BootStore>(store: &S, init_input: Self::Init) -> Result<Self, BootloadingError>;
 
     /// Invoke a function
-    fn invoke<Y>(
+    fn invoke<
+        Y: SystemApi<RuntimeError>
+            + KernelInternalApi<System<Self>>
+            + KernelNodeApi
+            + KernelSubstateApi<SystemLockData>,
+    >(
         package_address: &PackageAddress,
         package_export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>
-            + KernelInternalApi<System<Self>>
-            + KernelNodeApi
-            + KernelSubstateApi<SystemLockData>;
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>;
 }

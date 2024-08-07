@@ -43,17 +43,13 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
 
 impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
     #[trace_resources(log=self.package_address.is_native_package(), log=self.package_address.to_hex(), log=export_name)]
-    fn invoke<Y, V>(
+    fn invoke<Y: SystemApi<RuntimeError>, V: VmApi>(
         &mut self,
         export_name: &str,
         args: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        V: VmApi,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let rtn = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(
                 api,

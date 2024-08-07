@@ -74,10 +74,7 @@ impl NonFungibleProofSubstate {
 pub struct NonFungibleProofBlueprint;
 
 impl NonFungibleProofBlueprint {
-    pub(crate) fn clone<Y>(api: &mut Y) -> Result<Proof, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn clone<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Proof, RuntimeError> {
         let moveable = {
             let handle = api.actor_open_field(
                 ACTOR_STATE_SELF,
@@ -112,10 +109,9 @@ impl NonFungibleProofBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub(crate) fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn get_amount<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Decimal, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleProofField::ProofRefs.into(),
@@ -127,12 +123,9 @@ impl NonFungibleProofBlueprint {
         Ok(amount)
     }
 
-    pub(crate) fn get_local_ids<Y>(
+    pub(crate) fn get_local_ids<Y: SystemApi<RuntimeError>>(
         api: &mut Y,
-    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleProofField::ProofRefs.into(),
@@ -144,27 +137,23 @@ impl NonFungibleProofBlueprint {
         Ok(ids)
     }
 
-    pub(crate) fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn get_resource_address<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<ResourceAddress, RuntimeError> {
         let address = ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_OUTER)?.into());
         Ok(address)
     }
 
-    pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn drop<Y: SystemApi<RuntimeError>>(
+        proof: Proof,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         api.drop_object(proof.0.as_node_id())?;
 
         Ok(())
     }
 
-    pub(crate) fn on_drop<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn on_drop<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleProofField::ProofRefs.into(),
@@ -177,15 +166,12 @@ impl NonFungibleProofBlueprint {
         Ok(())
     }
 
-    pub(crate) fn on_move<Y>(
+    pub(crate) fn on_move<Y: SystemApi<RuntimeError>>(
         is_moving_down: bool,
         is_to_barrier: bool,
         destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         if is_moving_down {
             let is_to_self = destination_blueprint_id.eq(&Some(BlueprintId::new(
                 &RESOURCE_PACKAGE,

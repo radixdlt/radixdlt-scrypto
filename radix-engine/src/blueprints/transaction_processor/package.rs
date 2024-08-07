@@ -76,15 +76,14 @@ impl TransactionProcessorNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    >(
         export_name: &str,
         input: &IndexedScryptoValue,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
                 let input: TransactionProcessorRunInput = input.into_typed().map_err(|e| {

@@ -1,7 +1,7 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_substates::FieldSubstate;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -35,13 +35,10 @@ pub struct WorktopBlueprint;
 //==============================================
 
 impl WorktopBlueprint {
-    pub(crate) fn drop<Y>(
+    pub(crate) fn drop<Y: SystemApi<RuntimeError> + KernelSubstateApi<SystemLockData>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
         let input: WorktopDropInput = input
@@ -80,13 +77,10 @@ impl WorktopBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn put<Y>(
+    pub(crate) fn put<Y: SystemApi<RuntimeError>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let input: WorktopPutInput = input
             .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
@@ -115,13 +109,10 @@ impl WorktopBlueprint {
         }
     }
 
-    pub(crate) fn take<Y>(
+    pub(crate) fn take<Y: SystemApi<RuntimeError>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let input: WorktopTakeInput = input
             .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
@@ -164,13 +155,10 @@ impl WorktopBlueprint {
         }
     }
 
-    pub(crate) fn take_non_fungibles<Y>(
+    pub(crate) fn take_non_fungibles<Y: SystemApi<RuntimeError>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let input: WorktopTakeNonFungiblesInput = input
             .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
@@ -214,13 +202,10 @@ impl WorktopBlueprint {
         }
     }
 
-    pub(crate) fn take_all<Y>(
+    pub(crate) fn take_all<Y: SystemApi<RuntimeError>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let input: WorktopTakeAllInput = input
             .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
@@ -243,13 +228,10 @@ impl WorktopBlueprint {
         }
     }
 
-    pub(crate) fn assert_contains<Y>(
+    pub(crate) fn assert_contains<Y: SystemApi<RuntimeError>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let input: WorktopAssertContainsInput = input
             .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
@@ -274,13 +256,10 @@ impl WorktopBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn assert_contains_amount<Y>(
+    pub(crate) fn assert_contains_amount<Y: SystemApi<RuntimeError>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let input: WorktopAssertContainsAmountInput = input
             .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
@@ -305,13 +284,10 @@ impl WorktopBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn assert_contains_non_fungibles<Y>(
+    pub(crate) fn assert_contains_non_fungibles<Y: SystemApi<RuntimeError>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let input: WorktopAssertContainsNonFungiblesInput = input
             .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
@@ -337,13 +313,10 @@ impl WorktopBlueprint {
         Ok(IndexedScryptoValue::from_typed(&()))
     }
 
-    pub(crate) fn drain<Y>(
+    pub(crate) fn drain<Y: SystemApi<RuntimeError>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let _input: WorktopDrainInput = input
             .into_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;

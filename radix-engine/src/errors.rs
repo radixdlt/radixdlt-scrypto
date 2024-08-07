@@ -114,6 +114,8 @@ pub enum RuntimeError {
     FinalizationCostingError(CostingError),
 }
 
+impl SystemApiError for RuntimeError {}
+
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
         RuntimeError::KernelError(error.into())
@@ -279,7 +281,8 @@ pub enum SystemError {
 
     /// A panic that's occurred in the system-layer or below. We're calling it system panic since
     /// we're treating the system as a black-box here.
-    #[cfg(feature = "std")]
+    ///
+    /// Note that this is only used when feature std is used.
     SystemPanic(String),
 }
 

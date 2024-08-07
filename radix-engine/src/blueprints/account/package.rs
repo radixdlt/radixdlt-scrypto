@@ -20,14 +20,11 @@ impl AccountNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME => {
                 let input: OnVirtualizeInput = input.into_typed().map_err(|e| {

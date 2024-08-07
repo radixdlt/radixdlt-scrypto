@@ -68,17 +68,16 @@ const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
 #[derive(Clone)]
 struct TestInvoke;
 impl VmInvoke for TestInvoke {
-    fn invoke<Y, V>(
+    fn invoke<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
+    >(
         &mut self,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             "new" => {
                 let size: (usize,) = input.into_typed().unwrap();

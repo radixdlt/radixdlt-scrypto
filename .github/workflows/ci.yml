@@ -315,9 +315,9 @@ jobs:
           workspaces: radix-clis
       - name: Install rustc 1.81.0-nightly
         run: |
-          rustup toolchain install nightly-2024-06-28
-          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-06-28
-          rustup default nightly-2024-06-28
+          rustup toolchain install nightly-2024-07-18
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-18
+          rustup default nightly-2024-07-18
           rustup show
       - name: Install LLVM 18
         run: |

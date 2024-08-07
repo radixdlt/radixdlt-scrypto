@@ -3,7 +3,6 @@ use crate::blueprints::consensus_manager::EpochChangeEvent;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::ExecutionReceipt;
-use crate::system::actor::*;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::*;
@@ -26,7 +25,20 @@ define_single_versioned! {
     /// receipt versions, allowing us to release a wallet ahead-of-time which is forward
     /// compatible with a new version of the engine (and so a new transaction receipt).
     #[derive(Clone, ScryptoSbor)]
-    pub VersionedTransactionReceipt(TransactionReceiptVersions) => TransactionReceipt = TransactionReceiptV1
+    pub VersionedTransactionReceipt(TransactionReceiptVersions) => TransactionReceipt = TransactionReceiptV1,
+    outer_attributes: [
+        // VersionedTransactionReceipt is currently encoded in the node's preview API.
+        // It is then decoded in lots of different mobile wallets as part of Transaction Review.
+        // We therefore can't make any changes/additions, without breaking this.
+        //
+        // In the interim, we are planning to:
+        // * Temporarily, serialize a PreviewTransactionReceipt which is fixed as just a single v1 versioned
+        //   VersionedTransactionReceipt, and have `impl From<VersionedTransactionReceipt> for PreviewTransactionReceipt`.
+        //   This will allow us to add new receipt versions, but ensuring they can still map to the preview model.
+        // * Change the API to return some kind of explicit extensible preview DTO.
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(fixed("FILE:receipt_schema_bottlenose.txt"))]
+    ],
 }
 
 #[derive(Clone, ScryptoSbor, PartialEq, Eq)]
@@ -110,6 +122,9 @@ impl TransactionReceiptV1 {
         detailed_execution_cost_breakdown: &[DetailedExecutionCostBreakdownEntry],
         network_definition: &NetworkDefinition,
     ) -> String {
+        // Putting use in here so it doesn't cause unused import compile warning in no-std
+        use crate::system::actor::*;
+
         let address_bech32m_encoder = AddressBech32Encoder::new(&network_definition);
 
         let mut lines = Vec::<String>::new();

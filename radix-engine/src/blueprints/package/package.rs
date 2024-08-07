@@ -374,10 +374,10 @@ fn validate_type_schemas<'a, I: Iterator<Item = &'a BlueprintDefinitionInit>>(
     Ok(())
 }
 
-fn validate_royalties<Y>(definition: &PackageDefinition, api: &mut Y) -> Result<(), RuntimeError>
-where
-    Y: SystemApi<RuntimeError>,
-{
+fn validate_royalties<Y: SystemApi<RuntimeError>>(
+    definition: &PackageDefinition,
+    api: &mut Y,
+) -> Result<(), RuntimeError> {
     for (blueprint, definition_init) in &definition.blueprints {
         match &definition_init.royalty_config {
             PackageRoyaltyConfig::Disabled => {}
@@ -790,16 +790,13 @@ pub fn create_package_partition_substates(
     node_substates
 }
 
-fn globalize_package<Y>(
+fn globalize_package<Y: SystemApi<RuntimeError>>(
     package_address_reservation: Option<GlobalAddressReservation>,
     package_structure: PackageStructure,
     metadata: Own,
     role_assignment: RoleAssignment,
     api: &mut Y,
-) -> Result<PackageAddress, RuntimeError>
-where
-    Y: SystemApi<RuntimeError>,
-{
+) -> Result<PackageAddress, RuntimeError> {
     let vault = Vault(ResourceManager(XRD).new_empty_vault(api)?);
 
     let (fields, kv_entries) =
@@ -945,17 +942,13 @@ impl PackageNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y, V>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>, V: VmApi>(
         export_name: &str,
         input: &IndexedScryptoValue,
         version: PackageV1MinorVersion,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        V: VmApi,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let restrict_reserved_key = match version {
             PackageV1MinorVersion::Zero => false,
             PackageV1MinorVersion::One => true,
@@ -1361,7 +1354,7 @@ impl PackageNativePackage {
         Ok(package_structure)
     }
 
-    pub(crate) fn publish_native<Y, V>(
+    pub(crate) fn publish_native<Y: SystemApi<RuntimeError>, V: VmApi>(
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u64,
         definition: PackageDefinition,
@@ -1369,11 +1362,7 @@ impl PackageNativePackage {
         restrict_reserved_key: bool,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<PackageAddress, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        V: VmApi,
-    {
+    ) -> Result<PackageAddress, RuntimeError> {
         validate_royalties(&definition, api)?;
         let package_structure = Self::validate_and_build_package_structure(
             definition,
@@ -1395,18 +1384,14 @@ impl PackageNativePackage {
         )
     }
 
-    pub(crate) fn publish_wasm<Y, V>(
+    pub(crate) fn publish_wasm<Y: SystemApi<RuntimeError>, V: VmApi>(
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata_init: MetadataInit,
         restrict_reserved_key: bool,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<(PackageAddress, Bucket), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        V: VmApi,
-    {
+    ) -> Result<(PackageAddress, Bucket), RuntimeError> {
         validate_royalties(&definition, api)?;
 
         let package_structure = Self::validate_and_build_package_structure(
@@ -1444,7 +1429,7 @@ impl PackageNativePackage {
         Ok((address, bucket))
     }
 
-    pub(crate) fn publish_wasm_advanced<Y, V>(
+    pub(crate) fn publish_wasm_advanced<Y: SystemApi<RuntimeError>, V: VmApi>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
@@ -1453,11 +1438,7 @@ impl PackageNativePackage {
         restrict_reserved_key: bool,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<PackageAddress, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        V: VmApi,
-    {
+    ) -> Result<PackageAddress, RuntimeError> {
         validate_royalties(&definition, api)?;
         let package_structure = Self::validate_and_build_package_structure(
             definition,
@@ -1483,16 +1464,12 @@ impl PackageNativePackage {
 pub struct PackageRoyaltyNativeBlueprint;
 
 impl PackageRoyaltyNativeBlueprint {
-    pub fn charge_package_royalty<Y, V>(
+    pub fn charge_package_royalty<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         ident: &str,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<(), RuntimeError> {
         {
             let mut service = SystemService::new(api);
             if !service.is_feature_enabled(
@@ -1567,10 +1544,9 @@ impl PackageRoyaltyNativeBlueprint {
         Ok(())
     }
 
-    pub(crate) fn claim_royalties<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn claim_royalties<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_SELF,
             PackageFeature::PackageRoyalty.feature_name(),
@@ -1599,16 +1575,15 @@ impl PackageRoyaltyNativeBlueprint {
 pub struct PackageAuthNativeBlueprint;
 
 impl PackageAuthNativeBlueprint {
-    pub fn resolve_function_permission<Y, V>(
+    pub fn resolve_function_permission<
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V>>,
+        V: SystemCallbackObject,
+    >(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         ident: &str,
         api: &mut Y,
-    ) -> Result<ResolvedPermission, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V>>,
-        V: SystemCallbackObject,
-    {
+    ) -> Result<ResolvedPermission, RuntimeError> {
         let auth_config = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
         match auth_config.function_auth {
             FunctionAuth::AllowAll => Ok(ResolvedPermission::AllowAll),

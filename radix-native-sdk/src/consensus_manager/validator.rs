@@ -1,5 +1,5 @@
-use radix_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoDecode};
-use radix_engine_interface::api::SystemObjectApi;
+use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ValidatorAcceptsDelegatedStakeInput, ValidatorRegisterInput, ValidatorStakeInput,
     ValidatorUpdateAcceptDelegatedStakeInput, VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
@@ -13,10 +13,7 @@ use sbor::rust::fmt::Debug;
 pub struct Validator(pub ComponentAddress);
 
 impl Validator {
-    pub fn register<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<(), E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    pub fn register<Y: SystemObjectApi<E>, E: SystemApiError>(&self, api: &mut Y) -> Result<(), E> {
         api.call_method(
             self.0.as_node_id(),
             VALIDATOR_REGISTER_IDENT,
@@ -26,14 +23,11 @@ impl Validator {
         Ok(())
     }
 
-    pub fn update_accept_delegated_stake<Y, E: Debug + ScryptoDecode>(
+    pub fn update_accept_delegated_stake<Y: SystemObjectApi<E>, E: SystemApiError>(
         &self,
         accept_delegated_stake: bool,
         api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<(), E> {
         api.call_method(
             self.0.as_node_id(),
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
@@ -46,13 +40,10 @@ impl Validator {
         Ok(())
     }
 
-    pub fn accepts_delegated_stake<Y, E: Debug + ScryptoDecode>(
+    pub fn accepts_delegated_stake<Y: SystemObjectApi<E>, E: SystemApiError>(
         &self,
         api: &mut Y,
-    ) -> Result<bool, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<bool, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
@@ -62,14 +53,11 @@ impl Validator {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn stake<Y, E: Debug + ScryptoDecode>(
+    pub fn stake<Y: SystemObjectApi<E>, E: SystemApiError>(
         &self,
         stake: Bucket,
         api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: SystemObjectApi<E>,
-    {
+    ) -> Result<Bucket, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             VALIDATOR_STAKE_IDENT,

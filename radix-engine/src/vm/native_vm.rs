@@ -93,17 +93,16 @@ impl<I: VmInvoke> NativeVmInstance<I> {
 
 impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     #[trace_resources(log=self.package_address().is_native_package(), log=self.package_address().to_hex(), log=export_name)]
-    fn invoke<Y, V>(
+    fn invoke<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
+    >(
         &mut self,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         #[allow(unused_mut)]
         let mut func = || match self {
             NativeVmInstance::Extension(e) => e.invoke(export_name, input, api, vm_api),
@@ -276,17 +275,16 @@ impl DefaultNativeVm {
 pub struct NullVmInvoke;
 
 impl VmInvoke for NullVmInvoke {
-    fn invoke<Y, V>(
+    fn invoke<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
+    >(
         &mut self,
         _export_name: &str,
         _input: &IndexedScryptoValue,
         _api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         panic!("Invocation was called on null VmInvoke");
     }
 }

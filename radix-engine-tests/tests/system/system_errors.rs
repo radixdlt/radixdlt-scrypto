@@ -16,17 +16,16 @@ const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
 #[derive(Clone)]
 struct TestInvoke;
 impl VmInvoke for TestInvoke {
-    fn invoke<Y, V>(
+    fn invoke<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
+    >(
         &mut self,
         export_name: &str,
         _input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             "invalid_state_handle" => {
                 api.actor_open_field(2u32, 0u8, LockFlags::read_only())?;

@@ -112,7 +112,7 @@ where
     fn resolve_type_kind(
         &self,
         type_identifier: &ScopedTypeId,
-    ) -> Result<SchemaTypeKind<ScryptoCustomSchema>, schema::SchemaError> {
+    ) -> Result<LocalTypeKind<ScryptoCustomSchema>, schema::SchemaError> {
         self.lookup_schema(&type_identifier.0)
             .ok_or(schema::SchemaError::FailedToGetSchemaFromSchemaHash)?
             .as_latest_version()

@@ -16,14 +16,14 @@ use sbor::rust::prelude::*;
 pub struct Runtime {}
 
 impl Runtime {
-    pub fn emit_event<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
+    pub fn emit_event<
+        Y: SystemApi<E>,
+        E: SystemApiError,
+        T: ScryptoEncode + ScryptoDescribe + ScryptoEvent,
+    >(
         api: &mut Y,
         event: T,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+    ) -> Result<(), E> {
         api.actor_emit_event(
             T::EVENT_NAME.to_string(),
             scrypto_encode_to_payload(&event)
@@ -33,14 +33,14 @@ impl Runtime {
         )
     }
 
-    pub fn emit_event_no_revert<T: ScryptoEncode + ScryptoDescribe + ScryptoEvent, Y, E>(
+    pub fn emit_event_no_revert<
+        Y: SystemApi<E>,
+        E: SystemApiError,
+        T: ScryptoEncode + ScryptoDescribe + ScryptoEvent,
+    >(
         api: &mut Y,
         event: T,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+    ) -> Result<(), E> {
         api.actor_emit_event(
             T::EVENT_NAME.to_string(),
             scrypto_encode_to_payload(&event)
@@ -50,11 +50,9 @@ impl Runtime {
         )
     }
 
-    pub fn current_epoch<Y, E>(api: &mut Y) -> Result<Epoch, E>
-    where
-        Y: SystemObjectApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+    pub fn current_epoch<Y: SystemObjectApi<E>, E: SystemApiError>(
+        api: &mut Y,
+    ) -> Result<Epoch, E> {
         let rtn = api.call_method(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
@@ -64,11 +62,10 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn current_time<Y, E>(api: &mut Y, precision: TimePrecision) -> Result<Instant, E>
-    where
-        Y: SystemObjectApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+    pub fn current_time<Y: SystemObjectApi<E>, E: SystemApiError>(
+        precision: TimePrecision,
+        api: &mut Y,
+    ) -> Result<Instant, E> {
         let rtn = api.call_method(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
@@ -78,16 +75,12 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn compare_against_current_time<Y, E>(
-        api: &mut Y,
+    pub fn compare_against_current_time<Y: SystemObjectApi<E>, E: SystemApiError>(
         instant: Instant,
         precision: TimePrecision,
         operator: TimeComparisonOperator,
-    ) -> Result<bool, E>
-    where
-        Y: SystemObjectApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+        api: &mut Y,
+    ) -> Result<bool, E> {
         let rtn = api.call_method(
             CONSENSUS_MANAGER.as_node_id(),
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT,
@@ -102,19 +95,14 @@ impl Runtime {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn generate_ruid<Y, E>(api: &mut Y) -> Result<[u8; 32], E>
-    where
-        Y: SystemApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+    pub fn generate_ruid<Y: SystemApi<E>, E: SystemApiError>(api: &mut Y) -> Result<[u8; 32], E> {
         api.generate_ruid()
     }
 
-    pub fn assert_access_rule<Y, E>(rule: AccessRule, api: &mut Y) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+    pub fn assert_access_rule<Y: SystemApi<E>, E: SystemApiError>(
+        rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<(), E> {
         let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
         let _rtn = api.call_method(
             &auth_zone,
@@ -125,19 +113,13 @@ impl Runtime {
         Ok(())
     }
 
-    pub fn get_node_id<Y, E>(api: &mut Y) -> Result<NodeId, E>
-    where
-        Y: SystemApi<E>,
-        E: Debug + ScryptoCategorize + ScryptoDecode,
-    {
+    pub fn get_node_id<Y: SystemApi<E>, E: SystemApiError>(api: &mut Y) -> Result<NodeId, E> {
         api.actor_get_node_id(ACTOR_REF_SELF)
     }
 
-    pub fn package_address<Y, E>(api: &mut Y) -> Result<PackageAddress, E>
-    where
-        Y: SystemApi<E>,
-        E: Debug,
-    {
+    pub fn package_address<Y: SystemApi<E>, E: SystemApiError>(
+        api: &mut Y,
+    ) -> Result<PackageAddress, E> {
         api.actor_get_blueprint_id().map(|x| x.package_address)
     }
 }

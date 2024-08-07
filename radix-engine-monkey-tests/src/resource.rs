@@ -29,17 +29,16 @@ pub const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
 #[derive(Clone)]
 pub struct ResourceTestInvoke;
 impl VmInvoke for ResourceTestInvoke {
-    fn invoke<Y, V>(
+    fn invoke<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
+    >(
         &mut self,
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             "call_vault" => {
                 let handle = api

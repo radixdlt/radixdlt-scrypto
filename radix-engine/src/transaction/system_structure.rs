@@ -29,13 +29,6 @@ pub struct SystemFieldStructure {
     pub field_kind: SystemFieldKind,
 }
 
-// NOTE: Adding BootLoader and BootLoader(BootLoaderFieldKind) are both changes to the
-//       TransactionReceiptV1 encoding, BUT we only require the encoding to be consistent
-//       for the toolkit which parses it opaquely at the moment when doing transaction preview
-//       in the wallet. This change doesn't apply because BootLoader substates are only edited
-//       during transaction preview.
-//
-// Node depends on this structure, so append only.
 #[derive(Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub enum SystemFieldKind {
     TypeInfo,
@@ -98,7 +91,12 @@ pub struct EventSystemStructure {
 pub type SubstateSystemStructures =
     IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSystemStructure>>>;
 
-#[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq, ScryptoSborAssertion)]
+// This is currently persisted in the node's `LocalTransactionExecution` store,
+// so needs to be backwards compatible to avoid breaking the Core API transaction stream.
+// This assertion can be removed when `radixdlt-scrypto` is merged into the node,
+// because there will be an equivalent assertion against the `LocalTransactionExecution` itself.
+#[sbor_assert(backwards_compatible(bottlenose = "FILE:system_structure_v1.txt"))]
 pub struct SystemStructure {
     pub substate_system_structures: SubstateSystemStructures,
     pub event_system_structures: IndexMap<EventTypeIdentifier, EventSystemStructure>,

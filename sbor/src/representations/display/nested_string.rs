@@ -96,7 +96,7 @@ fn format_value_tree<F: fmt::Write, E: FormattableCustomExtension>(
     let typed_event = traverser.next_event();
     match typed_event.event {
         ContainerStart(type_id, container_header) => {
-            let parent_depth = typed_event.location.typed_ancestor_path.len();
+            let parent_depth = typed_event.location.typed_container_path.len();
             match container_header {
                 ContainerHeader::Tuple(header) => {
                     format_tuple(f, traverser, context, type_id, header, parent_depth)

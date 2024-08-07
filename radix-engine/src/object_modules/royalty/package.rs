@@ -164,14 +164,11 @@ impl RoyaltyNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             COMPONENT_ROYALTY_CREATE_IDENT => {
                 let input: ComponentRoyaltyCreateInput = input.into_typed().map_err(|e| {
@@ -223,14 +220,11 @@ pub enum ComponentRoyaltyError {
 pub struct RoyaltyUtil;
 
 impl RoyaltyUtil {
-    pub fn verify_royalty_amounts<'a, I: Iterator<Item = &'a RoyaltyAmount>, Y>(
-        royalty_amounts: I,
+    pub fn verify_royalty_amounts<'a, Y: SystemApi<RuntimeError>>(
+        royalty_amounts: impl Iterator<Item = &'a RoyaltyAmount>,
         is_component: bool,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let max_royalty_in_xrd = match api.max_per_function_royalty_in_xrd() {
             Ok(amount) => Ok(amount),
             Err(RuntimeError::SystemError(SystemError::CostingModuleNotEnabled)) => return Ok(()),
@@ -318,13 +312,10 @@ impl RoyaltyUtil {
 pub struct ComponentRoyaltyBlueprint;
 
 impl ComponentRoyaltyBlueprint {
-    pub(crate) fn create<Y>(
+    pub(crate) fn create<Y: SystemApi<RuntimeError>>(
         royalty_config: ComponentRoyaltyConfig,
         api: &mut Y,
-    ) -> Result<Own, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Own, RuntimeError> {
         // Create a royalty vault
         let accumulator_substate = ComponentRoyaltySubstate {
             royalty_vault: Vault::create(XRD, api)?,
@@ -373,14 +364,11 @@ impl ComponentRoyaltyBlueprint {
         Ok(Own(component_id))
     }
 
-    pub(crate) fn set_royalty<Y>(
+    pub(crate) fn set_royalty<Y: SystemApi<RuntimeError>>(
         method: String,
         amount: RoyaltyAmount,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         RoyaltyUtil::verify_royalty_amounts(vec![amount.clone()].iter(), true, api)?;
 
         let handle = api.actor_open_key_value_entry_typed(
@@ -398,10 +386,10 @@ impl ComponentRoyaltyBlueprint {
         Ok(())
     }
 
-    pub(crate) fn lock_royalty<Y>(method: String, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn lock_royalty<Y: SystemApi<RuntimeError>>(
+        method: String,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             ComponentRoyaltyCollection::MethodAmountKeyValue.collection_index(),
@@ -414,10 +402,9 @@ impl ComponentRoyaltyBlueprint {
         Ok(())
     }
 
-    pub(crate) fn claim_royalties<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn claim_royalties<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             RoyaltyField::RoyaltyAccumulator.into(),

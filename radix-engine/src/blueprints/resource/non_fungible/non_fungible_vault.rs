@@ -361,21 +361,18 @@ impl NonFungibleVaultBlueprint {
         }
     }
 
-    pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn take<Y: SystemApi<RuntimeError>>(
+        amount: &Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         Self::take_advanced(amount, WithdrawStrategy::Exact, api)
     }
 
-    pub fn take_advanced<Y>(
+    pub fn take_advanced<Y: SystemApi<RuntimeError>>(
         amount: &Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         let taken = {
@@ -403,13 +400,10 @@ impl NonFungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn take_non_fungibles<Y>(
+    pub fn take_non_fungibles<Y: SystemApi<RuntimeError>>(
         non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Take
@@ -424,10 +418,10 @@ impl NonFungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn put<Y: SystemApi<RuntimeError>>(
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
 
         // Drop other bucket
@@ -443,10 +437,7 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn get_amount<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Decimal, RuntimeError> {
         Self::liquid_amount(api)?
             .checked_add(Self::locked_amount(api)?)
             .ok_or(RuntimeError::ApplicationError(
@@ -454,13 +445,10 @@ impl NonFungibleVaultBlueprint {
             ))
     }
 
-    pub fn contains_non_fungible<Y>(
+    pub fn contains_non_fungible<Y: SystemApi<RuntimeError>>(
         id: NonFungibleLocalId,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<bool, RuntimeError> {
         let ids = Self::locked_non_fungible_local_ids(u32::MAX, api)?;
         if ids.contains(&id) {
             return Ok(true);
@@ -486,13 +474,10 @@ impl NonFungibleVaultBlueprint {
         Ok(exists)
     }
 
-    pub fn get_non_fungible_local_ids<Y>(
+    pub fn get_non_fungible_local_ids<Y: SystemApi<RuntimeError>>(
         limit: u32,
         api: &mut Y,
-    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError> {
         let mut ids = Self::locked_non_fungible_local_ids(limit, api)?;
         let id_len: u32 = ids.len().try_into().unwrap();
 
@@ -504,10 +489,10 @@ impl NonFungibleVaultBlueprint {
         Ok(ids)
     }
 
-    pub fn recall<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn recall<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         Self::assert_recallable(api)?;
 
         let n = check_non_fungible_amount(&amount).map_err(|_| {
@@ -526,10 +511,10 @@ impl NonFungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn freeze<Y: SystemApi<RuntimeError>>(
+        to_freeze: VaultFreezeFlags,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_open_field(
@@ -550,10 +535,10 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn unfreeze<Y: SystemApi<RuntimeError>>(
+        to_unfreeze: VaultFreezeFlags,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_open_field(
@@ -573,13 +558,10 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn recall_non_fungibles<Y>(
+    pub fn recall_non_fungibles<Y: SystemApi<RuntimeError>>(
         non_fungible_local_ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         Self::assert_recallable(api)?;
 
         let taken = Self::internal_take_non_fungibles(&non_fungible_local_ids, api)?;
@@ -592,13 +574,10 @@ impl NonFungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn create_proof_of_non_fungibles<Y>(
+    pub fn create_proof_of_non_fungibles<Y: SystemApi<RuntimeError>>(
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Proof, RuntimeError> {
         Self::lock_non_fungibles(&ids, api)?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
@@ -622,23 +601,20 @@ impl NonFungibleVaultBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub fn burn<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn burn<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
 
         Self::take(&amount, api)?.package_burn(api)?;
         Ok(())
     }
 
-    pub fn burn_non_fungibles<Y>(
+    pub fn burn_non_fungibles<Y: SystemApi<RuntimeError>>(
         non_fungible_local_ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
 
         Self::take_non_fungibles(non_fungible_local_ids, api)?.package_burn(api)?;
@@ -649,13 +625,10 @@ impl NonFungibleVaultBlueprint {
     // Protected methods
     //===================
 
-    pub fn lock_non_fungibles<Y>(
+    pub fn lock_non_fungibles<Y: SystemApi<RuntimeError>>(
         ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleVaultField::LockedResource.into(),
@@ -687,13 +660,10 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn unlock_non_fungibles<Y>(
+    pub fn unlock_non_fungibles<Y: SystemApi<RuntimeError>>(
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleVaultField::LockedResource.into(),
@@ -728,10 +698,10 @@ impl NonFungibleVaultBlueprint {
     // Helper methods
     //===================
 
-    fn assert_not_frozen<Y>(flags: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn assert_not_frozen<Y: SystemApi<RuntimeError>>(
+        flags: VaultFreezeFlags,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
             NonFungibleResourceManagerFeature::VaultFreeze.feature_name(),
@@ -758,10 +728,7 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-    fn assert_freezable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn assert_freezable<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
             NonFungibleResourceManagerFeature::VaultFreeze.feature_name(),
@@ -778,10 +745,7 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-    fn assert_recallable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn assert_recallable<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
             NonFungibleResourceManagerFeature::VaultRecall.feature_name(),
@@ -798,10 +762,7 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-    fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn liquid_amount<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Decimal, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleVaultField::Balance.into(),
@@ -815,10 +776,7 @@ impl NonFungibleVaultBlueprint {
         Ok(amount)
     }
 
-    fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn locked_amount<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Decimal, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleVaultField::LockedResource.into(),
@@ -832,13 +790,10 @@ impl NonFungibleVaultBlueprint {
         Ok(amount)
     }
 
-    fn liquid_non_fungible_local_ids<Y>(
+    fn liquid_non_fungible_local_ids<Y: SystemApi<RuntimeError>>(
         limit: u32,
         api: &mut Y,
-    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError> {
         let items: Vec<NonFungibleLocalId> = api.actor_index_scan_keys_typed(
             ACTOR_STATE_SELF,
             NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
@@ -848,13 +803,10 @@ impl NonFungibleVaultBlueprint {
         Ok(ids)
     }
 
-    fn locked_non_fungible_local_ids<Y>(
+    fn locked_non_fungible_local_ids<Y: SystemApi<RuntimeError>>(
         limit: u32,
         api: &mut Y,
-    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleVaultField::LockedResource.into(),
@@ -869,13 +821,10 @@ impl NonFungibleVaultBlueprint {
         Ok(ids)
     }
 
-    fn internal_take_by_amount<Y>(
+    fn internal_take_by_amount<Y: SystemApi<RuntimeError>>(
         n: u32,
         api: &mut Y,
-    ) -> Result<LiquidNonFungibleResource, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<LiquidNonFungibleResource, RuntimeError> {
         // deduct from liquidity pool
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -919,13 +868,10 @@ impl NonFungibleVaultBlueprint {
         Ok(taken)
     }
 
-    pub fn internal_take_non_fungibles<Y>(
+    pub fn internal_take_non_fungibles<Y: SystemApi<RuntimeError>>(
         ids: &IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<LiquidNonFungibleResource, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<LiquidNonFungibleResource, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             NonFungibleVaultField::Balance.into(),
@@ -969,13 +915,10 @@ impl NonFungibleVaultBlueprint {
         Ok(LiquidNonFungibleResource::new(ids.clone()))
     }
 
-    pub fn internal_put<Y>(
+    pub fn internal_put<Y: SystemApi<RuntimeError>>(
         resource: LiquidNonFungibleResource,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         if resource.is_empty() {
             return Ok(());
         }

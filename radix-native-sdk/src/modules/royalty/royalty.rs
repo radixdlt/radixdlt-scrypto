@@ -10,13 +10,10 @@ use sbor::rust::prelude::*;
 pub struct ComponentRoyalty(pub Own);
 
 impl ComponentRoyalty {
-    pub fn create<Y, E: Debug + ScryptoDecode>(
+    pub fn create<Y: SystemApi<E>, E: SystemApiError>(
         royalty_config: ComponentRoyaltyConfig,
         api: &mut Y,
-    ) -> Result<Own, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Own, E> {
         let rtn = api.call_function(
             ROYALTY_MODULE_PACKAGE,
             COMPONENT_ROYALTY_BLUEPRINT,
@@ -28,15 +25,12 @@ impl ComponentRoyalty {
         Ok(component_royalty)
     }
 
-    pub fn set_royalty<Y, E: Debug + ScryptoDecode>(
+    pub fn set_royalty<Y: SystemApi<E>, E: SystemApiError>(
         &mut self,
         method_name: &str,
         amount: RoyaltyAmount,
         api: &mut Y,
-    ) -> Result<ComponentRoyaltySetOutput, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<ComponentRoyaltySetOutput, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
@@ -50,14 +44,11 @@ impl ComponentRoyalty {
         Ok(rtn)
     }
 
-    pub fn lock_royalty<Y, E: Debug + ScryptoDecode>(
+    pub fn lock_royalty<Y: SystemApi<E>, E: SystemApiError>(
         &mut self,
         method_name: &str,
         api: &mut Y,
-    ) -> Result<ComponentRoyaltyLockOutput, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<ComponentRoyaltyLockOutput, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
@@ -70,13 +61,10 @@ impl ComponentRoyalty {
         Ok(rtn)
     }
 
-    pub fn claim_royalty<Y, E: Debug + ScryptoDecode>(
+    pub fn claim_royalty<Y: SystemApi<E>, E: SystemApiError>(
         &mut self,
         api: &mut Y,
-    ) -> Result<ComponentClaimRoyaltiesOutput, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<ComponentClaimRoyaltiesOutput, E> {
         let rtn = api.call_method(
             self.0.as_node_id(),
             COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,

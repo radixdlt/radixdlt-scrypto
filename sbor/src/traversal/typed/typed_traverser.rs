@@ -124,7 +124,14 @@ impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
         check_exact_end: bool,
     ) -> Self {
         Self {
-            traverser: VecTraverser::new(input, max_depth, expected_start, check_exact_end),
+            traverser: VecTraverser::new(
+                input,
+                expected_start,
+                VecTraverserConfig {
+                    max_depth,
+                    check_exact_end,
+                },
+            ),
             state: TypedTraverserState {
                 container_stack: Vec::with_capacity(max_depth),
                 schema,
@@ -144,7 +151,7 @@ impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
         TypedLocatedTraversalEvent {
             location: TypedLocation {
                 location,
-                typed_ancestor_path: &self.state.container_stack,
+                typed_container_path: &self.state.container_stack,
             },
             event: typed_event,
         }
@@ -163,7 +170,7 @@ impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
             TypedLocatedTraversalEvent {
                 location: TypedLocation {
                     location,
-                    typed_ancestor_path: &self.state.container_stack,
+                    typed_container_path: &self.state.container_stack,
                 },
                 event: typed_event,
             },
@@ -253,7 +260,7 @@ impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
                     next_event.display_as_unexpected_event("ContainerEnd at correct level", schema)
                 );
             }
-            let back_at_start_depth = next_event.location.typed_ancestor_path.len() == start_depth;
+            let back_at_start_depth = next_event.location.typed_container_path.len() == start_depth;
             if back_at_start_depth {
                 match next_event.event {
                     TypedTraversalEvent::ContainerEnd(type_id, header) => {
@@ -312,8 +319,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                 _ => return_type_mismatch_error!(
                     location,
                     TypeMismatchError::MismatchingType {
-                        expected_type_id: type_id,
-                        expected_type_kind: container_type.clone(),
+                        type_id,
+                        expected_type_kind: container_type.label(),
                         actual_value_kind: ValueKind::Tuple
                     }
                 ),
@@ -342,8 +349,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                     _ => return_type_mismatch_error!(
                         location,
                         TypeMismatchError::MismatchingType {
-                            expected_type_id: type_id,
-                            expected_type_kind: container_type.clone(),
+                            type_id,
+                            expected_type_kind: container_type.label(),
                             actual_value_kind: ValueKind::Enum
                         }
                     ),
@@ -365,8 +372,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildElementType {
-                                expected_type_id: *element_type_id,
-                                expected_type_kind: element_type.clone(),
+                                type_id: *element_type_id,
+                                expected_type_kind: element_type.label(),
                                 actual_value_kind: element_value_kind
                             }
                         )
@@ -377,8 +384,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                 _ => return_type_mismatch_error!(
                     location,
                     TypeMismatchError::MismatchingType {
-                        expected_type_id: type_id,
-                        expected_type_kind: container_type.clone(),
+                        type_id,
+                        expected_type_kind: container_type.label(),
                         actual_value_kind: ValueKind::Array
                     }
                 ),
@@ -398,8 +405,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildKeyType {
-                                expected_type_id: *key_type_id,
-                                expected_type_kind: key_type.clone(),
+                                type_id: *key_type_id,
+                                expected_type_kind: key_type.label(),
                                 actual_value_kind: key_value_kind
                             }
                         )
@@ -413,8 +420,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                         return_type_mismatch_error!(
                             location,
                             TypeMismatchError::MismatchingChildValueType {
-                                expected_type_id: *value_type_id,
-                                expected_type_kind: value_type.clone(),
+                                type_id: *value_type_id,
+                                expected_type_kind: value_type.label(),
                                 actual_value_kind: value_value_kind
                             }
                         )
@@ -428,8 +435,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                 _ => return_type_mismatch_error!(
                     location,
                     TypeMismatchError::MismatchingType {
-                        expected_type_id: type_id,
-                        expected_type_kind: container_type.clone(),
+                        type_id,
+                        expected_type_kind: container_type.label(),
                         actual_value_kind: ValueKind::Map
                     }
                 ),
@@ -451,8 +458,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
-                    expected_type_id: type_id,
-                    expected_type_kind: type_kind.clone(),
+                    type_id,
+                    expected_type_kind: type_kind.label(),
                     actual_value_kind: value_kind
                 }
             )
@@ -473,8 +480,8 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
             return_type_mismatch_error!(
                 location,
                 TypeMismatchError::MismatchingType {
-                    expected_type_id: type_id,
-                    expected_type_kind: type_kind.clone(),
+                    type_id,
+                    expected_type_kind: type_kind.label(),
                     actual_value_kind: value_kind
                 }
             )
@@ -493,10 +500,10 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
     }
 
     fn get_type_id(&self, location: &Location<E::CustomTraversal>) -> LocalTypeId {
-        match location.ancestor_path.last() {
-            Some(container_state) => {
-                let child_index = container_state.current_child_index.expect("Callers should ensure `current_child_index.is_some()`");
-                match container_state.container_header {
+        match location.get_latest_ancestor() {
+            Some(ancestor_state) => {
+                let child_index = ancestor_state.current_child_index;
+                match ancestor_state.container_header {
                     ContainerHeader::Tuple(_)
                     | ContainerHeader::EnumVariant(_)
                     | ContainerHeader::Array(_) =>  {
@@ -519,7 +526,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
 fn value_kind_matches_type_kind<E: CustomExtension>(
     schema: &Schema<E::CustomSchema>,
     value_kind: ValueKind<E::CustomValueKind>,
-    type_kind: &SchemaTypeKind<E::CustomSchema>,
+    type_kind: &LocalTypeKind<E::CustomSchema>,
 ) -> bool {
     if matches!(type_kind, TypeKind::Any) {
         return true;

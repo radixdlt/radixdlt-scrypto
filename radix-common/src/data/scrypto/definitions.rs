@@ -1,3 +1,5 @@
+use vec_traits::vec_decode_with_nice_error;
+
 use crate::internal_prelude::*;
 
 pub use crate::constants::SCRYPTO_SBOR_V1_MAX_DEPTH;
@@ -84,4 +86,31 @@ pub fn scrypto_decode_with_depth_limit<T: ScryptoDecode>(
     depth_limit: usize,
 ) -> Result<T, DecodeError> {
     ScryptoDecoder::new(buf, depth_limit).decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+}
+
+/// Decodes a data structure from a byte array.
+///
+/// If an error occurs, the type's schema is exported and used to give a better error message.
+///
+/// NOTE:
+/// * The error path runs very slowly. This should only be used where errors are NOT expected.
+/// * This should not be used in Scrypto, as it will pull in the schema aggregation code which is large.
+pub fn scrypto_decode_with_nice_error<T: ScryptoDecode + ScryptoDescribe>(
+    buf: &[u8],
+) -> Result<T, String> {
+    vec_decode_with_nice_error::<ScryptoCustomExtension, T>(buf, SCRYPTO_SBOR_V1_MAX_DEPTH)
+}
+
+/// Decodes a data structure from a byte array.
+///
+/// If an error occurs, the type's schema is exported and used to give a better error message.
+///
+/// NOTE:
+/// * The error path runs very slowly. This should only be used where errors are NOT expected.
+/// * This should not be used in Scrypto, as it will pull in the schema aggregation code which is large.
+pub fn scrypto_decode_with_depth_limit_and_nice_error<T: ScryptoDecode + ScryptoDescribe>(
+    buf: &[u8],
+    depth_limit: usize,
+) -> Result<T, String> {
+    vec_decode_with_nice_error::<ScryptoCustomExtension, T>(buf, depth_limit)
 }

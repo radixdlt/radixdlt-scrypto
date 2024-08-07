@@ -124,14 +124,11 @@ impl IdentityNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             IDENTITY_CREATE_ADVANCED_IDENT => {
                 let input: IdentityCreateAdvancedInput = input.into_typed().map_err(|e| {
@@ -192,13 +189,10 @@ impl PresecurifiedRoleAssignment for SecurifiedIdentity {}
 pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
-    pub fn create_advanced<Y>(
+    pub fn create_advanced<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
         api: &mut Y,
-    ) -> Result<GlobalAddress, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<GlobalAddress, RuntimeError> {
         let role_assignment = SecurifiedIdentity::create_advanced(owner_role, api)?;
 
         let (node_id, modules) = Self::create_object(
@@ -213,10 +207,9 @@ impl IdentityBlueprint {
         Ok(address)
     }
 
-    pub fn create<Y>(api: &mut Y) -> Result<(GlobalAddress, Bucket), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn create<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<(GlobalAddress, Bucket), RuntimeError> {
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
@@ -242,13 +235,10 @@ impl IdentityBlueprint {
         Ok((address, bucket))
     }
 
-    pub fn on_virtualize<Y>(
+    pub fn on_virtualize<Y: SystemApi<RuntimeError>>(
         input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<OnVirtualizeOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OnVirtualizeOutput, RuntimeError> {
         match input.variant_id {
             IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
@@ -264,14 +254,11 @@ impl IdentityBlueprint {
         }
     }
 
-    fn create_virtual<Y>(
+    fn create_virtual<Y: SystemApi<RuntimeError>>(
         public_key_hash: PublicKeyHash,
         address_reservation: GlobalAddressReservation,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let owner_badge = {
             let bytes = public_key_hash.get_hash_bytes();
             let entity_type = match public_key_hash {
@@ -311,31 +298,26 @@ impl IdentityBlueprint {
         Ok(())
     }
 
-    fn securify<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn securify<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Bucket, RuntimeError> {
         let receiver = Runtime::get_node_id(api)?;
         let owner_badge_data = IdentityOwnerBadgeData {
             name: "Identity Owner Badge".into(),
             identity: ComponentAddress::new_or_panic(receiver.0),
         };
-        SecurifiedIdentity::securify(
+        let bucket = SecurifiedIdentity::securify(
             &receiver,
             owner_badge_data,
             Some(NonFungibleLocalId::bytes(receiver.0).unwrap()),
             api,
-        )
+        )?;
+        Ok(bucket.into())
     }
 
-    fn create_object<Y>(
+    fn create_object<Y: SystemApi<RuntimeError>>(
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<(NodeId, IndexMap<AttachedModuleId, Own>), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(NodeId, IndexMap<AttachedModuleId, Own>), RuntimeError> {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 

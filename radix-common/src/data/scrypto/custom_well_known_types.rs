@@ -574,7 +574,7 @@ create_well_known_lookup!(
 
 pub fn resolve_scrypto_well_known_type(
     well_known_index: WellKnownTypeId,
-) -> Option<&'static TypeData<ScryptoCustomTypeKind, LocalTypeId>> {
+) -> Option<&'static ScryptoLocalTypeData> {
     WELL_KNOWN_LOOKUP
         .get(well_known_index.as_index())
         .and_then(|x| x.as_ref())

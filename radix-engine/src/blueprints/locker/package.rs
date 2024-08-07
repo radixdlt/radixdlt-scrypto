@@ -15,14 +15,11 @@ impl LockerNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         // Delegated to the blueprint's dispatcher since it's the only blueprint in the package. If
         // we add more then we need to control the dispatch here.
         AccountLockerBlueprint::invoke_export(export_name, input, api)

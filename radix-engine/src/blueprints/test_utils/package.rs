@@ -18,14 +18,11 @@ impl TestUtilsNativePackage {
         }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             TEST_UTILS_PANIC_IDENT => {
                 let TestUtilsPanicInput(input) = input.into_typed().map_err(|e| {

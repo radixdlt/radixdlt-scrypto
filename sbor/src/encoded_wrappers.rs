@@ -107,7 +107,14 @@ impl<'a, E: CustomExtension> UnvalidatedRawPayload<'a, E> {
     pub fn traverser(&self, max_depth: usize) -> VecTraverser<E::CustomTraversal> {
         let slice = self.unvalidated_payload_slice();
         let expected_start = ExpectedStart::PayloadPrefix(E::PAYLOAD_PREFIX);
-        VecTraverser::<E::CustomTraversal>::new(slice, max_depth, expected_start, true)
+        VecTraverser::<E::CustomTraversal>::new(
+            slice,
+            expected_start,
+            VecTraverserConfig {
+                max_depth,
+                check_exact_end: true,
+            },
+        )
     }
 
     pub fn typed_traverser<'b, 's>(
@@ -347,7 +354,14 @@ impl<'a, E: CustomExtension> RawPayload<'a, E> {
     pub fn traverser(&self, max_depth: usize) -> VecTraverser<E::CustomTraversal> {
         let slice = self.as_slice();
         let expected_start = ExpectedStart::PayloadPrefix(E::PAYLOAD_PREFIX);
-        VecTraverser::<E::CustomTraversal>::new(slice, max_depth, expected_start, true)
+        VecTraverser::<E::CustomTraversal>::new(
+            slice,
+            expected_start,
+            VecTraverserConfig {
+                max_depth,
+                check_exact_end: true,
+            },
+        )
     }
 
     pub fn typed_traverser<'s>(
@@ -984,7 +998,14 @@ impl<'a, E: CustomExtension> RawValueContent<'a, E> {
 
     fn traverser(&self, max_depth: usize) -> VecTraverser<E::CustomTraversal> {
         let (slice, expected_start) = self.traverser_context();
-        VecTraverser::<E::CustomTraversal>::new(slice, max_depth, expected_start, true)
+        VecTraverser::<E::CustomTraversal>::new(
+            slice,
+            expected_start,
+            VecTraverserConfig {
+                max_depth,
+                check_exact_end: true,
+            },
+        )
     }
 
     fn typed_traverser<'s>(

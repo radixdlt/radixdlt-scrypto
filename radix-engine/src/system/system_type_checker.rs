@@ -54,11 +54,7 @@ pub enum TypeCheckError {
     MissingSchema,
 }
 
-impl<'a, Y, V> SystemService<'a, Y, V>
-where
-    Y: KernelApi<System<V>>,
-    V: SystemCallbackObject,
-{
+impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, V> {
     /// Validate that the type substitutions match the generic definition of a given blueprint
     pub fn validate_bp_generic_args(
         &mut self,

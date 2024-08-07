@@ -279,10 +279,7 @@ impl FungibleVaultBlueprint {
         }
     }
 
-    fn get_divisibility<Y>(api: &mut Y) -> Result<u8, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn get_divisibility<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<u8, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
@@ -295,21 +292,18 @@ impl FungibleVaultBlueprint {
         Ok(divisibility)
     }
 
-    pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn take<Y: SystemApi<RuntimeError>>(
+        amount: &Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         Self::take_advanced(amount, WithdrawStrategy::Exact, api)
     }
 
-    pub fn take_advanced<Y>(
+    pub fn take_advanced<Y: SystemApi<RuntimeError>>(
         amount: &Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Apply withdraw strategy
@@ -343,10 +337,10 @@ impl FungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn put<Y: SystemApi<RuntimeError>>(
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
 
         // This will fail if bucket is not an inner object of the current fungible resource
@@ -361,10 +355,7 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn get_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn get_amount<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Decimal, RuntimeError> {
         Self::liquid_amount(api)?
             .checked_add(Self::locked_amount(api)?)
             .ok_or(RuntimeError::ApplicationError(
@@ -372,10 +363,11 @@ impl FungibleVaultBlueprint {
             ))
     }
 
-    pub fn lock_fee<Y>(amount: Decimal, contingent: bool, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn lock_fee<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        contingent: bool,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Check resource address and amount
@@ -439,10 +431,10 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn recall<Y>(amount: Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn recall<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
         Self::assert_recallable(api)?;
 
         let divisibility = Self::get_divisibility(api)?;
@@ -461,10 +453,10 @@ impl FungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn freeze<Y: SystemApi<RuntimeError>>(
+        to_freeze: VaultFreezeFlags,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_open_field(
@@ -485,10 +477,10 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn unfreeze<Y: SystemApi<RuntimeError>>(
+        to_unfreeze: VaultFreezeFlags,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_freezable(api)?;
 
         let frozen_flag_handle = api.actor_open_field(
@@ -508,10 +500,10 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn create_proof_of_amount<Y>(amount: Decimal, api: &mut Y) -> Result<Proof, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn create_proof_of_amount<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, RuntimeError> {
         let divisibility = Self::get_divisibility(api)?;
         if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
@@ -545,10 +537,10 @@ impl FungibleVaultBlueprint {
         Ok(Proof(Own(proof_id)))
     }
 
-    pub fn burn<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn burn<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
 
         Self::take(&amount, api)?.package_burn(api)?;
@@ -559,10 +551,10 @@ impl FungibleVaultBlueprint {
     // Protected methods
     //===================
 
-    pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn lock_amount<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             FungibleVaultField::LockedBalance.into(),
@@ -594,10 +586,10 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn unlock_amount<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             FungibleVaultField::LockedBalance.into(),
@@ -634,10 +626,10 @@ impl FungibleVaultBlueprint {
     // Helper methods
     //===================
 
-    fn assert_not_frozen<Y>(flags: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn assert_not_frozen<Y: SystemApi<RuntimeError>>(
+        flags: VaultFreezeFlags,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerFeature::VaultFreeze.feature_name(),
@@ -664,10 +656,7 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    fn assert_freezable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn assert_freezable<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerFeature::VaultFreeze.feature_name(),
@@ -684,10 +673,7 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    fn assert_recallable<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn assert_recallable<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         if !api.actor_is_feature_enabled(
             ACTOR_STATE_OUTER_OBJECT,
             FungibleResourceManagerFeature::VaultRecall.feature_name(),
@@ -704,10 +690,7 @@ impl FungibleVaultBlueprint {
         Ok(())
     }
 
-    fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn liquid_amount<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Decimal, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             FungibleVaultField::Balance.into(),
@@ -721,10 +704,7 @@ impl FungibleVaultBlueprint {
         Ok(amount)
     }
 
-    fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn locked_amount<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Decimal, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             FungibleVaultField::LockedBalance.into(),
@@ -738,13 +718,10 @@ impl FungibleVaultBlueprint {
         Ok(amount)
     }
 
-    fn internal_take<Y>(
+    fn internal_take<Y: SystemApi<RuntimeError>>(
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<LiquidFungibleResource, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<LiquidFungibleResource, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             FungibleVaultField::Balance.into(),
@@ -767,10 +744,10 @@ impl FungibleVaultBlueprint {
         Ok(taken)
     }
 
-    fn internal_put<Y>(resource: LiquidFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn internal_put<Y: SystemApi<RuntimeError>>(
+        resource: LiquidFungibleResource,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         if resource.is_empty() {
             return Ok(());
         }
