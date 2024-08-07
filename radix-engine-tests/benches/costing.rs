@@ -23,23 +23,43 @@ use sbor::rust::iter;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
 use wabt::wat2wasm;
 
-fn bench_decode_sbor(c: &mut Criterion) {
+fn bench_decode_rpd_to_manifest_value(c: &mut Criterion) {
     let payload = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd");
     println!("Payload size: {}", payload.len());
-    c.bench_function("costing::decode_sbor", |b| {
+    c.bench_function("costing::decode_rpd_to_manifest_value", |b| {
         b.iter(|| manifest_decode::<ManifestValue>(payload))
     });
 }
 
-fn bench_decode_sbor_bytes(c: &mut Criterion) {
+fn bench_decode_rpd_to_manifest_raw_value(c: &mut Criterion) {
+    let payload = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd");
+    println!("Payload size: {}", payload.len());
+    c.bench_function("costing::decode_rpd_to_manifest_raw_value", |b| {
+        b.iter(|| manifest_decode::<ManifestRawValue>(payload))
+    });
+}
+
+fn bench_decode_bytes_to_manifest_value(c: &mut Criterion) {
     let payload = manifest_encode(include_workspace_asset_bytes!(
         "radix-transaction-scenarios",
         "radiswap.rpd"
     ))
     .unwrap();
     println!("Payload size: {}", payload.len());
-    c.bench_function("costing::decode_sbor_bytes", |b| {
+    c.bench_function("costing::decode_bytes_to_manifest_value", |b| {
         b.iter(|| manifest_decode::<ManifestValue>(&payload))
+    });
+}
+
+fn bench_decode_bytes_to_manifest_raw_value(c: &mut Criterion) {
+    let payload = manifest_encode(include_workspace_asset_bytes!(
+        "radix-transaction-scenarios",
+        "radiswap.rpd"
+    ))
+    .unwrap();
+    println!("Payload size: {}", payload.len());
+    c.bench_function("costing::decode_bytes_to_manifest_raw_value", |b| {
+        b.iter(|| manifest_decode::<ManifestRawValue>(&payload))
     });
 }
 
@@ -230,8 +250,10 @@ fn bench_prepare_wasm(c: &mut Criterion) {
 
 criterion_group!(
     costing,
-    bench_decode_sbor,
-    bench_decode_sbor_bytes,
+    bench_decode_rpd_to_manifest_value,
+    bench_decode_rpd_to_manifest_raw_value,
+    bench_decode_bytes_to_manifest_value,
+    bench_decode_bytes_to_manifest_raw_value,
     bench_validate_sbor_payload,
     bench_validate_sbor_payload_bytes,
     bench_validate_secp256k1,
