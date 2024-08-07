@@ -13,6 +13,7 @@ syn = { workspace = true, features = ["full", "extra-traits"] }
 quote = { workspace = true }
 const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
 itertools = { workspace = true }
+indexmap = { workspace = true }
 
 [features]
 trace = []
