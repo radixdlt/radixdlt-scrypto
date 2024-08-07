@@ -1418,7 +1418,7 @@ impl ConsensusManagerBlueprint {
                 validator_info.address.as_node_id(),
                 VALIDATOR_APPLY_EMISSION_IDENT,
                 scrypto_encode(&ValidatorApplyEmissionInput {
-                    xrd_bucket: emission_xrd_bucket,
+                    xrd_bucket: emission_xrd_bucket.into(),
                     epoch,
                     proposals_made: validator_info.proposal_statistic.made,
                     proposals_missed: validator_info.proposal_statistic.missed,

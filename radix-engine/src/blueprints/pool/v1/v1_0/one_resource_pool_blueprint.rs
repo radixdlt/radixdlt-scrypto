@@ -187,7 +187,7 @@ impl OneResourcePoolBlueprint {
             },
         )?;
 
-        Ok(pool_units)
+        Ok(pool_units.into())
     }
 
     pub fn redeem<Y: SystemApi<RuntimeError>>(

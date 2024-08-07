@@ -471,7 +471,7 @@ fn two_resource_pool_initial_contribution_should_not_return_zero_pool_units(
 
     // Act
     let (pool_units, _) =
-        pool.contribute((bucket1, Bucket::create(resource_address2, env)?), env)?;
+        pool.contribute((bucket1, FungibleBucket(Bucket::create(resource_address2, env)?)), env)?;
 
     // Assert
     let pool_units_amount = pool_units.amount(env)?;

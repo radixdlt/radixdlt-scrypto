@@ -440,7 +440,7 @@ impl TwoResourcePoolBlueprint {
 
             Runtime::emit_event(api, event)?;
 
-            Ok((pool_units, change_bucket))
+            Ok((pool_units.into(), change_bucket))
         })
     }
 

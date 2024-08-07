@@ -558,21 +558,21 @@ impl ValidatorBlueprint {
         xrd_bucket: Bucket,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError> {
-        Self::stake_internal(xrd_bucket, true, api)
+        Ok(Self::stake_internal(xrd_bucket, true, api)?.into())
     }
 
     pub fn stake<Y: SystemApi<RuntimeError>>(
         xrd_bucket: Bucket,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError> {
-        Self::stake_internal(xrd_bucket, false, api)
+        Ok(Self::stake_internal(xrd_bucket, false, api)?.into())
     }
 
     fn stake_internal<Y: SystemApi<RuntimeError>>(
         xrd_bucket: Bucket,
         is_owner: bool,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError> {
+    ) -> Result<FungibleBucket, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             ValidatorField::State.field_index(),
@@ -637,7 +637,7 @@ impl ValidatorBlueprint {
     pub fn unstake<Y: SystemApi<RuntimeError>>(
         stake_unit_bucket: Bucket,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError> {
+    ) -> Result<NonFungibleBucket, RuntimeError> {
         let stake_unit_bucket_amount = stake_unit_bucket.amount(api)?;
 
         let handle = api.actor_open_field(
@@ -1404,7 +1404,7 @@ impl ValidatorBlueprint {
         stake_xrd_vault.put(fee_xrd_bucket, api)?;
 
         // - immediately lock these new stake units in the internal owner's "public display" vault
-        Vault(substate.locked_owner_stake_unit_vault_id).put(fee_stake_unit_bucket, api)?;
+        Vault(substate.locked_owner_stake_unit_vault_id).put(fee_stake_unit_bucket.into(), api)?;
 
         // - update the index, since the stake increased (because of net emission + staking of the validator fee)
         let new_stake_xrd = starting_stake_pool_xrd
@@ -1471,7 +1471,7 @@ impl ValidatorBlueprint {
         stake_xrd_vault.put(xrd_bucket, api)?;
 
         // Lock these new stake units in the internal owner's "public display" vault
-        Vault(substate.locked_owner_stake_unit_vault_id).put(new_stake_unit_bucket, api)?;
+        Vault(substate.locked_owner_stake_unit_vault_id).put(new_stake_unit_bucket.into(), api)?;
 
         // Update the index, since the stake increased (because of staking of the reward)
         let new_stake_xrd = starting_stake_pool_xrd

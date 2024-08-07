@@ -8,8 +8,6 @@ use radix_engine_interface::api::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_native_sdk::runtime::Runtime;
 
-pub struct FungibleBucket;
-
 pub struct FungibleBucketBlueprint;
 
 impl FungibleBucketBlueprint {

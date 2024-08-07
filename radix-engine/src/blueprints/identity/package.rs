@@ -303,12 +303,13 @@ impl IdentityBlueprint {
             name: "Identity Owner Badge".into(),
             identity: ComponentAddress::new_or_panic(receiver.0),
         };
-        SecurifiedIdentity::securify(
+        let bucket = SecurifiedIdentity::securify(
             &receiver,
             owner_badge_data,
             Some(NonFungibleLocalId::bytes(receiver.0).unwrap()),
             api,
-        )
+        )?;
+        Ok(bucket.into())
     }
 
     fn create_object<Y: SystemApi<RuntimeError>>(

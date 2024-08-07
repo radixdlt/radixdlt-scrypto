@@ -405,7 +405,7 @@ impl MultiResourcePoolBlueprint {
         };
 
         api.field_close(lock_handle)?;
-        Ok((pool_units, change))
+        Ok((pool_units.into(), change))
     }
 
     pub fn redeem<Y: SystemApi<RuntimeError>>(

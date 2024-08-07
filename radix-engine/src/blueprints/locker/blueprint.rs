@@ -324,7 +324,7 @@ impl AccountLockerBlueprint {
             let claim_bucket = match specifier {
                 ResourceSpecifier::Fungible(amount) => bucket.take(*amount, api)?,
                 ResourceSpecifier::NonFungible(ids) => {
-                    bucket.take_non_fungibles(ids.clone(), api)?
+                    bucket.take_non_fungibles(ids.clone(), api)?.into()
                 }
             };
 
