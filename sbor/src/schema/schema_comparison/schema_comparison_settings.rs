@@ -14,9 +14,9 @@ impl SchemaComparisonSettings {
     pub const fn require_equality() -> Self {
         Self {
             completeness: SchemaComparisonCompletenessSettings::enforce_type_roots_cover_schema_disallow_new_root_types(),
-            structure: SchemaComparisonStructureSettings::equality(),
-            metadata: SchemaComparisonMetadataSettings::equality(),
-            validation: SchemaComparisonValidationSettings::equality(),
+            structure: SchemaComparisonStructureSettings::require_identical_structure(),
+            metadata: SchemaComparisonMetadataSettings::require_identical_metadata(),
+            validation: SchemaComparisonValidationSettings::require_identical_validation(),
         }
     }
 
@@ -36,7 +36,7 @@ impl SchemaComparisonSettings {
         Self {
             completeness: SchemaComparisonCompletenessSettings::enforce_type_roots_cover_schema_allow_new_root_types(),
             structure: SchemaComparisonStructureSettings::allow_extension(),
-            metadata: SchemaComparisonMetadataSettings::equality(),
+            metadata: SchemaComparisonMetadataSettings::require_identical_metadata(),
             validation: SchemaComparisonValidationSettings::allow_weakening(),
         }
     }
@@ -106,7 +106,7 @@ pub struct SchemaComparisonStructureSettings {
 }
 
 impl SchemaComparisonStructureSettings {
-    pub const fn equality() -> Self {
+    pub const fn require_identical_structure() -> Self {
         Self {
             allow_new_enum_variants: false,
             allow_replacing_with_any: false,
@@ -129,7 +129,7 @@ pub struct SchemaComparisonMetadataSettings {
 }
 
 impl SchemaComparisonMetadataSettings {
-    pub const fn equality() -> Self {
+    pub const fn require_identical_metadata() -> Self {
         Self {
             type_name_changes: NameChangeRule::equality(),
             field_name_changes: NameChangeRule::equality(),
@@ -180,7 +180,7 @@ pub struct SchemaComparisonValidationSettings {
 }
 
 impl SchemaComparisonValidationSettings {
-    pub const fn equality() -> Self {
+    pub const fn require_identical_validation() -> Self {
         Self {
             allow_validation_weakening: false,
         }
