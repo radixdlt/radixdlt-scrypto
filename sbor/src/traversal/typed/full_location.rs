@@ -1,6 +1,5 @@
 use super::*;
 use crate::rust::fmt::*;
-use crate::rust::format;
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
@@ -9,8 +8,116 @@ use crate::*;
 pub struct FullLocation<'s, E: CustomExtension> {
     pub start_offset: usize,
     pub end_offset: usize,
-    pub ancestor_path: Vec<(ContainerState<E::CustomTraversal>, ContainerType<'s>)>,
+    pub ancestor_path: Vec<(AncestorState<E::CustomTraversal>, ContainerType<'s>)>,
     pub current_value_info: Option<CurrentValueInfo<E>>,
+}
+
+impl<'s, 'a, E: CustomExtension> PathAnnotate
+    for (&'a FullLocation<'s, E>, &'a Schema<E::CustomSchema>)
+{
+    fn iter_ancestor_path(&self) -> Box<dyn Iterator<Item = AnnotatedSborAncestor<'_>> + '_> {
+        let (full_location, schema) = self;
+        let schema = *schema;
+        let iterator =
+            full_location
+                .ancestor_path
+                .iter()
+                .map(|(container_state, container_type)| {
+                    let type_id = container_type.self_type();
+                    let metadata = schema.resolve_type_metadata(type_id);
+                    let name = metadata
+                        .and_then(|m| m.get_name())
+                        .unwrap_or_else(|| container_state.container_header.value_kind_name());
+                    let header = container_state.container_header;
+
+                    let current_child_index = container_state.current_child_index;
+
+                    let container = match header {
+                        ContainerHeader::EnumVariant(variant_header) => {
+                            let discriminator = variant_header.variant;
+                            let variant_data =
+                                metadata.and_then(|m| m.get_enum_variant_data(discriminator));
+                            let variant_name =
+                                variant_data.and_then(|d| d.get_name()).map(Cow::Borrowed);
+                            let field_index = current_child_index;
+                            let field_name = variant_data
+                                .and_then(|d| d.get_field_name(field_index))
+                                .map(Cow::Borrowed);
+                            AnnotatedSborAncestorContainer::EnumVariant {
+                                discriminator,
+                                variant_name,
+                                field_index,
+                                field_name,
+                            }
+                        }
+                        ContainerHeader::Tuple(_) => {
+                            let field_index = current_child_index;
+                            let field_name = metadata
+                                .and_then(|d| d.get_field_name(field_index))
+                                .map(Cow::Borrowed);
+                            AnnotatedSborAncestorContainer::Tuple {
+                                field_index,
+                                field_name,
+                            }
+                        }
+                        ContainerHeader::Array(_) => {
+                            let index = Some(current_child_index);
+                            AnnotatedSborAncestorContainer::Array { index }
+                        }
+                        ContainerHeader::Map(_) => {
+                            let index = Some(current_child_index / 2);
+                            let entry_part = if current_child_index % 2 == 0 {
+                                MapEntryPart::Key
+                            } else {
+                                MapEntryPart::Value
+                            };
+                            AnnotatedSborAncestorContainer::Map { index, entry_part }
+                        }
+                    };
+
+                    AnnotatedSborAncestor {
+                        name: Cow::Borrowed(name),
+                        container,
+                    }
+                });
+        Box::new(iterator)
+    }
+
+    fn annotated_leaf(&self) -> Option<AnnotatedSborPartialLeaf<'_>> {
+        let current_value_info = self.0.current_value_info.as_ref()?;
+        let schema = self.1;
+
+        let metadata = schema.resolve_type_metadata(current_value_info.type_id);
+        let name = metadata
+            .and_then(|m| m.get_name())
+            .map(Cow::Borrowed)
+            // We should consider falling back to the TypeKind's name before falling back to the value kind
+            .unwrap_or_else(|| Cow::Owned(current_value_info.value_kind.to_string()));
+        let partial_kinded_data = match current_value_info.value_kind {
+            ValueKind::Enum => {
+                if let Some(variant_discriminator) = current_value_info.variant {
+                    let variant_data =
+                        metadata.and_then(|v| v.get_enum_variant_data(variant_discriminator));
+                    let variant_name = variant_data.and_then(|d| d.get_name()).map(Cow::Borrowed);
+
+                    Some(AnnotatedSborPartialLeafLocator::EnumVariant {
+                        variant_discriminator: Some(variant_discriminator),
+                        variant_name,
+                        field_index: None,
+                        field_name: None,
+                    })
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        };
+
+        Some(AnnotatedSborPartialLeaf {
+            name,
+            partial_leaf_locator: partial_kinded_data,
+        })
+    }
 }
 
 impl<'s, E: CustomExtension> FullLocation<'s, E> {
@@ -20,112 +127,6 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
     /// As much information is extracted from the Type as possible, falling back to data from the value model
     /// if the Type is Any.
     pub fn path_to_string(&self, schema: &Schema<E::CustomSchema>) -> String {
-        let mut buf = String::new();
-        let mut is_first = true;
-        for (container_state, container_type) in self.ancestor_path.iter() {
-            if is_first {
-                is_first = false;
-            } else {
-                write!(buf, "->").unwrap();
-            }
-            let type_id = container_type.self_type();
-            let metadata = schema.resolve_type_metadata(type_id);
-            let type_name = metadata
-                .and_then(|m| m.get_name())
-                .unwrap_or_else(|| container_state.container_header.value_kind_name());
-            let current_child_index = container_state.current_child_index;
-            let header = container_state.container_header;
-            match header {
-                ContainerHeader::EnumVariant(variant_header) => {
-                    let variant_data = metadata.and_then(|v| match &v.child_names {
-                        Some(ChildNames::EnumVariants(variants)) => {
-                            variants.get(&variant_header.variant)
-                        }
-                        _ => None,
-                    });
-                    let variant_part = variant_data
-                        .and_then(|d| d.get_name())
-                        .map(|variant_name| {
-                            format!("::{{{}|{}}}", variant_header.variant, variant_name,)
-                        })
-                        .unwrap_or_else(|| format!("::{{{}}}", variant_header.variant));
-                    let field_part = if let Some(child_index) = current_child_index {
-                        variant_data
-                            .and_then(|d| match &d.child_names {
-                                Some(ChildNames::NamedFields(fields)) => fields.get(child_index),
-                                _ => None,
-                            })
-                            .map(|field_name| format!(".[{}|{}]", child_index, field_name))
-                            .unwrap_or_else(|| format!(".[{}]", child_index))
-                    } else {
-                        format!("")
-                    };
-                    write!(buf, "{}{}{}", type_name, variant_part, field_part).unwrap();
-                }
-                ContainerHeader::Tuple(_) => {
-                    let field_part = if let Some(child_index) = current_child_index {
-                        metadata
-                            .and_then(|d| match &d.child_names {
-                                Some(ChildNames::NamedFields(fields)) => fields.get(child_index),
-                                _ => None,
-                            })
-                            .map(|field_name| format!(".[{}|{}]", child_index, field_name))
-                            .unwrap_or_else(|| format!(".[{}]", child_index))
-                    } else {
-                        format!("")
-                    };
-                    write!(buf, "{}{}", type_name, field_part).unwrap();
-                }
-                ContainerHeader::Array(_) => {
-                    let field_part = if let Some(child_index) = current_child_index {
-                        format!(".[{}]", child_index)
-                    } else {
-                        format!("")
-                    };
-                    write!(buf, "{}{}", type_name, field_part).unwrap();
-                }
-                ContainerHeader::Map(_) => {
-                    let field_part = if let Some(child_index) = current_child_index {
-                        let entry_index = child_index / 2;
-                        let key_or_value = if child_index % 2 == 0 { "Key" } else { "Value" };
-                        format!(".[{}].{}", entry_index, key_or_value)
-                    } else {
-                        format!("")
-                    };
-
-                    write!(buf, "{}{}", type_name, field_part).unwrap();
-                }
-            }
-        }
-        if let Some(current_value_info) = &self.current_value_info {
-            if !is_first {
-                write!(buf, "->").unwrap();
-            }
-            let type_kind = schema
-                .resolve_type_kind(current_value_info.type_id)
-                .expect("Type index not found in given schema");
-            let metadata = if !matches!(type_kind, TypeKind::Any) {
-                schema.resolve_type_metadata(current_value_info.type_id)
-            } else {
-                None
-            };
-            let type_name = metadata
-                .and_then(|m| m.get_name_string())
-                .unwrap_or_else(|| current_value_info.value_kind.to_string());
-            if let Some(variant) = current_value_info.variant {
-                let variant_data = metadata.and_then(|v| match &v.child_names {
-                    Some(ChildNames::EnumVariants(variants)) => variants.get(&variant),
-                    _ => None,
-                });
-                let variant_part = variant_data
-                    .and_then(|d| d.get_name())
-                    .map(|variant_name| format!("::{{{}|{}}}", variant, variant_name,))
-                    .unwrap_or_else(|| format!("::{{{}}}", variant));
-                write!(buf, "{}{}", type_name, variant_part).unwrap();
-            } else {
-                write!(buf, "{}", type_name).unwrap();
-            }
-        }
-        buf
+        (self, schema).format_path()
     }
 }
