@@ -19,7 +19,7 @@ use crate::blueprints::transaction_tracker::{
 };
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::call_frame::{CallFrameMessage, StableReferenceType};
+use crate::kernel::call_frame::{CallFrameInit, CallFrameMessage, StableReferenceType};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::RefCheckEvent;
@@ -768,6 +768,100 @@ impl<C: SystemCallbackObject> System<C> {
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
+
+
+    /// Checks that references exist in the store
+    fn check_references<S: BootStore + CommitableSubstateStore>(
+        &mut self,
+        store: &mut S,
+        references: &IndexSet<Reference>,
+    ) -> Result<CallFrameInit, BootloadingError> {
+        let mut global_addresses = indexset!();
+        let mut direct_accesses = indexset!();
+
+        for reference in references.iter() {
+            let node_id = &reference.0;
+
+            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                // Allow always visible node and do not add reference
+                continue;
+            }
+
+            if node_id.is_global_virtual() {
+                // Allow global virtual and add reference
+                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                continue;
+            }
+
+            let ref_value = store
+                .read_substate(
+                    node_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+
+            match self.verify_boot_ref_value(node_id, ref_value)? {
+                StableReferenceType::Global => {
+                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                }
+                StableReferenceType::DirectAccess => {
+                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                }
+            }
+        }
+
+        Ok(CallFrameInit { global_addresses, direct_accesses })
+    }
+
+
+    fn verify_boot_ref_value(
+        &mut self,
+        node_id: &NodeId,
+        ref_value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        if let Some(costing) = self.modules.costing_mut() {
+            let io_access = IOAccess::ReadFromDb(
+                CanonicalSubstateKey {
+                    node_id: *node_id,
+                    partition_number: TYPE_INFO_FIELD_PARTITION,
+                    substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
+                },
+                ref_value.len(),
+            );
+            let event = RefCheckEvent::IOAccess(&io_access);
+
+            costing
+                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
+                .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+        }
+
+        let type_substate: TypeInfoSubstate = ref_value.as_typed().unwrap();
+        return match &type_substate {
+            TypeInfoSubstate::Object(
+                info @ ObjectInfo {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
+                    ..
+                },
+            ) => {
+                if info.is_global() {
+                    Ok(StableReferenceType::Global)
+                } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                    && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                    || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                {
+                    Ok(StableReferenceType::DirectAccess)
+                } else {
+                    Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
+                        node_id.clone(),
+                    ))
+                }
+            }
+            _ => Err(BootloadingError::ReferencedNodeIsNotAnObject(
+                node_id.clone(),
+            )),
+        };
+    }
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
@@ -781,7 +875,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         store: &mut S,
         executable: &Executable,
         init_input: SystemInit<C::Init>,
-    ) -> Result<Self, RejectionReason> {
+    ) -> Result<(Self, CallFrameInit), RejectionReason> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.enable_kernel_trace {
@@ -919,62 +1013,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             }
         }
 
-        let system = System {
+        let mut system = System {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
             callback,
             modules,
         };
-        Ok(system)
-    }
 
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        ref_value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        if let Some(costing) = self.modules.costing_mut() {
-            let io_access = IOAccess::ReadFromDb(
-                CanonicalSubstateKey {
-                    node_id: *node_id,
-                    partition_number: TYPE_INFO_FIELD_PARTITION,
-                    substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
-                },
-                ref_value.len(),
-            );
-            let event = RefCheckEvent::IOAccess(&io_access);
+        let call_frame_init = system.check_references(store, &executable.references())
+            l.map_err(RejectionReason::BootloadingError)?;
 
-            costing
-                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
-                .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
-        }
-
-        let type_substate: TypeInfoSubstate = ref_value.as_typed().unwrap();
-        return match &type_substate {
-            TypeInfoSubstate::Object(
-                info @ ObjectInfo {
-                    blueprint_info: BlueprintInfo { blueprint_id, .. },
-                    ..
-                },
-            ) => {
-                if info.is_global() {
-                    Ok(StableReferenceType::Global)
-                } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
-                    && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                        || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
-                {
-                    Ok(StableReferenceType::DirectAccess)
-                } else {
-                    Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
-                        node_id.clone(),
-                    ))
-                }
-            }
-            _ => Err(BootloadingError::ReferencedNodeIsNotAnObject(
-                node_id.clone(),
-            )),
-        };
+        Ok((system, call_frame_init))
     }
 
     fn start<Y: KernelApi<Self>>(

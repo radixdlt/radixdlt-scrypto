@@ -557,9 +557,18 @@ pub enum SubstateDiffError {
     ContainsDuplicateOwns,
 }
 
+#[derive(Debug, Default)]
+pub struct CallFrameInit {
+    pub global_addresses: IndexSet<GlobalAddress>,
+    pub direct_accesses: IndexSet<InternalAddress>,
+}
+
 impl<C, L: Clone> CallFrame<C, L> {
-    pub fn new_root(call_frame_data: C) -> Self {
-        Self {
+    pub fn new_root(
+        call_frame_data: C,
+        root_refs: CallFrameInit,
+    ) -> Self {
+        let mut call_frame = Self {
             depth: 0,
             call_frame_data,
             stable_references: Default::default(),
@@ -567,7 +576,16 @@ impl<C, L: Clone> CallFrame<C, L> {
             owned_root_nodes: index_set_new(),
             next_handle: 0u32,
             open_substates: index_map_new(),
+        };
+
+        for global_ref in root_refs.global_addresses {
+            call_frame.add_global_reference(global_ref);
         }
+        for direct_access in root_refs.direct_accesses {
+            call_frame.add_direct_access_reference(direct_access);
+        }
+
+        call_frame
     }
 
     pub fn new_child_from_parent<S: CommitableSubstateStore>(

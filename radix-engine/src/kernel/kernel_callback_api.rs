@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrameMessage, StableReferenceType};
+use super::call_frame::{CallFrameMessage, CallFrameInit};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -156,19 +156,12 @@ pub trait KernelCallbackObject: Sized {
     /// Final receipt to be created after transaction execution
     type Receipt: ExecutionReceipt;
 
-    /// Create the callback object (system layer) with data loaded from the substate store
+    /// Create the callback object (system layer) and the initial call frame configuration
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
         executable: &Executable,
         init: Self::Init,
-    ) -> Result<Self, RejectionReason>;
-
-    /// Verifies and returns the type of a given reference used during boot
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError>;
+    ) -> Result<(Self, CallFrameInit), RejectionReason>;
 
     /// Start execution
     fn start<Y: KernelApi<Self>>(

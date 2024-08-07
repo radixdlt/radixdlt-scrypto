@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, StableReferenceType};
+use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, CallFrameInit};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use crate::blueprints::resource::*;
@@ -82,51 +82,6 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
-    /// Checks that references exist in the store
-    fn check_references(
-        &mut self,
-        callback: &mut M,
-        references: &IndexSet<Reference>,
-    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
-        let mut global_addresses = indexset!();
-        let mut direct_accesses = indexset!();
-
-        for reference in references.iter() {
-            let node_id = &reference.0;
-
-            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-                // Allow always visible node and do not add reference
-                continue;
-            }
-
-            if node_id.is_global_virtual() {
-                // Allow global virtual and add reference
-                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                continue;
-            }
-
-            let ref_value = self
-                .track
-                .read_substate(
-                    node_id,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
-                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
-
-            match callback.verify_boot_ref_value(node_id, ref_value)? {
-                StableReferenceType::Global => {
-                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                }
-                StableReferenceType::DirectAccess => {
-                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
-                }
-            }
-        }
-
-        Ok((global_addresses, direct_accesses))
-    }
-
     fn execute_internal<'a>(
         mut self,
         executable: &Executable,
@@ -148,24 +103,16 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
             .unwrap_or(KernelBoot::babylon());
 
-        // Create System
-        let mut callback = M::init(&mut self.track, executable, self.init.clone())?;
+        // System Initialization
+        let (mut callback, call_frame_init) = M::init(&mut self.track, executable, self.init.clone())?;
 
         // Kernel Initialization
-        let mut kernel = {
-            // Check references
-            let (global_addresses, internal_addresses) = self
-                .check_references(&mut callback, executable.references())
-                .map_err(RejectionReason::BootloadingError)?;
-
-            Kernel::new(
-                &mut self.track,
-                &mut self.id_allocator,
-                &mut callback,
-                global_addresses,
-                internal_addresses,
-            )
-        };
+        let mut kernel = Kernel::new(
+            &mut self.track,
+            &mut self.id_allocator,
+            &mut callback,
+            call_frame_init,
+        );
 
         // Execution
         let result = || -> Result<M::ExecutionOutput, RuntimeError> {
@@ -233,8 +180,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
             store,
             id_allocator,
             callback,
-            index_set_new(),
-            index_set_new(),
+            Default::default(),
         )
     }
 
@@ -242,21 +188,10 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
-        global_addresses: IndexSet<GlobalAddress>,
-        internal_addresses: IndexSet<InternalAddress>,
+        init_refs: CallFrameInit,
     ) -> Self {
-        let call_frame = {
-            let mut call_frame = CallFrame::new_root(M::CallFrameData::root());
-            // Add visibility
-            for global_ref in global_addresses {
-                call_frame.add_global_reference(global_ref);
-            }
-            for direct_access in internal_addresses {
-                call_frame.add_direct_access_reference(direct_access);
-            }
-
-            call_frame
-        };
+        let call_frame =
+            CallFrame::new_root(M::CallFrameData::root(), init_refs);
 
         Kernel {
             substate_io: SubstateIO {
