@@ -95,8 +95,12 @@ impl AuthModule {
                     let thread_id = api.kernel_get_current_thread();
                     let auth_module = &api.kernel_get_system().modules.auth;
                     (
-                        auth_module.params.thread_params[thread_id].virtual_resources.clone(),
-                        auth_module.params.thread_params[thread_id].initial_proofs.clone(),
+                        auth_module.params.thread_params[thread_id]
+                            .virtual_resources
+                            .clone(),
+                        auth_module.params.thread_params[thread_id]
+                            .initial_proofs
+                            .clone(),
                     )
                 } else {
                     (BTreeSet::new(), BTreeSet::new())

@@ -14,18 +14,21 @@ pub struct AuthZoneParams {
 impl Default for AuthZoneParams {
     fn default() -> Self {
         Self {
-            thread_params: vec![AuthZoneThreadParams::default()]
+            thread_params: vec![AuthZoneThreadParams::default()],
         }
     }
 }
 
 impl AuthZoneParams {
-    pub fn single_thread(initial_proofs: BTreeSet<NonFungibleGlobalId>, virtual_resources: BTreeSet<ResourceAddress>) -> Self {
+    pub fn single_thread(
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+        virtual_resources: BTreeSet<ResourceAddress>,
+    ) -> Self {
         Self {
             thread_params: vec![AuthZoneThreadParams {
                 initial_proofs,
                 virtual_resources,
-            }]
+            }],
         }
     }
 }
@@ -40,7 +43,6 @@ pub struct EpochRange {
 pub struct ExecutionContext {
     pub intent_hash: TransactionIntentHash,
     pub epoch_range: Option<EpochRange>,
-    pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub num_of_signature_validations: usize,
     pub auth_zone_params: AuthZoneParams,
@@ -135,12 +137,18 @@ impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt 
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ExecutableThread<'a> {
+    pub encoded_instructions: &'a [u8],
+    pub references: IndexSet<Reference>,
+    pub blobs: &'a IndexMap<Hash, Vec<u8>>,
+    pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
+}
+
 /// Executable form of transaction, post stateless validation.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Executable<'a> {
-    pub(crate) encoded_instructions: &'a [u8],
-    pub(crate) references: IndexSet<Reference>,
-    pub(crate) blobs: &'a IndexMap<Hash, Vec<u8>>,
+    pub(crate) thread: ExecutableThread<'a>,
     pub(crate) context: ExecutionContext,
     pub(crate) system: bool,
 }
@@ -150,6 +158,7 @@ impl<'a> Executable<'a> {
         encoded_instructions: &'a [u8],
         references: &IndexSet<Reference>,
         blobs: &'a IndexMap<Hash, Vec<u8>>,
+        pre_allocated_addresses: Vec<PreAllocatedAddress>,
         context: ExecutionContext,
         system: bool,
     ) -> Self {
@@ -164,7 +173,7 @@ impl<'a> Executable<'a> {
             }
         }
 
-        for preallocated_address in &context.pre_allocated_addresses {
+        for preallocated_address in &pre_allocated_addresses {
             references.insert(
                 preallocated_address
                     .blueprint_id
@@ -175,9 +184,12 @@ impl<'a> Executable<'a> {
         }
 
         Self {
-            encoded_instructions,
-            references,
-            blobs,
+            thread: ExecutableThread {
+                pre_allocated_addresses,
+                encoded_instructions,
+                references,
+                blobs,
+            },
             context,
             system,
         }
@@ -229,23 +241,23 @@ impl<'a> Executable<'a> {
     }
 
     pub fn blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.blobs
+        &self.thread.blobs
     }
 
-    pub fn encoded_instructions(&self) -> &[u8] {
-        &self.encoded_instructions
+    pub fn thread(&self) -> &ExecutableThread {
+        &self.thread
     }
 
     pub fn references(&self) -> &IndexSet<Reference> {
-        &self.references
+        &self.thread.references
+    }
+
+    pub fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {
+        &self.thread.pre_allocated_addresses
     }
 
     pub fn auth_zone_params(&self) -> &AuthZoneParams {
         &self.context.auth_zone_params
-    }
-
-    pub fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {
-        &self.context.pre_allocated_addresses
     }
 
     pub fn payload_size(&self) -> usize {

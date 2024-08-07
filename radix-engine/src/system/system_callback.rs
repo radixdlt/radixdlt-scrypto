@@ -70,7 +70,9 @@ use radix_engine_interface::blueprints::transaction_processor::{
     InstructionOutput, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
-use radix_transactions::model::{Executable, PreAllocatedAddress, TransactionIntentHash};
+use radix_transactions::model::{
+    Executable, ExecutableThread, PreAllocatedAddress, TransactionIntentHash,
+};
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -979,10 +981,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
     fn start<Y: KernelApi<Self>>(
         api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
+        thread: &ExecutableThread,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system = SystemService::new(api);
 
@@ -991,7 +990,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         for PreAllocatedAddress {
             blueprint_id,
             address,
-        } in pre_allocated_addresses
+        } in &thread.pre_allocated_addresses
         {
             let global_address_reservation =
                 system.prepare_global_address(blueprint_id.clone(), address.clone())?;
@@ -1004,10 +1003,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions,
+                manifest_encoded_instructions: &thread.encoded_instructions,
                 global_address_reservations,
-                references,
-                blobs,
+                references: &thread.references,
+                blobs: &thread.blobs,
             })
             .unwrap(),
         )?;

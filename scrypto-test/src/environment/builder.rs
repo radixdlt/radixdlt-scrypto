@@ -250,7 +250,10 @@ where
                     Self::DEFAULT_INTENT_HASH,
                 );
 
-                let auth_module = AuthModule::new(AuthZoneParams::single_thread(Default::default(), Default::default()));
+                let auth_module = AuthModule::new(AuthZoneParams::single_thread(
+                    Default::default(),
+                    Default::default(),
+                ));
 
                 let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
 

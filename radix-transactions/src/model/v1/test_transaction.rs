@@ -55,6 +55,7 @@ impl PreparedTestTransaction {
             &self.encoded_instructions,
             &self.references,
             &self.blobs,
+            vec![],
             ExecutionContext {
                 intent_hash: TransactionIntentHash::NotToCheck {
                     intent_hash: self.hash,
@@ -70,7 +71,6 @@ impl PreparedTestTransaction {
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },
-                pre_allocated_addresses: vec![],
             },
             false,
         )

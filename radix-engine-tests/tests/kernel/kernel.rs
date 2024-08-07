@@ -15,6 +15,7 @@ use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::{Executable, PreAllocatedAddress};
+use radix_transactions::prelude::ExecutableThread;
 
 struct TestCallFrameData;
 
@@ -73,10 +74,7 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn start<Y: KernelApi<Self>>(
         _api: &mut Y,
-        _manifest_encoded_instructions: &[u8],
-        _pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        _references: &IndexSet<Reference>,
-        _blobs: &IndexMap<Hash, Vec<u8>>,
+        _thread: &ExecutableThread,
     ) -> Result<(), RuntimeError> {
         unreachable!()
     }

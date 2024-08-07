@@ -58,6 +58,7 @@ impl ValidatedPreviewIntent {
             &self.encoded_instructions,
             &intent.instructions.references,
             &intent.blobs.blobs_by_hash,
+            vec![],
             ExecutionContext {
                 intent_hash: if flags.skip_epoch_check {
                     TransactionIntentHash::NotToCheck {
@@ -81,7 +82,6 @@ impl ValidatedPreviewIntent {
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
                 auth_zone_params: AuthZoneParams::single_thread(initial_proofs, virtual_resources),
                 costing_parameters: fee_payment,
-                pre_allocated_addresses: vec![],
             },
             false,
         )

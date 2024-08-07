@@ -38,6 +38,7 @@ impl ValidatedNotarizedTransactionV1 {
             &self.encoded_instructions,
             &intent.instructions.references,
             &intent.blobs.blobs_by_hash,
+            vec![],
             ExecutionContext {
                 intent_hash: TransactionIntentHash::ToCheck {
                     intent_hash: intent_hash.into_hash(),
@@ -49,13 +50,15 @@ impl ValidatedNotarizedTransactionV1 {
                 }),
                 payload_size: summary.effective_length,
                 num_of_signature_validations: self.num_of_signature_validations,
-                auth_zone_params: AuthZoneParams::single_thread(AuthAddresses::signer_set(&self.signer_keys), BTreeSet::new()),
+                auth_zone_params: AuthZoneParams::single_thread(
+                    AuthAddresses::signer_set(&self.signer_keys),
+                    BTreeSet::new(),
+                ),
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: intent.header.inner.tip_percentage,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },
-                pre_allocated_addresses: vec![],
             },
             false,
         )

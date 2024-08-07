@@ -27,8 +27,7 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::Executable;
-use radix_transactions::prelude::PreAllocatedAddress;
+use radix_transactions::model::{Executable, ExecutableThread};
 
 pub type InjectSystemCostingError<'a, E> = InjectCostingError<Vm<'a, DefaultWasmEngine, E>>;
 
@@ -117,19 +116,10 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
 
     fn start<Y: KernelApi<Self>>(
         api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
+        thread: &ExecutableThread,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
-        System::start(
-            &mut api,
-            manifest_encoded_instructions,
-            pre_allocated_addresses,
-            references,
-            blobs,
-        )
+        System::start(&mut api, thread)
     }
 
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {

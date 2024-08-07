@@ -104,6 +104,7 @@ impl PreparedSystemTransactionV1 {
             &self.encoded_instructions,
             &self.references,
             &self.blobs.blobs_by_hash,
+            self.pre_allocated_addresses.inner.clone(),
             ExecutionContext {
                 intent_hash: TransactionIntentHash::NotToCheck {
                     intent_hash: self.hash_for_execution.hash,
@@ -117,7 +118,6 @@ impl PreparedSystemTransactionV1 {
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },
-                pre_allocated_addresses: self.pre_allocated_addresses.inner.clone(),
             },
             true,
         )

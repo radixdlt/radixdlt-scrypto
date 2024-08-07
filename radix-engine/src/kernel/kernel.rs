@@ -170,16 +170,15 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         // Execution
         let result = || -> Result<M::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let output = M::start(
-                &mut kernel,
-                executable.encoded_instructions(),
-                executable.pre_allocated_addresses(),
-                executable.references(),
-                executable.blobs(),
-            )?;
+            let output = M::start(&mut kernel, executable.thread())?;
 
             // Sanity check call frame
-            assert!(kernel.threads.get(kernel.cur_thread).unwrap().prev_frames.is_empty());
+            assert!(kernel
+                .threads
+                .get(kernel.cur_thread)
+                .unwrap()
+                .prev_frames
+                .is_empty());
 
             // Sanity check heap
             assert!(kernel.substate_io.heap.is_empty());
@@ -564,7 +563,11 @@ where
     }
 
     fn kernel_get_current_depth(&self) -> usize {
-        self.threads.get(self.cur_thread).unwrap().current_frame.depth()
+        self.threads
+            .get(self.cur_thread)
+            .unwrap()
+            .current_frame
+            .depth()
     }
 
     fn kernel_get_current_thread(&self) -> usize {
@@ -1279,8 +1282,15 @@ where
             )
             .map_err(CallFrameError::CreateFrameError)
             .map_err(KernelError::CallFrameError)?;
-            let parent = mem::replace(&mut self.threads.get_mut(self.cur_thread).unwrap().current_frame, frame);
-            self.threads.get_mut(self.cur_thread).unwrap().prev_frames.push(parent);
+            let parent = mem::replace(
+                &mut self.threads.get_mut(self.cur_thread).unwrap().current_frame,
+                frame,
+            );
+            self.threads
+                .get_mut(self.cur_thread)
+                .unwrap()
+                .prev_frames
+                .push(parent);
         }
 
         // Execute
@@ -1289,7 +1299,13 @@ where
             M::on_execution_start(self)?;
 
             // Auto drop locks
-            for handle in self.threads.get(self.cur_thread).unwrap().current_frame.open_substates() {
+            for handle in self
+                .threads
+                .get(self.cur_thread)
+                .unwrap()
+                .current_frame
+                .open_substates()
+            {
                 M::on_close_substate(self, CloseSubstateEvent::Start(handle))?;
             }
             self.threads
@@ -1303,7 +1319,13 @@ where
             let message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop
-            for handle in self.threads.get(self.cur_thread).unwrap().current_frame.open_substates() {
+            for handle in self
+                .threads
+                .get(self.cur_thread)
+                .unwrap()
+                .current_frame
+                .open_substates()
+            {
                 M::on_close_substate(self, CloseSubstateEvent::Start(handle))?;
             }
             self.threads
@@ -1334,11 +1356,21 @@ where
             .map_err(KernelError::CallFrameError)?;
 
             // Auto-drop
-            let owned_nodes = self.threads.get(self.cur_thread).unwrap().current_frame.owned_nodes();
+            let owned_nodes = self
+                .threads
+                .get(self.cur_thread)
+                .unwrap()
+                .current_frame
+                .owned_nodes();
             M::auto_drop(owned_nodes, self)?;
 
             // Now, check if any own has been left!
-            let owned_nodes = self.threads.get(self.cur_thread).unwrap().current_frame.owned_nodes();
+            let owned_nodes = self
+                .threads
+                .get(self.cur_thread)
+                .unwrap()
+                .current_frame
+                .owned_nodes();
             if !owned_nodes.is_empty() {
                 return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
                     owned_nodes,
@@ -1348,8 +1380,17 @@ where
 
         // Pop call frame
         {
-            let parent = self.threads.get_mut(self.cur_thread).unwrap().prev_frames.pop().unwrap();
-            let _ = core::mem::replace(&mut self.threads.get_mut(self.cur_thread).unwrap().current_frame, parent);
+            let parent = self
+                .threads
+                .get_mut(self.cur_thread)
+                .unwrap()
+                .prev_frames
+                .pop()
+                .unwrap();
+            let _ = core::mem::replace(
+                &mut self.threads.get_mut(self.cur_thread).unwrap().current_frame,
+                parent,
+            );
         }
 
         M::after_invoke(&output, self)?;

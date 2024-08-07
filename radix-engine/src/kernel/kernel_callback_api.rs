@@ -11,7 +11,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
-use radix_transactions::prelude::PreAllocatedAddress;
+use radix_transactions::prelude::{ExecutableThread, PreAllocatedAddress};
 
 pub trait CallFrameReferences {
     fn root() -> Self;
@@ -173,10 +173,7 @@ pub trait KernelCallbackObject: Sized {
     /// Start execution
     fn start<Y: KernelApi<Self>>(
         api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
+        thread: &ExecutableThread,
     ) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution

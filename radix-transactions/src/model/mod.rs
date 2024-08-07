@@ -162,16 +162,19 @@ Enum<3u8>(
         assert_eq!(
             executable,
             Executable {
-                encoded_instructions: &manifest_encode(&manifest.instructions).unwrap(),
-                references: indexset!(
-                    Reference(FAUCET.into_node_id()),
-                    // NOTE: not needed
-                    Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
-                    Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
-                ),
-                blobs: &indexmap!(
-                    hash(&[1, 2]) => vec![1, 2]
-                ),
+                thread: ExecutableThread {
+                    encoded_instructions: &manifest_encode(&manifest.instructions).unwrap(),
+                    references: indexset!(
+                        Reference(FAUCET.into_node_id()),
+                        // NOTE: not needed
+                        Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
+                        Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
+                    ),
+                    blobs: &indexmap!(
+                        hash(&[1, 2]) => vec![1, 2]
+                    ),
+                    pre_allocated_addresses: vec![],
+                },
                 context: ExecutionContext {
                     intent_hash: TransactionIntentHash::ToCheck {
                         intent_hash: hash(
@@ -206,7 +209,6 @@ Enum<3u8>(
                         start_epoch_inclusive: Epoch::of(55),
                         end_epoch_exclusive: Epoch::of(66)
                     }),
-                    pre_allocated_addresses: vec![],
                     // Source of discrepancy:
                     // * Manifest SBOR payload prefix byte: not counted
                     // * Array header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
