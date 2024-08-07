@@ -24,7 +24,7 @@ use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
-use radix_transactions::model::{Executable, ExecutableThread, PreAllocatedAddress};
+use radix_transactions::model::{Executable, ExecutableThread};
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;

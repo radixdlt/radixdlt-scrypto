@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, StableReferenceType};
+use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, RootCallFrameInitRefs, StableReferenceType};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use crate::blueprints::resource::*;
@@ -87,7 +87,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         &mut self,
         callback: &mut M,
         references: &IndexSet<Reference>,
-    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
+    ) -> Result<RootCallFrameInitRefs, BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
 
@@ -124,7 +124,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             }
         }
 
-        Ok((global_addresses, direct_accesses))
+        Ok(RootCallFrameInitRefs {global_addresses, direct_accesses })
     }
 
     fn execute_internal<'a>(
@@ -154,7 +154,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         // Kernel Initialization
         let mut kernel = {
             // Check references
-            let (global_addresses, internal_addresses) = self
+            let root_call_frame_init = self
                 .check_references(&mut callback, executable.references())
                 .map_err(RejectionReason::BootloadingError)?;
 
@@ -162,8 +162,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 &mut self.track,
                 &mut self.id_allocator,
                 &mut callback,
-                global_addresses,
-                internal_addresses,
+                root_call_frame_init,
             )
         };
 
@@ -242,8 +241,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
             store,
             id_allocator,
             callback,
-            index_set_new(),
-            index_set_new(),
+            Default::default(),
         )
     }
 
@@ -251,21 +249,10 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
-        global_addresses: IndexSet<GlobalAddress>,
-        internal_addresses: IndexSet<InternalAddress>,
+        init_refs: RootCallFrameInitRefs,
     ) -> Self {
-        let call_frame = {
-            let mut call_frame = CallFrame::new_root(M::CallFrameData::root());
-            // Add visibility
-            for global_ref in global_addresses {
-                call_frame.add_global_reference(global_ref);
-            }
-            for direct_access in internal_addresses {
-                call_frame.add_direct_access_reference(direct_access);
-            }
-
-            call_frame
-        };
+        let call_frame =
+            CallFrame::new_root(M::CallFrameData::root(), init_refs);
 
         Kernel {
             substate_io: SubstateIO {

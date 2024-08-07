@@ -11,7 +11,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
-use radix_transactions::prelude::{ExecutableThread, PreAllocatedAddress};
+use radix_transactions::prelude::ExecutableThread;
 
 pub trait CallFrameReferences {
     fn root() -> Self;
