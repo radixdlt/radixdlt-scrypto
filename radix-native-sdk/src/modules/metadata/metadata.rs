@@ -1,7 +1,7 @@
 use radix_common::constants::METADATA_MODULE_PACKAGE;
 use radix_common::data::scrypto::model::Own;
 use radix_common::data::scrypto::*;
-use radix_engine_interface::api::SystemApi;
+use radix_engine_interface::api::*;
 use radix_engine_interface::object_modules::metadata::{
     MetadataCreateInput, MetadataCreateWithDataInput, MetadataInit, MetadataSetInput, MetadataVal,
     METADATA_BLUEPRINT, METADATA_CREATE_IDENT, METADATA_CREATE_WITH_DATA_IDENT, METADATA_SET_IDENT,
@@ -11,10 +11,7 @@ use sbor::rust::prelude::*;
 pub struct Metadata(pub Own);
 
 impl Metadata {
-    pub fn create<Y, E: Debug + ScryptoDecode>(api: &mut Y) -> Result<Own, E>
-    where
-        Y: SystemApi<E>,
-    {
+    pub fn create<Y: SystemApi<E>, E: SystemApiError>(api: &mut Y) -> Result<Own, E> {
         let rtn = api.call_function(
             METADATA_MODULE_PACKAGE,
             METADATA_BLUEPRINT,
@@ -26,13 +23,10 @@ impl Metadata {
         Ok(metadata)
     }
 
-    pub fn create_with_data<Y, E: Debug + ScryptoDecode>(
+    pub fn create_with_data<Y: SystemApi<E>, E: SystemApiError>(
         data: MetadataInit,
         api: &mut Y,
-    ) -> Result<Own, E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<Own, E> {
         let rtn = api.call_function(
             METADATA_MODULE_PACKAGE,
             METADATA_BLUEPRINT,
@@ -44,22 +38,16 @@ impl Metadata {
         Ok(metadata)
     }
 
-    pub fn new<Y, E: Debug + ScryptoDecode>(api: &mut Y) -> Result<Self, E>
-    where
-        Y: SystemApi<E>,
-    {
+    pub fn new<Y: SystemApi<E>, E: SystemApiError>(api: &mut Y) -> Result<Self, E> {
         Self::create(api).map(Self)
     }
 
-    pub fn set<Y, E: Debug + ScryptoDecode, S: AsRef<str>, V: MetadataVal>(
+    pub fn set<Y: SystemApi<E>, E: SystemApiError, S: AsRef<str>, V: MetadataVal>(
         &mut self,
         api: &mut Y,
         key: S,
         value: V,
-    ) -> Result<(), E>
-    where
-        Y: SystemApi<E>,
-    {
+    ) -> Result<(), E> {
         api.call_method(
             self.0.as_node_id(),
             METADATA_SET_IDENT,

@@ -331,14 +331,11 @@ impl AccessControllerV1NativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         AccessControllerV1Blueprint::invoke_export(export_name, input, api)
     }
 }

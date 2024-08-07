@@ -556,14 +556,11 @@ impl AccountBlueprint {
         }
     }
 
-    fn create_modules<Y>(
+    fn create_modules<Y: SystemApi<RuntimeError>>(
         role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
-    ) -> Result<IndexMap<AttachedModuleId, Own>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexMap<AttachedModuleId, Own>, RuntimeError> {
         let metadata = Metadata::create_with_data(metadata_init, api)?;
 
         // No component royalties
@@ -575,13 +572,10 @@ impl AccountBlueprint {
         Ok(modules)
     }
 
-    pub fn on_virtualize<Y>(
+    pub fn on_virtualize<Y: SystemApi<RuntimeError>>(
         input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<OnVirtualizeOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OnVirtualizeOutput, RuntimeError> {
         match input.variant_id {
             ACCOUNT_CREATE_PREALLOCATED_SECP256K1_ID => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
@@ -597,14 +591,11 @@ impl AccountBlueprint {
         }
     }
 
-    fn create_virtual<Y>(
+    fn create_virtual<Y: SystemApi<RuntimeError>>(
         public_key_hash: PublicKeyHash,
         address_reservation: GlobalAddressReservation,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let owner_badge = {
             let bytes = public_key_hash.get_hash_bytes();
             let entity_type = match public_key_hash {
@@ -644,31 +635,26 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn securify<Y>(api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn securify<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Bucket, RuntimeError> {
         let receiver = Runtime::get_node_id(api)?;
         let owner_badge_data = AccountOwnerBadgeData {
             name: "Account Owner Badge".into(),
             account: ComponentAddress::new_or_panic(receiver.0),
         };
-        SecurifiedAccount::securify(
+        let bucket = SecurifiedAccount::securify(
             &receiver,
             owner_badge_data,
             Some(NonFungibleLocalId::bytes(receiver.0).unwrap()),
             api,
-        )
+        )?;
+        Ok(bucket.into())
     }
 
-    pub fn create_advanced<Y>(
+    pub fn create_advanced<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<GlobalAddress, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<GlobalAddress, RuntimeError> {
         let account = Self::create_local(api)?;
         let role_assignment = SecurifiedAccount::create_advanced(owner_role, api)?;
         let modules = Self::create_modules(
@@ -685,10 +671,9 @@ impl AccountBlueprint {
         Ok(address)
     }
 
-    pub fn create<Y>(api: &mut Y) -> Result<(GlobalAddress, Bucket), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn create<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<(GlobalAddress, Bucket), RuntimeError> {
         let (address_reservation, address) = api.allocate_global_address(BlueprintId {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
@@ -717,10 +702,7 @@ impl AccountBlueprint {
         Ok((address, bucket))
     }
 
-    fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn create_local<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<Own, RuntimeError> {
         let account_id = api.new_object(
             ACCOUNT_BLUEPRINT,
             vec![],
@@ -736,14 +718,11 @@ impl AccountBlueprint {
         Ok(Own(account_id))
     }
 
-    fn lock_fee_internal<Y>(
+    fn lock_fee_internal<Y: SystemApi<RuntimeError>>(
         amount: Decimal,
         contingent: bool,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let resource_address = XRD;
 
         Self::get_vault(
@@ -762,27 +741,27 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn lock_fee<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn lock_fee<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::lock_fee_internal(amount, false, api)?;
         Ok(())
     }
 
-    pub fn lock_contingent_fee<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn lock_contingent_fee<Y: SystemApi<RuntimeError>>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::lock_fee_internal(amount, true, api)?;
         Ok(())
     }
 
     /// Method requires auth - if call goes through it performs the deposit with no questions asked
-    pub fn deposit<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn deposit<Y: SystemApi<RuntimeError>>(
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let resource_address = bucket.resource_address(api)?;
         let event = if resource_address.is_fungible() {
             DepositEvent::Fungible(resource_address, bucket.amount(api)?)
@@ -800,24 +779,21 @@ impl AccountBlueprint {
     }
 
     /// Method requires auth - if call goes through it performs the deposit with no questions asked
-    pub fn deposit_batch<Y>(buckets: Vec<Bucket>, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub fn deposit_batch<Y: SystemApi<RuntimeError>>(
+        buckets: Vec<Bucket>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         for bucket in buckets {
             Self::deposit(bucket, api)?;
         }
         Ok(())
     }
 
-    pub fn try_deposit_or_refund<Y>(
+    pub fn try_deposit_or_refund<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
-    ) -> Result<Option<Bucket>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Option<Bucket>, RuntimeError> {
         let resource_address = bucket.resource_address(api)?;
         let is_deposit_allowed = Self::is_deposit_allowed(&resource_address, api)?;
         if is_deposit_allowed {
@@ -842,14 +818,11 @@ impl AccountBlueprint {
         }
     }
 
-    pub fn try_deposit_batch_or_refund<Y>(
+    pub fn try_deposit_batch_or_refund<Y: SystemApi<RuntimeError>>(
         buckets: Vec<Bucket>,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
-    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Option<Vec<Bucket>>, RuntimeError> {
         let offending_buckets = buckets
             .iter()
             .map(|bucket| {
@@ -894,14 +867,11 @@ impl AccountBlueprint {
         }
     }
 
-    pub fn try_deposit_or_abort<Y>(
+    pub fn try_deposit_or_abort<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         if let Some(bucket) = Self::try_deposit_or_refund(bucket, authorized_depositor_badge, api)?
         {
             let resource_address = bucket.resource_address(api)?;
@@ -913,14 +883,11 @@ impl AccountBlueprint {
 
     /// Method is public to all - if ANY of the resources can't be deposited then the execution
     /// panics.
-    pub fn try_deposit_batch_or_abort<Y>(
+    pub fn try_deposit_batch_or_abort<Y: SystemApi<RuntimeError>>(
         buckets: Vec<Bucket>,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let buckets = Self::try_deposit_batch_or_refund(buckets, authorized_depositor_badge, api)?;
         if let Some(_) = buckets {
             Err(AccountError::NotAllBucketsCouldBeDeposited.into())
@@ -932,13 +899,10 @@ impl AccountBlueprint {
     // Returns a result of a result. The outer result's error type is [`RuntimeError`] and it's for
     // cases when something about the process fails, e.g., reading the KVStore fails for some reason
     // or other cases. The inner result is for whether the validation succeeded or not.
-    fn validate_badge_is_authorized_depositor<Y>(
+    fn validate_badge_is_authorized_depositor<Y: SystemApi<RuntimeError>>(
         badge: &ResourceOrNonFungible,
         api: &mut Y,
-    ) -> Result<Result<(), AccountError>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Result<(), AccountError>, RuntimeError> {
         // Read the account's authorized depositors to ensure that this badge is on the list of
         // permitted depositors
         let encoded_key =
@@ -962,30 +926,25 @@ impl AccountBlueprint {
         }
     }
 
-    fn validate_badge_is_present<Y>(
+    fn validate_badge_is_present<Y: SystemApi<RuntimeError>>(
         badge: ResourceOrNonFungible,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         // At this point we know that the badge is in the set of allowed depositors, so, we create
         // an access rule and assert against it.
-        let access_rule =
-            AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(badge)));
+        let access_rule = AccessRule::Protected(CompositeRequirement::BasicRequirement(
+            BasicRequirement::Require(badge),
+        ));
 
         Runtime::assert_access_rule(access_rule, api)?;
         Ok(())
     }
 
-    pub fn withdraw<Y>(
+    pub fn withdraw<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         let bucket = Self::get_vault(
             resource_address,
             |vault, api| vault.take(amount, api),
@@ -1002,14 +961,11 @@ impl AccountBlueprint {
         Ok(bucket)
     }
 
-    pub fn withdraw_non_fungibles<Y>(
+    pub fn withdraw_non_fungibles<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         let bucket = Self::get_vault(
             resource_address,
             |vault, api| vault.take_non_fungibles(ids, api),
@@ -1023,14 +979,11 @@ impl AccountBlueprint {
         Ok(bucket)
     }
 
-    pub fn burn<Y>(
+    pub fn burn<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         Self::get_vault(
             resource_address,
             |vault, api| vault.burn(amount, api),
@@ -1039,14 +992,11 @@ impl AccountBlueprint {
         )
     }
 
-    pub fn burn_non_fungibles<Y>(
+    pub fn burn_non_fungibles<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         Self::get_vault(
             resource_address,
             |vault, api| vault.burn_non_fungibles(ids, api),
@@ -1055,15 +1005,12 @@ impl AccountBlueprint {
         )
     }
 
-    pub fn lock_fee_and_withdraw<Y>(
+    pub fn lock_fee_and_withdraw<Y: SystemApi<RuntimeError>>(
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         Self::lock_fee_internal(amount_to_lock, false, api)?;
 
         let bucket = Self::get_vault(
@@ -1076,15 +1023,12 @@ impl AccountBlueprint {
         Ok(bucket)
     }
 
-    pub fn lock_fee_and_withdraw_non_fungibles<Y>(
+    pub fn lock_fee_and_withdraw_non_fungibles<Y: SystemApi<RuntimeError>>(
         amount_to_lock: Decimal,
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Bucket, RuntimeError> {
         Self::lock_fee_internal(amount_to_lock, false, api)?;
 
         let bucket = Self::get_vault(
@@ -1097,14 +1041,11 @@ impl AccountBlueprint {
         Ok(bucket)
     }
 
-    pub fn create_proof_of_amount<Y>(
+    pub fn create_proof_of_amount<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         amount: Decimal,
         api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Proof, RuntimeError> {
         let proof = Self::get_vault(
             resource_address,
             |vault, api| vault.create_proof_of_amount(amount, api),
@@ -1115,14 +1056,11 @@ impl AccountBlueprint {
         Ok(proof)
     }
 
-    pub fn create_proof_of_non_fungibles<Y>(
+    pub fn create_proof_of_non_fungibles<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         ids: IndexSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Proof, RuntimeError> {
         let proof = Self::get_vault(
             resource_address,
             |vault, api| vault.create_proof_of_non_fungibles(ids, api),
@@ -1133,13 +1071,10 @@ impl AccountBlueprint {
         Ok(proof)
     }
 
-    pub fn set_default_deposit_rule<Y>(
+    pub fn set_default_deposit_rule<Y: SystemApi<RuntimeError>>(
         default: DefaultDepositRule,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AccountField::DepositRule.field_index(),
@@ -1163,14 +1098,11 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn set_resource_preference<Y>(
+    pub fn set_resource_preference<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         resource_preference: ResourcePreference,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
@@ -1195,13 +1127,10 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn remove_resource_preference<Y>(
+    pub fn remove_resource_preference<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
         api.actor_remove_key_value_entry(
             ACTOR_STATE_SELF,
@@ -1214,13 +1143,10 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn add_authorized_depositor<Y>(
+    pub fn add_authorized_depositor<Y: SystemApi<RuntimeError>>(
         badge: ResourceOrNonFungible,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let encoded_key =
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
@@ -1245,13 +1171,10 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    pub fn remove_authorized_depositor<Y>(
+    pub fn remove_authorized_depositor<Y: SystemApi<RuntimeError>>(
         badge: ResourceOrNonFungible,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         let encoded_key =
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         api.actor_remove_key_value_entry(
@@ -1270,10 +1193,9 @@ impl AccountBlueprint {
         Ok(())
     }
 
-    fn get_default_deposit_rule<Y>(api: &mut Y) -> Result<DefaultDepositRule, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn get_default_deposit_rule<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<DefaultDepositRule, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             AccountField::DepositRule.field_index(),
@@ -1288,16 +1210,12 @@ impl AccountBlueprint {
         Ok(default)
     }
 
-    fn get_vault<F, Y, R>(
+    fn get_vault<Y: SystemApi<RuntimeError>, R>(
         resource_address: ResourceAddress,
-        vault_fn: F,
+        vault_fn: impl FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
         create: bool,
         api: &mut Y,
-    ) -> Result<R, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        F: FnOnce(&mut Vault, &mut Y) -> Result<R, RuntimeError>,
-    {
+    ) -> Result<R, RuntimeError> {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let mut kv_store_entry_lock_handle = api.actor_open_key_value_entry(
@@ -1355,13 +1273,10 @@ impl AccountBlueprint {
         }
     }
 
-    fn is_deposit_allowed<Y>(
+    fn is_deposit_allowed<Y: SystemApi<RuntimeError>>(
         resource_address: &ResourceAddress,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<bool, RuntimeError> {
         match Self::get_resource_preference(resource_address, api)? {
             Some(ResourcePreference::Allowed) => Ok(true),
             Some(ResourcePreference::Disallowed) => Ok(false),
@@ -1379,13 +1294,10 @@ impl AccountBlueprint {
         }
     }
 
-    fn does_vault_exist<Y>(
+    fn does_vault_exist<Y: SystemApi<RuntimeError>>(
         resource_address: &ResourceAddress,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<bool, RuntimeError> {
         let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
@@ -1407,13 +1319,10 @@ impl AccountBlueprint {
         Ok(does_vault_exist)
     }
 
-    fn get_resource_preference<Y>(
+    fn get_resource_preference<Y: SystemApi<RuntimeError>>(
         resource_address: &ResourceAddress,
         api: &mut Y,
-    ) -> Result<Option<ResourcePreference>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Option<ResourcePreference>, RuntimeError> {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
@@ -1446,14 +1355,11 @@ impl NonFungibleData for AccountOwnerBadgeData {
 pub struct AccountBlueprintBottlenoseExtension;
 
 impl AccountBlueprintBottlenoseExtension {
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => {
                 let AccountTryDepositOrRefundInput {
@@ -1484,14 +1390,11 @@ impl AccountBlueprintBottlenoseExtension {
         }
     }
 
-    pub fn try_deposit_or_refund<Y>(
+    pub fn try_deposit_or_refund<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
-    ) -> Result<Option<Bucket>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Option<Bucket>, RuntimeError> {
         let resource_address = bucket.resource_address(api)?;
         let is_deposit_allowed = AccountBlueprint::is_deposit_allowed(&resource_address, api)?;
         if is_deposit_allowed {
@@ -1536,14 +1439,11 @@ impl AccountBlueprintBottlenoseExtension {
         }
     }
 
-    pub fn try_deposit_batch_or_refund<Y>(
+    pub fn try_deposit_batch_or_refund<Y: SystemApi<RuntimeError>>(
         buckets: Vec<Bucket>,
         authorized_depositor_badge: Option<ResourceOrNonFungible>,
         api: &mut Y,
-    ) -> Result<Option<Vec<Bucket>>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Option<Vec<Bucket>>, RuntimeError> {
         let offending_buckets = buckets
             .iter()
             .map(|bucket| {

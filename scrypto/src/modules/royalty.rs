@@ -6,7 +6,7 @@ use radix_common::constants::ROYALTY_MODULE_PACKAGE;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_common::types::RoyaltyAmount;
 use radix_engine_interface::api::AttachedModuleId;
-use radix_engine_interface::blueprints::resource::Bucket;
+use radix_engine_interface::blueprints::resource::FungibleBucket;
 use radix_engine_interface::object_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentRoyaltyLockInput,
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
@@ -25,7 +25,7 @@ use scrypto::modules::Attachable;
 pub trait HasComponentRoyalties {
     fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount);
     fn lock_royalty<M: ToString>(&self, method: M);
-    fn claim_component_royalties(&self) -> Bucket;
+    fn claim_component_royalties(&self) -> FungibleBucket;
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -81,7 +81,7 @@ impl Royalty {
         );
     }
 
-    pub fn claim_royalties(&self) -> Bucket {
+    pub fn claim_royalties(&self) -> FungibleBucket {
         self.call(
             COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
             &ComponentClaimRoyaltiesInput {},

@@ -961,15 +961,17 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let (pk3, sk3) = self.new_ed25519_key_pair();
         let (pk4, sk4) = self.new_ed25519_key_pair();
 
-        let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::CountOf(
-            n_out_of_4,
-            vec![
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
-                ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
-            ],
-        )));
+        let access_rule = AccessRule::Protected(CompositeRequirement::BasicRequirement(
+            BasicRequirement::CountOf(
+                n_out_of_4,
+                vec![
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk1)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk2)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk3)),
+                    ResourceOrNonFungible::NonFungible(NonFungibleGlobalId::from_public_key(&pk4)),
+                ],
+            ),
+        ));
 
         let access_controller = self
             .execute_manifest(
@@ -1305,6 +1307,25 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         )
     }
 
+    pub fn execute_manifest_with_execution_config<T>(
+        &mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        execution_config: ExecutionConfig,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            execution_config,
+        )
+    }
+
     pub fn execute_manifest_with_costing_params<T>(
         &mut self,
         manifest: TransactionManifestV1,
@@ -1357,6 +1378,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 system_input: SystemInit {
                     enable_kernel_trace: execution_config.enable_kernel_trace,
                     enable_cost_breakdown: execution_config.enable_cost_breakdown,
+                    enable_debug_information: execution_config.enable_debug_information,
                     execution_trace: execution_config.execution_trace,
                     callback_init: vm_init,
                     system_overrides: execution_config.system_overrides.clone(),

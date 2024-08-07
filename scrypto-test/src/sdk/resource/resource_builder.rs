@@ -8,7 +8,6 @@ use radix_engine_interface::object_modules::role_assignment::RoleDefinition;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::prelude::SystemApi;
 use sbor::rust::marker::PhantomData;
-use std::fmt::Debug;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -466,11 +465,10 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
     /// Creates the resource with no initial supply.
     ///
     /// The resource's address is returned.
-    fn create_with_no_initial_supply<Y, E>(self, env: &mut Y) -> Result<ResourceManager, E>
-    where
-        Y: SystemApi<E>,
-        E: Debug,
-    {
+    fn create_with_no_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
+        self,
+        env: &mut Y,
+    ) -> Result<ResourceManager, E> {
         match self.into_create_with_no_supply_invocation() {
             private::CreateWithNoSupply::Fungible {
                 owner_role,
@@ -563,19 +561,14 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     /// ```no_run
     /// use scrypto_test::prelude::*;
     ///
-    /// let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+    /// let bucket: FungibleBucket = ResourceBuilder::new_fungible(OwnerRole::None)
     ///     .mint_initial_supply(5, &mut env);
     /// ```
-    pub fn mint_initial_supply<T, Y, E>(
+    pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
         mut self,
-        amount: T,
+        amount: impl Into<Decimal>,
         env: &mut Y,
-    ) -> Result<radix_engine_interface::blueprints::resource::Bucket, E>
-    where
-        T: Into<Decimal>,
-        Y: SystemApi<E>,
-        E: Debug,
-    {
+    ) -> Result<FungibleBucket, E> {
         let metadata = self
             .metadata_config
             .take()
@@ -597,12 +590,8 @@ impl InProgressResourceBuilder<FungibleResourceType> {
             .unwrap(),
         )?;
 
-        Ok(scrypto_decode::<(
-            ResourceAddress,
-            radix_engine_interface::blueprints::resource::Bucket,
-        )>(&bytes)
-        .unwrap()
-        .1)
+        let result: (ResourceAddress, FungibleBucket) = scrypto_decode(&bytes).unwrap();
+        Ok(result.1)
     }
 }
 
@@ -623,19 +612,18 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket: Bucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///         &mut env
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T, Y, E>(mut self, entries: T, env: &mut Y) -> Result<Bucket, E>
-    where
-        T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
-        Y: SystemApi<E>,
-        E: Debug,
-    {
+    pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
+        mut self,
+        entries: impl IntoIterator<Item = (StringNonFungibleLocalId, D)>,
+        env: &mut Y,
+    ) -> Result<NonFungibleBucket, E> {
         let non_fungible_schema =
             NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
@@ -660,9 +648,11 @@ impl<D: NonFungibleData>
             })
             .unwrap(),
         )?;
-        Ok(scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-            .unwrap()
-            .1)
+        Ok(
+            scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+                .unwrap()
+                .1,
+        )
     }
 }
 
@@ -683,19 +673,18 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket: Bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (1u64.into(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///         &mut env
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T, Y, E>(mut self, entries: T, env: &mut Y) -> Result<Bucket, E>
-    where
-        T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
-        Y: SystemApi<E>,
-        E: Debug,
-    {
+    pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
+        mut self,
+        entries: impl IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
+        env: &mut Y,
+    ) -> Result<NonFungibleBucket, E> {
         let non_fungible_schema =
             NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
@@ -720,9 +709,11 @@ impl<D: NonFungibleData>
             })
             .unwrap(),
         )?;
-        Ok(scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-            .unwrap()
-            .1)
+        Ok(
+            scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+                .unwrap()
+                .1,
+        )
     }
 }
 
@@ -743,19 +734,18 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket: Bucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///         &mut env
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T, Y, E>(mut self, entries: T, env: &mut Y) -> Result<Bucket, E>
-    where
-        T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
-        Y: SystemApi<E>,
-        E: Debug,
-    {
+    pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
+        mut self,
+        entries: impl IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
+        env: &mut Y,
+    ) -> Result<NonFungibleBucket, E> {
         let non_fungible_schema =
             NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
@@ -780,9 +770,11 @@ impl<D: NonFungibleData>
             })
             .unwrap(),
         )?;
-        Ok(scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-            .unwrap()
-            .1)
+        Ok(
+            scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+                .unwrap()
+                .1,
+        )
     }
 }
 
@@ -806,19 +798,18 @@ impl<D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket: Bucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
+    /// let bucket: NonFungibleBucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (NFData { name: "NF One".to_owned(), flag: true }),
     ///         (NFData { name: "NF Two".to_owned(), flag: true }),
     ///         &mut env
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T, Y, E>(mut self, entries: T, env: &mut Y) -> Result<Bucket, E>
-    where
-        T: IntoIterator<Item = D>,
-        Y: SystemApi<E>,
-        E: Debug,
-    {
+    pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
+        mut self,
+        entries: impl IntoIterator<Item = D>,
+        env: &mut Y,
+    ) -> Result<NonFungibleBucket, E> {
         let non_fungible_schema =
             NonFungibleDataSchema::new_local_without_self_package_replacement::<D>();
 
@@ -851,9 +842,11 @@ impl<D: NonFungibleData>
             )
             .unwrap(),
         )?;
-        Ok(scrypto_decode::<(ResourceAddress, Bucket)>(&bytes)
-            .unwrap()
-            .1)
+        Ok(
+            scrypto_decode::<(ResourceAddress, NonFungibleBucket)>(&bytes)
+                .unwrap()
+                .1,
+        )
     }
 }
 

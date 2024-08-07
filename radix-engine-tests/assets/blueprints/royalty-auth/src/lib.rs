@@ -42,11 +42,14 @@ mod royalty_test {
                 .globalize()
         }
 
-        pub fn claim_package_royalty(package: Package, proof: Proof) -> Bucket {
+        pub fn claim_package_royalty(package: Package, proof: Proof) -> FungibleBucket {
             proof.authorize(|| package.claim_royalties())
         }
 
-        pub fn claim_component_royalty(component: Global<AnyComponent>, proof: Proof) -> Bucket {
+        pub fn claim_component_royalty(
+            component: Global<AnyComponent>,
+            proof: Proof,
+        ) -> FungibleBucket {
             proof.authorize(|| component.claim_component_royalties())
         }
     }

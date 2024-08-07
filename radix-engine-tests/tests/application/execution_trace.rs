@@ -7,7 +7,16 @@ use radix_transactions::model::PreviewFlags;
 use scrypto_test::prelude::*;
 
 #[test]
-fn test_trace_resource_transfers() {
+fn test_trace_resource_transfers_using_take() {
+    run_resource_transfers_trace_test(false);
+}
+
+#[test]
+fn test_trace_resource_transfers_using_take_advanced() {
+    run_resource_transfers_trace_test(true);
+}
+
+fn run_resource_transfers_trace_test(use_take_advanced: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
@@ -21,7 +30,7 @@ fn test_trace_resource_transfers() {
             package_address,
             "ExecutionTraceBp",
             "transfer_resource_between_two_components",
-            manifest_args!(transfer_amount),
+            manifest_args!(transfer_amount, use_take_advanced),
         )
         .build();
     let receipt = ledger.preview_manifest(

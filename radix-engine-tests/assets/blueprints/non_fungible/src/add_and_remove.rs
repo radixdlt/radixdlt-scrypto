@@ -8,8 +8,8 @@ pub struct Sandwich {
 #[blueprint]
 mod add_and_remove {
     struct AddAndRemove {
-        vault: Vault,
-        other_vault: Vault,
+        vault: NonFungibleVault,
+        other_vault: NonFungibleVault,
     }
 
     impl AddAndRemove {
@@ -47,8 +47,8 @@ mod add_and_remove {
                 },
             );
             self.vault.put(bucket);
-            let bucket = self.vault.as_non_fungible().take_non_fungible(&id);
-            self.other_vault.as_non_fungible().put(bucket);
+            let bucket = self.vault.take_non_fungible(&id);
+            self.other_vault.put(bucket);
         }
     }
 }

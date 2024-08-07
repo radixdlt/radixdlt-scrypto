@@ -20,17 +20,16 @@ fn cannot_store_reference_in_non_transient_blueprint() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "new" => {
                     let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
@@ -83,17 +82,16 @@ fn cannot_write_reference_in_non_transient_blueprint() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "new" => {
                     let node_id = api
@@ -149,17 +147,16 @@ fn cannot_write_reference_in_kv_store() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "kv_store" => {
                     let kv_store = api.key_value_store_new(

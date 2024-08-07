@@ -5,8 +5,6 @@ use super::substates::multi_resource_pool::*;
 use super::substates::one_resource_pool::*;
 use super::substates::two_resource_pool::*;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::*;
-use crate::system::system_callback::*;
 use crate::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::pool::*;
@@ -21,15 +19,12 @@ pub enum PoolV1MinorVersion {
 
 pub struct PoolNativePackage;
 impl PoolNativePackage {
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         minor_version: PoolV1MinorVersion,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
                 let OneResourcePoolInstantiateInput {

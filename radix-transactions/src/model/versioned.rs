@@ -30,8 +30,7 @@ const V1_PREVIEW_TRANSACTION: u8 = 6;
 const V1_LEDGER_TRANSACTION: u8 = 7;
 const V1_FLASH_TRANSACTION: u8 = 8;
 
-// TODO - change this to use #[flatten] when REP-84 is out
-/// An enum of a variety of different transaction payload types
+/// An enum of a variety of different transaction payload types.
 /// This might see use in (eg) the Node's transaction parse API.
 /// These represent the different transaction types.
 #[derive(Clone, Debug, Eq, PartialEq, ManifestSbor)]

@@ -8,7 +8,7 @@ source test_utils.sh
 
 setup_test_runner
 
-echo "Testing crates..."
+# echo "Testing crates..."
 test_crates_features \
     "sbor \
     sbor-derive-common \
@@ -27,8 +27,7 @@ test_crates_features \
 
 echo "Testing scrypto packages..."
 test_packages \
-    "assets/blueprints/faucet \
-    examples/hello-world \
+   "examples/hello-world \
     examples/no-std"
 
 echo "Testing CLIs..."

@@ -230,9 +230,6 @@ fn test_wasm_buffer_read_memory_substate_size_exceeded() {
 }
 
 #[test]
-#[cfg(not(feature = "wasmer"))]
-// 'wasmer' produces following panic:
-//  misaligned pointer dereference: address must be a multiple of 0x10 but is ...
 fn test_wasm_buffer_read_memory_instruction_trap() {
     // Arrange
     let (mut ledger, component_address) = get_ledger();
@@ -249,7 +246,7 @@ fn test_wasm_buffer_read_memory_instruction_trap() {
         // This error is really nasty and we should somehow prevent it from occurring.
         // Especially that we know that transaction will fail for smaller sizes...
         RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(message))) => {
-            message == "Trap(Trap { reason: InstructionTrap(UnreachableCodeReached) })"
+            message == "Error { kind: TrapCode(UnreachableCodeReached) }"
         }
         _ => false,
     });
@@ -268,7 +265,7 @@ fn test_wasm_buffer_read_memory_instruction_trap() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(message))) => {
-            message == "Trap(Trap { reason: InstructionTrap(UnreachableCodeReached) })"
+            message == "Error { kind: TrapCode(UnreachableCodeReached) }"
         }
         _ => false,
     });

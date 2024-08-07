@@ -114,6 +114,8 @@ pub enum RuntimeError {
     FinalizationCostingError(CostingError),
 }
 
+impl SystemApiError for RuntimeError {}
+
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
         RuntimeError::KernelError(error.into())

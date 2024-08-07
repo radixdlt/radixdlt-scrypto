@@ -8,7 +8,7 @@ pub fn with_multi_resource_pool<const N: usize, F, O>(divisibility: [u8; N], cal
 where
     F: FnOnce(
         &mut TestEnvironment<InMemorySubstateDatabase>,
-        [(Cloneable<Bucket>, ResourceAddress); N],
+        [(Cloneable<FungibleBucket>, ResourceAddress); N],
         MultiResourcePool<N>,
     ) -> O,
 {
@@ -61,20 +61,23 @@ impl Clone for Cloneable<Bucket> {
     }
 }
 
+impl Clone for Cloneable<FungibleBucket> {
+    fn clone(&self) -> Self {
+        Self(FungibleBucket(Bucket(self.0 .0 .0)))
+    }
+}
+
 pub struct OneResourcePool(NodeId);
 
 impl OneResourcePool {
-    pub fn instantiate<Y>(
+    pub fn instantiate<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<Self, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_function::<_, _, OneResourcePoolInstantiateOutput>(
+    ) -> Result<Self, RuntimeError> {
+        typed_call_function::<OneResourcePoolInstantiateOutput>(
             POOL_PACKAGE,
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
             ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
@@ -89,11 +92,13 @@ impl OneResourcePool {
         .map(|rtn| Self(rtn.0.into_node_id()))
     }
 
-    pub fn contribute<Y>(&mut self, bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_method::<_, _, OneResourcePoolContributeOutput>(
+    pub fn contribute<Y: SystemApi<RuntimeError>>(
+        &mut self,
+        bucket: FungibleBucket,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError> {
+        let bucket = bucket.into();
+        typed_call_method::<OneResourcePoolContributeOutput>(
             &self.0,
             ONE_RESOURCE_POOL_CONTRIBUTE_IDENT,
             &OneResourcePoolContributeInput { bucket },
@@ -101,11 +106,13 @@ impl OneResourcePool {
         )
     }
 
-    pub fn protected_deposit<Y>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_method::<_, _, OneResourcePoolProtectedDepositOutput>(
+    pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
+        &mut self,
+        bucket: FungibleBucket,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let bucket = bucket.into();
+        typed_call_method::<OneResourcePoolProtectedDepositOutput>(
             &self.0,
             ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
             &OneResourcePoolProtectedDepositInput { bucket },
@@ -113,16 +120,13 @@ impl OneResourcePool {
         )
     }
 
-    pub fn protected_withdraw<Y>(
+    pub fn protected_withdraw<Y: SystemApi<RuntimeError>>(
         &mut self,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_method::<_, _, OneResourcePoolProtectedWithdrawOutput>(
+    ) -> Result<Bucket, RuntimeError> {
+        typed_call_method::<OneResourcePoolProtectedWithdrawOutput>(
             &self.0,
             ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
             &OneResourcePoolProtectedWithdrawInput {
@@ -133,14 +137,11 @@ impl OneResourcePool {
         )
     }
 
-    pub fn get_redemption_value<Y>(
+    pub fn get_redemption_value<Y: SystemApi<RuntimeError>>(
         &self,
         amount_of_pool_units: Decimal,
         api: &mut Y,
-    ) -> Result<OneResourcePoolGetRedemptionValueOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OneResourcePoolGetRedemptionValueOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
@@ -151,14 +152,11 @@ impl OneResourcePool {
         )
     }
 
-    pub fn redeem<Y>(
+    pub fn redeem<Y: SystemApi<RuntimeError>>(
         &mut self,
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<OneResourcePoolRedeemOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OneResourcePoolRedeemOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             ONE_RESOURCE_POOL_REDEEM_IDENT,
@@ -171,17 +169,14 @@ impl OneResourcePool {
 pub struct TwoResourcePool(NodeId);
 
 impl TwoResourcePool {
-    pub fn instantiate<Y>(
+    pub fn instantiate<Y: SystemApi<RuntimeError>>(
         resource_addresses: (ResourceAddress, ResourceAddress),
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<Self, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_function::<_, _, TwoResourcePoolInstantiateOutput>(
+    ) -> Result<Self, RuntimeError> {
+        typed_call_function::<TwoResourcePoolInstantiateOutput>(
             POOL_PACKAGE,
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
             TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
@@ -196,49 +191,44 @@ impl TwoResourcePool {
         .map(|rtn| Self(rtn.0.into_node_id()))
     }
 
-    pub fn contribute<Y>(
+    pub fn contribute<Y: SystemApi<RuntimeError>>(
         &mut self,
-        buckets: (Bucket, Bucket),
+        buckets: (FungibleBucket, FungibleBucket),
         api: &mut Y,
-    ) -> Result<TwoResourcePoolContributeOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolContributeOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-            &TwoResourcePoolContributeInput { buckets },
+            &TwoResourcePoolContributeInput {
+                buckets: (buckets.0.into(), buckets.1.into()),
+            },
             api,
         )
     }
 
-    pub fn protected_deposit<Y>(
+    pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
         &mut self,
-        bucket: Bucket,
+        bucket: FungibleBucket,
         api: &mut Y,
-    ) -> Result<TwoResourcePoolProtectedDepositOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolProtectedDepositOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-            &TwoResourcePoolProtectedDepositInput { bucket },
+            &TwoResourcePoolProtectedDepositInput {
+                bucket: bucket.into(),
+            },
             api,
         )
     }
 
-    pub fn protected_withdraw<Y>(
+    pub fn protected_withdraw<Y: SystemApi<RuntimeError>>(
         &mut self,
         resource_address: ResourceAddress,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_method::<_, _, TwoResourcePoolProtectedWithdrawOutput>(
+    ) -> Result<Bucket, RuntimeError> {
+        typed_call_method::<TwoResourcePoolProtectedWithdrawOutput>(
             &self.0,
             TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
             &TwoResourcePoolProtectedWithdrawInput {
@@ -250,14 +240,11 @@ impl TwoResourcePool {
         )
     }
 
-    pub fn get_redemption_value<Y>(
+    pub fn get_redemption_value<Y: SystemApi<RuntimeError>>(
         &self,
         amount_of_pool_units: Decimal,
         api: &mut Y,
-    ) -> Result<TwoResourcePoolGetRedemptionValueOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolGetRedemptionValueOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
@@ -268,14 +255,11 @@ impl TwoResourcePool {
         )
     }
 
-    pub fn redeem<Y>(
+    pub fn redeem<Y: SystemApi<RuntimeError>>(
         &mut self,
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<TwoResourcePoolRedeemOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<TwoResourcePoolRedeemOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             TWO_RESOURCE_POOL_REDEEM_IDENT,
@@ -288,17 +272,14 @@ impl TwoResourcePool {
 pub struct MultiResourcePool<const N: usize>(NodeId);
 
 impl<const N: usize> MultiResourcePool<N> {
-    pub fn instantiate<Y>(
+    pub fn instantiate<Y: SystemApi<RuntimeError>>(
         resource_addresses: [ResourceAddress; N],
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<Self, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_function::<_, _, MultiResourcePoolInstantiateOutput>(
+    ) -> Result<Self, RuntimeError> {
+        typed_call_function::<MultiResourcePoolInstantiateOutput>(
             POOL_PACKAGE,
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
             MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
@@ -313,32 +294,26 @@ impl<const N: usize> MultiResourcePool<N> {
         .map(|rtn| Self(rtn.0.into_node_id()))
     }
 
-    pub fn contribute<Y>(
+    pub fn contribute<Y: SystemApi<RuntimeError>>(
         &mut self,
-        buckets: [Bucket; N],
+        buckets: [FungibleBucket; N],
         api: &mut Y,
-    ) -> Result<MultiResourcePoolContributeOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<MultiResourcePoolContributeOutput, RuntimeError> {
+        let buckets = buckets.into_iter().map(|b| b.into()).collect();
         typed_call_method(
             &self.0,
             MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT,
-            &MultiResourcePoolContributeInput {
-                buckets: buckets.into(),
-            },
+            &MultiResourcePoolContributeInput { buckets },
             api,
         )
     }
 
-    pub fn protected_deposit<Y>(
+    pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
         &mut self,
-        bucket: Bucket,
+        bucket: FungibleBucket,
         api: &mut Y,
-    ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<MultiResourcePoolProtectedDepositOutput, RuntimeError> {
+        let bucket = bucket.into();
         typed_call_method(
             &self.0,
             MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
@@ -347,17 +322,14 @@ impl<const N: usize> MultiResourcePool<N> {
         )
     }
 
-    pub fn protected_withdraw<Y>(
+    pub fn protected_withdraw<Y: SystemApi<RuntimeError>>(
         &mut self,
         resource_address: ResourceAddress,
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_method::<_, _, MultiResourcePoolProtectedWithdrawOutput>(
+    ) -> Result<Bucket, RuntimeError> {
+        typed_call_method::<MultiResourcePoolProtectedWithdrawOutput>(
             &self.0,
             MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
             &MultiResourcePoolProtectedWithdrawInput {
@@ -369,14 +341,11 @@ impl<const N: usize> MultiResourcePool<N> {
         )
     }
 
-    pub fn get_redemption_value<Y>(
+    pub fn get_redemption_value<Y: SystemApi<RuntimeError>>(
         &self,
         amount_of_pool_units: Decimal,
         api: &mut Y,
-    ) -> Result<MultiResourcePoolGetRedemptionValueOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<MultiResourcePoolGetRedemptionValueOutput, RuntimeError> {
         typed_call_method(
             &self.0,
             MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
@@ -387,11 +356,12 @@ impl<const N: usize> MultiResourcePool<N> {
         )
     }
 
-    pub fn redeem<Y>(&mut self, bucket: Bucket, api: &mut Y) -> Result<[Bucket; N], RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
-        typed_call_method::<_, _, MultiResourcePoolRedeemOutput>(
+    pub fn redeem<Y: SystemApi<RuntimeError>>(
+        &mut self,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<[Bucket; N], RuntimeError> {
+        typed_call_method::<MultiResourcePoolRedeemOutput>(
             &self.0,
             MULTI_RESOURCE_POOL_REDEEM_IDENT,
             &MultiResourcePoolRedeemInput { bucket },
@@ -401,38 +371,28 @@ impl<const N: usize> MultiResourcePool<N> {
     }
 }
 
-fn typed_call_function<Y, I, O>(
+fn typed_call_function<O: ScryptoDecode>(
     package_address: PackageAddress,
     blueprint_name: &str,
     function_name: &str,
-    input: I,
-    api: &mut Y,
-) -> Result<O, RuntimeError>
-where
-    Y: SystemApi<RuntimeError>,
-    I: ScryptoEncode,
-    O: ScryptoDecode,
-{
+    input: impl ScryptoEncode,
+    api: &mut impl SystemApi<RuntimeError>,
+) -> Result<O, RuntimeError> {
     api.call_function(
         package_address,
         blueprint_name,
         function_name,
         scrypto_encode(&input).unwrap(),
     )
-    .map(|rtn| scrypto_decode::<O>(&rtn).unwrap())
+    .map(|rtn| scrypto_decode(&rtn).unwrap())
 }
 
-fn typed_call_method<Y, I, O>(
+fn typed_call_method<O: ScryptoDecode>(
     address: &NodeId,
     method_name: &str,
-    input: I,
-    api: &mut Y,
-) -> Result<O, RuntimeError>
-where
-    Y: SystemApi<RuntimeError>,
-    I: ScryptoEncode,
-    O: ScryptoDecode,
-{
+    input: impl ScryptoEncode,
+    api: &mut impl SystemApi<RuntimeError>,
+) -> Result<O, RuntimeError> {
     api.call_method(address, method_name, scrypto_encode(&input).unwrap())
-        .map(|rtn| scrypto_decode::<O>(&rtn).unwrap())
+        .map(|rtn| scrypto_decode(&rtn).unwrap())
 }

@@ -73,19 +73,14 @@ impl From<TransactionProcessorError> for RuntimeError {
     }
 }
 
-fn handle_invocation<'a, 'p, 'w, F, Y, L>(
+fn handle_invocation<'a, 'p, 'w, Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
     api: &'a mut Y,
     processor: &'p mut TransactionProcessor,
     worktop: &'w mut Worktop,
     args: ManifestValue,
-    invocation_handler: F,
+    invocation_handler: impl FnOnce(&mut Y, ScryptoValue) -> Result<Vec<u8>, RuntimeError>,
     version: TransactionProcessorV1MinorVersion,
-) -> Result<InstructionOutput, RuntimeError>
-where
-    Y: SystemApi<RuntimeError> + KernelSubstateApi<L>,
-    F: FnOnce(&mut Y, ScryptoValue) -> Result<Vec<u8>, RuntimeError>,
-    L: Default,
-{
+) -> Result<InstructionOutput, RuntimeError> {
     let scrypto_value = {
         let mut processor_with_api = TransactionProcessorWithApi {
             worktop,
@@ -111,17 +106,17 @@ where
 pub struct TransactionProcessorBlueprint;
 
 impl TransactionProcessorBlueprint {
-    pub(crate) fn run<Y, L: Default>(
+    pub(crate) fn run<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
+        L: Default,
+    >(
         manifest_encoded_instructions: Vec<u8>,
         global_address_reservations: Vec<GlobalAddressReservation>,
         _references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
         blobs: IndexMap<Hash, Vec<u8>>,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi<L> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         // Create a worktop
         let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
@@ -255,14 +250,14 @@ impl TransactionProcessorBlueprint {
                 InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof_of_amount(amount, api)?;
-                    processor.create_manifest_proof(proof)?;
+                    processor.create_manifest_proof(proof.into())?;
                     InstructionOutput::None
                 }
                 InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof =
                         bucket.create_proof_of_non_fungibles(ids.into_iter().collect(), api)?;
-                    processor.create_manifest_proof(proof)?;
+                    processor.create_manifest_proof(proof.into())?;
                     InstructionOutput::None
                 }
                 InstructionV1::CreateProofFromBucketOfAll { bucket_id } => {
@@ -656,15 +651,12 @@ impl TransactionProcessor {
         }
     }
 
-    fn handle_call_return_data<Y, L: Default>(
+    fn handle_call_return_data<Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
         &mut self,
         value: &IndexedScryptoValue,
         worktop: &Worktop,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelSubstateApi<L> + SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         // Auto move into worktop & auth_zone
         for node_id in value.owned_nodes() {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;

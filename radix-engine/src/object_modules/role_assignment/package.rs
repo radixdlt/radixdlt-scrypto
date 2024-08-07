@@ -203,14 +203,11 @@ impl RoleAssignmentNativePackage {
         Ok(permission)
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             ROLE_ASSIGNMENT_CREATE_IDENT => {
                 let input: RoleAssignmentCreateInput = input.as_typed().map_err(|e| {
@@ -277,7 +274,11 @@ impl RoleAssignmentNativePackage {
         pub struct AccessRuleVerifier(usize);
         impl AccessRuleVisitor for AccessRuleVerifier {
             type Error = RoleAssignmentError;
-            fn visit(&mut self, _node: &AccessRuleNode, depth: usize) -> Result<(), Self::Error> {
+            fn visit(
+                &mut self,
+                _node: &CompositeRequirement,
+                depth: usize,
+            ) -> Result<(), Self::Error> {
                 // This is to protect unbounded native stack usage during authorization
                 if depth > MAX_ACCESS_RULE_DEPTH {
                     return Err(RoleAssignmentError::ExceededMaxAccessRuleDepth);
@@ -285,7 +286,7 @@ impl RoleAssignmentNativePackage {
 
                 self.0 += 1;
 
-                if self.0 > MAX_ACCESS_RULE_NODES {
+                if self.0 > MAX_COMPOSITE_REQUIREMENTS {
                     return Err(RoleAssignmentError::ExceededMaxAccessRuleNodes);
                 }
 
@@ -444,14 +445,11 @@ impl RoleAssignmentNativePackage {
         ))
     }
 
-    pub(crate) fn create<Y>(
+    pub(crate) fn create<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRoleEntry,
         roles: IndexMap<ModuleId, RoleAssignmentInit>,
         api: &mut Y,
-    ) -> Result<Own, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Own, RuntimeError> {
         let (fields, kv_entries) = Self::init_system_struct(owner_role, roles).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
         })?;
@@ -467,10 +465,10 @@ impl RoleAssignmentNativePackage {
         Ok(Own(component_id))
     }
 
-    fn set_owner_role<Y>(rule: AccessRule, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn set_owner_role<Y: SystemApi<RuntimeError>>(
+        rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Self::verify_access_rule(&rule).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::RoleAssignmentError(e))
         })?;
@@ -492,10 +490,7 @@ impl RoleAssignmentNativePackage {
         Ok(())
     }
 
-    fn lock_owner_role<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    fn lock_owner_role<Y: SystemApi<RuntimeError>>(api: &mut Y) -> Result<(), RuntimeError> {
         let handle = api.actor_open_field(ACTOR_STATE_SELF, 0u8, LockFlags::MUTABLE)?;
         let mut owner_role = api
             .field_read_typed::<RoleAssignmentOwnerFieldPayload>(handle)?
@@ -513,15 +508,12 @@ impl RoleAssignmentNativePackage {
         Ok(())
     }
 
-    fn set_role<Y>(
+    fn set_role<Y: SystemApi<RuntimeError>>(
         module: ModuleId,
         role_key: RoleKey,
         rule: AccessRule,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(), RuntimeError> {
         if module.eq(&ModuleId::RoleAssignment) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::RoleAssignmentError(RoleAssignmentError::UsedReservedSpace),
@@ -588,14 +580,11 @@ impl RoleAssignmentNativePackage {
         Ok(())
     }
 
-    pub(crate) fn get_role<Y>(
+    pub(crate) fn get_role<Y: SystemApi<RuntimeError>>(
         module: ModuleId,
         role_key: RoleKey,
         api: &mut Y,
-    ) -> Result<Option<AccessRule>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Option<AccessRule>, RuntimeError> {
         let module_role_key = ModuleRoleKey::new(module, role_key);
 
         let handle = api.actor_open_key_value_entry(
@@ -639,14 +628,11 @@ impl RoleAssignmentBottlenoseExtension {
         (functions, schema)
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             ROLE_ASSIGNMENT_GET_OWNER_ROLE_IDENT => {
                 input
@@ -664,10 +650,9 @@ impl RoleAssignmentBottlenoseExtension {
         }
     }
 
-    pub(crate) fn get_owner_role<Y>(api: &mut Y) -> Result<OwnerRoleEntry, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    pub(crate) fn get_owner_role<Y: SystemApi<RuntimeError>>(
+        api: &mut Y,
+    ) -> Result<OwnerRoleEntry, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
             RoleAssignmentField::Owner.field_index(),

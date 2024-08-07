@@ -51,14 +51,26 @@ pub struct Proof(pub Own);
 #[must_use]
 pub struct FungibleProof(pub Proof);
 
+impl AsRef<Proof> for FungibleProof {
+    fn as_ref(&self) -> &Proof {
+        &self.0
+    }
+}
+
+impl From<FungibleProof> for Proof {
+    fn from(value: FungibleProof) -> Self {
+        value.0
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
 #[must_use]
 pub struct NonFungibleProof(pub Proof);
 
-impl From<FungibleProof> for Proof {
-    fn from(value: FungibleProof) -> Self {
-        value.0
+impl AsRef<Proof> for NonFungibleProof {
+    fn as_ref(&self) -> &Proof {
+        &self.0
     }
 }
 

@@ -32,13 +32,10 @@ impl TypeInfoSubstate {
 pub struct TypeInfoBlueprint;
 
 impl TypeInfoBlueprint {
-    pub(crate) fn get_type<Y, L: Default>(
+    pub(crate) fn get_type<Y: KernelSubstateApi<L>, L: Default>(
         receiver: &NodeId,
         api: &mut Y,
-    ) -> Result<TypeInfoSubstate, RuntimeError>
-    where
-        Y: KernelSubstateApi<L>,
-    {
+    ) -> Result<TypeInfoSubstate, RuntimeError> {
         let handle = api.kernel_open_substate(
             receiver,
             TYPE_INFO_FIELD_PARTITION,

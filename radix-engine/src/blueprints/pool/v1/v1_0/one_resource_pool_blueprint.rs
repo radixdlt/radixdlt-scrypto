@@ -3,7 +3,6 @@ use crate::blueprints::pool::v1::errors::one_resource_pool::*;
 use crate::blueprints::pool::v1::events::one_resource_pool::*;
 use crate::blueprints::pool::v1::substates::one_resource_pool::*;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::*;
 use radix_engine_interface::blueprints::component::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::prelude::*;
@@ -16,16 +15,13 @@ use radix_native_sdk::runtime::*;
 
 pub struct OneResourcePoolBlueprint;
 impl OneResourcePoolBlueprint {
-    pub fn instantiate<Y>(
+    pub fn instantiate<Y: SystemApi<RuntimeError>>(
         resource_address: ResourceAddress,
         owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<OneResourcePoolInstantiateOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi,
-    {
+    ) -> Result<OneResourcePoolInstantiateOutput, RuntimeError> {
         // Validate that the resource is a fungible resource - a pool can't be created with non
         // fungible resources.
         let resource_manager = ResourceManager(resource_address);
@@ -121,13 +117,10 @@ impl OneResourcePoolBlueprint {
         )))
     }
 
-    pub fn contribute<Y>(
+    pub fn contribute<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<OneResourcePoolContributeOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OneResourcePoolContributeOutput, RuntimeError> {
         // No check that the bucket is of the same resource as the vault. This check will be handled
         // by the vault itself on deposit.
 
@@ -194,16 +187,13 @@ impl OneResourcePoolBlueprint {
             },
         )?;
 
-        Ok(pool_units)
+        Ok(pool_units.into())
     }
 
-    pub fn redeem<Y>(
+    pub fn redeem<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<OneResourcePoolRedeemOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OneResourcePoolRedeemOutput, RuntimeError> {
         let (pool_unit_resource_manager, mut vault, handle) = {
             let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
@@ -265,13 +255,10 @@ impl OneResourcePoolBlueprint {
         Ok(owed_resources)
     }
 
-    pub fn protected_deposit<Y>(
+    pub fn protected_deposit<Y: SystemApi<RuntimeError>>(
         bucket: Bucket,
         api: &mut Y,
-    ) -> Result<OneResourcePoolProtectedDepositOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OneResourcePoolProtectedDepositOutput, RuntimeError> {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let event = DepositEvent {
@@ -286,14 +273,11 @@ impl OneResourcePoolBlueprint {
         Ok(())
     }
 
-    pub fn protected_withdraw<Y>(
+    pub fn protected_withdraw<Y: SystemApi<RuntimeError>>(
         amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
-    ) -> Result<OneResourcePoolProtectedWithdrawOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OneResourcePoolProtectedWithdrawOutput, RuntimeError> {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let bucket = substate
@@ -312,13 +296,10 @@ impl OneResourcePoolBlueprint {
         Ok(bucket)
     }
 
-    pub fn get_redemption_value<Y>(
+    pub fn get_redemption_value<Y: SystemApi<RuntimeError>>(
         amount_of_pool_units: Decimal,
         api: &mut Y,
-    ) -> Result<OneResourcePoolGetRedemptionValueOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OneResourcePoolGetRedemptionValueOutput, RuntimeError> {
         let (pool_unit_resource_manager, vault, handle) = {
             let (substate, lock_handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
@@ -365,12 +346,9 @@ impl OneResourcePoolBlueprint {
         Ok(amount_owed)
     }
 
-    pub fn get_vault_amount<Y>(
+    pub fn get_vault_amount<Y: SystemApi<RuntimeError>>(
         api: &mut Y,
-    ) -> Result<OneResourcePoolGetVaultAmountOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<OneResourcePoolGetVaultAmountOutput, RuntimeError> {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let amount = substate.vault.amount(api)?;
         api.field_close(handle)?;
@@ -403,13 +381,10 @@ impl OneResourcePoolBlueprint {
         Ok(amount_owed)
     }
 
-    fn lock_and_read<Y>(
+    fn lock_and_read<Y: SystemApi<RuntimeError>>(
         api: &mut Y,
         lock_flags: LockFlags,
-    ) -> Result<(Substate, SubstateHandle), RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<(Substate, SubstateHandle), RuntimeError> {
         let substate_key = OneResourcePoolField::State.into();
         let handle = api.actor_open_field(ACTOR_STATE_SELF, substate_key, lock_flags)?;
         let substate = api

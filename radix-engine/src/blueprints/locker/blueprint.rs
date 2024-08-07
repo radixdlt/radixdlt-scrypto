@@ -93,14 +93,11 @@ impl AccountLockerBlueprint {
         }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         dispatch! {
             EXPORT_NAME,
             export_name,
@@ -122,7 +119,7 @@ impl AccountLockerBlueprint {
         }
     }
 
-    fn instantiate<Y>(
+    fn instantiate<Y: SystemApi<RuntimeError>>(
         AccountLockerInstantiateInput {
             owner_role,
             storer_role,
@@ -132,10 +129,7 @@ impl AccountLockerBlueprint {
             address_reservation,
         }: AccountLockerInstantiateInput,
         api: &mut Y,
-    ) -> Result<AccountLockerInstantiateOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerInstantiateOutput, RuntimeError> {
         Self::instantiate_internal(
             owner_role,
             storer_role,
@@ -150,13 +144,10 @@ impl AccountLockerBlueprint {
         )
     }
 
-    fn instantiate_simple<Y>(
+    fn instantiate_simple<Y: SystemApi<RuntimeError>>(
         AccountLockerInstantiateSimpleInput { allow_recover }: AccountLockerInstantiateSimpleInput,
         api: &mut Y,
-    ) -> Result<AccountLockerInstantiateSimpleOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerInstantiateSimpleOutput, RuntimeError> {
         // Two address reservations are needed. One for the badge and another for the account locker
         // that we're instantiating.
         let (locker_reservation, locker_address) = api.allocate_global_address(BlueprintId {
@@ -216,7 +207,7 @@ impl AccountLockerBlueprint {
         .map(|rtn| (rtn, badge))
     }
 
-    fn instantiate_internal<Y>(
+    fn instantiate_internal<Y: SystemApi<RuntimeError>>(
         owner_role: OwnerRole,
         storer_role: AccessRule,
         storer_updater_role: AccessRule,
@@ -225,10 +216,7 @@ impl AccountLockerBlueprint {
         metadata_init: MetadataInit,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
-    ) -> Result<Global<AccountLockerMarker>, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Global<AccountLockerMarker>, RuntimeError> {
         // Main module
         let object_id = api.new_simple_object(ACCOUNT_LOCKER_BLUEPRINT, indexmap! {})?;
 
@@ -260,17 +248,14 @@ impl AccountLockerBlueprint {
         Ok(Global::new(component_address))
     }
 
-    fn store<Y>(
+    fn store<Y: SystemApi<RuntimeError>>(
         AccountLockerStoreInput {
             claimant,
             bucket,
             try_direct_send,
         }: AccountLockerStoreInput,
         api: &mut Y,
-    ) -> Result<AccountLockerStoreOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerStoreOutput, RuntimeError> {
         // If we should try to send first then attempt the deposit into the account
         let bucket = if try_direct_send {
             // Getting the node-id of the actor and constructing the non-fungible global id of the
@@ -325,24 +310,21 @@ impl AccountLockerBlueprint {
         Ok(())
     }
 
-    fn airdrop<Y>(
+    fn airdrop<Y: SystemApi<RuntimeError>>(
         AccountLockerAirdropInput {
             claimants,
             bucket,
             try_direct_send,
         }: AccountLockerAirdropInput,
         api: &mut Y,
-    ) -> Result<AccountLockerAirdropOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerAirdropOutput, RuntimeError> {
         // Distribute and call `store`
         let resource_address = bucket.resource_address(api)?;
         for (account_address, specifier) in claimants.iter() {
             let claim_bucket = match specifier {
                 ResourceSpecifier::Fungible(amount) => bucket.take(*amount, api)?,
                 ResourceSpecifier::NonFungible(ids) => {
-                    bucket.take_non_fungibles(ids.clone(), api)?
+                    bucket.take_non_fungibles(ids.clone(), api)?.into()
                 }
             };
 
@@ -364,17 +346,14 @@ impl AccountLockerBlueprint {
         }
     }
 
-    fn recover<Y>(
+    fn recover<Y: SystemApi<RuntimeError>>(
         AccountLockerRecoverInput {
             claimant,
             resource_address,
             amount,
         }: AccountLockerRecoverInput,
         api: &mut Y,
-    ) -> Result<AccountLockerRecoverOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerRecoverOutput, RuntimeError> {
         // Recover the resources from the vault.
         let bucket = Self::with_vault_create_on_traversal(
             claimant.0,
@@ -398,17 +377,14 @@ impl AccountLockerBlueprint {
         Ok(bucket)
     }
 
-    fn recover_non_fungibles<Y>(
+    fn recover_non_fungibles<Y: SystemApi<RuntimeError>>(
         AccountLockerRecoverNonFungiblesInput {
             claimant,
             resource_address,
             ids,
         }: AccountLockerRecoverNonFungiblesInput,
         api: &mut Y,
-    ) -> Result<AccountLockerRecoverNonFungiblesOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerRecoverNonFungiblesOutput, RuntimeError> {
         // Recover the resources from the vault.
         let bucket = Self::with_vault_create_on_traversal(
             claimant.0,
@@ -432,17 +408,14 @@ impl AccountLockerBlueprint {
         Ok(bucket)
     }
 
-    fn claim<Y>(
+    fn claim<Y: SystemApi<RuntimeError>>(
         AccountLockerClaimInput {
             claimant,
             resource_address,
             amount,
         }: AccountLockerClaimInput,
         api: &mut Y,
-    ) -> Result<AccountLockerClaimOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerClaimOutput, RuntimeError> {
         // Read and assert against the owner role of the claimant.
         let claimant_owner_role = api
             .call_module_method(
@@ -477,17 +450,14 @@ impl AccountLockerBlueprint {
         Ok(bucket)
     }
 
-    fn claim_non_fungibles<Y>(
+    fn claim_non_fungibles<Y: SystemApi<RuntimeError>>(
         AccountLockerClaimNonFungiblesInput {
             claimant,
             resource_address,
             ids,
         }: AccountLockerClaimNonFungiblesInput,
         api: &mut Y,
-    ) -> Result<AccountLockerClaimNonFungiblesOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerClaimNonFungiblesOutput, RuntimeError> {
         // Read and assert against the owner role of the claimant.
         let claimant_owner_role = api
             .call_module_method(
@@ -522,16 +492,13 @@ impl AccountLockerBlueprint {
         Ok(bucket)
     }
 
-    fn get_amount<Y>(
+    fn get_amount<Y: SystemApi<RuntimeError>>(
         AccountLockerGetAmountInput {
             claimant,
             resource_address,
         }: AccountLockerGetAmountInput,
         api: &mut Y,
-    ) -> Result<AccountLockerGetAmountOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerGetAmountOutput, RuntimeError> {
         Self::with_vault(claimant.0, resource_address, api, |vault, api| {
             vault
                 .map(|vault| vault.amount(api))
@@ -539,17 +506,14 @@ impl AccountLockerBlueprint {
         })
     }
 
-    fn get_non_fungible_local_ids<Y>(
+    fn get_non_fungible_local_ids<Y: SystemApi<RuntimeError>>(
         AccountLockerGetNonFungibleLocalIdsInput {
             claimant,
             resource_address,
             limit,
         }: AccountLockerGetNonFungibleLocalIdsInput,
         api: &mut Y,
-    ) -> Result<AccountLockerGetNonFungibleLocalIdsOutput, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<AccountLockerGetNonFungibleLocalIdsOutput, RuntimeError> {
         Self::with_vault(claimant.0, resource_address, api, |vault, api| {
             vault
                 .map(|vault| vault.non_fungible_local_ids(limit, api))
@@ -557,16 +521,12 @@ impl AccountLockerBlueprint {
         })
     }
 
-    fn with_vault_create_on_traversal<Y, F, O>(
+    fn with_vault_create_on_traversal<Y: SystemApi<RuntimeError>, O>(
         account_address: ComponentAddress,
         resource_address: ResourceAddress,
         api: &mut Y,
-        handler: F,
-    ) -> Result<O, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        F: FnOnce(Vault, &mut Y) -> Result<O, RuntimeError>,
-    {
+        handler: impl FnOnce(Vault, &mut Y) -> Result<O, RuntimeError>,
+    ) -> Result<O, RuntimeError> {
         // The collection on the blueprint maps an account address to a key value store. We read the
         // node id of that key value store.
         let account_claims_handle = api.actor_open_key_value_entry(
@@ -636,16 +596,12 @@ impl AccountLockerBlueprint {
         Ok(rtn)
     }
 
-    fn with_vault<Y, F, O>(
+    fn with_vault<Y: SystemApi<RuntimeError>, O>(
         account_address: ComponentAddress,
         resource_address: ResourceAddress,
         api: &mut Y,
-        handler: F,
-    ) -> Result<O, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-        F: FnOnce(Option<Vault>, &mut Y) -> Result<O, RuntimeError>,
-    {
+        handler: impl FnOnce(Option<Vault>, &mut Y) -> Result<O, RuntimeError>,
+    ) -> Result<O, RuntimeError> {
         // The collection on the blueprint maps an account address to a key value store. We read the
         // node id of that key value store.
         let account_claims_handle = api.actor_open_key_value_entry(
@@ -696,13 +652,10 @@ impl AccountLockerBlueprint {
     }
 }
 
-fn bucket_to_resource_specifier<Y>(
+fn bucket_to_resource_specifier<Y: SystemApi<RuntimeError>>(
     bucket: &Bucket,
     api: &mut Y,
-) -> Result<(ResourceAddress, ResourceSpecifier), RuntimeError>
-where
-    Y: SystemApi<RuntimeError>,
-{
+) -> Result<(ResourceAddress, ResourceSpecifier), RuntimeError> {
     let resource_address = bucket.resource_address(api)?;
     if resource_address.is_fungible() {
         let amount = bucket.amount(api)?;

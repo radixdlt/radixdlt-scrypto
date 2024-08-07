@@ -80,11 +80,11 @@ enum FlattenEnum {
     #[sbor(flatten, impl_variant_trait)]
     A {
         #[sbor(skip)]
-        skipped: u32,
+        skipped: u8,
         y: (u32, MyOtherType),
     },
     #[sbor(flatten)]
-    B(#[sbor(skip)] u32, (u32,)),
+    B(#[sbor(skip)] u8, (u32,)),
     #[sbor(flatten, impl_variant_trait)]
     C(MyInnerStruct),
     D,

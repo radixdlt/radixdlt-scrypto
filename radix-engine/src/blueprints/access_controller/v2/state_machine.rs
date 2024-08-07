@@ -17,9 +17,11 @@ use sbor::rust::boxed::Box;
 pub(super) trait Transition<I> {
     type Output;
 
-    fn transition<Y>(&self, api: &mut Y, input: I) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>;
+    fn transition<Y: SystemApi<RuntimeError>>(
+        &self,
+        api: &mut Y,
+        input: I,
+    ) -> Result<Self::Output, RuntimeError>;
 }
 
 /// A trait which defines the interface for an access controller transition for a given trigger or
@@ -27,9 +29,11 @@ pub(super) trait Transition<I> {
 pub(super) trait TransitionMut<I> {
     type Output;
 
-    fn transition_mut<Y>(&mut self, api: &mut Y, input: I) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>;
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
+        &mut self,
+        api: &mut Y,
+        input: I,
+    ) -> Result<Self::Output, RuntimeError>;
 }
 
 //=================================================
@@ -49,14 +53,11 @@ pub(super) struct AccessControllerCreateProofStateMachineInput;
 impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControllerV2Substate {
     type Output = Proof;
 
-    fn transition<Y>(
+    fn transition<Y: SystemApi<RuntimeError>>(
         &self,
         api: &mut Y,
         _input: AccessControllerCreateProofStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // Proofs can only be created when the primary role is unlocked - regardless of any pending
         // recovery or withdraw attempts.
         match self.state {
@@ -88,14 +89,11 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsPrimaryStateMachineInput>
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         input: AccessControllerInitiateRecoveryAsPrimaryStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         match self.state {
             (
                 _,
@@ -130,14 +128,11 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         api: &mut Y,
         input: AccessControllerInitiateRecoveryAsRecoveryStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         match self.state {
             (
                 _,
@@ -147,7 +142,7 @@ impl TransitionMut<AccessControllerInitiateRecoveryAsRecoveryStateMachineInput>
                 _,
             ) => match self.timed_recovery_delay_in_minutes {
                 Some(delay_in_minutes) => {
-                    let current_time = Runtime::current_time(api, TimePrecision::Minute)?;
+                    let current_time = Runtime::current_time(TimePrecision::Minute, api)?;
                     let timed_recovery_allowed_after = current_time
                         .add_minutes(delay_in_minutes as i64)
                         .map_or(access_controller_runtime_error!(TimeOverflow), |instant| {
@@ -187,14 +182,11 @@ impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMac
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         _input: AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         match self.state {
             (
                 _,
@@ -226,14 +218,11 @@ impl TransitionMut<AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMa
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         _input: AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         match self.state {
             (
                 _,
@@ -265,14 +254,11 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateM
 {
     type Output = RecoveryProposal;
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         input: AccessControllerQuickConfirmPrimaryRoleRecoveryProposalStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         match self.state {
             (_, PrimaryRoleRecoveryAttemptState::RecoveryAttempt(ref proposal), _, _, _) => {
                 let proposal = proposal.clone();
@@ -304,14 +290,11 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleRecoveryProposalState
 {
     type Output = RecoveryProposal;
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         input: AccessControllerQuickConfirmRecoveryRoleRecoveryProposalStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         match self.state {
             (
                 _,
@@ -350,14 +333,11 @@ impl TransitionMut<AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptSt
 {
     type Output = Bucket;
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         api: &mut Y,
         _input: AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         match self.state {
             (_, _, PrimaryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt, _, _) => {
                 // Transition back to the initial state of the state machine
@@ -382,14 +362,11 @@ impl TransitionMut<AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptS
 {
     type Output = Bucket;
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         api: &mut Y,
         _input: AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         match self.state {
             (_, _, _, _, RecoveryRoleBadgeWithdrawAttemptState::BadgeWithdrawAttempt) => {
                 // Transition back to the initial state of the state machine
@@ -416,14 +393,11 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
 {
     type Output = RecoveryProposal;
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         api: &mut Y,
         input: AccessControllerTimedConfirmRecoveryStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // Timed confirm recovery can only be performed by the recovery role (this is checked
         // through access rules on the invocation itself) and can be performed in recovery mode
         // regardless of whether primary is locked or unlocked.
@@ -446,10 +420,10 @@ impl TransitionMut<AccessControllerTimedConfirmRecoveryStateMachineInput>
                 validate_recovery_proposal(&proposal, &input.proposal_to_confirm)?;
 
                 let recovery_time_has_elapsed = Runtime::compare_against_current_time(
-                    api,
                     *timed_recovery_allowed_after,
                     TimePrecision::Minute,
                     TimeComparisonOperator::Gte,
+                    api,
                 )?;
 
                 // If the timed recovery delay has elapsed, then we transition into normal
@@ -474,14 +448,11 @@ impl TransitionMut<AccessControllerCancelPrimaryRoleRecoveryProposalStateMachine
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         _input: AccessControllerCancelPrimaryRoleRecoveryProposalStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
         match self.state {
@@ -508,14 +479,11 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleRecoveryProposalStateMachin
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         _input: AccessControllerCancelRecoveryRoleRecoveryProposalStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // A recovery attempt can only be canceled when we're in recovery mode regardless of whether
         // primary is locked or unlocked
         match self.state {
@@ -542,14 +510,11 @@ impl TransitionMut<AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMac
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         _input: AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // A badge withdraw attempt can only be canceled when it exists regardless of whether
         // primary is locked or unlocked
         match self.state {
@@ -576,14 +541,11 @@ impl TransitionMut<AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMa
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         _input: AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // A badge withdraw attempt can only be canceled when it exists regardless of whether
         // primary is locked or unlocked
         match self.state {
@@ -610,14 +572,11 @@ impl TransitionMut<AccessControllerLockPrimaryRoleStateMachineInput>
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         _input: AccessControllerLockPrimaryRoleStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // Primary can only be locked when it's unlocked
         match self.state {
             (ref mut primary_role_locking_state @ PrimaryRoleLockingState::Unlocked, ..) => {
@@ -636,14 +595,11 @@ impl TransitionMut<AccessControllerUnlockPrimaryRoleStateMachineInput>
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         _input: AccessControllerUnlockPrimaryRoleStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // Primary can only be unlocked when it's locked
         match self.state {
             (ref mut primary_role_locking_state @ PrimaryRoleLockingState::Locked, ..) => {
@@ -664,14 +620,11 @@ impl TransitionMut<AccessControllerStopTimedRecoveryStateMachineInput>
 {
     type Output = ();
 
-    fn transition_mut<Y>(
+    fn transition_mut<Y: SystemApi<RuntimeError>>(
         &mut self,
         _api: &mut Y,
         input: AccessControllerStopTimedRecoveryStateMachineInput,
-    ) -> Result<Self::Output, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<Self::Output, RuntimeError> {
         // We can only stop the timed recovery timer if we're in recovery mode. It doesn't matter
         // if primary is locked or unlocked
         match self.state {

@@ -132,6 +132,7 @@ mod everything {
                     }
                 })
                 .create_with_no_initial_supply()
+                .into()
         }
 
         pub fn protected_method(&self) {

@@ -38,14 +38,14 @@ pub trait SecurifiedRoleAssignment {
         }
         let roles = indexmap!(ModuleId::Main => roles);
         let role_assignment = RoleAssignment::create(OwnerRole::Fixed(owner_role), roles, api)?;
-        Ok((role_assignment, bucket))
+        Ok((role_assignment, bucket.into()))
     }
 
     fn mint_securified_badge<Y: SystemApi<RuntimeError>>(
         owner_badge_data: Self::OwnerBadgeNonFungibleData,
         non_fungible_local_id: Option<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<(Bucket, AccessRule), RuntimeError> {
+    ) -> Result<(NonFungibleBucket, AccessRule), RuntimeError> {
         let owner_token = ResourceManager(Self::OWNER_BADGE);
         let (bucket, owner_local_id) = if let Some(owner_local_id) = non_fungible_local_id {
             (
@@ -96,7 +96,7 @@ pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
         owner_badge_data: Self::OwnerBadgeNonFungibleData,
         non_fungible_local_id: Option<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<Bucket, RuntimeError> {
+    ) -> Result<NonFungibleBucket, RuntimeError> {
         let role_assignment = AttachedRoleAssignment(*receiver);
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             role_assignment.set_role(

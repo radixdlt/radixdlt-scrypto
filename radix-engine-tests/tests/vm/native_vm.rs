@@ -91,12 +91,14 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             }),
             LimitsModule::babylon_genesis(),
             CostingModule {
+                current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: 0,
                 tx_num_of_signature_validations: 1,
                 config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
+                detailed_cost_breakdown: None,
                 on_apply_cost: Default::default(),
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
@@ -170,12 +172,14 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             }),
             LimitsModule::babylon_genesis(),
             CostingModule {
+                current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: 0,
                 tx_num_of_signature_validations: 1,
                 config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
+                detailed_cost_breakdown: None,
                 on_apply_cost: Default::default(),
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
@@ -236,17 +240,16 @@ impl NativeVmExtension for NonStringPanicExtension {
 pub struct NonStringPanicExtensionInstance;
 
 impl VmInvoke for NonStringPanicExtensionInstance {
-    fn invoke<Y, V>(
+    fn invoke<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        V: VmApi,
+    >(
         &mut self,
         _: &str,
         _: &IndexedScryptoValue,
         _: &mut Y,
         _: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-        V: VmApi,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         // A panic with a non-string type. Making sure that our panic infrastructure can catch those
         // panics too even if it can't make any useful messages out of them.
         std::panic::panic_any(1234);

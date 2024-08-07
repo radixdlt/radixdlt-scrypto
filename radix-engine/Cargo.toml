@@ -31,6 +31,9 @@ paste = { workspace = true }
 radix-common-derive = { workspace = true }
 const-sha1 = { workspace = true } # Chosen because of its small size and 0 transitive dependencies
 
+inferno = { workspace = true }
+tempfile = { workspace = true }
+
 # WASM validation
 wasmparser = { workspace = true }
 syn = { workspace = true, features = ["full", "extra-traits"] }
@@ -40,11 +43,7 @@ radix-wasm-instrument = { workspace = true,  features = ["ignore_custom_section"
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
-# - Wasmer is a WASM engine with multiple backends: `singlepass` (linear time), `LLVM` and `cranelift`
-
-radix-wasmi = {  workspace = true  }
-wasmer = { workspace = true, optional = true }
-wasmer-compiler-singlepass = { workspace = true, optional = true }
+wasmi = {  workspace = true, features = ["no-hash-maps"] }
 
 serde_json = { workspace = true, optional = true }
 lazy_static = { workspace = true }
@@ -54,9 +53,6 @@ wabt = { workspace = true }
 criterion = { workspace = true, features = ["html_reports"] }
 wasm-benchmarks-lib = { path = "./wasm-benchmarks-lib", default-features = false }
 
-wasmer = { workspace = true}
-wasmer-compiler-singlepass = { workspace = true }
-
 [[bench]]
 name = "wasm_benchmarks"
 harness = false
@@ -64,15 +60,12 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "radix-native-sdk/std", "radix-wasmi/std", "radix-transactions/std", "radix-blueprint-schema-init/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "radix-common-derive/std", "radix-rust/std", "serde_json?/std", "radix-wasm-instrument/std" ]
+std = ["sbor/std", "radix-native-sdk/std", "radix-transactions/std", "radix-blueprint-schema-init/std", "radix-engine-interface/std", "radix-substate-store-interface/std", "radix-common-derive/std", "radix-rust/std", "serde_json?/std", "radix-wasm-instrument/std", "wasmi/std" ]
 alloc = ["sbor/alloc", "radix-native-sdk/alloc", "radix-transactions/alloc", "radix-blueprint-schema-init/alloc", "radix-engine-interface/alloc", "radix-substate-store-interface/alloc", "radix-common-derive/alloc", "radix-rust/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
 # Requires CAP_PERFMON capability for the process (sudo setcap cap_perfmon=eip <exec_file>).
 cpu_ram_metrics = ["std", "perfcnt", "radix-engine-profiling/ram_metrics"]
-
-# Use `wasmer` as WASM engine, otherwise `wasmi`
-wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 
 # Two features for the two possible libraries to use for caching. Moka is not WASM friendly while LRU is. One of these
 # two features must be enabled.
@@ -84,7 +77,7 @@ resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling/resour
 # System/Application Database Checker
 db_checker = []
 
-# This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
+# This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi
 # to prevent non-determinism when fuzzing
 fuzzing = [
     "radix-common/fuzzing",

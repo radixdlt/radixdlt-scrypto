@@ -24,17 +24,16 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             _export_name: &str,
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             let node_id = input.references()[0];
             let _ = api.call_module_method(
                 &node_id,
@@ -108,17 +107,16 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
     #[derive(Clone)]
     struct TestInvoke;
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap![])?;
@@ -180,17 +178,16 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
         globalized_parent: bool,
     }
     impl VmInvoke for TestInvoke {
-        fn invoke<Y, V>(
+        fn invoke<
+            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+            V: VmApi,
+        >(
             &mut self,
             export_name: &str,
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError>
-        where
-            Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-            V: VmApi,
-        {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let child = api.new_simple_object(

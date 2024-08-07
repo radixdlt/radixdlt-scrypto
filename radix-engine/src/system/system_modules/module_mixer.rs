@@ -377,18 +377,14 @@ impl SystemModuleMixer {
     // - Kernel uses the `SystemModule<SystemConfig<V>>` trait above;
     // - System uses methods defined below (TODO: add a trait?)
 
-    pub fn on_call_method<Y, V>(
+    pub fn on_call_method<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
         module_id: ModuleId,
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
-    ) -> Result<NodeId, RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<NodeId, RuntimeError> {
         let auth_zone = if api
             .kernel_get_system_state()
             .system
@@ -409,26 +405,18 @@ impl SystemModuleMixer {
         Ok(auth_zone)
     }
 
-    pub fn on_call_method_finish<Y, V>(
+    pub fn on_call_method_finish<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         auth_zone: NodeId,
-    ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<(), RuntimeError> {
         AuthModule::on_call_method_finish(api, auth_zone)
     }
 
-    pub fn on_call_function<V, Y>(
+    pub fn on_call_function<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         blueprint_id: &BlueprintId,
         ident: &str,
-    ) -> Result<NodeId, RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<NodeId, RuntimeError> {
         let auth_zone = if api
             .kernel_get_system_state()
             .system
@@ -444,14 +432,10 @@ impl SystemModuleMixer {
         Ok(auth_zone)
     }
 
-    pub fn on_call_function_finish<V, Y>(
+    pub fn on_call_function_finish<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         auth_zone: NodeId,
-    ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<(), RuntimeError> {
         AuthModule::on_call_function_finish(api, auth_zone)
     }
 

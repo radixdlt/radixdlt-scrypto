@@ -174,9 +174,9 @@ impl<D> TestEnvironment<D>
 where
     D: SubstateDatabase + CommittableSubstateDatabase + 'static,
 {
-    //=============
-    // Invocations
-    //=============
+    // ===================
+    // region:invocations
+    // ===================
 
     /// Invokes a function on the provided blueprint and package with the given arguments.
     ///
@@ -365,9 +365,29 @@ where
             .map(|rtn| scrypto_decode(&rtn).expect("Scrypto decoding of returns failed"))
     }
 
-    //====================================
-    // Manipulation of the Kernel Modules
-    //====================================
+    //=======================
+    // endregion:invocations
+    // region:kernel-access
+    //=======================
+
+    pub fn with_kernel<F, O>(&mut self, callback: F) -> O
+    where
+        F: FnOnce(&TestKernel<'_, D>) -> O,
+    {
+        self.0.with_kernel(callback)
+    }
+
+    pub fn with_kernel_mut<F, O>(&mut self, callback: F) -> O
+    where
+        F: FnOnce(&mut TestKernel<'_, D>) -> O,
+    {
+        self.0.with_kernel_mut(callback)
+    }
+
+    //=========================
+    // endregion:kernel-access
+    // region:kernel-modules
+    //=========================
 
     /// Enables the kernel trace kernel module of the Radix Engine.
     pub fn enable_kernel_trace_module(&mut self) {
@@ -612,9 +632,10 @@ where
         })
     }
 
-    //=======
-    // State
-    //=======
+    //==========================
+    // endregion:kernel-modules
+    // region:state
+    //==========================
 
     /// Reads the state of a component and allows for a callback to be executed over the decoded
     /// state.
@@ -689,9 +710,10 @@ where
         Ok(rtn)
     }
 
-    //===================
-    // Epoch & Timestamp
-    //===================
+    //========================
+    // endregion:state
+    // region:epoch&timestamp
+    //========================
 
     /// Gets the current epoch from the Consensus Manager.
     pub fn get_current_epoch(&mut self) -> Epoch {
@@ -728,7 +750,7 @@ where
 
     /// Gets the current time stamp from the Consensus Manager.
     pub fn get_current_time(&mut self) -> Instant {
-        Runtime::current_time(self, TimePrecision::Second).unwrap()
+        Runtime::current_time(TimePrecision::Second, self).unwrap()
     }
 
     pub fn set_current_time(&mut self, instant: Instant) {
@@ -737,6 +759,29 @@ where
             ModuleId::Main,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
             |env| -> Result<(), RuntimeError> {
+                let handle = env.actor_open_field(
+                    ACTOR_STATE_SELF,
+                    ConsensusManagerField::ProposerMinuteTimestamp.into(),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut proposer_minute_timestamp =
+                    env.field_read_typed::<ConsensusManagerProposerMinuteTimestampFieldPayload>(
+                        handle,
+                    )?;
+                proposer_minute_timestamp
+                    .as_unique_version_mut()
+                    .epoch_minute =
+                    i32::try_from(instant.seconds_since_unix_epoch / 60).map_err(|_| {
+                        RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                            ConsensusManagerError::InvalidProposerTimestampUpdate {
+                                from_millis: env.get_current_time().seconds_since_unix_epoch * 1000,
+                                to_millis: instant.seconds_since_unix_epoch * 1000,
+                            },
+                        ))
+                    })?;
+                env.field_write_typed(handle, &proposer_minute_timestamp)?;
+                env.field_close(handle)?;
+
                 let handle = env.actor_open_field(
                     ACTOR_STATE_SELF,
                     ConsensusManagerField::ProposerMilliTimestamp.into(),
@@ -750,6 +795,7 @@ where
                     instant.seconds_since_unix_epoch * 1000;
                 env.field_write_typed(handle, &proposer_milli_timestamp)?;
                 env.field_close(handle)?;
+
                 Ok(())
             },
         )
@@ -757,9 +803,10 @@ where
         .unwrap();
     }
 
-    //=========
-    // Helpers
-    //=========
+    //===========================
+    // endregion:epoch&timestamp
+    // region:helpers
+    //===========================
 
     /// Allows us to perform some action as another actor.
     ///
@@ -869,6 +916,10 @@ where
 
         Ok(rtn)
     }
+
+    //===================
+    // endregion:helpers
+    //===================
 }
 
 impl Default for TestEnvironment<InMemorySubstateDatabase> {
@@ -884,5 +935,22 @@ mod tests {
     #[test]
     pub fn test_env_can_be_created() {
         let _ = TestEnvironment::new();
+    }
+
+    #[test]
+    pub fn test_time_set() {
+        // Arrange
+        let mut env = TestEnvironment::new();
+        let mut current_time = env.get_current_time();
+        current_time.seconds_since_unix_epoch += 60; // add 1 minute
+
+        // Act
+        env.set_current_time(current_time);
+
+        // Assert
+        let t1 = Runtime::current_time(&mut env, TimePrecision::Second).unwrap();
+        let t2 = Runtime::current_time(&mut env, TimePrecision::Minute).unwrap();
+
+        assert_eq!(t1, t2)
     }
 }

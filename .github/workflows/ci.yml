@@ -19,6 +19,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
+  phylum-analyze:
+    if: ${{ github.event.pull_request }}
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/phylum-analyze.yml@main
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+      deployments: write
+    secrets:
+      phylum_api_key: ${{ secrets.PHYLUM_API_KEY }}
+    with:
+      phylum_pr_number: ${{ github.event.number }}
+      phylum_pr_name: ${{ github.head_ref }}
+      phylum_group_name: Protocol
+      phylum_project_id: 851c8804-e9f6-423c-be8e-c529d22f4abd
+      github_repository: ${{ github.repository }}
+      add_report_comment_to_pull_request: true
   check-code-format:
     name: Check code format
     runs-on: ubuntu-latest
@@ -180,24 +198,8 @@ jobs:
       - name: Run tests
         run: |
           cargo nextest run \
-            --no-default-features --features alloc \
-            -p radix-common \
-            -p radix-sbor-derive \
-            -p radix-engine-interface \
-            -p radix-engine \
-            -p radix-engine-tests
-
-  radix-engine-wasmer:
-    name: Run Radix Engine tests (wasmer)
-    runs-on: ubuntu-16-cores-selfhosted
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: |
-          cargo nextest run \
-            --features wasmer \
+            --no-default-features \
+            --features alloc \
             -p radix-common \
             -p radix-sbor-derive \
             -p radix-engine-interface \
@@ -311,22 +313,29 @@ jobs:
           shared-key: radix-clis-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
-      - name: Install rustc 1.78.0-nightly
+      - name: Install rustc 1.81.0-nightly
         run: |
-          rustup toolchain install nightly-2024-02-08
-          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-02-08
-          rustup default nightly-2024-02-08
+          rustup toolchain install nightly-2024-07-18
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-18
+          rustup default nightly-2024-07-18
           rustup show
-      - name: Install LLVM 17
+      - name: Install LLVM 18
         run: |
-          sudo apt install lsb-release wget software-properties-common gnupg
+          sudo apt-get install -y lsb-release wget software-properties-common gnupg
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 17
+          sudo ./llvm.sh 18
+          # llvm.sh does not explicitly install llvm-18, which is needed here.
+          # It shall be installed as a dependency, but it was observed that
+          # it is not always installed. Reason unknown, might be related to below, which was also observed:
+          #  The following packages have unmet dependencies:
+          #   libllvm18 : Breaks: llvm-18-dev (< 1:18.1.8-4) but 1:18.1.8~++20240717051017+3b5b5c1ec4a3-1~exp1~20240717171122.141 is to be installed
+          # So, just in case, try to install them here.
+          sudo apt-get install -y llvm-18
       - name: Run tests
         working-directory: radix-clis
         run: bash ./tests/scrypto_coverage.sh
-        
+
   cargo-check:
     name: Run cargo check
     runs-on: ${{ matrix.os }}
@@ -360,7 +369,7 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Cargo Check
         run: |
-          sudo apt-get install libclang-dev -y 
+          sudo apt-get install libclang-dev -y
           curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
           sudo apt-get install git-lfs -y
       - name: Setup environment
@@ -374,4 +383,4 @@ jobs:
             --max-version 50000 \
             --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
         working-directory: radix-clis
-  
+

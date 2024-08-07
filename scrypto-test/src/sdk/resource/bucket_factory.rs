@@ -9,15 +9,16 @@ impl BucketFactory {
         amount: Decimal,
         creation_strategy: CreationStrategy,
         env: &mut TestEnvironment<S>,
-    ) -> Result<Bucket, RuntimeError>
+    ) -> Result<FungibleBucket, RuntimeError>
     where
         S: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
-        Self::create_bucket(
+        let bucket = Self::create_bucket(
             FactoryResourceSpecifier::Amount(resource_address, amount),
             creation_strategy,
             env,
-        )
+        )?;
+        Ok(FungibleBucket(bucket))
     }
 
     pub fn create_non_fungible_bucket<I, D, S>(
@@ -25,13 +26,13 @@ impl BucketFactory {
         non_fungibles: I,
         creation_strategy: CreationStrategy,
         env: &mut TestEnvironment<S>,
-    ) -> Result<Bucket, RuntimeError>
+    ) -> Result<NonFungibleBucket, RuntimeError>
     where
         I: IntoIterator<Item = (NonFungibleLocalId, D)>,
         D: ScryptoEncode,
         S: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
-        Self::create_bucket(
+        let bucket = Self::create_bucket(
             FactoryResourceSpecifier::Ids(
                 resource_address,
                 non_fungibles
@@ -47,7 +48,8 @@ impl BucketFactory {
             ),
             creation_strategy,
             env,
-        )
+        )?;
+        Ok(NonFungibleBucket(bucket))
     }
 
     pub fn create_bucket<S>(
@@ -63,13 +65,15 @@ impl BucketFactory {
                 FactoryResourceSpecifier::Amount(resource_address, amount),
                 CreationStrategy::DisableAuthAndMint,
             ) => env.with_auth_module_disabled(|env| {
-                ResourceManager(*resource_address).mint_fungible(*amount, env)
+                let bucket = ResourceManager(*resource_address).mint_fungible(*amount, env)?;
+                Ok(bucket.into())
             }),
             (
                 FactoryResourceSpecifier::Ids(resource_address, ids),
                 CreationStrategy::DisableAuthAndMint,
             ) => env.with_auth_module_disabled(|env| {
-                ResourceManager(*resource_address).mint_non_fungible(ids.clone(), env)
+                let bucket = ResourceManager(*resource_address).mint_non_fungible(ids.clone(), env)?;
+                Ok(bucket.into())
             }),
             (
                 FactoryResourceSpecifier::Amount(resource_address, amount),
@@ -170,7 +174,11 @@ impl BucketFactory {
                 // 1. All of one type.
                 // 2. This one type is the type of the non-fungible local ids.
                 let id_type = {
-                    let mut iter = non_fungibles.keys().map(|id| id.id_type());
+                    let mut iter = non_fungibles
+                        .keys()
+                        .map(|id| id.id_type())
+                        .collect::<IndexSet<NonFungibleIdType>>()
+                        .into_iter();
                     let Some(id_type) = iter.next() else {
                         return Ok(true);
                     };
@@ -194,5 +202,56 @@ impl BucketFactory {
             _ => return Ok(false),
         }
         Ok(true)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verify_validate_resource_specifier_method() {
+        // Arrange
+        let mut env = TestEnvironment::new();
+        let bucket = ResourceBuilder::new_integer_non_fungible::<()>(OwnerRole::None)
+            .mint_initial_supply([], &mut env)
+            .unwrap();
+
+        let items = indexmap!(
+            NonFungibleLocalId::integer(1u64) => SborValue::U8 { value: 1 },
+            NonFungibleLocalId::integer(2u64) => SborValue::U8 { value: 2 },
+        );
+
+        let resource =
+            FactoryResourceSpecifier::Ids(bucket.resource_address(&mut env).unwrap(), items);
+
+        // Act
+        let result = BucketFactory::validate_resource_specifier(&resource, &mut env).unwrap();
+
+        // Assert
+        assert!(result);
+    }
+
+    #[test]
+    fn verify_validate_resource_specifier_method_should_fail() {
+        // Arrange
+        let mut env = TestEnvironment::new();
+        let bucket = ResourceBuilder::new_integer_non_fungible::<()>(OwnerRole::None)
+            .mint_initial_supply([], &mut env)
+            .unwrap();
+
+        let items = indexmap!(
+            NonFungibleLocalId::integer(1u64) => SborValue::U8 { value: 1 },
+            NonFungibleLocalId::string("value").unwrap() => SborValue::U8 { value: 2 },
+        );
+
+        let resource =
+            FactoryResourceSpecifier::Ids(bucket.resource_address(&mut env).unwrap(), items);
+
+        // Act
+        let result = BucketFactory::validate_resource_specifier(&resource, &mut env).unwrap();
+
+        // Assert
+        assert!(!result);
     }
 }

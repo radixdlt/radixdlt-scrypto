@@ -77,9 +77,21 @@ pub struct FungibleBucket(pub Bucket);
 #[must_use]
 pub struct NonFungibleBucket(pub Bucket);
 
+impl AsRef<Bucket> for FungibleBucket {
+    fn as_ref(&self) -> &Bucket {
+        &self.0
+    }
+}
+
 impl From<FungibleBucket> for Bucket {
     fn from(value: FungibleBucket) -> Self {
         value.0
+    }
+}
+
+impl AsRef<Bucket> for NonFungibleBucket {
+    fn as_ref(&self) -> &Bucket {
+        &self.0
     }
 }
 

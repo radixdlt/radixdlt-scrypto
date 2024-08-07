@@ -9,7 +9,7 @@ impl ProofFactory {
         amount: Decimal,
         creation_strategy: CreationStrategy,
         env: &mut TestEnvironment<S>,
-    ) -> Result<Proof, RuntimeError>
+    ) -> Result<FungibleProof, RuntimeError>
     where
         S: SubstateDatabase + CommittableSubstateDatabase + 'static,
     {
@@ -22,7 +22,7 @@ impl ProofFactory {
         non_fungibles: I,
         creation_strategy: CreationStrategy,
         env: &mut TestEnvironment<S>,
-    ) -> Result<Proof, RuntimeError>
+    ) -> Result<NonFungibleProof, RuntimeError>
     where
         I: IntoIterator<Item = (NonFungibleLocalId, D)>,
         D: ScryptoEncode,

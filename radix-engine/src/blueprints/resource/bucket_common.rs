@@ -53,13 +53,10 @@ impl From<BucketError> for RuntimeError {
     }
 }
 
-pub fn drop_fungible_bucket<Y>(
+pub fn drop_fungible_bucket<Y: SystemApi<RuntimeError>>(
     bucket_node_id: &NodeId,
     api: &mut Y,
-) -> Result<DroppedFungibleBucket, RuntimeError>
-where
-    Y: SystemApi<RuntimeError>,
-{
+) -> Result<DroppedFungibleBucket, RuntimeError> {
     let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedFungibleBucket = fields.into();
     if bucket.locked.is_locked() {
@@ -71,13 +68,10 @@ where
     Ok(bucket)
 }
 
-pub fn drop_non_fungible_bucket<Y>(
+pub fn drop_non_fungible_bucket<Y: SystemApi<RuntimeError>>(
     bucket_node_id: &NodeId,
     api: &mut Y,
-) -> Result<DroppedNonFungibleBucket, RuntimeError>
-where
-    Y: SystemApi<RuntimeError>,
-{
+) -> Result<DroppedNonFungibleBucket, RuntimeError> {
     let fields = api.drop_object(bucket_node_id)?;
     let bucket: DroppedNonFungibleBucket = fields.into();
     if bucket.locked.is_locked() {

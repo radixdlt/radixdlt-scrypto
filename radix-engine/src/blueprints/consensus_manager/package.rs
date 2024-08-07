@@ -19,14 +19,11 @@ impl ConsensusManagerNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             CONSENSUS_MANAGER_CREATE_IDENT => {
                 let input: ConsensusManagerCreateInput = input.as_typed().map_err(|e| {
@@ -278,14 +275,11 @@ impl ConsensusManagerNativePackage {
 pub struct ConsensusManagerSecondsPrecisionNativeCode;
 
 impl ConsensusManagerSecondsPrecisionNativeCode {
-    pub fn invoke_export<Y>(
+    pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: SystemApi<RuntimeError>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => {
                 let input: ConsensusManagerGetCurrentTimeInputV2 =

@@ -90,9 +90,10 @@ impl From<&BucketSnapshot> for ResourceSpecifier {
 
 #[derive(Debug, Clone)]
 pub enum VaultOp {
-    Create(Decimal),               // TODO: add trace of vault creation
     Put(ResourceAddress, Decimal), // TODO: add non-fungible support
     Take(ResourceAddress, Decimal),
+    TakeAdvanced(ResourceAddress, Decimal),
+    Recall(ResourceAddress, Decimal),
     LockFee(Decimal, bool),
 }
 
@@ -508,18 +509,37 @@ impl ExecutionTraceModule {
 
         match &callee {
             Actor::Method(actor @ MethodActor { node_id, ident, .. })
-                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
-                    && ident.eq(VAULT_PUT_IDENT) =>
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id()) =>
             {
-                self.handle_vault_put_input(&resource_summary, current_actor, node_id)
+                match ident.as_str() {
+                    VAULT_PUT_IDENT => {
+                        self.handle_vault_put_input(&resource_summary, current_actor, node_id)
+                    }
+                    FUNGIBLE_VAULT_LOCK_FEE_IDENT => {
+                        self.handle_vault_lock_fee_input(current_actor, node_id, args)
+                    }
+                    VAULT_BURN_IDENT
+                    | VAULT_TAKE_IDENT
+                    | VAULT_TAKE_ADVANCED_IDENT
+                    | VAULT_RECALL_IDENT
+                    | VAULT_GET_AMOUNT_IDENT
+                    | VAULT_FREEZE_IDENT
+                    | VAULT_UNFREEZE_IDENT => { /* no-op */ }
+                    FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT
+                    | FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT
+                    | FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => { /* no-op */ }
+                    NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT
+                    | NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT
+                    | NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT
+                    | NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT
+                    | NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT
+                    | NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT
+                    | NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT
+                    | NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => { /* no-op */ }
+                    _ => panic!("Unhandled vault method"),
+                }
             }
-            Actor::Method(actor @ MethodActor { node_id, ident, .. })
-                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
-                    && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
-            {
-                self.handle_vault_lock_fee_input(current_actor, node_id, args)
-            }
-            _ => {}
+            _ => { /* no-op */ }
         }
     }
 
@@ -538,10 +558,49 @@ impl ExecutionTraceModule {
 
         match current_actor {
             Actor::Method(actor @ MethodActor { node_id, ident, .. }) => {
-                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
-                    && ident.eq(VAULT_TAKE_IDENT)
-                {
-                    self.handle_vault_take_output(&resource_summary, &caller, node_id)
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id()) {
+                    match ident.as_str() {
+                        VAULT_TAKE_IDENT | VAULT_TAKE_ADVANCED_IDENT | VAULT_RECALL_IDENT => {
+                            for (_, resource) in &resource_summary.buckets {
+                                let op = if ident == VAULT_TAKE_IDENT {
+                                    VaultOp::Take(resource.resource_address(), resource.amount())
+                                } else if ident == VAULT_TAKE_ADVANCED_IDENT {
+                                    VaultOp::TakeAdvanced(
+                                        resource.resource_address(),
+                                        resource.amount(),
+                                    )
+                                } else if ident == VAULT_RECALL_IDENT {
+                                    VaultOp::Recall(resource.resource_address(), resource.amount())
+                                } else {
+                                    panic!("Unhandled vault method")
+                                };
+                                self.vault_ops.push((
+                                    caller.clone(),
+                                    node_id.clone(),
+                                    op,
+                                    self.instruction_index(),
+                                ));
+                            }
+                        }
+                        VAULT_PUT_IDENT
+                        | VAULT_GET_AMOUNT_IDENT
+                        | VAULT_FREEZE_IDENT
+                        | VAULT_UNFREEZE_IDENT
+                        | VAULT_BURN_IDENT => { /* no-op */ }
+                        FUNGIBLE_VAULT_LOCK_FEE_IDENT
+                        | FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT
+                        | FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT
+                        | FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => { /* no-op */ }
+                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT
+                        | NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT
+                        | NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT
+                        | NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT
+                        | NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT
+                        | NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT
+                        | NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT
+                        | NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => { /* no-op */ }
+                        _ => panic!("Unhandled vault method"),
+                    }
                 }
             }
             Actor::Function(_) => {}
@@ -649,22 +708,6 @@ impl ExecutionTraceModule {
             self.instruction_index(),
         ));
     }
-
-    fn handle_vault_take_output<'s>(
-        &mut self,
-        resource_summary: &ResourceSummary,
-        actor: &TraceActor,
-        vault_id: &NodeId,
-    ) {
-        for (_, resource) in &resource_summary.buckets {
-            self.vault_ops.push((
-                actor.clone(),
-                vault_id.clone(),
-                VaultOp::Take(resource.resource_address(), resource.amount()),
-                self.instruction_index(),
-            ));
-        }
-    }
 }
 
 pub fn calculate_resource_changes(
@@ -683,7 +726,6 @@ pub fn calculate_resource_changes(
     for (actor, vault_id, vault_op, instruction_index) in vault_ops {
         if let TraceActor::Method(node_id) = actor {
             match vault_op {
-                VaultOp::Create(_) => todo!("Not supported yet!"),
                 VaultOp::Put(resource_address, amount) => {
                     let entry = &mut vault_changes
                         .entry(instruction_index)
@@ -695,7 +737,9 @@ pub fn calculate_resource_changes(
                         .1;
                     *entry = entry.checked_add(amount).unwrap();
                 }
-                VaultOp::Take(resource_address, amount) => {
+                VaultOp::Take(resource_address, amount)
+                | VaultOp::TakeAdvanced(resource_address, amount)
+                | VaultOp::Recall(resource_address, amount) => {
                     let entry = &mut vault_changes
                         .entry(instruction_index)
                         .or_default()

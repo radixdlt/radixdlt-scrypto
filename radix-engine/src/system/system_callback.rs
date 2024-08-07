@@ -52,12 +52,7 @@ use crate::track::{
     to_state_updates, BootStore, CanonicalSubstateKey, CommitableSubstateStore, IOAccess,
     StoreCommitInfo, Track, TrackFinalizeError,
 };
-use crate::transaction::{
-    reconcile_resource_state_and_events, AbortResult, CommitResult, CostingParameters,
-    FeeDestination, FeeSource, LimitParameters, RejectResult, StateUpdateSummary, SystemOverrides,
-    SystemStructure, TransactionFeeDetails, TransactionOutcome, TransactionReceipt,
-    TransactionResult, TransactionResultType,
-};
+use crate::transaction::*;
 use radix_blueprint_schema_init::RefTypes;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::SystemObjectApi;
@@ -148,6 +143,7 @@ pub struct SystemInit<C> {
     pub enable_kernel_trace: bool,
     pub enable_cost_breakdown: bool,
     pub execution_trace: Option<usize>,
+    pub enable_debug_information: bool,
 
     // Higher layer initialization object
     pub callback_init: C,
@@ -726,16 +722,13 @@ impl<C: SystemCallbackObject> System<C> {
         println!("{:-^120}", "Finish");
     }
 
-    fn on_move_node<Y>(
+    fn on_move_node<Y: KernelApi<Self>>(
         node_id: &NodeId,
         is_moving_down: bool,
         is_to_barrier: bool,
         destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
         match type_info {
@@ -871,6 +864,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         let limits_module = { LimitsModule::from_params(system_parameters.limit_parameters) };
 
         let costing_module = CostingModule {
+            // The current depth is set to zero since at the start of the execution of transactions
+            // there are no callframes expect for the root callframe.
+            current_depth: 0,
             fee_reserve: SystemLoanFeeReserve::new(
                 &system_parameters.costing_parameters,
                 executable.costing_parameters(),
@@ -880,6 +876,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             tx_num_of_signature_validations: executable.num_of_signature_validations(),
             config: system_parameters.costing_module_config,
             cost_breakdown: if init_input.enable_cost_breakdown {
+                Some(Default::default())
+            } else {
+                None
+            },
+            detailed_cost_breakdown: if init_input.enable_debug_information {
                 Some(Default::default())
             } else {
                 None
@@ -976,16 +977,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         };
     }
 
-    fn start<Y>(
+    fn start<Y: KernelApi<Self>>(
         api: &mut Y,
         manifest_encoded_instructions: &[u8],
         pre_allocated_addresses: &Vec<PreAllocatedAddress>,
         references: &IndexSet<Reference>,
         blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system = SystemService::new(api);
 
         // Allocate global addresses
@@ -1125,6 +1123,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             None
         };
 
+        let debug_information = match (costing_module.detailed_cost_breakdown,) {
+            (Some(detailed_cost_breakdown),) => Some(TransactionDebugInformation {
+                detailed_execution_cost_breakdown: detailed_cost_breakdown
+                    .detailed_execution_cost_breakdown,
+            }),
+            _ => None,
+        };
+
         let result_type =
             Self::determine_result_type(interpretation_result, &mut costing_module.fee_reserve);
         let (fee_summary, fee_details, result) = match result_type {
@@ -1244,6 +1250,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             fee_details,
             result,
             resources_usage: None,
+            debug_information,
         };
 
         // Dump summary
@@ -1259,52 +1266,52 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         SystemModuleMixer::on_pin_node(self, node_id)
     }
 
-    fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_create_node<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: CreateNodeEvent,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_create_node(api, &event)
     }
 
-    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_drop_node<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: DropNodeEvent,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_drop_node(api, &event)
     }
 
-    fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_move_module<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: MoveModuleEvent,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_move_module(api, &event)
     }
 
-    fn on_open_substate<Y>(api: &mut Y, event: OpenSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_open_substate<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: OpenSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_open_substate(api, &event)
     }
 
-    fn on_close_substate<Y>(api: &mut Y, event: CloseSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_close_substate<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: CloseSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_close_substate(api, &event)
     }
 
-    fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_read_substate<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: ReadSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_read_substate(api, &event)
     }
 
-    fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
-    where
-        Y: KernelInternalApi<Self>,
-    {
+    fn on_write_substate<Y: KernelInternalApi<Self>>(
+        api: &mut Y,
+        event: WriteSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_write_substate(api, &event)
     }
 
@@ -1331,13 +1338,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         SystemModuleMixer::on_scan_sorted_substates(self, &event)
     }
 
-    fn before_invoke<Y>(
+    fn before_invoke<Y: KernelApi<Self>>(
         invocation: &KernelInvocation<Actor>,
         api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<(), RuntimeError> {
         let is_to_barrier = invocation.call_frame_data.is_barrier();
         let destination_blueprint_id = invocation.call_frame_data.blueprint_id();
 
@@ -1354,10 +1358,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         SystemModuleMixer::before_invoke(api, invocation)
     }
 
-    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn after_invoke<Y: KernelApi<Self>>(
+        output: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let current_actor = api.kernel_get_system_state().current_call_frame;
         let is_to_barrier = current_actor.is_barrier();
         let destination_blueprint_id = current_actor.blueprint_id();
@@ -1374,26 +1378,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         SystemModuleMixer::after_invoke(api, output)
     }
 
-    fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_execution_start<Y: KernelApi<Self>>(api: &mut Y) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_execution_finish<Y: KernelApi<Self>>(
+        message: &CallFrameMessage,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_execution_finish(api, message)?;
 
         Ok(())
     }
 
-    fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_allocate_node_id<Y: KernelApi<Self>>(
+        entity_type: EntityType,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
 
@@ -1401,13 +1402,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     // Note that the following logic doesn't go through mixer and is not costed
     //--------------------------------------------------------------------------
 
-    fn invoke_upstream<Y>(
+    fn invoke_upstream<Y: KernelApi<System<C>>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelApi<System<C>>,
-    {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
         let node_id = actor.node_id();
@@ -1548,10 +1546,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     }
 
     // Note: we check dangling nodes, in kernel, after auto-drop
-    fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn auto_drop<Y: KernelApi<Self>>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError> {
         // Round 1 - drop all proofs
         for node_id in nodes {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
@@ -1615,15 +1610,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         )
     }
 
-    fn on_substate_lock_fault<Y>(
+    fn on_substate_lock_fault<Y: KernelApi<Self>>(
         node_id: NodeId,
         partition_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
-    ) -> Result<bool, RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    ) -> Result<bool, RuntimeError> {
         // As currently implemented, this should always be called with partition_num=0 and offset=0
         // since all nodes are access by accessing their type info first
         // This check is simply a sanity check that this invariant remain true
@@ -1688,10 +1680,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
     }
 
-    fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
+    fn on_drop_node_mut<Y: KernelApi<Self>>(
+        node_id: &NodeId,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
         match type_info {

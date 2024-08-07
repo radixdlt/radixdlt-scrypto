@@ -74,15 +74,11 @@ impl AuthModule {
         Self { params }
     }
 
-    pub fn on_call_function<V, Y>(
+    pub fn on_call_function<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         blueprint_id: &BlueprintId,
         ident: &str,
-    ) -> Result<NodeId, RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<NodeId, RuntimeError> {
         // Create AuthZone
         let auth_zone = {
             // TODO: Remove special casing use of transaction processor and just have virtual resources
@@ -129,29 +125,21 @@ impl AuthModule {
         Ok(auth_zone)
     }
 
-    pub fn on_call_function_finish<V, Y>(
+    pub fn on_call_function_finish<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         auth_zone: NodeId,
-    ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<(), RuntimeError> {
         Self::teardown_auth_zone(api, auth_zone)
     }
 
-    pub fn on_call_method<V, Y>(
+    pub fn on_call_method<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
         module_id: ModuleId,
         direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
-    ) -> Result<NodeId, RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<NodeId, RuntimeError> {
         let auth_zone = AuthModule::create_auth_zone(
             api,
             Some((receiver, direct_access)),
@@ -184,39 +172,27 @@ impl AuthModule {
         Ok(auth_zone)
     }
 
-    pub fn on_call_method_finish<V, Y>(
+    pub fn on_call_method_finish<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         auth_zone: NodeId,
-    ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<(), RuntimeError> {
         Self::teardown_auth_zone(api, auth_zone)
     }
 
     /// On CALL_FUNCTION or CALL_METHOD, when auth module is disabled.
-    pub fn on_call_fn_mock<V, Y>(
+    pub fn on_call_fn_mock<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         system: &mut SystemService<Y, V>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
-    ) -> Result<NodeId, RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<NodeId, RuntimeError> {
         Self::create_auth_zone(system, receiver, virtual_resources, virtual_non_fungibles)
     }
 
-    fn copy_global_caller<V, Y>(
+    fn copy_global_caller<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         system: &mut SystemService<Y, V>,
         node_id: &NodeId,
-    ) -> Result<(Option<(GlobalCaller, Reference)>, Option<SubstateHandle>), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<(Option<(GlobalCaller, Reference)>, Option<SubstateHandle>), RuntimeError> {
         let handle = system.kernel_open_substate(
             node_id,
             MAIN_BASE_PARTITION,
@@ -232,16 +208,12 @@ impl AuthModule {
         Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
 
-    fn create_auth_zone<V, Y>(
+    fn create_auth_zone<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         system: &mut SystemService<Y, V>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
-    ) -> Result<NodeId, RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<NodeId, RuntimeError> {
         let (auth_zone, parent_lock_handle) = {
             let is_global_context_change = if let Some((receiver, direct_access)) = receiver {
                 let object_info = system.get_object_info(receiver)?;
@@ -278,12 +250,19 @@ impl AuthModule {
                         (ReferenceOrigin::SubstateNonGlobalReference(..), _) => (None, None),
                         // Actor is a frame-owned object
                         (ReferenceOrigin::FrameOwned, _) => {
-                            let caller = Self::copy_global_caller(system, &self_auth_zone)?;
+                            // In the past frame-owned objects were inheriting the AuthZone of the caller.
+                            // It was a critical issue, which could allow called components to eg.
+                            // withdraw resources from the signing account.
+                            // To prevent this we use TRANSACTION_TRACKER NodeId as a marker, that we are dealing with a frame-owned object.
+                            // It is checked later on when virtual proofs for AuthZone are verified.
+                            // Approach with such marker allows to keep backward compatibility with substate database.
+                            let (caller, lock_handle) =
+                                Self::copy_global_caller(system, &self_auth_zone)?;
                             (
-                                caller.0.map(|_| {
-                                    (TRANSACTION_TRACKER.into(), Reference(self_auth_zone))
+                                caller.map(|_| {
+                                    (FRAME_OWNED_GLOBAL_MARKER.into(), Reference(self_auth_zone))
                                 }),
-                                caller.1,
+                                lock_handle,
                             )
                         }
                     }
@@ -352,14 +331,10 @@ impl AuthModule {
         Ok(new_auth_zone)
     }
 
-    pub fn teardown_auth_zone<V, Y>(
+    pub fn teardown_auth_zone<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
         self_auth_zone: NodeId,
-    ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
-    {
+    ) -> Result<(), RuntimeError> {
         // Detach proofs from the auth zone
         let handle = api.kernel_open_substate(
             &self_auth_zone,
