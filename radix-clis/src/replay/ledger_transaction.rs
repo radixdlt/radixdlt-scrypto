@@ -98,9 +98,9 @@ impl TransactionFullChildPreparable for PreparedRoundUpdateTransactionV1 {
 }
 
 impl PreparedRoundUpdateTransactionV1 {
-    pub fn get_executable(&self) -> Executable<'_> {
+    pub fn get_executable(&self) -> Executable {
         Executable::new(
-            &self.encoded_instructions,
+            Rc::new(self.encoded_instructions.clone()),
             &self.references,
             Rc::new(self.blobs.clone()),
             vec![],
@@ -460,7 +460,7 @@ impl ValidatedLedgerTransaction {
         }
     }
 
-    pub fn get_executable(&self) -> Executable<'_> {
+    pub fn get_executable(&self) -> Executable {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
                 PreparedGenesisTransaction::Flash(_) => {

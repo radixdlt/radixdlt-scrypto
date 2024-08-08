@@ -258,6 +258,10 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         System::resume_with_arg(args, &mut api)
     }
 
+    fn resume_child_thread<Y: KernelApi<Self>>(api: &mut Y, thread: &ExecutableThread, arg: IndexedScryptoValue) -> Result<IndexedScryptoValue, RuntimeError> {
+        todo!()
+    }
+
     fn auto_drop<Y: KernelApi<Self>>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);

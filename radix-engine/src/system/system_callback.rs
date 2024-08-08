@@ -1011,6 +1011,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         Ok(output)
     }
 
+    fn resume_child_thread<Y: KernelApi<Self>>(api: &mut Y, thread: &ExecutableThread, arg: IndexedScryptoValue) -> Result<IndexedScryptoValue, RuntimeError> {
+        todo!();
+    }
+
     fn finish(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
         self.modules.on_teardown()?;
 

@@ -12,7 +12,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt, InvokeResult};
+use crate::kernel::kernel_callback_api::{CallFrameReferences, ChildThreadResult, ExecutionReceipt, InvokeResult};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -176,6 +176,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 &mut self.track,
                 &mut self.id_allocator,
                 &mut callback,
+                executable.threads().iter().map(|t| t).collect(),
                 init_call_frames,
             )
         };
@@ -233,6 +234,7 @@ pub struct Kernel<
     M: KernelCallbackObject,
     S: CommitableSubstateStore,
 {
+    thread_init: Vec<&'g ExecutableThread>,
     cur_thread: usize,
     threads: Vec<KernelStack<M>>,
 
@@ -251,13 +253,14 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
     ) -> Self {
-        Self::new(store, id_allocator, callback, vec![Default::default()])
+        Self::new(store, id_allocator, callback, vec![], vec![Default::default()])
     }
 
     pub fn new(
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
+        thread_init: Vec<&'g ExecutableThread>, // TODO: Replace
         init_call_frames: Vec<RootCallFrameInitRefs>,
     ) -> Self {
         let threads = init_call_frames
@@ -278,6 +281,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
                 pinned_to_heap: BTreeSet::new(),
             },
             id_allocator,
+            thread_init,
             cur_thread: 0,
             threads,
             callback,
@@ -1319,15 +1323,32 @@ where
             let output = match M::invoke_upstream(args, self)? {
                 InvokeResult::Done(output) => output,
                 InvokeResult::SendToChildThreadAndWait(thread, value) => {
-                    // Pause current thread
-                    /*
-                    let saved_thread = self.cur_thread;
+                    (|| {
+                        let mut next_thread = thread;
+                        let mut next_value = value;
+                        loop {
+                            // Pause current thread
+                            let mut saved_thread = self.cur_thread;
 
-                    self.cur_thread = thread;
-                    let thread = self.threads.get(thread).unwrap();
-                    thread.current_frame.data()
-                     */
-                    todo!();
+                            // Change stack
+                            self.cur_thread = next_thread;
+                            let thread_init = self.thread_init.get(self.cur_thread).unwrap();
+                            let child_return = M::resume_child_thread(self, thread_init, next_value)?;
+
+                            // TODO: Remove value from child thread
+                            // TODO: Move results into current call frame
+
+                            // Resume current thread
+                            self.cur_thread = saved_thread;
+                            match M::resume_with_arg(&child_return, self)? {
+                                InvokeResult::Done(output) => return Ok::<IndexedScryptoValue, RuntimeError>(output),
+                                InvokeResult::SendToChildThreadAndWait(thread, value) => {
+                                    next_thread = thread;
+                                    next_value = value;
+                                }
+                            }
+                        }
+                    })()?
                 }
             };
             let message = CallFrameMessage::from_output(&output);
@@ -1434,6 +1455,7 @@ where
         callback: &'g mut M,
     ) -> Kernel<'g, M, S> {
         Self {
+            thread_init: vec![],
             cur_thread: 0usize,
             threads: vec![KernelStack {
                 current_frame,

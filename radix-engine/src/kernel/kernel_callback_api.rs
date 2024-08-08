@@ -148,6 +148,11 @@ pub enum InvokeResult {
     Done(IndexedScryptoValue),
 }
 
+pub enum ChildThreadResult {
+    Rtn(IndexedScryptoValue),
+    Done,
+}
+
 /// Upper layer callback object which a kernel interacts with during execution
 pub trait KernelCallbackObject: Sized {
     /// Data to be stored with each substate lock
@@ -175,11 +180,17 @@ pub trait KernelCallbackObject: Sized {
         value: &IndexedScryptoValue,
     ) -> Result<StableReferenceType, BootloadingError>;
 
-    /// Start execution
+    /// Start transaction execution
     fn start<Y: KernelApi<Self>>(
         api: &mut Y,
         thread: &ExecutableThread,
     ) -> Result<Self::ExecutionOutput, RuntimeError>;
+
+    fn resume_child_thread<Y: KernelApi<Self>>(
+        api: &mut Y,
+        thread: &ExecutableThread,
+        arg: IndexedScryptoValue,
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
 
     /// Finish execution
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
