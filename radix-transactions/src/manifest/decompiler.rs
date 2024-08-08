@@ -658,6 +658,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 ))?,
             )
         }
+        InstructionV1::SendToSubTransactionAndAwait { .. }=> ("SEND_TO_SUBTRANSACTION_AND_AWAIT", to_manifest_value(&())?),
     };
 
     write!(f, "{}", display_name)?;

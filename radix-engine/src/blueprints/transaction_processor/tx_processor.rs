@@ -458,6 +458,11 @@ impl TransactionProcessorBlueprint {
 
                     InstructionOutput::None
                 }
+                InstructionV1::SendToSubTransactionAndAwait {
+                    args
+                } => {
+                    InstructionOutput::None
+                }
             };
             outputs.push(result);
         }
