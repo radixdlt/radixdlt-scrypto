@@ -103,6 +103,7 @@ fn handle_invocation<'a, 'p, 'w, Y: SystemApi<RuntimeError> + KernelSubstateApi<
     Ok(InstructionOutput::CallReturn(result.into()))
 }
 
+
 pub struct TransactionProcessorBlueprint;
 
 impl TransactionProcessorBlueprint {
@@ -141,7 +142,7 @@ impl TransactionProcessorBlueprint {
         )?;
         api.kernel_pin_node(worktop_node_id)?;
 
-        let mut worktop = Worktop(Own(worktop_node_id));
+        let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)
             .map_err(|e| {
                 // This error should never occur if being called from root since this is constructed
@@ -149,9 +150,54 @@ impl TransactionProcessorBlueprint {
                 // space calling this function if/when possible
                 RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
             })?;
-        let mut processor = TransactionProcessor::new(blobs, global_address_reservations);
-        let mut outputs = Vec::new();
-        for (index, inst) in instructions.into_iter().enumerate() {
+        let processor = TransactionProcessor::new(blobs, global_address_reservations);
+        let outputs = Vec::new();
+
+        let state = TransactionProcessorState {
+            index: 0usize,
+            worktop,
+            instructions,
+            processor,
+            outputs,
+            version,
+        };
+
+        state.execute(api)
+    }
+
+    pub(crate) fn resume_run<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
+        L: Default,
+    >(
+        restore_state: TransactionProcessorState,
+        api: &mut Y,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+        restore_state.execute(api)
+    }
+}
+
+pub struct TransactionProcessorState {
+    index: usize,
+    worktop: Worktop,
+    instructions: Vec<InstructionV1>,
+    processor: TransactionProcessor,
+    outputs: Vec<InstructionOutput>,
+    version: TransactionProcessorV1MinorVersion,
+}
+
+impl TransactionProcessorState {
+    fn execute<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
+        L: Default,
+    >(self, api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
+
+        let mut worktop = self.worktop;
+        let mut processor = self.processor;
+        let version = self.version;
+        let mut outputs = self.outputs;
+
+        for (index, inst) in self.instructions.into_iter().skip(self.index).enumerate() {
+
             api.update_instruction_index(index)?;
 
             let result = match inst {
@@ -459,7 +505,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 InstructionV1::SendToSubTransactionAndAwait {
-                    args
+                    ..
                 } => {
                     InstructionOutput::None
                 }
@@ -472,6 +518,7 @@ impl TransactionProcessorBlueprint {
         Ok(outputs)
     }
 }
+
 
 struct TransactionProcessor {
     bucket_mapping: NonIterMap<ManifestBucket, NodeId>,

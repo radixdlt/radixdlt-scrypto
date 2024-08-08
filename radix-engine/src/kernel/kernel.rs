@@ -251,7 +251,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
     ) -> Self {
-        Self::new(store, id_allocator, callback, Default::default())
+        Self::new(store, id_allocator, callback, vec![Default::default()])
     }
 
     pub fn new(
@@ -1318,6 +1318,17 @@ where
             // Run
             let output = match M::invoke_upstream(args, self)? {
                 InvokeResult::Done(output) => output,
+                InvokeResult::SendToChildThreadAndWait(thread, value) => {
+                    // Pause current thread
+                    /*
+                    let saved_thread = self.cur_thread;
+
+                    self.cur_thread = thread;
+                    let thread = self.threads.get(thread).unwrap();
+                    thread.current_frame.data()
+                     */
+                    todo!();
+                }
             };
             let message = CallFrameMessage::from_output(&output);
 

@@ -14,7 +14,7 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
 
-use super::TransactionProcessorBlueprint;
+use super::{TransactionProcessorBlueprint, TransactionProcessorState};
 use super::TransactionProcessorRunInput;
 use super::TransactionProcessorV1MinorVersion;
 
@@ -81,6 +81,7 @@ impl TransactionProcessorNativePackage {
     >(
         export_name: &str,
         input: &IndexedScryptoValue,
+        restore: Box<dyn Any>,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
@@ -98,6 +99,12 @@ impl TransactionProcessorNativePackage {
                     version,
                     api,
                 )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            TRANSACTION_PROCESSOR_RESUME_RUN_IDENT => {
+                let restored = restore.downcast::<TransactionProcessorState>().unwrap();
+                let rtn = TransactionProcessorBlueprint::resume_run(*restored, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

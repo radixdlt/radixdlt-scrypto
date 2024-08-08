@@ -2,6 +2,7 @@ pub mod prelude {
     // See eg https://doc.rust-lang.org/std/prelude/index.html
 
     // std::prelude::v1
+    pub use super::any::Any;
     pub use super::borrow::ToOwned;
     pub use super::boxed::Box;
     pub use super::cell::RefCell;
@@ -58,6 +59,8 @@ pub use alloc::sync;
 #[cfg(feature = "alloc")]
 pub use alloc::vec;
 #[cfg(feature = "alloc")]
+pub use core::any;
+#[cfg(feature = "alloc")]
 pub use core::cell;
 #[cfg(feature = "alloc")]
 pub use core::clone;
@@ -96,6 +99,8 @@ pub use std::alloc;
 pub use std::borrow;
 #[cfg(not(feature = "alloc"))]
 pub use std::boxed;
+#[cfg(not(feature = "alloc"))]
+pub use std::any;
 #[cfg(not(feature = "alloc"))]
 pub use std::cell;
 #[cfg(not(feature = "alloc"))]

@@ -10,9 +10,7 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::test_utils::TestUtilsNativePackage;
-use crate::blueprints::transaction_processor::{
-    TransactionProcessorNativePackage, TransactionProcessorV1MinorVersion,
-};
+use crate::blueprints::transaction_processor::{TransactionProcessorNativePackage, TransactionProcessorState, TransactionProcessorV1MinorVersion};
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::internal_prelude::*;
@@ -167,6 +165,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         TransactionProcessorNativePackage::invoke_export(
                             export_name,
                             input,
+                            Box::new(Option::<TransactionProcessorState>::None),
                             TransactionProcessorV1MinorVersion::Zero,
                             api,
                         )
@@ -175,6 +174,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         TransactionProcessorNativePackage::invoke_export(
                             export_name,
                             input,
+                            Box::new(Option::<TransactionProcessorState>::None),
                             TransactionProcessorV1MinorVersion::One,
                             api,
                         )

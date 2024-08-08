@@ -1539,6 +1539,42 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
     }
 
+    fn resume_with_arg<Y: KernelApi<Self>>(input: &IndexedScryptoValue, api: &mut Y) -> Result<InvokeResult, RuntimeError> {
+        let mut system = SystemService::new(api);
+        let actor = system.current_actor();
+        match &actor {
+            actor @ Actor::Method(MethodActor { ident, .. })
+            | actor @ Actor::Function(FunctionActor { ident, .. }) => {
+
+                let blueprint_id = actor.blueprint_id().unwrap();
+
+                // TODO: Fix
+                let package_export = {
+                    let new_code = (NativeCodeId::TransactionProcessorCode2 as u64)
+                        .to_be_bytes()
+                        .to_vec();
+                    let code_hash = CodeHash::from_hash(hash(&new_code));
+
+                    PackageExport {
+                        code_hash,
+                        export_name: "resume".to_string(),
+                    }
+                };
+
+                let output = C::invoke(
+                    &blueprint_id.package_address,
+                    package_export,
+                    &input,
+                    &mut system,
+                )?;
+                Ok(InvokeResult::Done(output))
+            }
+            _ => {
+                panic!("Unexpected")
+            }
+        }
+    }
+
     // Note: we check dangling nodes, in kernel, after auto-drop
     fn auto_drop<Y: KernelApi<Self>>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError> {
         // Round 1 - drop all proofs

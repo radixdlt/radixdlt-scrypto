@@ -216,6 +216,10 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(InvokeResult::Done(args.clone()))
     }
 
+    fn resume_with_arg<Y: KernelApi<Self>>(args: &IndexedScryptoValue, api: &mut Y) -> Result<InvokeResult, RuntimeError> {
+        Ok(InvokeResult::Done(args.clone()))
+    }
+
     fn auto_drop<Y: KernelApi<Self>>(
         _nodes: Vec<NodeId>,
         _api: &mut Y,

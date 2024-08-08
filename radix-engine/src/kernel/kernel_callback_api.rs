@@ -144,7 +144,8 @@ pub trait ExecutionReceipt {
 }
 
 pub enum InvokeResult {
-    Done(IndexedScryptoValue)
+    SendToChildThreadAndWait(usize, IndexedScryptoValue),
+    Done(IndexedScryptoValue),
 }
 
 /// Upper layer callback object which a kernel interacts with during execution
@@ -265,6 +266,11 @@ pub trait KernelCallbackObject: Sized {
 
     /// Callback on invocation. This is where the callback object should execute application logic.
     fn invoke_upstream<Y: KernelApi<Self>>(
+        args: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<InvokeResult, RuntimeError>;
+
+    fn resume_with_arg<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<InvokeResult, RuntimeError>;
