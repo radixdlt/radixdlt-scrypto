@@ -23,6 +23,15 @@ use sbor::rust::iter;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
 use wabt::wat2wasm;
 
+fn generate_interesting_bytes_of_length(length: usize) -> Vec<u8> {
+    include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd")
+        .iter()
+        .cycle()
+        .take(length)
+        .cloned()
+        .collect()
+}
+
 fn bench_decode_rpd_to_manifest_value(c: &mut Criterion) {
     let payload = include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.rpd");
     println!("Payload size: {}", payload.len());
@@ -39,28 +48,74 @@ fn bench_decode_rpd_to_manifest_raw_value(c: &mut Criterion) {
     });
 }
 
-fn bench_decode_bytes_to_manifest_value(c: &mut Criterion) {
-    let payload = manifest_encode(include_workspace_asset_bytes!(
-        "radix-transaction-scenarios",
-        "radiswap.rpd"
-    ))
-    .unwrap();
+fn bench_decode_encoded_u8_array_to_manifest_value(c: &mut Criterion) {
+    let example_bytes = generate_interesting_bytes_of_length(1000000);
+    let payload = manifest_encode(&example_bytes).unwrap();
     println!("Payload size: {}", payload.len());
-    c.bench_function("costing::decode_bytes_to_manifest_value", |b| {
+    c.bench_function("costing::decode_encoded_u8_array_to_manifest_value", |b| {
         b.iter(|| manifest_decode::<ManifestValue>(&payload))
     });
 }
 
-fn bench_decode_bytes_to_manifest_raw_value(c: &mut Criterion) {
-    let payload = manifest_encode(include_workspace_asset_bytes!(
-        "radix-transaction-scenarios",
-        "radiswap.rpd"
-    ))
-    .unwrap();
+fn bench_decode_encoded_u8_array_to_manifest_raw_value(c: &mut Criterion) {
+    let example_bytes = generate_interesting_bytes_of_length(1000000);
+    let payload = manifest_encode(&example_bytes).unwrap();
     println!("Payload size: {}", payload.len());
-    c.bench_function("costing::decode_bytes_to_manifest_raw_value", |b| {
-        b.iter(|| manifest_decode::<ManifestRawValue>(&payload))
+    c.bench_function(
+        "costing::decode_encoded_u8_array_to_manifest_raw_value",
+        |b| b.iter(|| manifest_decode::<ManifestRawValue>(&payload)),
+    );
+}
+
+fn bench_decode_encoded_i8_array_to_manifest_value(c: &mut Criterion) {
+    let example_i8_array = generate_interesting_bytes_of_length(1000000)
+        .into_iter()
+        .map(|b| i8::from_be_bytes([b]))
+        .collect::<Vec<_>>();
+    let payload = manifest_encode(&example_i8_array).unwrap();
+    println!("Payload size: {}", payload.len());
+    c.bench_function("costing::decode_encoded_i8_array_to_manifest_value", |b| {
+        b.iter(|| manifest_decode::<ManifestValue>(&payload))
     });
+}
+
+fn bench_decode_encoded_i8_array_to_manifest_raw_value(c: &mut Criterion) {
+    let example_i8_array = generate_interesting_bytes_of_length(1000000)
+        .into_iter()
+        .map(|b| i8::from_be_bytes([b]))
+        .collect::<Vec<_>>();
+    let payload = manifest_encode(&example_i8_array).unwrap();
+    println!("Payload size: {}", payload.len());
+    c.bench_function(
+        "costing::decode_encoded_i8_array_to_manifest_raw_value",
+        |b| b.iter(|| manifest_decode::<ManifestRawValue>(&payload)),
+    );
+}
+
+fn bench_decode_encoded_tuple_array_to_manifest_value(c: &mut Criterion) {
+    let value = generate_interesting_bytes_of_length(1000000)
+        .into_iter()
+        .map(|b| (b,))
+        .collect::<Vec<_>>();
+    let payload = manifest_encode(&value).unwrap();
+    println!("Payload size: {}", payload.len());
+    c.bench_function(
+        "costing::decode_encoded_tuple_array_to_manifest_value",
+        |b| b.iter(|| manifest_decode::<ManifestValue>(&payload)),
+    );
+}
+
+fn bench_decode_encoded_tuple_array_to_manifest_raw_value(c: &mut Criterion) {
+    let value = generate_interesting_bytes_of_length(1000000)
+        .into_iter()
+        .map(|b| (b,))
+        .collect::<Vec<_>>();
+    let payload = manifest_encode(&value).unwrap();
+    println!("Payload size: {}", payload.len());
+    c.bench_function(
+        "costing::decode_encoded_tuple_array_to_manifest_raw_value",
+        |b| b.iter(|| manifest_decode::<ManifestRawValue>(&payload)),
+    );
 }
 
 fn bench_validate_sbor_payload(c: &mut Criterion) {
@@ -328,8 +383,12 @@ criterion_group!(
     costing,
     bench_decode_rpd_to_manifest_value,
     bench_decode_rpd_to_manifest_raw_value,
-    bench_decode_bytes_to_manifest_value,
-    bench_decode_bytes_to_manifest_raw_value,
+    bench_decode_encoded_u8_array_to_manifest_value,
+    bench_decode_encoded_u8_array_to_manifest_raw_value,
+    bench_decode_encoded_i8_array_to_manifest_value,
+    bench_decode_encoded_i8_array_to_manifest_raw_value,
+    bench_decode_encoded_tuple_array_to_manifest_value,
+    bench_decode_encoded_tuple_array_to_manifest_raw_value,
     bench_validate_sbor_payload,
     bench_validate_sbor_payload_bytes,
     bench_validate_secp256k1,
