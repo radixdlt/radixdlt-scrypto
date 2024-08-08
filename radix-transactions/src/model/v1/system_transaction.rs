@@ -96,14 +96,14 @@ impl SystemTransactionV1 {
 }
 
 impl PreparedSystemTransactionV1 {
-    pub fn get_executable<'a>(
-        &'a self,
+    pub fn get_executable(
+        &self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> Executable<'a> {
+    ) -> Executable {
         Executable::new(
-            &self.encoded_instructions,
+            Rc::new(self.encoded_instructions.clone()),
             &self.references,
-            &self.blobs.blobs_by_hash,
+            Rc::new(self.blobs.blobs_by_hash.clone()),
             self.pre_allocated_addresses.inner.clone(),
             ExecutionContext {
                 intent_hash: TransactionIntentHash::NotToCheck {

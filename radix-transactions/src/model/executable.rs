@@ -137,27 +137,27 @@ impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt 
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct ExecutableThread<'a> {
-    pub encoded_instructions: &'a [u8],
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ExecutableThread {
+    pub encoded_instructions: Rc<Vec<u8>>,
     pub references: IndexSet<Reference>,
-    pub blobs: &'a IndexMap<Hash, Vec<u8>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
 }
 
 /// Executable form of transaction, post stateless validation.
 #[derive(Debug, PartialEq, Eq)]
-pub struct Executable<'a> {
-    pub(crate) threads: Vec<ExecutableThread<'a>>,
+pub struct Executable {
+    pub(crate) threads: Vec<ExecutableThread>,
     pub(crate) context: ExecutionContext,
     pub(crate) system: bool,
 }
 
-impl<'a> Executable<'a> {
+impl Executable {
     pub fn new(
-        encoded_instructions: &'a [u8],
+        encoded_instructions: Rc<Vec<u8>>,
         references: &IndexSet<Reference>,
-        blobs: &'a IndexMap<Hash, Vec<u8>>,
+        blobs: Rc<IndexMap<Hash, Vec<u8>>>,
         pre_allocated_addresses: Vec<PreAllocatedAddress>,
         context: ExecutionContext,
         system: bool,

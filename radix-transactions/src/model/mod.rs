@@ -163,16 +163,16 @@ Enum<3u8>(
             executable,
             Executable {
                 threads: vec![ExecutableThread {
-                    encoded_instructions: &manifest_encode(&manifest.instructions).unwrap(),
+                    encoded_instructions: Rc::new(manifest_encode(&manifest.instructions).unwrap()),
                     references: indexset!(
                         Reference(FAUCET.into_node_id()),
                         // NOTE: not needed
                         Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
                         Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
                     ),
-                    blobs: &indexmap!(
+                    blobs: Rc::new(indexmap!(
                         hash(&[1, 2]) => vec![1, 2]
-                    ),
+                    )),
                     pre_allocated_addresses: vec![],
                 }],
                 context: ExecutionContext {

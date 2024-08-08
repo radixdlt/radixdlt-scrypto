@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use radix_common::prelude::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::prelude::system_execution;
@@ -101,7 +102,7 @@ impl PreparedRoundUpdateTransactionV1 {
         Executable::new(
             &self.encoded_instructions,
             &self.references,
-            &self.blobs,
+            Rc::new(self.blobs.clone()),
             vec![],
             ExecutionContext {
                 intent_hash: TransactionIntentHash::NotToCheck {

@@ -47,14 +47,14 @@ impl TestTransaction {
 }
 
 impl PreparedTestTransaction {
-    pub fn get_executable<'a>(
-        &'a self,
+    pub fn get_executable(
+        &self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> Executable<'a> {
+    ) -> Executable {
         Executable::new(
-            &self.encoded_instructions,
+            Rc::new(self.encoded_instructions.clone()),
             &self.references,
-            &self.blobs,
+            Rc::new(self.blobs.clone()),
             vec![],
             ExecutionContext {
                 intent_hash: TransactionIntentHash::NotToCheck {

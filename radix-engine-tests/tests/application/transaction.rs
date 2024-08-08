@@ -206,9 +206,9 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
     let blobs = Default::default();
 
     let executable = Executable::new(
-        &invalid_encoded_instructions,
+        Rc::new(invalid_encoded_instructions.to_vec()),
         &references,
-        &blobs,
+        Rc::new(blobs),
         Default::default(),
         ExecutionContext {
             intent_hash: TransactionIntentHash::NotToCheck {

@@ -24,7 +24,7 @@ pub struct ValidatedPreviewIntent {
 }
 
 impl ValidatedPreviewIntent {
-    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
+    pub fn get_executable(&self) -> Executable {
         let intent = &self.intent;
         let flags = &self.flags;
 
@@ -55,9 +55,9 @@ impl ValidatedPreviewIntent {
         let intent_hash = intent.intent_hash();
 
         Executable::new(
-            &self.encoded_instructions,
+            Rc::new(self.encoded_instructions.clone()),
             &intent.instructions.references,
-            &intent.blobs.blobs_by_hash,
+            Rc::new(intent.blobs.blobs_by_hash.clone()),
             vec![],
             ExecutionContext {
                 intent_hash: if flags.skip_epoch_check {
