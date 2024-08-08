@@ -22,7 +22,7 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::{CallFrameMessage, StableReferenceType};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
-use crate::kernel::kernel_callback_api::RefCheckEvent;
+use crate::kernel::kernel_callback_api::{InvokeResult, RefCheckEvent};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -1399,7 +1399,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     fn invoke_upstream<Y: KernelApi<System<C>>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<InvokeResult, RuntimeError> {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
         let node_id = actor.node_id();
@@ -1490,7 +1490,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     output.as_vec_ref(),
                 )?;
 
-                Ok(output)
+                Ok(InvokeResult::Done(output))
             }
             Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id, hook, ..
@@ -1534,7 +1534,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
                 })?;
 
-                Ok(output)
+                Ok(InvokeResult::Done(output))
             }
         }
     }

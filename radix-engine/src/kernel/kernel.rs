@@ -12,7 +12,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt};
+use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt, InvokeResult};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -1316,7 +1316,9 @@ where
                 .close_all_substates(&mut self.substate_io);
 
             // Run
-            let output = M::invoke_upstream(args, self)?;
+            let output = match M::invoke_upstream(args, self)? {
+                InvokeResult::Done(output) => output,
+            };
             let message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop
