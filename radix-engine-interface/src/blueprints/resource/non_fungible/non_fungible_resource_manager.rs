@@ -304,15 +304,10 @@ pub const NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE: u8 = 1;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum NonFungibleDataSchema {
     // TODO: ignore this variant in Scrypto for smaller code size
-    Local {
-        schema: VersionedScryptoSchema,
-        type_id: LocalTypeId,
-        mutable_fields: IndexSet<String>,
-    },
-    Remote {
-        type_id: BlueprintTypeIdentifier,
-        mutable_fields: IndexSet<String>,
-    },
+    #[sbor(flatten)]
+    Local(LocalNonFungibleDataSchema),
+    #[sbor(flatten)]
+    Remote(RemoteNonFungibleDataSchema),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
@@ -370,20 +365,12 @@ impl NonFungibleDataSchema {
     ) -> Self {
         let schema =
             LocalNonFungibleDataSchema::new_with_self_package_replacement::<N>(package_address);
-        Self::Local {
-            schema: schema.schema,
-            type_id: schema.type_id,
-            mutable_fields: schema.mutable_fields,
-        }
+        Self::Local(schema)
     }
 
     pub fn new_local_without_self_package_replacement<N: NonFungibleData>() -> Self {
         let schema = LocalNonFungibleDataSchema::new_without_self_package_replacement::<N>();
-        Self::Local {
-            schema: schema.schema,
-            type_id: schema.type_id,
-            mutable_fields: schema.mutable_fields,
-        }
+        Self::Local(schema)
     }
 }
 
@@ -426,11 +413,11 @@ mod test {
         let ds: NonFungibleDataSchema = NonFungibleDataSchema::new_with_self_package_replacement::<
             SomeNonFungibleData,
         >(SOME_ADDRESS);
-        if let NonFungibleDataSchema::Local {
+        if let NonFungibleDataSchema::Local(LocalNonFungibleDataSchema {
             schema,
             type_id,
             mutable_fields,
-        } = ds
+        }) = ds
         {
             let s = schema.fully_update_and_into_latest_version();
             assert_eq!(s.type_kinds.len(), 1);

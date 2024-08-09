@@ -11,7 +11,6 @@ pub struct SystemTransactionV1 {
 }
 
 impl TransactionPayload for SystemTransactionV1 {
-    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1System as u8 }, Self>;
     type Prepared = PreparedSystemTransactionV1;
     type Raw = RawSystemTransaction;
 }

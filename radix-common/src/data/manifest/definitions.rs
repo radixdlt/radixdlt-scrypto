@@ -18,6 +18,15 @@ impl<T: Categorize<ManifestCustomValueKind> + ?Sized> ManifestCategorize for T {
 pub trait ManifestSborEnum: SborEnum<ManifestCustomValueKind> {}
 impl<T: SborEnum<ManifestCustomValueKind> + ?Sized> ManifestSborEnum for T {}
 
+pub trait ManifestSborEnumVariantFor<E: ManifestSborEnum>:
+    SborEnumVariantFor<E, ManifestCustomValueKind>
+{
+}
+impl<E: ManifestSborEnum, T: SborEnumVariantFor<E, ManifestCustomValueKind> + ?Sized>
+    ManifestSborEnumVariantFor<E> for T
+{
+}
+
 pub trait ManifestSborTuple: SborTuple<ManifestCustomValueKind> {}
 impl<T: SborTuple<ManifestCustomValueKind> + ?Sized> ManifestSborTuple for T {}
 

@@ -42,7 +42,7 @@ impl<
             allow_ownership: schema.allow_ownership,
         };
         Self {
-            id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+            id: Own(ScryptoVmV1Api::kv_store_new(SborFixedEnumVariant::<
                 KV_STORE_DATA_SCHEMA_VARIANT_LOCAL,
                 LocalKeyValueStoreDataSchema,
             > {

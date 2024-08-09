@@ -13,7 +13,6 @@ pub struct NotarizedTransactionV1 {
 }
 
 impl TransactionPayload for NotarizedTransactionV1 {
-    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1Notarized as u8 }, Self>;
     type Prepared = PreparedNotarizedTransactionV1;
     type Raw = RawNotarizedTransaction;
 }

@@ -529,7 +529,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 };
 
                 Self {
-                    id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                    id: Own(ScryptoVmV1Api::kv_store_new(SborFixedEnumVariant::<
                         KV_STORE_DATA_SCHEMA_VARIANT_REMOTE,
                         RemoteKeyValueStoreDataSchema,
                     > {
@@ -548,29 +548,29 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         pub trait #registered_type_resource_builder {
             fn new_string_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
-            ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, SborFixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
 
             fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
-            ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, SborFixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
 
             fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
-            ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, SborFixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
 
             fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
-            ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, SborFixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>>;
         }
     });
     registered_type_impls.push(parse_quote! {
         impl #registered_type_resource_builder for ResourceBuilder {
             fn new_string_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
-            ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D, SborFixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
                 InProgressResourceBuilder::new(
                     owner_role,
-                    NonFungibleResourceType::new(FixedEnumVariant {
+                    NonFungibleResourceType::new(SborFixedEnumVariant {
                         fields: RemoteNonFungibleDataSchema::new(
                             D::blueprint_type_identifier(),
                             D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
@@ -581,10 +581,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             fn new_integer_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
-            ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D, SborFixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
                 InProgressResourceBuilder::new(
                     owner_role,
-                    NonFungibleResourceType::new(FixedEnumVariant {
+                    NonFungibleResourceType::new(SborFixedEnumVariant {
                         fields: RemoteNonFungibleDataSchema::new(
                             D::blueprint_type_identifier(),
                             D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
@@ -595,10 +595,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             fn new_bytes_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
-            ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D, SborFixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
                 InProgressResourceBuilder::new(
                     owner_role,
-                    NonFungibleResourceType::new(FixedEnumVariant {
+                    NonFungibleResourceType::new(SborFixedEnumVariant {
                         fields: RemoteNonFungibleDataSchema::new(
                             D::blueprint_type_identifier(),
                             D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
@@ -609,10 +609,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             fn new_ruid_non_fungible_with_registered_type<D: NonFungibleData + #registered_type_ident>(
                 owner_role: OwnerRole,
-            ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, FixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
+            ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D, SborFixedEnumVariant<NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE, RemoteNonFungibleDataSchema>>> {
                 InProgressResourceBuilder::new(
                     owner_role,
-                    NonFungibleResourceType::new(FixedEnumVariant {
+                    NonFungibleResourceType::new(SborFixedEnumVariant {
                         fields: RemoteNonFungibleDataSchema::new(
                             D::blueprint_type_identifier(),
                             D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
@@ -2169,7 +2169,7 @@ mod tests {
                             NonFungibleResourceType<
                                 StringNonFungibleLocalId,
                                 D,
-                                FixedEnumVariant<
+                                SborFixedEnumVariant<
                                     NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteNonFungibleDataSchema
                                 >
@@ -2181,7 +2181,7 @@ mod tests {
                             NonFungibleResourceType<
                                 IntegerNonFungibleLocalId,
                                 D,
-                                FixedEnumVariant<
+                                SborFixedEnumVariant<
                                     NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteNonFungibleDataSchema
                                 >
@@ -2193,7 +2193,7 @@ mod tests {
                             NonFungibleResourceType<
                                 BytesNonFungibleLocalId,
                                 D,
-                                FixedEnumVariant<
+                                SborFixedEnumVariant<
                                     NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteNonFungibleDataSchema
                                 >
@@ -2205,7 +2205,7 @@ mod tests {
                             NonFungibleResourceType<
                                 RUIDNonFungibleLocalId,
                                 D,
-                                FixedEnumVariant<
+                                SborFixedEnumVariant<
                                     NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteNonFungibleDataSchema
                                 >
@@ -2233,7 +2233,7 @@ mod tests {
                                 allow_ownership: true,
                             };
                             Self {
-                                id: Own(ScryptoVmV1Api::kv_store_new(FixedEnumVariant::<
+                                id: Own(ScryptoVmV1Api::kv_store_new(SborFixedEnumVariant::<
                                     KV_STORE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteKeyValueStoreDataSchema,
                                 > {
@@ -2252,7 +2252,7 @@ mod tests {
                             NonFungibleResourceType<
                                 StringNonFungibleLocalId,
                                 D,
-                                FixedEnumVariant<
+                                SborFixedEnumVariant<
                                     NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteNonFungibleDataSchema
                                 >
@@ -2260,7 +2260,7 @@ mod tests {
                         > {
                             InProgressResourceBuilder::new(
                                 owner_role,
-                                NonFungibleResourceType::new(FixedEnumVariant {
+                                NonFungibleResourceType::new(SborFixedEnumVariant {
                                     fields: RemoteNonFungibleDataSchema::new(
                                         D::blueprint_type_identifier(),
                                         D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
@@ -2274,7 +2274,7 @@ mod tests {
                             NonFungibleResourceType<
                                 IntegerNonFungibleLocalId,
                                 D,
-                                FixedEnumVariant<
+                                SborFixedEnumVariant<
                                     NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteNonFungibleDataSchema
                                 >
@@ -2282,7 +2282,7 @@ mod tests {
                         > {
                             InProgressResourceBuilder::new(
                                 owner_role,
-                                NonFungibleResourceType::new(FixedEnumVariant {
+                                NonFungibleResourceType::new(SborFixedEnumVariant {
                                     fields: RemoteNonFungibleDataSchema::new(
                                         D::blueprint_type_identifier(),
                                         D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
@@ -2296,7 +2296,7 @@ mod tests {
                             NonFungibleResourceType<
                                 BytesNonFungibleLocalId,
                                 D,
-                                FixedEnumVariant<
+                                SborFixedEnumVariant<
                                     NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteNonFungibleDataSchema
                                 >
@@ -2304,7 +2304,7 @@ mod tests {
                         > {
                             InProgressResourceBuilder::new(
                                 owner_role,
-                                NonFungibleResourceType::new(FixedEnumVariant {
+                                NonFungibleResourceType::new(SborFixedEnumVariant {
                                     fields: RemoteNonFungibleDataSchema::new(
                                         D::blueprint_type_identifier(),
                                         D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()
@@ -2318,7 +2318,7 @@ mod tests {
                             NonFungibleResourceType<
                                 RUIDNonFungibleLocalId,
                                 D,
-                                FixedEnumVariant<
+                                SborFixedEnumVariant<
                                     NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                                     RemoteNonFungibleDataSchema
                                 >
@@ -2326,7 +2326,7 @@ mod tests {
                         > {
                             InProgressResourceBuilder::new(
                                 owner_role,
-                                NonFungibleResourceType::new(FixedEnumVariant {
+                                NonFungibleResourceType::new(SborFixedEnumVariant {
                                     fields: RemoteNonFungibleDataSchema::new(
                                         D::blueprint_type_identifier(),
                                         D::MUTABLE_FIELDS.iter().map(|s| s.to_string()).collect()

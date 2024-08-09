@@ -102,7 +102,7 @@ pub mod prelude {
     // Exports from current crate
     pub use crate::eager_replace;
     pub use crate::encoded_wrappers::{RawPayload as SborRawPayload, RawValue as SborRawValue};
-    pub use crate::enum_variant::FixedEnumVariant as SborFixedEnumVariant;
+    pub use crate::enum_variant::SborFixedEnumVariant;
     pub use crate::path::{SborPath, SborPathBuf};
     pub use crate::representations;
     pub use crate::schema::prelude::*;

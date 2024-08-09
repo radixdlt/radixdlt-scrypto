@@ -41,7 +41,7 @@ mod non_fungible_data {
                         owner_role: Default::default(),
                         track_total_supply: true,
                         id_type: IntegerNonFungibleLocalId::id_type(),
-                        non_fungible_schema: FixedEnumVariant::<
+                        non_fungible_schema: SborFixedEnumVariant::<
                             NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE,
                             RemoteNonFungibleDataSchema,
                         > {

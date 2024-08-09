@@ -535,6 +535,10 @@ macro_rules! define_versioned {
                         _ => None,
                     }
                 }
+
+                pub fn into_versioned(self) -> #VersionedType {
+                    #VersionedTypePath::new(self)
+                }
             }
 
             $($(
@@ -567,28 +571,45 @@ macro_rules! define_versioned {
                 }
             }
 
+            // This trait is similar to `SborEnumVariantFor<X, Versioned>`, but it's nicer to use as
+            // it's got a better name and can be implemented without needing a specific CustomValueKind.
             [!SET:ident! #VersionTrait = $versioned_name Version]
             #[allow(dead_code)]
             $vis trait #VersionTrait {
                 // Note: We need to use an explicit associated type to capture the generics.
-                type Versioned: $crate::Versioned;
+                type Versioned: sbor::Versioned;
+
+                const DISCRIMINATOR: u8;
+                type OwnedSborVariant;
+                type BorrowedSborVariant<'a> where Self: 'a;
+
+                /// Can be used to encode the type as a variant under the Versioned type, without
+                /// needing to clone, like this: `encoder.encode(x.as_encodable_variant())`.
+                fn as_encodable_variant(&self) -> Self::BorrowedSborVariant<'_>;
+
+                /// Can be used to decode the type from an encoded variant, like this:
+                /// `X::from_decoded_variant(decoder.decode()?)`.
+                fn from_decoded_variant(variant: Self::OwnedSborVariant) -> Self where Self: core::marker::Sized;
 
                 fn into_versioned(self) -> Self::Versioned;
-            }
-
-            impl #ImplGenerics #VersionTrait for #VersionsType
-            {
-                type Versioned = #VersionedType;
-
-                fn into_versioned(self) -> Self::Versioned {
-                    #VersionedTypePath::new(self)
-                }
             }
 
             $($(
                 impl #ImplGenerics #VersionTrait for $version_type
                 {
                     type Versioned = #VersionedType;
+
+                    const DISCRIMINATOR: u8 = #discriminators::[!ident! VERSION_ $version_num];
+                    type OwnedSborVariant = sbor::SborFixedEnumVariant::<{ #discriminators::[!ident! VERSION_ $version_num] }, (Self,)>;
+                    type BorrowedSborVariant<'a> = sbor::SborFixedEnumVariant::<{ #discriminators::[!ident! VERSION_ $version_num] }, (&'a Self,)>  where Self: 'a;
+
+                    fn as_encodable_variant(&self) -> Self::BorrowedSborVariant<'_> {
+                        sbor::SborFixedEnumVariant::new((self,))
+                    }
+
+                    fn from_decoded_variant(variant: Self::OwnedSborVariant) -> Self {
+                        variant.into_fields().0
+                    }
 
                     fn into_versioned(self) -> Self::Versioned {
                         #VersionedTypePath::new(self.into())
@@ -599,6 +620,18 @@ macro_rules! define_versioned {
             impl #ImplGenerics #VersionTrait for $latest_version_type
             {
                 type Versioned = $versioned_name #TypeGenerics;
+
+                const DISCRIMINATOR: u8 = #discriminators::LATEST_VERSION;
+                type OwnedSborVariant = sbor::SborFixedEnumVariant::<{ #discriminators::LATEST_VERSION }, (Self,)>;
+                type BorrowedSborVariant<'a> = sbor::SborFixedEnumVariant::<{ #discriminators::LATEST_VERSION }, (&'a Self,)> where Self: 'a;
+
+                fn as_encodable_variant(&self) -> Self::BorrowedSborVariant<'_> {
+                    sbor::SborFixedEnumVariant::new((self,))
+                }
+
+                fn from_decoded_variant(variant: Self::OwnedSborVariant) -> Self {
+                    variant.into_fields().0
+                }
 
                 fn into_versioned(self) -> Self::Versioned {
                     #VersionedTypePath::new(self.into())
