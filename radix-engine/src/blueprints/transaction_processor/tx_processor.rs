@@ -132,10 +132,12 @@ impl TransactionProcessorBlueprint {
 
         let mut outputs = Vec::new();
         let mut cur_thread = 0usize;
+        let mut sent_value = None;
 
         loop {
             let mut thread = threads.get_mut(cur_thread).unwrap();
-            let result = thread.execute(api)?;
+            let result = thread.execute(api, sent_value)?;
+            sent_value = None;
             match result {
                 InstructionExecutionResult::Output(output) => outputs.push(output),
                 InstructionExecutionResult::Done => {
@@ -154,9 +156,11 @@ impl TransactionProcessorBlueprint {
                         return Ok(outputs);
                     }
                 },
-                InstructionExecutionResult::Switch => {
-                    cur_thread = 1 - cur_thread;
-                    api.switch_context(cur_thread)?;
+                InstructionExecutionResult::Switch(thread, value) => {
+                    cur_thread = thread;
+                    api.send(thread, value.clone())?;
+                    api.switch_context(thread)?;
+                    sent_value = Some(value);
                 }
             }
         }
@@ -165,7 +169,7 @@ impl TransactionProcessorBlueprint {
 
 pub enum InstructionExecutionResult {
     Output(InstructionOutput),
-    Switch,
+    Switch(usize, IndexedScryptoValue),
     Done,
 }
 
@@ -188,7 +192,7 @@ impl TransactionProcessorThread {
     fn execute<
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
         L: Default,
-    >(&mut self, api: &mut Y) -> Result<InstructionExecutionResult, RuntimeError> {
+    >(&mut self, api: &mut Y, next_value: Option<IndexedScryptoValue>) -> Result<InstructionExecutionResult, RuntimeError> {
         loop {
             match self {
                 TransactionProcessorThread::Uninitialized(input) => {
@@ -224,7 +228,12 @@ impl TransactionProcessorThread {
                             // space calling this function if/when possible
                             RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                         })?;
-                    let processor = TransactionProcessor::new(input.blobs.clone(), input.global_address_reservations.clone());
+                    let mut processor = TransactionProcessor::new(input.blobs.clone(), input.global_address_reservations.clone());
+
+                    if let Some(value) = &next_value {
+                        processor.handle_call_return_data(value, &worktop, api)?;
+                    }
+
                     *self = TransactionProcessorThread::Running(TransactionProcessorRunningState {
                         worktop,
                         index: 0,
@@ -236,6 +245,10 @@ impl TransactionProcessorThread {
                 TransactionProcessorThread::Running(state) => {
                     let mut worktop = state.worktop;
                     let version = state.version;
+
+                    if let Some(value) = &next_value {
+                        state.processor.handle_call_return_data(value, &worktop, api)?;
+                    }
 
                     if state.index >= state.instructions.len() {
                         worktop.drop(api)?;
@@ -553,14 +566,27 @@ impl TransactionProcessorThread {
                             InstructionOutput::None
                         }
                         InstructionV1::SendToSubTransactionAndAwait {
-                            ..
+                            args
                         } => {
-                            return Ok(InstructionExecutionResult::Switch);
+                            let scrypto_value = {
+                                let mut processor_with_api = TransactionProcessorWithApi {
+                                    worktop: &mut worktop,
+                                    processor: &mut state.processor,
+                                    api,
+                                    current_total_size_of_blobs: 0,
+                                    max_total_size_of_blobs: match version {
+                                        TransactionProcessorV1MinorVersion::Zero => usize::MAX,
+                                        TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+                                    },
+                                };
+                                transform(args, &mut processor_with_api)?
+                            };
+                            return Ok(InstructionExecutionResult::Switch(1, IndexedScryptoValue::from_scrypto_value(scrypto_value)));
                         }
                         InstructionV1::Yield {
                             ..
                         } => {
-                            return Ok(InstructionExecutionResult::Switch);
+                            return Ok(InstructionExecutionResult::Switch(0, IndexedScryptoValue::unit()));
                         }
                     };
 

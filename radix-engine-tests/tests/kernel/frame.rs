@@ -94,10 +94,8 @@ fn test() {
         let mut manifest = ManifestBuilder::new()
             .withdraw_from_account(account, btc, Decimal::from(2))
             .deposit_batch(account)
-            //.send_to_subtransaction(&())
+            .send_to_subtransaction(&())
             .build();
-
-        manifest.instructions.push(InstructionV1::SendToSubTransactionAndAwait { args: to_manifest_value_and_unwrap!(&())});
 
         let (instructions, blobs) = manifest.for_intent();
 
@@ -115,7 +113,7 @@ fn test() {
 
     let thread1 = {
         let mut manifest = ManifestBuilder::new()
-            //.withdraw_from_account(account2, usdc, Decimal::from(2))
+            .withdraw_from_account(account2, usdc, Decimal::from(2))
             .deposit_batch(account2)
             .build();
 
