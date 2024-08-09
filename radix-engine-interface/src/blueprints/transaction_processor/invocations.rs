@@ -6,8 +6,6 @@ pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
 
 pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";
 
-pub const TRANSACTION_PROCESSOR_RESUME_RUN_IDENT: &str = "resume_run";
-
 // TransactionProcessorInput in the engine
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;

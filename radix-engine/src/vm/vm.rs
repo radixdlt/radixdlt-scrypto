@@ -170,10 +170,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 let result =
                     { vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)? };
 
-                match result {
-                    VmInvokeResult::SendToChildAndWait(value) => SystemInvokeResult::SendToChildAndWait(value),
-                    VmInvokeResult::Done(output) => SystemInvokeResult::Done(output),
-                }
+                result
             }
             VmType::ScryptoV1 => {
                 let instrumented_code = {
@@ -216,21 +213,12 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                     scrypto_vm_instance.invoke(export.export_name.as_str(), input, api, &vm_api)?
                 };
 
-                match result {
-                    VmInvokeResult::SendToChildAndWait(value) => SystemInvokeResult::SendToChildAndWait(value),
-                    VmInvokeResult::Done(output) => SystemInvokeResult::Done(output),
-                }
-
+                result
             }
         };
 
-        Ok(output)
+        Ok(SystemInvokeResult::Done(output))
     }
-}
-
-pub enum VmInvokeResult {
-    SendToChildAndWait(IndexedScryptoValue),
-    Done(IndexedScryptoValue),
 }
 
 pub trait VmInvoke {
@@ -244,7 +232,7 @@ pub trait VmInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<VmInvokeResult, RuntimeError>;
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
 
 pub struct VmPackageValidation;

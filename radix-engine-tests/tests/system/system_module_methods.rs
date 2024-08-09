@@ -33,7 +33,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<VmInvokeResult, RuntimeError> {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             let node_id = input.references()[0];
             let _ = api.call_module_method(
                 &node_id,
@@ -46,7 +46,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
                 .unwrap(),
             )?;
 
-            Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+            Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()
@@ -116,7 +116,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<VmInvokeResult, RuntimeError> {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap![])?;
@@ -131,9 +131,9 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
                         .unwrap(),
                     )?;
                     api.drop_object(&node_id)?;
-                    Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+                    Ok(IndexedScryptoValue::from_typed(&()))
                 }
-                _ => Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&()))),
+                _ => Ok(IndexedScryptoValue::from_typed(&())),
             }
         }
     }
@@ -187,7 +187,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<VmInvokeResult, RuntimeError> {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let child = api.new_simple_object(
@@ -223,7 +223,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
 
                     api.call_method(&parent_node_id, "call_metadata_on_child", scrypto_args!())?;
 
-                    Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+                    Ok(IndexedScryptoValue::from_typed(&()))
                 }
                 "call_metadata_on_child" => {
                     let handle =
@@ -241,9 +241,9 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                         .unwrap(),
                     )?;
 
-                    Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+                    Ok(IndexedScryptoValue::from_typed(&()))
                 }
-                _ => Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&()))),
+                _ => Ok(IndexedScryptoValue::from_typed(&())),
             }
         }
     }

@@ -10,7 +10,7 @@ use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::v1::package::*;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::test_utils::TestUtilsNativePackage;
-use crate::blueprints::transaction_processor::{TransactionProcessorNativePackage, TransactionProcessorState, TransactionProcessorV1MinorVersion};
+use crate::blueprints::transaction_processor::{TransactionProcessorNativePackage, TransactionProcessorThread, TransactionProcessorV1MinorVersion};
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::internal_prelude::*;
@@ -19,7 +19,7 @@ use crate::object_modules::metadata::MetadataNativePackage;
 use crate::object_modules::role_assignment::*;
 use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback::SystemLockData;
-use crate::vm::{VmApi, VmInvoke, VmInvokeResult};
+use crate::vm::{VmApi, VmInvoke};
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_profiling_derive::trace_resources;
@@ -105,7 +105,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
         input: &IndexedScryptoValue,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<VmInvokeResult, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         #[allow(unused_mut)]
         let mut func = || match self {
             NativeVmInstance::Extension(e) => e.invoke(export_name, input, api, vm_api),
@@ -130,47 +130,46 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         PackageV1MinorVersion::Zero,
                         api,
                         vm_api,
-                    ).map(|value| VmInvokeResult::Done(value)),
+                    ),
                     NativeCodeId::PackageCode2 => PackageNativePackage::invoke_export(
                         export_name,
                         input,
                         PackageV1MinorVersion::One,
                         api,
                         vm_api,
-                    ).map(|value| VmInvokeResult::Done(value)),
+                    ),
                     NativeCodeId::ResourceCode1 => {
-                        ResourceNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        ResourceNativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::ConsensusManagerCode1 => {
-                        ConsensusManagerNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        ConsensusManagerNativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::ConsensusManagerCode2 => {
                         ConsensusManagerSecondsPrecisionNativeCode::invoke_export(
                             export_name,
                             input,
                             api,
-                        ).map(|value| VmInvokeResult::Done(value))
+                        )
                     }
                     NativeCodeId::IdentityCode1 => {
-                        IdentityNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        IdentityNativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::AccountCode1 => {
-                        AccountNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        AccountNativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::AccountCode2 => {
-                        AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::AccessControllerCode1 => {
-                        AccessControllerV1NativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        AccessControllerV1NativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::AccessControllerCode2 => {
-                        AccessControllerV2NativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        AccessControllerV2NativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::TransactionProcessorCode1 => {
                         TransactionProcessorNativePackage::invoke_export(
                             export_name,
                             input,
-                            Box::new(Option::<TransactionProcessorState>::None),
                             TransactionProcessorV1MinorVersion::Zero,
                             api,
                         )
@@ -179,45 +178,42 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         TransactionProcessorNativePackage::invoke_export(
                             export_name,
                             input,
-                            Box::new(Option::<TransactionProcessorState>::None),
                             TransactionProcessorV1MinorVersion::One,
                             api,
                         )
                     }
                     NativeCodeId::MetadataCode1 => {
-                        MetadataNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        MetadataNativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::RoyaltyCode1 => {
-                        RoyaltyNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        RoyaltyNativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::RoleAssignmentCode1 => {
-                        RoleAssignmentNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        RoleAssignmentNativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::RoleAssignmentCode2 => {
-                        RoleAssignmentBottlenoseExtension::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        RoleAssignmentBottlenoseExtension::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::PoolCode1 => PoolNativePackage::invoke_export(
                         export_name,
                         input,
                         PoolV1MinorVersion::Zero,
                         api,
-                    ).map(|value| VmInvokeResult::Done(value)),
+                    ),
                     NativeCodeId::PoolCode2 => PoolNativePackage::invoke_export(
                         export_name,
                         input,
                         PoolV1MinorVersion::One,
                         api,
-                    ).map(|value| VmInvokeResult::Done(value)),
+                    ),
                     NativeCodeId::TransactionTrackerCode1 => {
-                        TransactionTrackerNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
+                        TransactionTrackerNativePackage::invoke_export(export_name, input, api)
                     }
                     NativeCodeId::TestUtilsCode1 => {
                         TestUtilsNativePackage::invoke_export(export_name, input, api)
-                            .map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::LockerCode1 => {
                         LockerNativePackage::invoke_export(export_name, input, api)
-                            .map(|value| VmInvokeResult::Done(value))
                     }
                 }
             }
@@ -291,7 +287,7 @@ impl VmInvoke for NullVmInvoke {
         _input: &IndexedScryptoValue,
         _api: &mut Y,
         _vm_api: &V,
-    ) -> Result<VmInvokeResult, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         panic!("Invocation was called on null VmInvoke");
     }
 }

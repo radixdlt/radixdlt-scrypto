@@ -26,7 +26,7 @@ fn call_method_with_owned_actor_should_fail() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<VmInvokeResult, RuntimeError> {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "new" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap!())?;
@@ -37,7 +37,7 @@ fn call_method_with_owned_actor_should_fail() {
                 _ => {}
             }
 
-            Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+            Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()

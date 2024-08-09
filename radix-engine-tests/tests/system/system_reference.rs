@@ -29,7 +29,7 @@ fn cannot_store_reference_in_non_transient_blueprint() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<VmInvokeResult, RuntimeError> {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "new" => {
                     let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
@@ -42,7 +42,7 @@ fn cannot_store_reference_in_non_transient_blueprint() {
                 _ => {}
             }
 
-            Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+            Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()
@@ -91,7 +91,7 @@ fn cannot_write_reference_in_non_transient_blueprint() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<VmInvokeResult, RuntimeError> {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "new" => {
                     let node_id = api
@@ -107,7 +107,7 @@ fn cannot_write_reference_in_non_transient_blueprint() {
                 _ => {}
             }
 
-            Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+            Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()
@@ -156,7 +156,7 @@ fn cannot_write_reference_in_kv_store() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<VmInvokeResult, RuntimeError> {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "kv_store" => {
                     let kv_store = api.key_value_store_new(
@@ -176,7 +176,7 @@ fn cannot_write_reference_in_kv_store() {
                 _ => {}
             }
 
-            Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+            Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()

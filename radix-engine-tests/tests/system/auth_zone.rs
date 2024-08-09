@@ -25,7 +25,7 @@ fn should_not_be_able_to_move_auth_zone() {
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<VmInvokeResult, RuntimeError> {
+        ) -> Result<IndexedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let auth_zone_id = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE).unwrap();
@@ -38,12 +38,12 @@ fn should_not_be_able_to_move_auth_zone() {
                     )?;
                 }
                 "hi" => {
-                    return Ok(VmInvokeResult::Done(input.clone()));
+                    return Ok(input.clone());
                 }
                 _ => {}
             }
 
-            Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+            Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()

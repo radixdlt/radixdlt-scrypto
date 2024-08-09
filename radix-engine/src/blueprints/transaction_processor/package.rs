@@ -13,9 +13,8 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
-use crate::vm::{NativeVmInvokeResult, VmInvokeResult};
 
-use super::{TransactionProcessorBlueprint, TransactionProcessorState};
+use super::{TransactionProcessorBlueprint};
 use super::TransactionProcessorRunInput;
 use super::TransactionProcessorV1MinorVersion;
 
@@ -82,10 +81,9 @@ impl TransactionProcessorNativePackage {
     >(
         export_name: &str,
         input: &IndexedScryptoValue,
-        restore: Box<dyn Any>,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
-    ) -> Result<VmInvokeResult, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
                 let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
@@ -101,19 +99,7 @@ impl TransactionProcessorNativePackage {
                     api,
                 )?;
 
-                match result {
-                    NativeVmInvokeResult::Done(rtn) => Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&rtn))),
-                    NativeVmInvokeResult::SendToChildAndWait => Ok(VmInvokeResult::SendToChildAndWait(IndexedScryptoValue::from_typed(&()))),
-                }
-            }
-            TRANSACTION_PROCESSOR_RESUME_RUN_IDENT => {
-                let restored = restore.downcast::<TransactionProcessorState>().unwrap();
-                let result = TransactionProcessorBlueprint::resume_run(*restored, api)?;
-
-                match result {
-                    NativeVmInvokeResult::Done(rtn) => Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&rtn))),
-                    NativeVmInvokeResult::SendToChildAndWait => Ok(VmInvokeResult::SendToChildAndWait(IndexedScryptoValue::from_typed(&()))),
-                }
+                Ok(IndexedScryptoValue::from_typed(&result))
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),

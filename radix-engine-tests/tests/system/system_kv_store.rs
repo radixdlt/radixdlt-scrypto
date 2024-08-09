@@ -24,7 +24,7 @@ impl VmInvoke for TestInvoke {
         _input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<VmInvokeResult, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         match export_name {
             "test" => {
                 let kv_store = api.key_value_store_new(
@@ -61,7 +61,7 @@ impl VmInvoke for TestInvoke {
             _ => {}
         }
 
-        Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
+        Ok(IndexedScryptoValue::from_typed(&()))
     }
 }
 

@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 use crate::vm::vm::VmInvoke;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::ScryptoRuntime;
-use crate::vm::{VmApi, VmInvokeResult};
+use crate::vm::VmApi;
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::CodeHash;
 use radix_engine_profiling_derive::trace_resources;
@@ -49,7 +49,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
         args: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<VmInvokeResult, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let rtn = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(
                 api,
@@ -71,7 +71,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
         })?;
 
-        Ok(VmInvokeResult::Done(output))
+        Ok(output)
     }
 }
 
