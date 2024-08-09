@@ -13,6 +13,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
+use crate::vm::{NativeVmInvokeResult, VmInvokeResult};
 
 use super::{TransactionProcessorBlueprint, TransactionProcessorState};
 use super::TransactionProcessorRunInput;
@@ -84,14 +85,14 @@ impl TransactionProcessorNativePackage {
         restore: Box<dyn Any>,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<VmInvokeResult, RuntimeError> {
         match export_name {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
                 let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = TransactionProcessorBlueprint::run(
+                let result = TransactionProcessorBlueprint::run(
                     input.manifest_encoded_instructions,
                     input.global_address_reservations,
                     input.references,
@@ -100,13 +101,19 @@ impl TransactionProcessorNativePackage {
                     api,
                 )?;
 
-                Ok(IndexedScryptoValue::from_typed(&rtn))
+                match result {
+                    NativeVmInvokeResult::Done(rtn) => Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&rtn))),
+                    NativeVmInvokeResult::SendToChildAndWait => Ok(VmInvokeResult::SendToChildAndWait(IndexedScryptoValue::from_typed(&()))),
+                }
             }
             TRANSACTION_PROCESSOR_RESUME_RUN_IDENT => {
                 let restored = restore.downcast::<TransactionProcessorState>().unwrap();
-                let rtn = TransactionProcessorBlueprint::resume_run(*restored, api)?;
+                let result = TransactionProcessorBlueprint::resume_run(*restored, api)?;
 
-                Ok(IndexedScryptoValue::from_typed(&rtn))
+                match result {
+                    NativeVmInvokeResult::Done(rtn) => Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&rtn))),
+                    NativeVmInvokeResult::SendToChildAndWait => Ok(VmInvokeResult::SendToChildAndWait(IndexedScryptoValue::from_typed(&()))),
+                }
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),

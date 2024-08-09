@@ -110,10 +110,30 @@ fn test() {
         }
     };
 
+    let thread1 = {
+        let mut manifest = ManifestBuilder::new()
+            .withdraw_from_account(account, btc, Decimal::from(2))
+            .deposit_batch(account)
+            .build();
+
+        let (instructions, blobs) = manifest.for_intent();
+
+        let prepared_instructions = instructions.prepare_partial().unwrap();
+        let encoded_instructions = manifest_encode(&prepared_instructions.inner.0).unwrap();
+        let references = prepared_instructions.references;
+        let blobs = blobs.prepare_partial().unwrap().blobs_by_hash;
+        ExecutableThread {
+            encoded_instructions: Rc::new(encoded_instructions),
+            references,
+            blobs: Rc::new(blobs),
+            pre_allocated_addresses: vec![],
+        }
+    };
+
 
 
     let executable = Executable {
-        threads: vec![thread0],
+        threads: vec![thread0, thread1],
         context: ExecutionContext {
             intent_hash: TransactionIntentHash::NotToCheck {
                 intent_hash: Hash([0u8; Hash::LENGTH])

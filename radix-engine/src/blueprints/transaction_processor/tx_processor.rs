@@ -20,6 +20,7 @@ use radix_transactions::data::TransformHandler;
 use radix_transactions::model::*;
 use radix_transactions::validation::*;
 use sbor::rust::prelude::*;
+use crate::vm::NativeVmInvokeResult;
 
 #[cfg(not(feature = "coverage"))]
 pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 1024 * 1024;
@@ -117,7 +118,7 @@ impl TransactionProcessorBlueprint {
         blobs: IndexMap<Hash, Vec<u8>>,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+    ) -> Result<NativeVmInvokeResult<Vec<InstructionOutput>>, RuntimeError> {
         // Create a worktop
         let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
@@ -171,7 +172,7 @@ impl TransactionProcessorBlueprint {
     >(
         restore_state: TransactionProcessorState,
         api: &mut Y,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+    ) -> Result<NativeVmInvokeResult<Vec<InstructionOutput>>, RuntimeError> {
         restore_state.execute(api)
     }
 }
@@ -189,7 +190,7 @@ impl TransactionProcessorState {
     fn execute<
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
         L: Default,
-    >(self, api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
+    >(self, api: &mut Y) -> Result<NativeVmInvokeResult<Vec<InstructionOutput>>, RuntimeError> {
 
         let mut worktop = self.worktop;
         let mut processor = self.processor;
@@ -507,7 +508,8 @@ impl TransactionProcessorState {
                 InstructionV1::SendToSubTransactionAndAwait {
                     ..
                 } => {
-                    InstructionOutput::None
+                    return Ok(NativeVmInvokeResult::SendToChildAndWait);
+                    //InstructionOutput::None
                 }
             };
             outputs.push(result);
@@ -515,7 +517,7 @@ impl TransactionProcessorState {
 
         worktop.drop(api)?;
 
-        Ok(outputs)
+        Ok(NativeVmInvokeResult::Done(outputs))
     }
 }
 

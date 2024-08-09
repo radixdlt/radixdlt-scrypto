@@ -89,6 +89,11 @@ impl<I: VmInvoke> NativeVmInstance<I> {
     }
 }
 
+pub enum NativeVmInvokeResult<V> {
+    Done(V),
+    SendToChildAndWait,
+}
+
 impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     #[trace_resources(log=self.package_address().is_native_package(), log=self.package_address().to_hex(), log=export_name)]
     fn invoke<
@@ -118,48 +123,48 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     RuntimeError::VmError(VmError::Native(NativeRuntimeError::InvalidCodeId)),
                 )?;
 
-                let output = match code_id {
+                match code_id {
                     NativeCodeId::PackageCode1 => PackageNativePackage::invoke_export(
                         export_name,
                         input,
                         PackageV1MinorVersion::Zero,
                         api,
                         vm_api,
-                    ),
+                    ).map(|value| VmInvokeResult::Done(value)),
                     NativeCodeId::PackageCode2 => PackageNativePackage::invoke_export(
                         export_name,
                         input,
                         PackageV1MinorVersion::One,
                         api,
                         vm_api,
-                    ),
+                    ).map(|value| VmInvokeResult::Done(value)),
                     NativeCodeId::ResourceCode1 => {
-                        ResourceNativePackage::invoke_export(export_name, input, api)
+                        ResourceNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::ConsensusManagerCode1 => {
-                        ConsensusManagerNativePackage::invoke_export(export_name, input, api)
+                        ConsensusManagerNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::ConsensusManagerCode2 => {
                         ConsensusManagerSecondsPrecisionNativeCode::invoke_export(
                             export_name,
                             input,
                             api,
-                        )
+                        ).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::IdentityCode1 => {
-                        IdentityNativePackage::invoke_export(export_name, input, api)
+                        IdentityNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::AccountCode1 => {
-                        AccountNativePackage::invoke_export(export_name, input, api)
+                        AccountNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::AccountCode2 => {
-                        AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api)
+                        AccountBlueprintBottlenoseExtension::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::AccessControllerCode1 => {
-                        AccessControllerV1NativePackage::invoke_export(export_name, input, api)
+                        AccessControllerV1NativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::AccessControllerCode2 => {
-                        AccessControllerV2NativePackage::invoke_export(export_name, input, api)
+                        AccessControllerV2NativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::TransactionProcessorCode1 => {
                         TransactionProcessorNativePackage::invoke_export(
@@ -180,41 +185,41 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         )
                     }
                     NativeCodeId::MetadataCode1 => {
-                        MetadataNativePackage::invoke_export(export_name, input, api)
+                        MetadataNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::RoyaltyCode1 => {
-                        RoyaltyNativePackage::invoke_export(export_name, input, api)
+                        RoyaltyNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::RoleAssignmentCode1 => {
-                        RoleAssignmentNativePackage::invoke_export(export_name, input, api)
+                        RoleAssignmentNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::RoleAssignmentCode2 => {
-                        RoleAssignmentBottlenoseExtension::invoke_export(export_name, input, api)
+                        RoleAssignmentBottlenoseExtension::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::PoolCode1 => PoolNativePackage::invoke_export(
                         export_name,
                         input,
                         PoolV1MinorVersion::Zero,
                         api,
-                    ),
+                    ).map(|value| VmInvokeResult::Done(value)),
                     NativeCodeId::PoolCode2 => PoolNativePackage::invoke_export(
                         export_name,
                         input,
                         PoolV1MinorVersion::One,
                         api,
-                    ),
+                    ).map(|value| VmInvokeResult::Done(value)),
                     NativeCodeId::TransactionTrackerCode1 => {
-                        TransactionTrackerNativePackage::invoke_export(export_name, input, api)
+                        TransactionTrackerNativePackage::invoke_export(export_name, input, api).map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::TestUtilsCode1 => {
                         TestUtilsNativePackage::invoke_export(export_name, input, api)
+                            .map(|value| VmInvokeResult::Done(value))
                     }
                     NativeCodeId::LockerCode1 => {
                         LockerNativePackage::invoke_export(export_name, input, api)
+                            .map(|value| VmInvokeResult::Done(value))
                     }
-                };
-
-                output.map(|value| VmInvokeResult::Done(value))
+                }
             }
         };
 
