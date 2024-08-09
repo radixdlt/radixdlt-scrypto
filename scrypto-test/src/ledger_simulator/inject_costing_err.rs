@@ -1,5 +1,4 @@
 use radix_common::prelude::*;
-use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, RootCallFrameInitRefs, StableReferenceType};

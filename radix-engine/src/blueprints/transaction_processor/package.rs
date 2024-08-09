@@ -91,10 +91,7 @@ impl TransactionProcessorNativePackage {
                 })?;
 
                 let result = TransactionProcessorBlueprint::run(
-                    input.manifest_encoded_instructions,
-                    input.global_address_reservations,
-                    input.references,
-                    input.blobs,
+                    input.threads,
                     version,
                     api,
                 )?;

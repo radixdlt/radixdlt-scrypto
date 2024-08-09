@@ -13,7 +13,7 @@ use crate::blueprints::resource::{
     BurnFungibleResourceEvent, FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate,
     FungibleVaultField,
 };
-use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
+use crate::blueprints::transaction_processor::{TransactionProcessorRunInputEfficientEncodable, TransactionProcessorThreadRunInputEfficientEncodable};
 use crate::blueprints::transaction_tracker::{
     TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
 };
@@ -1063,10 +1063,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
 
         let tx_input = TransactionProcessorRunInputEfficientEncodable {
-            manifest_encoded_instructions,
-            global_address_reservations,
-            references,
-            blobs,
+            threads: vec![TransactionProcessorThreadRunInputEfficientEncodable {
+                manifest_encoded_instructions,
+                global_address_reservations,
+                references,
+                blobs,
+            }]
         };
 
         // Call TX processor

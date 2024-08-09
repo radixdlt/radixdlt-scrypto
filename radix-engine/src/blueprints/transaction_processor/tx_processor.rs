@@ -35,20 +35,30 @@ pub enum TransactionProcessorV1MinorVersion {
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct TransactionProcessorRunInput {
+pub struct TransactionProcessorThreadRunInput {
     pub manifest_encoded_instructions: Vec<u8>,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
     pub blobs: IndexMap<Hash, Vec<u8>>,
 }
 
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionProcessorRunInput {
+    pub threads: Vec<TransactionProcessorThreadRunInput>,
+}
+
 // This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
-#[derive(Debug, Eq, PartialEq, ScryptoEncode)]
-pub struct TransactionProcessorRunInputEfficientEncodable {
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionProcessorThreadRunInputEfficientEncodable {
     pub manifest_encoded_instructions: Rc<Vec<u8>>,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: IndexSet<Reference>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionProcessorRunInputEfficientEncodable {
+    pub threads: Vec<TransactionProcessorThreadRunInputEfficientEncodable>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -112,18 +122,17 @@ impl TransactionProcessorBlueprint {
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
         L: Default,
     >(
-        manifest_encoded_instructions: Vec<u8>,
-        global_address_reservations: Vec<GlobalAddressReservation>,
-        _references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
-        blobs: IndexMap<Hash, Vec<u8>>,
+        thread_inputs: Vec<TransactionProcessorThreadRunInput>,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        // Create a worktop
-        let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
-        api.kernel_create_node(
-            worktop_node_id,
-            btreemap!(
+        let mut threads = vec![];
+        for thread_input in thread_inputs {
+            // Create a worktop
+            let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+            api.kernel_create_node(
+                worktop_node_id,
+                btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
                     WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(WorktopSubstate::new()))
                 ),
@@ -140,27 +149,32 @@ impl TransactionProcessorBlueprint {
                     })
                 )
             ),
-        )?;
-        api.kernel_pin_node(worktop_node_id)?;
+            )?;
+            api.kernel_pin_node(worktop_node_id)?;
 
-        let worktop = Worktop(Own(worktop_node_id));
-        let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)
-            .map_err(|e| {
-                // This error should never occur if being called from root since this is constructed
-                // by the transaction executor. This error is more to protect against application
-                // space calling this function if/when possible
-                RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-            })?;
-        let processor = TransactionProcessor::new(blobs, global_address_reservations);
+            let worktop = Worktop(Own(worktop_node_id));
+            let instructions = manifest_decode::<Vec<InstructionV1>>(&thread_input.manifest_encoded_instructions)
+                .map_err(|e| {
+                    // This error should never occur if being called from root since this is constructed
+                    // by the transaction executor. This error is more to protect against application
+                    // space calling this function if/when possible
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+            let processor = TransactionProcessor::new(thread_input.blobs, thread_input.global_address_reservations);
+            let thread = TransactionProcessorThread {
+                index: 0usize,
+                worktop,
+                instructions,
+                processor,
+                version,
+            };
+
+            threads.push(thread);
+        }
+
         let mut outputs = Vec::new();
 
-        let mut thread = TransactionProcessorThread {
-            index: 0usize,
-            worktop,
-            instructions,
-            processor,
-            version,
-        };
+        let mut thread = threads.remove(0);
 
         loop {
             let result = thread.execute(api)?;
