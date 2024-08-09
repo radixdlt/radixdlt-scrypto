@@ -702,6 +702,10 @@ pub enum InstructionV1 {
     SendToSubTransactionAndAwait {
         args: ManifestValue,
     },
+    #[sbor(discriminator(INSTRUCTION_YIELD_DISCRIMINATOR))]
+    Yield {
+        args: ManifestValue,
+    },
 }
 
 //===============================================================
@@ -772,3 +776,4 @@ pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
 pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;
 
 pub const INSTRUCTION_SEND_TO_SUBTRANSACTION_AND_AWAIT_DISCRIMINATOR: u8 = 0x53;
+pub const INSTRUCTION_YIELD_DISCRIMINATOR: u8 = 0x54;

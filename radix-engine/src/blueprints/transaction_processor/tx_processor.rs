@@ -553,6 +553,11 @@ impl TransactionProcessorThread {
                         } => {
                             return Ok(InstructionExecutionResult::Switch);
                         }
+                        InstructionV1::Yield {
+                            ..
+                        } => {
+                            return Ok(InstructionExecutionResult::Switch);
+                        }
                     };
 
                     return Ok(InstructionExecutionResult::Output(output));
