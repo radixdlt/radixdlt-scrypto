@@ -206,8 +206,8 @@ fn test_default_substate_size_limit() {
         .call_function(
             package_address,
             "TransactionLimitSubstateTest",
-            "write_large_value",
-            manifest_args!(MAX_SUBSTATE_VALUE_SIZE - 17),
+            "write_large_values",
+            manifest_args!([MAX_SUBSTATE_VALUE_SIZE - 17]),
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
@@ -221,8 +221,8 @@ fn test_default_substate_size_limit() {
         .call_function(
             package_address,
             "TransactionLimitSubstateTest",
-            "write_large_value",
-            manifest_args!(MAX_SUBSTATE_VALUE_SIZE - 16),
+            "write_large_values",
+            manifest_args!([MAX_SUBSTATE_VALUE_SIZE - 16]),
         )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
