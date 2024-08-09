@@ -2,7 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
+use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke, VmInvokeResult};
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -77,7 +77,7 @@ impl VmInvoke for TestInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<VmInvokeResult, RuntimeError> {
         match export_name {
             "new" => {
                 let size: (usize,) = input.as_typed().unwrap();
@@ -125,7 +125,7 @@ impl VmInvoke for TestInvoke {
             _ => {}
         }
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
     }
 }
 

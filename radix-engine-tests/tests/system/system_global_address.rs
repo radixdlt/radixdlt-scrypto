@@ -29,19 +29,19 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<VmInvokeResult, RuntimeError> {
             match export_name {
                 "test" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap!())?;
                     let _ = api.call_method(&node_id, "get_global_address", scrypto_args!())?;
                     let _ = api.drop_object(&node_id)?;
-                    Ok(IndexedScryptoValue::from_typed(&()))
+                    Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
                 }
                 "get_global_address" => {
                     let _ = api.actor_get_node_id(ACTOR_REF_GLOBAL)?;
-                    Ok(IndexedScryptoValue::from_typed(&()))
+                    Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
                 }
-                _ => Ok(IndexedScryptoValue::from_typed(&())),
+                _ => Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&()))),
             }
         }
     }
@@ -106,12 +106,12 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<VmInvokeResult, RuntimeError> {
             if self.0.contains(export_name) {
                 api.actor_get_node_id(ACTOR_REF_GLOBAL)
                     .expect_err("Direct method calls should never have global address");
             }
-            ResourceNativePackage::invoke_export(export_name, input, api)
+            ResourceNativePackage::invoke_export(export_name, input, api).map(VmInvokeResult::Done)
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()

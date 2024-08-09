@@ -243,7 +243,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<VmInvokeResult, RuntimeError> {
             match export_name {
                 "create_access_rule" => match self.0 {
                     AccessRuleCreation::OwnerCreation => {
@@ -281,7 +281,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
                 _ => {}
             }
 
-            Ok(IndexedScryptoValue::from_typed(&()))
+            Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()

@@ -251,7 +251,7 @@ impl VmInvoke for NonStringPanicExtensionInstance {
         _: &IndexedScryptoValue,
         _: &mut Y,
         _: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<VmInvokeResult, RuntimeError> {
         // A panic with a non-string type. Making sure that our panic infrastructure can catch those
         // panics too even if it can't make any useful messages out of them.
         std::panic::panic_any(1234);

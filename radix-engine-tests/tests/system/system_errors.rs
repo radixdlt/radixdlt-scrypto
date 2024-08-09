@@ -25,7 +25,7 @@ impl VmInvoke for TestInvoke {
         _input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<VmInvokeResult, RuntimeError> {
         match export_name {
             "invalid_state_handle" => {
                 api.actor_open_field(2u32, 0u8, LockFlags::read_only())?;
@@ -97,7 +97,7 @@ impl VmInvoke for TestInvoke {
             _ => {}
         }
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
     }
 }
 

@@ -29,7 +29,7 @@ fn claiming_royalties_on_native_packages_should_be_unauthorized() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<VmInvokeResult, RuntimeError> {
             match export_name {
                 "test" => {
                     api.call_method(
@@ -37,9 +37,9 @@ fn claiming_royalties_on_native_packages_should_be_unauthorized() {
                         PACKAGE_CLAIM_ROYALTIES_IDENT,
                         scrypto_encode(&PackageClaimRoyaltiesInput {}).unwrap(),
                     )?;
-                    Ok(IndexedScryptoValue::from_typed(&()))
+                    Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
                 }
-                _ => Ok(IndexedScryptoValue::from_typed(&())),
+                _ => Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&()))),
             }
         }
     }

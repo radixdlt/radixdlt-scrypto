@@ -10,7 +10,7 @@ use radix_common::types::{ComponentAddress, ResourceAddress};
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
-use radix_engine::vm::{VmApi, VmInvoke};
+use radix_engine::vm::{VmApi, VmInvoke, VmInvokeResult};
 use radix_engine_interface::api::{AttachedModuleId, LockFlags, SystemApi, ACTOR_STATE_SELF};
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::prelude::{
@@ -42,7 +42,7 @@ impl VmInvoke for ResourceTestInvoke {
         input: &IndexedScryptoValue,
         api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<VmInvokeResult, RuntimeError> {
         match export_name {
             "call_vault" => {
                 let handle = api
@@ -57,12 +57,12 @@ impl VmInvoke for ResourceTestInvoke {
                     input.0.as_str(),
                     scrypto_encode(&input.1).unwrap(),
                 )?;
-                return Ok(IndexedScryptoValue::from_vec(rtn).unwrap());
+                return Ok(VmInvokeResult::Done(IndexedScryptoValue::from_vec(rtn).unwrap()));
             }
             "combine_buckets" => {
                 let input: (Bucket, Bucket) = scrypto_decode(input.as_slice()).unwrap();
                 input.0.put(input.1, api)?;
-                return Ok(IndexedScryptoValue::from_typed(&input.0));
+                return Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&input.0)));
             }
             "new" => {
                 let resource_address: (ResourceAddress,) =
@@ -106,7 +106,7 @@ impl VmInvoke for ResourceTestInvoke {
             _ => {}
         }
 
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
     }
 }
 

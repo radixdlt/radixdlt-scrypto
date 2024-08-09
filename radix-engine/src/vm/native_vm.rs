@@ -19,7 +19,7 @@ use crate::object_modules::metadata::MetadataNativePackage;
 use crate::object_modules::role_assignment::*;
 use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback::SystemLockData;
-use crate::vm::{VmApi, VmInvoke};
+use crate::vm::{VmApi, VmInvoke, VmInvokeResult};
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_profiling_derive::trace_resources;
@@ -100,7 +100,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
         input: &IndexedScryptoValue,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<VmInvokeResult, RuntimeError> {
         #[allow(unused_mut)]
         let mut func = || match self {
             NativeVmInstance::Extension(e) => e.invoke(export_name, input, api, vm_api),
@@ -118,7 +118,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     RuntimeError::VmError(VmError::Native(NativeRuntimeError::InvalidCodeId)),
                 )?;
 
-                match code_id {
+                let output = match code_id {
                     NativeCodeId::PackageCode1 => PackageNativePackage::invoke_export(
                         export_name,
                         input,
@@ -212,7 +212,9 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                     NativeCodeId::LockerCode1 => {
                         LockerNativePackage::invoke_export(export_name, input, api)
                     }
-                }
+                };
+
+                output.map(|value| VmInvokeResult::Done(value))
             }
         };
 
@@ -284,7 +286,7 @@ impl VmInvoke for NullVmInvoke {
         _input: &IndexedScryptoValue,
         _api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<VmInvokeResult, RuntimeError> {
         panic!("Invocation was called on null VmInvoke");
     }
 }

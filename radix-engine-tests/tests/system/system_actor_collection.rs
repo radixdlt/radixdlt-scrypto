@@ -28,7 +28,7 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<VmInvokeResult, RuntimeError> {
             match export_name {
                 "test" => {
                     let _handle = api.actor_open_key_value_entry(
@@ -54,7 +54,7 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
                 _ => {}
             }
 
-            Ok(IndexedScryptoValue::from_typed(&()))
+            Ok(VmInvokeResult::Done(IndexedScryptoValue::from_typed(&())))
         }
     }
     let mut ledger = LedgerSimulatorBuilder::new()
