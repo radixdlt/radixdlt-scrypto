@@ -998,10 +998,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions: &thread.encoded_instructions,
+                manifest_encoded_instructions: thread.encoded_instructions.clone(),
                 global_address_reservations,
-                references: &thread.references,
-                blobs: &thread.blobs,
+                references: thread.references.clone(),
+                blobs: thread.blobs.clone(),
             })
             .unwrap(),
         )?;
