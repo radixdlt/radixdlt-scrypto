@@ -88,26 +88,32 @@ fn test() {
         });
         execution_config
     };
+    let thread0 = {
+        let mut manifest = ManifestBuilder::new()
+            .withdraw_from_account(account, btc, Decimal::from(2))
+            .deposit_batch(account)
+            .build();
 
-    let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account, btc, Decimal::from(2))
-        .deposit_batch(account)
-        .build();
+        manifest.instructions.push(InstructionV1::SendToSubTransactionAndAwait { args: to_manifest_value_and_unwrap!(&())});
 
-    let (instructions, blobs) = manifest.for_intent();
+        let (instructions, blobs) = manifest.for_intent();
 
-    let prepared_instructions = instructions.prepare_partial().unwrap();
-    let encoded_instructions = manifest_encode(&prepared_instructions.inner.0).unwrap();
-    let references = prepared_instructions.references;
-    let blobs = blobs.prepare_partial().unwrap().blobs_by_hash;
-
-    let executable = Executable {
-        threads: vec![ExecutableThread {
+        let prepared_instructions = instructions.prepare_partial().unwrap();
+        let encoded_instructions = manifest_encode(&prepared_instructions.inner.0).unwrap();
+        let references = prepared_instructions.references;
+        let blobs = blobs.prepare_partial().unwrap().blobs_by_hash;
+        ExecutableThread {
             encoded_instructions: Rc::new(encoded_instructions),
             references,
             blobs: Rc::new(blobs),
             pre_allocated_addresses: vec![],
-        }],
+        }
+    };
+
+
+
+    let executable = Executable {
+        threads: vec![thread0],
         context: ExecutionContext {
             intent_hash: TransactionIntentHash::NotToCheck {
                 intent_hash: Hash([0u8; Hash::LENGTH])

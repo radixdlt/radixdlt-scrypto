@@ -34,7 +34,7 @@ use crate::system::actor::FunctionActor;
 use crate::system::actor::MethodActor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_callback_api::{SystemCallbackObject, SystemInvokeResult};
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::{
@@ -1551,17 +1551,24 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     .get(ident)
                     .expect("Schema should have validated this exists")
                     .clone();
-                let output =
+                let result =
                     { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
 
-                // Validate output
-                system.validate_blueprint_payload(
-                    &target,
-                    BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
-                    output.as_vec_ref(),
-                )?;
+                match result {
+                    SystemInvokeResult::SendToChildAndWait(value) => {
+                        Ok(InvokeResult::SendToThreadAndWait(1, value))
+                    }
+                    SystemInvokeResult::Done(output) => {
+                        // Validate output
+                        system.validate_blueprint_payload(
+                            &target,
+                            BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
+                            output.as_vec_ref(),
+                        )?;
 
-                Ok(InvokeResult::Done(output))
+                        Ok(InvokeResult::Done(output))
+                    }
+                }
             }
             Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id, hook, ..
@@ -1582,12 +1589,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 // Input is not validated as they're created by system.
 
                 // Invoke the export
-                let output = C::invoke(
+                let result = C::invoke(
                     &blueprint_id.package_address,
                     export.clone(),
                     &input,
                     &mut system,
                 )?;
+
+                let output = match result {
+                    SystemInvokeResult::Done(output) => output,
+                    SystemInvokeResult::SendToChildAndWait(..) => panic!("Unexpected"),
+                };
 
                 // Check output against well-known schema
                 match hook {
@@ -1641,7 +1653,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     &input,
                     &mut system,
                 )?;
-                Ok(ResumeResult::SendToThreadAndWait(0, output))
+                match output {
+                    SystemInvokeResult::SendToChildAndWait(output) => {
+                        Ok(ResumeResult::SendToThreadAndWait(1, output))
+                    }
+                    SystemInvokeResult::Done(output) => {
+                        Ok(ResumeResult::Done(0, output))
+                    }
+                }
             }
             _ => {
                 panic!("Unexpected")
