@@ -1,0 +1,17 @@
+[package]
+name = "scrypto-wasm-fuzzer"
+version = "0.0.1"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+radix-engine = { workspace = true, default-features = true, features = ["wasm_fuzzing"] }
+radix-engine-interface = { workspace = true, default-features = true }
+radix-transactions = { workspace = true, default-features = true }
+scrypto-test = { workspace = true, default-features = true }
+scrypto-compiler = { workspace = true, default-features = true }
+proc-lock = "0.4.0"
+
+[[bin]]
+name = "wasm_fuzzer"
+path = "bin/wasm_fuzzer.rs"
