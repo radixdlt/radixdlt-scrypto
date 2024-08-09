@@ -43,6 +43,12 @@ pub struct MockKernel;
 
 impl<'g> KernelApi<System<Vm<'g, DefaultWasmEngine, NoExtension>>> for MockKernel {}
 
+impl KernelThreadApi for MockKernel {
+    fn kernel_switch_stack(&mut self, _: usize) -> Result<(), RuntimeError> {
+        panic1!()
+    }
+}
+
 impl KernelNodeApi for MockKernel {
     fn kernel_pin_node(&mut self, _: NodeId) -> Result<(), RuntimeError> {
         panic1!()

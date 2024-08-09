@@ -10,6 +10,7 @@ pub mod key_value_entry_api;
 pub mod key_value_store_api;
 pub mod object_api;
 pub mod transaction_runtime_api;
+pub mod thread_api;
 
 // Re-exports
 pub use actor_api::*;
@@ -41,6 +42,7 @@ pub type FieldIndex = u8;
 pub type CollectionIndex = u8;
 
 use radix_common::prelude::*;
+use crate::api::thread_api::SystemThreadApi;
 
 pub trait SystemApiError: fmt::Debug + ScryptoCategorize + ScryptoDecode {}
 
@@ -58,6 +60,7 @@ pub trait SystemApi<E: SystemApiError>:
     + SystemFieldApi<E>
     + SystemBlueprintApi<E>
     + SystemCostingApi<E>
+    + SystemThreadApi<E>
     + SystemTransactionRuntimeApi<E>
     + SystemExecutionTraceApi<E>
 {

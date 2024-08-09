@@ -1040,35 +1040,41 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     fn start<Y: KernelApi<Self>>(
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        let thread = api.kernel_get_system_state().system.executable.threads().get(0).unwrap();
-
-        let manifest_encoded_instructions = thread.encoded_instructions.clone();
-        let references = thread.references.clone();
-        let blobs = thread.blobs.clone();
-
-        let pre_allocated_addresses = thread.pre_allocated_addresses.clone();
+        let threads = api.kernel_get_system_state().system.executable.threads();
+        let init: Vec<_> = threads.iter().map(|thread| {
+            let manifest_encoded_instructions = thread.encoded_instructions.clone();
+            let references = thread.references.clone();
+            let blobs = thread.blobs.clone();
+            let pre_allocated_addresses = thread.pre_allocated_addresses.clone();
+            (manifest_encoded_instructions, references, blobs, pre_allocated_addresses)
+        }).collect();
 
         let mut system = SystemService::new(api);
 
-        // Allocate global addresses
-        let mut global_address_reservations = Vec::new();
-        for PreAllocatedAddress {
-            blueprint_id,
-            address,
-        } in &pre_allocated_addresses
-        {
-            let global_address_reservation =
-                system.prepare_global_address(blueprint_id.clone(), address.clone())?;
-            global_address_reservations.push(global_address_reservation);
-        }
+        let mut threads = vec![];
+        for (manifest_encoded_instructions, references, blobs, pre_allocated_addresses) in init {
+            // Allocate global addresses
+            let mut global_address_reservations = Vec::new();
+            for PreAllocatedAddress {
+                blueprint_id,
+                address,
+            } in &pre_allocated_addresses
+            {
+                let global_address_reservation =
+                    system.prepare_global_address(blueprint_id.clone(), address.clone())?;
+                global_address_reservations.push(global_address_reservation);
+            }
 
-        let tx_input = TransactionProcessorRunInputEfficientEncodable {
-            threads: vec![TransactionProcessorThreadRunInputEfficientEncodable {
+            threads.push(TransactionProcessorThreadRunInputEfficientEncodable {
                 manifest_encoded_instructions,
                 global_address_reservations,
                 references,
                 blobs,
-            }]
+            });
+        }
+
+        let tx_input = TransactionProcessorRunInputEfficientEncodable {
+            threads
         };
 
         // Call TX processor

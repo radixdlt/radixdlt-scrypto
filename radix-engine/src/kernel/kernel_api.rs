@@ -15,6 +15,11 @@ pub struct DroppedNode {
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
 
+
+pub trait KernelThreadApi {
+    fn kernel_switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError>;
+}
+
 /// API for managing nodes
 pub trait KernelNodeApi {
     /// Pin a node to it's current device.
@@ -202,7 +207,8 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi
+    KernelThreadApi
+    + KernelNodeApi
     + KernelSubstateApi<M::LockData>
     + KernelInvokeApi<M::CallFrameData>
     + KernelInternalApi<M>

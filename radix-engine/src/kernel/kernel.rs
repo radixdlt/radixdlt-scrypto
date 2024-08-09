@@ -306,6 +306,17 @@ macro_rules! as_read_only {
     }};
 }
 
+impl<'g, M, S> KernelThreadApi for Kernel<'g, M, S>
+    where
+        M: KernelCallbackObject,
+        S: CommitableSubstateStore,
+{
+    fn kernel_switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError> {
+        self.cur_thread = thread;
+        Ok(())
+    }
+}
+
 impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,

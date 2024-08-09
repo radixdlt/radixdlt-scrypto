@@ -29,6 +29,7 @@ use crate::track::interface::NodeSubstates;
 use radix_blueprint_schema_init::{Condition, KeyValueStoreGenericSubstitutions};
 #[cfg(not(feature = "alloc"))]
 use radix_common_derive::*;
+use radix_common_derive::catch_unwind;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::actor_index_api::SystemActorIndexApi;
 use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
@@ -40,6 +41,7 @@ use radix_engine_interface::api::key_value_store_api::{
 };
 use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::*;
+use radix_engine_interface::api::thread_api::SystemThreadApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
@@ -2752,6 +2754,18 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemExecutionTraceA
             .modules
             .update_instruction_index(new_index);
         Ok(())
+    }
+}
+
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
+impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemThreadApi<RuntimeError>
+for SystemService<'a, Y, V>
+{
+    fn switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError> {
+        self.api.kernel_switch_stack(thread)
     }
 }
 

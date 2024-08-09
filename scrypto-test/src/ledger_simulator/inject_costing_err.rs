@@ -2,10 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, RootCallFrameInitRefs, StableReferenceType};
-use radix_engine::kernel::kernel_api::{
-    DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
-    KernelSubstateApi, SystemState,
-};
+use radix_engine::kernel::kernel_api::{DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, KernelThreadApi, SystemState};
 use radix_engine::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, InvokeResult, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ResumeResult, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use radix_engine::system::actor::Actor;
 use radix_engine::system::system_callback::{System, SystemInit, SystemLockData};
@@ -315,6 +312,14 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
 pub struct WrappedKernelApi<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> {
     api: &'a mut K,
     phantom: PhantomData<M>,
+}
+
+impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelThreadApi
+for WrappedKernelApi<'a, M, K>
+{
+    fn kernel_switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError> {
+        self.api.kernel_switch_stack(thread)
+    }
 }
 
 impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelNodeApi
