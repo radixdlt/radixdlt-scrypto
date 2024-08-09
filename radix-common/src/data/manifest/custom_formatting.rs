@@ -127,7 +127,7 @@ mod tests {
 
         let context = ManifestValueDisplayContext::with_optional_bech32(Some(&encoder));
 
-        let payload = ManifestRawPayload::new_from_valid_owned(payload);
+        let payload = ManifestRawPayload::from_valid_payload(payload);
 
         let actual_rustlike = payload.to_string(ValueDisplayParameters::Schemaless {
             display_mode: DisplayMode::RustLike,

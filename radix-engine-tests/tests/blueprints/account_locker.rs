@@ -2999,7 +2999,7 @@ impl AccountLockerEvent {
     pub fn new(
         emitter: &Emitter,
         event_name: &str,
-        event_data: &[u8],
+        event_data: &ScryptoRawPayload,
     ) -> Option<AccountLockerEvent> {
         if let Emitter::Method(node_id, ModuleId::Main) = emitter {
             if node_id
@@ -3007,13 +3007,13 @@ impl AccountLockerEvent {
                 .is_some_and(|entity_type| entity_type == EntityType::GlobalAccountLocker)
             {
                 match event_name {
-                    StoreEvent::EVENT_NAME => scrypto_decode(event_data)
+                    StoreEvent::EVENT_NAME => event_data.decode_as()
                         .map(AccountLockerEvent::StoreEvent)
                         .ok(),
-                    ClaimEvent::EVENT_NAME => scrypto_decode(event_data)
+                    ClaimEvent::EVENT_NAME => event_data.decode_as()
                         .map(AccountLockerEvent::ClaimEvent)
                         .ok(),
-                    RecoverEvent::EVENT_NAME => scrypto_decode(event_data)
+                    RecoverEvent::EVENT_NAME => event_data.decode_as()
                         .map(AccountLockerEvent::RecoveryEvent)
                         .ok(),
                     _ => None,

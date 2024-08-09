@@ -1,3 +1,4 @@
+use radix_common::prelude::ScryptoOwnedRawValue;
 use radix_engine_interface::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -22,14 +23,14 @@ pub enum ErrorLocation {
         node_id: NodeId,
         module_id: ModuleId,
         field_index: FieldIndex,
-        value: Vec<u8>,
+        value: ScryptoOwnedRawValue,
     },
     CollectionEntry {
         info: BlueprintInfo,
         node_id: NodeId,
         module_id: ModuleId,
         collection_index: CollectionIndex,
-        key: Vec<u8>,
-        value: Vec<u8>,
+        key: ScryptoOwnedRawValue,
+        value: ScryptoOwnedRawValue,
     },
 }

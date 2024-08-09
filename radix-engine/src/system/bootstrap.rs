@@ -589,7 +589,7 @@ pub fn create_system_bootstrap_flash(
         for (partition_num, partition_substates) in partitions {
             let mut substates = BTreeMap::new();
             for (key, value) in partition_substates {
-                substates.insert(key, value.into());
+                substates.insert(key, value.into_payload_bytes());
             }
             to_flash.insert((address.into_node_id(), partition_num), substates);
         }

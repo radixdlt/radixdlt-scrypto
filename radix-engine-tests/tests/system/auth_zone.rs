@@ -25,7 +25,7 @@ fn should_not_be_able_to_move_auth_zone() {
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let auth_zone_id = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE).unwrap();
@@ -38,7 +38,7 @@ fn should_not_be_able_to_move_auth_zone() {
                     )?;
                 }
                 "hi" => {
-                    return Ok(input.clone());
+                    return Ok(input.ref_into_owned());
                 }
                 _ => {}
             }

@@ -22,10 +22,10 @@ impl TestUtilsNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             TEST_UTILS_PANIC_IDENT => {
-                let TestUtilsPanicInput(input) = input.as_typed().map_err(|e| {
+                let TestUtilsPanicInput(input) = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TestUtilsBlueprint::panic(input.as_str(), api)?;

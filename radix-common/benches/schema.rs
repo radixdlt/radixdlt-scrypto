@@ -1,6 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_common::data::scrypto::{scrypto_encode, ScryptoCustomExtension, ScryptoCustomSchema};
-use radix_common::prelude::SCRYPTO_SBOR_V1_MAX_DEPTH;
+use radix_common::data::scrypto::*;
 use radix_common::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -49,18 +48,13 @@ pub fn get_simple_dataset(repeat: usize) -> SimpleStruct {
 const REPEAT: usize = 1000;
 
 fn bench_schema_new(b: &mut Criterion) {
-    let bytes = scrypto_encode(&get_simple_dataset(REPEAT)).unwrap();
+    let payload = scrypto_encode_to_payload(&get_simple_dataset(REPEAT)).unwrap();
+    let validation_context = ();
     let (type_id, schema) =
         generate_full_schema_from_single_type::<SimpleStruct, ScryptoCustomSchema>();
     b.bench_function("schema::validate_payload", |b| {
         b.iter(|| {
-            let result = validate_payload_against_schema::<ScryptoCustomExtension, _>(
-                &bytes,
-                schema.v1(),
-                type_id,
-                &(),
-                SCRYPTO_SBOR_V1_MAX_DEPTH,
-            );
+            let result = payload.validate_against_type(schema.v1(), type_id, &validation_context);
             assert!(result.is_ok())
         })
     });

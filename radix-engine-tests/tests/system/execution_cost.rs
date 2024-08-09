@@ -153,7 +153,7 @@ pub fn to_json<S: ScryptoEncode + ScryptoDescribe>(
 
     let context = ScryptoValueDisplayContext::with_optional_bech32(Some(&encoder));
     let payload = scrypto_encode(&value).unwrap();
-    let raw_payload = ScryptoRawPayload::new_from_valid_slice(&payload);
+    let raw_payload = ScryptoRawPayload::from_valid_payload_slice(&payload);
     let serializable = raw_payload.serializable(SerializationParameters::WithSchema {
         mode: representations::SerializationMode::Natural,
         custom_context: context,

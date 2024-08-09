@@ -145,7 +145,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
                 BOOT_LOADER_PARTITION,
                 &SubstateKey::Field(BOOT_LOADER_KERNEL_BOOT_FIELD_KEY),
             )
-            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .map(|v| v.into_typed().unwrap())
             .unwrap_or(KernelBoot::babylon());
 
         // Create System
@@ -599,7 +599,7 @@ where
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         ) {
-            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let type_info: TypeInfoSubstate = substate.into_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
                     if info.blueprint_info.blueprint_id.package_address == RESOURCE_PACKAGE
@@ -635,7 +635,7 @@ where
                     &FungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
-            let liquid: FieldSubstate<LiquidFungibleResource> = substate.as_typed().unwrap();
+            let liquid: FieldSubstate<LiquidFungibleResource> = substate.into_typed().unwrap();
 
             Some(BucketSnapshot::Fungible {
                 resource_address,
@@ -650,7 +650,7 @@ where
                     &NonFungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
-            let liquid: FieldSubstate<LiquidNonFungibleResource> = substate.as_typed().unwrap();
+            let liquid: FieldSubstate<LiquidNonFungibleResource> = substate.into_typed().unwrap();
 
             Some(BucketSnapshot::NonFungible {
                 resource_address,
@@ -665,7 +665,7 @@ where
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
         ) {
-            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let type_info: TypeInfoSubstate = substate.into_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint_info: BlueprintInfo { blueprint_id, .. },
@@ -693,7 +693,7 @@ where
                     &TypeInfoField::TypeInfo.into(),
                 )
                 .unwrap();
-            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let info: TypeInfoSubstate = substate.into_typed().unwrap();
             let resource_address =
                 ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
@@ -705,7 +705,7 @@ where
                     &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
-            let proof: FieldSubstate<FungibleProofSubstate> = substate.as_typed().unwrap();
+            let proof: FieldSubstate<FungibleProofSubstate> = substate.into_typed().unwrap();
 
             Some(ProofSnapshot::Fungible {
                 resource_address,
@@ -720,7 +720,7 @@ where
                     &TypeInfoField::TypeInfo.into(),
                 )
                 .unwrap();
-            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let info: TypeInfoSubstate = substate.into_typed().unwrap();
             let resource_address =
                 ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
@@ -732,7 +732,7 @@ where
                     &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
-            let proof: FieldSubstate<NonFungibleProofSubstate> = substate.as_typed().unwrap();
+            let proof: FieldSubstate<NonFungibleProofSubstate> = substate.into_typed().unwrap();
 
             Some(ProofSnapshot::NonFungible {
                 resource_address,
@@ -767,7 +767,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedOwnedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -829,7 +829,7 @@ where
                             partition_num,
                             &substate_key,
                             flags,
-                            None::<fn() -> IndexedScryptoValue>,
+                            None::<fn() -> IndexedOwnedScryptoValue>,
                             M::LockData::default(),
                             &mut handler,
                         )
@@ -890,7 +890,7 @@ where
     fn kernel_read_substate(
         &mut self,
         lock_handle: SubstateHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError> {
+    ) -> Result<&IndexedOwnedScryptoValue, RuntimeError> {
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
@@ -916,7 +916,7 @@ where
     fn kernel_write_substate(
         &mut self,
         lock_handle: SubstateHandle,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_write_substate(
@@ -973,7 +973,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.callback.on_set_substate(SetSubstateEvent::Start(
             node_id,
@@ -1016,7 +1016,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Option<IndexedOwnedScryptoValue>, RuntimeError> {
         self.callback
             .on_remove_substate(RemoveSubstateEvent::Start(
                 node_id,
@@ -1095,7 +1095,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SubstateKey, IndexedOwnedScryptoValue)>, RuntimeError> {
         self.callback
             .on_drain_substates(DrainSubstatesEvent::Start(limit))?;
 
@@ -1133,7 +1133,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, IndexedOwnedScryptoValue)>, RuntimeError> {
         self.callback
             .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
 

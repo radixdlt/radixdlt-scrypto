@@ -34,6 +34,8 @@ pub enum DecodeError {
     DuplicateKey,
 
     InvalidCustomValue, // TODO: generify custom error codes
+
+    PayloadTooLong,
 }
 
 pub trait Decoder<X: CustomValueKind>: Sized {

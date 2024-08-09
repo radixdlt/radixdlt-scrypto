@@ -66,7 +66,7 @@ macro_rules! dispatch {
             match $export_name {
                 $(
                     [< $blueprint_ident:snake:upper _ $function_ident:snake:upper _ $export_name_const_suffix >] => {
-                        let input: [< $blueprint_ident:camel $function_ident:camel Input >] = $input.as_typed().map_err(|e| {
+                        let input: [< $blueprint_ident:camel $function_ident:camel Input >] = $input.into_typed().map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                         })?;
                         let rtn: [< $blueprint_ident:camel $function_ident:camel Output >] = Self::$function_ident(input, $api)?;

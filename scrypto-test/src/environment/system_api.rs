@@ -119,7 +119,7 @@ implement_system_api! {
         actor_emit_event: (
             &mut self,
             event_name: String,
-            event_data: Vec<u8>,
+            event_data: ScryptoUnvalidatedRawPayload,
             event_flags: EventFlags,
         ) -> Result<(), RuntimeError>
     },
@@ -128,63 +128,63 @@ implement_system_api! {
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
-            key: Vec<u8>,
-            buffer: Vec<u8>,
+            key: ScryptoUnvalidatedRawValue,
+            buffer: ScryptoUnvalidatedRawValue,
         ) -> Result<(), RuntimeError>,
         actor_index_remove: (
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
-            key: Vec<u8>,
-        ) -> Result<Option<Vec<u8>>, RuntimeError>,
+            key: ScryptoUnvalidatedRawValue,
+        ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError>,
         actor_index_scan_keys: (
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
             limit: u32,
-        ) -> Result<Vec<Vec<u8>>, RuntimeError>,
+        ) -> Result<Vec<ScryptoOwnedRawValue>, RuntimeError>,
         actor_index_drain: (
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
             limit: u32,
-        ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError>,
+        ) -> Result<Vec<(ScryptoOwnedRawValue, ScryptoOwnedRawValue)>, RuntimeError>,
     },
     SystemActorKeyValueEntryApi: {
         actor_open_key_value_entry: (
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
-            key: &Vec<u8>,
+            key: ScryptoUnvalidatedRawValue,
             flags: LockFlags,
         ) -> Result<KeyValueEntryHandle, RuntimeError>,
         actor_remove_key_value_entry: (
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
-            key: &Vec<u8>,
-        ) -> Result<Vec<u8>, RuntimeError>,
+            key: ScryptoUnvalidatedRawValue,
+        ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError>,
     },
     SystemActorSortedIndexApi: {
         actor_sorted_index_insert: (
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
-            sorted_key: SortedKey,
-            buffer: Vec<u8>,
+            sorted_key: UnvalidatedSortedKey,
+            buffer: ScryptoUnvalidatedRawValue,
         ) -> Result<(), RuntimeError>,
         actor_sorted_index_remove: (
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
-            sorted_key: &SortedKey,
-        ) -> Result<Option<Vec<u8>>, RuntimeError>,
+            sorted_key: UnvalidatedSortedKey,
+        ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError>,
         actor_sorted_index_scan: (
             &mut self,
             object_handle: ActorStateHandle,
             collection_index: CollectionIndex,
             count: u32,
-        ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError>,
+        ) -> Result<Vec<(SortedKey, ScryptoOwnedRawValue)>, RuntimeError>,
     },
     SystemBlueprintApi: {
         call_function: (
@@ -200,19 +200,19 @@ implement_system_api! {
         ) -> Result<(Rc<VersionedScryptoSchema>, ScopedTypeId), RuntimeError>
     },
     SystemFieldApi: {
-        field_read: (&mut self, handle: field_api::FieldHandle) -> Result<Vec<u8>, RuntimeError>,
-        field_write: (&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError>,
+        field_read: (&mut self, handle: field_api::FieldHandle) -> Result<ScryptoOwnedRawValue, RuntimeError>,
+        field_write: (&mut self, handle: FieldHandle, buffer: ScryptoUnvalidatedRawValue) -> Result<(), RuntimeError>,
         field_lock: (&mut self, handle: FieldHandle) -> Result<(), RuntimeError>,
         field_close: (&mut self, handle: FieldHandle) -> Result<(), RuntimeError>
     },
     SystemKeyValueEntryApi: {
-        key_value_entry_get: (&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, RuntimeError>,
+        key_value_entry_get: (&mut self, handle: KeyValueEntryHandle) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError>,
         key_value_entry_set: (
             &mut self,
             handle: KeyValueEntryHandle,
-            buffer: Vec<u8>,
+            buffer: ScryptoUnvalidatedRawValue,
         ) -> Result<(), RuntimeError>,
-        key_value_entry_remove: (&mut self, handle: KeyValueEntryHandle) -> Result<Vec<u8>, RuntimeError>,
+        key_value_entry_remove: (&mut self, handle: KeyValueEntryHandle) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError>,
         key_value_entry_lock: (&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError>,
         key_value_entry_close: (&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError>,
     },
@@ -221,14 +221,14 @@ implement_system_api! {
         key_value_store_open_entry: (
             &mut self,
             node_id: &NodeId,
-            key: &Vec<u8>,
+            key: ScryptoUnvalidatedRawValue,
             flags: LockFlags,
         ) -> Result<KeyValueEntryHandle, RuntimeError>,
         key_value_store_remove_entry: (
             &mut self,
             node_id: &NodeId,
-            key: &Vec<u8>,
-        ) -> Result<Vec<u8>, RuntimeError>,
+            key: ScryptoUnvalidatedRawValue,
+        ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError>,
     },
     SystemObjectApi: {
         new_object: (
@@ -266,7 +266,7 @@ implement_system_api! {
             inner_object_blueprint: &str,
             inner_object_fields: IndexMap<u8, FieldValue>,
             event_name: &str,
-            event_data: Vec<u8>,
+            event_data: ScryptoUnvalidatedOwnedRawPayload,
         ) -> Result<(GlobalAddress, NodeId), RuntimeError>,
         call_method: (
             &mut self,

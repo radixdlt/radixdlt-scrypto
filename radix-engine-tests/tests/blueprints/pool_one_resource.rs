@@ -484,7 +484,7 @@ fn contribution_emits_expected_event() {
             if ledger.ledger.event_name(event_type_identifier) == "ContributionEvent"
                 && is_pool_emitter(event_type_identifier)
             {
-                Some(scrypto_decode(event_data).unwrap())
+                Some(event_data.decode_as().unwrap())
             } else {
                 None
             }
@@ -517,7 +517,7 @@ fn redemption_emits_expected_event() {
             if ledger.ledger.event_name(event_type_identifier) == "RedemptionEvent"
                 && is_pool_emitter(event_type_identifier)
             {
-                Some(scrypto_decode(event_data).unwrap())
+                Some(event_data.decode_as().unwrap())
             } else {
                 None
             }
@@ -544,7 +544,7 @@ fn deposits_emits_expected_event() {
             if ledger.ledger.event_name(event_type_identifier) == "DepositEvent"
                 && is_pool_emitter(event_type_identifier)
             {
-                Some(scrypto_decode(event_data).unwrap())
+                Some(event_data.decode_as().unwrap())
             } else {
                 None
             }
@@ -573,7 +573,7 @@ fn withdraw_emits_expected_event() {
             if ledger.ledger.event_name(event_type_identifier) == "WithdrawEvent"
                 && is_pool_emitter(event_type_identifier)
             {
-                Some(scrypto_decode(event_data).unwrap())
+                Some(event_data.decode_as().unwrap())
             } else {
                 None
             }
@@ -606,7 +606,7 @@ fn withdraw_with_rounding_emits_expected_event() {
             if ledger.ledger.event_name(event_type_identifier) == "WithdrawEvent"
                 && is_pool_emitter(event_type_identifier)
             {
-                Some(scrypto_decode(event_data).unwrap())
+                Some(event_data.decode_as().unwrap())
             } else {
                 None
             }

@@ -48,7 +48,7 @@ impl KernelDatabaseChecker {
             }
 
             for (_, value) in substate_db.list_entries(&db_partition_key) {
-                let value = IndexedScryptoValue::from_vec(value)
+                let value = IndexedScryptoValue::from_untrusted_payload_vec(value)
                     .map_err(KernelDatabaseCheckError::DecodeError)?;
                 for owned in value.owned_nodes() {
                     let state = internal_nodes

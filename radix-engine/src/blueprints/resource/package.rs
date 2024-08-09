@@ -1149,12 +1149,13 @@ impl ResourceNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {
-                let input: FungibleResourceManagerCreateInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let input: FungibleResourceManagerCreateInput =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn = FungibleResourceManagerBlueprint::create(
                     input.owner_role,
                     input.track_total_supply,
@@ -1168,7 +1169,7 @@ impl ResourceNativePackage {
             }
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME => {
                 let input: FungibleResourceManagerCreateWithInitialSupplyInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply(
@@ -1184,36 +1185,37 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME => {
-                let input: FungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
+                let input: FungibleResourceManagerMintInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::mint(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME => {
-                let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
+                let input: ResourceManagerBurnInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME => {
-                let input: ResourceManagerPackageBurnInput = input.as_typed().map_err(|e| {
+                let input: ResourceManagerPackageBurnInput = input.into_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::package_burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME => {
-                let input: ResourceManagerDropEmptyBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let input: ResourceManagerDropEmptyBucketInput =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn = FungibleResourceManagerBlueprint::drop_empty_bucket(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME => {
                 let _input: ResourceManagerCreateEmptyVaultInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_empty_vault(api)?;
@@ -1221,7 +1223,7 @@ impl ResourceNativePackage {
             }
             FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME => {
                 let _input: ResourceManagerCreateEmptyBucketInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
@@ -1230,22 +1232,23 @@ impl ResourceNativePackage {
             }
             FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
                 let _input: ResourceManagerGetResourceTypeInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::get_resource_type(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME => {
-                let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let _input: ResourceManagerGetTotalSupplyInput =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn = FungibleResourceManagerBlueprint::get_total_supply(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME => {
                 let input: ResourceManagerGetAmountForWithdrawalInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::amount_for_withdrawal(
@@ -1257,7 +1260,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {
                 let input: NonFungibleResourceManagerCreateInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create(
@@ -1274,7 +1277,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME => {
                 let input: NonFungibleResourceManagerCreateWithInitialSupplyInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_initial_supply(
@@ -1292,7 +1295,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT => {
                 let input: NonFungibleResourceManagerCreateRuidWithInitialSupplyInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
@@ -1310,16 +1313,17 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_EXPORT_NAME => {
-                let input: NonFungibleResourceManagerMintInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let input: NonFungibleResourceManagerMintInput =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn =
                     NonFungibleResourceManagerBlueprint::mint_non_fungible(input.entries, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_EXPORT_NAME => {
                 let input: NonFungibleResourceManagerMintRuidInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::mint_ruid_non_fungible(
@@ -1330,7 +1334,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => {
                 let input: NonFungibleResourceManagerMintSingleRuidInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::mint_single_ruid_non_fungible(
@@ -1340,30 +1344,31 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME => {
-                let input: ResourceManagerBurnInput = input.as_typed().map_err(|e| {
+                let input: ResourceManagerBurnInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME => {
-                let input: ResourceManagerPackageBurnInput = input.as_typed().map_err(|e| {
+                let input: ResourceManagerPackageBurnInput = input.into_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::package_burn(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME => {
-                let input: ResourceManagerDropEmptyBucketInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let input: ResourceManagerDropEmptyBucketInput =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn =
                     NonFungibleResourceManagerBlueprint::drop_empty_bucket(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_EXPORT_NAME => {
                 let _input: ResourceManagerCreateEmptyBucketInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
@@ -1372,7 +1377,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EMPTY_VAULT_EXPORT_NAME => {
                 let _input: ResourceManagerCreateEmptyVaultInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_empty_vault(api)?;
@@ -1381,7 +1386,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => {
                 let input: NonFungibleResourceManagerUpdateDataInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::update_non_fungible_data(
@@ -1394,7 +1399,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => {
                 let input: NonFungibleResourceManagerExistsInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::non_fungible_exists(input.id, api)?;
@@ -1402,22 +1407,23 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME => {
                 let _input: ResourceManagerGetResourceTypeInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_resource_type(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME => {
-                let _input: ResourceManagerGetTotalSupplyInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let _input: ResourceManagerGetTotalSupplyInput =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_total_supply(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME => {
                 let input: ResourceManagerGetAmountForWithdrawalInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::amount_for_withdrawal(
@@ -1429,7 +1435,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => {
                 let input: NonFungibleResourceManagerGetNonFungibleInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_non_fungible(input.id, api)?;
@@ -1437,21 +1443,21 @@ impl ResourceNativePackage {
             }
 
             FUNGIBLE_VAULT_LOCK_FEE_IDENT => {
-                let input: FungibleVaultLockFeeInput = input.as_typed().map_err(|e| {
+                let input: FungibleVaultLockFeeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::lock_fee(input.amount, input.contingent, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
-                let input: VaultTakeInput = input.as_typed().map_err(|e| {
+                let input: VaultTakeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::take(&input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME => {
-                let input: VaultTakeAdvancedInput = input.as_typed().map_err(|e| {
+                let input: VaultTakeAdvancedInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::take_advanced(
@@ -1462,35 +1468,35 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
-                let input: VaultRecallInput = input.as_typed().map_err(|e| {
+                let input: VaultRecallInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::recall(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_FREEZE_EXPORT_NAME => {
-                let input: VaultFreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultFreezeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::freeze(input.to_freeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME => {
-                let input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultUnfreezeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::unfreeze(input.to_unfreeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
-                let input: VaultPutInput = input.as_typed().map_err(|e| {
+                let input: VaultPutInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
-                let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
+                let _input: VaultGetAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::get_amount(api)?;
@@ -1498,7 +1504,7 @@ impl ResourceNativePackage {
             }
             FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 let input: FungibleVaultCreateProofOfAmountInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleVaultBlueprint::create_proof_of_amount(input.amount, api)?;
@@ -1506,7 +1512,7 @@ impl ResourceNativePackage {
             }
             FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
                 let input: FungibleVaultLockFungibleAmountInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleVaultBlueprint::lock_amount(input.amount, api)?;
@@ -1514,14 +1520,14 @@ impl ResourceNativePackage {
             }
             FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME => {
                 let input: FungibleVaultUnlockFungibleAmountInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleVaultBlueprint::unlock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_BURN_EXPORT_NAME => {
-                let input: VaultBurnInput = input.as_typed().map_err(|e| {
+                let input: VaultBurnInput = input.into_typed().map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::burn(input.amount, api)?;
@@ -1529,7 +1535,7 @@ impl ResourceNativePackage {
             }
 
             NON_FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME => {
-                let input: VaultTakeAdvancedInput = input.as_typed().map_err(|e| {
+                let input: VaultTakeAdvancedInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::take_advanced(
@@ -1540,7 +1546,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
-                let input: VaultTakeInput = input.as_typed().map_err(|e| {
+                let input: VaultTakeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::take(&input.amount, api)?;
@@ -1548,7 +1554,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => {
                 let input: NonFungibleVaultTakeNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::take_non_fungibles(
@@ -1558,21 +1564,21 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
-                let input: VaultRecallInput = input.as_typed().map_err(|e| {
+                let input: VaultRecallInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::recall(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME => {
-                let input: VaultFreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultFreezeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::freeze(input.to_freeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME => {
-                let input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultUnfreezeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::unfreeze(input.to_unfreeze, api)?;
@@ -1580,7 +1586,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
                 let input: NonFungibleVaultRecallNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::recall_non_fungibles(
@@ -1590,14 +1596,14 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
-                let input: VaultPutInput = input.as_typed().map_err(|e| {
+                let input: VaultPutInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME => {
-                let _input: VaultGetAmountInput = input.as_typed().map_err(|e| {
+                let _input: VaultGetAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::get_amount(api)?;
@@ -1605,7 +1611,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => {
                 let input: NonFungibleVaultGetNonFungibleLocalIdsInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(input.limit, api)?;
@@ -1613,7 +1619,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_VAULT_CONTAINS_NON_FUNGIBLE_IDENT => {
                 let input: NonFungibleVaultContainsNonFungibleInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::contains_non_fungible(input.id, api)?;
@@ -1621,7 +1627,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::create_proof_of_non_fungibles(input.ids, api)?;
@@ -1629,7 +1635,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 let input: NonFungibleVaultLockNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::lock_non_fungibles(&input.local_ids, api)?;
@@ -1637,14 +1643,14 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 let input: NonFungibleVaultUnlockNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::unlock_non_fungibles(input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME => {
-                let input: VaultBurnInput = input.as_typed().map_err(|e| {
+                let input: VaultBurnInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleVaultBlueprint::burn(input.amount, api)?;
@@ -1652,7 +1658,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => {
                 let input: NonFungibleVaultBurnNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::burn_non_fungibles(
@@ -1663,21 +1669,21 @@ impl ResourceNativePackage {
             }
 
             FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
-                let _input: ProofCloneInput = input.as_typed().map_err(|e| {
+                let _input: ProofCloneInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleProofBlueprint::clone(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME => {
-                let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
+                let _input: ProofGetAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleProofBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
-                let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
+                let _input: ProofGetResourceAddressInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1685,21 +1691,21 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_PROOF_DROP_EXPORT_NAME => {
-                let input: ProofDropInput = input.as_typed().map_err(|e| {
+                let input: ProofDropInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleProofBlueprint::drop(input.proof, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME => {
-                let _input: OnDropInput = input.as_typed().map_err(|e| {
+                let _input: OnDropInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleProofBlueprint::on_drop(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_PROOF_ON_MOVE_EXPORT_NAME => {
-                let input: OnMoveInput = input.as_typed().map_err(|e| {
+                let input: OnMoveInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleProofBlueprint::on_move(
@@ -1711,21 +1717,21 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
-                let _input: ProofCloneInput = input.as_typed().map_err(|e| {
+                let _input: ProofCloneInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::clone(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME => {
-                let _input: ProofGetAmountInput = input.as_typed().map_err(|e| {
+                let _input: ProofGetAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT => {
-                let _input: NonFungibleProofGetLocalIdsInput = input.as_typed().map_err(|e| {
+                let _input: NonFungibleProofGetLocalIdsInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::get_local_ids(api)?;
@@ -1733,7 +1739,7 @@ impl ResourceNativePackage {
             }
 
             NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
-                let _input: ProofGetResourceAddressInput = input.as_typed().map_err(|e| {
+                let _input: ProofGetResourceAddressInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1741,21 +1747,21 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME => {
-                let input: ProofDropInput = input.as_typed().map_err(|e| {
+                let input: ProofDropInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::drop(input.proof, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME => {
-                let _input: OnDropInput = input.as_typed().map_err(|e| {
+                let _input: OnDropInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::on_drop(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_PROOF_ON_MOVE_EXPORT_NAME => {
-                let input: OnMoveInput = input.as_typed().map_err(|e| {
+                let input: OnMoveInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::on_move(
@@ -1768,21 +1774,21 @@ impl ResourceNativePackage {
             }
 
             FUNGIBLE_BUCKET_PUT_EXPORT_NAME => {
-                let input: BucketPutInput = input.as_typed().map_err(|e| {
+                let input: BucketPutInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleBucketBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => {
-                let input: BucketTakeInput = input.as_typed().map_err(|e| {
+                let input: BucketTakeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleBucketBlueprint::take(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_TAKE_ADVANCED_EXPORT_NAME => {
-                let input: BucketTakeAdvancedInput = input.as_typed().map_err(|e| {
+                let input: BucketTakeAdvancedInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleBucketBlueprint::take_advanced(
@@ -1793,7 +1799,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
-                let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
+                let _input: BucketGetAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1802,7 +1808,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&amount))
             }
             FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
-                let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
+                let _input: BucketGetResourceAddressInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleBucketBlueprint::get_resource_address(api)?;
@@ -1810,49 +1816,49 @@ impl ResourceNativePackage {
             }
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 let input: FungibleBucketCreateProofOfAmountInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleBucketBlueprint::create_proof_of_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
-                let _input: BucketCreateProofOfAllInput = input.as_typed().map_err(|e| {
+                let _input: BucketCreateProofOfAllInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleBucketBlueprint::create_proof_of_all(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME => {
-                let input: FungibleBucketLockAmountInput = input.as_typed().map_err(|e| {
+                let input: FungibleBucketLockAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleBucketBlueprint::lock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME => {
-                let input: FungibleBucketLockAmountInput = input.as_typed().map_err(|e| {
+                let input: FungibleBucketLockAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleBucketBlueprint::unlock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME => {
-                let input: BucketPutInput = input.as_typed().map_err(|e| {
+                let input: BucketPutInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleBucketBlueprint::put(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => {
-                let input: BucketTakeInput = input.as_typed().map_err(|e| {
+                let input: BucketTakeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleBucketBlueprint::take(&input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_TAKE_ADVANCED_EXPORT_NAME => {
-                let input: BucketTakeAdvancedInput = input.as_typed().map_err(|e| {
+                let input: BucketTakeAdvancedInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleBucketBlueprint::take_advanced(
@@ -1863,14 +1869,14 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME => {
-                let input: BucketTakeNonFungiblesInput = input.as_typed().map_err(|e| {
+                let input: BucketTakeNonFungiblesInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleBucketBlueprint::take_non_fungibles(&input.ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
-                let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
+                let _input: BucketGetAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1879,7 +1885,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&amount))
             }
             NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
-                let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
+                let _input: BucketGetResourceAddressInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let address = NonFungibleBucketBlueprint::get_resource_address(api)?;
@@ -1887,7 +1893,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 let input: NonFungibleBucketCreateProofOfNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn =
@@ -1895,7 +1901,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
-                let _input: BucketCreateProofOfAllInput = input.as_typed().map_err(|e| {
+                let _input: BucketCreateProofOfAllInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleBucketBlueprint::create_proof_of_all(api)?;
@@ -1903,15 +1909,16 @@ impl ResourceNativePackage {
             }
 
             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME => {
-                let _input: BucketGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let _input: BucketGetNonFungibleLocalIdsInput =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn = NonFungibleBucketBlueprint::get_non_fungible_local_ids(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_CONTAINS_NON_FUNGIBLE_EXPORT_NAME => {
                 let input: NonFungibleVaultContainsNonFungibleInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleBucketBlueprint::contains_non_fungible(input.id, api)?;
@@ -1919,7 +1926,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 let input: NonFungibleBucketLockNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleBucketBlueprint::lock_non_fungibles(&input.local_ids, api)?;
@@ -1927,7 +1934,7 @@ impl ResourceNativePackage {
             }
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
                 let input: NonFungibleBucketUnlockNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleBucketBlueprint::unlock_non_fungibles(input.local_ids, api)?;
@@ -1948,7 +1955,7 @@ impl ResourceNativePackage {
             }
             WORKTOP_DRAIN_IDENT => WorktopBlueprint::drain(input, api),
             AUTH_ZONE_POP_EXPORT_NAME => {
-                let _input: AuthZonePopInput = input.as_typed().map_err(|e| {
+                let _input: AuthZonePopInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1957,7 +1964,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_PUSH_EXPORT_NAME => {
-                let input: AuthZonePushInput = input.as_typed().map_err(|e| {
+                let input: AuthZonePushInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1966,7 +1973,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
-                let input: AuthZoneCreateProofOfAmountInput = input.as_typed().map_err(|e| {
+                let input: AuthZoneCreateProofOfAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -1980,7 +1987,7 @@ impl ResourceNativePackage {
             }
             AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 let input: AuthZoneCreateProofOfNonFungiblesInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
@@ -1993,7 +2000,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME => {
-                let input: AuthZoneCreateProofOfAllInput = input.as_typed().map_err(|e| {
+                let input: AuthZoneCreateProofOfAllInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -2002,7 +2009,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_DROP_PROOFS_EXPORT_NAME => {
-                let _input: AuthZoneDropProofsInput = input.as_typed().map_err(|e| {
+                let _input: AuthZoneDropProofsInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -2011,7 +2018,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_DROP_SIGNATURE_PROOFS_EXPORT_NAME => {
-                let _input: AuthZoneDropProofsInput = input.as_typed().map_err(|e| {
+                let _input: AuthZoneDropProofsInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -2020,7 +2027,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_DROP_REGULAR_PROOFS_EXPORT_NAME => {
-                let _input: AuthZoneDropProofsInput = input.as_typed().map_err(|e| {
+                let _input: AuthZoneDropProofsInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -2029,7 +2036,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&()))
             }
             AUTH_ZONE_DRAIN_EXPORT_NAME => {
-                let _input: AuthZoneDrainInput = input.as_typed().map_err(|e| {
+                let _input: AuthZoneDrainInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -2038,7 +2045,7 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&proofs))
             }
             AUTH_ZONE_ASSERT_ACCESS_RULE_EXPORT_NAME => {
-                let input: AuthZoneAssertAccessRuleInput = input.as_typed().map_err(|e| {
+                let input: AuthZoneAssertAccessRuleInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 

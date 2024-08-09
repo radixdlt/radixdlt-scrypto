@@ -4,7 +4,7 @@ use crate::blueprints::resource::{
 };
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::transaction::{BalanceChange, StateUpdateSummary};
-use radix_common::prelude::scrypto_decode;
+use radix_common::prelude::*;
 use radix_common::traits::ScryptoEvent;
 use radix_common::types::ResourceAddress;
 use radix_engine_interface::api::ObjectModuleId;
@@ -18,7 +18,7 @@ use sbor::rust::vec::Vec;
 
 pub fn reconcile_resource_state_and_events<'a, S: SubstateDatabase>(
     summary: &StateUpdateSummary,
-    events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
+    events: &Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
     system_db: SystemDatabaseReader<'a, S>,
 ) {
     let mut resource_changes_from_state = compute_resource_changes_from_state(summary);
@@ -59,7 +59,7 @@ fn compute_resource_changes_from_state(
 }
 
 fn compute_resource_changes_from_resman_events(
-    events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
+    events: &Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
 ) -> IndexMap<ResourceAddress, BalanceChange> {
     let mut resource_changes_from_resman_events: IndexMap<ResourceAddress, BalanceChange> =
         indexmap!();
@@ -73,11 +73,11 @@ fn compute_resource_changes_from_resman_events(
 
                 let change = match event_id.1.as_str() {
                     MintFungibleResourceEvent::EVENT_NAME => {
-                        let mint: MintFungibleResourceEvent = scrypto_decode(event).unwrap();
+                        let mint: MintFungibleResourceEvent = event.decode_as().unwrap();
                         BalanceChange::Fungible(mint.amount)
                     }
                     BurnFungibleResourceEvent::EVENT_NAME => {
-                        let burn: BurnFungibleResourceEvent = scrypto_decode(event).unwrap();
+                        let burn: BurnFungibleResourceEvent = event.decode_as().unwrap();
                         BalanceChange::Fungible(burn.amount.neg())
                     }
                     _ => continue,
@@ -93,14 +93,14 @@ fn compute_resource_changes_from_resman_events(
 
                 let change = match event_id.1.as_str() {
                     MintNonFungibleResourceEvent::EVENT_NAME => {
-                        let mint: MintNonFungibleResourceEvent = scrypto_decode(event).unwrap();
+                        let mint: MintNonFungibleResourceEvent = event.decode_as().unwrap();
                         BalanceChange::NonFungible {
                             added: mint.ids.into_iter().collect(),
                             removed: btreeset!(),
                         }
                     }
                     BurnNonFungibleResourceEvent::EVENT_NAME => {
-                        let burn: BurnNonFungibleResourceEvent = scrypto_decode(event).unwrap();
+                        let burn: BurnNonFungibleResourceEvent = event.decode_as().unwrap();
                         BalanceChange::NonFungible {
                             added: btreeset!(),
                             removed: burn.ids.into_iter().collect(),
@@ -126,7 +126,7 @@ fn compute_resource_changes_from_resman_events(
 }
 
 fn compute_resource_changes_from_vault_events<'a, S: SubstateDatabase>(
-    events: &Vec<(EventTypeIdentifier, Vec<u8>)>,
+    events: &Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
     system_db: &SystemDatabaseReader<'a, S>,
 ) -> IndexMap<ResourceAddress, BalanceChange> {
     let mut resource_changes_from_vault_events: IndexMap<ResourceAddress, BalanceChange> =
@@ -146,20 +146,19 @@ fn compute_resource_changes_from_vault_events<'a, S: SubstateDatabase>(
 
                 let change = match event_id.1.as_str() {
                     fungible_vault::DepositEvent::EVENT_NAME => {
-                        let deposit: fungible_vault::DepositEvent = scrypto_decode(event).unwrap();
+                        let deposit: fungible_vault::DepositEvent = event.decode_as().unwrap();
                         BalanceChange::Fungible(deposit.amount)
                     }
                     fungible_vault::WithdrawEvent::EVENT_NAME => {
-                        let withdraw: fungible_vault::WithdrawEvent =
-                            scrypto_decode(event).unwrap();
+                        let withdraw: fungible_vault::WithdrawEvent = event.decode_as().unwrap();
                         BalanceChange::Fungible(withdraw.amount.neg())
                     }
                     fungible_vault::RecallEvent::EVENT_NAME => {
-                        let recall: fungible_vault::RecallEvent = scrypto_decode(event).unwrap();
+                        let recall: fungible_vault::RecallEvent = event.decode_as().unwrap();
                         BalanceChange::Fungible(recall.amount.neg())
                     }
                     fungible_vault::PayFeeEvent::EVENT_NAME => {
-                        let recall: fungible_vault::PayFeeEvent = scrypto_decode(event).unwrap();
+                        let recall: fungible_vault::PayFeeEvent = event.decode_as().unwrap();
                         BalanceChange::Fungible(recall.amount.neg())
                     }
                     _ => continue,
@@ -180,8 +179,7 @@ fn compute_resource_changes_from_vault_events<'a, S: SubstateDatabase>(
 
                 let change = match event_id.1.as_str() {
                     non_fungible_vault::DepositEvent::EVENT_NAME => {
-                        let deposit: non_fungible_vault::DepositEvent =
-                            scrypto_decode(event).unwrap();
+                        let deposit: non_fungible_vault::DepositEvent = event.decode_as().unwrap();
                         BalanceChange::NonFungible {
                             added: deposit.ids.into_iter().collect(),
                             removed: btreeset!(),
@@ -189,15 +187,14 @@ fn compute_resource_changes_from_vault_events<'a, S: SubstateDatabase>(
                     }
                     non_fungible_vault::WithdrawEvent::EVENT_NAME => {
                         let withdraw: non_fungible_vault::WithdrawEvent =
-                            scrypto_decode(event).unwrap();
+                            event.decode_as().unwrap();
                         BalanceChange::NonFungible {
                             added: btreeset!(),
                             removed: withdraw.ids.into_iter().collect(),
                         }
                     }
                     non_fungible_vault::RecallEvent::EVENT_NAME => {
-                        let recall: non_fungible_vault::RecallEvent =
-                            scrypto_decode(event).unwrap();
+                        let recall: non_fungible_vault::RecallEvent = event.decode_as().unwrap();
                         BalanceChange::NonFungible {
                             added: btreeset!(),
                             removed: recall.ids.into_iter().collect(),

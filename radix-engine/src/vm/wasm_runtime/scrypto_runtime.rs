@@ -253,7 +253,8 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         );
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.key_value_store_open_entry(&node_id, &key, flags)?;
+        let key = ScryptoUnvalidatedRawValue::from_payload(key);
+        let handle = self.api.key_value_store_open_entry(&node_id, key, flags)?;
 
         Ok(handle)
     }
@@ -263,7 +264,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         handle: u32,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let value = self.api.key_value_entry_get(handle)?;
-        self.allocate_buffer(value)
+        self.allocate_buffer(scrypto_encode(&value).unwrap())
     }
 
     fn key_value_entry_set(
@@ -271,6 +272,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         handle: u32,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        let data = ScryptoUnvalidatedRawValue::from_payload(data);
         self.api.key_value_entry_set(handle, data)?;
         Ok(())
     }
@@ -280,7 +282,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         handle: u32,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let value = self.api.key_value_entry_remove(handle)?;
-        self.allocate_buffer(value)
+        self.allocate_buffer(scrypto_encode(&value).unwrap())
     }
 
     fn key_value_entry_close(&mut self, handle: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -297,8 +299,9 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let rtn = self.api.key_value_store_remove_entry(&node_id, &key)?;
-        self.allocate_buffer(rtn)
+        let key = ScryptoUnvalidatedRawValue::from_payload(key);
+        let rtn = self.api.key_value_store_remove_entry(&node_id, key)?;
+        self.allocate_buffer(scrypto_encode(&rtn).unwrap())
     }
 
     fn actor_open_field(
@@ -318,8 +321,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         handle: SubstateHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let substate = self.api.field_read(handle)?;
-
-        self.allocate_buffer(substate)
+        self.allocate_buffer(scrypto_encode(&substate).unwrap())
     }
 
     fn field_entry_write(
@@ -327,6 +329,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
         handle: SubstateHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        let data = ScryptoUnvalidatedRawValue::from_payload(data);
         self.api.field_write(handle, data)?;
 
         Ok(())
@@ -450,7 +453,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.api.actor_emit_event(
             String::from_utf8(event_name).map_err(|_| WasmRuntimeError::InvalidString)?,
-            event_payload,
+            ScryptoUnvalidatedRawPayload::from_payload(event_payload),
             event_flags,
         )?;
         Ok(())

@@ -321,7 +321,7 @@ where
                 ConsensusManagerField::State.field_index(),
             )
             .map_err(|_| ScenarioExecutorError::FailedToGetEpoch)?
-            .as_typed::<VersionedConsensusManagerState>()
+            .into_typed::<VersionedConsensusManagerState>()
             .unwrap()
             .fully_update_and_into_latest_version()
             .epoch;

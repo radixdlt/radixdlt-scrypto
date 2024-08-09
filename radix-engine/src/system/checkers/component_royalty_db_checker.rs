@@ -18,8 +18,8 @@ impl ApplicationChecker for ComponentRoyaltyDatabaseChecker {
         node_id: NodeId,
         module_id: ModuleId,
         collection_index: CollectionIndex,
-        key: &Vec<u8>,
-        value: &Vec<u8>,
+        key: &ScryptoRawValue,
+        value: &ScryptoRawValue,
     ) {
         // Ignore if the module id is not the royalty module.
         if module_id != ModuleId::Royalty {
@@ -31,18 +31,18 @@ impl ApplicationChecker for ComponentRoyaltyDatabaseChecker {
             node_id,
             module_id,
             collection_index,
-            key: key.clone(),
-            value: value.clone(),
+            key: key.ref_into_owned(),
+            value: value.ref_into_owned(),
         };
 
         let collection_index =
             ComponentRoyaltyCollection::from_repr(collection_index).expect("Impossible case!");
         match collection_index {
             ComponentRoyaltyCollection::MethodAmountKeyValue => {
-                let _key = scrypto_decode::<ComponentRoyaltyMethodAmountKeyPayload>(&key)
-                    .expect("Impossible Case.");
-                let value = scrypto_decode::<ComponentRoyaltyMethodAmountEntryPayload>(&value)
-                    .expect("Impossible Case.");
+                let _key: ComponentRoyaltyMethodAmountKeyPayload =
+                    key.decode_as().expect("Impossible Case.");
+                let value: ComponentRoyaltyMethodAmountEntryPayload =
+                    value.decode_as().expect("Impossible Case.");
 
                 self.check_royalty_amount(value, location);
             }

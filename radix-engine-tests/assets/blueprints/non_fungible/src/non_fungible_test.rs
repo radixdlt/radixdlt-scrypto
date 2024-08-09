@@ -573,7 +573,7 @@ mod non_fungible_test {
         fn create_non_fungible_with_given_type(
             func_name: &str,
             id_type: NonFungibleIdType,
-            entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+            entries: IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)>,
             address_reservation: Option<GlobalAddressReservation>,
         ) -> NonFungibleBucket {
             let rtn = match func_name {
@@ -582,7 +582,7 @@ mod non_fungible_test {
                     let entries = entries
                         .into_iter()
                         .map(|(_, v)| v)
-                        .collect::<Vec<(ScryptoValue,)>>();
+                        .collect::<Vec<(_,)>>();
 
                     ScryptoVmV1Api::blueprint_call(
                     RESOURCE_PACKAGE,

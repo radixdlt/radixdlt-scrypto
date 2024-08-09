@@ -97,7 +97,7 @@ impl AccountLockerBlueprint {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         dispatch! {
             EXPORT_NAME,
             export_name,
@@ -529,10 +529,10 @@ impl AccountLockerBlueprint {
     ) -> Result<O, RuntimeError> {
         // The collection on the blueprint maps an account address to a key value store. We read the
         // node id of that key value store.
-        let account_claims_handle = api.actor_open_key_value_entry(
+        let account_claims_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             AccountLockerCollection::AccountClaimsKeyValue.collection_index(),
-            &scrypto_encode(&account_address).unwrap(),
+            &account_address,
             LockFlags::MUTABLE,
         )?;
         let account_claims = api
@@ -564,9 +564,9 @@ impl AccountLockerBlueprint {
         };
 
         // Lock the entry in the key-value store which contains the vault and attempt to get it.
-        let vault_entry_handle = api.key_value_store_open_entry(
+        let vault_entry_handle = api.key_value_store_open_entry_typed(
             account_claims_kv_store.as_node_id(),
-            &scrypto_encode(&resource_address).unwrap(),
+            &resource_address,
             LockFlags::MUTABLE,
         )?;
 
@@ -604,10 +604,10 @@ impl AccountLockerBlueprint {
     ) -> Result<O, RuntimeError> {
         // The collection on the blueprint maps an account address to a key value store. We read the
         // node id of that key value store.
-        let account_claims_handle = api.actor_open_key_value_entry(
+        let account_claims_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             AccountLockerCollection::AccountClaimsKeyValue.collection_index(),
-            &scrypto_encode(&account_address).unwrap(),
+            &account_address,
             LockFlags::read_only(),
         )?;
         let account_claims = api
@@ -630,9 +630,9 @@ impl AccountLockerBlueprint {
 
         // Lock the entry in the key-value store which contains the vault and attempt to get it. If
         // we're allowed to create the vault.
-        let vault_entry_handle = api.key_value_store_open_entry(
+        let vault_entry_handle = api.key_value_store_open_entry_typed(
             account_claims_kv_store.as_node_id(),
-            &scrypto_encode(&resource_address).unwrap(),
+            &resource_address,
             LockFlags::read_only(),
         )?;
 

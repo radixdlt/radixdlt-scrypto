@@ -28,8 +28,8 @@ use super::CheckedTruncate;
 /// The finite set of values are of the form `m / 10^18`, where `m` is
 /// an integer such that `-2^(192 - 1) <= m < 2^(192 - 1)`.
 ///
-/// Fractional part: ~60 bits/18 digits
-/// Integer part   : 132 bits /40 digits
+/// Fractional part: ~60 bits / 18 digits
+/// Integer part   : ~132 bits / ~40 digits
 /// Max            :  3138550867693340381917894711603833208051.177722232017256447
 /// Min            : -3138550867693340381917894711603833208051.177722232017256448
 ///

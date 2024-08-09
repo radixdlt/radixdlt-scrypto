@@ -1200,7 +1200,7 @@ impl ConsensusManagerBlueprint {
             config.max_validators + (config.max_validators / 10) + 10;
 
         let mut top_registered_validators: Vec<(
-            ComponentAddress,
+            (_, ComponentAddress),
             ConsensusManagerRegisteredValidatorByStakeEntryPayload,
         )> = api.actor_sorted_index_scan_typed(
             ACTOR_STATE_SELF,
@@ -1221,7 +1221,7 @@ impl ConsensusManagerBlueprint {
             validators_by_stake_desc: top_registered_validators
                 .into_iter()
                 .take(config.max_validators as usize)
-                .map(|(component_address, validator)| {
+                .map(|((_, component_address), validator)| {
                     (
                         component_address,
                         validator.fully_update_and_into_latest_version(),

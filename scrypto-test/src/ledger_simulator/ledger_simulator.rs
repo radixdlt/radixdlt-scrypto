@@ -19,24 +19,15 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
-    ConsensusManagerGetCurrentTimeInputV2, ConsensusManagerNextRoundInput, EpochChangeCondition,
-    LeaderProposalHistory, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
-    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-    VALIDATOR_STAKE_AS_OWNER_IDENT,
-};
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::pool::{
     OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
 use radix_engine_interface::prelude::{dec, freeze_roles, rule};
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase};
-use radix_substate_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase, SubstateDatabase,
-};
+use radix_substate_store_interface::db_key_mapper::*;
+use radix_substate_store_interface::interface::*;
 use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_substate_store_queries::typed_native_events::to_typed_native_event;
 use radix_substate_store_queries::typed_substate_layout::*;
@@ -418,7 +409,7 @@ pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
     next_transaction_nonce: u32,
 
     /// Events collected from all the committed transactions
-    collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    collected_events: Vec<Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>>,
     /// Track whether any of the committed transaction has used free credit
     xrd_free_credits_used: bool,
 
@@ -440,7 +431,7 @@ pub struct LedgerSimulatorSnapshot {
     database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
-    collected_events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+    collected_events: Vec<Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>>,
     xrd_free_credits_used: bool,
     with_kernel_trace: bool,
     with_receipt_substate_check: bool,
@@ -483,7 +474,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         &mut self.database
     }
 
-    pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>> {
+    pub fn collected_events(&self) -> &Vec<Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>> {
         self.collected_events.as_ref()
     }
 
@@ -655,9 +646,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             )
             .unwrap()
             .map(|(key, value)| {
-                let key = key.into_map();
-                let hash: SchemaHash = scrypto_decode(&key).unwrap();
-                let schema: PackageSchemaEntryPayload = scrypto_decode(&value).unwrap();
+                let hash: SchemaHash = key.into_map().decode_as().unwrap();
+                let schema: PackageSchemaEntryPayload = value.decode_as().unwrap();
                 (hash, schema.into_content())
             })
             .collect()
@@ -677,9 +667,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .unwrap()
             .map(|(key, value)| {
                 let map_key = key.into_map();
-                let key: BlueprintVersionKey = scrypto_decode(&map_key).unwrap();
+                let key: BlueprintVersionKey = map_key.decode_as().unwrap();
                 let definition: PackageBlueprintVersionDefinitionEntryPayload =
-                    scrypto_decode(&value).unwrap();
+                    value.decode_as().unwrap();
                 (key, definition.fully_update_and_into_latest_version())
             })
             .collect()
@@ -764,11 +754,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 NonFungibleVaultCollection::NonFungibleIndex.collection_index(),
             )
             .unwrap()
-            .map(|(key, _)| {
-                let map_key = key.into_map();
-                let id: NonFungibleLocalId = scrypto_decode(&map_key).unwrap();
-                id
-            })
+            .map(|(key, _)| key.into_map().decode_as().unwrap())
             .collect();
 
         Some((amount, Box::new(iter.into_iter())))
@@ -2303,7 +2289,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .application_events
             .iter()
             .filter(|(id, _data)| self.is_event_name_equal::<T>(id))
-            .map(|(_id, data)| scrypto_decode::<T>(data).unwrap())
+            .map(|(_id, data)| data.decode_as().unwrap())
             .collect::<Vec<_>>()
     }
 

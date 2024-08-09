@@ -160,21 +160,24 @@ impl Publish {
             let original_code = PackageCodeOriginalCode { code };
             let instrumented_code = PackageCodeInstrumentedCode { instrumented_code };
             {
-                let key =
-                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
+                    &scrypto_encode_to_payload(&code_hash).unwrap(),
+                );
                 let update =
                     DatabaseUpdate::Set(scrypto_encode(&vm_type.into_locked_substate()).unwrap());
                 vm_type_updates.insert(key, update);
 
-                let key =
-                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
+                    &scrypto_encode_to_payload(&code_hash).unwrap(),
+                );
                 let update = DatabaseUpdate::Set(
                     scrypto_encode(&original_code.into_locked_substate()).unwrap(),
                 );
                 original_code_updates.insert(key, update);
 
-                let key =
-                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
+                let key = SpreadPrefixKeyMapper::map_to_db_sort_key(
+                    &scrypto_encode_to_payload(&code_hash).unwrap(),
+                );
                 let update = DatabaseUpdate::Set(
                     scrypto_encode(&instrumented_code.into_locked_substate()).unwrap(),
                 );
@@ -190,7 +193,7 @@ impl Publish {
                 let schema_hash = blueprint_schema.schema.generate_schema_hash();
                 schema_updates.insert(
                     SpreadPrefixKeyMapper::map_to_db_sort_key(
-                        &scrypto_encode(&schema_hash).unwrap(),
+                        &scrypto_encode_to_payload(&schema_hash).unwrap(),
                     ),
                     DatabaseUpdate::Set(
                         scrypto_encode(&blueprint_schema.schema.into_locked_substate()).unwrap(),
@@ -264,13 +267,13 @@ impl Publish {
                 };
                 blueprint_updates.insert(
                     SpreadPrefixKeyMapper::map_to_db_sort_key(
-                        &scrypto_encode(&blueprint_version_key.clone()).unwrap(),
+                        &scrypto_encode_to_payload(&blueprint_version_key.clone()).unwrap(),
                     ),
                     DatabaseUpdate::Set(scrypto_encode(&def.into_locked_substate()).unwrap()),
                 );
                 dependency_updates.insert(
                     SpreadPrefixKeyMapper::map_to_db_sort_key(
-                        &scrypto_encode(&blueprint_version_key.clone()).unwrap(),
+                        &scrypto_encode_to_payload(&blueprint_version_key.clone()).unwrap(),
                     ),
                     DatabaseUpdate::Set(
                         scrypto_encode(
@@ -284,7 +287,7 @@ impl Publish {
                 );
                 auth_config_updates.insert(
                     SpreadPrefixKeyMapper::map_to_db_sort_key(
-                        &scrypto_encode(&blueprint_version_key.clone()).unwrap(),
+                        &scrypto_encode_to_payload(&blueprint_version_key.clone()).unwrap(),
                     ),
                     DatabaseUpdate::Set(
                         scrypto_encode(&blueprint_definition.auth_config.into_locked_substate())
@@ -293,7 +296,7 @@ impl Publish {
                 );
                 royalty_config_updates.insert(
                     SpreadPrefixKeyMapper::map_to_db_sort_key(
-                        &scrypto_encode(&blueprint_version_key.clone()).unwrap(),
+                        &scrypto_encode_to_payload(&blueprint_version_key.clone()).unwrap(),
                     ),
                     DatabaseUpdate::Set(
                         scrypto_encode(&blueprint_definition.royalty_config.into_locked_substate())

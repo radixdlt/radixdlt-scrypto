@@ -223,8 +223,8 @@ impl KernelCallbackObject for TestCallbackObject {
     fn invoke_upstream<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         _api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
-        Ok(args.clone())
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
+        Ok(args.ref_into_owned())
     }
 
     fn auto_drop<Y: KernelApi<Self>>(
@@ -323,7 +323,7 @@ impl KernelFuzzer {
         }
     }
 
-    fn next_value(&mut self) -> IndexedScryptoValue {
+    fn next_value(&mut self) -> IndexedOwnedScryptoValue {
         let mut owned = Vec::new();
         let mut refs = Vec::new();
         let num_children = self.rng.gen_range(0usize..self.nodes.len());
@@ -336,7 +336,7 @@ impl KernelFuzzer {
             }
         }
 
-        IndexedScryptoValue::from_typed(&(owned, refs))
+        IndexedOwnedScryptoValue::from_typed(&(owned, refs))
     }
 
     fn next_entity_type(&mut self) -> EntityType {

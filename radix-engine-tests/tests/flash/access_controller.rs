@@ -1130,7 +1130,7 @@ where
             AccessControllerV2Field::State.field_index(),
         )
         .unwrap()
-        .as_typed::<AccessControllerV2StateFieldPayload>()
+        .into_typed::<AccessControllerV2StateFieldPayload>()
         .unwrap()
         .into_content()
         .into_versions()

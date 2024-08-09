@@ -108,8 +108,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                     .key_value_store_iter(&node_id, None)
                     .unwrap()
                 {
-                    let (_, owned_nodes, _) =
-                        IndexedScryptoValue::from_slice(&value).unwrap().unpack();
+                    let (_, owned_nodes, _) = IndexedScryptoValue::from_value(value).unpack();
                     for child_node_id in owned_nodes {
                         Self::traverse_recursive(
                             system_db_reader,
@@ -170,9 +169,8 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
                         )
                         .unwrap()
                     {
-                        let map_key = key.into_map();
                         let non_fungible_local_id: NonFungibleLocalId =
-                            scrypto_decode(&map_key).unwrap();
+                            key.into_map().decode_as().unwrap();
                         visitor.visit_non_fungible(
                             node_id,
                             &ResourceAddress::new_or_panic(info.get_outer_object().into()),
@@ -253,7 +251,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor + 'v> StateTreeTraverser<'
 
                         for (substate_key, value) in iter {
                             let (_, owned_nodes, _) =
-                                IndexedScryptoValue::from_slice(&value).unwrap().unpack();
+                                IndexedScryptoValue::from_typed(&value).unpack();
                             for child_node_id in owned_nodes {
                                 Self::traverse_recursive(
                                     system_db_reader,

@@ -23,10 +23,10 @@ impl ConsensusManagerNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             CONSENSUS_MANAGER_CREATE_IDENT => {
-                let input: ConsensusManagerCreateInput = input.as_typed().map_err(|e| {
+                let input: ConsensusManagerCreateInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::create(
@@ -42,7 +42,7 @@ impl ConsensusManagerNativePackage {
             }
             CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => {
                 let _input: ConsensusManagerGetCurrentEpochInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
 
@@ -50,7 +50,7 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_START_IDENT => {
-                let _input: ConsensusManagerStartInput = input.as_typed().map_err(|e| {
+                let _input: ConsensusManagerStartInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::start(api)?;
@@ -59,7 +59,7 @@ impl ConsensusManagerNativePackage {
             }
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => {
                 let input: ConsensusManagerGetCurrentTimeInputV1 =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::get_current_time_v1(input.precision, api)?;
@@ -68,7 +68,7 @@ impl ConsensusManagerNativePackage {
             }
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
                 let input: ConsensusManagerCompareCurrentTimeInputV1 =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::compare_current_time_v1(
@@ -81,7 +81,7 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT => {
-                let input: ConsensusManagerNextRoundInput = input.as_typed().map_err(|e| {
+                let input: ConsensusManagerNextRoundInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ConsensusManagerBlueprint::next_round(
@@ -95,7 +95,7 @@ impl ConsensusManagerNativePackage {
             }
             CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => {
                 let input: ConsensusManagerCreateValidatorInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::create_validator(
@@ -108,56 +108,56 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_REGISTER_IDENT => {
-                let _input: ValidatorRegisterInput = input.as_typed().map_err(|e| {
+                let _input: ValidatorRegisterInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::register(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UNREGISTER_IDENT => {
-                let _input: ValidatorUnregisterInput = input.as_typed().map_err(|e| {
+                let _input: ValidatorUnregisterInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::unregister(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_STAKE_AS_OWNER_IDENT => {
-                let input: ValidatorStakeAsOwnerInput = input.as_typed().map_err(|e| {
+                let input: ValidatorStakeAsOwnerInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::stake_as_owner(input.stake, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_STAKE_IDENT => {
-                let input: ValidatorStakeInput = input.as_typed().map_err(|e| {
+                let input: ValidatorStakeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::stake(input.stake, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UNSTAKE_IDENT => {
-                let input: ValidatorUnstakeInput = input.as_typed().map_err(|e| {
+                let input: ValidatorUnstakeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::unstake(input.stake_unit_bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_CLAIM_XRD_IDENT => {
-                let input: ValidatorClaimXrdInput = input.as_typed().map_err(|e| {
+                let input: ValidatorClaimXrdInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::claim_xrd(input.bucket, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UPDATE_KEY_IDENT => {
-                let input: ValidatorUpdateKeyInput = input.as_typed().map_err(|e| {
+                let input: ValidatorUpdateKeyInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::update_key(input.key, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_UPDATE_FEE_IDENT => {
-                let input: ValidatorUpdateFeeInput = input.as_typed().map_err(|e| {
+                let input: ValidatorUpdateFeeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::update_fee(input.new_fee_factor, api)?;
@@ -165,7 +165,7 @@ impl ConsensusManagerNativePackage {
             }
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => {
                 let input: ValidatorUpdateAcceptDelegatedStakeInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::update_accept_delegated_stake(
@@ -175,28 +175,28 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT => {
-                let _: ValidatorAcceptsDelegatedStakeInput = input.as_typed().map_err(|e| {
+                let _: ValidatorAcceptsDelegatedStakeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::accepts_delegated_stake(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_TOTAL_STAKE_XRD_AMOUNT_IDENT => {
-                let _: ValidatorTotalStakeXrdAmountInput = input.as_typed().map_err(|e| {
+                let _: ValidatorTotalStakeXrdAmountInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::total_stake_xrd_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_TOTAL_STAKE_UNIT_SUPPLY_IDENT => {
-                let _: ValidatorTotalStakeUnitSupplyInput = input.as_typed().map_err(|e| {
+                let _: ValidatorTotalStakeUnitSupplyInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::total_stake_unit_supply(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_GET_REDEMPTION_VALUE_IDENT => {
-                let input: ValidatorGetRedemptionValueInput = input.as_typed().map_err(|e| {
+                let input: ValidatorGetRedemptionValueInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn =
@@ -205,7 +205,7 @@ impl ConsensusManagerNativePackage {
             }
             VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => {
                 let input: ValidatorSignalProtocolUpdateReadinessInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::signal_protocol_update_readiness(input.vote, api)?;
@@ -213,14 +213,14 @@ impl ConsensusManagerNativePackage {
             }
             VALIDATOR_GET_PROTOCOL_UPDATE_READINESS_IDENT => {
                 let _input: ValidatorGetProtocolUpdateReadinessInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::get_protocol_update_readiness(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => {
-                let input: ValidatorLockOwnerStakeUnitsInput = input.as_typed().map_err(|e| {
+                let input: ValidatorLockOwnerStakeUnitsInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::lock_owner_stake_units(input.stake_unit_bucket, api)?;
@@ -228,7 +228,7 @@ impl ConsensusManagerNativePackage {
             }
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => {
                 let input: ValidatorStartUnlockOwnerStakeUnitsInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::start_unlock_owner_stake_units(
@@ -239,14 +239,14 @@ impl ConsensusManagerNativePackage {
             }
             VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => {
                 let _input: ValidatorFinishUnlockOwnerStakeUnitsInput =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ValidatorBlueprint::finish_unlock_owner_stake_units(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_APPLY_EMISSION_IDENT => {
-                let input: ValidatorApplyEmissionInput = input.as_typed().map_err(|e| {
+                let input: ValidatorApplyEmissionInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::apply_emission(
@@ -259,7 +259,7 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_APPLY_REWARD_IDENT => {
-                let input: ValidatorApplyRewardInput = input.as_typed().map_err(|e| {
+                let input: ValidatorApplyRewardInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = ValidatorBlueprint::apply_reward(input.xrd_bucket, input.epoch, api)?;
@@ -279,11 +279,11 @@ impl ConsensusManagerSecondsPrecisionNativeCode {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => {
                 let input: ConsensusManagerGetCurrentTimeInputV2 =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::get_current_time_v2(input.precision, api)?;
@@ -292,7 +292,7 @@ impl ConsensusManagerSecondsPrecisionNativeCode {
             }
             CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => {
                 let input: ConsensusManagerCompareCurrentTimeInputV2 =
-                    input.as_typed().map_err(|e| {
+                    input.into_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = ConsensusManagerBlueprint::compare_current_time_v2(

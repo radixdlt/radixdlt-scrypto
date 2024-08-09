@@ -955,7 +955,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
         .map(|(id, data)| {
             (
                 extract_emitter_node_id(id),
-                scrypto_decode::<ValidatorEmissionAppliedEvent>(data).unwrap(),
+                data.decode_as::<ValidatorEmissionAppliedEvent>().unwrap(),
             )
         })
         .collect::<Vec<_>>();

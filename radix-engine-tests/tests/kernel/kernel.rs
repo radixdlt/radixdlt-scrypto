@@ -170,8 +170,8 @@ impl KernelCallbackObject for TestCallbackObject {
     fn invoke_upstream<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         _api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
-        Ok(args.clone())
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
+        Ok(args.ref_into_owned())
     }
 
     fn auto_drop<Y: KernelApi<Self>>(_nodes: Vec<NodeId>, _api: &mut Y) -> Result<(), RuntimeError> {

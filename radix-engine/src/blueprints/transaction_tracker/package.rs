@@ -117,10 +117,10 @@ impl TransactionTrackerNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             TRANSACTION_TRACKER_CREATE_EXPORT_NAME => {
-                let input: TransactionTrackerCreateInput = input.as_typed().map_err(|e| {
+                let input: TransactionTrackerCreateInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 

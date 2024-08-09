@@ -753,7 +753,7 @@ mod helper_macros {
                     payload_trait: $payload_trait,
                     ----
                     $(#[$attributes])*
-                    pub struct $payload_type_name<$generic_ident: [<$ident_core ContentMarker>] = ScryptoValue>($generic_ident);
+                    pub struct $payload_type_name<$generic_ident: [<$ident_core ContentMarker>] = ScryptoOwnedRawValue>($generic_ident);
                 );
                 // We choose to create an explicit marker trait, as an alternative to a blanket impl
                 // over ScryptoEncode + ScryptoDecode. Any explicit types can implement this trait.
@@ -762,7 +762,7 @@ mod helper_macros {
                 // Anyone needing a type implementing content can use the payload type itself
                 pub trait [<$ident_core ContentMarker>]: ScryptoEncode + ScryptoDecode {}
                 impl [<$ident_core ContentMarker>] for ScryptoValue {}
-                impl [<$ident_core ContentMarker>] for RawScryptoValue<'_> {}
+                impl [<$ident_core ContentMarker>] for ScryptoRawValue<'_> {}
             }
         };
     }
@@ -1320,7 +1320,9 @@ mod tests {
     #[test]
     fn test_blueprint_field_try_from() {
         assert!(TestBlueprintField::try_from(&SubstateKey::Field(0)).is_ok());
-        assert!(TestBlueprintField::try_from(&SubstateKey::Map(Vec::new())).is_err());
+        assert!(
+            TestBlueprintField::try_from(&SubstateKey::Map(ScryptoRawPayload::unit())).is_err()
+        );
     }
 
     #[test]
@@ -1348,7 +1350,7 @@ mod tests {
 
         assert!(TestBlueprintTypedSubstateKey::for_key_in_partition(
             &TestBlueprintPartitionOffset::MyCoolIndexIndex,
-            &SubstateKey::Map(vec![92, 0])
+            &SubstateKey::Map(ScryptoOwnedRawPayload::unit())
         )
         .is_err());
     }

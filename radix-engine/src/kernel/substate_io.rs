@@ -13,7 +13,7 @@ use radix_common::prelude::{NodeId, PartitionNumber};
 use radix_common::types::{SortedKey, SubstateKey};
 use radix_common::ScryptoSbor;
 use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::types::IndexedScryptoValue;
+use radix_engine_interface::types::{IndexedOwnedScryptoValue, IndexedScryptoValue};
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
 use sbor::rust::collections::BTreeSet;
@@ -30,7 +30,7 @@ pub enum SubstateDevice {
 pub struct LockData {
     pub flags: LockFlags,
     device: SubstateDevice,
-    virtualized: Option<IndexedScryptoValue>,
+    virtualized: Option<IndexedOwnedScryptoValue>,
 }
 
 /// Callback for store access, from SubstateIO
@@ -309,7 +309,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn open_substate<E, D: FnOnce() -> IndexedScryptoValue>(
+    pub fn open_substate<E, D: FnOnce() -> IndexedOwnedScryptoValue>(
         &mut self,
         device: SubstateDevice,
         node_id: &NodeId,
@@ -318,7 +318,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         flags: LockFlags,
         default: Option<D>,
         handler: &mut impl IOAccessHandler<E>,
-    ) -> Result<(u32, &IndexedScryptoValue), CallbackError<OpenSubstateError, E>> {
+    ) -> Result<(u32, &IndexedOwnedScryptoValue), CallbackError<OpenSubstateError, E>> {
         match device {
             SubstateDevice::Heap => {
                 if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -424,7 +424,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         &mut self,
         global_lock_handle: u32,
         handler: &mut H,
-    ) -> Result<&IndexedScryptoValue, H::Error> {
+    ) -> Result<&IndexedOwnedScryptoValue, H::Error> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get(global_lock_handle);
 
@@ -454,7 +454,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
     pub fn write_substate<E>(
         &mut self,
         global_lock_handle: u32,
-        substate: IndexedScryptoValue,
+        substate: IndexedOwnedScryptoValue,
         handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let (node_id, partition_num, substate_key, lock_data) =
@@ -512,7 +512,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
         handler: &mut impl IOAccessHandler<E>,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         if self
@@ -556,7 +556,8 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         key: &SubstateKey,
         handler: &mut impl IOAccessHandler<E>,
-    ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
+    ) -> Result<Option<IndexedOwnedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>>
+    {
         if self.substate_locks.is_locked(node_id, partition_num, key) {
             return Err(CallbackError::Error(
                 CallFrameRemoveSubstateError::SubstateLocked(
@@ -615,7 +616,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         count: u32,
         handler: &mut impl IOAccessHandler<E>,
     ) -> Result<
-        Vec<(SubstateKey, IndexedScryptoValue)>,
+        Vec<(SubstateKey, IndexedOwnedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
     > {
         let substates = match device {
@@ -649,7 +650,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         count: u32,
         handler: &mut impl IOAccessHandler<E>,
     ) -> Result<
-        Vec<(SortedKey, IndexedScryptoValue)>,
+        Vec<(SortedKey, IndexedOwnedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
     > {
         let substates = match device {
@@ -679,7 +680,7 @@ impl<'g, S: CommitableSubstateStore + 'g> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         handler: &mut impl IOAccessHandler<E>,
-    ) -> Result<Option<&'a IndexedScryptoValue>, CallbackError<OpenSubstateError, E>> {
+    ) -> Result<Option<&'a IndexedOwnedScryptoValue>, CallbackError<OpenSubstateError, E>> {
         let value = match location {
             SubstateDevice::Heap => heap.get_substate(node_id, partition_num, substate_key),
             SubstateDevice::Store => store

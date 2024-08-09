@@ -191,17 +191,16 @@ pub fn to_typed_substate_key(
         SCHEMAS_PARTITION => {
             let key = substate_key.for_map().ok_or_else(|| error("Schema key"))?;
             TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(
-                scrypto_decode(key).map_err(|_| error("Schema key"))?,
+                key.decode_as().map_err(|_| error("Schema key"))?,
             ))
         }
         METADATA_BASE_PARTITION => {
             TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(
-                scrypto_decode(
-                    substate_key
-                        .for_map()
-                        .ok_or_else(|| error("Metadata key"))?,
-                )
-                .map_err(|_| error("string Metadata key"))?,
+                substate_key
+                    .for_map()
+                    .ok_or_else(|| error("Metadata key"))?
+                    .decode_as()
+                    .map_err(|_| error("string Metadata key"))?,
             ))
         }
         ROYALTY_FIELDS_PARTITION => {
@@ -211,12 +210,11 @@ pub fn to_typed_substate_key(
         }
         ROYALTY_CONFIG_PARTITION => TypedSubstateKey::RoyaltyModule(
             TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(
-                scrypto_decode(
-                    substate_key
-                        .for_map()
-                        .ok_or_else(|| error("RoyaltyConfigEntryFnIdent key"))?,
-                )
-                .map_err(|_| error("string RoyaltyConfigEntryFnIdent key"))?,
+                substate_key
+                    .for_map()
+                    .ok_or_else(|| error("RoyaltyConfigEntryFnIdent key"))?
+                    .decode_as()
+                    .map_err(|_| error("string RoyaltyConfigEntryFnIdent key"))?,
             ),
         ),
         ROLE_ASSIGNMENT_FIELDS_PARTITION => TypedSubstateKey::RoleAssignmentModule(
@@ -230,7 +228,7 @@ pub fn to_typed_substate_key(
                 .for_map()
                 .ok_or_else(|| error("Access Rules key"))?;
             TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::Rule(
-                scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
+                key.decode_as().map_err(|_| error("Access Rules key"))?,
             ))
         }
         partition_num @ _ if partition_num >= MAIN_BASE_PARTITION => {
@@ -363,7 +361,7 @@ fn to_typed_object_substate_key_internal(
             } else {
                 if let Some(key) = substate_key.for_map() {
                     TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
-                        IntentHash::from_hash(scrypto_decode(key).map_err(|_| ())?),
+                        IntentHash::from_hash(key.decode_as().map_err(|_| ())?),
                     )
                 } else {
                     return Err(());

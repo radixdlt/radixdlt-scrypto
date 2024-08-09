@@ -297,7 +297,7 @@ mod tests {
         let payload = manifest_encode(&value).unwrap();
 
         assert_json_eq(
-            ManifestRawPayload::new_from_valid_slice(&payload).serializable(
+            ManifestRawPayload::from_valid_payload_slice(&payload).serializable(
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Natural,
                     custom_context: context.into(),
@@ -320,7 +320,7 @@ mod tests {
         let payload = manifest_encode(&value).unwrap();
 
         assert_json_eq(
-            ManifestRawPayload::new_from_valid_slice(&payload).serializable(
+            ManifestRawPayload::from_valid_payload_slice(&payload).serializable(
                 SerializationParameters::Schemaless {
                     mode: SerializationMode::Programmatic,
                     custom_context: context.into(),

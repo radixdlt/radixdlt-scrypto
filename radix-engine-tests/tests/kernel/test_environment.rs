@@ -255,7 +255,7 @@ fn can_read_kv_entries_from_a_store_read_from_state() {
         let handle = env
             .key_value_store_open_entry(
                 kv_store.as_node_id(),
-                &scrypto_encode(&Hash([0; 32])).unwrap(),
+                scrypto_encode_to_value(&Hash([0; 32])).unwrap().into_unvalidated(),
                 LockFlags::empty(),
             )
             .unwrap();

@@ -519,7 +519,7 @@ fn component_and_package_royalties_are_both_applied() {
 /// This test is here to check if the following bit of code can cause a panic in the Royalty module:
 /// https://github.com/radixdlt/radixdlt-scrypto/blob/v0.12.1/radix-engine/src/system/node_modules/royalty/package.rs#L455
 /// I suspected that this could cause a panic since we're defaulting to one type and then calling
-/// `.as_typed` with a different type later down in the code. It turns out that this bit doesn't
+/// `.into_typed` with a different type later down in the code. It turns out that this bit doesn't
 /// panic since all [`KeyValueEntrySubstate::<T>::default()`] are equal when we scrypto encode them,
 /// so decoding as a different type is no issue. I've still went ahead and changed the type there as
 /// I believe that it's better.

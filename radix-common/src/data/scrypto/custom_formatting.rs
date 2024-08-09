@@ -117,7 +117,7 @@ mod tests {
 
         let context = ScryptoValueDisplayContext::with_optional_bech32(Some(&encoder));
 
-        let payload = ScryptoRawPayload::new_from_valid_owned(scrypto_encode(&value).unwrap());
+        let payload = ScryptoRawPayload::from_valid_payload(scrypto_encode(&value).unwrap());
 
         let actual_rustlike = payload.to_string(ValueDisplayParameters::Schemaless {
             display_mode: DisplayMode::RustLike,

@@ -32,7 +32,7 @@ pub enum ComposedProof {
     ),
 }
 
-impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
+impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedOwnedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof, ..) => btreemap!(
@@ -151,7 +151,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeErr
                     SystemLockData::default(),
                 )?;
                 let proof: FieldSubstate<FungibleProofSubstate> =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
+                    api.kernel_read_substate(handle)?.into_typed().unwrap();
                 for (container, locked_amount) in &proof.into_payload().evidence {
                     if let Some(existing) = max.get_mut(container) {
                         *existing = Decimal::max(*existing, locked_amount.clone());
@@ -204,7 +204,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + SystemApi<RuntimeError>
                     SystemLockData::default(),
                 )?;
                 let proof: FieldSubstate<NonFungibleProofSubstate> =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
+                    api.kernel_read_substate(handle)?.into_typed().unwrap();
                 for (container, locked_ids) in &proof.into_payload().evidence {
                     total.extend(locked_ids.clone());
                     if let Some(ids) = per_container.get_mut(container) {
@@ -249,7 +249,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + SystemApi<Runti
             SystemLockData::default(),
         )?;
         let substate: FieldSubstate<FungibleProofSubstate> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_read_substate(handle)?.into_typed().unwrap();
         let proof = substate.into_payload();
         for (container, _) in &proof.evidence {
             if remaining.is_zero() {
@@ -344,7 +344,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + SystemApi<R
             SystemLockData::default(),
         )?;
         let substate: FieldSubstate<NonFungibleProofSubstate> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_read_substate(handle)?.into_typed().unwrap();
         let proof = substate.into_payload().clone();
         for (container, _) in &proof.evidence {
             if remaining.is_empty() {

@@ -94,7 +94,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         MAIN_BASE_PARTITION
             .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
             .unwrap(),
-        &SubstateKey::Map(scrypto_encode(&BlueprintVersionKey::new_default("Test")).unwrap()),
+        &SubstateKey::Map(scrypto_encode_to_payload(&BlueprintVersionKey::new_default("Test")).unwrap()),
         LockFlags::read_only(),
         SystemLockData::default(),
     );

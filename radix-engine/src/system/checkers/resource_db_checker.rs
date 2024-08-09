@@ -10,9 +10,7 @@ use crate::blueprints::resource::{
 };
 use crate::internal_prelude::*;
 use crate::system::checkers::ApplicationChecker;
-use radix_common::math::Decimal;
-use radix_common::prelude::{scrypto_decode, RESOURCE_PACKAGE};
-use radix_common::types::{NodeId, ResourceAddress};
+use radix_common::prelude::*;
 use radix_engine_interface::api::FieldIndex;
 use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
@@ -20,7 +18,6 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
 
 #[derive(Debug, Default)]
 pub struct ResourceCounter {
@@ -51,7 +48,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
         node_id: NodeId,
         module_id: ModuleId,
         field_index: FieldIndex,
-        value: &Vec<u8>,
+        value: &ScryptoRawValue,
     ) {
         if !info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) || module_id != ModuleId::Main {
             return;
@@ -63,7 +60,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                 match field {
                     FungibleResourceManagerField::TotalSupply => {
                         let total_supply: FungibleResourceManagerTotalSupplyFieldPayload =
-                            scrypto_decode(value).unwrap();
+                            value.decode_as().unwrap();
                         let address = ResourceAddress::new_or_panic(node_id.0);
                         let tracker = self.resources.entry(address).or_default();
                         tracker.expected =
@@ -77,7 +74,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                 match field {
                     FungibleVaultField::Balance => {
                         let vault_balance: FungibleVaultBalanceFieldPayload =
-                            scrypto_decode(value).unwrap();
+                            value.decode_as().unwrap();
                         let address = ResourceAddress::new_or_panic(
                             info.outer_obj_info.expect().into_node_id().0,
                         );
@@ -103,7 +100,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                 match field {
                     NonFungibleResourceManagerField::TotalSupply => {
                         let total_supply: NonFungibleResourceManagerTotalSupplyFieldPayload =
-                            scrypto_decode(value).unwrap();
+                            value.decode_as().unwrap();
                         let address = ResourceAddress::new_or_panic(node_id.0);
                         let tracker = self.resources.entry(address).or_default();
                         tracker.expected =
@@ -117,7 +114,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                 match field {
                     NonFungibleVaultField::Balance => {
                         let vault_balance: NonFungibleVaultBalanceFieldPayload =
-                            scrypto_decode(value).unwrap();
+                            value.decode_as().unwrap();
                         let address = ResourceAddress::new_or_panic(
                             info.outer_obj_info.expect().into_node_id().0,
                         );
@@ -147,7 +144,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                 match field {
                     ConsensusManagerField::CurrentValidatorSet => {
                         let validator_set: ConsensusManagerCurrentValidatorSetFieldPayload =
-                            scrypto_decode(value).unwrap();
+                            value.decode_as().unwrap();
 
                         let mut prev = Decimal::MAX;
                         for validator in validator_set
@@ -164,7 +161,7 @@ impl ApplicationChecker for ResourceDatabaseChecker {
                     }
                     ConsensusManagerField::CurrentProposalStatistic => {
                         let stats: ConsensusManagerCurrentProposalStatisticFieldPayload =
-                            scrypto_decode(value).unwrap();
+                            value.decode_as().unwrap();
                         stats_count = stats
                             .fully_update_and_into_latest_version()
                             .validator_statistics
@@ -187,8 +184,8 @@ impl ApplicationChecker for ResourceDatabaseChecker {
         node_id: NodeId,
         module_id: ModuleId,
         collection_index: CollectionIndex,
-        _key: &Vec<u8>,
-        _value: &Vec<u8>,
+        _key: &ScryptoRawValue,
+        _value: &ScryptoRawValue,
     ) {
         if !info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) || module_id != ModuleId::Main {
             return;

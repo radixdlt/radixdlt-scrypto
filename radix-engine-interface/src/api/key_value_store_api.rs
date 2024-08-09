@@ -1,11 +1,6 @@
-use radix_common::prelude::{
-    replace_self_package_address, ScryptoCustomTypeKind, ScryptoDescribe, VersionedScryptoSchema,
-};
-use radix_common::types::*;
-use radix_common::{ManifestSbor, ScryptoSbor};
+use radix_common::prelude::*;
 use radix_engine_interface::api::key_value_entry_api::KeyValueEntryHandle;
 use radix_engine_interface::api::LockFlags;
-use sbor::rust::prelude::*;
 use sbor::LocalTypeId;
 use sbor::{generate_full_schema, TypeAggregator};
 
@@ -145,14 +140,35 @@ pub trait SystemKeyValueStoreApi<E> {
     fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
-        key: &Vec<u8>,
+        key: ScryptoUnvalidatedRawValue,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, E>;
+
+    /// Open a key value store entry for reading/writing
+    fn key_value_store_open_entry_typed<T: ScryptoEncode>(
+        &mut self,
+        node_id: &NodeId,
+        key: &T,
+        flags: LockFlags,
+    ) -> Result<KeyValueEntryHandle, E> {
+        let key = scrypto_encode_to_value(&key).unwrap().into_unvalidated();
+        self.key_value_store_open_entry(node_id, key, flags)
+    }
 
     /// Removes an entry from a key value store
     fn key_value_store_remove_entry(
         &mut self,
         node_id: &NodeId,
-        key: &Vec<u8>,
-    ) -> Result<Vec<u8>, E>;
+        key: ScryptoUnvalidatedRawValue,
+    ) -> Result<Option<ScryptoOwnedRawValue>, E>;
+
+    /// Removes an entry from a key value store
+    fn key_value_store_remove_entry_typed<T: ScryptoEncode>(
+        &mut self,
+        node_id: &NodeId,
+        key: &T,
+    ) -> Result<Option<ScryptoOwnedRawValue>, E> {
+        let key = scrypto_encode_to_value(&key).unwrap().into_unvalidated();
+        self.key_value_store_remove_entry(node_id, key)
+    }
 }

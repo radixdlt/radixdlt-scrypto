@@ -8,7 +8,6 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, LockStatus};
 use crate::track::interface::NodeSubstates;
 use radix_blueprint_schema_init::KeyValueStoreGenericSubstitutions;
-use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{CollectionIndex, FieldValue, KVEntry};
 use radix_engine_interface::blueprints::package::*;
 use sbor::rust::vec::Vec;
@@ -226,43 +225,44 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
     }
 
     /// Validate that a blueprint payload matches the blueprint's definition of that payload
-    pub fn validate_blueprint_payload(
+    pub fn validate_blueprint_payload<'v>(
         &mut self,
         target: &BlueprintTypeTarget,
         payload_identifier: BlueprintPayloadIdentifier,
-        payload: &[u8],
-    ) -> Result<(), RuntimeError> {
+        payload: ScryptoUnvalidatedRawValue<'v>,
+    ) -> Result<ScryptoRawValue<'v>, RuntimeError> {
         let (schema, index, allow_ownership, allow_non_global_ref, schema_origin) =
             self.get_payload_schema(target, &payload_identifier)?;
 
         self.validate_payload(
-            payload,
+            payload.into(),
             &schema,
             index,
             schema_origin,
             allow_ownership,
             allow_non_global_ref,
             BLUEPRINT_PAYLOAD_MAX_DEPTH,
-        )
-        .map_err(|err| {
-            RuntimeError::SystemError(SystemError::TypeCheckError(
+            |err| {
                 TypeCheckError::BlueprintPayloadValidationError(
                     Box::new(target.blueprint_info.clone()),
                     payload_identifier,
-                    err.error_message(schema.v1()),
-                ),
-            ))
-        })?;
-
-        Ok(())
+                    err,
+                )
+            },
+        )
     }
 
     /// Validate that a blueprint kv collection payloads match the blueprint's definition
-    pub fn validate_blueprint_kv_collection(
+    pub fn validate_blueprint_kv_collection<'x>(
         &mut self,
         target: &BlueprintTypeTarget,
         collection_index: CollectionIndex,
-        payloads: &[(&Vec<u8>, &Vec<u8>)],
+        payloads: impl IntoIterator<
+            Item = (
+                ScryptoUnvalidatedRawValue<'x>,
+                ScryptoUnvalidatedRawValue<'x>,
+            ),
+        >,
     ) -> Result<PartitionDescription, RuntimeError> {
         let blueprint_definition =
             self.get_blueprint_default_definition(target.blueprint_info.blueprint_id.clone())?;
@@ -282,7 +282,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
             })?
             .0;
 
-        for (key, value) in payloads {
+        for (key, value) in payloads.into_iter() {
             self.validate_blueprint_payload(
                 &target,
                 BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key),
@@ -300,12 +300,12 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
     }
 
     /// Validate that a key value payload matches the key value store's definition of that payload
-    pub fn validate_kv_store_payload(
+    pub fn validate_kv_store_payload<'b, 'v>(
         &mut self,
         target: &KVStoreTypeTarget,
         payload_identifier: KeyOrValue,
-        payload: &[u8],
-    ) -> Result<(), RuntimeError> {
+        payload: ScryptoUnvalidatedRawValue<'v>,
+    ) -> Result<ScryptoRawValue<'v>, RuntimeError> {
         let type_substitution = match payload_identifier {
             KeyOrValue::Key => target.kv_store_type.key_generic_substitution.clone(),
             KeyOrValue::Value => target.kv_store_type.value_generic_substitution.clone(),
@@ -333,29 +333,21 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
             allow_ownership,
             false,
             KEY_VALUE_STORE_PAYLOAD_MAX_DEPTH,
+            |err| TypeCheckError::KeyValueStorePayloadValidationError(payload_identifier, err),
         )
-        .map_err(|err| {
-            RuntimeError::SystemError(SystemError::TypeCheckError(
-                TypeCheckError::KeyValueStorePayloadValidationError(
-                    payload_identifier,
-                    err.error_message(schema.v1()),
-                ),
-            ))
-        })?;
-
-        Ok(())
     }
 
-    fn validate_payload<'s>(
+    fn validate_payload<'s, 'v>(
         &mut self,
-        payload: &[u8],
+        payload: ScryptoUnvalidatedRawValue<'v>,
         schema: &'s VersionedScryptoSchema,
         type_id: LocalTypeId,
         schema_origin: SchemaOrigin,
         allow_ownership: bool,
         allow_non_global_ref: bool,
         depth_limit: usize,
-    ) -> Result<(), LocatedValidationError<'s, ScryptoCustomExtension>> {
+        error_map: impl FnOnce(String) -> TypeCheckError,
+    ) -> Result<ScryptoRawValue<'v>, RuntimeError> {
         let validation_context: Box<dyn ValidationContext<Error = RuntimeError>> =
             Box::new(SystemServiceTypeInfoLookup::new(
                 self,
@@ -363,13 +355,20 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
                 allow_ownership,
                 allow_non_global_ref,
             ));
-        validate_payload_against_schema::<ScryptoCustomExtension, _>(
-            payload,
-            schema.v1(),
-            type_id,
-            &validation_context,
-            depth_limit,
-        )
+
+        payload
+            .validate_against_type_with_max_depth(
+                0,
+                depth_limit,
+                schema.v1(),
+                type_id,
+                &validation_context,
+            )
+            .map_err(|err| {
+                RuntimeError::SystemError(SystemError::TypeCheckError(error_map(
+                    err.error_message(schema.v1()),
+                )))
+            })
     }
 
     fn get_schema(
@@ -390,7 +389,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
         let handle = self.api.kernel_open_substate_with_default(
             node_id,
             SCHEMAS_PARTITION,
-            &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
+            &SubstateKey::Map(scrypto_encode_to_payload(schema_hash).unwrap()),
             LockFlags::read_only(),
             Some(|| {
                 let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -400,7 +399,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
         )?;
 
         let substate: KeyValueEntrySubstate<VersionedScryptoSchema> =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+            self.api.kernel_read_substate(handle)?.into_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
         let schema = Rc::new(substate.into_value().unwrap());
@@ -468,7 +467,7 @@ impl SystemMapper {
                     FieldTransience::NotTransient => {}
                 }
 
-                let payload: ScryptoValue =
+                let payload: ScryptoRawValue =
                     scrypto_decode(&field.value).expect("Checked by payload-schema validation");
 
                 let lock_status = if field.locked {
@@ -499,7 +498,7 @@ impl SystemMapper {
 
             for (key, kv_entry) in substates {
                 let kv_entry = if let Some(value) = kv_entry.value {
-                    let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                    let value: ScryptoRawValue = scrypto_decode(&value).unwrap();
                     let kv_entry = if kv_entry.locked {
                         KeyValueEntrySubstate::locked_entry(value)
                     } else {
@@ -514,6 +513,9 @@ impl SystemMapper {
                     }
                 };
 
+                let key = ScryptoUnvalidatedRawPayload::from_payload(key)
+                    .validate()
+                    .expect("Checked by payload-schema validation");
                 let value = IndexedScryptoValue::from_typed(&kv_entry);
                 partition.insert(SubstateKey::Map(key), value);
             }

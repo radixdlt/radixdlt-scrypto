@@ -5,6 +5,7 @@ pub enum ManifestCustomExtension {}
 
 impl CustomExtension for ManifestCustomExtension {
     const PAYLOAD_PREFIX: u8 = MANIFEST_SBOR_V1_PAYLOAD_PREFIX;
+    const DEFAULT_DEPTH_LIMIT: usize = MANIFEST_SBOR_V1_MAX_DEPTH;
 
     type CustomValueKind = ManifestCustomValueKind;
     type CustomTraversal = ManifestCustomTraversal;

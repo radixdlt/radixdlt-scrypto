@@ -233,7 +233,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                     PartitionStateUpdates::Delta { by_substate } => {
                         for (substate_key, substate_update) in by_substate {
                             let id: NonFungibleLocalId =
-                                scrypto_decode(substate_key.for_map().unwrap()).unwrap();
+                                    substate_key.for_map().unwrap().decode_as().unwrap();
                                 let previous_value = self
                                 .system_reader
                                 .fetch_substate_from_database::<SpreadPrefixKeyMapper, ScryptoValue>(

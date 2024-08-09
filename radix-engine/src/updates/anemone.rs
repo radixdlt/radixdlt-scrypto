@@ -301,24 +301,24 @@ fn generate_seconds_precision_timestamp_state_updates<S: SubstateDatabase + ?Siz
                 by_partition: indexmap! {
                     bp_definition_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&bp_version_key).unwrap()) => DatabaseUpdate::Set(
+                            SubstateKey::Map(scrypto_encode_to_payload(&bp_version_key).unwrap()) => DatabaseUpdate::Set(
                                 updated_bp_definition_substate
                             )
                         }
                     },
                     code_vm_type_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(new_vm_type_substate)
+                            SubstateKey::Map(scrypto_encode_to_payload(&code_hash).unwrap()) => DatabaseUpdate::Set(new_vm_type_substate)
                         }
                     },
                     code_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => DatabaseUpdate::Set(new_code_substate)
+                            SubstateKey::Map(scrypto_encode_to_payload(&code_hash).unwrap()) => DatabaseUpdate::Set(new_code_substate)
                         }
                     },
                     schema_partition_num => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&new_schema_hash).unwrap()) => DatabaseUpdate::Set(new_schema_substate)
+                            SubstateKey::Map(scrypto_encode_to_payload(&new_schema_hash).unwrap()) => DatabaseUpdate::Set(new_schema_substate)
                         }
                     }
                 }
@@ -458,27 +458,27 @@ fn generate_pool_math_precision_fix_state_updates<S: SubstateDatabase + ?Sized>(
                 by_partition: indexmap! {
                     original_code_partition_number => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap())
+                            SubstateKey::Map(scrypto_encode_to_payload(&old_code_hash).unwrap())
                                 => DatabaseUpdate::Delete,
-                            SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap())
+                            SubstateKey::Map(scrypto_encode_to_payload(&new_code_hash).unwrap())
                                 => DatabaseUpdate::Set(scrypto_encode(&new_code_substate).unwrap()),
                         }
                     },
                     code_vm_type_partition_number => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&old_code_hash).unwrap())
+                            SubstateKey::Map(scrypto_encode_to_payload(&old_code_hash).unwrap())
                                 => DatabaseUpdate::Delete,
-                            SubstateKey::Map(scrypto_encode(&new_code_hash).unwrap())
+                            SubstateKey::Map(scrypto_encode_to_payload(&new_code_hash).unwrap())
                                 => DatabaseUpdate::Set(scrypto_encode(&new_vm_type_substate).unwrap()),
                         }
                     },
                     blueprint_definition_partition_number => PartitionStateUpdates::Delta {
                         by_substate: indexmap! {
-                            SubstateKey::Map(scrypto_encode(&one_resource_pool_blueprint_key).unwrap())
+                            SubstateKey::Map(scrypto_encode_to_payload(&one_resource_pool_blueprint_key).unwrap())
                                 => DatabaseUpdate::Set(scrypto_encode(&one_resource_pool_blueprint_definition).unwrap()),
-                            SubstateKey::Map(scrypto_encode(&two_resource_pool_blueprint_key).unwrap())
+                            SubstateKey::Map(scrypto_encode_to_payload(&two_resource_pool_blueprint_key).unwrap())
                                 => DatabaseUpdate::Set(scrypto_encode(&two_resource_pool_blueprint_definition).unwrap()),
-                            SubstateKey::Map(scrypto_encode(&multi_resource_pool_blueprint_key).unwrap())
+                            SubstateKey::Map(scrypto_encode_to_payload(&multi_resource_pool_blueprint_key).unwrap())
                                 => DatabaseUpdate::Set(scrypto_encode(&multi_resource_pool_blueprint_definition).unwrap()),
                         }
                     }

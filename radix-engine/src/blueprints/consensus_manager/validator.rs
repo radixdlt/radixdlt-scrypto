@@ -1511,7 +1511,7 @@ impl ValidatorBlueprint {
         } else {
             Ok(Some((
                 create_sort_prefix_from_stake(stake)?,
-                scrypto_encode(&address).unwrap(),
+                scrypto_encode_to_payload(&address).unwrap(),
             )))
         }
     }
@@ -1526,6 +1526,7 @@ impl ValidatorBlueprint {
                 key,
                 stake,
             } => {
+                let index_key = (index_key.0, index_key.1.as_unvalidated());
                 api.actor_sorted_index_insert_typed(
                     ACTOR_STATE_OUTER_OBJECT,
                     ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
@@ -1537,11 +1538,12 @@ impl ValidatorBlueprint {
                 )?;
             }
             UpdateSecondaryIndex::UpdatePublicKey { index_key, key } => {
+                let index_key = (index_key.0, index_key.1.as_unvalidated());
                 let mut validator = api
                     .actor_sorted_index_remove_typed::<ConsensusManagerRegisteredValidatorByStakeEntryPayload>(
                         ACTOR_STATE_OUTER_OBJECT,
                         ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
-                        &index_key,
+                        index_key.clone(),
                     )?
                     .unwrap().fully_update_and_into_latest_version();
                 validator.key = key;
@@ -1560,11 +1562,13 @@ impl ValidatorBlueprint {
                 new_index_key,
                 new_stake_amount,
             } => {
+                let index_key = (index_key.0, index_key.1.as_unvalidated());
+                let new_index_key = (new_index_key.0, new_index_key.1.as_unvalidated());
                 let mut validator = api
                     .actor_sorted_index_remove_typed::<ConsensusManagerRegisteredValidatorByStakeEntryPayload>(
                         ACTOR_STATE_OUTER_OBJECT,
                         ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex.collection_index(),
-                        &index_key,
+                        index_key,
                     )?
                     .unwrap().fully_update_and_into_latest_version();
                 validator.stake = new_stake_amount;
@@ -1579,11 +1583,12 @@ impl ValidatorBlueprint {
                 )?;
             }
             UpdateSecondaryIndex::Remove { index_key } => {
+                let index_key = (index_key.0, index_key.1.as_unvalidated());
                 api.actor_sorted_index_remove(
                     ACTOR_STATE_OUTER_OBJECT,
                     ConsensusManagerCollection::RegisteredValidatorByStakeSortedIndex
                         .collection_index(),
-                    &index_key,
+                    index_key,
                 )?;
             }
         }

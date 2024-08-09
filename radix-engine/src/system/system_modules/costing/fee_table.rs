@@ -199,7 +199,7 @@ impl FeeTable {
             CreateNodeEvent::Start(_node_id, node_substates) => {
                 let total_substate_size = node_substates
                     .values()
-                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .map(|x| x.values().map(|x| x.payload_len()).sum::<usize>())
                     .sum::<usize>();
                 add(
                     15510 / CPU_INSTRUCTIONS_TO_COST_UNIT,
@@ -224,7 +224,7 @@ impl FeeTable {
             DropNodeEvent::End(_node_id, node_substates) => {
                 let total_substate_size = node_substates
                     .values()
-                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .map(|x| x.values().map(|x| x.payload_len()).sum::<usize>())
                     .sum::<usize>();
                 add(
                     38883 / CPU_INSTRUCTIONS_TO_COST_UNIT,
@@ -267,7 +267,7 @@ impl FeeTable {
 
                 add(
                     base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
-                    Self::data_processing_cost(value.len()),
+                    Self::data_processing_cost(value.payload_len()),
                 )
             }
             ReadSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
@@ -280,7 +280,7 @@ impl FeeTable {
             WriteSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
             WriteSubstateEvent::Start { value, .. } => add(
                 7441 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-                Self::data_processing_cost(value.len()),
+                Self::data_processing_cost(value.payload_len()),
             ),
         }
     }
@@ -297,7 +297,7 @@ impl FeeTable {
         match event {
             SetSubstateEvent::Start(.., value) => add(
                 4530 / CPU_INSTRUCTIONS_TO_COST_UNIT,
-                Self::data_processing_cost(value.len()),
+                Self::data_processing_cost(value.payload_len()),
             ),
             SetSubstateEvent::IOAccess(io_access) => self.io_access_cost(io_access),
         }

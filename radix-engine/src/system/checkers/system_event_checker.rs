@@ -9,7 +9,12 @@ use radix_substate_store_interface::interface::SubstateDatabase;
 pub trait ApplicationEventChecker: Default {
     type ApplicationEventCheckerResults: Debug + Default;
 
-    fn on_event(&mut self, _info: BlueprintInfo, _event_id: EventTypeIdentifier, _event: &Vec<u8>) {
+    fn on_event(
+        &mut self,
+        _info: BlueprintInfo,
+        _event_id: EventTypeIdentifier,
+        _event: &ScryptoRawPayload,
+    ) {
     }
 
     fn on_finish(&self) -> Self::ApplicationEventCheckerResults {
@@ -42,11 +47,11 @@ impl<A: ApplicationEventChecker> SystemEventChecker<A> {
     pub fn check_all_events<S: SubstateDatabase>(
         &mut self,
         substate_db: &S,
-        events: &Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+        events: &Vec<Vec<(EventTypeIdentifier, ScryptoRawPayload)>>,
     ) -> Result<A::ApplicationEventCheckerResults, SystemEventCheckerError> {
         let reader = SystemDatabaseReader::new(substate_db);
 
-        for (event_id, event_payload) in events.iter().flatten() {
+        for (event_id, event_value) in events.iter().flatten() {
             let type_target = match &event_id.0 {
                 Emitter::Method(node_id, module_id) => reader
                     .get_blueprint_type_target(node_id, *module_id)
@@ -71,13 +76,17 @@ impl<A: ApplicationEventChecker> SystemEventChecker<A> {
                 .map_err(SystemEventCheckerError::MissingPayloadSchema)?;
 
             reader
-                .validate_payload(&event_payload, &event_schema, BLUEPRINT_PAYLOAD_MAX_DEPTH)
+                .validate_value(
+                    event_value.as_value().as_unvalidated(),
+                    &event_schema,
+                    BLUEPRINT_PAYLOAD_MAX_DEPTH,
+                )
                 .map_err(|_| SystemEventCheckerError::InvalidEvent)?;
 
             self.application_checker.on_event(
                 type_target.blueprint_info,
                 event_id.clone(),
-                event_payload,
+                event_value,
             );
         }
 

@@ -5,6 +5,7 @@ pub struct ScryptoCustomExtension {}
 
 impl CustomExtension for ScryptoCustomExtension {
     const PAYLOAD_PREFIX: u8 = SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
+    const DEFAULT_DEPTH_LIMIT: usize = SCRYPTO_SBOR_V1_MAX_DEPTH;
 
     type CustomValueKind = ScryptoCustomValueKind;
     type CustomTraversal = ScryptoCustomTraversal;

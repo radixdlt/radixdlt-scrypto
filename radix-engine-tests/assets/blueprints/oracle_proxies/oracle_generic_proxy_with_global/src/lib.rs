@@ -68,7 +68,7 @@ mod proxy {
         //     )
         //     .build();
         //  ```
-        pub fn call_method(&self, method_name: String, args: ScryptoValue) -> ScryptoValue {
+        pub fn call_method(&self, method_name: String, args: ScryptoOwnedRawValue) -> ScryptoOwnedRawValue {
             let args = scrypto_encode(&args).unwrap();
 
             let bytes = ScryptoVmV1Api::object_call(

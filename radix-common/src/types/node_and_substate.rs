@@ -1,11 +1,9 @@
 use crate::address::{AddressBech32EncodeError, AddressDisplayContext};
-use crate::data::scrypto::model::*;
+use crate::internal_prelude::*;
 use crate::types::*;
 use crate::*;
 #[cfg(feature = "fuzzing")]
 use arbitrary::Arbitrary;
-use radix_rust::ContextualDisplay;
-use sbor::rust::prelude::*;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -239,11 +237,25 @@ impl PartitionNumber {
 pub struct PartitionOffset(pub u8);
 
 /// The unique identifier of a substate within a node module.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum SubstateKey {
     Field(FieldKey),
     Map(MapKey),
     Sorted(SortedKey),
+}
+
+// Keep SubstateKey like the Babylon format to avoid execution traces changing
+impl Debug for SubstateKey {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Field(x) => f.debug_tuple("Field").field(x).finish(),
+            Self::Map(x) => f.debug_tuple("Map").field(&x.as_slice()).finish(),
+            Self::Sorted(x) => {
+                let content = (x.0, x.1.as_slice());
+                f.debug_tuple("Sorted").field(&content).finish()
+            }
+        }
+    }
 }
 
 impl SubstateKey {
@@ -277,5 +289,8 @@ impl SubstateKey {
 }
 
 pub type FieldKey = u8;
-pub type MapKey = Vec<u8>;
-pub type SortedKey = ([u8; 2], Vec<u8>);
+pub type MapKey = ScryptoOwnedRawPayload;
+pub type SortedKey = ([u8; 2], ScryptoOwnedRawPayload);
+
+pub type UnvalidatedMapKey<'a> = ScryptoUnvalidatedRawPayload<'a>;
+pub type UnvalidatedSortedKey<'a> = ([u8; 2], ScryptoUnvalidatedRawPayload<'a>);

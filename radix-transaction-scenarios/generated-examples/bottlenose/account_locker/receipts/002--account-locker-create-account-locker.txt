@@ -346,7 +346,7 @@ STATE UPDATES: 9 entities
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
          LiquidFungibleResource(Decimal("1")),
        )
-├─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
   └─ Partition(64): 1 change
     └─ Set: Field(0)
        Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
