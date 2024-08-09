@@ -44,7 +44,11 @@ pub struct MockKernel;
 impl<'g> KernelApi<System<Vm<'g, DefaultWasmEngine, NoExtension>>> for MockKernel {}
 
 impl KernelThreadApi for MockKernel {
-    fn kernel_switch_stack(&mut self, _: usize) -> Result<(), RuntimeError> {
+    fn kernel_send(&mut self, _: usize, _: IndexedScryptoValue) -> Result<(), RuntimeError> {
+        panic!()
+    }
+
+    fn kernel_switch_context(&mut self, _: usize) -> Result<(), RuntimeError> {
         panic1!()
     }
 }

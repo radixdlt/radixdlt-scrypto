@@ -317,8 +317,12 @@ pub struct WrappedKernelApi<'a, M: SystemCallbackObject + 'a, K: KernelApi<Injec
 impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelThreadApi
 for WrappedKernelApi<'a, M, K>
 {
-    fn kernel_switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError> {
-        self.api.kernel_switch_stack(thread)
+    fn kernel_send(&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+        self.api.kernel_send(thread, value)
+    }
+
+    fn kernel_switch_context(&mut self, thread: usize) -> Result<(), RuntimeError> {
+        self.api.kernel_switch_context(thread)
     }
 }
 

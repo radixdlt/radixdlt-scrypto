@@ -311,7 +311,29 @@ impl<'g, M, S> KernelThreadApi for Kernel<'g, M, S>
         M: KernelCallbackObject,
         S: CommitableSubstateStore,
 {
-    fn kernel_switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError> {
+    fn kernel_send(&mut self, to_thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+        let message = CallFrameMessage::from_output(&value);
+
+        let mut mut_threads: Vec<_> = self.threads.iter_mut().map(|x| Some(x)).collect();
+
+        let cur_thread = mut_threads[self.cur_thread].take().unwrap();
+        let to_frame = mut_threads[to_thread].take().unwrap();
+
+        /*
+        CallFrame::pass_message(
+            &self.substate_io,
+            &mut to_frame.current_frame,
+            &mut cur_thread.current_frame,
+            message,
+        )
+            .map_err(CallFrameError::PassMessageError)
+            .map_err(KernelError::CallFrameError)?;
+         */
+
+        Ok(())
+    }
+
+    fn kernel_switch_context(&mut self, thread: usize) -> Result<(), RuntimeError> {
         self.cur_thread = thread;
         Ok(())
     }

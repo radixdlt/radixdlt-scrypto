@@ -144,15 +144,15 @@ impl TransactionProcessorBlueprint {
                         .next();
                     if let Some((thread_id, ..)) = next {
                         cur_thread = thread_id;
-                        api.switch_stack(thread_id)?;
+                        api.context_switch(thread_id)?;
                     } else {
-                        api.switch_stack(0)?;
+                        api.context_switch(0)?;
                         return Ok(outputs);
                     }
                 },
                 InstructionExecutionResult::Switch => {
                     cur_thread = 1 - cur_thread;
-                    api.switch_stack(cur_thread)?;
+                    api.context_switch(cur_thread)?;
                 }
             }
         }

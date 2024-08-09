@@ -104,7 +104,8 @@ macro_rules! implement_system_api {
 implement_system_api! {
     SystemApi: {},
     SystemThreadApi: {
-        switch_stack: (&mut self, thread: usize) -> Result<(), RuntimeError>,
+        send: (&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError>,
+        context_switch: (&mut self, thread: usize) -> Result<(), RuntimeError>,
     },
     SystemActorApi: {
         actor_get_blueprint_id: (&mut self) -> Result<BlueprintId, RuntimeError>,

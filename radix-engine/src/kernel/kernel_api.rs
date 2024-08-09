@@ -17,7 +17,9 @@ pub struct DroppedNode {
 
 
 pub trait KernelThreadApi {
-    fn kernel_switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError>;
+    fn kernel_send(&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError>;
+
+    fn kernel_switch_context(&mut self, thread: usize) -> Result<(), RuntimeError>;
 }
 
 /// API for managing nodes

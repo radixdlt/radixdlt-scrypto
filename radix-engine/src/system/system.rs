@@ -2764,8 +2764,12 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemExecutionTraceA
 impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemThreadApi<RuntimeError>
 for SystemService<'a, Y, V>
 {
-    fn switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError> {
-        self.api.kernel_switch_stack(thread)
+    fn send(&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+        self.api.kernel_send(thread, value)
+    }
+
+    fn context_switch(&mut self, thread: usize) -> Result<(), RuntimeError> {
+        self.api.kernel_switch_context(thread)
     }
 }
 
