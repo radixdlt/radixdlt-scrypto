@@ -59,7 +59,7 @@ pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
 
 impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Executes a transaction
-    pub fn execute<'a>(self, executable: &Executable) -> M::Receipt {
+    pub fn execute(self, executable: Rc<Executable>) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker =
@@ -67,8 +67,9 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
 
         #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
         {
+            let cloned = executable.clone();
             self.execute_internal(executable)
-                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason))
+                .unwrap_or_else(|reason| M::Receipt::from_rejection(cloned.as_ref(), reason))
         }
 
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
@@ -84,66 +85,9 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
-    /// Checks that references exist in the store
-    fn check_references(
-        &mut self,
-        callback: &mut M,
-        threads: &Vec<ExecutableThread>,
-    ) -> Result<Vec<RootCallFrameInitRefs>, BootloadingError> {
-        let mut initial_call_frames = vec![];
-
-        for thread in threads {
-            let mut global_addresses = indexset!();
-            let mut direct_accesses = indexset!();
-
-            for reference in thread.references.iter() {
-                let node_id = &reference.0;
-
-                if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-                    // Allow always visible node and do not add reference
-                    continue;
-                }
-
-                if node_id.is_global_virtual() {
-                    // Allow global virtual and add reference
-                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                    continue;
-                }
-
-                let ref_value = self
-                    .track
-                    .read_substate(
-                        node_id,
-                        TYPE_INFO_FIELD_PARTITION,
-                        &TypeInfoField::TypeInfo.into(),
-                    )
-                    .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
-
-                match callback.verify_boot_ref_value(node_id, ref_value)? {
-                    StableReferenceType::Global => {
-                        global_addresses
-                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                    }
-                    StableReferenceType::DirectAccess => {
-                        direct_accesses
-                            .insert(InternalAddress::new_or_panic(node_id.clone().into()));
-                    }
-                }
-            }
-
-            let init_refs = RootCallFrameInitRefs {
-                global_addresses,
-                direct_accesses,
-            };
-            initial_call_frames.push(init_refs);
-        }
-
-        Ok(initial_call_frames)
-    }
-
-    fn execute_internal<'a>(
+    fn execute_internal(
         mut self,
-        executable: &Executable,
+        executable: Rc<Executable>,
     ) -> Result<M::Receipt, RejectionReason> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
@@ -163,20 +107,15 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             .unwrap_or(KernelBoot::babylon());
 
         // Create System
-        let mut callback = M::init(&mut self.track, executable, self.init.clone())?;
+        let threads = executable.threads();
+        let (mut callback, init_call_frames) = M::init(&mut self.track, executable, self.init.clone())?;
 
         // Kernel Initialization
         let mut kernel = {
-            // Check references
-            let init_call_frames = self
-                .check_references(&mut callback, executable.threads())
-                .map_err(RejectionReason::BootloadingError)?;
-
             Kernel::new(
                 &mut self.track,
                 &mut self.id_allocator,
                 &mut callback,
-                executable.threads().iter().map(|t| t).collect(),
                 init_call_frames,
             )
         };
@@ -184,7 +123,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         // Execution
         let result = || -> Result<M::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let output = M::start(&mut kernel, executable.threads().get(0).unwrap())?;
+            let output = M::start(&mut kernel)?;
 
             // Sanity check call frame
             assert!(kernel
@@ -206,7 +145,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
         // Create receipt representing the result of a transaction
-        let receipt = M::create_receipt(callback, self.track, executable, result);
+        let receipt = M::create_receipt(callback, self.track, result);
 
         Ok(receipt)
     }
@@ -234,7 +173,6 @@ pub struct Kernel<
     M: KernelCallbackObject,
     S: CommitableSubstateStore,
 {
-    thread_init: Vec<&'g ExecutableThread>,
     cur_thread: usize,
     threads: Vec<KernelStack<M>>,
 
@@ -253,14 +191,13 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
     ) -> Self {
-        Self::new(store, id_allocator, callback, vec![], vec![Default::default()])
+        Self::new(store, id_allocator, callback, vec![Default::default()])
     }
 
     pub fn new(
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
-        thread_init: Vec<&'g ExecutableThread>, // TODO: Replace
         init_call_frames: Vec<RootCallFrameInitRefs>,
     ) -> Self {
         let threads = init_call_frames
@@ -281,7 +218,6 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
                 pinned_to_heap: BTreeSet::new(),
             },
             id_allocator,
-            thread_init,
             cur_thread: 0,
             threads,
             callback,
@@ -1332,8 +1268,8 @@ where
 
                             // Change stack
                             self.cur_thread = next_thread;
-                            let thread_init = self.thread_init.get(self.cur_thread).unwrap();
-                            let child_return = M::resume_child_thread(self, thread_init, next_value)?;
+                            //let thread_init = self.thread_init.get(self.cur_thread).unwrap();
+                            let child_return = M::resume_child_thread(&next_value, self)?;
 
                             // TODO: Remove value from child thread
                             // TODO: Move results into current call frame
@@ -1455,7 +1391,6 @@ where
         callback: &'g mut M,
     ) -> Kernel<'g, M, S> {
         Self {
-            thread_init: vec![],
             cur_thread: 0usize,
             threads: vec![KernelStack {
                 current_frame,

@@ -138,7 +138,7 @@ fn test_normal_transaction_flow() {
         &mut substate_db,
         vm_init,
         &execution_config,
-        &executable,
+        Rc::new(executable),
     );
 
     // Assert

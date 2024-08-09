@@ -2,7 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::{
     BootloadingError, RejectionReason, RuntimeError, TransactionExecutionError,
 };
-use radix_engine::kernel::call_frame::{CallFrameMessage, StableReferenceType};
+use radix_engine::kernel::call_frame::{CallFrameMessage, RootCallFrameInitRefs, StableReferenceType};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -70,13 +70,13 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn init<S: BootStore + CommitableSubstateStore>(
         _store: &mut S,
-        _executable: &Executable,
+        _executable: Rc<Executable>,
         _init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
-        Ok(Self)
+    ) -> Result<(Self, Vec<RootCallFrameInitRefs>), RejectionReason> {
+        Ok((Self, vec![]))
     }
 
-    fn start<Y: KernelApi<Self>>(_: &mut Y, _: &ExecutableThread) -> Result<(), RuntimeError> {
+    fn start<Y: KernelApi<Self>>(_: &mut Y) -> Result<(), RuntimeError> {
         unreachable!()
     }
 
@@ -87,18 +87,9 @@ impl KernelCallbackObject for TestCallbackObject {
     fn create_receipt<S: SubstateDatabase>(
         self,
         _track: Track<S, SpreadPrefixKeyMapper>,
-        _executable: &Executable,
         _result: Result<(), TransactionExecutionError>,
     ) -> Self::Receipt {
         TestReceipt
-    }
-
-    fn verify_boot_ref_value(
-        &mut self,
-        _node_id: &NodeId,
-        _value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        Ok(StableReferenceType::Global)
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
@@ -220,7 +211,7 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(InvokeResult::Done(args.clone()))
     }
 
-    fn resume_child_thread<Y: KernelApi<Self>>(api: &mut Y, thread: &ExecutableThread, arg: IndexedScryptoValue) -> Result<IndexedScryptoValue, RuntimeError> {
+    fn resume_child_thread<Y: KernelApi<Self>>(arg: &IndexedScryptoValue, api: &mut Y, ) -> Result<IndexedScryptoValue, RuntimeError> {
         todo!()
     }
 

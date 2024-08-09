@@ -148,9 +148,9 @@ pub struct ExecutableThread {
 /// Executable form of transaction, post stateless validation.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Executable {
-    pub(crate) threads: Vec<ExecutableThread>,
-    pub(crate) context: ExecutionContext,
-    pub(crate) system: bool,
+    pub threads: Vec<ExecutableThread>,
+    pub context: ExecutionContext,
+    pub system: bool,
 }
 
 impl Executable {
@@ -194,6 +194,27 @@ impl Executable {
             threads,
             context,
             system,
+        }
+    }
+
+    pub fn mock() -> Self {
+        Self {
+            threads: vec![],
+            context: ExecutionContext { // TODO: Replace with different system
+                intent_hash: TransactionIntentHash::NotToCheck {
+                    intent_hash: Hash([0u8; Hash::LENGTH])
+                },
+                epoch_range: None,
+                payload_size: 0,
+                num_of_signature_validations: 0,
+                auth_zone_params: AuthZoneParams::single_thread(Default::default(), BTreeSet::new()),
+                costing_parameters: TransactionCostingParameters {
+                    tip_percentage: 0,
+                    free_credit_in_xrd: Decimal::ZERO,
+                    abort_when_loan_repaid: false,
+                },
+            },
+            system: false,
         }
     }
 

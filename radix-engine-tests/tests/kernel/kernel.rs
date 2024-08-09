@@ -1,6 +1,6 @@
 use radix_common::prelude::*;
 use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, StableReferenceType, TakeNodeError, WriteSubstateError};
+use radix_engine::kernel::call_frame::{CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, RootCallFrameInitRefs, StableReferenceType, TakeNodeError, WriteSubstateError};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -62,19 +62,14 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn init<S: BootStore + CommitableSubstateStore>(
         _store: &mut S,
-        _executable: &Executable,
+        _executable: Rc<Executable>,
         _init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
-        Ok(Self)
-    }
-
-    fn verify_boot_ref_value(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
-        Ok(StableReferenceType::Global)
+    ) -> Result<(Self, Vec<RootCallFrameInitRefs>), RejectionReason> {
+        Ok((Self, vec![]))
     }
 
     fn start<Y: KernelApi<Self>>(
         _api: &mut Y,
-        _thread: &ExecutableThread,
     ) -> Result<(), RuntimeError> {
         unreachable!()
     }
@@ -83,7 +78,7 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _executable: &Executable, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
+    fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
         TestReceipt
     }
 
@@ -176,7 +171,7 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(InvokeResult::Done(args.clone()))
     }
 
-    fn resume_child_thread<Y: KernelApi<Self>>(api: &mut Y, thread: &ExecutableThread, arg: IndexedScryptoValue) -> Result<IndexedScryptoValue, RuntimeError> {
+    fn resume_child_thread<Y: KernelApi<Self>>(arg: &IndexedScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError> {
         todo!()
     }
 

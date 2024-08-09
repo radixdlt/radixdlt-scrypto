@@ -186,10 +186,10 @@ pub fn handle_system_transaction<O: std::io::Write>(
         vm_init,
         &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
             .with_kernel_trace(trace),
-        &transaction
+        Rc::new(transaction
             .prepare()
             .map_err(Error::TransactionPrepareError)?
-            .get_executable(initial_proofs),
+            .get_executable(initial_proofs)),
     );
 
     if print_receipt {
@@ -254,10 +254,10 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut db,
                 vm_init,
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
-                &transaction
+                Rc::new(transaction
                     .prepare()
                     .map_err(Error::TransactionPrepareError)?
-                    .get_executable(initial_proofs),
+                    .get_executable(initial_proofs)),
             );
 
             if print_receipt {

@@ -2,7 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, StableReferenceType};
+use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, RootCallFrameInitRefs, StableReferenceType};
 use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi, SystemState,
@@ -89,33 +89,24 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &Executable,
+        executable: Rc<Executable>,
         init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
-        let mut system = System::<K>::init(store, executable, init_input.system_input)?;
+    ) -> Result<(Self, Vec<RootCallFrameInitRefs>), RejectionReason> {
+        let (mut system, init_call_frames) = System::<K>::init(store, executable, init_input.system_input)?;
 
         let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
         system.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
             fail_after: fail_after.clone(),
         };
 
-        Ok(Self { fail_after, system })
-    }
-
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        self.system.verify_boot_ref_value(node_id, value)
+        Ok((Self { fail_after, system }, init_call_frames))
     }
 
     fn start<Y: KernelApi<Self>>(
         api: &mut Y,
-        thread: &ExecutableThread,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
-        System::start(&mut api, thread)
+        System::start(&mut api)
     }
 
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
@@ -126,10 +117,9 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     fn create_receipt<S: SubstateDatabase>(
         self,
         track: Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
         result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
-        self.system.create_receipt(track, executable, result)
+        self.system.create_receipt(track, result)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
@@ -258,7 +248,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         System::resume_with_arg(args, &mut api)
     }
 
-    fn resume_child_thread<Y: KernelApi<Self>>(api: &mut Y, thread: &ExecutableThread, arg: IndexedScryptoValue) -> Result<IndexedScryptoValue, RuntimeError> {
+    fn resume_child_thread<Y: KernelApi<Self>>(arg: &IndexedScryptoValue, api: &mut Y, ) -> Result<IndexedScryptoValue, RuntimeError> {
         todo!()
     }
 

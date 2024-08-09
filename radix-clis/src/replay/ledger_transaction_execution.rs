@@ -82,7 +82,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                         &ExecutionConfig::for_genesis_transaction(network.clone())
                             .with_kernel_trace(trace)
                             .with_cost_breakdown(trace),
-                        &tx.get_executable(btreeset!(system_execution(SystemExecution::Protocol))),
+                        Rc::new(tx.get_executable(btreeset!(system_execution(SystemExecution::Protocol)))),
                     );
                     LedgerTransactionReceipt::Standard(receipt)
                 }
@@ -98,10 +98,10 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 &ExecutionConfig::for_notarized_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),
-                &NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+                Rc::new(NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
                     .validate(tx.as_ref().clone())
                     .expect("Transaction validation failure")
-                    .get_executable(),
+                    .get_executable()),
             );
             LedgerTransactionReceipt::Standard(receipt)
         }
@@ -115,7 +115,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 &ExecutionConfig::for_system_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),
-                &tx.get_executable(),
+                Rc::new(tx.get_executable()),
             );
             LedgerTransactionReceipt::Standard(receipt)
         }

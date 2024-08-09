@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrameMessage, StableReferenceType};
+use super::call_frame::{CallFrameMessage, RootCallFrameInitRefs, StableReferenceType};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -169,28 +169,13 @@ pub trait KernelCallbackObject: Sized {
     /// Create the callback object (system layer) with data loaded from the substate store
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &Executable,
+        executable: Rc<Executable>,
         init: Self::Init,
-    ) -> Result<Self, RejectionReason>;
-
-    /// Verifies and returns the type of a given reference used during boot
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError>;
+    ) -> Result<(Self, Vec<RootCallFrameInitRefs>), RejectionReason>;
 
     /// Start transaction execution
-    fn start<Y: KernelApi<Self>>(
-        api: &mut Y,
-        thread: &ExecutableThread,
-    ) -> Result<Self::ExecutionOutput, RuntimeError>;
+    fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Self::ExecutionOutput, RuntimeError>;
 
-    fn resume_child_thread<Y: KernelApi<Self>>(
-        api: &mut Y,
-        thread: &ExecutableThread,
-        arg: IndexedScryptoValue,
-    ) -> Result<IndexedScryptoValue, RuntimeError>;
 
     /// Finish execution
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
@@ -199,7 +184,6 @@ pub trait KernelCallbackObject: Sized {
     fn create_receipt<S: SubstateDatabase>(
         self,
         track: Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 
@@ -285,6 +269,11 @@ pub trait KernelCallbackObject: Sized {
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<InvokeResult, RuntimeError>;
+
+    fn resume_child_thread<Y: KernelApi<Self>>(
+        arg: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
 
     /// Callback after invocation during call frame cleanup and nodes are still owned by the executed
     /// call frame

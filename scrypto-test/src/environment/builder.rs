@@ -270,6 +270,7 @@ where
                 };
 
                 System {
+                    executable: Rc::new(Executable::mock()),
                     blueprint_cache: NonIterMap::new(),
                     auth_cache: NonIterMap::new(),
                     schema_cache: NonIterMap::new(),

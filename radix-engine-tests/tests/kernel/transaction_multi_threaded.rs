@@ -57,12 +57,12 @@ mod multi_threaded_test {
                     &mut substate_db,
                     vm_init.clone(),
                     &ExecutionConfig::for_test_transaction(),
-                    &TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
+                    Rc::new(TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
                         .prepare()
                         .unwrap()
                         .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
                             &public_key
-                        )]),
+                        )])),
                 )
                 .expect_commit(true)
                 .new_component_addresses()[0];
@@ -84,10 +84,10 @@ mod multi_threaded_test {
                 &mut substate_db,
                 vm_init.clone(),
                 &ExecutionConfig::for_test_transaction(),
-                &TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
+                Rc::new(TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
                     .expect("Expected transaction to be preparable")
-                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
+                    .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)])),
             )
             .expect_commit(true);
         }
@@ -109,12 +109,12 @@ mod multi_threaded_test {
                         &substate_db,
                         vm_init.clone(),
                         &ExecutionConfig::for_test_transaction(),
-                        &TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
+                        Rc::new(TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()
                             .expect("Expected transaction to be preparable")
                             .get_executable(btreeset![NonFungibleGlobalId::from_public_key(
                                 &public_key,
-                            )]),
+                            )])),
                     );
                     receipt.expect_commit_success();
                     println!("receipt = {:?}", receipt);

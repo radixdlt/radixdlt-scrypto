@@ -412,10 +412,10 @@ where
             self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
-            &transaction
+            Rc::new(transaction
                 .prepare()
                 .expect("Expected system bootstrap transaction to be preparable")
-                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
+                .get_executable(btreeset![system_execution(SystemExecution::Protocol)])),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -441,10 +441,10 @@ where
             self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
-            &transaction
+            Rc::new(transaction
                 .prepare()
                 .expect("Expected genesis data chunk transaction to be preparable")
-                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
+                .get_executable(btreeset![system_execution(SystemExecution::Protocol)])),
         );
 
         let commit_result = receipt.expect_commit(true);
@@ -465,10 +465,10 @@ where
             self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
-            &transaction
+            Rc::new(transaction
                 .prepare()
                 .expect("Expected genesis wrap up transaction to be preparable")
-                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
+                .get_executable(btreeset![system_execution(SystemExecution::Protocol)])),
         );
 
         let commit_result = receipt.expect_commit(true);

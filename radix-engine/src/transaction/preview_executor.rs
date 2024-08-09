@@ -1,8 +1,10 @@
+use rust::rc::Rc;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVmExtension, VmInit};
 use radix_common::network::NetworkDefinition;
+use radix_rust::rust;
 use radix_substate_store_interface::interface::*;
 use radix_transactions::errors::TransactionValidationError;
 use radix_transactions::model::PreviewIntentV1;
@@ -40,6 +42,6 @@ pub fn execute_preview<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtens
         substate_db,
         vm_init,
         &execution_config,
-        &validated.get_executable(),
+        Rc::new(validated.get_executable()),
     ))
 }
