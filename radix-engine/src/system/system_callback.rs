@@ -1614,6 +1614,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
         match &actor {
+            Actor::Root => {
+                todo!("ROOT!");
+            }
             actor @ Actor::Method(MethodActor { ident, .. })
             | actor @ Actor::Function(FunctionActor { ident, .. }) => {
 

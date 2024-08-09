@@ -1923,9 +1923,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
-    pub fn create_mintable_burnable_fungible_resource(
+    pub fn create_mintable_burnable_fungible_resource_with_initial_amount(
         &mut self,
         account: ComponentAddress,
+        amount: Option<Decimal>,
     ) -> (ResourceAddress, ResourceAddress) {
         let admin_auth = self.create_non_fungible_resource(account);
 
@@ -1947,13 +1948,20 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                     ..Default::default()
                 },
                 metadata!(),
-                None,
+                amount,
             )
             .try_deposit_entire_worktop_or_abort(account, None)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
         (admin_auth, resource_address)
+    }
+
+    pub fn create_mintable_burnable_fungible_resource(
+        &mut self,
+        account: ComponentAddress,
+    ) -> (ResourceAddress, ResourceAddress) {
+        self.create_mintable_burnable_fungible_resource_with_initial_amount(account, None)
     }
 
     pub fn create_freely_mintable_fungible_resource(

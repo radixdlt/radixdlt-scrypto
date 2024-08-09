@@ -62,3 +62,72 @@ fn test_max_call_depth_failure() {
         )
     });
 }
+
+
+
+
+
+
+
+
+
+#[test]
+fn test() {
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (key, _, account) = ledger.new_allocated_account();
+    let (btc_mint_auth, btc) = ledger.create_mintable_burnable_fungible_resource_with_initial_amount(account, Some(Decimal::from(1000)));
+
+    let execution_config = {
+        let mut execution_config = ExecutionConfig::for_test_transaction();
+        execution_config.system_overrides = Some(SystemOverrides {
+            disable_costing: true,
+            disable_limits: true,
+            disable_auth: true,
+            ..Default::default()
+        });
+        execution_config
+    };
+
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(account, btc, Decimal::from(2))
+        .deposit_batch(account)
+        .build();
+
+    let (instructions, blobs) = manifest.for_intent();
+
+    let prepared_instructions = instructions.prepare_partial().unwrap();
+    let encoded_instructions = manifest_encode(&prepared_instructions.inner.0).unwrap();
+    let references = prepared_instructions.references;
+    let blobs = blobs.prepare_partial().unwrap().blobs_by_hash;
+
+    let executable = Executable {
+        threads: vec![ExecutableThread {
+            encoded_instructions: Rc::new(encoded_instructions),
+            references,
+            blobs: Rc::new(blobs),
+            pre_allocated_addresses: vec![],
+        }],
+        context: ExecutionContext {
+            intent_hash: TransactionIntentHash::NotToCheck {
+                intent_hash: Hash([0u8; Hash::LENGTH])
+            },
+            epoch_range: None,
+            payload_size: 0usize,
+            num_of_signature_validations: 1,
+            auth_zone_params: AuthZoneParams::single_thread(Default::default(), BTreeSet::new()),
+            costing_parameters: TransactionCostingParameters {
+                tip_percentage: DEFAULT_TIP_PERCENTAGE,
+                free_credit_in_xrd: Decimal::ZERO,
+                abort_when_loan_repaid: false,
+            },
+        },
+        system: false,
+    };
+
+    let receipt = ledger.execute_transaction(executable, execution_config);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
