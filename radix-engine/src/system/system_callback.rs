@@ -820,6 +820,13 @@ impl<C: SystemCallbackObject> System<C> {
             initial_call_frames.push(init_refs);
         }
 
+        // HACK
+        let (first, rest) = initial_call_frames.split_first_mut().unwrap();
+        for r in rest {
+            first.direct_accesses.extend(r.direct_accesses.clone());
+            first.global_addresses.extend(r.global_addresses.clone());
+        }
+
         Ok(initial_call_frames)
     }
 
@@ -1072,6 +1079,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 blobs,
             });
         }
+
+        /*
+        let (first, rest) = threads.split_first_mut().unwrap();
+        for other in rest {
+            first.references.extend(other.references.clone());
+        }
+         */
 
         let tx_input = TransactionProcessorRunInputEfficientEncodable {
             threads

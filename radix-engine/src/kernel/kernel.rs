@@ -306,7 +306,7 @@ macro_rules! as_read_only {
     }};
 }
 
-impl<'g, M, S> KernelThreadApi for Kernel<'g, M, S>
+impl<'g, M, S> KernelThreadApi<M> for Kernel<'g, M, S>
     where
         M: KernelCallbackObject,
         S: CommitableSubstateStore,
@@ -333,7 +333,12 @@ impl<'g, M, S> KernelThreadApi for Kernel<'g, M, S>
         Ok(())
     }
 
-    fn kernel_switch_context(&mut self, thread: usize) -> Result<(), RuntimeError> {
+    fn kernel_switch_context(&mut self, thread: usize, update: Option<M::CallFrameData>) -> Result<(), RuntimeError> {
+        if let Some(update) = update {
+            let data = self.threads.get_mut(thread).unwrap().current_frame.data_mut();
+            *data = update;
+        }
+
         self.cur_thread = thread;
         Ok(())
     }

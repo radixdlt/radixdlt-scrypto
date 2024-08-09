@@ -603,7 +603,10 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         // Copy references and move nodes
         Self::pass_message(substate_io, parent, &mut frame, message)
-            .map_err(CreateFrameError::PassMessageError)?;
+            .map_err(CreateFrameError::PassMessageError).map_err(|e| {
+            println!("HEre");
+            e
+        })?;
 
         Ok(frame)
     }
@@ -676,6 +679,10 @@ impl<C, L: Clone> CallFrame<C, L> {
 
     pub fn data(&self) -> &C {
         &self.call_frame_data
+    }
+
+    pub fn data_mut(&mut self) -> &mut C {
+        &mut self.call_frame_data
     }
 
     pub fn pin_node<'f, S: CommitableSubstateStore>(

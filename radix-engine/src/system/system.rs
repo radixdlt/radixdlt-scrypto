@@ -2768,8 +2768,11 @@ for SystemService<'a, Y, V>
         self.api.kernel_send(thread, value)
     }
 
-    fn context_switch(&mut self, thread: usize) -> Result<(), RuntimeError> {
-        self.api.kernel_switch_context(thread)
+    fn switch_context(&mut self, thread: usize) -> Result<(), RuntimeError> {
+
+        //let auth_zone = SystemModuleMixer::on_call_function(self, &blueprint_id, function_name)?;
+
+        self.api.kernel_switch_context(thread, None)
     }
 }
 

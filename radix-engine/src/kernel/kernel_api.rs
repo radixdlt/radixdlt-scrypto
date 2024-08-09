@@ -16,10 +16,10 @@ pub struct DroppedNode {
 // all methods are prefixed by the subsystem of kernel.
 
 
-pub trait KernelThreadApi {
+pub trait KernelThreadApi<M: KernelCallbackObject> {
     fn kernel_send(&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError>;
 
-    fn kernel_switch_context(&mut self, thread: usize) -> Result<(), RuntimeError>;
+    fn kernel_switch_context(&mut self, thread: usize, update: Option<M::CallFrameData>) -> Result<(), RuntimeError>;
 }
 
 /// API for managing nodes
@@ -209,7 +209,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelThreadApi
+    KernelThreadApi<M>
     + KernelNodeApi
     + KernelSubstateApi<M::LockData>
     + KernelInvokeApi<M::CallFrameData>

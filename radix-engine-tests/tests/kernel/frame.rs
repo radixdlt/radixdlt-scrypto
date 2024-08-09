@@ -76,14 +76,16 @@ fn test() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (key, _, account) = ledger.new_allocated_account();
+    let (key2, _, account2) = ledger.new_allocated_account();
     let (btc_mint_auth, btc) = ledger.create_mintable_burnable_fungible_resource_with_initial_amount(account, Some(Decimal::from(1000)));
+    let (_, usdc) = ledger.create_mintable_burnable_fungible_resource_with_initial_amount(account2, Some(Decimal::from(1000)));
 
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
         execution_config.system_overrides = Some(SystemOverrides {
             disable_costing: true,
             disable_limits: true,
-            disable_auth: true,
+            disable_auth: false,
             ..Default::default()
         });
         execution_config
@@ -92,6 +94,7 @@ fn test() {
         let mut manifest = ManifestBuilder::new()
             .withdraw_from_account(account, btc, Decimal::from(2))
             .deposit_batch(account)
+            //.send_to_subtransaction(&())
             .build();
 
         manifest.instructions.push(InstructionV1::SendToSubTransactionAndAwait { args: to_manifest_value_and_unwrap!(&())});
@@ -112,8 +115,8 @@ fn test() {
 
     let thread1 = {
         let mut manifest = ManifestBuilder::new()
-            .withdraw_from_account(account, btc, Decimal::from(2))
-            .deposit_batch(account)
+            //.withdraw_from_account(account2, usdc, Decimal::from(2))
+            .deposit_batch(account2)
             .build();
 
         let (instructions, blobs) = manifest.for_intent();
@@ -141,7 +144,18 @@ fn test() {
             epoch_range: None,
             payload_size: 0usize,
             num_of_signature_validations: 1,
-            auth_zone_params: AuthZoneParams::single_thread(Default::default(), BTreeSet::new()),
+            auth_zone_params: AuthZoneParams {
+                thread_params: vec![
+                    AuthZoneThreadParams {
+                        initial_proofs: btreeset!(NonFungibleGlobalId::from_public_key(&key)),
+                        virtual_resources: Default::default(),
+                    },
+                    AuthZoneThreadParams {
+                        initial_proofs: btreeset!(NonFungibleGlobalId::from_public_key(&key2)),
+                        virtual_resources: Default::default(),
+                    },
+                ]
+            },
             costing_parameters: TransactionCostingParameters {
                 tip_percentage: DEFAULT_TIP_PERCENTAGE,
                 free_credit_in_xrd: Decimal::ZERO,
