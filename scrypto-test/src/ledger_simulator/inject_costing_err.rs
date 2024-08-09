@@ -7,7 +7,7 @@ use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi, SystemState,
 };
-use radix_engine::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, InvokeResult, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
+use radix_engine::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, InvokeResult, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ResumeResult, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use radix_engine::system::actor::Actor;
 use radix_engine::system::system_callback::{System, SystemInit, SystemLockData};
 use radix_engine::system::system_callback_api::SystemCallbackObject;
@@ -242,14 +242,10 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         System::invoke_upstream(args, &mut api)
     }
 
-    fn resume_with_arg<Y: KernelApi<Self>>(args: &IndexedScryptoValue, api: &mut Y) -> Result<InvokeResult, RuntimeError> {
+    fn resume_thread<Y: KernelApi<Self>>(args: &IndexedScryptoValue, api: &mut Y) -> Result<ResumeResult, RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::resume_with_arg(args, &mut api)
-    }
-
-    fn resume_child_thread<Y: KernelApi<Self>>(arg: &IndexedScryptoValue, api: &mut Y, ) -> Result<IndexedScryptoValue, RuntimeError> {
-        todo!()
+        System::resume_thread(args, &mut api)
     }
 
     fn auto_drop<Y: KernelApi<Self>>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError> {

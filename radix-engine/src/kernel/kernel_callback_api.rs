@@ -144,13 +144,13 @@ pub trait ExecutionReceipt {
 }
 
 pub enum InvokeResult {
-    SendToChildThreadAndWait(usize, IndexedScryptoValue),
+    SendToThreadAndWait(usize, IndexedScryptoValue),
     Done(IndexedScryptoValue),
 }
 
-pub enum ChildThreadResult {
-    Rtn(IndexedScryptoValue),
-    Done,
+pub enum ResumeResult {
+    SendToThreadAndWait(usize, IndexedScryptoValue),
+    Done(usize, IndexedScryptoValue),
 }
 
 /// Upper layer callback object which a kernel interacts with during execution
@@ -265,15 +265,10 @@ pub trait KernelCallbackObject: Sized {
         api: &mut Y,
     ) -> Result<InvokeResult, RuntimeError>;
 
-    fn resume_with_arg<Y: KernelApi<Self>>(
+    fn resume_thread<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<InvokeResult, RuntimeError>;
-
-    fn resume_child_thread<Y: KernelApi<Self>>(
-        arg: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>;
+    ) -> Result<ResumeResult, RuntimeError>;
 
     /// Callback after invocation during call frame cleanup and nodes are still owned by the executed
     /// call frame

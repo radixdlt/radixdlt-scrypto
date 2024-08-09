@@ -12,7 +12,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::{CallFrameReferences, ChildThreadResult, ExecutionReceipt, InvokeResult};
+use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt, InvokeResult, ResumeResult};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -1258,31 +1258,26 @@ where
             // Run
             let output = match M::invoke_upstream(args, self)? {
                 InvokeResult::Done(output) => output,
-                InvokeResult::SendToChildThreadAndWait(thread, value) => {
+                InvokeResult::SendToThreadAndWait(thread, value) => {
+                    let root_thread = self.cur_thread;
+                    // Async loop
                     (|| {
                         let mut next_thread = thread;
                         let mut next_value = value;
                         loop {
-                            // Pause current thread
-                            let mut saved_thread = self.cur_thread;
-
                             // Change stack
                             self.cur_thread = next_thread;
-                            //let thread_init = self.thread_init.get(self.cur_thread).unwrap();
-                            let child_return = M::resume_child_thread(&next_value, self)?;
-
-                            // TODO: Remove value from child thread
-                            // TODO: Move results into current call frame
-
-                            // Resume current thread
-                            self.cur_thread = saved_thread;
-                            match M::resume_with_arg(&child_return, self)? {
-                                InvokeResult::Done(output) => return Ok::<IndexedScryptoValue, RuntimeError>(output),
-                                InvokeResult::SendToChildThreadAndWait(thread, value) => {
-                                    next_thread = thread;
-                                    next_value = value;
+                            (next_thread, next_value) = match M::resume_thread(&next_value, self)? {
+                                ResumeResult::SendToThreadAndWait(next_thread, next_value) => (next_thread, next_value),
+                                ResumeResult::Done(next_thread, next_value) => {
+                                    if self.cur_thread == root_thread {
+                                        return Ok::<IndexedScryptoValue, RuntimeError>(next_value);
+                                    }
+                                    (next_thread, next_value)
                                 }
                             }
+                            // TODO: Remove value from child thread
+                            // TODO: Move results into current call frame
                         }
                     })()?
                 }

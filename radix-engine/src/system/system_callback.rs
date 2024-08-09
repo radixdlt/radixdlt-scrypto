@@ -22,7 +22,7 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::{CallFrameMessage, RootCallFrameInitRefs, StableReferenceType};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
-use crate::kernel::kernel_callback_api::{InvokeResult, RefCheckEvent};
+use crate::kernel::kernel_callback_api::{InvokeResult, RefCheckEvent, ResumeResult};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -1083,10 +1083,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         Ok(output)
     }
 
-    fn resume_child_thread<Y: KernelApi<Self>>(arg: &IndexedScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError> {
-        todo!();
-    }
-
     fn finish(&mut self, info: StoreCommitInfo) -> Result<(), RuntimeError> {
         self.modules.on_teardown()?;
 
@@ -1614,7 +1610,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
     }
 
-    fn resume_with_arg<Y: KernelApi<Self>>(input: &IndexedScryptoValue, api: &mut Y) -> Result<InvokeResult, RuntimeError> {
+    fn resume_thread<Y: KernelApi<Self>>(input: &IndexedScryptoValue, api: &mut Y) -> Result<ResumeResult, RuntimeError> {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
         match &actor {
@@ -1642,7 +1638,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     &input,
                     &mut system,
                 )?;
-                Ok(InvokeResult::Done(output))
+                Ok(ResumeResult::SendToThreadAndWait(0, output))
             }
             _ => {
                 panic!("Unexpected")
