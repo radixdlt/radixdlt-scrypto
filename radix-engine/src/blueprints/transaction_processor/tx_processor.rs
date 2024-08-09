@@ -139,6 +139,10 @@ impl TransactionProcessorBlueprint {
             match result {
                 InstructionExecutionResult::Output(output) => outputs.push(output),
                 InstructionExecutionResult::Done => {
+                    if cur_thread > 0 {
+                        api.join(0)?;
+                    }
+
                     let next = threads.iter().enumerate()
                         .filter(|(thread_id, thread)| !matches!(thread, TransactionProcessorThread::Done))
                         .next();

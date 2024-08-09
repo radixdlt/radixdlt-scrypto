@@ -321,8 +321,12 @@ for WrappedKernelApi<'a, M, K>
         self.api.kernel_send(thread, value)
     }
 
-    fn kernel_switch_context(&mut self, thread: usize, update: Option<Actor>) -> Result<(), RuntimeError> {
-        self.api.kernel_switch_context(thread, update)
+    fn kernel_switch_context(&mut self, thread: usize) -> Result<(), RuntimeError> {
+        self.api.kernel_switch_context(thread)
+    }
+
+    fn kernel_update_call_frame_data(&mut self, update: Actor) -> Result<(), RuntimeError> {
+        self.api.kernel_update_call_frame_data(update)
     }
 }
 

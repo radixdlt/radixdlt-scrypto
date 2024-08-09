@@ -44,10 +44,12 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::api::thread_api::SystemThreadApi;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::system::system_modules::auth::AuthModule;
 
 pub const BOOT_LOADER_SYSTEM_VERSION_FIELD_KEY: FieldKey = 1u8;
 
@@ -2769,10 +2771,56 @@ for SystemService<'a, Y, V>
     }
 
     fn switch_context(&mut self, thread: usize) -> Result<(), RuntimeError> {
-
         //let auth_zone = SystemModuleMixer::on_call_function(self, &blueprint_id, function_name)?;
 
-        self.api.kernel_switch_context(thread, None)
+        self.api.kernel_switch_context(thread)?;
+
+        let cur_frame = self.api.kernel_get_system_state().current_call_frame;
+        match cur_frame {
+            Actor::Root => {
+                let (virtual_resources, virtual_non_fungibles) = {
+                    let auth_module = &self.api.kernel_get_system().modules.auth;
+                    let virtual_resources =
+                        auth_module.params.thread_params[thread]
+                            .virtual_resources
+                            .clone();
+                    let virtual_non_fungibles =
+                        auth_module.params.thread_params[thread]
+                            .initial_proofs
+                            .clone();
+
+                    (virtual_resources, virtual_non_fungibles)
+                };
+
+                let auth_zone = AuthModule::create_auth_zone(self, None, virtual_resources, virtual_non_fungibles)?;
+
+                self.api.kernel_update_call_frame_data(Actor::Function(
+                    FunctionActor {
+                        blueprint_id: BlueprintId::new(&TRANSACTION_PROCESSOR_PACKAGE, TRANSACTION_PROCESSOR_BLUEPRINT),
+                        ident: "run".to_string(),
+                        auth_zone,
+                    }
+                ))?;
+            }
+            _ => {
+            }
+        }
+
+        Ok(())
+    }
+
+
+    fn join(&mut self, thread: usize) -> Result<(), RuntimeError> {
+        let cur_frame = self.api.kernel_get_system_state().current_call_frame;
+        match cur_frame {
+            Actor::Function(FunctionActor { auth_zone, .. }) => {
+                let auth_zone = auth_zone.clone();
+                self.api.kernel_drop_node(&auth_zone)?;
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 }
 

@@ -19,7 +19,9 @@ pub struct DroppedNode {
 pub trait KernelThreadApi<M: KernelCallbackObject> {
     fn kernel_send(&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError>;
 
-    fn kernel_switch_context(&mut self, thread: usize, update: Option<M::CallFrameData>) -> Result<(), RuntimeError>;
+    fn kernel_switch_context(&mut self, thread: usize) -> Result<(), RuntimeError>;
+
+    fn kernel_update_call_frame_data(&mut self, update: M::CallFrameData) -> Result<(), RuntimeError>;
 }
 
 /// API for managing nodes

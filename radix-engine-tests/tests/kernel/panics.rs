@@ -48,8 +48,12 @@ impl<'g> KernelThreadApi<System<Vm<'g, DefaultWasmEngine, NoExtension>>> for Moc
         panic!()
     }
 
-    fn kernel_switch_context(&mut self, _: usize, _: Option<Actor>) -> Result<(), RuntimeError> {
+    fn kernel_switch_context(&mut self, _: usize) -> Result<(), RuntimeError> {
         panic1!()
+    }
+
+    fn kernel_update_call_frame_data(&mut self, _: Actor) -> Result<(), RuntimeError> {
+        panic!()
     }
 }
 

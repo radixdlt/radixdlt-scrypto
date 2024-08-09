@@ -84,7 +84,7 @@ pub struct SystemModuleMixer {
     pub(super) kernel_trace: KernelTraceModule,
     pub(super) limits: LimitsModule,
     pub(super) costing: CostingModule,
-    pub(super) auth: AuthModule,
+    pub(crate) auth: AuthModule,
     pub(crate) transaction_runtime: TransactionRuntimeModule,
     pub(super) execution_trace: ExecutionTraceModule,
 }

@@ -213,7 +213,7 @@ impl AuthModule {
         Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
 
-    fn create_auth_zone<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
+    pub(crate) fn create_auth_zone<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
         system: &mut SystemService<Y, V>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,

@@ -333,13 +333,14 @@ impl<'g, M, S> KernelThreadApi<M> for Kernel<'g, M, S>
         Ok(())
     }
 
-    fn kernel_switch_context(&mut self, thread: usize, update: Option<M::CallFrameData>) -> Result<(), RuntimeError> {
-        if let Some(update) = update {
-            let data = self.threads.get_mut(thread).unwrap().current_frame.data_mut();
-            *data = update;
-        }
-
+    fn kernel_switch_context(&mut self, thread: usize) -> Result<(), RuntimeError> {
         self.cur_thread = thread;
+        Ok(())
+    }
+
+    fn kernel_update_call_frame_data(&mut self, update: M::CallFrameData) -> Result<(), RuntimeError> {
+        let data = self.threads.get_mut(self.cur_thread).unwrap().current_frame.data_mut();
+        *data = update;
         Ok(())
     }
 }

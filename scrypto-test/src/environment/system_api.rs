@@ -106,6 +106,7 @@ implement_system_api! {
     SystemThreadApi: {
         send: (&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError>,
         switch_context: (&mut self, thread: usize) -> Result<(), RuntimeError>,
+        join: (&mut self, thread: usize) -> Result<(), RuntimeError>,
     },
     SystemActorApi: {
         actor_get_blueprint_id: (&mut self) -> Result<BlueprintId, RuntimeError>,
