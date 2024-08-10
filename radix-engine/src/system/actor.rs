@@ -75,11 +75,13 @@ pub enum Actor {
     BlueprintHook(BlueprintHookActor),
 }
 
-impl CallFrameReferences for Actor {
-    fn root() -> Self {
-        Actor::Root
+impl Default for Actor {
+    fn default() -> Self {
+        Self::Root
     }
+}
 
+impl CallFrameReferences for Actor {
     fn global_references(&self) -> Vec<NodeId> {
         let mut global_refs = Vec::new();
 

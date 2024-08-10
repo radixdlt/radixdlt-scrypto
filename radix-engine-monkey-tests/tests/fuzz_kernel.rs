@@ -1,8 +1,6 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{
-    BootloadingError, RejectionReason, RuntimeError, TransactionExecutionError,
-};
-use radix_engine::kernel::call_frame::{CallFrameMessage, StableReferenceType};
+use radix_engine::errors::{RejectionReason, RuntimeError, TransactionExecutionError};
+use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -31,13 +29,10 @@ use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
+#[derive(Default)]
 struct TestCallFrameData;
 
 impl CallFrameReferences for TestCallFrameData {
-    fn root() -> Self {
-        TestCallFrameData
-    }
-
     fn global_references(&self) -> Vec<NodeId> {
         Default::default()
     }
@@ -77,8 +72,8 @@ impl KernelCallbackObject for TestCallbackObject {
         _store: &mut S,
         _executable: &Executable,
         _init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
-        Ok(Self)
+    ) -> Result<(Self, CallFrameInit<TestCallFrameData>), RejectionReason> {
+        Ok((Self, Default::default()))
     }
 
     fn start<Y: KernelApi<Self>>(
@@ -102,14 +97,6 @@ impl KernelCallbackObject for TestCallbackObject {
         _result: Result<(), TransactionExecutionError>,
     ) -> Self::Receipt {
         TestReceipt
-    }
-
-    fn verify_boot_ref_value(
-        &mut self,
-        _node_id: &NodeId,
-        _value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        Ok(StableReferenceType::Global)
     }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {

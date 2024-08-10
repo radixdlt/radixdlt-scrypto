@@ -769,13 +769,12 @@ impl<C: SystemCallbackObject> System<C> {
         }
     }
 
-
     /// Checks that references exist in the store
     fn check_references<S: BootStore + CommitableSubstateStore>(
         &mut self,
         store: &mut S,
         references: &IndexSet<Reference>,
-    ) -> Result<CallFrameInit, BootloadingError> {
+    ) -> Result<CallFrameInit<Actor>, BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
 
@@ -811,9 +810,12 @@ impl<C: SystemCallbackObject> System<C> {
             }
         }
 
-        Ok(CallFrameInit { global_addresses, direct_accesses })
+        Ok(CallFrameInit {
+            data: Actor::Root,
+            global_addresses,
+            direct_accesses,
+        })
     }
-
 
     fn verify_boot_ref_value(
         &mut self,
@@ -848,7 +850,7 @@ impl<C: SystemCallbackObject> System<C> {
                     Ok(StableReferenceType::Global)
                 } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                    || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                        || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                 {
                     Ok(StableReferenceType::DirectAccess)
                 } else {
@@ -875,7 +877,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         store: &mut S,
         executable: &Executable,
         init_input: SystemInit<C::Init>,
-    ) -> Result<(Self, CallFrameInit), RejectionReason> {
+    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.enable_kernel_trace {
@@ -1021,8 +1023,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             modules,
         };
 
-        let call_frame_init = system.check_references(store, &executable.references())
-            l.map_err(RejectionReason::BootloadingError)?;
+        let call_frame_init = system
+            .check_references(store, &executable.references())
+            .map_err(RejectionReason::BootloadingError)?;
 
         Ok((system, call_frame_init))
     }

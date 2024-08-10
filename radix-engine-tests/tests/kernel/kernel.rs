@@ -1,6 +1,6 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{BootloadingError, CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, StableReferenceType, TakeNodeError, WriteSubstateError};
+use radix_engine::errors::{CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
+use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -16,13 +16,10 @@ use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::{Executable, PreAllocatedAddress};
 
+#[derive(Default)]
 struct TestCallFrameData;
 
 impl CallFrameReferences for TestCallFrameData {
-    fn root() -> Self {
-        TestCallFrameData
-    }
-
     fn global_references(&self) -> Vec<NodeId> {
         Default::default()
     }
@@ -63,12 +60,8 @@ impl KernelCallbackObject for TestCallbackObject {
         _store: &mut S,
         _executable: &Executable,
         _init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
-        Ok(Self)
-    }
-
-    fn verify_boot_ref_value(&mut self, _node_id: &NodeId, _value: &IndexedScryptoValue) -> Result<StableReferenceType, BootloadingError> {
-        Ok(StableReferenceType::Global)
+    ) -> Result<(Self, CallFrameInit<TestCallFrameData>), RejectionReason> {
+        Ok((Self, Default::default()))
     }
 
     fn start<Y: KernelApi<Self>>(

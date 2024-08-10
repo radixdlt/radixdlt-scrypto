@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError, CallFrameInit};
+use super::call_frame::{CallFrame, CallFrameInit, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use crate::blueprints::resource::*;
@@ -10,7 +10,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt};
+use crate::kernel::kernel_callback_api::ExecutionReceipt;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -103,8 +103,9 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
             .map(|v| scrypto_decode(v.as_slice()).unwrap())
             .unwrap_or(KernelBoot::babylon());
 
-        // System Initialization
-        let (mut callback, call_frame_init) = M::init(&mut self.track, executable, self.init.clone())?;
+        // Upper Layer Initialization
+        let (mut callback, call_frame_init) =
+            M::init(&mut self.track, executable, self.init.clone())?;
 
         // Kernel Initialization
         let mut kernel = Kernel::new(
@@ -170,29 +171,28 @@ pub struct Kernel<
     callback: &'g mut M,
 }
 
-impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel<'g, M, S> {
+impl<
+        'g,
+        M: KernelCallbackObject<CallFrameData: Default>,
+        S: CommitableSubstateStore + BootStore,
+    > Kernel<'g, M, S>
+{
     pub fn new_no_refs(
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
     ) -> Self {
-        Self::new(
-            store,
-            id_allocator,
-            callback,
-            Default::default(),
-        )
+        Self::new(store, id_allocator, callback, Default::default())
     }
+}
 
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel<'g, M, S> {
     pub fn new(
         store: &'g mut S,
         id_allocator: &'g mut IdAllocator,
         callback: &'g mut M,
-        init_refs: CallFrameInit,
+        call_frame_init: CallFrameInit<M::CallFrameData>,
     ) -> Self {
-        let call_frame =
-            CallFrame::new_root(M::CallFrameData::root(), init_refs);
-
         Kernel {
             substate_io: SubstateIO {
                 heap: Heap::new(),
@@ -203,7 +203,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore + BootStore> Kernel
                 pinned_to_heap: BTreeSet::new(),
             },
             id_allocator,
-            current_frame: call_frame,
+            current_frame: CallFrame::new_root(call_frame_init),
             prev_frame_stack: vec![],
             callback,
         }

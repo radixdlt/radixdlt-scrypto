@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrameMessage, CallFrameInit};
+use super::call_frame::{CallFrameInit, CallFrameMessage};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -14,7 +14,6 @@ use radix_transactions::model::Executable;
 use radix_transactions::prelude::PreAllocatedAddress;
 
 pub trait CallFrameReferences {
-    fn root() -> Self;
     fn global_references(&self) -> Vec<NodeId>;
     fn direct_access_references(&self) -> Vec<NodeId>;
     fn stable_transient_references(&self) -> Vec<NodeId>;
@@ -161,7 +160,7 @@ pub trait KernelCallbackObject: Sized {
         store: &mut S,
         executable: &Executable,
         init: Self::Init,
-    ) -> Result<(Self, CallFrameInit), RejectionReason>;
+    ) -> Result<(Self, CallFrameInit<Self::CallFrameData>), RejectionReason>;
 
     /// Start execution
     fn start<Y: KernelApi<Self>>(

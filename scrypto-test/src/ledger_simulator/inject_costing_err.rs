@@ -1,8 +1,7 @@
 use radix_common::prelude::*;
-use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, StableReferenceType};
+use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi, SystemState,
@@ -96,23 +95,16 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         store: &mut S,
         executable: &Executable,
         init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
-        let mut system = System::<K>::init(store, executable, init_input.system_input)?;
+    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
+        let (mut system, call_frame_init) =
+            System::<K>::init(store, executable, init_input.system_input)?;
 
         let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
         system.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
             fail_after: fail_after.clone(),
         };
 
-        Ok(Self { fail_after, system })
-    }
-
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        self.system.verify_boot_ref_value(node_id, value)
+        Ok((Self { fail_after, system }, call_frame_init))
     }
 
     fn start<Y: KernelApi<Self>>(

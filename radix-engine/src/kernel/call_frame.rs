@@ -558,19 +558,17 @@ pub enum SubstateDiffError {
 }
 
 #[derive(Debug, Default)]
-pub struct CallFrameInit {
+pub struct CallFrameInit<C> {
+    pub data: C,
     pub global_addresses: IndexSet<GlobalAddress>,
     pub direct_accesses: IndexSet<InternalAddress>,
 }
 
 impl<C, L: Clone> CallFrame<C, L> {
-    pub fn new_root(
-        call_frame_data: C,
-        root_refs: CallFrameInit,
-    ) -> Self {
+    pub fn new_root(init: CallFrameInit<C>) -> Self {
         let mut call_frame = Self {
             depth: 0,
-            call_frame_data,
+            call_frame_data: init.data,
             stable_references: Default::default(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_set_new(),
@@ -578,10 +576,10 @@ impl<C, L: Clone> CallFrame<C, L> {
             open_substates: index_map_new(),
         };
 
-        for global_ref in root_refs.global_addresses {
+        for global_ref in init.global_addresses {
             call_frame.add_global_reference(global_ref);
         }
-        for direct_access in root_refs.direct_accesses {
+        for direct_access in init.direct_accesses {
             call_frame.add_direct_access_reference(direct_access);
         }
 
