@@ -78,11 +78,11 @@ fn test_non_fungible_resource_with_schema<F: FnOnce(TransactionReceipt)>(
 fn create_non_fungible_resource_with_invalid_type_id_should_fail() {
     let aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let schema = generate_full_schema(aggregator);
-    let non_fungible_schema = NonFungibleDataSchema::Local {
+    let non_fungible_schema = NonFungibleDataSchema::Local(LocalNonFungibleDataSchema {
         schema,
         type_id: LocalTypeId::SchemaLocalIndex(64), // Invalid LocalTypeId
         mutable_fields: indexset!(),
-    };
+    });
 
     test_non_fungible_resource_with_schema(non_fungible_schema, |receipt| {
         receipt.expect_specific_failure(|e| {
@@ -103,11 +103,11 @@ fn create_non_fungible_resource_with_non_tuple_type_id_should_fail() {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let type_id = aggregator.add_child_type_and_descendents::<String>();
     let schema = generate_full_schema(aggregator);
-    let non_fungible_schema = NonFungibleDataSchema::Local {
+    let non_fungible_schema = NonFungibleDataSchema::Local(LocalNonFungibleDataSchema {
         schema,
         type_id,
         mutable_fields: indexset!(),
-    };
+    });
 
     test_non_fungible_resource_with_schema(non_fungible_schema, |receipt| {
         receipt.expect_specific_failure(|e| {
@@ -128,11 +128,11 @@ fn create_non_fungible_resource_with_missing_mutable_field_should_fail2() {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let type_id = aggregator.add_child_type_and_descendents::<Sandwich>();
     let schema = generate_full_schema(aggregator);
-    let non_fungible_schema = NonFungibleDataSchema::Local {
+    let non_fungible_schema = NonFungibleDataSchema::Local(LocalNonFungibleDataSchema {
         schema,
         type_id,
         mutable_fields: indexset!("missing".to_string()),
-    };
+    });
 
     test_non_fungible_resource_with_schema(non_fungible_schema, |receipt| {
         receipt.expect_specific_failure(|e| {
@@ -153,11 +153,11 @@ fn create_non_fungible_resource_with_missing_mutable_field_should_fail() {
     let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
     let type_id = aggregator.add_child_type_and_descendents::<()>();
     let schema = generate_full_schema(aggregator);
-    let non_fungible_schema = NonFungibleDataSchema::Local {
+    let non_fungible_schema = NonFungibleDataSchema::Local(LocalNonFungibleDataSchema {
         schema,
         type_id,
         mutable_fields: indexset!("missing".to_string()),
-    };
+    });
 
     test_non_fungible_resource_with_schema(non_fungible_schema, |receipt| {
         receipt.expect_specific_failure(|e| {

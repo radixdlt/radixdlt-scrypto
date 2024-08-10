@@ -15,7 +15,6 @@ pub struct IntentV1 {
 }
 
 impl TransactionPayload for IntentV1 {
-    type Versioned = SborFixedEnumVariant<{ TransactionDiscriminator::V1Intent as u8 }, Self>;
     type Prepared = PreparedIntentV1;
     type Raw = RawIntent;
 }

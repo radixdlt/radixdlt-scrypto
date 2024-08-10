@@ -75,9 +75,9 @@ pub enum Mixed {
     I = 0b11011,
 }
 
-#[derive(Debug, PartialEq, Eq, Sbor)]
+#[derive(Debug, PartialEq, Eq, Sbor, Clone)]
 enum FlattenEnum {
-    #[sbor(flatten)]
+    #[sbor(flatten, impl_variant_trait)]
     A {
         #[sbor(skip)]
         skipped: u8,
@@ -85,28 +85,29 @@ enum FlattenEnum {
     },
     #[sbor(flatten)]
     B(#[sbor(skip)] u8, (u32,)),
-    #[sbor(flatten)]
+    #[sbor(flatten, impl_variant_trait)]
     C(MyInnerStruct),
     D,
+    #[sbor(impl_variant_trait)]
     E(MyOtherTypeTwo),
 }
 
-#[derive(Debug, PartialEq, Eq, Sbor)]
+#[derive(Debug, PartialEq, Eq, Sbor, Clone)]
 struct MyInnerStruct {
     hello: String,
     world: MyInnerInnerType, // This checks that we properly capture descendents in Describe
 }
 
-#[derive(Debug, PartialEq, Eq, Sbor)]
+#[derive(Debug, PartialEq, Eq, Sbor, Clone)]
 struct MyOtherType(u8);
 
-#[derive(Debug, PartialEq, Eq, Sbor)]
+#[derive(Debug, PartialEq, Eq, Sbor, Clone)]
 struct MyInnerInnerType(u8);
 
-#[derive(Debug, PartialEq, Eq, Sbor)]
+#[derive(Debug, PartialEq, Eq, Sbor, Clone)]
 struct MyOtherTypeTwo(u8);
 
-#[derive(Debug, PartialEq, Eq, Sbor)]
+#[derive(Debug, PartialEq, Eq, Sbor, Clone)]
 #[sbor(type_name = "FlattenEnum")]
 enum FlattenedEnum {
     A(u32, MyOtherType),
@@ -118,6 +119,15 @@ enum FlattenedEnum {
     D,
     E(MyOtherTypeTwo),
 }
+
+#[derive(Debug, PartialEq, Eq, Categorize, Clone)]
+#[sbor(impl_variant_traits)]
+enum OnlyCategorizeAndImplVariantTraits {
+    A(OnlyCategorizeInnerType),
+}
+
+#[derive(Debug, PartialEq, Eq, Categorize, Clone)]
+struct OnlyCategorizeInnerType(u8);
 
 #[test]
 fn test_encode_decode_and_schemas() {
@@ -194,6 +204,59 @@ fn test_encode_decode_and_schemas() {
     );
     check_encode_identically(&Abc::Variant1, &AbcV2::Variant1);
     check_encode_identically(&Abc::Variant2, &AbcV2::Variant2);
+}
+
+#[test]
+fn test_impl_variant_trait() {
+    // First test flattened variant
+    assert_sbor_enum_variant_equivalency(
+        MyInnerStruct {
+            hello: "hi".to_string(),
+            world: MyInnerInnerType(31),
+        },
+        FlattenEnum::C(MyInnerStruct {
+            hello: "hi".to_string(),
+            world: MyInnerInnerType(31),
+        }),
+    );
+    // Then test unflattened variant
+    assert_sbor_enum_variant_equivalency(MyOtherTypeTwo(3), FlattenEnum::E(MyOtherTypeTwo(3)));
+
+    assert_eq!(
+        <OnlyCategorizeInnerType as SborEnumVariantFor<
+            OnlyCategorizeAndImplVariantTraits,
+            NoCustomValueKind,
+        >>::into_enum(OnlyCategorizeInnerType(1)),
+        OnlyCategorizeAndImplVariantTraits::A(OnlyCategorizeInnerType(1)),
+    );
+}
+
+fn assert_sbor_enum_variant_equivalency<
+    TEnum: SborEnum<NoCustomValueKind> + BasicSbor + Eq + Debug + Clone,
+    TInner: SborEnumVariantFor<TEnum, NoCustomValueKind> + BasicSbor + Eq + Debug + Clone,
+>(
+    inner_value: TInner,
+    value_in_enum: TEnum,
+) where
+    for<'a> TInner::BorrowedVariant<'a>: BasicEncode,
+    for<'a> TInner::OwnedVariant: BasicDecode,
+{
+    let encoded_inner_value_as_variant = basic_encode(&inner_value.as_encodable_variant()).unwrap();
+    let encoded_enum_value = basic_encode(&value_in_enum).unwrap();
+    assert_eq!(
+        encoded_inner_value_as_variant, encoded_enum_value,
+        "Encodable variant should encoded identically to the value in the enum"
+    );
+    assert_eq!(
+        inner_value.clone().into_enum(),
+        value_in_enum.clone(),
+        "Converting the inner value into_enum should give the value in the enum"
+    );
+    assert_eq!(
+        TInner::from_decoded_variant(basic_decode(&encoded_enum_value).unwrap()),
+        inner_value,
+        "Decoding into the inner type from an encoded enum payload should work"
+    );
 }
 
 #[test]

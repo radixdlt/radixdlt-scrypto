@@ -61,7 +61,7 @@ pub trait Encoder<X: CustomValueKind>: Sized {
     /// Each layer of the Value counts as one depth.
     ///
     /// If the encoder you're writing is embedding a child type (and is represented as such
-    /// in the Value type), then you should call `encoder.encode_body` to increment
+    /// in the Value type), then you should call `encoder.encode_deeper_body` to increment
     /// the SBOR depth tracker.
     ///
     /// You should call `value.encode_body` directly when the encoding of that type
