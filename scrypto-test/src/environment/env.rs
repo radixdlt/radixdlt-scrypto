@@ -948,8 +948,8 @@ mod tests {
         env.set_current_time(current_time);
 
         // Assert
-        let t1 = Runtime::current_time(&mut env, TimePrecision::Second).unwrap();
-        let t2 = Runtime::current_time(&mut env, TimePrecision::Minute).unwrap();
+        let t1 = Runtime::current_time(TimePrecision::Second, &mut env).unwrap();
+        let t2 = Runtime::current_time(TimePrecision::Minute, &mut env).unwrap();
 
         assert_eq!(t1, t2)
     }
