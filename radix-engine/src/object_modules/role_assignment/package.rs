@@ -334,7 +334,11 @@ impl RoleAssignmentNativePackage {
         Ok(ResolvedPermission::AccessRule(rule))
     }
 
-    fn resolve_update_role_method_permission<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+    fn resolve_update_role_method_permission<
+        Y: KernelApi<System<V, E>>,
+        V: SystemCallbackObject,
+        E,
+    >(
         receiver: &NodeId,
         module: ModuleId,
         role_key: &RoleKey,

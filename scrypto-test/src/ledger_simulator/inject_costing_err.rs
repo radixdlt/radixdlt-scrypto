@@ -471,8 +471,8 @@ impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> Kern
     }
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInternalApi<System<M, Executable>>
-    for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>>
+    KernelInternalApi<System<M, Executable>> for WrappedKernelApi<'a, M, K>
 {
     fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, Executable>> {
         let state = self.api.kernel_get_system_state();
@@ -500,8 +500,8 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInt
     }
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelApi<System<M, Executable>>
-    for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>>
+    KernelApi<System<M, Executable>> for WrappedKernelApi<'a, M, K>
 {
 }
 

@@ -172,16 +172,6 @@ impl Executable {
         }
     }
 
-    pub fn mock() -> Self {
-        Self {
-            encoded_instructions: Default::default(),
-            references: Default::default(),
-            blobs: Default::default(),
-            context: ExecutionContext::mock(),
-            system: false,
-        }
-    }
-
     // Consuming builder-like customization methods:
 
     pub fn is_system(&self) -> bool {

@@ -198,7 +198,7 @@ impl<C: SystemCallbackObject, E> System<C, E> {
                             destination_blueprint_id,
                         }),
                     }))
-                        .map(|_| ())
+                    .map(|_| ())
                 } else {
                     Ok(())
                 }
@@ -771,7 +771,6 @@ impl<C: SystemCallbackObject> System<C, Executable> {
         }
         println!("{:-^120}", "Finish");
     }
-
 
     /// Checks that references exist in the store
     fn check_references<S: BootStore + CommitableSubstateStore>(

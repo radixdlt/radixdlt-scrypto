@@ -20,7 +20,7 @@ pub trait SystemCallbackObject: Sized {
             + KernelInternalApi<System<Self, E>>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
-        E
+        E,
     >(
         package_address: &PackageAddress,
         package_export: PackageExport,

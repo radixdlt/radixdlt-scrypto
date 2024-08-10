@@ -53,7 +53,7 @@ pub fn test_open_substate_of_invisible_package_address() {
 
     // Create kernel
     let mut system = System {
-        executable: Executable::mock(),
+        executable: (),
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),

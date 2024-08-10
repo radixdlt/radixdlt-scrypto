@@ -49,7 +49,13 @@ pub enum SchemaOrigin {
 // SYSTEM ADAPTERS
 //==================
 
-pub struct SystemServiceTypeInfoLookup<'s, 'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> {
+pub struct SystemServiceTypeInfoLookup<
+    's,
+    'a,
+    Y: KernelApi<System<V, E>>,
+    V: SystemCallbackObject,
+    E,
+> {
     system_service: RefCell<&'s mut SystemService<'a, Y, V, E>>,
     schema_origin: SchemaOrigin,
     allow_ownership: bool,
