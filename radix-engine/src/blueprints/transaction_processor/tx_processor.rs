@@ -584,9 +584,22 @@ impl TransactionProcessorThread {
                             return Ok(InstructionExecutionResult::Switch(1, IndexedScryptoValue::from_scrypto_value(scrypto_value)));
                         }
                         InstructionV1::Yield {
-                            ..
+                            args
                         } => {
-                            return Ok(InstructionExecutionResult::Switch(0, IndexedScryptoValue::unit()));
+                            let scrypto_value = {
+                                let mut processor_with_api = TransactionProcessorWithApi {
+                                    worktop: &mut worktop,
+                                    processor: &mut state.processor,
+                                    api,
+                                    current_total_size_of_blobs: 0,
+                                    max_total_size_of_blobs: match version {
+                                        TransactionProcessorV1MinorVersion::Zero => usize::MAX,
+                                        TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+                                    },
+                                };
+                                transform(args, &mut processor_with_api)?
+                            };
+                            return Ok(InstructionExecutionResult::Switch(0, IndexedScryptoValue::from_scrypto_value(scrypto_value)));
                         }
                     };
 

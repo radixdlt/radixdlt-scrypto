@@ -97,6 +97,11 @@ fn test() {
             .with_name_lookup(|builder, lookup| {
                 builder.send_to_subtransaction(manifest_args!(lookup.bucket("btc")))
             })
+            .assert_worktop_contains(usdc, Decimal::from(23))
+            .take_all_from_worktop(usdc, "usdc")
+            .with_name_lookup(|builder, lookup| {
+                builder.deposit(account, lookup.bucket("usdc"))
+            })
             .build();
 
         let (instructions, blobs) = manifest.for_intent();
@@ -115,8 +120,16 @@ fn test() {
 
     let thread1 = {
         let mut manifest = ManifestBuilder::new()
-            .withdraw_from_account(account2, usdc, Decimal::from(2))
-            .deposit_batch(account2)
+            .withdraw_from_account(account2, usdc, Decimal::from(23))
+            .take_all_from_worktop(usdc, "usdc")
+            .with_name_lookup(|builder, lookup| {
+                builder.yield_to_parent(manifest_args!(lookup.bucket("usdc")))
+            })
+            .assert_worktop_contains(btc, Decimal::from(2))
+            .take_all_from_worktop(btc, "btc")
+            .with_name_lookup(|builder, lookup| {
+                builder.deposit(account2, lookup.bucket("btc"))
+            })
             .build();
 
         let (instructions, blobs) = manifest.for_intent();
