@@ -289,7 +289,7 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
-                    executable: Executable::mock(),
+                    executable: (),
                 }
             },
             |system_config, track, id_allocator| {

@@ -50,9 +50,9 @@ use sbor::rust::vec::Vec;
 pub const BOOT_LOADER_SYSTEM_VERSION_FIELD_KEY: FieldKey = 1u8;
 
 /// Provided to upper layer for invoking lower layer service
-pub struct SystemService<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> {
+pub struct SystemService<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> {
     pub api: &'a mut Y,
-    pub phantom: PhantomData<V>,
+    pub phantom: PhantomData<(V,E)>,
 }
 
 enum ActorStateRef {
@@ -100,7 +100,7 @@ enum EmitterActor {
     AsObject(NodeId, Option<AttachedModuleId>),
 }
 
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, V> {
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemService<'a, Y, V, E> {
     pub fn new(api: &'a mut Y) -> Self {
         Self {
             api,
@@ -113,7 +113,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, V> {
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemService<'a, Y, V, E> {
     fn validate_new_object(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -1105,8 +1105,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemFieldApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemFieldApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // Costing through kernel
     #[trace_resources]
@@ -1196,8 +1196,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemFieldApi<Runtim
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemObjectApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // Costing through kernel
     #[trace_resources]
@@ -1583,8 +1583,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueEntryApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemKeyValueEntryApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // Costing through kernel
     #[trace_resources]
@@ -1720,8 +1720,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueEntryAp
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemKeyValueStoreApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // Costing through kernel
     #[trace_resources]
@@ -1872,8 +1872,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreAp
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemActorIndexApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // Costing through kernel
     fn actor_index_insert(
@@ -2004,8 +2004,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorSortedIndexApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemActorSortedIndexApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // Costing through kernel
     #[trace_resources]
@@ -2122,8 +2122,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorSortedInde
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemBlueprintApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemBlueprintApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // Costing through kernel
     fn call_function(
@@ -2168,8 +2168,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemBlueprintApi<Ru
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemCostingApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemCostingApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // No costing should be applied
     fn consume_cost_units(
@@ -2431,8 +2431,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemCostingApi<Runt
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemActorApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     #[trace_resources]
     fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, RuntimeError> {
@@ -2650,8 +2650,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorApi<Runtim
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorKeyValueEntryApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemActorKeyValueEntryApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // Costing through kernel
     #[trace_resources]
@@ -2741,8 +2741,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorKeyValueEn
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemExecutionTraceApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemExecutionTraceApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     // No costing should be applied
     #[trace_resources]
@@ -2759,8 +2759,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemExecutionTraceA
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemTransactionRuntimeApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemTransactionRuntimeApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
     #[trace_resources]
     fn get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
@@ -2852,8 +2852,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemTransactionRunt
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemApi<RuntimeError>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
 {
 }
 
@@ -2861,8 +2861,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemApi<RuntimeErro
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelNodeApi
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> KernelNodeApi
+    for SystemService<'a, Y, V, E>
 {
     fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         self.api.kernel_pin_node(node_id)
@@ -2897,8 +2897,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelNodeApi
     feature = "std",
     catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
 )]
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelSubstateApi<SystemLockData>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> KernelSubstateApi<SystemLockData>
+    for SystemService<'a, Y, V, E>
 {
     fn kernel_mark_substate_as_transient(
         &mut self,
@@ -3007,10 +3007,10 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelSubstateApi<Sys
     }
 }
 
-impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelInternalApi<System<V>>
-    for SystemService<'a, Y, V>
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> KernelInternalApi<System<V, E>>
+    for SystemService<'a, Y, V, E>
 {
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<V>> {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<V, E>> {
         self.api.kernel_get_system_state()
     }
 

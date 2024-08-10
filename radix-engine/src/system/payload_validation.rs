@@ -49,18 +49,18 @@ pub enum SchemaOrigin {
 // SYSTEM ADAPTERS
 //==================
 
-pub struct SystemServiceTypeInfoLookup<'s, 'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> {
-    system_service: RefCell<&'s mut SystemService<'a, Y, V>>,
+pub struct SystemServiceTypeInfoLookup<'s, 'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> {
+    system_service: RefCell<&'s mut SystemService<'a, Y, V, E>>,
     schema_origin: SchemaOrigin,
     allow_ownership: bool,
     allow_non_global_ref: bool,
 }
 
-impl<'s, 'a, Y: KernelApi<System<V>>, V: SystemCallbackObject>
-    SystemServiceTypeInfoLookup<'s, 'a, Y, V>
+impl<'s, 'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>
+    SystemServiceTypeInfoLookup<'s, 'a, Y, V, E>
 {
     pub fn new(
-        system_service: &'s mut SystemService<'a, Y, V>,
+        system_service: &'s mut SystemService<'a, Y, V, E>,
         schema_origin: SchemaOrigin,
         allow_ownership: bool,
         allow_non_global_ref: bool,
@@ -74,8 +74,8 @@ impl<'s, 'a, Y: KernelApi<System<V>>, V: SystemCallbackObject>
     }
 }
 
-impl<'s, 'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> ValidationContext
-    for SystemServiceTypeInfoLookup<'s, 'a, Y, V>
+impl<'s, 'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> ValidationContext
+    for SystemServiceTypeInfoLookup<'s, 'a, Y, V, E>
 {
     type Error = RuntimeError;
 

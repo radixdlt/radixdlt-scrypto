@@ -152,16 +152,65 @@ pub struct SystemInit<C> {
     pub system_overrides: Option<SystemOverrides>,
 }
 
-pub struct System<C: SystemCallbackObject> {
+pub struct System<C: SystemCallbackObject, E> {
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
-    pub executable: Executable,
+    pub executable: E,
 }
 
-impl<C: SystemCallbackObject> System<C> {
+impl<C: SystemCallbackObject, E> System<C, E> {
+    fn on_move_node<Y: KernelApi<Self>>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => {
+                let mut service = SystemService::new(api);
+                let definition = service.load_blueprint_definition(
+                    object_info.blueprint_info.blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: object_info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
+                        version: BlueprintVersion::default(),
+                    },
+                )?;
+                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
+                            receiver: Some(node_id.clone()),
+                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
+                            hook: BlueprintHook::OnMove,
+                        }),
+                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
+                            is_moving_down,
+                            is_to_barrier,
+                            destination_blueprint_id,
+                        }),
+                    }))
+                        .map(|_| ())
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
+        }
+    }
+}
+
+impl<C: SystemCallbackObject> System<C, Executable> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
         println!("{:-^120}", "Executable");
@@ -723,52 +772,6 @@ impl<C: SystemCallbackObject> System<C> {
         println!("{:-^120}", "Finish");
     }
 
-    fn on_move_node<Y: KernelApi<Self>>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
-
-        match type_info {
-            TypeInfoSubstate::Object(object_info) => {
-                let mut service = SystemService::new(api);
-                let definition = service.load_blueprint_definition(
-                    object_info.blueprint_info.blueprint_id.package_address,
-                    &BlueprintVersionKey {
-                        blueprint: object_info
-                            .blueprint_info
-                            .blueprint_id
-                            .blueprint_name
-                            .clone(),
-                        version: BlueprintVersion::default(),
-                    },
-                )?;
-                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
-                    api.kernel_invoke(Box::new(KernelInvocation {
-                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
-                            receiver: Some(node_id.clone()),
-                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
-                            hook: BlueprintHook::OnMove,
-                        }),
-                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
-                            is_moving_down,
-                            is_to_barrier,
-                            destination_blueprint_id,
-                        }),
-                    }))
-                    .map(|_| ())
-                } else {
-                    Ok(())
-                }
-            }
-            TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::GlobalAddressReservation(_)
-            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
-        }
-    }
 
     /// Checks that references exist in the store
     fn check_references<S: BootStore + CommitableSubstateStore>(
@@ -866,7 +869,7 @@ impl<C: SystemCallbackObject> System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
+impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Executable> {
     type Init = SystemInit<C::Init>;
     type Executable = Executable;
     type ExecutionOutput = Vec<InstructionOutput>;
@@ -1319,7 +1322,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
+impl<C: SystemCallbackObject, E> KernelCallbackObject for System<C, E> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 
@@ -1419,51 +1422,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         SystemModuleMixer::before_invoke(api, invocation)
     }
 
-    fn after_invoke<Y: KernelApi<Self>>(
-        output: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        let current_actor = api.kernel_get_system_state().current_call_frame;
-        let is_to_barrier = current_actor.is_barrier();
-        let destination_blueprint_id = current_actor.blueprint_id();
-        for node_id in output.owned_nodes() {
-            Self::on_move_node(
-                node_id,
-                false,
-                is_to_barrier,
-                destination_blueprint_id.clone(),
-                api,
-            )?;
-        }
-
-        SystemModuleMixer::after_invoke(api, output)
-    }
-
     fn on_execution_start<Y: KernelApi<Self>>(api: &mut Y) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y: KernelApi<Self>>(
-        message: &CallFrameMessage,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_execution_finish(api, message)?;
-
-        Ok(())
-    }
-
-    fn on_allocate_node_id<Y: KernelApi<Self>>(
-        entity_type: EntityType,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_allocate_node_id(api, entity_type)
-    }
-
-    //--------------------------------------------------------------------------
-    // Note that the following logic doesn't go through mixer and is not costed
-    //--------------------------------------------------------------------------
-
-    fn invoke_upstream<Y: KernelApi<System<C>>>(
+    fn invoke_upstream<Y: KernelApi<System<C, E>>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
@@ -1655,6 +1618,46 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
 
         Ok(())
+    }
+
+    fn on_execution_finish<Y: KernelApi<Self>>(
+        message: &CallFrameMessage,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_execution_finish(api, message)?;
+
+        Ok(())
+    }
+
+    //--------------------------------------------------------------------------
+    // Note that the following logic doesn't go through mixer and is not costed
+    //--------------------------------------------------------------------------
+
+    fn after_invoke<Y: KernelApi<Self>>(
+        output: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.kernel_get_system_state().current_call_frame;
+        let is_to_barrier = current_actor.is_barrier();
+        let destination_blueprint_id = current_actor.blueprint_id();
+        for node_id in output.owned_nodes() {
+            Self::on_move_node(
+                node_id,
+                false,
+                is_to_barrier,
+                destination_blueprint_id.clone(),
+                api,
+            )?;
+        }
+
+        SystemModuleMixer::after_invoke(api, output)
+    }
+
+    fn on_allocate_node_id<Y: KernelApi<Self>>(
+        entity_type: EntityType,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
 
     fn on_mark_substate_as_transient(

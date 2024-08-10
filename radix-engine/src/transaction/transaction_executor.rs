@@ -333,7 +333,7 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
     execution_config: &ExecutionConfig,
     executable: Executable,
 ) -> TransactionReceipt {
-    let mut executor = TransactionExecutor::<_, System<V>>::new(
+    let mut executor = TransactionExecutor::<_, System<V, Executable>>::new(
         substate_db,
         SystemInit {
             enable_kernel_trace: execution_config.enable_kernel_trace,
