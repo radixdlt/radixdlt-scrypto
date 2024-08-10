@@ -61,8 +61,9 @@ impl ManifestDecimal {
 manifest_type!(
     ManifestDecimal,
     ManifestCustomValueKind::Decimal,
-    DECIMAL_SIZE
+    DECIMAL_SIZE,
 );
+scrypto_describe_for_manifest_type!(ManifestDecimal, DECIMAL_TYPE, decimal_type_data,);
 
 #[cfg(test)]
 mod tests {

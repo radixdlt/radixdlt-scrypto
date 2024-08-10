@@ -61,7 +61,12 @@ impl ManifestPreciseDecimal {
 manifest_type!(
     ManifestPreciseDecimal,
     ManifestCustomValueKind::PreciseDecimal,
-    PRECISE_DECIMAL_SIZE
+    PRECISE_DECIMAL_SIZE,
+);
+scrypto_describe_for_manifest_type!(
+    ManifestPreciseDecimal,
+    PRECISE_DECIMAL_TYPE,
+    precise_decimal_type_data,
 );
 
 #[cfg(test)]

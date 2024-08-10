@@ -9,7 +9,7 @@ pub struct PreviewFlags {
     pub disable_auth: bool,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct PreviewIntentV1 {
     pub intent: IntentV1,
     pub signer_public_keys: Vec<PublicKey>,

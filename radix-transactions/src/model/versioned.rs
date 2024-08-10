@@ -16,7 +16,6 @@ pub enum TransactionDiscriminator {
     V1Notarized = V1_NOTARIZED_TRANSACTION,
     V1System = V1_SYSTEM_TRANSACTION,
     V1RoundUpdate = V1_ROUND_UPDATE_TRANSACTION,
-    V1Preview = V1_PREVIEW_TRANSACTION,
     V1Ledger = V1_LEDGER_TRANSACTION,
     V1Flash = V1_FLASH_TRANSACTION,
 }
@@ -26,15 +25,33 @@ const V1_SIGNED_INTENT: u8 = 2;
 const V1_NOTARIZED_TRANSACTION: u8 = 3;
 const V1_SYSTEM_TRANSACTION: u8 = 4;
 const V1_ROUND_UPDATE_TRANSACTION: u8 = 5;
-const V1_PREVIEW_TRANSACTION: u8 = 6;
+// NOTE: 6 used to be reserved for serialized preview transactions,
+//       but they have never been serialized, so 6 is free for re-use
 const V1_LEDGER_TRANSACTION: u8 = 7;
 const V1_FLASH_TRANSACTION: u8 = 8;
 
 /// An enum of a variety of different transaction payload types.
-/// This might see use in (eg) the Node's transaction parse API.
-/// These represent the different transaction types.
-#[derive(Clone, Debug, Eq, PartialEq, ManifestSbor)]
+///
+/// Running `to_payload_bytes()` on each transaction type gives the same
+/// as Manifest SBOR encoding the variant of this enum.
+///
+/// For this reason, this type might see use in (e.g.) the Node's
+/// transaction parse API.
+///
+/// All the transaction types also implement `ScryptoDescribe`, primarily
+/// so that they can derive `ScryptoSborAssertion` to ensure we don't change
+/// the types accidentally.
+#[derive(Clone, Debug, Eq, PartialEq, ManifestSbor, ScryptoDescribe, ScryptoSborAssertion)]
 #[sbor(impl_variant_traits)]
+#[sbor_assert(
+    // This sum type of all payload-convertible transactions is extensible, so
+    // we use `backwards_compatible` here. But most individual transaction models
+    // should themselves be `fixed`, e.g. NotarizedTransactionV1
+    backwards_compatible(
+        bottlenose = "FILE:any_transaction_payload_schema.txt"
+    ),
+    settings(allow_name_changes)
+)]
 pub enum VersionedTransactionPayload {
     #[sbor(flatten, discriminator(V1_INTENT))]
     IntentV1(IntentV1),
@@ -44,6 +61,12 @@ pub enum VersionedTransactionPayload {
     NotarizedTransactionV1(NotarizedTransactionV1),
     #[sbor(flatten, discriminator(V1_SYSTEM_TRANSACTION))]
     SystemTransactionV1(SystemTransactionV1),
+    #[sbor(flatten, discriminator(V1_ROUND_UPDATE_TRANSACTION))]
+    RoundUpdateTransactionV1(RoundUpdateTransactionV1),
+    #[sbor(discriminator(V1_LEDGER_TRANSACTION))] // Not flattened because it's an enum
+    LedgerTransaction(LedgerTransaction),
+    #[sbor(flatten, discriminator(V1_FLASH_TRANSACTION))]
+    FlashTransactionV1(FlashTransactionV1),
 }
 
 #[cfg(test)]

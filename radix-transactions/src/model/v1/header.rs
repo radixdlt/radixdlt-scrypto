@@ -1,9 +1,10 @@
+use crate::internal_prelude::*;
 use radix_common::types::Epoch;
 use radix_common::{crypto::PublicKey, ManifestSbor};
 
 use crate::model::SummarizedRawFullBody;
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct TransactionHeaderV1 {
     pub network_id: u8,
     pub start_epoch_inclusive: Epoch,

@@ -8,7 +8,6 @@ use radix_engine_interface::*;
 #[allow(deprecated)]
 pub struct NonFungibleResourceWithRemoteTypeScenarioConfig {
     pub main_account: PreallocatedAccount,
-    pub occasional_recipient_account: PreallocatedAccount,
 }
 
 #[derive(Default)]
@@ -22,7 +21,6 @@ impl Default for NonFungibleResourceWithRemoteTypeScenarioConfig {
     fn default() -> Self {
         Self {
             main_account: secp256k1_account_1(),
-            occasional_recipient_account: secp256k1_account_2(),
         }
     }
 }

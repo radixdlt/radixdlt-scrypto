@@ -56,6 +56,7 @@ impl ManifestProof {
 }
 
 manifest_type!(ManifestProof, ManifestCustomValueKind::Proof, 4);
+scrypto_describe_for_manifest_type!(ManifestProof, OWN_PROOF_TYPE, own_proof_type_data);
 
 #[cfg(test)]
 mod tests {

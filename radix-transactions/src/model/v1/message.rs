@@ -2,7 +2,7 @@ use super::*;
 use crate::internal_prelude::*;
 
 /// Transaction messages as per REP-70
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub enum MessageV1 {
     None,
     Plaintext(PlaintextMessageV1),
@@ -19,7 +19,7 @@ impl Default for MessageV1 {
 // PLAINTEXT MESSAGE
 //============================================================================
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct PlaintextMessageV1 {
     pub mime_type: String,
     pub message: MessageContentsV1,
@@ -29,7 +29,7 @@ pub struct PlaintextMessageV1 {
 /// whether the message is intended to be displayable as text, or not.
 ///
 /// This data model ensures that messages intended to be displayable as text are valid unicode strings.
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub enum MessageContentsV1 {
     String(String),
     Bytes(Vec<u8>),
@@ -68,7 +68,7 @@ impl MessageContentsV1 {
 /// - We persist 128-bit symmetric keys because we wish to save on payload size, and:
 ///   * 128-bit AES is considered secure enough for most use cases (EG bitcoin hash rate is only 2^93 / year)
 ///   * It's being used with a transient key - so a hypothetical successful attack would only decrypt one message
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct EncryptedMessageV1 {
     pub encrypted: AesGcmPayload,
     // Note we use a collection here rather than a struct to be forward-compatible to adding more curve types.
@@ -76,13 +76,15 @@ pub struct EncryptedMessageV1 {
     pub decryptors_by_curve: IndexMap<CurveType, DecryptorsByCurve>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor, ScryptoDescribe,
+)]
 pub enum CurveType {
     Ed25519,
     Secp256k1,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub enum DecryptorsByCurve {
     Ed25519 {
         dh_ephemeral_public_key: Ed25519PublicKey,
@@ -112,7 +114,7 @@ impl DecryptorsByCurve {
 
 /// The last 8 bytes of the Blake2b-256 hash of the public key bytes,
 /// in their standard Radix byte-serialization.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct PublicKeyFingerprint(pub [u8; Self::LENGTH]);
 
@@ -140,7 +142,7 @@ impl From<PublicKeyHash> for PublicKeyFingerprint {
 /// * Nonce/IV: 12 bytes
 /// * Cipher(text): Variable length
 /// * Tag/MAC: 16 bytes
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct AesGcmPayload(pub Vec<u8>);
 
@@ -152,7 +154,7 @@ pub struct AesGcmPayload(pub Vec<u8>);
 /// This must be serialized as per https://www.ietf.org/rfc/rfc3394.txt as `IV || Cipher` where:
 /// * IV: First 8 bytes
 /// * Cipher: The wrapped 128 bit key, encoded as two 64 bit blocks
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct AesWrapped128BitKey(pub [u8; Self::LENGTH]);
 

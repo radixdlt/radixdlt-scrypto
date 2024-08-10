@@ -390,7 +390,7 @@ fn handle_generate(
                 ));
 
             // We panic because the generate test is always expected to fail - so that someone doesn't leave it in generate mode accidentally.
-            panic!("Schema written successfully to {}", full_file_path.display());
+            panic!("\n\nSchema written successfully to:\n  {}\n\nNow panicking so that you can't accidentally leave this in generate mode and have your tests pass!\n\n", full_file_path.display());
         },
     };
 

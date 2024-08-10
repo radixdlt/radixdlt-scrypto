@@ -25,7 +25,7 @@ impl From<Ed25519Signature> for SignatureV1 {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct NotarySignatureV1(pub SignatureV1);
 

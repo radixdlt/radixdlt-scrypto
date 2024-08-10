@@ -22,6 +22,7 @@ impl Parse for Blueprint {
 }
 
 /// Represents a Blueprint module which consists of a struct and an implementation of said struct
+#[allow(dead_code)] // Fields for tokens from parse for completeness
 pub struct BlueprintMod {
     pub vis: Visibility,
     pub mod_token: Token![mod],
@@ -89,6 +90,7 @@ impl Parse for BlueprintMod {
     }
 }
 
+#[allow(dead_code)] // Fields for tokens from parse for completeness
 pub struct EventsInner {
     pub paren_token: Paren,
     pub paths: Punctuated<Path, Token![,]>,
@@ -104,6 +106,7 @@ impl Parse for EventsInner {
     }
 }
 
+#[allow(dead_code)] // Fields for tokens from parse for completeness
 pub struct TypesInner {
     pub paren_token: Paren,
     pub aliasable_types: Punctuated<AliasableType, Token![,]>,

@@ -1,21 +1,17 @@
 use super::ledger_transaction_execution::*;
 use super::txn_reader::TxnReader;
 use super::Error;
-use crate::replay::ledger_transaction::PreparedLedgerTransactionInner;
 use clap::Parser;
 use flate2::read::GzDecoder;
 use flume;
-use radix_common::prelude::NetworkDefinition;
 use radix_common::prelude::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::ScryptoVm;
 use radix_engine_profiling::info_alloc::*;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::interface::CommittableSubstateDatabase;
-use radix_transactions::prelude::HasSystemTransactionHash;
-use radix_transactions::prelude::IntentHash;
-use radix_transactions::prelude::TransactionHashBech32Encoder;
+use radix_substate_store_interface::interface::*;
+use radix_transactions::prelude::*;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
@@ -185,6 +181,20 @@ impl TxnAllocDump {
                             writeln!(
                                 output,
                                 "round_update,{},{},{},{},{}",
+                                tx.summary.hash,
+                                execution_cost_units.unwrap_or_default(),
+                                heap_allocations_sum,
+                                heap_current_level,
+                                heap_peak_memory
+                            )
+                            .map_err(Error::IOError)?
+                        }
+                    }
+                    PreparedLedgerTransactionInner::FlashV1(tx) => {
+                        if dump_round {
+                            writeln!(
+                                output,
+                                "flash,{},{},{},{},{}",
                                 tx.summary.hash,
                                 execution_cost_units.unwrap_or_default(),
                                 heap_allocations_sum,

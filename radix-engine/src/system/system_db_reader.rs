@@ -1,9 +1,4 @@
 use crate::internal_prelude::*;
-use radix_common::data::scrypto::ScryptoDecode;
-use radix_common::prelude::{
-    scrypto_decode, scrypto_encode, ScryptoCustomExtension, ScryptoEncode, ScryptoValue,
-    VersionedScryptoSchema,
-};
 use radix_engine_interface::api::{AttachedModuleId, CollectionIndex, ModuleId};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::types::*;
@@ -11,7 +6,7 @@ use radix_substate_store_interface::db_key_mapper::{
     MappedCommittableSubstateDatabase, SubstateKeyContent,
 };
 use radix_substate_store_interface::interface::{
-    CommittableSubstateDatabase, DatabaseUpdate, ListableSubstateDatabase,
+    CommittableSubstateDatabase, ListableSubstateDatabase,
 };
 use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, MappedSubstateDatabase, SpreadPrefixKeyMapper},
@@ -29,9 +24,6 @@ use crate::system::system_type_checker::{
     BlueprintTypeTarget, KVStoreTypeTarget, SchemaValidationMeta,
 };
 use crate::system::type_info::TypeInfoSubstate;
-use crate::track::{
-    BatchPartitionStateUpdate, NodeStateUpdates, PartitionStateUpdates, StateUpdates,
-};
 use crate::transaction::{
     ObjectInstanceTypeReference, ObjectSubstateTypeReference, PackageTypeReference,
 };

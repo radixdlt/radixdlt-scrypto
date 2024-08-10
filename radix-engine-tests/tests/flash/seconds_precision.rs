@@ -13,7 +13,7 @@ use radix_engine_tests::common::PackageLoader;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 use radix_transactions::builder::ManifestBuilder;
-use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
+use scrypto_test::prelude::{CreateDatabaseUpdates, CustomGenesis, LedgerSimulatorBuilder};
 
 #[test]
 fn get_current_time_rounded_to_seconds_without_state_flash_should_fail() {

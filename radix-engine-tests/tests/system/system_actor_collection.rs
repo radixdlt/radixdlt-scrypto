@@ -7,7 +7,6 @@ use radix_engine_interface::api::{AttachedModuleId, SystemApi, LockFlags, ACTOR_
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;
-use radix_substate_store_interface::interface::DatabaseUpdate;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;
 

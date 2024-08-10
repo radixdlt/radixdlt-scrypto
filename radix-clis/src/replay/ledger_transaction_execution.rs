@@ -1,8 +1,5 @@
-use super::ledger_transaction::*;
-use radix_common::prelude::NetworkDefinition;
 use radix_common::prelude::*;
 use radix_engine::system::bootstrap::*;
-use radix_engine::track::StateUpdates;
 use radix_engine::transaction::{
     execute_transaction, ExecutionConfig, TransactionFeeSummary, TransactionReceipt,
 };
@@ -10,6 +7,7 @@ use radix_engine::vm::wasm::*;
 use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
 use radix_engine_interface::prelude::system_execution;
 use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::prelude::*;
 use radix_transactions::validation::{
     NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
 };
@@ -17,6 +15,7 @@ use radix_transactions::validation::{
 pub enum LedgerTransactionReceipt {
     Flash(FlashReceipt),
     Standard(TransactionReceipt),
+    ProtocolUpdateFlash(StateUpdates),
 }
 
 impl LedgerTransactionReceipt {
@@ -26,6 +25,7 @@ impl LedgerTransactionReceipt {
             LedgerTransactionReceipt::Standard(receipt) => {
                 receipt.into_commit_ignore_outcome().state_updates
             }
+            LedgerTransactionReceipt::ProtocolUpdateFlash(state_updates) => state_updates,
         }
     }
 
@@ -33,6 +33,7 @@ impl LedgerTransactionReceipt {
         match self {
             LedgerTransactionReceipt::Flash(_) => None,
             LedgerTransactionReceipt::Standard(receipt) => Some(&receipt.fee_summary),
+            LedgerTransactionReceipt::ProtocolUpdateFlash(_) => None,
         }
     }
 }
@@ -118,6 +119,9 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 &tx.get_executable(),
             );
             LedgerTransactionReceipt::Standard(receipt)
+        }
+        PreparedLedgerTransactionInner::FlashV1(tx) => {
+            LedgerTransactionReceipt::ProtocolUpdateFlash(tx.state_updates.clone())
         }
     }
 }

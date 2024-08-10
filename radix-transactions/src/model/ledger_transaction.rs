@@ -1,220 +1,7 @@
-use radix_common::prelude::*;
-use radix_engine_interface::blueprints::consensus_manager::*;
-use radix_engine_interface::prelude::system_execution;
-use radix_transactions::define_raw_transaction_payload;
-use radix_transactions::prelude::*;
-use sbor::SborFixedEnumVariant;
+use super::*;
+use crate::internal_prelude::*;
 
-#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
-pub struct RoundUpdateTransactionV1 {
-    pub proposer_timestamp_ms: i64,
-    pub epoch: Epoch,
-    pub round: Round,
-    pub leader_proposal_history: LeaderProposalHistory,
-}
-
-impl RoundUpdateTransactionV1 {
-    pub fn create_instructions(&self) -> Vec<InstructionV1> {
-        vec![InstructionV1::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-            args: to_manifest_value(&ConsensusManagerNextRoundInput {
-                round: self.round,
-                proposer_timestamp_ms: self.proposer_timestamp_ms,
-                leader_proposal_history: self.leader_proposal_history.clone(),
-            })
-            .expect("round update input encoding should succeed"),
-        }]
-    }
-
-    pub fn prepare(&self) -> Result<PreparedRoundUpdateTransactionV1, PrepareError> {
-        let prepared_instructions = InstructionsV1(self.create_instructions()).prepare_partial()?;
-        let encoded_source = manifest_encode(&self)?;
-        // Minor TODO - for a slight performance improvement, change this to be read from the decoder
-        // As per the other hashes, don't include the prefix byte
-        let source_hash = hash(&encoded_source[1..]);
-        let instructions_hash = prepared_instructions.summary.hash;
-        let round_update_hash = HashAccumulator::new()
-            .update([
-                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                TransactionDiscriminator::V1RoundUpdate as u8,
-            ])
-            // We include the full source transaction contents
-            .update(source_hash)
-            // We also include the instructions hash, so the exact instructions can be proven
-            .update(instructions_hash)
-            .finalize();
-        Ok(PreparedRoundUpdateTransactionV1 {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
-            references: prepared_instructions.references,
-            blobs: index_map_new(),
-            summary: Summary {
-                effective_length: prepared_instructions.summary.effective_length,
-                total_bytes_hashed: prepared_instructions.summary.total_bytes_hashed,
-                hash: round_update_hash,
-            },
-        })
-    }
-}
-
-impl TransactionPayload for RoundUpdateTransactionV1 {
-    type Prepared = PreparedRoundUpdateTransactionV1;
-    type Raw = RawRoundUpdateTransactionV1;
-}
-
-// This shouldn't be implemented manually
-// Instead we should move/consolidate all transactions into the transaction crate,
-// including fixing VersionedTransactionPayload to be comprehensive
-impl SborEnumVariantFor<VersionedTransactionPayload, ManifestCustomValueKind>
-    for RoundUpdateTransactionV1
-{
-    const DISCRIMINATOR: u8 = { TransactionDiscriminator::V1Ledger as u8 };
-    const IS_FLATTENED: bool = true;
-
-    type VariantFields = Self;
-    fn from_variant_fields(variant_fields: Self::VariantFields) -> Self {
-        variant_fields
-    }
-
-    type VariantFieldsRef<'a> = &'a Self;
-    fn as_variant_fields_ref(&self) -> Self::VariantFieldsRef<'_> {
-        self
-    }
-
-    /// For use Decoding from the enum to its fields
-    type OwnedVariant = sbor::SborFixedEnumVariant<
-        { TransactionDiscriminator::V1Ledger as u8 },
-        Self::VariantFields,
-    >;
-    /// For use Encoding to the enum from a reference to its fields
-    type BorrowedVariant<'a> = sbor::SborFixedEnumVariant<
-        { TransactionDiscriminator::V1Ledger as u8 },
-        Self::VariantFieldsRef<'a>,
-    >;
-
-    fn into_enum(self) -> VersionedTransactionPayload {
-        unimplemented!()
-    }
-}
-
-pub struct PreparedRoundUpdateTransactionV1 {
-    pub encoded_instructions: Vec<u8>,
-    pub references: IndexSet<Reference>,
-    pub blobs: IndexMap<Hash, Vec<u8>>,
-    pub summary: Summary,
-}
-
-impl HasSummary for PreparedRoundUpdateTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
-
-define_raw_transaction_payload!(RawRoundUpdateTransactionV1);
-
-impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
-    type Raw = RawRoundUpdateTransactionV1;
-
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let decoded_variant = decoder.decode()?;
-        RoundUpdateTransactionV1::from_decoded_variant(decoded_variant).prepare()
-    }
-}
-
-impl TransactionFullChildPreparable for PreparedRoundUpdateTransactionV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let decoded = decoder.decode::<RoundUpdateTransactionV1>()?;
-        decoded.prepare()
-    }
-}
-
-impl PreparedRoundUpdateTransactionV1 {
-    pub fn get_executable(&self) -> Executable<'_> {
-        Executable::new(
-            &self.encoded_instructions,
-            &self.references,
-            &self.blobs,
-            ExecutionContext {
-                intent_hash: TransactionIntentHash::NotToCheck {
-                    intent_hash: self.summary.hash,
-                },
-                epoch_range: None,
-                payload_size: 0,
-                num_of_signature_validations: 0,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs: btreeset!(system_execution(SystemExecution::Validator)),
-                    virtual_resources: BTreeSet::new(),
-                },
-                costing_parameters: TransactionCostingParameters {
-                    tip_percentage: 0,
-                    free_credit_in_xrd: Decimal::ZERO,
-                    abort_when_loan_repaid: false,
-                },
-                pre_allocated_addresses: vec![],
-            },
-            true,
-        )
-    }
-}
-
-define_wrapped_hash!(RoundUpdateTransactionHash);
-
-impl HasRoundUpdateTransactionHash for PreparedRoundUpdateTransactionV1 {
-    fn round_update_transaction_hash(&self) -> RoundUpdateTransactionHash {
-        RoundUpdateTransactionHash::from_hash(self.summary.hash)
-    }
-}
-
-pub trait HasRoundUpdateTransactionHash {
-    fn round_update_transaction_hash(&self) -> RoundUpdateTransactionHash;
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub struct PayloadIdentifiers {
-    pub ledger_transaction_hash: LedgerTransactionHash,
-    pub typed: TypedTransactionIdentifiers,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
-pub enum TypedTransactionIdentifiers {
-    Genesis {
-        system_transaction_hash: SystemTransactionHash,
-    },
-    User {
-        intent_hash: IntentHash,
-        signed_intent_hash: SignedIntentHash,
-        notarized_transaction_hash: NotarizedTransactionHash,
-    },
-    RoundUpdateV1 {
-        round_update_hash: RoundUpdateTransactionHash,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserTransactionIdentifiers<'a> {
-    pub intent_hash: &'a IntentHash,
-    pub signed_intent_hash: &'a SignedIntentHash,
-    pub notarized_transaction_hash: &'a NotarizedTransactionHash,
-}
-
-impl TypedTransactionIdentifiers {
-    pub fn user(&self) -> Option<UserTransactionIdentifiers> {
-        match self {
-            TypedTransactionIdentifiers::User {
-                intent_hash,
-                signed_intent_hash,
-                notarized_transaction_hash,
-            } => Some(UserTransactionIdentifiers {
-                intent_hash,
-                signed_intent_hash,
-                notarized_transaction_hash,
-            }),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub enum LedgerTransaction {
     #[sbor(discriminator(GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR))]
     Genesis(Box<GenesisTransaction>),
@@ -222,53 +9,23 @@ pub enum LedgerTransaction {
     UserV1(Box<NotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<RoundUpdateTransactionV1>),
+    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    FlashV1(Box<FlashTransactionV1>),
 }
 
 const GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 0;
 const USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 1;
 const ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 2;
+const FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 3;
 
 define_raw_transaction_payload!(RawLedgerTransaction);
 
-impl LedgerTransaction {
-    pub fn to_raw(&self) -> Result<RawLedgerTransaction, EncodeError> {
-        Ok(self.to_payload_bytes()?.into())
-    }
-
-    pub fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
-        manifest_encode(&SborFixedEnumVariant::<
-            { TransactionDiscriminator::V1Ledger as u8 },
-            (&LedgerTransaction,),
-        >::new((self,)))
-    }
-
-    pub fn from_raw(raw: &RawLedgerTransaction) -> Result<Self, DecodeError> {
-        Self::from_payload_bytes(&raw.0)
-    }
-
-    pub fn from_raw_user(raw: &RawNotarizedTransaction) -> Result<Self, DecodeError> {
-        Ok(LedgerTransaction::UserV1(Box::new(
-            NotarizedTransactionV1::from_raw(raw)?,
-        )))
-    }
-
-    pub fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
-        Ok(manifest_decode::<
-            SborFixedEnumVariant<
-                { TransactionDiscriminator::V1Ledger as u8 },
-                (LedgerTransaction,),
-            >,
-        >(payload_bytes)?
-        .into_fields()
-        .0)
-    }
-
-    pub fn prepare(&self) -> Result<PreparedLedgerTransaction, PrepareError> {
-        PreparedLedgerTransaction::prepare_from_payload(&self.to_payload_bytes()?)
-    }
+impl TransactionPayload for LedgerTransaction {
+    type Prepared = PreparedLedgerTransaction;
+    type Raw = RawLedgerTransaction;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestCategorize, ManifestEncode, ManifestDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub enum GenesisTransaction {
     #[sbor(discriminator(GENESIS_TRANSACTION_FLASH_DISCRIMINATOR))]
     Flash,
@@ -318,6 +75,11 @@ impl PreparedLedgerTransaction {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
+                PreparedLedgerTransactionInner::FlashV1(t) => {
+                    TypedTransactionIdentifiers::FlashV1 {
+                        flash_transaction_hash: t.flash_transaction_hash(),
+                    }
+                }
             },
         }
     }
@@ -337,6 +99,8 @@ pub enum PreparedLedgerTransactionInner {
     UserV1(Box<PreparedNotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
+    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    FlashV1(Box<PreparedFlashTransactionV1>),
 }
 
 impl PreparedLedgerTransactionInner {
@@ -351,6 +115,7 @@ impl HasSummary for PreparedLedgerTransactionInner {
             Self::Genesis(t) => t.get_summary(),
             Self::UserV1(t) => t.get_summary(),
             Self::RoundUpdateV1(t) => t.get_summary(),
+            Self::FlashV1(t) => t.get_summary(),
         }
     }
 }
@@ -392,6 +157,11 @@ impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
                 let prepared =
                     PreparedRoundUpdateTransactionV1::prepare_as_full_body_child(decoder)?;
                 PreparedLedgerTransactionInner::RoundUpdateV1(Box::new(prepared))
+            }
+            FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
+                check_length(length, 1)?;
+                let prepared = PreparedFlashTransactionV1::prepare_as_full_body_child(decoder)?;
+                PreparedLedgerTransactionInner::FlashV1(Box::new(prepared))
             }
             _ => return Err(unknown_discriminator(discriminator)),
         };
@@ -473,6 +243,8 @@ pub enum ValidatedLedgerTransactionInner {
     UserV1(Box<ValidatedNotarizedTransactionV1>),
     #[sbor(discriminator(ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
+    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    FlashV1(Box<PreparedFlashTransactionV1>),
 }
 
 impl ValidatedLedgerTransaction {
@@ -481,19 +253,11 @@ impl ValidatedLedgerTransaction {
             ValidatedLedgerTransactionInner::Genesis(_) => None,
             ValidatedLedgerTransactionInner::UserV1(t) => Some(t.intent_hash()),
             ValidatedLedgerTransactionInner::RoundUpdateV1(_) => None,
+            ValidatedLedgerTransactionInner::FlashV1(_) => None,
         }
     }
 
-    pub fn as_genesis_flash(&self) -> Option<&Summary> {
-        match &self.inner {
-            ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
-                PreparedGenesisTransaction::Flash(summary) => Some(summary),
-                PreparedGenesisTransaction::Transaction(_) => None,
-            },
-            _ => None,
-        }
-    }
-
+    /// Note - panics if it's a genesis flash
     pub fn get_executable(&self) -> Executable<'_> {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
@@ -506,6 +270,9 @@ impl ValidatedLedgerTransaction {
             },
             ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),
             ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable(),
+            ValidatedLedgerTransactionInner::FlashV1(_) => {
+                panic!("Should not call get_executable on a flash transaction")
+            }
         }
     }
 
@@ -528,7 +295,60 @@ impl ValidatedLedgerTransaction {
                         round_update_hash: t.round_update_transaction_hash(),
                     }
                 }
+                ValidatedLedgerTransactionInner::FlashV1(t) => {
+                    TypedTransactionIdentifiers::FlashV1 {
+                        flash_transaction_hash: t.flash_transaction_hash(),
+                    }
+                }
             },
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub struct PayloadIdentifiers {
+    pub ledger_transaction_hash: LedgerTransactionHash,
+    pub typed: TypedTransactionIdentifiers,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub enum TypedTransactionIdentifiers {
+    Genesis {
+        system_transaction_hash: SystemTransactionHash,
+    },
+    User {
+        intent_hash: IntentHash,
+        signed_intent_hash: SignedIntentHash,
+        notarized_transaction_hash: NotarizedTransactionHash,
+    },
+    RoundUpdateV1 {
+        round_update_hash: RoundUpdateTransactionHash,
+    },
+    FlashV1 {
+        flash_transaction_hash: FlashTransactionHash,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserTransactionIdentifiers<'a> {
+    pub intent_hash: &'a IntentHash,
+    pub signed_intent_hash: &'a SignedIntentHash,
+    pub notarized_transaction_hash: &'a NotarizedTransactionHash,
+}
+
+impl TypedTransactionIdentifiers {
+    pub fn user(&self) -> Option<UserTransactionIdentifiers> {
+        match self {
+            TypedTransactionIdentifiers::User {
+                intent_hash,
+                signed_intent_hash,
+                notarized_transaction_hash,
+            } => Some(UserTransactionIdentifiers {
+                intent_hash,
+                signed_intent_hash,
+                notarized_transaction_hash,
+            }),
+            _ => None,
         }
     }
 }
@@ -581,5 +401,63 @@ pub trait HasLedgerTransactionHash {
 impl HasLedgerTransactionHash for PreparedLedgerTransaction {
     fn ledger_transaction_hash(&self) -> LedgerTransactionHash {
         LedgerTransactionHash::from_hash(self.summary.hash)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn v1_ledger_transaction_structure() {
+        let sig_1_private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
+        let sig_2_private_key = Ed25519PrivateKey::from_u64(2).unwrap();
+        let notary_private_key = Ed25519PrivateKey::from_u64(3).unwrap();
+
+        let notarized = TransactionBuilder::new()
+            .header(TransactionHeaderV1 {
+                network_id: 21,
+                start_epoch_inclusive: Epoch::of(0),
+                end_epoch_exclusive: Epoch::of(100),
+                nonce: 0,
+                notary_public_key: notary_private_key.public_key().into(),
+                notary_is_signatory: true,
+                tip_percentage: 0,
+            })
+            .manifest(ManifestBuilder::new().drop_all_proofs().build())
+            .sign(&sig_1_private_key)
+            .sign(&sig_2_private_key)
+            .notarize(&notary_private_key)
+            .build();
+
+        let prepared_notarized = notarized.prepare().expect("Notarized can be prepared");
+
+        let ledger = LedgerTransaction::UserV1(Box::new(notarized));
+        let ledger_transaction_bytes = ledger.to_payload_bytes().expect("Can be encoded");
+        LedgerTransaction::from_payload_bytes(&ledger_transaction_bytes).expect("Can be decoded");
+        let prepared_ledger_transaction =
+            PreparedLedgerTransaction::prepare_from_payload(&ledger_transaction_bytes)
+                .expect("Can be prepared");
+
+        let expected_intent_hash = LedgerTransactionHash::from_hash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V1Ledger as u8,
+                    USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR,
+                ]
+                .as_slice(),
+                prepared_notarized.notarized_transaction_hash().0.as_slice(),
+            ]
+            .concat(),
+        ));
+        assert_eq!(
+            prepared_ledger_transaction.ledger_transaction_hash(),
+            expected_intent_hash
+        );
+        assert_eq!(
+            LedgerTransactionHash::for_user_v1(&prepared_notarized.notarized_transaction_hash()),
+            expected_intent_hash
+        );
     }
 }

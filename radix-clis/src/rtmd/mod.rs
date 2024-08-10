@@ -98,6 +98,7 @@ pub fn run() -> Result<(), String> {
                             blobs,
                             ..
                         }) => (instructions.0, blobs.blobs),
+                        _ => return Err("Transaction type not currently supported".to_string()),
                     };
 
                     let blobs: Vec<Vec<u8>> = blobs.into_iter().map(|item| item.0).collect();

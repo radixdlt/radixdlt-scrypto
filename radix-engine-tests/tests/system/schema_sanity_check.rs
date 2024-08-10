@@ -381,6 +381,7 @@ fn is_safe_well_known_type(
 #[derive(Debug, Clone)]
 pub enum CheckResult {
     Safe,
+    #[allow(dead_code)] // Fields are used by the Debug macro
     PossiblyUnsafe {
         type_kind: ScryptoTypeKind<LocalTypeId>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,

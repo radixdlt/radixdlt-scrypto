@@ -5,13 +5,12 @@ use crate::kernel::kernel::BootLoader;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::system_callback::{System, SystemInit};
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::{BootStore, Track};
+use crate::track::Track;
 use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVmExtension, Vm, VmInit};
 use radix_common::constants::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use radix_transactions::model::*;
 
@@ -261,25 +260,6 @@ impl ExecutionConfig {
     pub fn with_cost_breakdown(mut self, enabled: bool) -> Self {
         self.enable_cost_breakdown = enabled;
         self
-    }
-}
-
-pub struct SubstateBootStore<'a, S: SubstateDatabase> {
-    boot_store: &'a S,
-}
-
-impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
-    fn read_boot_substate(
-        &self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-    ) -> Option<IndexedScryptoValue> {
-        let db_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_num);
-        let db_sort_key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
-        self.boot_store
-            .get_substate(&db_partition_key, &db_sort_key)
-            .map(|v| IndexedScryptoValue::from_vec(v.to_vec()).unwrap())
     }
 }
 

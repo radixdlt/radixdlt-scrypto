@@ -761,13 +761,13 @@ well_known_scrypto_custom_type!(
     Type::PreciseDecimal,
     PreciseDecimal::BITS / 8,
     PRECISE_DECIMAL_TYPE,
-    precise_decimal_type_data
+    precise_decimal_type_data,
 );
 
 manifest_type!(
     PreciseDecimal,
     ManifestCustomValueKind::PreciseDecimal,
-    PreciseDecimal::BITS / 8
+    PreciseDecimal::BITS / 8,
 );
 
 //======

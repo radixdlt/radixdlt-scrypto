@@ -7,7 +7,7 @@ use crate::internal_prelude::*;
 // in eg the manifest builder
 //=================================================================================
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
 pub struct TransactionManifestV1 {
     pub instructions: Vec<InstructionV1>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
