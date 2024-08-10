@@ -216,6 +216,8 @@ impl TransactionReceiptV1 {
 }
 
 impl ExecutionReceipt for TransactionReceipt {
+    type Executed = Executable;
+
     fn from_rejection(executable: Executable, reason: RejectionReason) -> Self {
         TransactionReceipt {
             costing_parameters: CostingParameters::babylon_genesis(),

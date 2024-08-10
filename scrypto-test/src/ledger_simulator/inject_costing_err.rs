@@ -27,7 +27,6 @@ use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
-use radix_transactions::prelude::PreAllocatedAddress;
 
 pub type InjectSystemCostingError<'a, E> = InjectCostingError<Vm<'a, DefaultWasmEngine, E>>;
 
@@ -88,12 +87,13 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     type CallFrameData = Actor;
 
     type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
+    type Executable = Executable;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &Executable,
+        executable: Executable,
         init_input: Self::Init,
     ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
         let (mut system, call_frame_init) =
@@ -107,21 +107,9 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
         Ok((Self { fail_after, system }, call_frame_init))
     }
 
-    fn start<Y: KernelApi<Self>>(
-        api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+    fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
-        System::start(
-            &mut api,
-            manifest_encoded_instructions,
-            pre_allocated_addresses,
-            references,
-            blobs,
-        )
+        System::start(&mut api)
     }
 
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
@@ -132,10 +120,9 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     fn create_receipt<S: SubstateDatabase>(
         self,
         track: Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
         result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
-        self.system.create_receipt(track, executable, result)
+        self.system.create_receipt(track, result)
     }
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {

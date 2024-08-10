@@ -283,6 +283,16 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
     }
 }
 
+pub trait UniqueTransaction {
+    fn uniqe_id(&self) -> Hash;
+}
+
+impl UniqueTransaction for Executable {
+    fn uniqe_id(&self) -> Hash {
+        self.intent_hash().to_hash()
+    }
+}
+
 pub struct TransactionExecutor<'s, S, V: KernelCallbackObject>
 where
     S: SubstateDatabase,
@@ -295,7 +305,7 @@ where
 impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    V: KernelCallbackObject,
+    V: KernelCallbackObject<Executable: UniqueTransaction>,
 {
     pub fn new(substate_db: &'s S, system_init: V::Init) -> Self {
         Self {
@@ -305,9 +315,9 @@ where
         }
     }
 
-    pub fn execute(&mut self, executable: Executable) -> V::Receipt {
+    pub fn execute(&mut self, executable: V::Executable) -> V::Receipt {
         let kernel_boot = BootLoader {
-            id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
+            id_allocator: IdAllocator::new(executable.uniqe_id()),
             track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
             init: self.system_init.clone(),
             phantom: PhantomData::<V>::default(),

@@ -10,8 +10,6 @@ use crate::transaction::ResourcesUsage;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::Executable;
-use radix_transactions::prelude::PreAllocatedAddress;
 
 pub trait CallFrameReferences {
     fn global_references(&self) -> Vec<NodeId>;
@@ -137,7 +135,9 @@ pub enum ScanSortedSubstatesEvent<'a> {
 
 /// A receipt created from executing a transaction
 pub trait ExecutionReceipt {
-    fn from_rejection(executable: Executable, reason: RejectionReason) -> Self;
+    type Executed;
+
+    fn from_rejection(executable: Self::Executed, reason: RejectionReason) -> Self;
 
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
@@ -150,26 +150,22 @@ pub trait KernelCallbackObject: Sized {
     type CallFrameData: CallFrameReferences;
     /// Initialization object
     type Init: Clone;
+    /// Executable type
+    type Executable: Clone;
     /// Output to be returned at the end of execution
     type ExecutionOutput;
     /// Final receipt to be created after transaction execution
-    type Receipt: ExecutionReceipt;
+    type Receipt: ExecutionReceipt<Executed = Self::Executable>;
 
     /// Create the callback object (system layer) and the initial call frame configuration
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &Executable,
+        executable: Self::Executable,
         init: Self::Init,
     ) -> Result<(Self, CallFrameInit<Self::CallFrameData>), RejectionReason>;
 
     /// Start execution
-    fn start<Y: KernelApi<Self>>(
-        api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Self::ExecutionOutput, RuntimeError>;
+    fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
@@ -178,7 +174,6 @@ pub trait KernelCallbackObject: Sized {
     fn create_receipt<S: SubstateDatabase>(
         self,
         track: Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
 

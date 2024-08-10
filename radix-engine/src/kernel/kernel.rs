@@ -29,7 +29,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::prelude::Executable;
 use sbor::rust::mem;
 
 pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
@@ -57,7 +56,7 @@ pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
 
 impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Executes a transaction
-    pub fn execute(self, executable: Executable) -> M::Receipt {
+    pub fn execute(self, executable: M::Executable) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker =
@@ -82,7 +81,10 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
-    fn execute_internal(mut self, executable: Executable) -> Result<M::Receipt, RejectionReason> {
+    fn execute_internal(
+        mut self,
+        executable: M::Executable,
+    ) -> Result<M::Receipt, RejectionReason> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
@@ -102,7 +104,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
 
         // Upper Layer Initialization
         let (mut callback, call_frame_init) =
-            M::init(&mut self.track, &executable, self.init.clone())?;
+            M::init(&mut self.track, executable, self.init.clone())?;
 
         // Kernel Initialization
         let mut kernel = Kernel::new(
@@ -115,13 +117,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         // Execution
         let result = || -> Result<M::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let output = M::start(
-                &mut kernel,
-                executable.encoded_instructions(),
-                executable.pre_allocated_addresses(),
-                executable.references(),
-                executable.blobs(),
-            )?;
+            let output = M::start(&mut kernel)?;
 
             // Sanity check call frame
             assert!(kernel.prev_frame_stack.is_empty());
@@ -138,7 +134,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
         // Create receipt representing the result of a transaction
-        let receipt = M::create_receipt(callback, self.track, &executable, result);
+        let receipt = M::create_receipt(callback, self.track, result);
 
         Ok(receipt)
     }

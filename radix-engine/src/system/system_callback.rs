@@ -158,6 +158,7 @@ pub struct System<C: SystemCallbackObject> {
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
+    pub executable: Executable,
 }
 
 impl<C: SystemCallbackObject> System<C> {
@@ -773,12 +774,11 @@ impl<C: SystemCallbackObject> System<C> {
     fn check_references<S: BootStore + CommitableSubstateStore>(
         &mut self,
         store: &mut S,
-        references: &IndexSet<Reference>,
     ) -> Result<CallFrameInit<Actor>, BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
 
-        for reference in references.iter() {
+        for reference in self.executable.references().iter() {
             let node_id = &reference.0;
 
             if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
@@ -800,7 +800,7 @@ impl<C: SystemCallbackObject> System<C> {
                 )
                 .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
 
-            match self.verify_boot_ref_value(node_id, ref_value)? {
+            match Self::verify_boot_ref_value(&mut self.modules, node_id, ref_value)? {
                 StableReferenceType::Global => {
                     global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                 }
@@ -818,11 +818,11 @@ impl<C: SystemCallbackObject> System<C> {
     }
 
     fn verify_boot_ref_value(
-        &mut self,
+        modules: &mut SystemModuleMixer,
         node_id: &NodeId,
         ref_value: &IndexedScryptoValue,
     ) -> Result<StableReferenceType, BootloadingError> {
-        if let Some(costing) = self.modules.costing_mut() {
+        if let Some(costing) = modules.costing_mut() {
             let io_access = IOAccess::ReadFromDb(
                 CanonicalSubstateKey {
                     node_id: *node_id,
@@ -870,12 +870,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
     type Init = SystemInit<C::Init>;
+    type Executable = Executable;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &Executable,
+        executable: Executable,
         init_input: SystemInit<C::Init>,
     ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
         // Dump executable
@@ -1021,46 +1022,46 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             schema_cache: NonIterMap::new(),
             callback,
             modules,
+            executable,
         };
 
         let call_frame_init = system
-            .check_references(store, &executable.references())
+            .check_references(store)
             .map_err(RejectionReason::BootloadingError)?;
 
         Ok((system, call_frame_init))
     }
 
-    fn start<Y: KernelApi<Self>>(
-        api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        let mut system = SystemService::new(api);
+    fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
+        let mut system_service = SystemService::new(api);
+        let executable = system_service
+            .kernel_get_system_state()
+            .system
+            .executable
+            .clone();
 
         // Allocate global addresses
         let mut global_address_reservations = Vec::new();
         for PreAllocatedAddress {
             blueprint_id,
             address,
-        } in pre_allocated_addresses
+        } in executable.pre_allocated_addresses()
         {
             let global_address_reservation =
-                system.prepare_global_address(blueprint_id.clone(), address.clone())?;
+                system_service.prepare_global_address(blueprint_id.clone(), address.clone())?;
             global_address_reservations.push(global_address_reservation);
         }
 
         // Call TX processor
-        let rtn = system.call_function(
+        let rtn = system_service.call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions,
+                manifest_encoded_instructions: executable.encoded_instructions(),
                 global_address_reservations,
-                references,
-                blobs,
+                references: executable.references(),
+                blobs: executable.blobs(),
             })
             .unwrap(),
         )?;
@@ -1117,7 +1118,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     fn create_receipt<S: SubstateDatabase>(
         self,
         mut track: Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
         interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
         // Panic if an error is encountered in the system layer or below. The following code
@@ -1202,7 +1202,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                         &mut track,
                         costing_module.fee_reserve,
                         is_success,
-                        executable.costing_parameters().free_credit_in_xrd,
+                        self.executable.costing_parameters().free_credit_in_xrd,
                     );
                 let fee_destination = FeeDestination {
                     to_proposer: fee_reserve_finalization.to_proposer_amount(),
@@ -1216,7 +1216,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     Self::update_transaction_tracker(
                         &mut track,
                         next_epoch,
-                        executable.intent_hash(),
+                        self.executable.intent_hash(),
                         is_success,
                     );
                 }
@@ -1251,7 +1251,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     StateUpdateSummary::new(substate_db, new_node_ids, &state_updates);
 
                 // Resource reconciliation does not currently work in preview mode
-                if executable.costing_parameters().free_credit_in_xrd.is_zero() {
+                if self
+                    .executable
+                    .costing_parameters()
+                    .free_credit_in_xrd
+                    .is_zero()
+                {
                     let system_reader =
                         SystemDatabaseReader::new_with_overlay(substate_db, &state_updates);
                     reconcile_resource_state_and_events(
@@ -1298,7 +1303,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         let receipt = TransactionReceipt {
             costing_parameters,
-            transaction_costing_parameters: executable.costing_parameters().clone().into(),
+            transaction_costing_parameters: self.executable.costing_parameters().clone().into(),
             fee_summary,
             fee_details,
             result,

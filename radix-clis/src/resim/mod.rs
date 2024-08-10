@@ -173,7 +173,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 
     let nonce = get_nonce()?;
     let transaction = SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
+        instructions: InstructionsV1(Rc::new(instructions)),
         blobs: BlobsV1 {
             blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
         },
@@ -186,7 +186,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         vm_init,
         &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
             .with_kernel_trace(trace),
-        &transaction
+        transaction
             .prepare()
             .map_err(Error::TransactionPrepareError)?
             .get_executable(initial_proofs),
@@ -254,7 +254,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut db,
                 vm_init,
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
-                &transaction
+                transaction
                     .prepare()
                     .map_err(Error::TransactionPrepareError)?
                     .get_executable(initial_proofs),

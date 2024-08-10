@@ -14,7 +14,7 @@ use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::{Executable, PreAllocatedAddress};
+use radix_transactions::model::Executable;
 
 #[derive(Default)]
 struct TestCallFrameData;
@@ -40,6 +40,8 @@ impl CallFrameReferences for TestCallFrameData {
 struct TestReceipt;
 
 impl ExecutionReceipt for TestReceipt {
+    type Executed = Executable;
+
     fn from_rejection(_executable: Executable, _reason: RejectionReason) -> Self {
         Self
     }
@@ -53,24 +55,19 @@ impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
     type Init = ();
+    type Executable = Executable;
     type ExecutionOutput = ();
     type Receipt = TestReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         _store: &mut S,
-        _executable: &Executable,
+        _executable: Executable,
         _init_input: Self::Init,
     ) -> Result<(Self, CallFrameInit<TestCallFrameData>), RejectionReason> {
         Ok((Self, Default::default()))
     }
 
-    fn start<Y: KernelApi<Self>>(
-        _api: &mut Y,
-        _manifest_encoded_instructions: &[u8],
-        _pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        _references: &IndexSet<Reference>,
-        _blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<(), RuntimeError> {
+    fn start<Y: KernelApi<Self>>(_api: &mut Y) -> Result<(), RuntimeError> {
         unreachable!()
     }
 
@@ -78,7 +75,7 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _executable: &Executable, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
+    fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
         TestReceipt
     }
 

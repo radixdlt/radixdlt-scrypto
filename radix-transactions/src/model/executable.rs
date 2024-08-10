@@ -23,6 +23,22 @@ pub struct ExecutionContext {
     pub costing_parameters: TransactionCostingParameters,
 }
 
+impl ExecutionContext {
+    pub fn mock() -> Self {
+        Self {
+            intent_hash: TransactionIntentHash::NotToCheck {
+                intent_hash: Hash([0u8; Hash::LENGTH]),
+            },
+            epoch_range: Default::default(),
+            pre_allocated_addresses: Default::default(),
+            payload_size: 0usize,
+            num_of_signature_validations: 0usize,
+            auth_zone_params: AuthZoneParams::default(),
+            costing_parameters: TransactionCostingParameters::default(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionIntentHash {
     /// Should be checked with transaction tracker.
@@ -153,6 +169,16 @@ impl Executable {
             blobs,
             context,
             system,
+        }
+    }
+
+    pub fn mock() -> Self {
+        Self {
+            encoded_instructions: Default::default(),
+            references: Default::default(),
+            blobs: Default::default(),
+            context: ExecutionContext::mock(),
+            system: false,
         }
     }
 
