@@ -18,13 +18,13 @@ pub struct PreviewIntentV1 {
 
 pub struct ValidatedPreviewIntent {
     pub intent: PreparedIntentV1,
-    pub encoded_instructions: Vec<u8>,
+    pub encoded_instructions: Rc<Vec<u8>>,
     pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,
 }
 
 impl ValidatedPreviewIntent {
-    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
+    pub fn get_executable(&self) -> Executable {
         let intent = &self.intent;
         let flags = &self.flags;
 
@@ -55,9 +55,9 @@ impl ValidatedPreviewIntent {
         let intent_hash = intent.intent_hash();
 
         Executable::new(
-            &self.encoded_instructions,
-            &intent.instructions.references,
-            &intent.blobs.blobs_by_hash,
+            self.encoded_instructions.clone(),
+            intent.instructions.references.clone(),
+            intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 intent_hash: if flags.skip_epoch_check {
                     TransactionIntentHash::NotToCheck {

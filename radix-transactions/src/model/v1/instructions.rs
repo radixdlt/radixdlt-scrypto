@@ -3,7 +3,7 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 #[sbor(transparent)]
-pub struct InstructionsV1(pub Vec<InstructionV1>);
+pub struct InstructionsV1(pub Rc<Vec<InstructionV1>>);
 
 impl TransactionPartialEncode for InstructionsV1 {
     type Prepared = PreparedInstructionsV1;

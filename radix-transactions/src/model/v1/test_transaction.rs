@@ -14,9 +14,9 @@ pub struct TestTransaction {
 
 #[derive(ManifestSbor)]
 pub struct PreparedTestTransaction {
-    pub encoded_instructions: Vec<u8>,
+    pub encoded_instructions: Rc<Vec<u8>>,
     pub references: IndexSet<Reference>,
-    pub blobs: IndexMap<Hash, Vec<u8>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub hash: Hash,
 }
 
@@ -38,7 +38,7 @@ impl TestTransaction {
     pub fn prepare(self) -> Result<PreparedTestTransaction, PrepareError> {
         let prepared_instructions = self.instructions.prepare_partial()?;
         Ok(PreparedTestTransaction {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
+            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
             references: prepared_instructions.references,
             blobs: self.blobs.prepare_partial()?.blobs_by_hash,
             hash: self.hash,
@@ -47,14 +47,11 @@ impl TestTransaction {
 }
 
 impl PreparedTestTransaction {
-    pub fn get_executable<'a>(
-        &'a self,
-        initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> Executable<'a> {
+    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> Executable {
         Executable::new(
-            &self.encoded_instructions,
-            &self.references,
-            &self.blobs,
+            self.encoded_instructions.clone(),
+            self.references.clone(),
+            self.blobs.clone(),
             ExecutionContext {
                 intent_hash: TransactionIntentHash::NotToCheck {
                     intent_hash: self.hash,

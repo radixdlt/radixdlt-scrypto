@@ -112,24 +112,24 @@ impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt 
 }
 
 /// Executable form of transaction, post stateless validation.
-#[derive(Debug, PartialEq, Eq)]
-pub struct Executable<'a> {
-    pub(crate) encoded_instructions: &'a [u8],
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Executable {
+    pub(crate) encoded_instructions: Rc<Vec<u8>>,
     pub(crate) references: IndexSet<Reference>,
-    pub(crate) blobs: &'a IndexMap<Hash, Vec<u8>>,
+    pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub(crate) context: ExecutionContext,
     pub(crate) system: bool,
 }
 
-impl<'a> Executable<'a> {
+impl Executable {
     pub fn new(
-        encoded_instructions: &'a [u8],
-        references: &IndexSet<Reference>,
-        blobs: &'a IndexMap<Hash, Vec<u8>>,
+        encoded_instructions: Rc<Vec<u8>>,
+        references: IndexSet<Reference>,
+        blobs: Rc<IndexMap<Hash, Vec<u8>>>,
         context: ExecutionContext,
         system: bool,
     ) -> Self {
-        let mut references = references.clone();
+        let mut references = references;
 
         for proof in &context.auth_zone_params.initial_proofs {
             references.insert(proof.resource_address().clone().into());

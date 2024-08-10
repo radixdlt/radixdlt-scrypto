@@ -57,7 +57,7 @@ pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
 
 impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Executes a transaction
-    pub fn execute<'a>(self, executable: &Executable) -> M::Receipt {
+    pub fn execute(self, executable: &Executable) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker =
@@ -82,10 +82,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
-    fn execute_internal<'a>(
-        mut self,
-        executable: &Executable,
-    ) -> Result<M::Receipt, RejectionReason> {
+    fn execute_internal(mut self, executable: &Executable) -> Result<M::Receipt, RejectionReason> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();

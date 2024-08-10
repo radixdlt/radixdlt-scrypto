@@ -1334,7 +1334,7 @@ pub fn create_system_bootstrap_transaction(
     }
 
     SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
+        instructions: InstructionsV1(Rc::new(instructions)),
         pre_allocated_addresses: pre_allocated_addresses
             .into_iter()
             .map(|allocation_pair| allocation_pair.into())
@@ -1360,7 +1360,7 @@ pub fn create_genesis_data_ingestion_transaction(
     });
 
     SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
+        instructions: InstructionsV1(Rc::new(instructions)),
         pre_allocated_addresses,
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Data Chunk: {}", chunk_number)),
@@ -1432,7 +1432,7 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
     });
 
     SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
+        instructions: InstructionsV1(Rc::new(instructions)),
         pre_allocated_addresses: vec![],
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),
