@@ -36,6 +36,7 @@ pub enum TransactionProcessorV1MinorVersion {
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorThreadRunInput {
+    pub id: Hash,
     pub manifest_encoded_instructions: Vec<u8>,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
@@ -50,6 +51,7 @@ pub struct TransactionProcessorRunInput {
 // This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorThreadRunInputEfficientEncodable {
+    pub id: Hash,
     pub manifest_encoded_instructions: Rc<Vec<u8>>,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: IndexSet<Reference>,
@@ -127,39 +129,52 @@ impl TransactionProcessorBlueprint {
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut threads: Vec<_> = thread_inputs.into_iter()
-            .map(|input| TransactionProcessorThread::Uninitialized(input))
+            .map(|input| (input.id, TransactionProcessorThread::Uninitialized(input)))
             .collect();
+
+        let hash_to_index: NonIterMap<Hash, usize> = threads.iter().enumerate().map(|(index, (id, ..))| {
+            (*id, index)
+        }).collect();
 
         let mut outputs = Vec::new();
         let mut cur_thread = 0usize;
         let mut sent_value = None;
 
         loop {
-            let mut thread = threads.get_mut(cur_thread).unwrap();
+            let (_, ref mut thread) = threads.get_mut(cur_thread).unwrap();
             let result = thread.execute(api, sent_value)?;
             sent_value = None;
             match result {
                 InstructionExecutionResult::Output(output) => outputs.push(output),
                 InstructionExecutionResult::Done => {
                     if cur_thread > 0 {
-                        api.join(0)?;
+                        api.free_stack(0)?;
                     }
 
                     let next = threads.iter().enumerate()
-                        .filter(|(thread_id, thread)| !matches!(thread, TransactionProcessorThread::Done))
+                        .filter(|(thread_id, (_, thread))| !matches!(thread, TransactionProcessorThread::Done))
                         .next();
                     if let Some((thread_id, ..)) = next {
                         cur_thread = thread_id;
-                        api.switch_context(thread_id)?;
+                        api.switch_stack(thread_id)?;
                     } else {
-                        api.switch_context(0)?;
+                        api.switch_stack(0)?;
                         return Ok(outputs);
                     }
                 },
-                InstructionExecutionResult::Switch(thread, value) => {
+                InstructionExecutionResult::YieldToChild(child, value) => {
+                    println!("YIELD_TO_CHILD");
+                    let thread = *hash_to_index.get(&child).unwrap();
                     cur_thread = thread;
-                    api.send(thread, value.clone())?;
-                    api.switch_context(thread)?;
+                    api.move_to_stack(thread, value.clone())?;
+                    api.switch_stack(thread)?;
+                    sent_value = Some(value);
+                }
+                InstructionExecutionResult::YieldToParent(value) => {
+                    println!("YIELD_TO_PARENT");
+                    cur_thread = 0;
+                    api.move_to_stack(0, value.clone())?;
+                    api.switch_stack(0)?;
                     sent_value = Some(value);
                 }
             }
@@ -169,7 +184,8 @@ impl TransactionProcessorBlueprint {
 
 pub enum InstructionExecutionResult {
     Output(InstructionOutput),
-    Switch(usize, IndexedScryptoValue),
+    YieldToChild(Hash, IndexedScryptoValue),
+    YieldToParent(IndexedScryptoValue),
     Done,
 }
 
@@ -565,7 +581,8 @@ impl TransactionProcessorThread {
 
                             InstructionOutput::None
                         }
-                        InstructionV1::SendToSubTransactionAndAwait {
+                        InstructionV1::YieldToChild {
+                            id,
                             args
                         } => {
                             let scrypto_value = {
@@ -581,9 +598,9 @@ impl TransactionProcessorThread {
                                 };
                                 transform(args, &mut processor_with_api)?
                             };
-                            return Ok(InstructionExecutionResult::Switch(1, IndexedScryptoValue::from_scrypto_value(scrypto_value)));
+                            return Ok(InstructionExecutionResult::YieldToChild(id, IndexedScryptoValue::from_scrypto_value(scrypto_value)));
                         }
-                        InstructionV1::Yield {
+                        InstructionV1::YieldToParent {
                             args
                         } => {
                             let scrypto_value = {
@@ -599,7 +616,7 @@ impl TransactionProcessorThread {
                                 };
                                 transform(args, &mut processor_with_api)?
                             };
-                            return Ok(InstructionExecutionResult::Switch(0, IndexedScryptoValue::from_scrypto_value(scrypto_value)));
+                            return Ok(InstructionExecutionResult::YieldToParent(IndexedScryptoValue::from_scrypto_value(scrypto_value)));
                         }
                     };
 

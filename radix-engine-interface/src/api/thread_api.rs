@@ -1,9 +1,10 @@
 use crate::types::IndexedScryptoValue;
 
 pub trait SystemThreadApi<E> {
-    fn send(&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), E>;
 
-    fn switch_context(&mut self, thread: usize) -> Result<(), E>;
+    fn free_stack(&mut self, stack_id: usize) -> Result<(), E>;
 
-    fn join(&mut self, thread: usize) -> Result<(), E>;
+    fn move_to_stack(&mut self, stack_id: usize, value: IndexedScryptoValue) -> Result<(), E>;
+
+    fn switch_stack(&mut self, stack_id: usize) -> Result<(), E>;
 }

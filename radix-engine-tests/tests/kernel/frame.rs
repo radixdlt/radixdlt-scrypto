@@ -63,22 +63,16 @@ fn test_max_call_depth_failure() {
     });
 }
 
-
-
-
-
-
-
-
-
 #[test]
 fn test() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (key, _, account) = ledger.new_allocated_account();
     let (key2, _, account2) = ledger.new_allocated_account();
-    let (btc_mint_auth, btc) = ledger.create_mintable_burnable_fungible_resource_with_initial_amount(account, Some(Decimal::from(1000)));
+    let (main_key, _, main_account) = ledger.new_allocated_account();
+    let (_, btc) = ledger.create_mintable_burnable_fungible_resource_with_initial_amount(account, Some(Decimal::from(1000)));
     let (_, usdc) = ledger.create_mintable_burnable_fungible_resource_with_initial_amount(account2, Some(Decimal::from(1000)));
+    println!("{:?}", usdc);
 
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
@@ -90,35 +84,8 @@ fn test() {
         });
         execution_config
     };
-    let thread0 = {
-        let mut manifest = ManifestBuilder::new()
-            .withdraw_from_account(account, btc, Decimal::from(2))
-            .take_all_from_worktop(btc, "btc")
-            .with_name_lookup(|builder, lookup| {
-                builder.send_to_subtransaction(manifest_args!(lookup.bucket("btc")))
-            })
-            .assert_worktop_contains(usdc, Decimal::from(23))
-            .take_all_from_worktop(usdc, "usdc")
-            .with_name_lookup(|builder, lookup| {
-                builder.deposit(account, lookup.bucket("usdc"))
-            })
-            .build();
 
-        let (instructions, blobs) = manifest.for_intent();
-
-        let prepared_instructions = instructions.prepare_partial().unwrap();
-        let encoded_instructions = manifest_encode(&prepared_instructions.inner.0).unwrap();
-        let references = prepared_instructions.references;
-        let blobs = blobs.prepare_partial().unwrap().blobs_by_hash;
-        ExecutableThread {
-            encoded_instructions: Rc::new(encoded_instructions),
-            references,
-            blobs: Rc::new(blobs),
-            pre_allocated_addresses: vec![],
-        }
-    };
-
-    let thread1 = {
+    let child_thread0 = {
         let mut manifest = ManifestBuilder::new()
             .withdraw_from_account(account2, usdc, Decimal::from(23))
             .take_all_from_worktop(usdc, "usdc")
@@ -139,6 +106,7 @@ fn test() {
         let references = prepared_instructions.references;
         let blobs = blobs.prepare_partial().unwrap().blobs_by_hash;
         ExecutableThread {
+            id: Hash([0u8;Hash::LENGTH]),
             encoded_instructions: Rc::new(encoded_instructions),
             references,
             blobs: Rc::new(blobs),
@@ -146,10 +114,66 @@ fn test() {
         }
     };
 
+    let child_thread1 = {
+        let mut manifest = ManifestBuilder::new()
+            .withdraw_from_account(account, btc, Decimal::from(2))
+            .take_all_from_worktop(btc, "btc")
+            .with_name_lookup(|builder, lookup| {
+                builder.yield_to_parent(manifest_args!(lookup.bucket("btc")))
+            })
+            .assert_worktop_contains(usdc, Decimal::from(23))
+            .take_all_from_worktop(usdc, "usdc")
+            .with_name_lookup(|builder, lookup| {
+                builder.deposit(account, lookup.bucket("usdc"))
+            })
+            .build();
 
+        let (instructions, blobs) = manifest.for_intent();
+
+        let prepared_instructions = instructions.prepare_partial().unwrap();
+        let encoded_instructions = manifest_encode(&prepared_instructions.inner.0).unwrap();
+        let references = prepared_instructions.references;
+        let blobs = blobs.prepare_partial().unwrap().blobs_by_hash;
+        ExecutableThread {
+            id: Hash([1u8;Hash::LENGTH]),
+            encoded_instructions: Rc::new(encoded_instructions),
+            references,
+            blobs: Rc::new(blobs),
+            pre_allocated_addresses: vec![],
+        }
+    };
+
+    let main_thread = {
+        let mut manifest = ManifestBuilder::new()
+            .yield_to_child(Hash([0u8; Hash::LENGTH]), manifest_args!(&()))
+            .take_all_from_worktop(usdc, "usdc")
+            .with_name_lookup(|builder, lookup| {
+                builder.yield_to_child(Hash([1u8; Hash::LENGTH]), manifest_args!(lookup.bucket("usdc")))
+            })
+            .take_all_from_worktop(btc, "btc")
+            .with_name_lookup(|builder, lookup| {
+                builder.yield_to_child(Hash([0u8; Hash::LENGTH]), manifest_args!(lookup.bucket("btc")))
+            })
+            .deposit_batch(main_account)
+            .build();
+
+        let (instructions, blobs) = manifest.for_intent();
+
+        let prepared_instructions = instructions.prepare_partial().unwrap();
+        let encoded_instructions = manifest_encode(&prepared_instructions.inner.0).unwrap();
+        let references = prepared_instructions.references;
+        let blobs = blobs.prepare_partial().unwrap().blobs_by_hash;
+        ExecutableThread {
+            id: Hash([2u8;Hash::LENGTH]),
+            encoded_instructions: Rc::new(encoded_instructions),
+            references,
+            blobs: Rc::new(blobs),
+            pre_allocated_addresses: vec![],
+        }
+    };
 
     let executable = Executable {
-        threads: vec![thread0, thread1],
+        threads: vec![main_thread, child_thread0, child_thread1],
         context: ExecutionContext {
             intent_hash: TransactionIntentHash::NotToCheck {
                 intent_hash: Hash([0u8; Hash::LENGTH])
@@ -160,11 +184,15 @@ fn test() {
             auth_zone_params: AuthZoneParams {
                 thread_params: vec![
                     AuthZoneThreadParams {
-                        initial_proofs: btreeset!(NonFungibleGlobalId::from_public_key(&key)),
+                        initial_proofs: btreeset!(NonFungibleGlobalId::from_public_key(&main_key)),
                         virtual_resources: Default::default(),
                     },
                     AuthZoneThreadParams {
                         initial_proofs: btreeset!(NonFungibleGlobalId::from_public_key(&key2)),
+                        virtual_resources: Default::default(),
+                    },
+                    AuthZoneThreadParams {
+                        initial_proofs: btreeset!(NonFungibleGlobalId::from_public_key(&key)),
                         virtual_resources: Default::default(),
                     },
                 ]

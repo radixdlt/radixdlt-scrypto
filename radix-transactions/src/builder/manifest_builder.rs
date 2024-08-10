@@ -806,11 +806,13 @@ impl ManifestBuilder {
         self.call_method(address, VALIDATOR_CLAIM_XRD_IDENT, (bucket,))
     }
 
-    pub fn send_to_subtransaction(
+    pub fn yield_to_child(
         self,
+        id: Hash,
         arguments: impl ResolvableArguments,
     ) -> Self {
-        self.add_instruction(InstructionV1::SendToSubTransactionAndAwait {
+        self.add_instruction(InstructionV1::YieldToChild {
+            id,
             args: arguments.resolve(),
         })
     }
@@ -819,7 +821,7 @@ impl ManifestBuilder {
         self,
         arguments: impl ResolvableArguments,
     ) -> Self {
-        self.add_instruction(InstructionV1::Yield {
+        self.add_instruction(InstructionV1::YieldToParent {
             args: arguments.resolve(),
         })
     }

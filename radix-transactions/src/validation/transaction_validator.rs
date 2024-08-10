@@ -262,8 +262,8 @@ impl NotarizedTransactionValidator {
                 | InstructionV1::CallMetadataMethod { args, .. }
                 | InstructionV1::CallRoleAssignmentMethod { args, .. }
                 | InstructionV1::CallDirectVaultMethod { args, .. }
-                | InstructionV1::Yield { args }
-                | InstructionV1::SendToSubTransactionAndAwait { args } => {
+                | InstructionV1::YieldToParent { args }
+                | InstructionV1::YieldToChild { args, .. } => {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }

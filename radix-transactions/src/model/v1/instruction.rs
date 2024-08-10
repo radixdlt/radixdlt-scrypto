@@ -698,12 +698,13 @@ pub enum InstructionV1 {
         blueprint_name: String,
     },
 
-    #[sbor(discriminator(INSTRUCTION_SEND_TO_SUBTRANSACTION_AND_AWAIT_DISCRIMINATOR))]
-    SendToSubTransactionAndAwait {
+    #[sbor(discriminator(INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR))]
+    YieldToChild {
+        id: Hash,
         args: ManifestValue,
     },
-    #[sbor(discriminator(INSTRUCTION_YIELD_DISCRIMINATOR))]
-    Yield {
+    #[sbor(discriminator(INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR))]
+    YieldToParent {
         args: ManifestValue,
     },
 }
@@ -775,5 +776,5 @@ pub const INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR: u8 = 0x52;
 pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
 pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;
 
-pub const INSTRUCTION_SEND_TO_SUBTRANSACTION_AND_AWAIT_DISCRIMINATOR: u8 = 0x53;
-pub const INSTRUCTION_YIELD_DISCRIMINATOR: u8 = 0x54;
+pub const INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR: u8 = 0x53;
+pub const INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR: u8 = 0x54;

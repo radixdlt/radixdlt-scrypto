@@ -2766,11 +2766,11 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemExecutionTraceA
 impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemThreadApi<RuntimeError>
 for SystemService<'a, Y, V>
 {
-    fn send(&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+    fn move_to_stack(&mut self, thread: usize, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
         self.api.kernel_send(thread, value)
     }
 
-    fn switch_context(&mut self, thread: usize) -> Result<(), RuntimeError> {
+    fn switch_stack(&mut self, thread: usize) -> Result<(), RuntimeError> {
         //let auth_zone = SystemModuleMixer::on_call_function(self, &blueprint_id, function_name)?;
 
         self.api.kernel_switch_context(thread)?;
@@ -2810,7 +2810,7 @@ for SystemService<'a, Y, V>
     }
 
 
-    fn join(&mut self, thread: usize) -> Result<(), RuntimeError> {
+    fn free_stack(&mut self, thread: usize) -> Result<(), RuntimeError> {
         let cur_frame = self.api.kernel_get_system_state().current_call_frame;
         match cur_frame {
             Actor::Function(FunctionActor { auth_zone, .. }) => {

@@ -1053,13 +1053,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             let references = thread.references.clone();
             let blobs = thread.blobs.clone();
             let pre_allocated_addresses = thread.pre_allocated_addresses.clone();
-            (manifest_encoded_instructions, references, blobs, pre_allocated_addresses)
+            (thread.id, manifest_encoded_instructions, references, blobs, pre_allocated_addresses)
         }).collect();
 
         let mut system = SystemService::new(api);
 
         let mut threads = vec![];
-        for (manifest_encoded_instructions, references, blobs, pre_allocated_addresses) in init {
+        for (id, manifest_encoded_instructions, references, blobs, pre_allocated_addresses) in init {
             // Allocate global addresses
             let mut global_address_reservations = Vec::new();
             for PreAllocatedAddress {
@@ -1073,6 +1073,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             }
 
             threads.push(TransactionProcessorThreadRunInputEfficientEncodable {
+                id,
                 manifest_encoded_instructions,
                 global_address_reservations,
                 references,

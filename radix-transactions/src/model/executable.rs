@@ -139,6 +139,7 @@ impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt 
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecutableThread {
+    pub id: Hash,
     pub encoded_instructions: Rc<Vec<u8>>,
     pub references: IndexSet<Reference>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
@@ -184,6 +185,7 @@ impl Executable {
         }
 
         let threads = vec![ExecutableThread {
+            id: Hash([0u8; Hash::LENGTH]),
             pre_allocated_addresses,
             encoded_instructions,
             references,

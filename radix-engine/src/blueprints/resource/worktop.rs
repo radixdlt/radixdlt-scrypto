@@ -25,6 +25,7 @@ impl WorktopSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WorktopError {
     AssertionFailed,
+    AssertAmountFailed(Decimal),
     InsufficientBalance,
 }
 
@@ -277,7 +278,7 @@ impl WorktopBlueprint {
         };
         if amount < input.amount {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::WorktopError(WorktopError::AssertionFailed),
+                ApplicationError::WorktopError(WorktopError::AssertAmountFailed(input.amount)),
             ));
         }
         api.field_close(worktop_handle)?;
