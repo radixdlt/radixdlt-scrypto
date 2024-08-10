@@ -192,7 +192,7 @@ impl TransactionProcessorThread {
     fn execute<
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
         L: Default,
-    >(&mut self, api: &mut Y, next_value: Option<IndexedScryptoValue>) -> Result<InstructionExecutionResult, RuntimeError> {
+    >(&mut self, api: &mut Y, mut next_value: Option<IndexedScryptoValue>) -> Result<InstructionExecutionResult, RuntimeError> {
         loop {
             match self {
                 TransactionProcessorThread::Uninitialized(input) => {
@@ -230,8 +230,8 @@ impl TransactionProcessorThread {
                         })?;
                     let mut processor = TransactionProcessor::new(input.blobs.clone(), input.global_address_reservations.clone());
 
-                    if let Some(value) = &next_value {
-                        processor.handle_call_return_data(value, &worktop, api)?;
+                    if let Some(value) = next_value.take() {
+                        processor.handle_call_return_data(&value, &worktop, api)?;
                     }
 
                     *self = TransactionProcessorThread::Running(TransactionProcessorRunningState {
@@ -246,8 +246,8 @@ impl TransactionProcessorThread {
                     let mut worktop = state.worktop;
                     let version = state.version;
 
-                    if let Some(value) = &next_value {
-                        state.processor.handle_call_return_data(value, &worktop, api)?;
+                    if let Some(value) = next_value.take() {
+                        state.processor.handle_call_return_data(&value, &worktop, api)?;
                     }
 
                     if state.index >= state.instructions.len() {

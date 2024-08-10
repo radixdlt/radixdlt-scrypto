@@ -319,16 +319,14 @@ impl<'g, M, S> KernelThreadApi<M> for Kernel<'g, M, S>
         let cur_thread = mut_threads[self.cur_thread].take().unwrap();
         let to_frame = mut_threads[to_thread].take().unwrap();
 
-        /*
         CallFrame::pass_message(
             &self.substate_io,
-            &mut to_frame.current_frame,
             &mut cur_thread.current_frame,
+            &mut to_frame.current_frame,
             message,
         )
             .map_err(CallFrameError::PassMessageError)
             .map_err(KernelError::CallFrameError)?;
-         */
 
         Ok(())
     }

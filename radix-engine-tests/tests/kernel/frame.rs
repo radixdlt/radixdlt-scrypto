@@ -93,8 +93,10 @@ fn test() {
     let thread0 = {
         let mut manifest = ManifestBuilder::new()
             .withdraw_from_account(account, btc, Decimal::from(2))
-            .deposit_batch(account)
-            .send_to_subtransaction(&())
+            .take_all_from_worktop(btc, "btc")
+            .with_name_lookup(|builder, lookup| {
+                builder.send_to_subtransaction(manifest_args!(lookup.bucket("btc")))
+            })
             .build();
 
         let (instructions, blobs) = manifest.for_intent();
