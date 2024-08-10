@@ -8,8 +8,9 @@ use radix_engine::kernel::kernel_api::{
 };
 use radix_engine::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
-    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+    KernelTransactionCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
+    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
+    WriteSubstateEvent,
 };
 use radix_engine::system::actor::Actor;
 use radix_engine::system::system_callback::{System, SystemInit, SystemLockData};
@@ -82,10 +83,7 @@ macro_rules! wrapped_internal_api {
     };
 }
 
-impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
-    type LockData = SystemLockData;
-    type CallFrameData = Actor;
-
+impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingError<K> {
     type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
     type Executable = Executable;
     type ExecutionOutput = Vec<InstructionOutput>;
@@ -124,6 +122,11 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> TransactionReceipt {
         self.system.create_receipt(track, result)
     }
+}
+
+impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
+    type LockData = SystemLockData;
+    type CallFrameData = Actor;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
         self.maybe_err()?;

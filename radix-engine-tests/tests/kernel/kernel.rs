@@ -1,6 +1,6 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{CallFrameError, KernelError, RejectionReason, RuntimeError, TransactionExecutionError};
-use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError};
+use radix_engine::errors::{CallFrameError, KernelError, RejectionReason, RuntimeError};
+use radix_engine::kernel::call_frame::{CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError};
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -8,12 +8,11 @@ use radix_engine::kernel::kernel_api::{
     KernelSubstateApi,
 };
 use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
-use radix_engine::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
+use radix_engine::track::{Track};
 use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
 
 #[derive(Default)]
@@ -51,33 +50,10 @@ impl ExecutionReceipt for TestReceipt {
 }
 
 struct TestCallbackObject;
+
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
-    type Init = ();
-    type Executable = Executable;
-    type ExecutionOutput = ();
-    type Receipt = TestReceipt;
-
-    fn init<S: BootStore + CommitableSubstateStore>(
-        _store: &mut S,
-        _executable: Executable,
-        _init_input: Self::Init,
-    ) -> Result<(Self, CallFrameInit<TestCallFrameData>), RejectionReason> {
-        Ok((Self, Default::default()))
-    }
-
-    fn start<Y: KernelApi<Self>>(_api: &mut Y) -> Result<(), RuntimeError> {
-        unreachable!()
-    }
-
-    fn finish(&mut self, _store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn create_receipt<S: SubstateDatabase>(self, _track: Track<S, SpreadPrefixKeyMapper>, _result: Result<(), TransactionExecutionError>) -> TestReceipt {
-        TestReceipt
-    }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
         Ok(())
@@ -141,19 +117,7 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn after_invoke<Y: KernelApi<Self>>(_output: &IndexedScryptoValue, _api: &mut Y) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
     fn on_execution_start<Y: KernelApi<Self>>(_api: &mut Y) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_execution_finish<Y: KernelApi<Self>>(_message: &CallFrameMessage, _api: &mut Y) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_allocate_node_id<Y: KernelApi<Self>>(_entity_type: EntityType, _api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -165,6 +129,18 @@ impl KernelCallbackObject for TestCallbackObject {
     }
 
     fn auto_drop<Y: KernelApi<Self>>(_nodes: Vec<NodeId>, _api: &mut Y) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_execution_finish<Y: KernelApi<Self>>(_message: &CallFrameMessage, _api: &mut Y) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn after_invoke<Y: KernelApi<Self>>(_output: &IndexedScryptoValue, _api: &mut Y) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_allocate_node_id<Y: KernelApi<Self>>(_entity_type: EntityType, _api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 

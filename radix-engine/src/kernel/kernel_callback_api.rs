@@ -142,12 +142,7 @@ pub trait ExecutionReceipt {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
 
-/// Upper layer callback object which a kernel interacts with during execution
-pub trait KernelCallbackObject: Sized {
-    /// Data to be stored with each substate lock
-    type LockData: Default + Clone;
-    /// Data to be stored with every call frame
-    type CallFrameData: CallFrameReferences;
+pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     /// Initialization object
     type Init: Clone;
     /// Executable type
@@ -176,6 +171,14 @@ pub trait KernelCallbackObject: Sized {
         track: Track<S, SpreadPrefixKeyMapper>,
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
+}
+
+/// Upper layer callback object which a kernel interacts with during execution
+pub trait KernelCallbackObject: Sized {
+    /// Data to be stored with each substate lock
+    type LockData: Default + Clone;
+    /// Data to be stored with every call frame
+    type CallFrameData: CallFrameReferences;
 
     /// Callback before a node is pinned to it's device
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;

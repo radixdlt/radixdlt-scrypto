@@ -293,7 +293,7 @@ impl UniqueTransaction for Executable {
     }
 }
 
-pub struct TransactionExecutor<'s, S, V: KernelCallbackObject>
+pub struct TransactionExecutor<'s, S, V: KernelTransactionCallbackObject>
 where
     S: SubstateDatabase,
 {
@@ -305,7 +305,7 @@ where
 impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    V: KernelCallbackObject<Executable: UniqueTransaction>,
+    V: KernelTransactionCallbackObject<Executable: UniqueTransaction>,
 {
     pub fn new(substate_db: &'s S, system_init: V::Init) -> Self {
         Self {

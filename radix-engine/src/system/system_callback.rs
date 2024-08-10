@@ -22,12 +22,12 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::{CallFrameInit, CallFrameMessage, StableReferenceType};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
-use crate::kernel::kernel_callback_api::RefCheckEvent;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::kernel::kernel_callback_api::{KernelTransactionCallbackObject, RefCheckEvent};
 use crate::system::actor::Actor;
 use crate::system::actor::BlueprintHookActor;
 use crate::system::actor::FunctionActor;
@@ -866,9 +866,7 @@ impl<C: SystemCallbackObject> System<C> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
-    type LockData = SystemLockData;
-    type CallFrameData = Actor;
+impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     type Init = SystemInit<C::Init>;
     type Executable = Executable;
     type ExecutionOutput = Vec<InstructionOutput>;
@@ -1319,6 +1317,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         receipt
     }
+}
+
+impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
+    type LockData = SystemLockData;
+    type CallFrameData = Actor;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_pin_node(self, node_id)

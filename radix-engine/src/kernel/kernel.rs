@@ -10,12 +10,12 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::ExecutionReceipt;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::kernel::kernel_callback_api::{ExecutionReceipt, KernelTransactionCallbackObject};
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -47,14 +47,14 @@ impl KernelBoot {
 }
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
-pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
+pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> {
     pub id_allocator: IdAllocator,
     pub track: Track<'h, S, SpreadPrefixKeyMapper>,
     pub init: M::Init,
     pub phantom: PhantomData<M>,
 }
 
-impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
+impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Executes a transaction
     pub fn execute(self, executable: M::Executable) -> M::Receipt {
         // Start hardware resource usage tracker
