@@ -57,7 +57,7 @@ pub struct BootLoader<'h, M: KernelCallbackObject, S: SubstateDatabase> {
 
 impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Executes a transaction
-    pub fn execute(self, executable: &Executable) -> M::Receipt {
+    pub fn execute(self, executable: Executable) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker =
@@ -65,14 +65,14 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
 
         #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
         {
-            self.execute_internal(executable)
+            self.execute_internal(executable.clone())
                 .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason))
         }
 
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         {
             let mut receipt = self
-                .execute_internal(executable)
+                .execute_internal(executable.clone())
                 .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason));
 
             // Stop hardware resource usage tracker
@@ -82,7 +82,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         }
     }
 
-    fn execute_internal(mut self, executable: &Executable) -> Result<M::Receipt, RejectionReason> {
+    fn execute_internal(mut self, executable: Executable) -> Result<M::Receipt, RejectionReason> {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
@@ -102,7 +102,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
 
         // Upper Layer Initialization
         let (mut callback, call_frame_init) =
-            M::init(&mut self.track, executable, self.init.clone())?;
+            M::init(&mut self.track, &executable, self.init.clone())?;
 
         // Kernel Initialization
         let mut kernel = Kernel::new(
@@ -138,7 +138,7 @@ impl<'h, M: KernelCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
         .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
         // Create receipt representing the result of a transaction
-        let receipt = M::create_receipt(callback, self.track, executable, result);
+        let receipt = M::create_receipt(callback, self.track, &executable, result);
 
         Ok(receipt)
     }

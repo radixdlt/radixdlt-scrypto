@@ -1387,7 +1387,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             },
         );
 
-        let transaction_receipt = executor.execute(&executable);
+        let transaction_receipt = executor.execute(executable);
 
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit
@@ -1466,7 +1466,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             _,
             Vm<'_, DefaultWasmEngine, E>,
         >(
-            &mut self.database, vm_init, &execution_config, &executable
+            &mut self.database, vm_init, &execution_config, executable
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit

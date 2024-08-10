@@ -137,7 +137,7 @@ pub enum ScanSortedSubstatesEvent<'a> {
 
 /// A receipt created from executing a transaction
 pub trait ExecutionReceipt {
-    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self;
+    fn from_rejection(executable: Executable, reason: RejectionReason) -> Self;
 
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }

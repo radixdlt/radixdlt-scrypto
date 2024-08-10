@@ -305,7 +305,7 @@ where
         }
     }
 
-    pub fn execute(&mut self, executable: &Executable) -> V::Receipt {
+    pub fn execute(&mut self, executable: Executable) -> V::Receipt {
         let kernel_boot = BootLoader {
             id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
             track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
@@ -321,7 +321,7 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
     substate_db: &S,
     vms: V::Init,
     execution_config: &ExecutionConfig,
-    transaction: &Executable,
+    executable: Executable,
 ) -> TransactionReceipt {
     let mut executor = TransactionExecutor::<_, System<V>>::new(
         substate_db,
@@ -335,20 +335,20 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
         },
     );
 
-    executor.execute(transaction)
+    executor.execute(executable)
 }
 
 pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
     substate_db: &S,
     vm_init: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
-    transaction: &Executable,
+    executable: Executable,
 ) -> TransactionReceipt {
     execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
         substate_db,
         vm_init,
         execution_config,
-        transaction,
+        executable,
     )
 }
 
@@ -361,7 +361,7 @@ pub fn execute_and_commit_transaction<
     substate_db: &mut S,
     vms: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
-    transaction: &Executable,
+    transaction: Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
         substate_db,

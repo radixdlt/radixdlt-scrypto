@@ -216,7 +216,7 @@ impl TransactionReceiptV1 {
 }
 
 impl ExecutionReceipt for TransactionReceipt {
-    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self {
+    fn from_rejection(executable: Executable, reason: RejectionReason) -> Self {
         TransactionReceipt {
             costing_parameters: CostingParameters::babylon_genesis(),
             transaction_costing_parameters: executable.costing_parameters().clone().into(),

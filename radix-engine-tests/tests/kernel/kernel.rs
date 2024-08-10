@@ -40,7 +40,7 @@ impl CallFrameReferences for TestCallFrameData {
 struct TestReceipt;
 
 impl ExecutionReceipt for TestReceipt {
-    fn from_rejection(_executable: &Executable, _reason: RejectionReason) -> Self {
+    fn from_rejection(_executable: Executable, _reason: RejectionReason) -> Self {
         Self
     }
 

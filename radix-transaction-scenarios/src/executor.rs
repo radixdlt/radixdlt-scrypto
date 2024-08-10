@@ -379,7 +379,7 @@ where
             &self.database,
             VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
             &self.scenario_execution_config,
-            &validated.get_executable(),
+            validated.get_executable(),
         );
 
         if let TransactionResult::Commit(commit) = &receipt.result {
