@@ -154,7 +154,7 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///   #index
 /// }
 /// ```
-/// Which then evaluates by setting `#index` to `0 + 1 + 1 + 1`, and then outputting that sum.
+/// Which then evaluates by setting `#index` to the token stream `0 + 1 + 1 + 1`, and then outputting that sum.
 ///
 /// # Details
 /// ## Specific functions
@@ -185,9 +185,9 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 /// # Future extensions
 /// ## String case conversion
 ///
-/// This could in future support case conversion like [paste](https://docs.rs/paste/latest/paste/#case-conversion).
+/// This could in future support case conversion like [paste](https://docs.rs/paste/1.0.15/paste/index.html).
 /// e.g. `[!snakecase! ..]`, `[!camelcase! ..]`, `[!uppercase! ..]`, `[!lowercase! ..]`, `[!capitalize! ..]`, `[!decapitalize! ..]`.
-/// Which all support `concat` algorithm, combined with a string function.
+/// Which all use the `concat` algorithm to combine inputs, and then apply a string function.
 ///
 /// These can be composed to achieve things like `UPPER_SNAKE_CASE` or `lowerCamelCase`,
 ///
@@ -207,8 +207,8 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 /// `[!IF! cond { .. } !ELSE! { .. }]`, for example `[!IF! [!eq! [!mod! $length 2] 0] { "even length" } !ELSE! { "odd length" }]`.
 ///
 /// ## Labels and gotos
-/// `[!LABEL:loop!]` and `[!GOTO:loop!]` would bring turing completeness - although would need a rearchitecture of the token
-/// streaming logic.
+/// `[!LABEL:loop!]` and `[!GOBACKTO:loop!]` would bring turing completeness - although it would need a re-architecture
+/// of the token streaming logic to support jumping backwards in the stream.
 #[proc_macro]
 pub fn eager_replace(token_stream: TokenStream) -> TokenStream {
     eager::replace(proc_macro2::TokenStream::from(token_stream))

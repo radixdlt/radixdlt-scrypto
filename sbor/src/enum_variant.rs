@@ -153,14 +153,28 @@ pub trait SborEnumVariantFor<TEnum: SborEnum<X>, X: CustomValueKind> {
     /// Ideally we'd not need this and just have `as_encodable_variant` return
     /// `SborFixedEnumVariant<{ Self::DISCRIMINATOR as u8 }, Self::VariantFieldsRef<'_>>`
     /// But this gets "error: generic parameters may not be used in const operations"
+    ///
+    /// ### Why doesn't this require `VecDecode<X>`?
+    /// We don't want a compiler error if a type only implements Categorize (and so gets this trait)
+    /// but not Decode. Really I'd like to say `OwnedVariant: VecDecode<X> if Self: VecDecode<X>`
+    /// but Rust doesn't support that. Instead, users will need to add the bound on the associated
+    /// type themselves.
     type OwnedVariant: IsSborFixedEnumVariant<Self::VariantFields>;
 
     /// Should always be `SborFixedEnumVariant<{ [DISCRIMINATOR] as u8 }, &'a Self::VariantFields>`
     ///
     /// ### Why is this required as an associated type?
     /// Ideally we'd not need this and just have `as_encodable_variant` return
-    /// `SborFixedEnumVariant<{ Self::DISCRIMINATOR as u8 }, Self::VariantFields>`
-    /// But this gets "error: generic parameters may not be used in const operations"
+    /// `SborFixedEnumVariant<{ Self::DISCRIMINATOR }, Self::VariantFields>`
+    /// But this gets "error: generic parameters may not be used in const operations" which needs
+    /// the `const-generics` feature which has been in progress for a number of years.
+    /// See https://github.com/rust-lang/project-const-generics/issues/31
+    ///
+    /// ### Why doesn't this require `VecEncode<X>`?
+    /// We don't want a compiler error if a type only implements Categorize (and so gets this trait)
+    /// but not Encode. Really I'd like to say `BorrowedVariant<'a>: VecEncode<X> if Self: VecEncode<X>`
+    /// but Rust doesn't support that. Instead, users will need to add the bound on the associated
+    /// type themselves.
     type BorrowedVariant<'a>: IsSborFixedEnumVariant<Self::VariantFieldsRef<'a>>
     where
         Self: 'a,
@@ -168,12 +182,18 @@ pub trait SborEnumVariantFor<TEnum: SborEnum<X>, X: CustomValueKind> {
 
     /// Can be used to encode the type as a variant under `TEnum`, like this:
     /// `encoder.encode(x.as_encodable_variant())`.
-    fn as_encodable_variant(&self) -> Self::BorrowedVariant<'_> {
+    ///
+    /// To use this pattern in a generic context, you will likely need to add a bound like
+    /// `for<'a> T::BorrowedVariant<'a>: VecEncode<X>`.
+    fn as_encodable_variant<'a>(&'a self) -> Self::BorrowedVariant<'a> {
         Self::BorrowedVariant::new(self.as_variant_fields_ref())
     }
 
     /// Can be used to decode the type from an encoded variant, like this:
-    /// `X::from_decoded_variant(decoder.decode()?)`.
+    /// `T::from_decoded_variant(decoder.decode()?)`.
+    ///
+    /// To use this pattern in a generic context, you will likely need to add a bound like
+    /// `T::OwnedVariant: VecDecode<X>`.
     fn from_decoded_variant(variant: Self::OwnedVariant) -> Self
     where
         Self: core::marker::Sized,
