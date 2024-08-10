@@ -3,7 +3,7 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::{System, SystemLockData};
-use crate::system::system_callback_api::{SystemCallbackObject, SystemInvokeResult};
+use crate::system::system_callback_api::{SystemCallbackObject};
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::track::BootStore;
 use crate::vm::wasm::{ScryptoV1WasmValidator, WasmEngine};
@@ -108,7 +108,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
         export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<SystemInvokeResult, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let vm_type = {
             let handle = api.kernel_open_substate_with_default(
                 address.as_node_id(),
@@ -217,7 +217,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
             }
         };
 
-        Ok(SystemInvokeResult::Done(output))
+        Ok(output)
     }
 }
 

@@ -143,16 +143,6 @@ pub trait ExecutionReceipt {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
 
-pub enum InvokeResult {
-    SendToThreadAndWait(usize, IndexedScryptoValue),
-    Done(IndexedScryptoValue),
-}
-
-pub enum ResumeResult {
-    SendToThreadAndWait(usize, IndexedScryptoValue),
-    Done(usize, IndexedScryptoValue),
-}
-
 /// Upper layer callback object which a kernel interacts with during execution
 pub trait KernelCallbackObject: Sized {
     /// Data to be stored with each substate lock
@@ -263,12 +253,7 @@ pub trait KernelCallbackObject: Sized {
     fn invoke_upstream<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<InvokeResult, RuntimeError>;
-
-    fn resume_thread<Y: KernelApi<Self>>(
-        args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<ResumeResult, RuntimeError>;
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
 
     /// Callback after invocation during call frame cleanup and nodes are still owned by the executed
     /// call frame

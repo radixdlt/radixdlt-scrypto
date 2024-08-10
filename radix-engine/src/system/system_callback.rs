@@ -22,7 +22,7 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::{CallFrameMessage, RootCallFrameInitRefs, StableReferenceType};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
-use crate::kernel::kernel_callback_api::{InvokeResult, RefCheckEvent, ResumeResult};
+use crate::kernel::kernel_callback_api::{RefCheckEvent};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -34,7 +34,7 @@ use crate::system::actor::FunctionActor;
 use crate::system::actor::MethodActor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
-use crate::system::system_callback_api::{SystemCallbackObject, SystemInvokeResult};
+use crate::system::system_callback_api::{SystemCallbackObject};
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::{
@@ -1493,7 +1493,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     fn invoke_upstream<Y: KernelApi<System<C>>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<InvokeResult, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
         let node_id = actor.node_id();
@@ -1574,24 +1574,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     .get(ident)
                     .expect("Schema should have validated this exists")
                     .clone();
-                let result =
+                let output =
                     { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
 
-                match result {
-                    SystemInvokeResult::SendToChildAndWait(value) => {
-                        Ok(InvokeResult::SendToThreadAndWait(1, value))
-                    }
-                    SystemInvokeResult::Done(output) => {
-                        // Validate output
-                        system.validate_blueprint_payload(
-                            &target,
-                            BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
-                            output.as_vec_ref(),
-                        )?;
-
-                        Ok(InvokeResult::Done(output))
-                    }
-                }
+                Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id, hook, ..
@@ -1612,17 +1598,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 // Input is not validated as they're created by system.
 
                 // Invoke the export
-                let result = C::invoke(
+                let output = C::invoke(
                     &blueprint_id.package_address,
                     export.clone(),
                     &input,
                     &mut system,
                 )?;
-
-                let output = match result {
-                    SystemInvokeResult::Done(output) => output,
-                    SystemInvokeResult::SendToChildAndWait(..) => panic!("Unexpected"),
-                };
 
                 // Check output against well-known schema
                 match hook {
@@ -1640,53 +1621,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
                 })?;
 
-                Ok(InvokeResult::Done(output))
-            }
-        }
-    }
-
-    fn resume_thread<Y: KernelApi<Self>>(input: &IndexedScryptoValue, api: &mut Y) -> Result<ResumeResult, RuntimeError> {
-        let mut system = SystemService::new(api);
-        let actor = system.current_actor();
-        match &actor {
-            Actor::Root => {
-                todo!("ROOT!");
-            }
-            actor @ Actor::Method(MethodActor { ident, .. })
-            | actor @ Actor::Function(FunctionActor { ident, .. }) => {
-
-                let blueprint_id = actor.blueprint_id().unwrap();
-
-                // TODO: Fix
-                let package_export = {
-                    let new_code = (NativeCodeId::TransactionProcessorCode2 as u64)
-                        .to_be_bytes()
-                        .to_vec();
-                    let code_hash = CodeHash::from_hash(hash(&new_code));
-
-                    PackageExport {
-                        code_hash,
-                        export_name: "resume".to_string(),
-                    }
-                };
-
-                let output = C::invoke(
-                    &blueprint_id.package_address,
-                    package_export,
-                    &input,
-                    &mut system,
-                )?;
-                match output {
-                    SystemInvokeResult::SendToChildAndWait(output) => {
-                        Ok(ResumeResult::SendToThreadAndWait(1, output))
-                    }
-                    SystemInvokeResult::Done(output) => {
-                        Ok(ResumeResult::Done(0, output))
-                    }
-                }
-            }
-            _ => {
-                panic!("Unexpected")
+                Ok(output)
             }
         }
     }

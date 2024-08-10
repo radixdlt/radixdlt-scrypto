@@ -12,7 +12,7 @@ use crate::kernel::call_frame::{
     TransientSubstates,
 };
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt, InvokeResult, ResumeResult};
+use crate::kernel::kernel_callback_api::{CallFrameReferences, ExecutionReceipt};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
@@ -1293,32 +1293,7 @@ where
                 .close_all_substates(&mut self.substate_io);
 
             // Run
-            let output = match M::invoke_upstream(args, self)? {
-                InvokeResult::Done(output) => output,
-                InvokeResult::SendToThreadAndWait(thread, value) => {
-                    let root_thread = self.cur_thread;
-                    // Async loop
-                    (|| {
-                        let mut next_thread = thread;
-                        let mut next_value = value;
-                        loop {
-                            // Change stack
-                            self.cur_thread = next_thread;
-                            (next_thread, next_value) = match M::resume_thread(&next_value, self)? {
-                                ResumeResult::SendToThreadAndWait(next_thread, next_value) => (next_thread, next_value),
-                                ResumeResult::Done(next_thread, next_value) => {
-                                    if self.cur_thread == root_thread {
-                                        return Ok::<IndexedScryptoValue, RuntimeError>(next_value);
-                                    }
-                                    (next_thread, next_value)
-                                }
-                            }
-                            // TODO: Remove value from child thread
-                            // TODO: Move results into current call frame
-                        }
-                    })()?
-                }
-            };
+            let output = M::invoke_upstream(args, self)?;
             let message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop

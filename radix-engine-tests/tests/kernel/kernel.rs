@@ -7,7 +7,7 @@ use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
 };
-use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, InvokeResult, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ResumeResult, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
+use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use radix_engine::track::{BootStore, CommitableSubstateStore, StoreCommitInfo, Track};
 use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
@@ -163,12 +163,8 @@ impl KernelCallbackObject for TestCallbackObject {
     fn invoke_upstream<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         _api: &mut Y,
-    ) -> Result<InvokeResult, RuntimeError> {
-        Ok(InvokeResult::Done(args.clone()))
-    }
-
-    fn resume_thread<Y: KernelApi<Self>>(args: &IndexedScryptoValue, api: &mut Y) -> Result<ResumeResult, RuntimeError> {
-        Ok(ResumeResult::Done(0, args.clone()))
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        Ok(args.clone())
     }
 
     fn auto_drop<Y: KernelApi<Self>>(_nodes: Vec<NodeId>, _api: &mut Y) -> Result<(), RuntimeError> {

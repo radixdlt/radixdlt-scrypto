@@ -6,11 +6,6 @@ use crate::track::BootStore;
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::PackageExport;
 
-pub enum SystemInvokeResult {
-    Done(IndexedScryptoValue),
-    SendToChildAndWait(IndexedScryptoValue),
-}
-
 /// Callback object invoked by the system layer
 pub trait SystemCallbackObject: Sized {
     /// Initialization Object
@@ -30,5 +25,5 @@ pub trait SystemCallbackObject: Sized {
         package_export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<SystemInvokeResult, RuntimeError>;
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
 }
