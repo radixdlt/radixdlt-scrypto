@@ -522,6 +522,9 @@ impl TransactionProcessor {
 
                     InstructionOutput::None
                 }
+                InstructionV1::YieldToChild { .. } => {
+                    todo!()
+                }
             };
             self.outputs.push(result);
         }

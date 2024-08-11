@@ -697,6 +697,12 @@ pub enum InstructionV1 {
         package_address: PackageAddress,
         blueprint_name: String,
     },
+
+    #[sbor(discriminator(INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR))]
+    YieldToChild {
+        child_id: Hash,
+        args: ManifestValue,
+    }
 }
 
 //===============================================================
@@ -765,3 +771,5 @@ pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
 pub const INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR: u8 = 0x52;
 pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
 pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;
+
+pub const INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR: u8 = 0x53;
