@@ -130,11 +130,11 @@ impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt 
 /// Executable form of transaction, post stateless validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Executable {
-    pub(crate) encoded_instructions: Rc<Vec<u8>>,
-    pub(crate) references: IndexSet<Reference>,
-    pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
-    pub(crate) context: ExecutionContext,
-    pub(crate) system: bool,
+    pub encoded_instructions: Rc<Vec<u8>>,
+    pub references: IndexSet<Reference>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub context: ExecutionContext,
+    pub system: bool,
 }
 
 impl Executable {
