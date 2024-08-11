@@ -13,7 +13,9 @@ use crate::blueprints::resource::{
     BurnFungibleResourceEvent, FungibleVaultBalanceFieldPayload, FungibleVaultBalanceFieldSubstate,
     FungibleVaultField,
 };
-use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
+use crate::blueprints::transaction_processor::{
+    TransactionManifestEfficientEncodable, TransactionProcessorRunInputEfficientEncodable,
+};
 use crate::blueprints::transaction_tracker::{
     TransactionStatus, TransactionStatusV1, TransactionTrackerSubstate,
 };
@@ -214,7 +216,7 @@ impl<C: SystemCallbackObject> System<C, Executable> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
         println!("{:-^120}", "Executable");
-        println!("Intent hash: {}", executable.intent_hash());
+        println!("Intent hash: {}", executable.root_intent_hash());
         println!("Payload size: {}", executable.payload_size());
         println!(
             "Transaction costing parameters: {:?}",
@@ -224,7 +226,6 @@ impl<C: SystemCallbackObject> System<C, Executable> {
             "Pre-allocated addresses: {:?}",
             executable.pre_allocated_addresses()
         );
-        println!("Blobs: {:?}", executable.blobs().keys());
         println!("References: {:?}", executable.references());
     }
 
@@ -624,8 +625,8 @@ impl<C: SystemCallbackObject> System<C, Executable> {
         for (intent_hash, update) in updates {
             match update {
                 NullifierUpdate::CheckAndUpdate { epoch_range } => {
-                    if let Some(partition_number) =
-                        transaction_tracker.partition_for_expiry_epoch(epoch_range.end_epoch_exclusive)
+                    if let Some(partition_number) = transaction_tracker
+                        .partition_for_expiry_epoch(epoch_range.end_epoch_exclusive)
                     {
                         track
                             .set_substate(
@@ -635,9 +636,13 @@ impl<C: SystemCallbackObject> System<C, Executable> {
                                 IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
                                     KeyValueEntrySubstateV1 {
                                         value: Some(if is_success {
-                                            TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
+                                            TransactionStatus::V1(
+                                                TransactionStatusV1::CommittedSuccess,
+                                            )
                                         } else {
-                                            TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
+                                            TransactionStatus::V1(
+                                                TransactionStatusV1::CommittedFailure,
+                                            )
                                         }),
                                         // TODO: maybe make it immutable, but how does this affect partition deletion?
                                         lock_status: LockStatus::Unlocked,
@@ -954,10 +959,19 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
 
         let txn_runtime_module = TransactionRuntimeModule::new(
             system_parameters.network_definition,
-            executable.intent_hash(),
+            executable.root_intent_hash(),
         );
 
-        let auth_module = AuthModule::new(executable.auth_zone_params().clone());
+        let auth_zone_params = executable
+            .intents
+            .iter()
+            .map(|i| (i.intent_hash, i.auth_zone_params.clone()))
+            .collect();
+
+        let auth_module = AuthModule::new(
+            executable.intents.get(0).unwrap().intent_hash,
+            auth_zone_params,
+        );
         let limits_module = { LimitsModule::from_params(system_parameters.limit_parameters) };
 
         let costing_module = CostingModule {
@@ -1004,9 +1018,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
         if let Some(current_epoch) = current_epoch {
             for (hash, update) in executable.intent_tracker_updates() {
                 match update {
-                    NullifierUpdate::CheckAndUpdate {
-                        epoch_range
-                    } => {
+                    NullifierUpdate::CheckAndUpdate { epoch_range } => {
                         Self::validate_epoch_range(
                             current_epoch,
                             epoch_range.start_epoch_inclusive,
@@ -1017,7 +1029,6 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
                             hash.clone(),
                             epoch_range.end_epoch_exclusive,
                         )?;
-
                     }
                 }
             }
@@ -1047,6 +1058,16 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
             .executable
             .clone();
 
+        let manifests = executable
+            .intents
+            .iter()
+            .map(|intent| TransactionManifestEfficientEncodable {
+                id: intent.intent_hash,
+                manifest_encoded_instructions: intent.encoded_instructions.clone(),
+                blobs: intent.blobs.clone(),
+            })
+            .collect();
+
         // Allocate global addresses
         let mut global_address_reservations = Vec::new();
         for PreAllocatedAddress {
@@ -1065,10 +1086,9 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions: executable.intent.encoded_instructions.clone(),
+                manifests,
                 global_address_reservations,
                 references: executable.references.clone(),
-                blobs: executable.intent.blobs.clone(),
             })
             .unwrap(),
         )?;

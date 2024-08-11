@@ -46,7 +46,8 @@ pub struct Unauthorized {
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
-    pub params: AuthZoneParams,
+    pub root: Hash,
+    pub params: BTreeMap<Hash, AuthZoneParams>,
 }
 
 pub enum AuthorizationCheckResult {
@@ -70,8 +71,8 @@ pub enum ResolvedPermission {
 }
 
 impl AuthModule {
-    pub fn new(params: AuthZoneParams) -> Self {
-        Self { params }
+    pub fn new(root: Hash, params: BTreeMap<Hash, AuthZoneParams>) -> Self {
+        Self { root, params }
     }
 
     pub fn on_call_function<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
@@ -93,10 +94,14 @@ impl AuthModule {
             let (virtual_resources, virtual_non_fungibles) =
                 if is_transaction_processor_blueprint && is_at_root {
                     let auth_module = &api.kernel_get_system().modules.auth;
-                    (
-                        auth_module.params.virtual_resources.clone(),
-                        auth_module.params.initial_proofs.clone(),
-                    )
+                    if let Some(params) = auth_module.params.get(&auth_module.root) {
+                        (
+                            params.virtual_resources.clone(),
+                            params.initial_proofs.clone(),
+                        )
+                    } else {
+                        (BTreeSet::new(), BTreeSet::new())
+                    }
                 } else {
                     (BTreeSet::new(), BTreeSet::new())
                 };

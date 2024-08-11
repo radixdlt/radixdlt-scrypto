@@ -23,9 +23,7 @@ pub struct ExecutionContext {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NullifierUpdate {
-    CheckAndUpdate {
-        epoch_range: EpochRange,
-    }
+    CheckAndUpdate { epoch_range: EpochRange },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
@@ -104,7 +102,7 @@ pub struct ExecutableIntent {
 /// Executable form of transaction, post stateless validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Executable {
-    pub intent: ExecutableIntent,
+    pub intents: Vec<ExecutableIntent>,
     pub references: IndexSet<Reference>,
     pub context: ExecutionContext,
     pub system: bool,
@@ -112,22 +110,20 @@ pub struct Executable {
 
 impl Executable {
     pub fn new(
-        intent_hash: Hash,
-        encoded_instructions: Rc<Vec<u8>>,
-        blobs: Rc<IndexMap<Hash, Vec<u8>>>,
-        auth_zone_params: AuthZoneParams,
-        references: IndexSet<Reference>,
+        intents: Vec<ExecutableIntent>,
+        mut references: IndexSet<Reference>,
         context: ExecutionContext,
         system: bool,
     ) -> Self {
-        let mut references = references;
+        for intent in &intents {
+            for proof in &intent.auth_zone_params.initial_proofs {
+                references.insert(proof.resource_address().clone().into());
+            }
+            for resource in &intent.auth_zone_params.virtual_resources {
+                references.insert(resource.clone().into());
+            }
+        }
 
-        for proof in &auth_zone_params.initial_proofs {
-            references.insert(proof.resource_address().clone().into());
-        }
-        for resource in &auth_zone_params.virtual_resources {
-            references.insert(resource.clone().into());
-        }
         for preallocated_address in &context.pre_allocated_addresses {
             references.insert(
                 preallocated_address
@@ -138,15 +134,8 @@ impl Executable {
             );
         }
 
-        let intent = ExecutableIntent {
-            intent_hash,
-            encoded_instructions,
-            blobs,
-            auth_zone_params,
-        };
-
         Self {
-            intent,
+            intents,
             references,
             context,
             system,
@@ -157,11 +146,6 @@ impl Executable {
 
     pub fn is_system(&self) -> bool {
         self.system
-    }
-
-    pub fn overwrite_intent_hash(mut self, hash: Hash) -> Self {
-        self.intent.intent_hash = hash;
-        self
     }
 
     pub fn skip_epoch_range_check_and_update(mut self) -> Self {
@@ -181,32 +165,20 @@ impl Executable {
 
     // Getters:
 
-    pub fn intent_tracker_updates(&self) -> &BTreeMap<Hash, NullifierUpdate> {
-        &self.context.nullifier_updates
+    pub fn root_intent_hash(&self) -> Hash {
+        self.intents.get(0).unwrap().intent_hash
     }
 
-    pub fn intent_hash(&self) -> Hash {
-        self.intent.intent_hash
+    pub fn intent_tracker_updates(&self) -> &BTreeMap<Hash, NullifierUpdate> {
+        &self.context.nullifier_updates
     }
 
     pub fn costing_parameters(&self) -> &TransactionCostingParameters {
         &self.context.costing_parameters
     }
 
-    pub fn blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.intent.blobs
-    }
-
-    pub fn encoded_instructions(&self) -> &[u8] {
-        &self.intent.encoded_instructions
-    }
-
     pub fn references(&self) -> &IndexSet<Reference> {
         &self.references
-    }
-
-    pub fn auth_zone_params(&self) -> &AuthZoneParams {
-        &self.intent.auth_zone_params
     }
 
     pub fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {

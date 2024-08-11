@@ -206,10 +206,12 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
     let blobs = Default::default();
 
     let executable = Executable::new(
-        Hash([0; 32]),
-        Rc::new(invalid_encoded_instructions),
-        Rc::new(blobs),
-        Default::default(),
+        vec![ExecutableIntent {
+            intent_hash: Hash([0; 32]),
+            encoded_instructions: Rc::new(invalid_encoded_instructions),
+            blobs: Rc::new(blobs),
+            auth_zone_params: Default::default(),
+        }],
         references,
         ExecutionContext {
             nullifier_updates: Default::default(),

@@ -35,13 +35,15 @@ impl ValidatedNotarizedTransactionV1 {
         let summary = &self.prepared.summary;
 
         Executable::new(
-            intent_hash.into_hash(),
-            self.encoded_instructions.clone(),
-            intent.blobs.blobs_by_hash.clone(),
-            AuthZoneParams {
-                initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
-                virtual_resources: BTreeSet::new(),
-            },
+            vec![ExecutableIntent {
+                intent_hash: intent_hash.into_hash(),
+                encoded_instructions: self.encoded_instructions.clone(),
+                blobs: intent.blobs.blobs_by_hash.clone(),
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
+                    virtual_resources: BTreeSet::new(),
+                },
+            }],
             intent.instructions.references.clone(),
             ExecutionContext {
                 nullifier_updates: btreemap!(intent_hash.into_hash() => NullifierUpdate::CheckAndUpdate {

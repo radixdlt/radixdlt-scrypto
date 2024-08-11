@@ -132,16 +132,18 @@ impl TransactionFullChildPreparable for PreparedRoundUpdateTransactionV1 {
 impl PreparedRoundUpdateTransactionV1 {
     pub fn get_executable(&self) -> Executable {
         Executable::new(
-            self.summary.hash,
-            self.encoded_instructions.clone(),
-            self.blobs.clone(),
-            AuthZoneParams {
-                initial_proofs: btreeset!(system_execution(SystemExecution::Validator)),
-                virtual_resources: BTreeSet::new(),
-            },
+            vec![ExecutableIntent {
+                intent_hash: self.summary.hash,
+                encoded_instructions: self.encoded_instructions.clone(),
+                blobs: self.blobs.clone(),
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs: btreeset!(system_execution(SystemExecution::Validator)),
+                    virtual_resources: BTreeSet::new(),
+                },
+            }],
             self.references.clone(),
             ExecutionContext {
-                intent_tracker_updates: Default::default(),
+                nullifier_updates: Default::default(),
                 payload_size: 0,
                 num_of_signature_validations: 0,
                 costing_parameters: TransactionCostingParameters {

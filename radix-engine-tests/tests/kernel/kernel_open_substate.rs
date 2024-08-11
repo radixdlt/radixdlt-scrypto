@@ -67,16 +67,16 @@ pub fn test_open_substate_of_invisible_package_address() {
             KernelTraceModule,
             TransactionRuntimeModule::new(
                 NetworkDefinition::simulator(),
-                executable.intent_hash(),
+                executable.root_intent_hash(),
             ),
-            AuthModule::new(executable.auth_zone_params().clone()),
+            AuthModule::new(executable.root_intent_hash(), btreemap!()),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: executable.payload_size(),
-                tx_num_of_signature_validations: executable.auth_zone_params().initial_proofs.len(),
+                tx_num_of_signature_validations: 0,
                 config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
                 detailed_cost_breakdown: None,
@@ -86,7 +86,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         ),
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
-    let mut id_allocator = IdAllocator::new(executable.intent_hash());
+    let mut id_allocator = IdAllocator::new(executable.root_intent_hash());
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 
     // Lock package substate

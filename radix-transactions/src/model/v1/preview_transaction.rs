@@ -58,21 +58,23 @@ impl ValidatedPreviewIntent {
             btreemap!()
         } else {
             btreemap!(intent_hash.into_hash() => NullifierUpdate::CheckAndUpdate {
-                        epoch_range: EpochRange {
-                            start_epoch_inclusive: intent.header.inner.start_epoch_inclusive,
-                            end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
-                        }
-                    })
+                epoch_range: EpochRange {
+                    start_epoch_inclusive: intent.header.inner.start_epoch_inclusive,
+                    end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
+                }
+            })
         };
 
         Executable::new(
-            intent_hash.into_hash(),
-            self.encoded_instructions.clone(),
-            intent.blobs.blobs_by_hash.clone(),
-            AuthZoneParams {
-                initial_proofs,
-                virtual_resources,
-            },
+            vec![ExecutableIntent {
+                intent_hash: intent_hash.into_hash(),
+                encoded_instructions: self.encoded_instructions.clone(),
+                blobs: intent.blobs.blobs_by_hash.clone(),
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs,
+                    virtual_resources,
+                },
+            }],
             intent.instructions.references.clone(),
             ExecutionContext {
                 nullifier_updates: intent_tracker_updates,

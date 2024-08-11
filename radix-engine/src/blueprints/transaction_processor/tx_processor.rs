@@ -34,20 +34,32 @@ pub enum TransactionProcessorV1MinorVersion {
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct TransactionProcessorRunInput {
+pub struct TransactionManifest {
+    pub id: Hash,
     pub manifest_encoded_instructions: Vec<u8>,
-    pub global_address_reservations: Vec<GlobalAddressReservation>,
-    pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
     pub blobs: IndexMap<Hash, Vec<u8>>,
 }
 
-// This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
-#[derive(Debug, Eq, PartialEq, ScryptoEncode)]
-pub struct TransactionProcessorRunInputEfficientEncodable {
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionProcessorRunInput {
+    pub manifests: Vec<TransactionManifest>,
+    pub global_address_reservations: Vec<GlobalAddressReservation>,
+    pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionManifestEfficientEncodable {
+    pub id: Hash,
     pub manifest_encoded_instructions: Rc<Vec<u8>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+}
+
+// This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionProcessorRunInputEfficientEncodable {
+    pub manifests: Vec<TransactionManifestEfficientEncodable>,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: IndexSet<Reference>,
-    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -110,21 +122,27 @@ impl TransactionProcessorBlueprint {
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
         L: Default,
     >(
-        manifest_encoded_instructions: Vec<u8>,
+        manifests: Vec<TransactionManifest>,
         global_address_reservations: Vec<GlobalAddressReservation>,
         _references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
-        blobs: IndexMap<Hash, Vec<u8>>,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        let processor = TransactionProcessor::init(
-            manifest_encoded_instructions,
-            global_address_reservations,
-            blobs,
-            version,
-            api,
-        )?;
-        processor.execute(api)
+        let mut output = vec![];
+        for (i, manifest) in manifests.into_iter().enumerate() {
+            let processor = TransactionProcessor::init(
+                manifest,
+                global_address_reservations.clone(),
+                version,
+                api,
+            )?;
+            let result = processor.execute(api)?;
+            if i == 0 {
+                output.extend(result);
+            }
+        }
+
+        Ok(output)
     }
 }
 
@@ -138,9 +156,8 @@ struct TransactionProcessor {
 
 impl TransactionProcessor {
     fn init<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
-        manifest_encoded_instructions: Vec<u8>,
+        manifest: TransactionManifest,
         global_address_reservations: Vec<GlobalAddressReservation>,
-        blobs: IndexMap<Hash, Vec<u8>>,
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
@@ -169,14 +186,16 @@ impl TransactionProcessor {
         api.kernel_pin_node(worktop_node_id)?;
 
         let worktop = Worktop(Own(worktop_node_id));
-        let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)
-            .map_err(|e| {
-                // This error should never occur if being called from root since this is constructed
-                // by the transaction executor. This error is more to protect against application
-                // space calling this function if/when possible
-                RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-            })?;
-        let processor = TransactionProcessorMapping::new(blobs, global_address_reservations);
+        let instructions =
+            manifest_decode::<Vec<InstructionV1>>(&manifest.manifest_encoded_instructions)
+                .map_err(|e| {
+                    // This error should never occur if being called from root since this is constructed
+                    // by the transaction executor. This error is more to protect against application
+                    // space calling this function if/when possible
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+        let processor =
+            TransactionProcessorMapping::new(manifest.blobs, global_address_reservations);
         let outputs = Vec::new();
 
         Ok(Self {

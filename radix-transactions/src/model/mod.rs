@@ -165,30 +165,24 @@ Enum<3u8>(
                     TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
                     TransactionDiscriminator::V1Intent as u8,
                 ]
+                .as_slice(),
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.header)
                     .as_slice(),
-                hash_manifest_sbor_excluding_prefix(
-                    &transaction.signed_intent.intent.header
-                )
-                    .as_slice(),
-                hash_manifest_sbor_excluding_prefix(
-                    &transaction.signed_intent.intent.instructions
-                )
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.instructions)
                     .as_slice(),
                 hash(
-                    hash(&[1, 2]) // one blob only
+                    hash(&[1, 2]), // one blob only
                 )
-                    .as_slice(),
-                hash_manifest_sbor_excluding_prefix(
-                    &transaction.signed_intent.intent.message
-                )
+                .as_slice(),
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.message)
                     .as_slice(),
             ]
-                .concat(),
+            .concat(),
         );
         assert_eq!(
             executable,
             Executable {
-                intent: ExecutableIntent {
+                intents: vec![ExecutableIntent {
                     intent_hash,
                     encoded_instructions: Rc::new(manifest_encode(&manifest.instructions).unwrap()),
                     blobs: Rc::new(indexmap!(
@@ -201,7 +195,7 @@ Enum<3u8>(
                         ),
                         virtual_resources: btreeset!()
                     },
-                },
+                }],
                 references: indexset!(
                     Reference(FAUCET.into_node_id()),
                     // NOTE: not needed

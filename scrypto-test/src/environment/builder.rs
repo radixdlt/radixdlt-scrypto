@@ -250,11 +250,10 @@ where
                     Self::DEFAULT_INTENT_HASH,
                 );
 
-                let auth_module = AuthModule::new(AuthZoneParams {
-                    initial_proofs: Default::default(),
-                    virtual_resources: Default::default(),
-                });
-
+                let auth_module = AuthModule::new(
+                    Self::DEFAULT_INTENT_HASH,
+                    btreemap!(Self::DEFAULT_INTENT_HASH => AuthZoneParams::default()),
+                );
                 let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
 
                 let costing_module = CostingModule {

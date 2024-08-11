@@ -97,13 +97,15 @@ impl SystemTransactionV1 {
 impl PreparedSystemTransactionV1 {
     pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> Executable {
         Executable::new(
-            self.hash_for_execution.hash,
-            self.encoded_instructions.clone(),
-            self.blobs.blobs_by_hash.clone(),
-            AuthZoneParams {
-                initial_proofs,
-                virtual_resources: BTreeSet::new(),
-            },
+            vec![ExecutableIntent {
+                intent_hash: self.hash_for_execution.hash,
+                encoded_instructions: self.encoded_instructions.clone(),
+                blobs: self.blobs.blobs_by_hash.clone(),
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs,
+                    virtual_resources: BTreeSet::new(),
+                },
+            }],
             self.references.clone(),
             ExecutionContext {
                 nullifier_updates: Default::default(),

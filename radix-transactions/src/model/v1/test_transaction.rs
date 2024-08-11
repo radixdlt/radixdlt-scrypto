@@ -51,13 +51,15 @@ impl PreparedTestTransaction {
         let num_of_signature_validations = initial_proofs.len() + 1;
 
         Executable::new(
-            self.hash,
-            self.encoded_instructions.clone(),
-            self.blobs.clone(),
-            AuthZoneParams {
-                initial_proofs,
-                virtual_resources: BTreeSet::new(),
-            },
+            vec![ExecutableIntent {
+                intent_hash: self.hash,
+                encoded_instructions: self.encoded_instructions.clone(),
+                blobs: self.blobs.clone(),
+                auth_zone_params: AuthZoneParams {
+                    initial_proofs,
+                    virtual_resources: BTreeSet::new(),
+                },
+            }],
             self.references.clone(),
             ExecutionContext {
                 nullifier_updates: Default::default(),
