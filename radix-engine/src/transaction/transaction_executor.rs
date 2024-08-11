@@ -289,7 +289,7 @@ pub trait UniqueTransaction {
 
 impl UniqueTransaction for Executable {
     fn uniqe_id(&self) -> Hash {
-        self.intent_hash().to_hash()
+        self.intent_hash()
     }
 }
 

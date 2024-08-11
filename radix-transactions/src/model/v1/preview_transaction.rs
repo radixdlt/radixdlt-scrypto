@@ -55,34 +55,27 @@ impl ValidatedPreviewIntent {
         let intent_hash = intent.intent_hash();
 
         Executable::new(
+            intent_hash.into_hash(),
             self.encoded_instructions.clone(),
-            intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
+            AuthZoneParams {
+                initial_proofs,
+                virtual_resources,
+            },
+            intent.instructions.references.clone(),
             ExecutionContext {
-                intent_hash: if flags.skip_epoch_check {
-                    TransactionIntentHash::NotToCheck {
-                        intent_hash: intent_hash.into_hash(),
-                    }
+                intent_tracker_update: if flags.skip_epoch_check {
+                    IntentTrackerUpdate::Skip
                 } else {
-                    TransactionIntentHash::ToCheck {
-                        intent_hash: intent_hash.into_hash(),
-                        expiry_epoch: intent.header.inner.end_epoch_exclusive,
+                    IntentTrackerUpdate::CheckAndUpdate {
+                        epoch_range: EpochRange {
+                            start_epoch_inclusive: intent.header.inner.start_epoch_inclusive,
+                            end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
+                        },
                     }
-                },
-                epoch_range: if flags.skip_epoch_check {
-                    None
-                } else {
-                    Some(EpochRange {
-                        start_epoch_inclusive: intent.header.inner.start_epoch_inclusive,
-                        end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
-                    })
                 },
                 payload_size: self.intent.summary.effective_length,
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources,
-                },
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],
             },

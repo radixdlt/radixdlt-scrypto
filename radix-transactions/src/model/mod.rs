@@ -162,57 +162,37 @@ Enum<3u8>(
         assert_eq!(
             executable,
             Executable {
-                encoded_instructions: Rc::new(manifest_encode(&manifest.instructions).unwrap()),
-                references: indexset!(
-                    Reference(FAUCET.into_node_id()),
-                    // NOTE: not needed
-                    Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
-                    Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
-                ),
-                blobs: Rc::new(indexmap!(
-                    hash(&[1, 2]) => vec![1, 2]
-                )),
-                context: ExecutionContext {
-                    intent_hash: TransactionIntentHash::ToCheck {
-                        intent_hash: hash(
+                intent: ExecutableIntent {
+                    intent_hash: hash(
+                        [
                             [
-                                [
-                                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                                    TransactionDiscriminator::V1Intent as u8,
-                                ]
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.header
-                                )
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.instructions
-                                )
-                                .as_slice(),
-                                hash(
-                                    hash(&[1, 2]) // one blob only
-                                )
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.message
-                                )
-                                .as_slice(),
+                                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                                TransactionDiscriminator::V1Intent as u8,
                             ]
-                            .concat(),
-                        ),
-                        expiry_epoch: Epoch::of(66)
-                    },
-                    epoch_range: Some(EpochRange {
-                        start_epoch_inclusive: Epoch::of(55),
-                        end_epoch_exclusive: Epoch::of(66)
-                    }),
-                    pre_allocated_addresses: vec![],
-                    // Source of discrepancy:
-                    // * Manifest SBOR payload prefix byte: not counted
-                    // * Array header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
-                    // * Enum variant header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
-                    payload_size: payload.len() - 3,
-                    num_of_signature_validations: 3,
+                            .as_slice(),
+                            hash_manifest_sbor_excluding_prefix(
+                                &transaction.signed_intent.intent.header
+                            )
+                            .as_slice(),
+                            hash_manifest_sbor_excluding_prefix(
+                                &transaction.signed_intent.intent.instructions
+                            )
+                            .as_slice(),
+                            hash(
+                                hash(&[1, 2]) // one blob only
+                            )
+                            .as_slice(),
+                            hash_manifest_sbor_excluding_prefix(
+                                &transaction.signed_intent.intent.message
+                            )
+                            .as_slice(),
+                        ]
+                        .concat(),
+                    ),
+                    encoded_instructions: Rc::new(manifest_encode(&manifest.instructions).unwrap()),
+                    blobs: Rc::new(indexmap!(
+                        hash(&[1, 2]) => vec![1, 2]
+                    )),
                     auth_zone_params: AuthZoneParams {
                         initial_proofs: btreeset!(
                             NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
@@ -220,6 +200,27 @@ Enum<3u8>(
                         ),
                         virtual_resources: btreeset!()
                     },
+                },
+                references: indexset!(
+                    Reference(FAUCET.into_node_id()),
+                    // NOTE: not needed
+                    Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
+                    Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
+                ),
+                context: ExecutionContext {
+                    intent_tracker_update: IntentTrackerUpdate::CheckAndUpdate {
+                        epoch_range: EpochRange {
+                            start_epoch_inclusive: Epoch::of(55),
+                            end_epoch_exclusive: Epoch::of(66)
+                        }
+                    },
+                    pre_allocated_addresses: vec![],
+                    // Source of discrepancy:
+                    // * Manifest SBOR payload prefix byte: not counted
+                    // * Array header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
+                    // * Enum variant header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
+                    payload_size: payload.len() - 3,
+                    num_of_signature_validations: 3,
                     costing_parameters: TransactionCostingParameters {
                         tip_percentage: 4,
                         free_credit_in_xrd: dec!(0),

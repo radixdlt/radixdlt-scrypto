@@ -70,7 +70,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
     InstructionOutput, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
-use radix_transactions::model::{Executable, PreAllocatedAddress, TransactionIntentHash};
+use radix_transactions::model::{Executable, IntentTrackerUpdate, PreAllocatedAddress};
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -214,7 +214,7 @@ impl<C: SystemCallbackObject> System<C, Executable> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
         println!("{:-^120}", "Executable");
-        println!("Intent hash: {}", executable.intent_hash().as_hash());
+        println!("Intent hash: {}", executable.intent_hash());
         println!("Payload size: {}", executable.payload_size());
         println!(
             "Transaction costing parameters: {:?}",
@@ -603,7 +603,8 @@ impl<C: SystemCallbackObject> System<C, Executable> {
     fn update_transaction_tracker<S: SubstateDatabase>(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         next_epoch: Epoch,
-        intent_hash: &TransactionIntentHash,
+        intent_hash: Hash,
+        check: &IntentTrackerUpdate,
         is_success: bool,
     ) {
         // Read the intent hash store
@@ -621,19 +622,15 @@ impl<C: SystemCallbackObject> System<C, Executable> {
         let mut transaction_tracker = transaction_tracker.into_v1();
 
         // Update the status of the intent hash
-        if let TransactionIntentHash::ToCheck {
-            expiry_epoch,
-            intent_hash,
-        } = intent_hash
-        {
+        if let IntentTrackerUpdate::CheckAndUpdate { epoch_range } = check {
             if let Some(partition_number) =
-                transaction_tracker.partition_for_expiry_epoch(*expiry_epoch)
+                transaction_tracker.partition_for_expiry_epoch(epoch_range.end_epoch_exclusive)
             {
                 track
                     .set_substate(
                         TRANSACTION_TRACKER.into_node_id(),
                         PartitionNumber(partition_number),
-                        SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
+                        SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
                         IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
                             KeyValueEntrySubstateV1 {
                                 value: Some(if is_success {
@@ -954,7 +951,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
 
         let txn_runtime_module = TransactionRuntimeModule::new(
             system_parameters.network_definition,
-            executable.intent_hash().to_hash(),
+            executable.intent_hash(),
         );
 
         let auth_module = AuthModule::new(executable.auth_zone_params().clone());
@@ -1002,7 +999,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
         // We are assuming that intent hash store is ready when epoch manager is ready.
         let current_epoch = Self::read_epoch(store);
         if let Some(current_epoch) = current_epoch {
-            if let Some(range) = executable.epoch_range() {
+            if let Some(range) = executable.epoch_range_check() {
                 Self::validate_epoch_range(
                     current_epoch,
                     range.start_epoch_inclusive,
@@ -1010,7 +1007,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
                 )?;
                 Self::validate_intent_hash(
                     store,
-                    executable.intent_hash().to_hash(),
+                    executable.intent_hash(),
                     range.end_epoch_exclusive,
                 )?;
             }
@@ -1058,10 +1055,10 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions: executable.encoded_instructions.clone(),
+                manifest_encoded_instructions: executable.intent.encoded_instructions.clone(),
                 global_address_reservations,
                 references: executable.references.clone(),
-                blobs: executable.blobs.clone(),
+                blobs: executable.intent.blobs.clone(),
             })
             .unwrap(),
         )?;
@@ -1217,6 +1214,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
                         &mut track,
                         next_epoch,
                         self.executable.intent_hash(),
+                        self.executable.transaction_tracker_check(),
                         is_success,
                     );
                 }

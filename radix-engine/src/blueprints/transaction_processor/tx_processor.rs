@@ -168,7 +168,7 @@ impl TransactionProcessor {
         )?;
         api.kernel_pin_node(worktop_node_id)?;
 
-        let mut worktop = Worktop(Own(worktop_node_id));
+        let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)
             .map_err(|e| {
                 // This error should never occur if being called from root since this is constructed
@@ -176,8 +176,8 @@ impl TransactionProcessor {
                 // space calling this function if/when possible
                 RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
             })?;
-        let mut processor = TransactionProcessorMapping::new(blobs, global_address_reservations);
-        let mut outputs = Vec::new();
+        let processor = TransactionProcessorMapping::new(blobs, global_address_reservations);
+        let outputs = Vec::new();
 
         Ok(Self {
             version,

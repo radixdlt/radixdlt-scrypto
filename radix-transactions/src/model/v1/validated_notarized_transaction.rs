@@ -35,24 +35,23 @@ impl ValidatedNotarizedTransactionV1 {
         let summary = &self.prepared.summary;
 
         Executable::new(
+            intent_hash.into_hash(),
             self.encoded_instructions.clone(),
-            intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
+            AuthZoneParams {
+                initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
+                virtual_resources: BTreeSet::new(),
+            },
+            intent.instructions.references.clone(),
             ExecutionContext {
-                intent_hash: TransactionIntentHash::ToCheck {
-                    intent_hash: intent_hash.into_hash(),
-                    expiry_epoch: header.end_epoch_exclusive,
+                intent_tracker_update: IntentTrackerUpdate::CheckAndUpdate {
+                    epoch_range: EpochRange {
+                        start_epoch_inclusive: header.start_epoch_inclusive,
+                        end_epoch_exclusive: header.end_epoch_exclusive,
+                    },
                 },
-                epoch_range: Some(EpochRange {
-                    start_epoch_inclusive: header.start_epoch_inclusive,
-                    end_epoch_exclusive: header.end_epoch_exclusive,
-                }),
                 payload_size: summary.effective_length,
                 num_of_signature_validations: self.num_of_signature_validations,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
-                    virtual_resources: BTreeSet::new(),
-                },
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: intent.header.inner.tip_percentage,
                     free_credit_in_xrd: Decimal::ZERO,

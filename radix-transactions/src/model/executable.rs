@@ -14,36 +14,19 @@ pub struct EpochRange {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
-    pub intent_hash: TransactionIntentHash,
-    pub epoch_range: Option<EpochRange>,
+    pub intent_tracker_update: IntentTrackerUpdate,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub num_of_signature_validations: usize,
-    pub auth_zone_params: AuthZoneParams,
     pub costing_parameters: TransactionCostingParameters,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TransactionIntentHash {
-    /// Should be checked with transaction tracker.
-    ToCheck {
-        intent_hash: Hash,
-        expiry_epoch: Epoch,
-    },
-    /// Should not be checked by transaction tracker.
-    NotToCheck { intent_hash: Hash },
-}
-
-impl TransactionIntentHash {
-    pub fn as_hash(&self) -> &Hash {
-        match self {
-            TransactionIntentHash::ToCheck { intent_hash, .. }
-            | TransactionIntentHash::NotToCheck { intent_hash } => intent_hash,
-        }
-    }
-    pub fn to_hash(&self) -> Hash {
-        self.as_hash().clone()
-    }
+pub enum IntentTrackerUpdate {
+    /// Should be checked and updated with transaction tracker.
+    CheckAndUpdate { epoch_range: EpochRange },
+    /// Should not be checked nor updated by transaction tracker.
+    Skip,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
@@ -111,30 +94,39 @@ impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt 
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutableIntent {
+    pub intent_hash: Hash,
+    pub encoded_instructions: Rc<Vec<u8>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub auth_zone_params: AuthZoneParams,
+}
+
 /// Executable form of transaction, post stateless validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Executable {
-    pub encoded_instructions: Rc<Vec<u8>>,
+    pub intent: ExecutableIntent,
     pub references: IndexSet<Reference>,
-    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub context: ExecutionContext,
     pub system: bool,
 }
 
 impl Executable {
     pub fn new(
+        intent_hash: Hash,
         encoded_instructions: Rc<Vec<u8>>,
-        references: IndexSet<Reference>,
         blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+        auth_zone_params: AuthZoneParams,
+        references: IndexSet<Reference>,
         context: ExecutionContext,
         system: bool,
     ) -> Self {
         let mut references = references;
 
-        for proof in &context.auth_zone_params.initial_proofs {
+        for proof in &auth_zone_params.initial_proofs {
             references.insert(proof.resource_address().clone().into());
         }
-        for resource in &context.auth_zone_params.virtual_resources {
+        for resource in &auth_zone_params.virtual_resources {
             references.insert(resource.clone().into());
         }
         for preallocated_address in &context.pre_allocated_addresses {
@@ -147,10 +139,16 @@ impl Executable {
             );
         }
 
-        Self {
+        let intent = ExecutableIntent {
+            intent_hash,
             encoded_instructions,
-            references,
             blobs,
+            auth_zone_params,
+        };
+
+        Self {
+            intent,
+            references,
             context,
             system,
         }
@@ -163,17 +161,12 @@ impl Executable {
     }
 
     pub fn overwrite_intent_hash(mut self, hash: Hash) -> Self {
-        match &mut self.context.intent_hash {
-            TransactionIntentHash::ToCheck { intent_hash, .. }
-            | TransactionIntentHash::NotToCheck { intent_hash } => {
-                *intent_hash = hash;
-            }
-        }
+        self.intent.intent_hash = hash;
         self
     }
 
-    pub fn skip_epoch_range_check(mut self) -> Self {
-        self.context.epoch_range = None;
+    pub fn skip_epoch_range_check_and_update(mut self) -> Self {
+        self.context.intent_tracker_update = IntentTrackerUpdate::Skip;
         self
     }
 
@@ -189,12 +182,19 @@ impl Executable {
 
     // Getters:
 
-    pub fn intent_hash(&self) -> &TransactionIntentHash {
-        &self.context.intent_hash
+    pub fn transaction_tracker_check(&self) -> &IntentTrackerUpdate {
+        &self.context.intent_tracker_update
     }
 
-    pub fn epoch_range(&self) -> Option<&EpochRange> {
-        self.context.epoch_range.as_ref()
+    pub fn intent_hash(&self) -> Hash {
+        self.intent.intent_hash
+    }
+
+    pub fn epoch_range_check(&self) -> Option<&EpochRange> {
+        match &self.context.intent_tracker_update {
+            IntentTrackerUpdate::Skip => None,
+            IntentTrackerUpdate::CheckAndUpdate { epoch_range } => Some(epoch_range),
+        }
     }
 
     pub fn costing_parameters(&self) -> &TransactionCostingParameters {
@@ -202,11 +202,11 @@ impl Executable {
     }
 
     pub fn blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.blobs
+        &self.intent.blobs
     }
 
     pub fn encoded_instructions(&self) -> &[u8] {
-        &self.encoded_instructions
+        &self.intent.encoded_instructions
     }
 
     pub fn references(&self) -> &IndexSet<Reference> {
@@ -214,7 +214,7 @@ impl Executable {
     }
 
     pub fn auth_zone_params(&self) -> &AuthZoneParams {
-        &self.context.auth_zone_params
+        &self.intent.auth_zone_params
     }
 
     pub fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {
