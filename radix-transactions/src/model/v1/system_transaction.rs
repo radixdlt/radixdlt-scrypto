@@ -106,7 +106,7 @@ impl PreparedSystemTransactionV1 {
             },
             self.references.clone(),
             ExecutionContext {
-                intent_tracker_update: IntentTrackerUpdate::Skip,
+                nullifier_updates: Default::default(),
                 payload_size: 0,
                 num_of_signature_validations: 0,
                 costing_parameters: TransactionCostingParameters {

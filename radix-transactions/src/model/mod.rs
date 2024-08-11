@@ -159,36 +159,37 @@ Enum<3u8>(
             .validate_from_payload_bytes(&payload)
             .unwrap();
         let executable = validated.get_executable();
+        let intent_hash = hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V1Intent as u8,
+                ]
+                    .as_slice(),
+                hash_manifest_sbor_excluding_prefix(
+                    &transaction.signed_intent.intent.header
+                )
+                    .as_slice(),
+                hash_manifest_sbor_excluding_prefix(
+                    &transaction.signed_intent.intent.instructions
+                )
+                    .as_slice(),
+                hash(
+                    hash(&[1, 2]) // one blob only
+                )
+                    .as_slice(),
+                hash_manifest_sbor_excluding_prefix(
+                    &transaction.signed_intent.intent.message
+                )
+                    .as_slice(),
+            ]
+                .concat(),
+        );
         assert_eq!(
             executable,
             Executable {
                 intent: ExecutableIntent {
-                    intent_hash: hash(
-                        [
-                            [
-                                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                                TransactionDiscriminator::V1Intent as u8,
-                            ]
-                            .as_slice(),
-                            hash_manifest_sbor_excluding_prefix(
-                                &transaction.signed_intent.intent.header
-                            )
-                            .as_slice(),
-                            hash_manifest_sbor_excluding_prefix(
-                                &transaction.signed_intent.intent.instructions
-                            )
-                            .as_slice(),
-                            hash(
-                                hash(&[1, 2]) // one blob only
-                            )
-                            .as_slice(),
-                            hash_manifest_sbor_excluding_prefix(
-                                &transaction.signed_intent.intent.message
-                            )
-                            .as_slice(),
-                        ]
-                        .concat(),
-                    ),
+                    intent_hash,
                     encoded_instructions: Rc::new(manifest_encode(&manifest.instructions).unwrap()),
                     blobs: Rc::new(indexmap!(
                         hash(&[1, 2]) => vec![1, 2]
@@ -208,12 +209,12 @@ Enum<3u8>(
                     Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
                 ),
                 context: ExecutionContext {
-                    intent_tracker_update: IntentTrackerUpdate::CheckAndUpdate {
+                    nullifier_updates: btreemap!(intent_hash => NullifierUpdate::CheckAndUpdate {
                         epoch_range: EpochRange {
                             start_epoch_inclusive: Epoch::of(55),
                             end_epoch_exclusive: Epoch::of(66)
                         }
-                    },
+                    }),
                     pre_allocated_addresses: vec![],
                     // Source of discrepancy:
                     // * Manifest SBOR payload prefix byte: not counted

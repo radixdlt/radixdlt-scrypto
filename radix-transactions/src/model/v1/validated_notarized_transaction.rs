@@ -44,12 +44,12 @@ impl ValidatedNotarizedTransactionV1 {
             },
             intent.instructions.references.clone(),
             ExecutionContext {
-                intent_tracker_update: IntentTrackerUpdate::CheckAndUpdate {
+                nullifier_updates: btreemap!(intent_hash.into_hash() => NullifierUpdate::CheckAndUpdate {
                     epoch_range: EpochRange {
                         start_epoch_inclusive: header.start_epoch_inclusive,
                         end_epoch_exclusive: header.end_epoch_exclusive,
                     },
-                },
+                }),
                 payload_size: summary.effective_length,
                 num_of_signature_validations: self.num_of_signature_validations,
                 costing_parameters: TransactionCostingParameters {

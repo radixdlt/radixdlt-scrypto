@@ -60,7 +60,7 @@ impl PreparedTestTransaction {
             },
             self.references.clone(),
             ExecutionContext {
-                intent_tracker_update: IntentTrackerUpdate::Skip,
+                nullifier_updates: Default::default(),
                 payload_size: self.encoded_instructions.len()
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),
                 // For testing purpose, assume `num_of_signature_validations = num_of_initial_proofs + 1`

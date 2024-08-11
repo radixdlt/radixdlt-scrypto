@@ -14,7 +14,7 @@ pub struct EpochRange {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ExecutionContext {
-    pub intent_tracker_update: IntentTrackerUpdate,
+    pub nullifier_updates: BTreeMap<Hash, NullifierUpdate>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub num_of_signature_validations: usize,
@@ -22,11 +22,10 @@ pub struct ExecutionContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum IntentTrackerUpdate {
-    /// Should be checked and updated with transaction tracker.
-    CheckAndUpdate { epoch_range: EpochRange },
-    /// Should not be checked nor updated by transaction tracker.
-    Skip,
+pub enum NullifierUpdate {
+    CheckAndUpdate {
+        epoch_range: EpochRange,
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
@@ -166,7 +165,7 @@ impl Executable {
     }
 
     pub fn skip_epoch_range_check_and_update(mut self) -> Self {
-        self.context.intent_tracker_update = IntentTrackerUpdate::Skip;
+        self.context.nullifier_updates.clear();
         self
     }
 
@@ -182,19 +181,12 @@ impl Executable {
 
     // Getters:
 
-    pub fn transaction_tracker_check(&self) -> &IntentTrackerUpdate {
-        &self.context.intent_tracker_update
+    pub fn intent_tracker_updates(&self) -> &BTreeMap<Hash, NullifierUpdate> {
+        &self.context.nullifier_updates
     }
 
     pub fn intent_hash(&self) -> Hash {
         self.intent.intent_hash
-    }
-
-    pub fn epoch_range_check(&self) -> Option<&EpochRange> {
-        match &self.context.intent_tracker_update {
-            IntentTrackerUpdate::Skip => None,
-            IntentTrackerUpdate::CheckAndUpdate { epoch_range } => Some(epoch_range),
-        }
     }
 
     pub fn costing_parameters(&self) -> &TransactionCostingParameters {

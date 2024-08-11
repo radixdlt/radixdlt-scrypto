@@ -70,7 +70,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
     InstructionOutput, TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
-use radix_transactions::model::{Executable, IntentTrackerUpdate, PreAllocatedAddress};
+use radix_transactions::model::{Executable, NullifierUpdate, PreAllocatedAddress};
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -603,8 +603,7 @@ impl<C: SystemCallbackObject> System<C, Executable> {
     fn update_transaction_tracker<S: SubstateDatabase>(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         next_epoch: Epoch,
-        intent_hash: Hash,
-        check: &IntentTrackerUpdate,
+        updates: &BTreeMap<Hash, NullifierUpdate>,
         is_success: bool,
     ) {
         // Read the intent hash store
@@ -622,31 +621,35 @@ impl<C: SystemCallbackObject> System<C, Executable> {
         let mut transaction_tracker = transaction_tracker.into_v1();
 
         // Update the status of the intent hash
-        if let IntentTrackerUpdate::CheckAndUpdate { epoch_range } = check {
-            if let Some(partition_number) =
-                transaction_tracker.partition_for_expiry_epoch(epoch_range.end_epoch_exclusive)
-            {
-                track
-                    .set_substate(
-                        TRANSACTION_TRACKER.into_node_id(),
-                        PartitionNumber(partition_number),
-                        SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
-                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
-                            KeyValueEntrySubstateV1 {
-                                value: Some(if is_success {
-                                    TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
-                                } else {
-                                    TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
-                                }),
-                                // TODO: maybe make it immutable, but how does this affect partition deletion?
-                                lock_status: LockStatus::Unlocked,
-                            },
-                        )),
-                        &mut |_| -> Result<(), ()> { Ok(()) },
-                    )
-                    .unwrap();
-            } else {
-                panic!("No partition for an expiry epoch")
+        for (intent_hash, update) in updates {
+            match update {
+                NullifierUpdate::CheckAndUpdate { epoch_range } => {
+                    if let Some(partition_number) =
+                        transaction_tracker.partition_for_expiry_epoch(epoch_range.end_epoch_exclusive)
+                    {
+                        track
+                            .set_substate(
+                                TRANSACTION_TRACKER.into_node_id(),
+                                PartitionNumber(partition_number),
+                                SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
+                                IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
+                                    KeyValueEntrySubstateV1 {
+                                        value: Some(if is_success {
+                                            TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
+                                        } else {
+                                            TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
+                                        }),
+                                        // TODO: maybe make it immutable, but how does this affect partition deletion?
+                                        lock_status: LockStatus::Unlocked,
+                                    },
+                                )),
+                                &mut |_| -> Result<(), ()> { Ok(()) },
+                            )
+                            .unwrap();
+                    } else {
+                        panic!("No partition for an expiry epoch")
+                    }
+                }
             }
         }
 
@@ -999,17 +1002,24 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
         // We are assuming that intent hash store is ready when epoch manager is ready.
         let current_epoch = Self::read_epoch(store);
         if let Some(current_epoch) = current_epoch {
-            if let Some(range) = executable.epoch_range_check() {
-                Self::validate_epoch_range(
-                    current_epoch,
-                    range.start_epoch_inclusive,
-                    range.end_epoch_exclusive,
-                )?;
-                Self::validate_intent_hash(
-                    store,
-                    executable.intent_hash(),
-                    range.end_epoch_exclusive,
-                )?;
+            for (hash, update) in executable.intent_tracker_updates() {
+                match update {
+                    NullifierUpdate::CheckAndUpdate {
+                        epoch_range
+                    } => {
+                        Self::validate_epoch_range(
+                            current_epoch,
+                            epoch_range.start_epoch_inclusive,
+                            epoch_range.end_epoch_exclusive,
+                        )?;
+                        Self::validate_intent_hash(
+                            store,
+                            hash.clone(),
+                            epoch_range.end_epoch_exclusive,
+                        )?;
+
+                    }
+                }
             }
         }
 
@@ -1213,8 +1223,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
                     Self::update_transaction_tracker(
                         &mut track,
                         next_epoch,
-                        self.executable.intent_hash(),
-                        self.executable.transaction_tracker_check(),
+                        self.executable.intent_tracker_updates(),
                         is_success,
                     );
                 }

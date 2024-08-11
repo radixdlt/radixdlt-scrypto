@@ -54,6 +54,17 @@ impl ValidatedPreviewIntent {
 
         let intent_hash = intent.intent_hash();
 
+        let intent_tracker_updates = if flags.skip_epoch_check {
+            btreemap!()
+        } else {
+            btreemap!(intent_hash.into_hash() => NullifierUpdate::CheckAndUpdate {
+                        epoch_range: EpochRange {
+                            start_epoch_inclusive: intent.header.inner.start_epoch_inclusive,
+                            end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
+                        }
+                    })
+        };
+
         Executable::new(
             intent_hash.into_hash(),
             self.encoded_instructions.clone(),
@@ -64,16 +75,7 @@ impl ValidatedPreviewIntent {
             },
             intent.instructions.references.clone(),
             ExecutionContext {
-                intent_tracker_update: if flags.skip_epoch_check {
-                    IntentTrackerUpdate::Skip
-                } else {
-                    IntentTrackerUpdate::CheckAndUpdate {
-                        epoch_range: EpochRange {
-                            start_epoch_inclusive: intent.header.inner.start_epoch_inclusive,
-                            end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
-                        },
-                    }
-                },
+                nullifier_updates: intent_tracker_updates,
                 payload_size: self.intent.summary.effective_length,
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
                 costing_parameters: fee_payment,

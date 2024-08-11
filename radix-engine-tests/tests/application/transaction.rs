@@ -212,7 +212,7 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
         Default::default(),
         references,
         ExecutionContext {
-            intent_tracker_update: IntentTrackerUpdate::Skip,
+            nullifier_updates: Default::default(),
             pre_allocated_addresses: Default::default(),
             payload_size: 4,
             num_of_signature_validations: 0,
