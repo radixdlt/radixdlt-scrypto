@@ -806,6 +806,26 @@ impl ManifestBuilder {
         self.call_method(address, VALIDATOR_CLAIM_XRD_IDENT, (bucket,))
     }
 
+    pub fn yield_to_child(
+        self,
+        child_id: Hash,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.add_instruction(InstructionV1::YieldToChild {
+            child_id,
+            args: arguments.resolve(),
+        })
+    }
+
+    pub fn yield_to_parent(
+        self,
+        arguments: impl ResolvableArguments,
+    ) -> Self {
+        self.add_instruction(InstructionV1::YieldToParent {
+            args: arguments.resolve(),
+        })
+    }
+
     /// Calls a scrypto function where the arguments should be one of:
     /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
     ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
