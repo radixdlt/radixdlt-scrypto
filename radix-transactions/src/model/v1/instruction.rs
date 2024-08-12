@@ -699,15 +699,10 @@ pub enum InstructionV1 {
     },
 
     #[sbor(discriminator(INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR))]
-    YieldToChild {
-        child_id: Hash,
-        args: ManifestValue,
-    },
+    YieldToChild { child_id: Hash, args: ManifestValue },
 
     #[sbor(discriminator(INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR))]
-    YieldToParent {
-        args: ManifestValue,
-    }
+    YieldToParent { args: ManifestValue },
 }
 
 //===============================================================

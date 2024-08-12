@@ -658,22 +658,12 @@ pub fn decompile_instruction<F: fmt::Write>(
                 ))?,
             )
         }
-        InstructionV1::YieldToChild {
-            child_id,
-            args,
-        } => {
-            (
-                "YIELD_TO_CHILD",
-                to_manifest_value(&(*child_id, args.clone()))?,
-            )
-        }
-        InstructionV1::YieldToParent {
-            args,
-        } => {
-            (
-                "YIELD_TO_PARENT",
-                to_manifest_value(&(args.clone(),))?,
-            )
+        InstructionV1::YieldToChild { child_id, args } => (
+            "YIELD_TO_CHILD",
+            to_manifest_value(&(*child_id, args.clone()))?,
+        ),
+        InstructionV1::YieldToParent { args } => {
+            ("YIELD_TO_PARENT", to_manifest_value(&(args.clone(),))?)
         }
     };
 

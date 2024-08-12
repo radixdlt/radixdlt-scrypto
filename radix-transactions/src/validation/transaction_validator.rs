@@ -275,7 +275,7 @@ impl NotarizedTransactionValidator {
                     let _ = id_validator.new_address_reservation();
                     id_validator.new_named_address();
                 }
-                InstructionV1::YieldToChild { args, ..} => {
+                InstructionV1::YieldToChild { args, .. } => {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
