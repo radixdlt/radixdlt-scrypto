@@ -1,20 +1,27 @@
-use std::rc::Rc;
 use radix_common::constants::DEFAULT_TIP_PERCENTAGE;
-use radix_common::crypto::{Hash, HasPublicKeyHash};
+use radix_common::crypto::{HasPublicKeyHash, Hash};
 use radix_common::manifest_args;
 use radix_common::math::Decimal;
-use radix_common::prelude::{FromPublicKey, manifest_encode, NonFungibleGlobalId, Reference};
+use radix_common::prelude::ManifestArgs;
+use radix_common::prelude::{manifest_encode, FromPublicKey, NonFungibleGlobalId, Reference};
 use radix_engine::transaction::{ExecutionConfig, SystemOverrides};
 use radix_rust::btreeset;
 use radix_rust::prelude::IndexSet;
 use radix_transactions::builder::ManifestBuilder;
-use radix_transactions::model::{AuthZoneParams, Executable, ExecutableIntent, ExecutionContext, TransactionCostingParameters, TransactionManifestV1, TransactionPartialEncode};
+use radix_transactions::model::{
+    AuthZoneParams, Executable, ExecutableIntent, ExecutionContext, TransactionCostingParameters,
+    TransactionManifestV1, TransactionPartialEncode,
+};
 use scrypto::prelude::DIVISIBILITY_MAXIMUM;
 use scrypto_test::ledger_simulator::LedgerSimulatorBuilder;
 use scrypto_test::prelude::LedgerSimulatorResourceExtension;
-use radix_common::prelude::ManifestArgs;
+use std::rc::Rc;
 
-fn manifest_to_executable_intent<P: HasPublicKeyHash>(intent_hash: Hash, manifest: TransactionManifestV1, key: &P) -> (ExecutableIntent, IndexSet<Reference>) {
+fn manifest_to_executable_intent<P: HasPublicKeyHash>(
+    intent_hash: Hash,
+    manifest: TransactionManifestV1,
+    key: &P,
+) -> (ExecutableIntent, IndexSet<Reference>) {
     let (instructions, blobs) = manifest.for_intent();
 
     let prepared_instructions = instructions.prepare_partial().unwrap();
@@ -25,7 +32,7 @@ fn manifest_to_executable_intent<P: HasPublicKeyHash>(intent_hash: Hash, manifes
         intent_hash,
         encoded_instructions: Rc::new(encoded_instructions),
         blobs,
-        auth_zone_params:  AuthZoneParams {
+        auth_zone_params: AuthZoneParams {
             initial_proofs: btreeset!(NonFungibleGlobalId::from_public_key(key)),
             virtual_resources: Default::default(),
         },
@@ -60,12 +67,11 @@ fn swap_with_intents_should_work() {
             })
             .assert_worktop_contains(btc, Decimal::from(2))
             .take_all_from_worktop(btc, "btc")
-            .with_name_lookup(|builder, lookup| {
-                builder.deposit(account2, lookup.bucket("btc"))
-            })
+            .with_name_lookup(|builder, lookup| builder.deposit(account2, lookup.bucket("btc")))
             .build();
 
-        let (intent, references) = manifest_to_executable_intent(Hash([0u8; Hash::LENGTH]), manifest, &key2);
+        let (intent, references) =
+            manifest_to_executable_intent(Hash([0u8; Hash::LENGTH]), manifest, &key2);
         all_references.extend(references);
         intent
     };
@@ -79,12 +85,11 @@ fn swap_with_intents_should_work() {
             })
             .assert_worktop_contains(usdc, Decimal::from(23))
             .take_all_from_worktop(usdc, "usdc")
-            .with_name_lookup(|builder, lookup| {
-                builder.deposit(account, lookup.bucket("usdc"))
-            })
+            .with_name_lookup(|builder, lookup| builder.deposit(account, lookup.bucket("usdc")))
             .build();
 
-        let (intent, references) = manifest_to_executable_intent(Hash([1u8; Hash::LENGTH]), manifest, &key);
+        let (intent, references) =
+            manifest_to_executable_intent(Hash([1u8; Hash::LENGTH]), manifest, &key);
         all_references.extend(references);
         intent
     };
@@ -95,17 +100,24 @@ fn swap_with_intents_should_work() {
             .yield_to_child(child_intent0.intent_hash, manifest_args!(&()))
             .take_all_from_worktop(usdc, "usdc")
             .with_name_lookup(|builder, lookup| {
-                builder.yield_to_child(child_intent1.intent_hash, manifest_args!(lookup.bucket("usdc")))
+                builder.yield_to_child(
+                    child_intent1.intent_hash,
+                    manifest_args!(lookup.bucket("usdc")),
+                )
             })
             .take_all_from_worktop(btc, "btc")
             .with_name_lookup(|builder, lookup| {
-                builder.yield_to_child(child_intent0.intent_hash, manifest_args!(lookup.bucket("btc")))
+                builder.yield_to_child(
+                    child_intent0.intent_hash,
+                    manifest_args!(lookup.bucket("btc")),
+                )
             })
             .yield_to_child(child_intent1.intent_hash, manifest_args!(&()))
             .deposit_batch(main_account)
             .build();
 
-        let (intent, references) = manifest_to_executable_intent(Hash([2u8; Hash::LENGTH]), manifest, &main_key);
+        let (intent, references) =
+            manifest_to_executable_intent(Hash([2u8; Hash::LENGTH]), manifest, &main_key);
         all_references.extend(references);
         intent
     };
