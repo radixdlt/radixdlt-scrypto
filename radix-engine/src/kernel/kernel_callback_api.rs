@@ -142,6 +142,11 @@ pub trait ExecutionReceipt {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
 
+pub struct KernelStacksInit<D> {
+    pub stack_pointer: Hash,
+    pub call_frame_init: BTreeMap<Hash, CallFrameInit<D>>,
+}
+
 pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     /// Initialization object
     type Init: Clone;
@@ -157,7 +162,7 @@ pub trait KernelTransactionCallbackObject: KernelCallbackObject {
         store: &mut S,
         executable: Self::Executable,
         init: Self::Init,
-    ) -> Result<(Self, CallFrameInit<Self::CallFrameData>), RejectionReason>;
+    ) -> Result<(Self, KernelStacksInit<Self::CallFrameData>), RejectionReason>;
 
     /// Start execution
     fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Self::ExecutionOutput, RuntimeError>;

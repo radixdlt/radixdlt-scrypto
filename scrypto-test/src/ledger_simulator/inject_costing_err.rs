@@ -1,16 +1,16 @@
 use radix_common::prelude::*;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage, NodeVisibility};
+use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi, SystemState,
 };
 use radix_engine::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
-    KernelTransactionCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
-    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
-    WriteSubstateEvent,
+    KernelStacksInit, KernelTransactionCallbackObject, MoveModuleEvent, OpenSubstateEvent,
+    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
+    SetSubstateEvent, WriteSubstateEvent,
 };
 use radix_engine::system::actor::Actor;
 use radix_engine::system::system_callback::{System, SystemInit, SystemLockData};
@@ -93,8 +93,8 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
         store: &mut S,
         executable: Executable,
         init_input: Self::Init,
-    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
-        let (mut system, call_frame_init) =
+    ) -> Result<(Self, KernelStacksInit<Actor>), RejectionReason> {
+        let (mut system, kernel_stacks_init) =
             System::<K, _>::init(store, executable, init_input.system_input)?;
 
         let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
@@ -102,7 +102,7 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
             fail_after: fail_after.clone(),
         };
 
-        Ok((Self { fail_after, system }, call_frame_init))
+        Ok((Self { fail_after, system }, kernel_stacks_init))
     }
 
     fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {

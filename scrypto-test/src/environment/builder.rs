@@ -304,7 +304,6 @@ where
                         pinned_to_heap: Default::default(),
                     },
                     id_allocator,
-                    KernelStack::new(Default::default()),
                     system_config,
                 )
             },

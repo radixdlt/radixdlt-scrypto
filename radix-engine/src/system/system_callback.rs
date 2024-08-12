@@ -26,8 +26,8 @@ use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
-    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+    KernelStacksInit, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent,
+    ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
 use crate::kernel::kernel_callback_api::{KernelTransactionCallbackObject, RefCheckEvent};
 use crate::system::actor::Actor;
@@ -781,7 +781,7 @@ impl<C: SystemCallbackObject> System<C, Executable> {
     fn check_references<S: BootStore + CommitableSubstateStore>(
         &mut self,
         store: &mut S,
-    ) -> Result<CallFrameInit<Actor>, BootloadingError> {
+    ) -> Result<KernelStacksInit<Actor>, BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
 
@@ -817,10 +817,25 @@ impl<C: SystemCallbackObject> System<C, Executable> {
             }
         }
 
-        Ok(CallFrameInit {
-            data: Actor::Root,
-            global_addresses,
-            direct_accesses,
+        let stack_pointer = self.executable.intents.get(0).unwrap().intent_hash;
+
+        let call_frame_init = self
+            .executable
+            .intents
+            .iter()
+            .map(|intent| {
+                let frame_init = CallFrameInit {
+                    data: Actor::Root,
+                    global_addresses: global_addresses.clone(),
+                    direct_accesses: direct_accesses.clone(),
+                };
+                (intent.intent_hash, frame_init)
+            })
+            .collect();
+
+        Ok(KernelStacksInit {
+            stack_pointer,
+            call_frame_init,
         })
     }
 
@@ -883,7 +898,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
         store: &mut S,
         executable: Executable,
         init_input: SystemInit<C::Init>,
-    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
+    ) -> Result<(Self, KernelStacksInit<Actor>), RejectionReason> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.enable_kernel_trace {
@@ -1043,11 +1058,11 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
             executable,
         };
 
-        let call_frame_init = system
+        let stacks_init = system
             .check_references(store)
             .map_err(RejectionReason::BootloadingError)?;
 
-        Ok((system, call_frame_init))
+        Ok((system, stacks_init))
     }
 
     fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
