@@ -14,6 +14,7 @@ use radix_engine_interface::prelude::*;
 use radix_transactions::prelude::*;
 use scrypto::prelude::Pow;
 use scrypto_test::prelude::{is_auth_error, DefaultLedgerSimulator, LedgerSimulatorBuilder};
+use scrypto_test::ledger_simulator::LedgerSimulatorResourceExtension;
 
 #[test]
 fn multi_resource_pool_can_be_instantiated() {

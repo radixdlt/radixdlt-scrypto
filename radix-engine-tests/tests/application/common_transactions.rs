@@ -10,6 +10,7 @@ use radix_transactions::manifest::{compile, BlobProvider};
 use radix_transactions::prelude::*;
 use scrypto::prelude::Pow;
 use scrypto::NonFungibleData;
+use scrypto_test::ledger_simulator::LedgerSimulatorResourceExtension;
 use scrypto_test::prelude::LedgerSimulatorBuilder;
 
 macro_rules! replace_variables {
