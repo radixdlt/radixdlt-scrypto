@@ -34,7 +34,7 @@ fn manifest_to_executable_intent<P: HasPublicKeyHash>(intent_hash: Hash, manifes
 }
 
 #[test]
-fn test_swap_with_intents() {
+fn swap_with_intents_should_work() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (key, _, account) = ledger.new_allocated_account();
@@ -45,12 +45,7 @@ fn test_swap_with_intents() {
 
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
-        execution_config.system_overrides = Some(SystemOverrides {
-            disable_costing: true,
-            disable_limits: true,
-            disable_auth: false,
-            ..Default::default()
-        });
+        execution_config.enable_kernel_trace = false;
         execution_config
     };
 
@@ -96,6 +91,7 @@ fn test_swap_with_intents() {
 
     let parent_intent = {
         let manifest = ManifestBuilder::new()
+            .lock_fee(main_account, Decimal::from(10))
             .yield_to_child(child_intent0.intent_hash, manifest_args!(&()))
             .take_all_from_worktop(usdc, "usdc")
             .with_name_lookup(|builder, lookup| {
@@ -131,6 +127,7 @@ fn test_swap_with_intents() {
         system: false,
     };
 
+    // Act
     let receipt = ledger.execute_transaction(executable, execution_config);
 
     // Assert
