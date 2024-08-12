@@ -414,7 +414,11 @@ where
     }
 
     #[trace_resources]
-    fn kernel_send_to_stack(&mut self, to_stack_id: Hash, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+    fn kernel_send_to_stack(
+        &mut self,
+        to_stack_id: Hash,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
         let message = CallFrameMessage::from_output(&value);
 
         let (cur, other) = self.stacks.cur_mut_and_other_mut(to_stack_id);

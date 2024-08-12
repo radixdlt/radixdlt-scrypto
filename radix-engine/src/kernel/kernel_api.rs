@@ -19,10 +19,7 @@ pub trait KernelStackApi<D> {
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
-    fn kernel_switch_stack(
-        &mut self,
-        to_stack_id: Hash,
-    ) -> Result<(), RuntimeError>;
+    fn kernel_switch_stack(&mut self, to_stack_id: Hash) -> Result<(), RuntimeError>;
 
     fn kernel_free_and_switch_stack(&mut self, to_stack_id: Hash) -> Result<(), RuntimeError>;
 

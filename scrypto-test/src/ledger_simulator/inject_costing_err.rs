@@ -325,7 +325,11 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelSta
         self.api.kernel_switch_stack(to_stack_id)
     }
 
-    fn kernel_send_to_stack(&mut self, to_stack_id: Hash, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+    fn kernel_send_to_stack(
+        &mut self,
+        to_stack_id: Hash,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
         self.api.kernel_send_to_stack(to_stack_id, value)
     }
 

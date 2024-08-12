@@ -1066,26 +1066,23 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
     }
 
     fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        let executable = api.kernel_get_system_state()
-            .system
-            .executable
-            .clone();
+        let executable = api.kernel_get_system_state().system.executable.clone();
 
         // Add AuthZones to children
         {
             for intent in executable.intents.iter().skip(1) {
                 api.kernel_switch_stack(intent.intent_hash)?;
                 let mut system_service = SystemService::new(api);
-                let auth_zone = AuthModule::create_root_auth_zone(&mut system_service, intent.intent_hash)?;
-                api
-                    .kernel_set_call_frame_data(Actor::Function(FunctionActor {
-                        blueprint_id: BlueprintId::new(
-                            &TRANSACTION_PROCESSOR_PACKAGE,
-                            TRANSACTION_PROCESSOR_BLUEPRINT,
-                        ),
-                        ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
-                        auth_zone,
-                    }))?;
+                let auth_zone =
+                    AuthModule::create_root_auth_zone(&mut system_service, intent.intent_hash)?;
+                api.kernel_set_call_frame_data(Actor::Function(FunctionActor {
+                    blueprint_id: BlueprintId::new(
+                        &TRANSACTION_PROCESSOR_PACKAGE,
+                        TRANSACTION_PROCESSOR_BLUEPRINT,
+                    ),
+                    ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
+                    auth_zone,
+                }))?;
             }
 
             api.kernel_switch_stack(executable.intents.get(0).unwrap().intent_hash)?;

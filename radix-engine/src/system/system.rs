@@ -17,7 +17,6 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, System, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
@@ -43,7 +42,6 @@ use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::prelude::thread_api::SystemThreadApi;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
@@ -2765,10 +2763,7 @@ impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>
 impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemThreadApi<RuntimeError>
     for SystemService<'a, Y, V, E>
 {
-    fn switch_stack(
-        &mut self,
-        to_stack_id: Hash,
-    ) -> Result<(), RuntimeError> {
+    fn switch_stack(&mut self, to_stack_id: Hash) -> Result<(), RuntimeError> {
         self.api.kernel_switch_stack(to_stack_id)?;
         Ok(())
     }

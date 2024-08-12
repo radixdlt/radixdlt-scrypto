@@ -1,12 +1,20 @@
-use std::collections::BTreeMap;
-use radix_common::math::Decimal;
-use radix_common::prelude::{ComponentAddress, ManifestEncode, NonFungibleData, NonFungibleIdType, NonFungibleLocalId, ResourceAddress};
-use radix_engine::vm::NativeVmExtension;
-use radix_engine_interface::{burn_roles, deposit_roles, freeze_roles, metadata, mint_roles, non_fungible_data_update_roles, recall_roles, rule, withdraw_roles};
-use radix_engine_interface::prelude::{FungibleResourceRoles, NonFungibleResourceRoles, OwnerRole, require};
-use radix_transactions::builder::ManifestBuilder;
 use crate::ledger_simulator::{EmptyNonFungibleData, LedgerSimulator, TestDatabase};
 use crate::prelude::*;
+use radix_common::math::Decimal;
+use radix_common::prelude::{
+    ComponentAddress, ManifestEncode, NonFungibleData, NonFungibleIdType, NonFungibleLocalId,
+    ResourceAddress,
+};
+use radix_engine::vm::NativeVmExtension;
+use radix_engine_interface::prelude::{
+    require, FungibleResourceRoles, NonFungibleResourceRoles, OwnerRole,
+};
+use radix_engine_interface::{
+    burn_roles, deposit_roles, freeze_roles, metadata, mint_roles, non_fungible_data_update_roles,
+    recall_roles, rule, withdraw_roles,
+};
+use radix_transactions::builder::ManifestBuilder;
+use std::collections::BTreeMap;
 
 pub trait LedgerSimulatorResourceExtension {
     fn create_fungible_resource_and_deposit(
@@ -30,7 +38,10 @@ pub trait LedgerSimulatorResourceExtension {
         ResourceAddress,
     );
 
-    fn create_everything_allowed_non_fungible_resource(&mut self, owner_role: OwnerRole) -> ResourceAddress;
+    fn create_everything_allowed_non_fungible_resource(
+        &mut self,
+        owner_role: OwnerRole,
+    ) -> ResourceAddress;
 
     fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress;
     fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress;
@@ -86,12 +97,14 @@ pub trait LedgerSimulatorResourceExtension {
         initial_supply: Option<T>,
         account: ComponentAddress,
     ) -> ResourceAddress
-        where
-            T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-            V: ManifestEncode + NonFungibleData;
+    where
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
+        V: ManifestEncode + NonFungibleData;
 }
 
-impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorResourceExtension for LedgerSimulator<E, D> {
+impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorResourceExtension
+    for LedgerSimulator<E, D>
+{
     fn create_fungible_resource_and_deposit(
         &mut self,
         owner_role: OwnerRole,
@@ -114,7 +127,19 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorResourceExtension for
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
-    fn create_restricted_token(&mut self, account: ComponentAddress) -> (ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress) {
+    fn create_restricted_token(
+        &mut self,
+        account: ComponentAddress,
+    ) -> (
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+    ) {
         let mint_auth = self.create_fungible_resource(dec!(1), 0, account);
         let burn_auth = self.create_fungible_resource(dec!(1), 0, account);
         let withdraw_auth = self.create_fungible_resource(dec!(1), 0, account);
@@ -481,9 +506,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorResourceExtension for
         initial_supply: Option<T>,
         account: ComponentAddress,
     ) -> ResourceAddress
-        where
-            T: IntoIterator<Item = (NonFungibleLocalId, V)>,
-            V: ManifestEncode + NonFungibleData,
+    where
+        T: IntoIterator<Item = (NonFungibleLocalId, V)>,
+        V: ManifestEncode + NonFungibleData,
     {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
