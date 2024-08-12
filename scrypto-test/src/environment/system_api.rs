@@ -104,7 +104,8 @@ macro_rules! implement_system_api {
 implement_system_api! {
     SystemApi: {},
     SystemThreadApi: {
-        send_and_switch_stack: (&mut self, to_stack_id: Hash, value: IndexedScryptoValue) -> Result<(), RuntimeError>,
+        switch_stack: (&mut self, to_stack_id: Hash) -> Result<(), RuntimeError>,
+        send_to_stack: (&mut self, to_stack_id: Hash, value: IndexedScryptoValue) -> Result<(), RuntimeError>,
         free_and_switch_stack: (&mut self, to_stack_id: Hash) -> Result<(), RuntimeError>,
     },
     SystemActorApi: {

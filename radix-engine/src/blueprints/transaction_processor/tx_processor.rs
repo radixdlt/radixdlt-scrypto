@@ -140,6 +140,8 @@ impl TransactionProcessorBlueprint {
             let mut threads = btreemap!();
             for manifest in manifests.into_iter() {
                 let id = manifest.id;
+                api.switch_stack(id)?;
+
                 let thread = TransactionProcessor::init(
                     manifest,
                     global_address_reservations.clone(),
@@ -155,6 +157,7 @@ impl TransactionProcessorBlueprint {
             }
             threads
         };
+        api.switch_stack(root_thread)?;
 
         let mut output = vec![];
         let mut cur_thread = root_thread;
@@ -167,17 +170,27 @@ impl TransactionProcessorBlueprint {
             }
             match result.state {
                 TransactionProcessorState::YieldToChild(hash, value) => {
-                    received_value = Some(value);
-                    todo!()
+                    received_value = Some(value.clone());
+                    cur_thread = hash;
+
+                    // Context switch
+                    api.send_to_stack(cur_thread, value)?;
+                    api.switch_stack(cur_thread)?;
                 }
                 TransactionProcessorState::YieldToParent(value) => {
-                    received_value = Some(value);
-                    todo!()
+                    received_value = Some(value.clone());
+                    cur_thread = parent.unwrap();
+
+                    // Context switch
+                    api.send_to_stack(cur_thread, value)?;
+                    api.switch_stack(cur_thread)?;
                 }
                 TransactionProcessorState::Done => {
                     if let Some(parent) = parent {
                         // Parent should never be done while children are running
                         cur_thread = *parent;
+                        // Context switch
+                        api.free_and_switch_stack(cur_thread)?;
                     } else {
                         break;
                     }

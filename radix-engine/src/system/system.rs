@@ -2765,12 +2765,11 @@ impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>
 impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemThreadApi<RuntimeError>
     for SystemService<'a, Y, V, E>
 {
-    fn send_and_switch_stack(
+    fn switch_stack(
         &mut self,
         to_stack_id: Hash,
-        value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_send_and_switch_stack(to_stack_id, value)?;
+        self.api.kernel_switch_stack(to_stack_id)?;
 
         let cur_frame = self.api.kernel_get_system_state().current_call_frame;
         match cur_frame {
@@ -2806,6 +2805,16 @@ impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemThreadApi
             }
             _ => {}
         }
+
+        Ok(())
+    }
+
+    fn send_to_stack(
+        &mut self,
+        to_stack_id: Hash,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.api.kernel_send_to_stack(to_stack_id, value)?;
 
         Ok(())
     }

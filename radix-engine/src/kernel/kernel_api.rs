@@ -13,11 +13,17 @@ pub struct DroppedNode {
 }
 
 pub trait KernelStackApi<D> {
-    fn kernel_send_and_switch_stack(
+    fn kernel_send_to_stack(
         &mut self,
         to_stack_id: Hash,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
+
+    fn kernel_switch_stack(
+        &mut self,
+        to_stack_id: Hash,
+    ) -> Result<(), RuntimeError>;
+
     fn kernel_free_and_switch_stack(&mut self, to_stack_id: Hash) -> Result<(), RuntimeError>;
 
     fn kernel_set_call_frame_data(&mut self, data: D) -> Result<(), RuntimeError>;

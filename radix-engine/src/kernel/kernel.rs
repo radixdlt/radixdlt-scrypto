@@ -407,11 +407,14 @@ where
     S: CommitableSubstateStore,
 {
     #[trace_resources]
-    fn kernel_send_and_switch_stack(
-        &mut self,
-        to_stack_id: Hash,
-        value: IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
+    fn kernel_switch_stack(&mut self, to_stack_id: Hash) -> Result<(), RuntimeError> {
+        self.stacks.switch(to_stack_id);
+
+        Ok(())
+    }
+
+    #[trace_resources]
+    fn kernel_send_to_stack(&mut self, to_stack_id: Hash, value: IndexedScryptoValue) -> Result<(), RuntimeError> {
         let message = CallFrameMessage::from_output(&value);
 
         let (cur, other) = self.stacks.cur_mut_and_other_mut(to_stack_id);
@@ -419,8 +422,6 @@ where
         CallFrame::pass_message(&self.substate_io, cur, other, message)
             .map_err(CallFrameError::PassMessageError)
             .map_err(KernelError::CallFrameError)?;
-
-        self.stacks.switch(to_stack_id);
 
         Ok(())
     }

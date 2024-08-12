@@ -44,7 +44,11 @@ pub struct MockKernel;
 impl<'g> KernelApi<System<Vm<'g, DefaultWasmEngine, NoExtension>, ()>> for MockKernel {}
 
 impl KernelStackApi<Actor> for MockKernel {
-    fn kernel_send_and_switch_stack(&mut self, _to_stack_id: Hash, _value: IndexedScryptoValue) -> Result<(), RuntimeError> {
+    fn kernel_switch_stack(&mut self, _to_stack_id: Hash) -> Result<(), RuntimeError> {
+        panic1!()
+    }
+
+    fn kernel_send_to_stack(&mut self, _to_stack_id: Hash, _value: IndexedScryptoValue) -> Result<(), RuntimeError> {
         panic1!()
     }
 
