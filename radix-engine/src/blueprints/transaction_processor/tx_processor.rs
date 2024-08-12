@@ -85,6 +85,27 @@ impl From<TransactionProcessorError> for RuntimeError {
     }
 }
 
+fn to_scrypto_value<'a, 'p, 'w, Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
+    api: &'a mut Y,
+    mapping: &'p mut TransactionProcessorMapping,
+    worktop: &'w mut Worktop,
+    args: ManifestValue,
+    version: TransactionProcessorV1MinorVersion,
+) -> Result<ScryptoValue, RuntimeError> {
+    let mut processor_with_api = TransactionProcessorWithApi {
+        worktop,
+        processor: mapping,
+        api,
+        current_total_size_of_blobs: 0,
+        max_total_size_of_blobs: match version {
+            TransactionProcessorV1MinorVersion::Zero => usize::MAX,
+            TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+        },
+    };
+    transform(args, &mut processor_with_api)
+}
+
+
 fn handle_invocation<'a, 'p, 'w, Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
     api: &'a mut Y,
     processor: &'p mut TransactionProcessorMapping,
@@ -93,20 +114,7 @@ fn handle_invocation<'a, 'p, 'w, Y: SystemApi<RuntimeError> + KernelSubstateApi<
     invocation_handler: impl FnOnce(&mut Y, ScryptoValue) -> Result<Vec<u8>, RuntimeError>,
     version: TransactionProcessorV1MinorVersion,
 ) -> Result<InstructionOutput, RuntimeError> {
-    let scrypto_value = {
-        let mut processor_with_api = TransactionProcessorWithApi {
-            worktop,
-            processor,
-            api,
-            current_total_size_of_blobs: 0,
-            max_total_size_of_blobs: match version {
-                TransactionProcessorV1MinorVersion::Zero => usize::MAX,
-                TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
-            },
-        };
-        transform(args, &mut processor_with_api)?
-    };
-
+    let scrypto_value = to_scrypto_value(api, processor, worktop, args, version)?;
     let rtn = invocation_handler(api, scrypto_value)?;
 
     let result = IndexedScryptoValue::from_vec(rtn)
@@ -128,17 +136,86 @@ impl TransactionProcessorBlueprint {
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+
+        enum ThreadState {
+            Running,
+            WaitingForChildren,
+        }
+
+        let root_thread = manifests.get(0).unwrap().id;
+        let mut threads = {
+            let mut threads = btreemap!();
+            for manifest in manifests.into_iter() {
+                let id = manifest.id;
+                let thread = TransactionProcessor::init(
+                    manifest,
+                    global_address_reservations.clone(),
+                    version,
+                    api,
+                )?;
+                let parent = if id.eq(&root_thread) {
+                    None
+                } else {
+                    Some(root_thread)
+                };
+                threads.insert(id, (thread, parent, ThreadState::Running, BTreeSet::new()));
+            }
+            threads
+        };
+
+
         let mut output = vec![];
-        for (i, manifest) in manifests.into_iter().enumerate() {
-            let processor = TransactionProcessor::init(
-                manifest,
-                global_address_reservations.clone(),
-                version,
-                api,
-            )?;
+        let mut cur_thread = root_thread;
+        loop {
+            let (processor, _, status, children) = threads.get_mut(&cur_thread).unwrap();
             let result = processor.execute(api)?;
-            if i == 0 {
-                output.extend(result);
+            if cur_thread.eq(&root_thread) {
+                output.extend(result.outputs);
+            }
+            match result.state {
+                TransactionProcessorState::YieldToChild(hash, ..) => {
+                    children.insert(hash);
+
+                    todo!()
+                }
+                TransactionProcessorState::Done => {
+                    *status = ThreadState::WaitingForChildren;
+
+                    // 1. Finish executing ourselves
+                    // 2. Wait for children to finish
+                    // 3. Remove self
+                    // 4. Go to step 1 with parent
+                    let next_thread = (|| {
+                        let mut cur = cur_thread;
+                        loop {
+                            let (_, _, status, children) = threads.get(&cur).unwrap();
+                            match *status {
+                                ThreadState::WaitingForChildren => {
+                                    if let Some(next) = children.iter().filter(|hash| threads.contains_key(hash)).next() {
+                                        // A child here should never be waiting for children itself so execute it next
+                                        return Some(*next);
+                                    } else {
+                                        let (_, parent, ..) = threads.remove(&cur).unwrap();
+                                        if let Some(parent) = parent {
+                                            cur = parent;
+                                        } else {
+                                            return None;
+                                        }
+                                    }
+                                }
+                                ThreadState::Running => {
+                                    return Some(cur);
+                                }
+                            }
+                        }
+                    })();
+
+                    if let Some(next_thread) = next_thread {
+                        cur_thread = next_thread;
+                    } else {
+                        break;
+                    }
+                }
             }
         }
 
@@ -146,12 +223,22 @@ impl TransactionProcessorBlueprint {
     }
 }
 
+struct TransactionProcessorExecuteResult {
+    outputs: Vec<InstructionOutput>,
+    state: TransactionProcessorState,
+}
+
+enum TransactionProcessorState {
+    YieldToChild(Hash, IndexedScryptoValue),
+    Done,
+}
+
 struct TransactionProcessor {
     version: TransactionProcessorV1MinorVersion,
     worktop: Worktop,
+    cur_instruction: usize,
     instructions: Vec<InstructionV1>,
     processor: TransactionProcessorMapping,
-    outputs: Vec<InstructionOutput>,
 }
 
 impl TransactionProcessor {
@@ -196,23 +283,27 @@ impl TransactionProcessor {
                 })?;
         let processor =
             TransactionProcessorMapping::new(manifest.blobs, global_address_reservations);
-        let outputs = Vec::new();
 
         Ok(Self {
             version,
             worktop,
+            cur_instruction: 0usize,
             instructions,
             processor,
-            outputs,
         })
     }
 
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
-        mut self,
+        &mut self,
         api: &mut Y,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        for (index, inst) in self.instructions.into_iter().enumerate() {
+    ) -> Result<TransactionProcessorExecuteResult, RuntimeError> {
+
+        let mut outputs = Vec::new();
+
+        for (index, inst) in self.instructions.iter().enumerate().skip(self.cur_instruction) {
             api.update_instruction_index(index)?;
+
+            let inst = inst.clone();
 
             let result = match inst {
                 InstructionV1::TakeAllFromWorktop { resource_address } => {
@@ -522,16 +613,27 @@ impl TransactionProcessor {
 
                     InstructionOutput::None
                 }
-                InstructionV1::YieldToChild { .. } => {
-                    todo!()
+                InstructionV1::YieldToChild { child_id, args } => {
+                    let scrypto_value = to_scrypto_value(api, &mut self.processor, &mut self.worktop, args, self.version)?;
+                    let indexed = IndexedScryptoValue::from_scrypto_value(scrypto_value);
+                    self.cur_instruction += 1;
+                    return Ok(TransactionProcessorExecuteResult {
+                        outputs,
+                        state: TransactionProcessorState::YieldToChild(child_id, indexed),
+                    });
                 }
             };
-            self.outputs.push(result);
+
+            self.cur_instruction += 1;
+            outputs.push(result);
         }
 
         self.worktop.drop(api)?;
 
-        Ok(self.outputs)
+        Ok(TransactionProcessorExecuteResult {
+            outputs,
+            state: TransactionProcessorState::Done,
+        })
     }
 }
 
