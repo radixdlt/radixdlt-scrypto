@@ -333,9 +333,9 @@ impl AccessControllerV1NativePackage {
 
     pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
-        input: &IndexedScryptoValue,
+        input: &IndexedScryptoValue<'_>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         AccessControllerV1Blueprint::invoke_export(export_name, input, api)
     }
 }

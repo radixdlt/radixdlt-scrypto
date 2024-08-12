@@ -102,7 +102,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
         input: &IndexedScryptoValue,
         api: &mut Y,
         vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         #[allow(unused_mut)]
         let mut func = || match self {
             NativeVmInstance::Extension(e) => e.invoke(export_name, input, api, vm_api),
@@ -113,7 +113,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                 api.consume_cost_units(ClientCostingEntry::RunNativeCode {
                     package_address: package_address,
                     export_name: export_name,
-                    input_size: input.len(),
+                    input_size: input.payload_len(),
                 })?;
 
                 let code_id = NativeCodeId::from_repr(*native_package_code_id).ok_or(
@@ -234,7 +234,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         Err(RuntimeError::VmError(VmError::Native(
                             NativeRuntimeError::Trap {
                                 export_name: export_name.to_owned(),
-                                input: input.as_scrypto_value().clone(),
+                                input: input.as_value().into_owned(),
                                 error: message,
                             },
                         )))
@@ -284,7 +284,7 @@ impl VmInvoke for NullVmInvoke {
         _input: &IndexedScryptoValue,
         _api: &mut Y,
         _vm_api: &V,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         panic!("Invocation was called on null VmInvoke");
     }
 }

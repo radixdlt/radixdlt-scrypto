@@ -690,7 +690,7 @@ where
             // Read
             let state = kernel.kernel_read_substate(handle).map(|v| {
                 let FieldSubstate::<ScryptoValue>::V1(FieldSubstateV1 { payload, .. }) =
-                    v.as_typed().unwrap();
+                    v.into_typed().unwrap();
                 scrypto_encode(&payload).unwrap()
             })?;
 

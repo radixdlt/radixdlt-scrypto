@@ -203,7 +203,7 @@ impl AuthModule {
 
         let auth_zone = system
             .kernel_read_substate(handle)?
-            .as_typed::<FieldSubstate<AuthZone>>()
+            .into_typed::<FieldSubstate<AuthZone>>()
             .unwrap();
         Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
@@ -345,7 +345,7 @@ impl AuthModule {
         )?;
         let mut auth_zone = api
             .kernel_read_substate(handle)?
-            .as_typed::<FieldSubstate<AuthZone>>()
+            .into_typed::<FieldSubstate<AuthZone>>()
             .unwrap()
             .into_payload();
         let proofs = core::mem::replace(&mut auth_zone.proofs, Vec::new());

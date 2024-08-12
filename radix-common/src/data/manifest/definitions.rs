@@ -100,6 +100,22 @@ pub fn manifest_encode<T: ManifestEncode + ?Sized>(value: &T) -> Result<Vec<u8>,
     manifest_encode_with_depth_limit(value, MANIFEST_SBOR_V1_MAX_DEPTH)
 }
 
+pub fn manifest_encode_to_payload<T: ManifestEncode + ?Sized>(
+    value: &T,
+) -> Result<ManifestOwnedRawPayload, EncodeError> {
+    Ok(ManifestOwnedRawPayload::from_valid_payload(
+        manifest_encode(value)?,
+    ))
+}
+
+pub fn manifest_encode_to_value<T: ManifestEncode + ?Sized>(
+    value: &T,
+) -> Result<ManifestOwnedRawValue, EncodeError> {
+    Ok(ManifestOwnedRawValue::from_valid_payload(manifest_encode(
+        value,
+    )?))
+}
+
 pub fn manifest_encode_with_depth_limit<T: ManifestEncode + ?Sized>(
     value: &T,
     depth_limit: usize,

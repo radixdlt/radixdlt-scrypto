@@ -1038,7 +1038,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
         let epoch_change_events = events
             .into_iter()
             .filter(|(id, _data)| ledger.is_event_name_equal::<EpochChangeEvent>(id))
-            .map(|(_id, data)| scrypto_decode::<EpochChangeEvent>(&data).unwrap())
+            .map(|(_id, data)| data.decode_as::<EpochChangeEvent>().unwrap())
             .collect::<Vec<_>>();
         assert_eq!(epoch_change_events.len(), 1);
         let event = epoch_change_events.first().unwrap();
@@ -1815,8 +1815,8 @@ struct RegisteredEvent {
     number: u64,
 }
 
-fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -> bool {
-    scrypto_decode::<T>(&actual).unwrap() == *expected
+fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &ScryptoRawPayload) -> bool {
+    actual.decode_as::<T>().unwrap() == *expected
 }
 
 fn create_all_allowed_resource(ledger: &mut DefaultLedgerSimulator) -> ResourceAddress {
@@ -1904,7 +1904,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
                 "MintFungibleResourceEvent" => {
                     total_mint_amount = total_mint_amount
                         .checked_add(
-                            scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                            event.1.decode_as::<MintFungibleResourceEvent>()
                                 .unwrap()
                                 .amount,
                         )
@@ -1913,7 +1913,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
                 "BurnFungibleResourceEvent" => {
                     total_burn_amount = total_burn_amount
                         .checked_add(
-                            scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                            event.1.decode_as::<BurnFungibleResourceEvent>()
                                 .unwrap()
                                 .amount,
                         )
@@ -2013,14 +2013,14 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
             match actual_type_name.as_str() {
                 "MintNonFungibleResourceEvent" => {
                     total_mint_non_fungibles.extend(
-                        scrypto_decode::<MintNonFungibleResourceEvent>(&event.1)
+                        event.1.decode_as::<MintNonFungibleResourceEvent>()
                             .unwrap()
                             .ids,
                     );
                 }
                 "BurnNonFungibleResourceEvent" => {
                     total_burn_non_fungibles.extend(
-                        scrypto_decode::<BurnNonFungibleResourceEvent>(&event.1)
+                        event.1.decode_as::<BurnNonFungibleResourceEvent>()
                             .unwrap()
                             .ids,
                     );
@@ -2096,7 +2096,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             fungible_vault::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<fungible_vault::WithdrawEvent>(&vault_withdraw_event.1).unwrap(),
+            vault_withdraw_event.1.decode_as::<fungible_vault::WithdrawEvent>().unwrap(),
             fungible_vault::WithdrawEvent::new(dec!("1"))
         )
     }
@@ -2106,7 +2106,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             account::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
+            account_withdraw_event.1.decode_as::<account::WithdrawEvent>().unwrap(),
             account::WithdrawEvent::Fungible(XRD, dec!("1"))
         )
     }
@@ -2116,7 +2116,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             fungible_vault::DepositEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<fungible_vault::DepositEvent>(&vault_deposit_event.1).unwrap(),
+            vault_deposit_event.1.decode_as::<fungible_vault::DepositEvent>().unwrap(),
             fungible_vault::DepositEvent::new(dec!("1"))
         )
     }
@@ -2126,7 +2126,7 @@ fn account_withdraw_and_deposit_fungibles_should_emit_correct_event() {
             account::DepositEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
+            account_deposit_event.1.decode_as::<account::DepositEvent>().unwrap(),
             account::DepositEvent::Fungible(XRD, dec!("1"))
         )
     }
@@ -2184,7 +2184,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
             non_fungible_vault::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<non_fungible_vault::WithdrawEvent>(&vault_withdraw_event.1).unwrap(),
+            vault_withdraw_event.1.decode_as::<non_fungible_vault::WithdrawEvent>().unwrap(),
             non_fungible_vault::WithdrawEvent::new(expected_non_fungibles.clone())
         )
     }
@@ -2194,7 +2194,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
             account::WithdrawEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::WithdrawEvent>(&account_withdraw_event.1).unwrap(),
+            account_withdraw_event.1.decode_as::<account::WithdrawEvent>().unwrap(),
             account::WithdrawEvent::NonFungible(resource_address, expected_non_fungibles.clone())
         )
     }
@@ -2204,7 +2204,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
             non_fungible_vault::DepositEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<non_fungible_vault::DepositEvent>(&vault_deposit_event.1).unwrap(),
+            vault_deposit_event.1.decode_as::<non_fungible_vault::DepositEvent>().unwrap(),
             non_fungible_vault::DepositEvent::new(expected_non_fungibles.clone())
         )
     }
@@ -2214,7 +2214,7 @@ fn account_withdraw_and_deposit_non_fungibles_should_emit_correct_event() {
             account::DepositEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::DepositEvent>(&account_deposit_event.1).unwrap(),
+            account_deposit_event.1.decode_as::<account::DepositEvent>().unwrap(),
             account::DepositEvent::NonFungible(resource_address, expected_non_fungibles)
         )
     }
@@ -2340,9 +2340,7 @@ fn account_configuration_emits_expected_events() {
             account::SetResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::SetResourcePreferenceEvent>(
-                &set_resource_preference_allowed_event.1
-            )
+            set_resource_preference_allowed_event.1.decode_as::<account::SetResourcePreferenceEvent>()
             .unwrap(),
             account::SetResourcePreferenceEvent {
                 resource_address,
@@ -2360,10 +2358,8 @@ fn account_configuration_emits_expected_events() {
             account::SetResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::SetResourcePreferenceEvent>(
-                &set_resource_preference_disallowed_event.1
-            )
-            .unwrap(),
+            set_resource_preference_disallowed_event.1.decode_as::<account::SetResourcePreferenceEvent>()
+                .unwrap(),
             account::SetResourcePreferenceEvent {
                 resource_address,
                 preference: ResourcePreference::Disallowed
@@ -2380,9 +2376,7 @@ fn account_configuration_emits_expected_events() {
             account::RemoveResourcePreferenceEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::RemoveResourcePreferenceEvent>(
-                &remove_resource_preference_event.1
-            )
+            remove_resource_preference_event.1.decode_as::<account::RemoveResourcePreferenceEvent>()
             .unwrap(),
             account::RemoveResourcePreferenceEvent { resource_address }
         )
@@ -2397,9 +2391,7 @@ fn account_configuration_emits_expected_events() {
             account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::SetDefaultDepositRuleEvent>(
-                &set_default_deposit_rule_accept_event.1
-            )
+            set_default_deposit_rule_accept_event.1.decode_as::<account::SetDefaultDepositRuleEvent>()
             .unwrap(),
             account::SetDefaultDepositRuleEvent {
                 default_deposit_rule: DefaultDepositRule::Accept
@@ -2416,10 +2408,8 @@ fn account_configuration_emits_expected_events() {
             account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::SetDefaultDepositRuleEvent>(
-                &set_default_deposit_rule_reject_event.1
-            )
-            .unwrap(),
+            set_default_deposit_rule_reject_event.1.decode_as::<account::SetDefaultDepositRuleEvent>()
+                .unwrap(),
             account::SetDefaultDepositRuleEvent {
                 default_deposit_rule: DefaultDepositRule::Reject
             }
@@ -2435,9 +2425,7 @@ fn account_configuration_emits_expected_events() {
             account::SetDefaultDepositRuleEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::SetDefaultDepositRuleEvent>(
-                &set_default_deposit_rule_allow_existing_event.1
-            )
+            set_default_deposit_rule_allow_existing_event.1.decode_as::<account::SetDefaultDepositRuleEvent>()
             .unwrap(),
             account::SetDefaultDepositRuleEvent {
                 default_deposit_rule: DefaultDepositRule::AllowExisting
@@ -2454,10 +2442,8 @@ fn account_configuration_emits_expected_events() {
             account::AddAuthorizedDepositorEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::AddAuthorizedDepositorEvent>(
-                &add_authorized_depositor_event.1
-            )
-            .unwrap(),
+            add_authorized_depositor_event.1.decode_as::<account::AddAuthorizedDepositorEvent>()
+                .unwrap(),
             account::AddAuthorizedDepositorEvent {
                 authorized_depositor_badge: authorized_depositor_badge.clone()
             }
@@ -2473,10 +2459,7 @@ fn account_configuration_emits_expected_events() {
             account::RemoveAuthorizedDepositorEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::RemoveAuthorizedDepositorEvent>(
-                &remove_authorized_depositor_event.1
-            )
-            .unwrap(),
+            remove_authorized_depositor_event.1.decode_as::<account::RemoveAuthorizedDepositorEvent>().unwrap(),
             account::RemoveAuthorizedDepositorEvent {
                 authorized_depositor_badge: authorized_depositor_badge
             }
@@ -2551,7 +2534,7 @@ fn account_deposit_batch_emits_expected_events() {
                 account::DepositEvent::EVENT_NAME
             );
             assert_eq!(
-                scrypto_decode::<account::DepositEvent>(&xrd_deposit_event.1).unwrap(),
+                xrd_deposit_event.1.decode_as::<account::DepositEvent>().unwrap(),
                 account::DepositEvent::Fungible(XRD, dec!("1"))
             )
         }
@@ -2565,7 +2548,7 @@ fn account_deposit_batch_emits_expected_events() {
                 account::DepositEvent::EVENT_NAME
             );
             assert_eq!(
-                scrypto_decode::<account::DepositEvent>(&nfts_deposit_event.1).unwrap(),
+                nfts_deposit_event.1.decode_as::<account::DepositEvent>().unwrap(),
                 account::DepositEvent::NonFungible(
                     resource_address,
                     indexset!(
@@ -2640,7 +2623,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
             account::RejectedDepositEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::RejectedDepositEvent>(&xrd_rejected_deposit_event.1).unwrap(),
+            xrd_rejected_deposit_event.1.decode_as::<account::RejectedDepositEvent>().unwrap(),
             account::RejectedDepositEvent::Fungible(XRD, dec!("1"))
         )
     }
@@ -2654,8 +2637,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
             account::RejectedDepositEvent::EVENT_NAME
         );
         assert_eq!(
-            scrypto_decode::<account::RejectedDepositEvent>(&nfts_rejected_deposit_event.1)
-                .unwrap(),
+            nfts_rejected_deposit_event.1.decode_as::<account::RejectedDepositEvent>().unwrap(),
             account::RejectedDepositEvent::NonFungible(
                 resource_address,
                 indexset!(
@@ -2719,7 +2701,7 @@ fn event_replacements_occur_as_expected() {
         )
     );
     assert_eq!(
-        scrypto_decode::<SetMetadataEvent>(&metadata_event_data).unwrap(),
+        metadata_event_data.decode_as::<SetMetadataEvent>().unwrap(),
         SetMetadataEvent {
             key: "Hello".to_owned(),
             value: MetadataValue::String("World".to_owned())

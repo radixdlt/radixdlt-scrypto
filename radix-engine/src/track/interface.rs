@@ -27,7 +27,7 @@ impl<E, C> CallbackError<E, C> {
     }
 }
 
-pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>;
+pub type NodeSubstates = BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedOwnedScryptoValue>>;
 
 pub enum TrackedSubstateInfo {
     New,
@@ -88,7 +88,7 @@ pub trait CommitableSubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Option<&IndexedScryptoValue> {
+    ) -> Option<&IndexedOwnedScryptoValue> {
         self.get_substate(node_id, partition_num, substate_key, &mut |_| -> Result<
             (),
             (),
@@ -104,7 +104,7 @@ pub trait CommitableSubstateStore {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_io_access: &mut F,
-    ) -> Result<Option<&IndexedScryptoValue>, E>;
+    ) -> Result<Option<&IndexedOwnedScryptoValue>, E>;
 
     /// Inserts a substate into the substate store.
     ///
@@ -115,7 +115,7 @@ pub trait CommitableSubstateStore {
         node_id: NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
-        substate_value: IndexedScryptoValue,
+        substate_value: IndexedOwnedScryptoValue,
         on_io_access: &mut F,
     ) -> Result<(), E>;
 
@@ -139,7 +139,7 @@ pub trait CommitableSubstateStore {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_io_access: &mut F,
-    ) -> Result<Option<IndexedScryptoValue>, E>;
+    ) -> Result<Option<IndexedOwnedScryptoValue>, E>;
 
     /// Returns Substate Keys of maximum count for a given partition.
     ///
@@ -171,7 +171,7 @@ pub trait CommitableSubstateStore {
         partition_num: PartitionNumber,
         count: u32,
         on_io_access: &mut F,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E>;
+    ) -> Result<Vec<(SubstateKey, IndexedOwnedScryptoValue)>, E>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn scan_sorted_substates<E, F: FnMut(IOAccess) -> Result<(), E>>(
@@ -180,7 +180,7 @@ pub trait CommitableSubstateStore {
         partition_num: PartitionNumber,
         count: u32,
         on_io_access: &mut F,
-    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, E>;
+    ) -> Result<Vec<(SortedKey, IndexedOwnedScryptoValue)>, E>;
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);

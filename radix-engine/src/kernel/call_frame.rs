@@ -858,8 +858,10 @@ impl<C, L: Clone> CallFrame<C, L> {
     ) -> Result<(), ProcessSubstateKeyError> {
         match substate_key {
             SubstateKey::Sorted((_, map_key)) | SubstateKey::Map(map_key) => {
-                let key_value = IndexedScryptoValue::from_slice(map_key)
-                    .map_err(|e| ProcessSubstateKeyError::DecodeError(e))?;
+                // Explicitly check the map keys are valid SBOR
+                let key_value =
+                    IndexedScryptoValue::from_untrusted_payload_slice(map_key.as_slice())
+                        .map_err(|e| ProcessSubstateKeyError::DecodeError(e))?;
 
                 // Check owns
                 if !key_value.owned_nodes().is_empty() {
@@ -889,7 +891,9 @@ impl<C, L: Clone> CallFrame<C, L> {
     ) -> Result<(), ProcessSubstateKeyError> {
         match substate_key {
             SubstateKey::Sorted((_, map_key)) | SubstateKey::Map(map_key) => {
-                let key = IndexedScryptoValue::from_slice(map_key).unwrap();
+                // Explicitly check the map keys are valid SBOR
+                let key =
+                    IndexedScryptoValue::from_untrusted_payload_slice(map_key.as_slice()).unwrap();
 
                 // Check owns
                 if !key.owned_nodes().is_empty() {
@@ -912,7 +916,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         Ok(())
     }
 
-    pub fn open_substate<S: CommitableSubstateStore, E, F: FnOnce() -> IndexedScryptoValue>(
+    pub fn open_substate<S: CommitableSubstateStore, E, F: FnOnce() -> IndexedOwnedScryptoValue>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
@@ -946,7 +950,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             &mut adapter,
         )?;
 
-        let value_len = substate_value.len();
+        let value_len = substate_value.payload_len();
         for node_id in substate_value.references() {
             if node_id.is_global() {
                 // Again, safe to overwrite because Global and DirectAccess are exclusive.
@@ -987,7 +991,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         substate_io: &'f mut SubstateIO<S>,
         lock_handle: SubstateHandle,
         handler: &mut H,
-    ) -> Result<&'f IndexedScryptoValue, CallbackError<ReadSubstateError, H::Error>> {
+    ) -> Result<&'f IndexedOwnedScryptoValue, CallbackError<ReadSubstateError, H::Error>> {
         let OpenedSubstate {
             global_substate_handle,
             ..
@@ -1015,7 +1019,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
         lock_handle: SubstateHandle,
-        substate: IndexedScryptoValue,
+        substate: IndexedOwnedScryptoValue,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
         let mut opened_substate =
@@ -1145,7 +1149,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: SubstateKey,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
@@ -1177,7 +1181,8 @@ impl<C, L: Clone> CallFrame<C, L> {
         partition_num: PartitionNumber,
         key: &SubstateKey,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
-    ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
+    ) -> Result<Option<IndexedOwnedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>>
+    {
         let (_ref_origin, device) = self.get_node_ref(node_id).ok_or_else(|| {
             CallbackError::Error(CallFrameRemoveSubstateError::NodeNotVisible(
                 node_id.clone(),
@@ -1239,7 +1244,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         limit: u32,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
     ) -> Result<
-        Vec<(SubstateKey, IndexedScryptoValue)>,
+        Vec<(SubstateKey, IndexedOwnedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
     > {
         // Check node visibility
@@ -1295,7 +1300,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         count: u32,
         handler: &mut impl CallFrameIOAccessHandler<C, L, E>,
     ) -> Result<
-        Vec<(SortedKey, IndexedScryptoValue)>,
+        Vec<(SortedKey, IndexedOwnedScryptoValue)>,
         CallbackError<CallFrameScanSortedSubstatesError, E>,
     > {
         // Check node visibility

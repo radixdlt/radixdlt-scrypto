@@ -253,7 +253,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
                     self.validate_blueprint_payload(
                         &validation_target,
                         BlueprintPayloadIdentifier::Field(i as u8),
-                        &field_value.value,
+                        ScryptoUnvalidatedRawValue::from_payload_slice(&field_value.value),
                     )?;
                 }
             }
@@ -262,15 +262,22 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
         // Collections
         {
             for (collection_index, entries) in &kv_entries {
-                let payloads: Vec<(&Vec<u8>, &Vec<u8>)> = entries
+                let payloads: Vec<_> = entries
                     .iter()
-                    .filter_map(|(key, entry)| entry.value.as_ref().map(|e| (key, e)))
+                    .filter_map(|(key, entry)| {
+                        entry.value.as_ref().map(|e| {
+                            (
+                                ScryptoUnvalidatedRawValue::from_payload_slice(key.as_slice()),
+                                ScryptoUnvalidatedRawValue::from_payload_slice(e.as_slice()),
+                            )
+                        })
+                    })
                     .collect();
 
                 self.validate_blueprint_kv_collection(
                     &validation_target,
                     *collection_index,
-                    &payloads,
+                    payloads,
                 )?;
             }
 
@@ -293,7 +300,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
             .or_insert(BTreeMap::new());
 
         for (schema_hash, schema) in additional_schemas {
-            let key = SubstateKey::Map(scrypto_encode(&schema_hash).unwrap());
+            let key = SubstateKey::Map(scrypto_encode_to_payload(&schema_hash).unwrap());
             let value =
                 IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::locked_entry(schema));
             schema_partition.insert(key, value);
@@ -337,7 +344,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
                 .unwrap(),
-            &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
+            &SubstateKey::Map(scrypto_encode_to_payload(bp_version_key).unwrap()),
             LockFlags::read_only(),
             Some(|| {
                 let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -347,7 +354,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
         )?;
 
         let substate: PackageBlueprintVersionDefinitionEntrySubstate =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+            self.api.kernel_read_substate(handle)?.into_typed().unwrap();
         self.api.kernel_close_substate(handle)?;
 
         let definition = Rc::new(match substate.into_value() {
@@ -416,7 +423,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
             SystemLockData::default(),
         )?;
         let value = self.api.kernel_read_substate(handle)?;
-        let type_info = value.as_typed::<TypeInfoSubstate>().unwrap();
+        let type_info = value.into_typed::<TypeInfoSubstate>().unwrap();
         self.api.kernel_close_substate(handle)?;
         Ok(type_info)
     }
@@ -536,12 +543,12 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
         &mut self,
         actor: EmitterActor,
         event_name: String,
-        event_data: Vec<u8>,
+        event_data: ScryptoUnvalidatedRawPayload,
         event_flags: EventFlags,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_get_system().modules.apply_execution_cost(
             ExecutionCostingEntry::EmitEvent {
-                size: event_data.len(),
+                size: event_data.unvalidated_payload_len(),
             },
         )?;
 
@@ -561,11 +568,13 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
             EmitterActor::CurrentActor => self.get_actor_type_target()?,
         };
 
-        self.validate_blueprint_payload(
-            &validation_target,
-            BlueprintPayloadIdentifier::Event(event_name.clone()),
-            &event_data,
-        )?;
+        let event_data = self
+            .validate_blueprint_payload(
+                &validation_target,
+                BlueprintPayloadIdentifier::Event(event_name.clone()),
+                event_data.into_value(),
+            )?
+            .into_owned_payload();
 
         // Construct the event type identifier based on the current actor
         let event_type_identifier = match actor {
@@ -611,23 +620,17 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
     fn key_value_entry_remove_and_close_substate(
         &mut self,
         handle: KeyValueEntryHandle,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError> {
         // TODO: Replace with api::replace
-        let current_value = self
-            .api
-            .kernel_read_substate(handle)
-            .map(|v| v.as_slice().to_vec())?;
+        let substate = self.api.kernel_read_substate(handle)?;
 
-        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> =
-            scrypto_decode(&current_value).unwrap();
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoOwnedRawValue> =
+            substate.into_typed().unwrap();
         let value = kv_entry.remove();
         self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
-
         self.kernel_close_substate(handle)?;
 
-        let current_value = scrypto_encode(&value).unwrap();
-
-        Ok(current_value)
+        Ok(value)
     }
 
     pub fn get_blueprint_info(
@@ -871,7 +874,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
                 .substates
                 .get(&TYPE_INFO_FIELD_PARTITION)
                 .and_then(|x| x.get(&TypeInfoField::TypeInfo.into()))
-                .and_then(|x| x.as_typed().ok());
+                .and_then(|x| x.into_typed().ok());
 
             match type_info {
                 Some(TypeInfoSubstate::GlobalAddressReservation(x)) => x,
@@ -892,8 +895,10 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemService<'a, Y, 
                 LockFlags::MUTABLE, // This is to ensure the substate is lock free!
                 SystemLockData::Default,
             )?;
-            let type_info: TypeInfoSubstate =
-                self.kernel_read_substate(lock_handle)?.as_typed().unwrap();
+            let type_info: TypeInfoSubstate = self
+                .kernel_read_substate(lock_handle)?
+                .into_typed()
+                .unwrap();
             self.kernel_close_substate(lock_handle)?;
             match type_info {
                 TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom { blueprint_id }) => {
@@ -1110,7 +1115,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemFieldApi<Runtim
 {
     // Costing through kernel
     #[trace_resources]
-    fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, RuntimeError> {
+    fn field_read(&mut self, handle: FieldHandle) -> Result<ScryptoOwnedRawValue, RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::Field(..) => {}
@@ -1120,34 +1125,33 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemFieldApi<Runtim
         }
 
         self.api.kernel_read_substate(handle).map(|v| {
-            let wrapper: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-            scrypto_encode(&wrapper.into_payload()).unwrap()
+            let wrapper: FieldSubstate<ScryptoOwnedRawValue> = v.into_typed().unwrap();
+            wrapper.into_payload()
         })
     }
 
     // Costing through kernel
     #[trace_resources]
-    fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
+    fn field_write(
+        &mut self,
+        handle: FieldHandle,
+        buffer: ScryptoUnvalidatedRawValue,
+    ) -> Result<(), RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
 
-        match data {
+        let value = match data {
             SystemLockData::Field(FieldLockData::Write {
                 target,
                 field_index,
-            }) => {
-                self.validate_blueprint_payload(
-                    &target,
-                    BlueprintPayloadIdentifier::Field(field_index),
-                    &buffer,
-                )?;
-            }
+            }) => self.validate_blueprint_payload(
+                &target,
+                BlueprintPayloadIdentifier::Field(field_index),
+                buffer.as_value(),
+            )?,
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
             }
         };
-
-        let value: ScryptoValue =
-            scrypto_decode(&buffer).expect("Should be valid due to payload check");
 
         let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_unlocked_field(value));
 
@@ -1169,7 +1173,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemFieldApi<Runtim
         }
 
         let v = self.api.kernel_read_substate(handle)?;
-        let mut substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+        let mut substate: FieldSubstate<ScryptoOwnedRawValue> = v.into_typed().unwrap();
         substate.lock();
         let indexed = IndexedScryptoValue::from_typed(&substate);
         self.api.kernel_write_substate(handle, indexed)?;
@@ -1299,7 +1303,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
         inner_object_blueprint: &str,
         inner_object_fields: IndexMap<u8, FieldValue>,
         event_name: &str,
-        event_data: Vec<u8>,
+        event_data: ScryptoUnvalidatedOwnedRawPayload,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
 
@@ -1339,7 +1343,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
     ) -> Result<Vec<u8>, RuntimeError> {
         let object_info = self.get_object_info(&receiver)?;
 
-        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+        let args = IndexedScryptoValue::from_untrusted_payload_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
@@ -1364,7 +1368,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
                 }),
                 args,
             }))
-            .map(|v| v.into())?;
+            .map(|v| v.into_payload_bytes())?;
 
         SystemModuleMixer::on_call_method_finish(self, auth_actor_info)?;
 
@@ -1380,7 +1384,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
     ) -> Result<Vec<u8>, RuntimeError> {
         let object_info = self.get_object_info(&receiver)?;
 
-        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+        let args = IndexedScryptoValue::from_untrusted_payload_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
@@ -1406,7 +1410,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
                 }),
                 args,
             }))
-            .map(|v| v.into())?;
+            .map(|v| v.into_payload_bytes())?;
 
         SystemModuleMixer::on_call_method_finish(self, auth_actor_info)?;
 
@@ -1439,7 +1443,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
             }
         }
 
-        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+        let args = IndexedScryptoValue::from_untrusted_payload_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
@@ -1465,7 +1469,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
                 }),
                 args,
             }))
-            .map(|v| v.into())?;
+            .map(|v| v.into_payload_bytes())?;
 
         SystemModuleMixer::on_call_method_finish(self, auth_actor_info)?;
 
@@ -1567,7 +1571,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemObjectApi<Runti
                 user_substates
                     .into_iter()
                     .map(|(_key, v)| {
-                        let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+                        let substate: FieldSubstate<ScryptoValue> = v.into_typed().unwrap();
                         scrypto_encode(&substate.into_payload()).unwrap()
                     })
                     .collect()
@@ -1591,7 +1595,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueEntryAp
     fn key_value_entry_get(
         &mut self,
         handle: KeyValueEntryHandle,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
         if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(
@@ -1600,8 +1604,9 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueEntryAp
         }
 
         self.api.kernel_read_substate(handle).map(|v| {
-            let wrapper: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-            scrypto_encode(&wrapper.into_value()).unwrap()
+            // TODO - This can be made more efficient if we also specialize get_typed
+            let wrapper: KeyValueEntrySubstate<ScryptoOwnedRawValue> = v.into_typed().unwrap();
+            wrapper.into_value()
         })
     }
 
@@ -1621,7 +1626,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueEntryAp
         };
 
         let v = self.api.kernel_read_substate(handle)?;
-        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoOwnedRawValue> = v.into_typed().unwrap();
         kv_entry.lock();
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
         self.api.kernel_write_substate(handle, indexed)?;
@@ -1632,7 +1637,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueEntryAp
     fn key_value_entry_remove(
         &mut self,
         handle: KeyValueEntryHandle,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
         if !data.is_kv_entry_with_write() {
             return Err(RuntimeError::SystemError(
@@ -1640,19 +1645,15 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueEntryAp
             ));
         }
 
-        let current_value = self
+        let mut kv_entry: KeyValueEntrySubstate<ScryptoOwnedRawValue> = self
             .api
             .kernel_read_substate(handle)
-            .map(|v| v.as_slice().to_vec())?;
+            .map(|v| v.into_typed().unwrap())?;
 
-        let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> =
-            scrypto_decode(&current_value).unwrap();
         let value = kv_entry.remove();
         self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
-        let current_value = scrypto_encode(&value).unwrap();
-
-        Ok(current_value)
+        Ok(value)
     }
 
     // Costing through kernel
@@ -1660,41 +1661,33 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueEntryAp
     fn key_value_entry_set(
         &mut self,
         handle: KeyValueEntryHandle,
-        buffer: Vec<u8>,
+        value: ScryptoUnvalidatedRawValue,
     ) -> Result<(), RuntimeError> {
         let data = self.api.kernel_get_lock_data(handle)?;
 
-        match data {
+        let value = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVCollectionWrite {
                 collection_index,
                 target,
-            }) => {
-                self.validate_blueprint_payload(
-                    &target,
-                    BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value),
-                    &buffer,
-                )?;
-            }
+            }) => self.validate_blueprint_payload(
+                &target,
+                BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Value),
+                value,
+            )?,
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite {
                 kv_store_validation_target,
-            }) => {
-                self.validate_kv_store_payload(
-                    &kv_store_validation_target,
-                    KeyOrValue::Value,
-                    &buffer,
-                )?;
-            }
+            }) => self.validate_kv_store_payload(
+                &kv_store_validation_target,
+                KeyOrValue::Value,
+                value,
+            )?,
             _ => {
                 return Err(RuntimeError::SystemError(
                     SystemError::NotAKeyValueEntryWriteHandle,
                 ));
             }
-        }
+        };
 
-        let substate =
-            IndexedScryptoValue::from_slice(&buffer).expect("Should be valid due to payload check");
-
-        let value = substate.as_scrypto_value().clone();
         let kv_entry = KeyValueEntrySubstate::unlocked_entry(value);
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
 
@@ -1764,7 +1757,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreAp
         let schema_partition = additional_schemas
             .into_iter()
             .map(|(schema_hash, schema)| {
-                let key = SubstateKey::Map(scrypto_encode(&schema_hash).unwrap());
+                let key = SubstateKey::Map(scrypto_encode_to_payload(&schema_hash).unwrap());
                 let substate = KeyValueEntrySubstate::locked_entry(schema);
                 let value = IndexedScryptoValue::from_typed(&substate);
                 (key, value)
@@ -1802,7 +1795,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreAp
     fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
-        key: &Vec<u8>,
+        key: ScryptoUnvalidatedRawValue,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
@@ -1821,7 +1814,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreAp
             meta: *node_id,
         };
 
-        self.validate_kv_store_payload(&target, KeyOrValue::Key, &key)?;
+        let key = self.validate_kv_store_payload(&target, KeyOrValue::Key, key.as_value())?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::KVStoreWrite {
@@ -1834,7 +1827,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreAp
         let handle = self.api.kernel_open_substate_with_default(
             &node_id,
             MAIN_BASE_PARTITION,
-            &SubstateKey::Map(key.clone()),
+            &SubstateKey::Map(key.into_owned_payload()),
             flags,
             Some(|| {
                 let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -1845,7 +1838,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreAp
 
         if flags.contains(LockFlags::MUTABLE) {
             let lock_status = self.api.kernel_read_substate(handle).map(|v| {
-                let kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+                let kv_entry: KeyValueEntrySubstate<ScryptoOwnedRawValue> = v.into_typed().unwrap();
                 kv_entry.lock_status()
             })?;
 
@@ -1861,8 +1854,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemKeyValueStoreAp
     fn key_value_store_remove_entry(
         &mut self,
         node_id: &NodeId,
-        key: &Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+        key: ScryptoUnvalidatedRawValue,
+    ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError> {
         let handle = self.key_value_store_open_entry(node_id, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_close_substate(handle)
     }
@@ -1880,8 +1873,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        key: Vec<u8>,
-        buffer: Vec<u8>,
+        key: ScryptoUnvalidatedRawValue,
+        value: ScryptoUnvalidatedRawValue,
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
@@ -1898,24 +1891,26 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
             },
         };
 
-        self.validate_blueprint_payload(
+        let key = self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Key),
-            &key,
+            key,
         )?;
 
-        self.validate_blueprint_payload(
+        let value = self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::IndexEntry(collection_index, KeyOrValue::Value),
-            &buffer,
+            value,
         )?;
-
-        let value: ScryptoValue = scrypto_decode(&buffer).unwrap();
         let index_entry = IndexEntrySubstate::entry(value);
         let value = IndexedScryptoValue::from_typed(&index_entry);
 
-        self.api
-            .kernel_set_substate(&node_id, partition_num, SubstateKey::Map(key), value)
+        self.api.kernel_set_substate(
+            &node_id,
+            partition_num,
+            SubstateKey::Map(key.into_owned_payload()),
+            value,
+        )
     }
 
     // Costing through kernel
@@ -1923,8 +1918,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        key: Vec<u8>,
-    ) -> Result<Option<Vec<u8>>, RuntimeError> {
+        key: ScryptoUnvalidatedRawValue,
+    ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError> {
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -1933,12 +1928,21 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
             &BlueprintPartitionType::IndexCollection,
         )?;
 
+        // TODO: Add explicit validation. The index API can only be used by native blueprints, and
+        // this is only used for a read action, so it's not strictly related to the correct functioning
+        // of the system, but it would still be more correct for the system to check it
+        let key = key.confirm_validated();
+
         let rtn = self
             .api
-            .kernel_remove_substate(&node_id, partition_num, &SubstateKey::Map(key))?
+            .kernel_remove_substate(
+                &node_id,
+                partition_num,
+                &SubstateKey::Map(key.into_owned_payload()),
+            )?
             .map(|v| {
-                let value: IndexEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-                scrypto_encode(value.value()).unwrap()
+                let substate: IndexEntrySubstate<ScryptoRawValue> = v.into_typed().unwrap();
+                substate.into_value()
             });
 
         Ok(rtn)
@@ -1950,7 +1954,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
-    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    ) -> Result<Vec<ScryptoOwnedRawValue>, RuntimeError> {
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -1963,7 +1967,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
             .api
             .kernel_scan_keys::<MapKey>(&node_id, partition_num, limit)?
             .into_iter()
-            .map(|key| key.into_map())
+            .map(|key| key.into_map().into_value())
             .collect();
 
         Ok(substates)
@@ -1975,7 +1979,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
-    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
+    ) -> Result<Vec<(ScryptoOwnedRawValue, ScryptoOwnedRawValue)>, RuntimeError> {
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -1989,10 +1993,9 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorIndexApi<R
             .kernel_drain_substates::<MapKey>(&node_id, partition_num, limit)?
             .into_iter()
             .map(|(key, value)| {
-                let value: IndexEntrySubstate<ScryptoValue> = value.as_typed().unwrap();
-                let value = scrypto_encode(value.value()).unwrap();
-
-                (key.into_map(), value)
+                let substate: IndexEntrySubstate<ScryptoOwnedRawValue> =
+                    value.into_typed().unwrap();
+                (key.into_map().into_value(), substate.into_value())
             })
             .collect();
 
@@ -2013,8 +2016,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorSortedInde
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        sorted_key: SortedKey,
-        buffer: Vec<u8>,
+        sorted_key: UnvalidatedSortedKey,
+        value: ScryptoUnvalidatedRawValue,
     ) -> Result<(), RuntimeError> {
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
@@ -2031,26 +2034,25 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorSortedInde
             },
         };
 
-        self.validate_blueprint_payload(
+        let key_payload = self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Key),
-            &sorted_key.1,
+            sorted_key.1.into_value(),
         )?;
 
-        self.validate_blueprint_payload(
+        let value = self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::SortedIndexEntry(collection_index, KeyOrValue::Value),
-            &buffer,
+            value,
         )?;
 
-        let value: ScryptoValue = scrypto_decode(&buffer).unwrap();
         let sorted_entry = SortedIndexEntrySubstate::entry(value);
         let value = IndexedScryptoValue::from_typed(&sorted_entry);
 
         self.api.kernel_set_substate(
             &node_id,
             partition_num,
-            SubstateKey::Sorted((sorted_key.0, sorted_key.1)),
+            SubstateKey::Sorted((sorted_key.0, key_payload.into_owned_payload())),
             value,
         )
     }
@@ -2061,8 +2063,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorSortedInde
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        sorted_key: &SortedKey,
-    ) -> Result<Option<Vec<u8>>, RuntimeError> {
+        sorted_key: UnvalidatedSortedKey,
+    ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError> {
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -2071,16 +2073,21 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorSortedInde
             &BlueprintPartitionType::SortedIndexCollection,
         )?;
 
+        // TODO: Add explicit validation. The index API can only be used by native blueprints, and
+        // this is only used for a read action, so it's not strictly related to the correct functioning
+        // of the system, but it would still be more correct for the system to check it
+        let key_payload = sorted_key.1.confirm_validated();
+
         let rtn = self
             .api
             .kernel_remove_substate(
                 &node_id,
                 partition_num,
-                &SubstateKey::Sorted((sorted_key.0, sorted_key.1.clone())),
+                &SubstateKey::Sorted((sorted_key.0, key_payload.into_owned())),
             )?
             .map(|v| {
-                let value: SortedIndexEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-                scrypto_encode(value.value()).unwrap()
+                let substate: SortedIndexEntrySubstate<ScryptoRawValue> = v.into_typed().unwrap();
+                substate.into_value()
             });
 
         Ok(rtn)
@@ -2093,7 +2100,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorSortedInde
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
         limit: u32,
-    ) -> Result<Vec<(SortedKey, Vec<u8>)>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, ScryptoOwnedRawValue)>, RuntimeError> {
         let actor_object_type: ActorStateRef = object_handle.try_into()?;
 
         let (node_id, _info, partition_num) = self.get_actor_collection_partition_info(
@@ -2107,10 +2114,9 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorSortedInde
             .kernel_scan_sorted_substates(&node_id, partition_num, limit)?
             .into_iter()
             .map(|(key, value)| {
-                let value: SortedIndexEntrySubstate<ScryptoValue> = value.as_typed().unwrap();
-                let value = scrypto_encode(value.value()).unwrap();
-
-                (key, value)
+                let substate: SortedIndexEntrySubstate<ScryptoRawValue> =
+                    value.into_typed().unwrap();
+                (key, substate.into_value())
             })
             .collect();
 
@@ -2133,7 +2139,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemBlueprintApi<Ru
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+        let args = IndexedScryptoValue::from_untrusted_payload_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
         let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
@@ -2149,7 +2155,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemBlueprintApi<Ru
                 }),
                 args,
             }))
-            .map(|v| v.into())?;
+            .map(|v| v.into_payload_bytes())?;
 
         SystemModuleMixer::on_call_function_finish(self, auth_zone)?;
 
@@ -2241,7 +2247,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemCostingApi<Runt
 
         let event_data = {
             let lock_fee_event = LockFeeEvent { amount };
-            scrypto_encode(&lock_fee_event).unwrap()
+            scrypto_encode_to_payload(&lock_fee_event).unwrap()
         };
 
         // If costing is enabled, reserve event and pay for the event up front for the call to lock_fee()
@@ -2260,7 +2266,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemCostingApi<Runt
             self.emit_event_internal(
                 EmitterActor::CurrentActor,
                 LockFeeEvent::EVENT_NAME.to_string(),
-                event_data,
+                event_data.into_unvalidated(),
                 EventFlags::FORCE_WRITE,
             )?;
         }
@@ -2291,7 +2297,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemCostingApi<Runt
             let lock_fee_event = LockFeeEvent {
                 amount: locked_fee.amount(),
             };
-            let payload = scrypto_encode(&lock_fee_event).unwrap();
+            let payload = scrypto_encode_to_payload(&lock_fee_event).unwrap();
 
             let event = Event {
                 type_identifier,
@@ -2580,7 +2586,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorApi<Runtim
                 SystemLockData::Field(lock_data),
             )?,
             FieldTransience::TransientStatic { default_value } => {
-                let default_value: ScryptoValue = scrypto_decode(&default_value).unwrap();
+                let default_value: ScryptoOwnedRawValue = scrypto_decode(&default_value).unwrap();
                 self.api.kernel_mark_substate_as_transient(
                     node_id,
                     partition_num,
@@ -2603,7 +2609,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorApi<Runtim
 
         if flags.contains(LockFlags::MUTABLE) {
             let lock_status = self.api.kernel_read_substate(handle).map(|v| {
-                let field: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+                let field: FieldSubstate<ScryptoValue> = v.into_typed().unwrap();
                 field.into_lock_status()
             })?;
 
@@ -2622,7 +2628,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorApi<Runtim
     fn actor_emit_event(
         &mut self,
         event_name: String,
-        event_data: Vec<u8>,
+        event_data: ScryptoUnvalidatedRawPayload,
         event_flags: EventFlags,
     ) -> Result<(), RuntimeError> {
         if event_flags.contains(EventFlags::FORCE_WRITE) {
@@ -2659,7 +2665,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorKeyValueEn
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        key: &Vec<u8>,
+        key: ScryptoUnvalidatedRawValue,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
@@ -2681,10 +2687,10 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorKeyValueEn
             },
         };
 
-        self.validate_blueprint_payload(
+        let key = self.validate_blueprint_payload(
             &target,
             BlueprintPayloadIdentifier::KeyValueEntry(collection_index, KeyOrValue::Key),
-            &key,
+            key,
         )?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
@@ -2699,7 +2705,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorKeyValueEn
         let handle = self.api.kernel_open_substate_with_default(
             &node_id,
             partition_num,
-            &SubstateKey::Map(key.to_vec()),
+            &SubstateKey::Map(key.into_owned_payload()),
             flags,
             Some(|| {
                 let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -2709,8 +2715,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorKeyValueEn
         )?;
 
         if flags.contains(LockFlags::MUTABLE) {
-            let substate: KeyValueEntrySubstate<ScryptoValue> =
-                self.api.kernel_read_substate(handle)?.as_typed().unwrap();
+            let substate: KeyValueEntrySubstate<ScryptoOwnedRawValue> =
+                self.api.kernel_read_substate(handle)?.into_typed().unwrap();
 
             if substate.is_locked() {
                 return Err(RuntimeError::SystemError(SystemError::KeyValueEntryLocked));
@@ -2725,8 +2731,8 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> SystemActorKeyValueEn
         &mut self,
         object_handle: ActorStateHandle,
         collection_index: CollectionIndex,
-        key: &Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+        key: ScryptoUnvalidatedRawValue,
+    ) -> Result<Option<ScryptoOwnedRawValue>, RuntimeError> {
         let handle = self.actor_open_key_value_entry(
             object_handle,
             collection_index,
@@ -2910,7 +2916,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelSubstateApi<Sys
             .kernel_mark_substate_as_transient(node_id, partition_num, key)
     }
 
-    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedOwnedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -2943,14 +2949,14 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelSubstateApi<Sys
     fn kernel_read_substate(
         &mut self,
         lock_handle: SubstateHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError> {
+    ) -> Result<&IndexedOwnedScryptoValue, RuntimeError> {
         self.api.kernel_read_substate(lock_handle)
     }
 
     fn kernel_write_substate(
         &mut self,
         lock_handle: SubstateHandle,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_write_substate(lock_handle, value)
     }
@@ -2960,7 +2966,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelSubstateApi<Sys
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api
             .kernel_set_substate(node_id, partition_num, substate_key, value)
@@ -2971,7 +2977,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelSubstateApi<Sys
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Option<IndexedOwnedScryptoValue>, RuntimeError> {
         self.api
             .kernel_remove_substate(node_id, partition_num, substate_key)
     }
@@ -2981,7 +2987,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelSubstateApi<Sys
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, IndexedOwnedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }
@@ -3001,7 +3007,7 @@ impl<'a, Y: KernelApi<System<V>>, V: SystemCallbackObject> KernelSubstateApi<Sys
         node_id: &NodeId,
         partition_num: PartitionNumber,
         limit: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SubstateKey, IndexedOwnedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_drain_substates::<K>(node_id, partition_num, limit)
     }

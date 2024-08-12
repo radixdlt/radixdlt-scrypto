@@ -19,9 +19,9 @@ pub struct AccessControllerV2Blueprint;
 impl AccessControllerV2Blueprint {
     pub fn invoke_export<Y: SystemApi<RuntimeError>>(
         export_name: &str,
-        input: &IndexedScryptoValue,
+        input: &IndexedScryptoValue<'_>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         dispatch! {
             IDENT,
             export_name,

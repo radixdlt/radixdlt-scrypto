@@ -137,25 +137,9 @@ impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayPa
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
-        options: &ValueDisplayParameters<'s, 'a, E>,
+        context: &ValueDisplayParameters<'s, 'a, E>,
     ) -> Result<(), Self::Error> {
-        let context = options.get_context_and_type_id();
-        match context {
-            Context::Nested(context, type_id, depth_limit) => format_payload_as_nested_string(
-                f,
-                &context,
-                self.payload_bytes(),
-                type_id,
-                depth_limit,
-            ),
-            Context::RustLike(context, type_id, depth_limit) => format_payload_as_rustlike_value(
-                f,
-                &context,
-                self.payload_bytes(),
-                type_id,
-                depth_limit,
-            ),
-        }
+        self.as_value().contextual_format(f, context)
     }
 }
 
@@ -174,7 +158,7 @@ impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayPa
             Context::Nested(context, type_id, depth_limit) => {
                 format_partial_payload_as_nested_string(
                     f,
-                    self.value_body_bytes(),
+                    self.value_body(),
                     ExpectedStart::ValueBody(self.value_kind()),
                     true,
                     0,
@@ -186,7 +170,7 @@ impl<'s, 'a, 'b, E: FormattableCustomExtension> ContextualDisplay<ValueDisplayPa
             Context::RustLike(context, type_id, depth_limit) => {
                 format_partial_payload_as_rustlike_value(
                     f,
-                    self.value_body_bytes(),
+                    self.value_body(),
                     ExpectedStart::ValueBody(self.value_kind()),
                     true,
                     0,

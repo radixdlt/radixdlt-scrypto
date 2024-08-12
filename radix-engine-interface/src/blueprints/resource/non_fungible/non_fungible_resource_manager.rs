@@ -115,7 +115,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+    pub entries: IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)>,
     pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
@@ -159,7 +159,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub entries: Vec<(ScryptoValue,)>,
+    pub entries: Vec<(ScryptoOwnedRawValue,)>,
     pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
@@ -199,6 +199,8 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT: &str = "update_non_fu
 pub struct NonFungibleResourceManagerUpdateDataInput {
     pub id: NonFungibleLocalId,
     pub field_name: String,
+    // Still a ScryptoValue because of how the update is done.
+    // We could consider optimizing this in future.
     pub data: ScryptoValue,
 }
 
@@ -243,7 +245,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT: &str = "mint";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintInput {
-    pub entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+    pub entries: IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)>,
 }
 
 /// For manifest
@@ -265,7 +267,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT: &str = "mint_ruid";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintRuidInput {
-    pub entries: Vec<(ScryptoValue,)>,
+    pub entries: Vec<(ScryptoOwnedRawValue,)>,
 }
 
 /// For manifest
@@ -287,7 +289,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT: &str = "mint_sin
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMintSingleRuidInput {
-    pub entry: ScryptoValue,
+    pub entry: ScryptoOwnedRawValue,
 }
 
 /// For typed value, to skip any codec

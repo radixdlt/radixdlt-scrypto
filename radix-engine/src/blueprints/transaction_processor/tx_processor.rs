@@ -97,10 +97,10 @@ fn handle_invocation<'a, 'p, 'w, Y: SystemApi<RuntimeError> + KernelSubstateApi<
 
     let rtn = invocation_handler(api, scrypto_value)?;
 
-    let result = IndexedScryptoValue::from_vec(rtn)
+    let result = IndexedScryptoValue::from_untrusted_payload_vec(rtn)
         .map_err(|error| TransactionProcessorError::InvocationOutputDecodeError(error))?;
     processor.handle_call_return_data(&result, &worktop, api)?;
-    Ok(InstructionOutput::CallReturn(result.into()))
+    Ok(InstructionOutput::CallReturn(result.into_payload_bytes()))
 }
 
 pub struct TransactionProcessorBlueprint;
@@ -284,7 +284,7 @@ impl TransactionProcessorBlueprint {
 
                     let result = IndexedScryptoValue::from_typed(&rtn);
                     processor.handle_call_return_data(&result, &worktop, api)?;
-                    InstructionOutput::CallReturn(result.into())
+                    InstructionOutput::CallReturn(result.into_payload_bytes())
                 }
                 InstructionV1::CloneProof { proof_id } => {
                     let proof = processor.get_proof(&proof_id)?;

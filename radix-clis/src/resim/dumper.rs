@@ -308,9 +308,8 @@ fn get_entity_metadata<T: SubstateDatabase>(
         )
         .unwrap()
         .map(|(key, value)| {
-            let map_key = key.into_map();
-            let key = scrypto_decode::<String>(&map_key).unwrap();
-            let value = scrypto_decode::<MetadataEntryEntryPayload>(&value).unwrap();
+            let key: String = key.into_map().decode_as().unwrap();
+            let value: MetadataEntryEntryPayload = value.decode_as().unwrap();
             (key, value.fully_update_and_into_latest_version())
         })
         .collect()

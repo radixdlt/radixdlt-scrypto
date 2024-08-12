@@ -54,7 +54,7 @@ pub trait KernelSubstateApi<L> {
     ) -> Result<(), RuntimeError>;
 
     /// Locks a substate to make available for reading and/or writing
-    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedOwnedScryptoValue>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -77,7 +77,7 @@ pub trait KernelSubstateApi<L> {
             partition_num,
             substate_key,
             flags,
-            None::<fn() -> IndexedScryptoValue>,
+            None::<fn() -> IndexedOwnedScryptoValue>,
             lock_data,
         )
     }
@@ -93,13 +93,13 @@ pub trait KernelSubstateApi<L> {
     fn kernel_read_substate(
         &mut self,
         lock_handle: SubstateHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError>;
+    ) -> Result<&IndexedOwnedScryptoValue, RuntimeError>;
 
     /// Writes a value to the substate locked by the given lock handle
     fn kernel_write_substate(
         &mut self,
         lock_handle: SubstateHandle,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
     /// Sets a value to a substate without checking for the original value.
@@ -111,7 +111,7 @@ pub trait KernelSubstateApi<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
-        value: IndexedScryptoValue,
+        value: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError>;
 
     /// Removes a substate from a node and returns the original value.
@@ -123,7 +123,7 @@ pub trait KernelSubstateApi<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Option<IndexedOwnedScryptoValue>, RuntimeError>;
 
     /// Reads substates under a node in sorted lexicographical order
     ///
@@ -134,7 +134,7 @@ pub trait KernelSubstateApi<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError>;
+    ) -> Result<Vec<(SortedKey, IndexedOwnedScryptoValue)>, RuntimeError>;
 
     fn kernel_scan_keys<K: SubstateKeyContent + 'static>(
         &mut self,
@@ -148,18 +148,18 @@ pub trait KernelSubstateApi<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
+    ) -> Result<Vec<(SubstateKey, IndexedOwnedScryptoValue)>, RuntimeError>;
 }
 
 #[derive(Debug, Clone)]
-pub struct KernelInvocation<C> {
+pub struct KernelInvocation<'v, C> {
     pub call_frame_data: C,
-    pub args: IndexedScryptoValue,
+    pub args: IndexedScryptoValue<'v>,
 }
 
-impl<C: CallFrameReferences> KernelInvocation<C> {
+impl<'v, C: CallFrameReferences> KernelInvocation<'v, C> {
     pub fn len(&self) -> usize {
-        self.call_frame_data.len() + self.args.len()
+        self.call_frame_data.len() + self.args.payload_len()
     }
 }
 

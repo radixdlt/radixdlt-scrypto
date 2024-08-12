@@ -29,7 +29,7 @@ fn cannot_store_reference_in_non_transient_blueprint() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "new" => {
                     let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;
@@ -91,7 +91,7 @@ fn cannot_write_reference_in_non_transient_blueprint() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "new" => {
                     let node_id = api
@@ -156,7 +156,7 @@ fn cannot_write_reference_in_kv_store() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "kv_store" => {
                     let kv_store = api.key_value_store_new(
@@ -167,7 +167,7 @@ fn cannot_write_reference_in_kv_store() {
                     )?;
                     let handle = api.key_value_store_open_entry(
                         &kv_store,
-                        &scrypto_encode(&()).unwrap(),
+                        scrypto_encode_to_value(&()).unwrap().into_unvalidated(),
                         LockFlags::MUTABLE,
                     )?;
                     let auth_zone = api.actor_get_node_id(ACTOR_REF_AUTH_ZONE)?;

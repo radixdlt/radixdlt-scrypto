@@ -243,7 +243,7 @@ fn creating_an_access_rule_which_is_beyond_the_depth_limit_should_error<F>(
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "create_access_rule" => match self.0 {
                     AccessRuleCreation::OwnerCreation => {

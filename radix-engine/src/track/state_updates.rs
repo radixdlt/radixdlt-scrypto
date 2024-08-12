@@ -262,11 +262,11 @@ impl BatchPartitionStateUpdate {
 
 #[derive(Clone, Debug)]
 pub struct RuntimeSubstate {
-    pub value: IndexedScryptoValue,
+    pub value: IndexedOwnedScryptoValue,
 }
 
 impl RuntimeSubstate {
-    pub fn new(value: IndexedScryptoValue) -> Self {
+    pub fn new(value: IndexedOwnedScryptoValue) -> Self {
         Self { value }
     }
 }
@@ -284,7 +284,7 @@ pub enum Write {
 }
 
 impl Write {
-    pub fn into_value(self) -> Option<IndexedScryptoValue> {
+    pub fn into_value(self) -> Option<IndexedOwnedScryptoValue> {
         match self {
             Write::Update(substate) => Some(substate.value),
             Write::Delete => None,
@@ -303,7 +303,7 @@ pub struct TrackedSubstate {
 pub enum TrackedSubstateValue {
     New(RuntimeSubstate),
     ReadOnly(ReadOnly),
-    ReadExistAndWrite(IndexedScryptoValue, Write),
+    ReadExistAndWrite(IndexedOwnedScryptoValue, Write),
     ReadNonExistAndWrite(RuntimeSubstate),
     WriteOnly(Write),
     Garbage,
@@ -319,21 +319,21 @@ impl TrackedSubstate {
 impl TrackedSubstateValue {
     pub fn size(&self) -> usize {
         match self {
-            TrackedSubstateValue::New(x) => x.value.len(),
+            TrackedSubstateValue::New(x) => x.value.payload_len(),
             TrackedSubstateValue::ReadOnly(r) => match r {
                 ReadOnly::NonExistent => 0,
-                ReadOnly::Existent(x) => x.value.len(),
+                ReadOnly::Existent(x) => x.value.payload_len(),
             },
             TrackedSubstateValue::ReadExistAndWrite(e, w) => {
-                e.len()
+                e.payload_len()
                     + match w {
-                        Write::Update(x) => x.value.len(),
+                        Write::Update(x) => x.value.payload_len(),
                         Write::Delete => 0,
                     }
             }
-            TrackedSubstateValue::ReadNonExistAndWrite(x) => x.value.len(),
+            TrackedSubstateValue::ReadNonExistAndWrite(x) => x.value.payload_len(),
             TrackedSubstateValue::WriteOnly(w) => match w {
-                Write::Update(x) => x.value.len(),
+                Write::Update(x) => x.value.payload_len(),
                 Write::Delete => 0,
             },
             TrackedSubstateValue::Garbage => 0,
@@ -355,7 +355,7 @@ impl TrackedSubstateValue {
         }
     }
 
-    pub fn get(&self) -> Option<&IndexedScryptoValue> {
+    pub fn get(&self) -> Option<&IndexedOwnedScryptoValue> {
         match self {
             TrackedSubstateValue::New(substate)
             | TrackedSubstateValue::WriteOnly(Write::Update(substate))
@@ -369,7 +369,7 @@ impl TrackedSubstateValue {
         }
     }
 
-    pub fn set(&mut self, value: IndexedScryptoValue) {
+    pub fn set(&mut self, value: IndexedOwnedScryptoValue) {
         match self {
             TrackedSubstateValue::Garbage => {
                 *self = TrackedSubstateValue::WriteOnly(Write::Update(RuntimeSubstate::new(value)));
@@ -399,7 +399,7 @@ impl TrackedSubstateValue {
         };
     }
 
-    pub fn take(&mut self) -> Option<IndexedScryptoValue> {
+    pub fn take(&mut self) -> Option<IndexedOwnedScryptoValue> {
         match self {
             TrackedSubstateValue::Garbage => None,
             TrackedSubstateValue::New(..) => {
@@ -445,7 +445,7 @@ impl TrackedSubstateValue {
         }
     }
 
-    pub fn into_value(self) -> Option<IndexedScryptoValue> {
+    pub fn into_value(self) -> Option<IndexedOwnedScryptoValue> {
         match self {
             TrackedSubstateValue::New(substate)
             | TrackedSubstateValue::WriteOnly(Write::Update(substate))
@@ -531,12 +531,14 @@ pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
                     TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => None,
                     TrackedSubstateValue::ReadNonExistAndWrite(substate)
                     | TrackedSubstateValue::New(substate) => {
-                        Some(DatabaseUpdate::Set(substate.value.into()))
+                        Some(DatabaseUpdate::Set(substate.value.into_payload_bytes()))
                     }
                     TrackedSubstateValue::ReadExistAndWrite(_, write)
                     | TrackedSubstateValue::WriteOnly(write) => match write {
                         Write::Delete => Some(DatabaseUpdate::Delete),
-                        Write::Update(substate) => Some(DatabaseUpdate::Set(substate.value.into())),
+                        Write::Update(substate) => {
+                            Some(DatabaseUpdate::Set(substate.value.into_payload_bytes()))
+                        }
                     },
                 };
                 if let Some(update) = update {
@@ -557,15 +559,17 @@ pub fn to_state_updates<M: DatabaseKeyMapper + 'static>(
 }
 
 pub struct IterationCountedIter<'a, E> {
-    pub iter:
-        Box<dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>> + 'a>,
+    pub iter: Box<
+        dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedOwnedScryptoValue)), E>> + 'a,
+    >,
     pub num_iterations: u32,
 }
 
 impl<'a, E> IterationCountedIter<'a, E> {
     pub fn new(
         iter: Box<
-            dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>> + 'a,
+            dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedOwnedScryptoValue)), E>>
+                + 'a,
         >,
     ) -> Self {
         Self {
@@ -576,7 +580,7 @@ impl<'a, E> IterationCountedIter<'a, E> {
 }
 
 impl<'a, E> Iterator for IterationCountedIter<'a, E> {
-    type Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>;
+    type Item = Result<(DbSortKey, (SubstateKey, IndexedOwnedScryptoValue)), E>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.num_iterations = self.num_iterations + 1;

@@ -26,7 +26,9 @@ impl Runtime {
     ) -> Result<(), E> {
         api.actor_emit_event(
             T::EVENT_NAME.to_string(),
-            scrypto_encode(&event).unwrap(),
+            scrypto_encode_to_payload(&event)
+                .unwrap()
+                .into_unvalidated(),
             EventFlags::empty(),
         )
     }
@@ -41,7 +43,9 @@ impl Runtime {
     ) -> Result<(), E> {
         api.actor_emit_event(
             T::EVENT_NAME.to_string(),
-            scrypto_encode(&event).unwrap(),
+            scrypto_encode_to_payload(&event)
+                .unwrap()
+                .into_unvalidated(),
             EventFlags::FORCE_WRITE,
         )
     }

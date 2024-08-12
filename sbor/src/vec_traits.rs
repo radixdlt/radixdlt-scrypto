@@ -1,6 +1,6 @@
 use crate::{
-    internal_prelude::*, validate_payload_against_schema, CustomExtension, CustomSchema,
-    Decoder as _, Describe, Encoder as _, ValidatableCustomExtension, VecDecoder, VecEncoder,
+    internal_prelude::*, CustomExtension, CustomSchema, Decoder as _, Describe, Encoder as _,
+    UnvalidatedRawPayload, ValidatableCustomExtension, VecDecoder, VecEncoder,
 };
 
 pub trait VecEncode<X: CustomValueKind>: for<'a> Encode<X, VecEncoder<'a, X>> {}
@@ -48,8 +48,14 @@ pub fn create_nice_error_following_decode_error<
 ) -> String {
     let (local_type_id, schema) = generate_full_schema_from_single_type::<T, E::CustomSchema>();
     let schema = schema.as_unique_version();
-    match validate_payload_against_schema::<E, _>(buf, schema, local_type_id, &(), max_depth) {
-        Ok(()) => {
+    let unvalidated_payload = UnvalidatedRawPayload::<E>::from_payload_slice(buf);
+    match unvalidated_payload.validate_against_type_with_max_depth(
+        max_depth,
+        schema,
+        local_type_id,
+        &(),
+    ) {
+        Ok(_) => {
             // This case is unexpected. We got a decode error, but it's valid against the schema.
             // In this case, let's just debug-print the DecodeError.
             format!("{decode_error:?}")

@@ -16,7 +16,7 @@ use radix_engine_interface::prelude::*;
 /// event data into a structured model provided that the event is registered to a native blueprint.
 pub fn to_typed_native_event(
     event_type_identifier: &EventTypeIdentifier,
-    event_data: &[u8],
+    event_data: &ScryptoRawPayload,
 ) -> Result<TypedNativeEvent, TypedNativeEventError> {
     let typed_native_event_key =
         resolve_typed_event_key_from_event_type_identifier(event_type_identifier)?;
@@ -547,7 +547,7 @@ macro_rules! define_structure {
             // bytes to the appropriate typed event type.
             fn to_typed_event_with_event_key(
                 event_key: &TypedNativeEventKey,
-                data: &[u8]
+                data: &ScryptoRawPayload
             ) -> Result<TypedNativeEvent, TypedNativeEventError> {
                 match event_key {
                     $(
@@ -560,7 +560,7 @@ macro_rules! define_structure {
                                 ) => Ok(TypedNativeEvent::$package_ident(
                                     [< Typed $package_ident PackageEvent >]::$blueprint_ident(
                                         [< Typed $blueprint_ident BlueprintEvent >]::$event_ty(
-                                            radix_common::prelude::scrypto_decode(data)?
+                                            data.decode_as()?
                                         )
                                     )
                                 )),

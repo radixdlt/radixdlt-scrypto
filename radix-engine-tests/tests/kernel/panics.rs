@@ -79,7 +79,7 @@ impl KernelSubstateApi<SystemLockData> for MockKernel {
         panic1!()
     }
 
-    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedScryptoValue>(
+    fn kernel_open_substate_with_default<F: FnOnce() -> IndexedOwnedScryptoValue>(
         &mut self,
         _: &NodeId,
         _: PartitionNumber,
@@ -102,14 +102,14 @@ impl KernelSubstateApi<SystemLockData> for MockKernel {
     fn kernel_read_substate(
         &mut self,
         _: SubstateHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError> {
+    ) -> Result<&IndexedOwnedScryptoValue, RuntimeError> {
         panic1!()
     }
 
     fn kernel_write_substate(
         &mut self,
         _: SubstateHandle,
-        _: IndexedScryptoValue,
+        _: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError> {
         panic1!()
     }
@@ -119,7 +119,7 @@ impl KernelSubstateApi<SystemLockData> for MockKernel {
         _: &NodeId,
         _: PartitionNumber,
         _: SubstateKey,
-        _: IndexedScryptoValue,
+        _: IndexedOwnedScryptoValue,
     ) -> Result<(), RuntimeError> {
         panic1!()
     }
@@ -129,7 +129,7 @@ impl KernelSubstateApi<SystemLockData> for MockKernel {
         _: &NodeId,
         _: PartitionNumber,
         _: &SubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Option<IndexedOwnedScryptoValue>, RuntimeError> {
         panic1!()
     }
 
@@ -138,7 +138,7 @@ impl KernelSubstateApi<SystemLockData> for MockKernel {
         _: &NodeId,
         _: PartitionNumber,
         _: u32,
-    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SortedKey, IndexedOwnedScryptoValue)>, RuntimeError> {
         panic1!()
     }
 
@@ -156,7 +156,7 @@ impl KernelSubstateApi<SystemLockData> for MockKernel {
         _: &NodeId,
         _: PartitionNumber,
         _: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<(SubstateKey, IndexedOwnedScryptoValue)>, RuntimeError> {
         panic1!()
     }
 }
@@ -165,7 +165,7 @@ impl KernelInvokeApi<Actor> for MockKernel {
     fn kernel_invoke(
         &mut self,
         _: Box<KernelInvocation<Actor>>,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         panic1!()
     }
 }

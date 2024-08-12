@@ -585,7 +585,7 @@ mod tests {
                 ],
             },
         );
-        let payload = basic_encode(&value).unwrap();
+        let payload = basic_encode_to_payload(&value).unwrap();
 
         let expected_annotated_single_line = r###"Tuple:MyComplexTupleStruct(Array<U16>(1u16, 2u16, 3u16), Array<U16>(), Array<U8>(), Array<U8>(Hex("010203")), Map<Enum:TestEnum, Tuple:MyFieldStruct>(Enum:TestEnum<0u8:UnitVariant>(), Tuple:MyFieldStruct(field1 = 1u64, field2 = Array<String>("hello")), Enum:TestEnum<1u8:SingleFieldVariant>(field = 1u8), Tuple:MyFieldStruct(field1 = 2u64, field2 = Array<String>("world")), Enum:TestEnum<2u8:DoubleStructVariant>(field1 = 1u8, field2 = 2u8), Tuple:MyFieldStruct(field1 = 3u64, field2 = Array<String>("!"))), Map<String, Tuple:MyUnitStruct>("hello", Tuple:MyUnitStruct(), "world", Tuple:MyUnitStruct()), Enum:TestEnum<0u8:UnitVariant>(), Enum:TestEnum<1u8:SingleFieldVariant>(field = 1u8), Enum:TestEnum<2u8:DoubleStructVariant>(field1 = 3u8, field2 = 5u8), Tuple:MyFieldStruct(field1 = 21u64, field2 = Array<String>("hello", "world!")), Array<Tuple:MyUnitStruct>(Tuple:MyUnitStruct(), Tuple:MyUnitStruct()), Tuple(Enum<32u8>(), Enum<21u8>(-3i32)))"###;
         let display_context = ValueDisplayParameters::Annotated {
@@ -596,10 +596,7 @@ mod tests {
             type_id,
             depth_limit: 64,
         };
-        let actual_annotated_single_line =
-            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
-                .unwrap()
-                .to_string(display_context);
+        let actual_annotated_single_line = payload.to_string(display_context);
         // println!("{}", actual_annotated_single_line);
         assert_eq!(
             &actual_annotated_single_line,
@@ -687,11 +684,7 @@ mod tests {
             type_id,
             depth_limit: 64,
         };
-        let actual_annotated_multi_line =
-            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
-                .unwrap()
-                .to_string(display_context);
-        // println!("{}", actual_annotated_multi_line);
+        let actual_annotated_multi_line = payload.to_string(display_context);
         assert_eq!(&actual_annotated_multi_line, expected_annotated_multi_line,);
     }
 }

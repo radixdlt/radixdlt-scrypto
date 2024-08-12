@@ -82,6 +82,18 @@ pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeErr
     basic_encode_with_depth_limit(v, BASIC_SBOR_V1_MAX_DEPTH)
 }
 
+pub fn basic_encode_to_payload<T: BasicEncode + ?Sized>(
+    v: &T,
+) -> Result<BasicOwnedRawPayload, EncodeError> {
+    Ok(BasicOwnedRawPayload::from_valid_payload(basic_encode(v)?))
+}
+
+pub fn basic_encode_to_value<T: BasicEncode + ?Sized>(
+    v: &T,
+) -> Result<BasicOwnedRawValue, EncodeError> {
+    Ok(BasicOwnedRawValue::from_valid_payload(basic_encode(v)?))
+}
+
 pub fn basic_encode_with_depth_limit<T: BasicEncode + ?Sized>(
     v: &T,
     depth_limit: usize,
@@ -304,6 +316,8 @@ create_well_known_lookup!(
 
 impl CustomExtension for NoCustomExtension {
     const PAYLOAD_PREFIX: u8 = BASIC_SBOR_V1_PAYLOAD_PREFIX;
+    const DEFAULT_DEPTH_LIMIT: usize = BASIC_SBOR_V1_MAX_DEPTH;
+
     type CustomValueKind = NoCustomValueKind;
     type CustomTraversal = NoCustomTraversal;
     type CustomSchema = NoCustomSchema;

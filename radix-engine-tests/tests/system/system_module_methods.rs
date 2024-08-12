@@ -33,7 +33,7 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             let node_id = input.references()[0];
             let _ = api.call_module_method(
                 &node_id,
@@ -116,7 +116,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap![])?;
@@ -187,7 +187,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let child = api.new_simple_object(

@@ -188,7 +188,7 @@ impl<C: SystemCallbackObject> System<C> {
         ) {
             Some(x) => {
                 let substate: FieldSubstate<ConsensusManagerStateFieldPayload> =
-                    x.as_typed().unwrap();
+                    x.into_typed().unwrap();
                 Some(substate.into_payload().into_unique_version().epoch)
             }
             None => None,
@@ -228,7 +228,7 @@ impl<C: SystemCallbackObject> System<C> {
                 &TransactionTrackerField::TransactionTracker.into(),
             )
             .unwrap()
-            .as_typed()
+            .into_typed()
             .unwrap();
 
         let partition_number = substate
@@ -240,12 +240,13 @@ impl<C: SystemCallbackObject> System<C> {
         let substate = track.read_substate(
             TRANSACTION_TRACKER.as_node_id(),
             PartitionNumber(partition_number),
-            &SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
+            &SubstateKey::Map(scrypto_encode_to_payload(&intent_hash).unwrap()),
         );
 
         match substate {
             Some(value) => {
-                let substate: KeyValueEntrySubstate<TransactionStatus> = value.as_typed().unwrap();
+                let substate: KeyValueEntrySubstate<TransactionStatus> =
+                    value.into_typed().unwrap();
                 match substate.into_value() {
                     Some(status) => match status.into_v1() {
                         TransactionStatusV1::CommittedSuccess
@@ -316,9 +317,9 @@ impl<C: SystemCallbackObject> System<C> {
     ) -> (
         FeeReserveFinalizationSummary,
         IndexMap<NodeId, Decimal>,
-        Vec<(EventTypeIdentifier, Vec<u8>)>,
+        Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
     ) {
-        let mut events = Vec::<(EventTypeIdentifier, Vec<u8>)>::new();
+        let mut events = Vec::<(EventTypeIdentifier, ScryptoOwnedRawPayload)>::new();
 
         // Distribute royalty
         for (recipient, amount) in fee_reserve.royalty_cost_breakdown().clone() {
@@ -327,7 +328,7 @@ impl<C: SystemCallbackObject> System<C> {
             let mut vault_balance = track
                 .read_substate(&node_id, MAIN_BASE_PARTITION, &substate_key)
                 .unwrap()
-                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .into_typed::<FungibleVaultBalanceFieldSubstate>()
                 .unwrap()
                 .into_payload()
                 .into_unique_version();
@@ -349,7 +350,7 @@ impl<C: SystemCallbackObject> System<C> {
                     Emitter::Method(node_id, ModuleId::Main),
                     DepositEvent::EVENT_NAME.to_string(),
                 ),
-                scrypto_encode(&DepositEvent { amount }).unwrap(),
+                scrypto_encode_to_payload(&DepositEvent { amount }).unwrap(),
             ));
         }
 
@@ -386,7 +387,7 @@ impl<C: SystemCallbackObject> System<C> {
                     &FungibleVaultField::Balance.into(),
                 )
                 .unwrap()
-                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .into_typed::<FungibleVaultBalanceFieldSubstate>()
                 .unwrap()
                 .into_payload()
                 .into_unique_version();
@@ -413,7 +414,7 @@ impl<C: SystemCallbackObject> System<C> {
                     Emitter::Method(vault_id, ModuleId::Main),
                     PayFeeEvent::EVENT_NAME.to_string(),
                 ),
-                scrypto_encode(&PayFeeEvent { amount }).unwrap(),
+                scrypto_encode_to_payload(&PayFeeEvent { amount }).unwrap(),
             ));
         }
         // Free credit is locked first and thus used last
@@ -461,7 +462,7 @@ impl<C: SystemCallbackObject> System<C> {
                     &ConsensusManagerField::State.into(),
                 )
                 .unwrap()
-                .as_typed()
+                .into_typed()
                 .unwrap();
             let current_leader = substate.into_payload().into_unique_version().current_leader;
 
@@ -473,7 +474,7 @@ impl<C: SystemCallbackObject> System<C> {
                     &ConsensusManagerField::ValidatorRewards.into(),
                 )
                 .unwrap()
-                .as_typed()
+                .into_typed()
                 .unwrap();
 
             let mut rewards = substate.into_payload().into_unique_version();
@@ -507,7 +508,7 @@ impl<C: SystemCallbackObject> System<C> {
                     &FungibleVaultField::Balance.into(),
                 )
                 .unwrap()
-                .as_typed::<FungibleVaultBalanceFieldSubstate>()
+                .into_typed::<FungibleVaultBalanceFieldSubstate>()
                 .unwrap()
                 .into_payload()
                 .into_unique_version();
@@ -530,7 +531,7 @@ impl<C: SystemCallbackObject> System<C> {
                     Emitter::Method(vault_node_id, ModuleId::Main),
                     DepositEvent::EVENT_NAME.to_string(),
                 ),
-                scrypto_encode(&DepositEvent {
+                scrypto_encode_to_payload(&DepositEvent {
                     amount: total_amount,
                 })
                 .unwrap(),
@@ -543,7 +544,7 @@ impl<C: SystemCallbackObject> System<C> {
                     Emitter::Method(XRD.into_node_id(), ModuleId::Main),
                     "BurnFungibleResourceEvent".to_string(),
                 ),
-                scrypto_encode(&BurnFungibleResourceEvent { amount: to_burn }).unwrap(),
+                scrypto_encode_to_payload(&BurnFungibleResourceEvent { amount: to_burn }).unwrap(),
             ));
         }
 
@@ -564,7 +565,7 @@ impl<C: SystemCallbackObject> System<C> {
                 &TransactionTrackerField::TransactionTracker.into(),
             )
             .unwrap()
-            .as_typed::<FieldSubstate<TransactionTrackerSubstate>>()
+            .into_typed::<FieldSubstate<TransactionTrackerSubstate>>()
             .unwrap()
             .into_payload();
 
@@ -583,7 +584,7 @@ impl<C: SystemCallbackObject> System<C> {
                     .set_substate(
                         TRANSACTION_TRACKER.into_node_id(),
                         PartitionNumber(partition_number),
-                        SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
+                        SubstateKey::Map(scrypto_encode_to_payload(intent_hash).unwrap()),
                         IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
                             KeyValueEntrySubstateV1 {
                                 value: Some(if is_success {
@@ -795,7 +796,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     BOOT_LOADER_PARTITION,
                     &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
                 )
-                .map(|v| scrypto_decode(v.as_slice()).unwrap())
+                .map(|v| v.into_typed().unwrap())
                 .unwrap_or(SystemBoot::V1(SystemParameters {
                     network_definition: NetworkDefinition::mainnet(),
                     costing_parameters: CostingParameters::babylon_genesis(),
@@ -941,7 +942,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     partition_number: TYPE_INFO_FIELD_PARTITION,
                     substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
                 },
-                ref_value.len(),
+                ref_value.payload_len(),
             );
             let event = RefCheckEvent::IOAccess(&io_access);
 
@@ -950,7 +951,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
         }
 
-        let type_substate: TypeInfoSubstate = ref_value.as_typed().unwrap();
+        let type_substate: TypeInfoSubstate = ref_value.into_typed().unwrap();
         return match &type_substate {
             TypeInfoSubstate::Object(
                 info @ ObjectInfo {
@@ -1405,7 +1406,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     fn invoke_upstream<Y: KernelApi<System<C>>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
         let node_id = actor.node_id();
@@ -1423,7 +1424,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
                     .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
+                &SubstateKey::Map(scrypto_encode_to_payload(&key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
                     let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -1453,7 +1454,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 system.validate_blueprint_payload(
                     &target,
                     BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Input),
-                    input.as_vec_ref(),
+                    input.as_unvalidated(),
                 )?;
 
                 // Validate receiver type
@@ -1493,7 +1494,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 system.validate_blueprint_payload(
                     &target,
                     BlueprintPayloadIdentifier::Function(ident.clone(), InputOrOutput::Output),
-                    output.as_vec_ref(),
+                    output.as_unvalidated(),
                 )?;
 
                 Ok(output)
@@ -1527,14 +1528,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                 // Check output against well-known schema
                 match hook {
                     BlueprintHook::OnVirtualize => {
-                        scrypto_decode::<OnVirtualizeOutput>(output.as_slice()).map(|_| ())
+                        output.into_typed::<OnVirtualizeOutput>().map(|_| ())
                     }
-                    BlueprintHook::OnDrop => {
-                        scrypto_decode::<OnDropOutput>(output.as_slice()).map(|_| ())
-                    }
-                    BlueprintHook::OnMove => {
-                        scrypto_decode::<OnMoveOutput>(output.as_slice()).map(|_| ())
-                    }
+                    BlueprintHook::OnDrop => output.into_typed::<OnDropOutput>().map(|_| ()),
+                    BlueprintHook::OnMove => output.into_typed::<OnMoveOutput>().map(|_| ()),
                 }
                 .map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))

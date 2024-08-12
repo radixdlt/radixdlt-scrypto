@@ -65,7 +65,7 @@ impl Authorization {
             )?;
             let auth_zone = api
                 .kernel_read_substate(handle)?
-                .as_typed::<FieldSubstate<AuthZone>>()
+                .into_typed::<FieldSubstate<AuthZone>>()
                 .unwrap()
                 .into_payload();
             handles.push(handle);
@@ -128,7 +128,7 @@ impl Authorization {
         let rtn = (|| -> Result<bool, RuntimeError> {
             let auth_zone = api
                 .kernel_read_substate(handle)?
-                .as_typed::<FieldSubstate<AuthZone>>()
+                .into_typed::<FieldSubstate<AuthZone>>()
                 .unwrap()
                 .into_payload();
 
@@ -331,7 +331,7 @@ impl Authorization {
                 ROLE_ASSIGNMENT_BASE_PARTITION
                     .at_offset(ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET)
                     .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
+                &SubstateKey::Map(scrypto_encode_to_payload(&key).unwrap()),
                 LockFlags::read_only(),
                 Some(|| {
                     let kv_entry = KeyValueEntrySubstate::<()>::default();
@@ -340,7 +340,7 @@ impl Authorization {
                 L::default(),
             )?;
             let substate: KeyValueEntrySubstate<RoleAssignmentAccessRuleEntryPayload> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
+                api.kernel_read_substate(handle)?.into_typed().unwrap();
             api.kernel_close_substate(handle)?;
 
             match substate.into_value() {
@@ -357,7 +357,7 @@ impl Authorization {
                     )?;
 
                     let owner_role_substate: FieldSubstate<RoleAssignmentOwnerFieldPayload> =
-                        api.kernel_read_substate(handle)?.as_typed().unwrap();
+                        api.kernel_read_substate(handle)?.into_typed().unwrap();
                     api.kernel_close_substate(handle)?;
                     owner_role_substate
                         .into_payload()

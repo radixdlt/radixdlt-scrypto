@@ -28,13 +28,13 @@ fn opening_read_only_key_value_entry_should_not_create_substates() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
-                    let _handle = api.actor_open_key_value_entry(
+                    let _handle = api.actor_open_key_value_entry_typed(
                         ACTOR_STATE_SELF,
                         0u8,
-                        &scrypto_encode(&()).unwrap(),
+                        &(),
                         LockFlags::read_only(),
                     )?;
                 }

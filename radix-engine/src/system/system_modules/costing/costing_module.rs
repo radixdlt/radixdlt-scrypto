@@ -109,7 +109,7 @@ pub struct DetailedExecutionCostBreakdownEntry {
 pub enum ExecutionCostBreakdownItem {
     Invocation {
         actor: Actor,
-        args: (ScryptoValue,),
+        args: (ScryptoOwnedRawValue,),
     },
     InvocationComplete,
     Execution {
@@ -381,7 +381,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
                     depth,
                     item: ExecutionCostBreakdownItem::Invocation {
                         actor: invocation.call_frame_data.clone(),
-                        args: (invocation.args.as_scrypto_value().to_owned(),),
+                        args: (invocation.args.value().ref_into_owned(),),
                     },
                 });
         }
@@ -493,7 +493,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         costing_module.current_depth = depth;
         costing_module
             .apply_execution_cost(ExecutionCostingEntry::AfterInvoke {
-                output_size: output.len(),
+                output_size: output.payload_len(),
             })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 

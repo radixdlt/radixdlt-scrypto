@@ -26,7 +26,7 @@ fn call_method_with_owned_actor_should_fail() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "new" => {
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, indexmap!())?;

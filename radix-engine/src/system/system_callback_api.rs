@@ -25,5 +25,5 @@ pub trait SystemCallbackObject: Sized {
         package_export: PackageExport,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>;
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>;
 }

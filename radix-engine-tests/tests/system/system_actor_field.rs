@@ -29,7 +29,7 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     api.actor_open_field(ACTOR_STATE_OUTER_OBJECT, 0u8, LockFlags::read_only())?;

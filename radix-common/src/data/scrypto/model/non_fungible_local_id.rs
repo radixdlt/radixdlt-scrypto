@@ -112,10 +112,6 @@ impl NonFungibleLocalId {
     pub const fn ruid(value: [u8; 32]) -> Self {
         Self::RUID(RUIDNonFungibleLocalId(value))
     }
-
-    pub fn to_key(&self) -> Vec<u8> {
-        scrypto_encode(self).expect("Failed to encode non-fungible local id")
-    }
 }
 
 /// The implementation of const constructors for the non-fungible local id.

@@ -128,10 +128,10 @@ impl IdentityNativePackage {
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
         match export_name {
             IDENTITY_CREATE_ADVANCED_IDENT => {
-                let input: IdentityCreateAdvancedInput = input.as_typed().map_err(|e| {
+                let input: IdentityCreateAdvancedInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -140,7 +140,7 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_IDENT => {
-                let _input: IdentityCreateInput = input.as_typed().map_err(|e| {
+                let _input: IdentityCreateInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -149,16 +149,17 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_SECURIFY_IDENT => {
-                let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let _input: IdentitySecurifyToSingleBadgeInput =
+                    input.into_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
 
                 let rtn = IdentityBlueprint::securify(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_ON_VIRTUALIZE_EXPORT_NAME => {
-                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
+                let input: OnVirtualizeInput = input.into_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 

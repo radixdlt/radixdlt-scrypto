@@ -34,8 +34,8 @@ where
         node_id: NodeId,
         module_id: ModuleId,
         collection_index: CollectionIndex,
-        key: &Vec<u8>,
-        value: &Vec<u8>,
+        key: &ScryptoRawValue,
+        value: &ScryptoRawValue,
     ) {
         // Ignore if the module id is not the royalty module.
         if module_id != ModuleId::Royalty {
@@ -47,19 +47,18 @@ where
             node_id,
             module_id,
             collection_index,
-            key: key.clone(),
-            value: value.clone(),
+            key: key.ref_into_owned(),
+            value: value.ref_into_owned(),
         };
 
         let collection_index =
             PackageCollection::from_repr(collection_index).expect("Impossible case!");
         match collection_index {
             PackageCollection::BlueprintVersionRoyaltyConfigKeyValue => {
-                let _key = scrypto_decode::<PackageBlueprintVersionRoyaltyConfigKeyPayload>(&key)
-                    .expect("Impossible Case.");
-                let value =
-                    scrypto_decode::<PackageBlueprintVersionRoyaltyConfigEntryPayload>(&value)
-                        .expect("Impossible Case.");
+                let _key: PackageBlueprintVersionRoyaltyConfigKeyPayload =
+                    key.decode_as().expect("Impossible Case.");
+                let value: PackageBlueprintVersionRoyaltyConfigEntryPayload =
+                    value.decode_as().expect("Impossible Case.");
                 self.check_package_royalty_config(value, location);
             }
             /* Nothing else to check in the package substates. */

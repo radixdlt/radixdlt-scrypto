@@ -118,7 +118,7 @@ pub enum InvalidNonFungibleSchema {
 fn create_non_fungibles<Y: SystemApi<RuntimeError>>(
     resource_address: ResourceAddress,
     id_type: NonFungibleIdType,
-    entries: IndexMap<NonFungibleLocalId, ScryptoValue>,
+    entries: IndexMap<NonFungibleLocalId, ScryptoOwnedRawValue>,
     check_non_existence: bool,
     api: &mut Y,
 ) -> Result<IndexSet<NonFungibleLocalId>, RuntimeError> {
@@ -135,10 +135,10 @@ fn create_non_fungibles<Y: SystemApi<RuntimeError>>(
             ));
         }
 
-        let non_fungible_handle = api.actor_open_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
-            &non_fungible_local_id.to_key(),
+            &non_fungible_local_id,
             LockFlags::MUTABLE,
         )?;
 
@@ -669,7 +669,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+        entries: IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)>,
         resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
@@ -732,20 +732,21 @@ impl NonFungibleResourceManagerBlueprint {
         owner_role: OwnerRole,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        entries: Vec<(ScryptoValue,)>,
+        entries: Vec<(ScryptoOwnedRawValue,)>,
         resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError> {
-        let entries: Result<IndexMap<NonFungibleLocalId, (ScryptoValue,)>, RuntimeError> = entries
-            .into_iter()
-            .map(|e| {
-                let ruid = Runtime::generate_ruid(api)?;
-                let id = NonFungibleLocalId::ruid(ruid);
-                Ok((id, e))
-            })
-            .collect();
+        let entries: Result<IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)>, RuntimeError> =
+            entries
+                .into_iter()
+                .map(|e| {
+                    let ruid = Runtime::generate_ruid(api)?;
+                    let id = NonFungibleLocalId::ruid(ruid);
+                    Ok((id, e))
+                })
+                .collect();
         let entries = entries?;
 
         let ids: IndexSet<NonFungibleLocalId> = entries.keys().cloned().collect();
@@ -793,7 +794,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_non_fungible<Y: SystemApi<RuntimeError>>(
-        entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+        entries: IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError> {
         Self::assert_mintable(api)?;
@@ -814,7 +815,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_ruid_non_fungible<Y: SystemApi<RuntimeError>>(
-        entries: Vec<(ScryptoValue,)>,
+        entries: Vec<(ScryptoOwnedRawValue,)>,
         api: &mut Y,
     ) -> Result<Bucket, RuntimeError> {
         Self::assert_mintable(api)?;
@@ -845,7 +846,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn mint_single_ruid_non_fungible<Y: SystemApi<RuntimeError>>(
-        value: ScryptoValue,
+        value: ScryptoOwnedRawValue,
         api: &mut Y,
     ) -> Result<(Bucket, NonFungibleLocalId), RuntimeError> {
         Self::assert_mintable(api)?;
@@ -905,15 +906,15 @@ impl NonFungibleResourceManagerBlueprint {
                 })?
         };
 
-        let non_fungible_handle = api.actor_open_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
-            &id.to_key(),
+            &id,
             LockFlags::MUTABLE,
         )?;
 
         let mut non_fungible_entry = api
-            .key_value_entry_get_typed::<NonFungibleResourceManagerDataEntryPayload>(
+            .key_value_entry_get_typed::<NonFungibleResourceManagerDataEntryPayload<ScryptoValue>>(
                 non_fungible_handle,
             )?;
 
@@ -922,8 +923,8 @@ impl NonFungibleResourceManagerBlueprint {
                 Value::Tuple { fields } => fields[field_index] = data,
                 _ => panic!("Non-tuple non-fungible created: id = {}", id),
             }
-            let buffer = scrypto_encode(non_fungible_data_payload).unwrap();
-            api.key_value_entry_set(non_fungible_handle, buffer)?;
+            let buffer = scrypto_encode_to_value(non_fungible_data_payload).unwrap();
+            api.key_value_entry_set(non_fungible_handle, buffer.into_unvalidated())?;
         } else {
             let resource_address =
                 ResourceAddress::new_or_panic(api.actor_get_node_id(ACTOR_REF_GLOBAL)?.into());
@@ -944,10 +945,10 @@ impl NonFungibleResourceManagerBlueprint {
         id: NonFungibleLocalId,
         api: &mut Y,
     ) -> Result<bool, RuntimeError> {
-        let non_fungible_handle = api.actor_open_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
-            &id.to_key(),
+            &id,
             LockFlags::read_only(),
         )?;
         let non_fungible = api
@@ -961,11 +962,11 @@ impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn get_non_fungible<Y: SystemApi<RuntimeError>>(
         id: NonFungibleLocalId,
         api: &mut Y,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let non_fungible_handle = api.actor_open_key_value_entry(
+    ) -> Result<ScryptoOwnedRawValue, RuntimeError> {
+        let non_fungible_handle = api.actor_open_key_value_entry_typed(
             ACTOR_STATE_SELF,
             NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
-            &id.to_key(),
+            &id,
             LockFlags::read_only(),
         )?;
         let wrapper = api.key_value_entry_get_typed::<NonFungibleResourceManagerDataEntryPayload>(
@@ -1045,10 +1046,10 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                let handle = api.actor_open_key_value_entry(
+                let handle = api.actor_open_key_value_entry_typed(
                     ACTOR_STATE_SELF,
                     NonFungibleResourceManagerCollection::DataKeyValue.collection_index(),
-                    &id.to_key(),
+                    &id,
                     LockFlags::MUTABLE,
                 )?;
                 api.key_value_entry_remove(handle)?;
@@ -1159,7 +1160,7 @@ impl NonFungibleResourceManagerBlueprint {
 
     fn create_object<Y: SystemApi<RuntimeError>>(
         id_type: NonFungibleIdType,
-        entries: IndexMap<NonFungibleLocalId, (ScryptoValue,)>,
+        entries: IndexMap<NonFungibleLocalId, (ScryptoOwnedRawValue,)>,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         resource_roles: NonFungibleResourceRoles,

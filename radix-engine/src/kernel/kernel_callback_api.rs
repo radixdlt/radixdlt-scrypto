@@ -67,7 +67,7 @@ pub enum OpenSubstateEvent<'a> {
 pub enum ReadSubstateEvent<'a> {
     OnRead {
         handle: SubstateHandle,
-        value: &'a IndexedScryptoValue,
+        value: &'a IndexedScryptoValue<'a>,
         device: SubstateDevice,
     },
     IOAccess(&'a IOAccess),
@@ -91,7 +91,7 @@ impl<'a> ReadSubstateEvent<'a> {
 pub enum WriteSubstateEvent<'a> {
     Start {
         handle: SubstateHandle,
-        value: &'a IndexedScryptoValue,
+        value: &'a IndexedScryptoValue<'a>,
     },
     IOAccess(&'a IOAccess),
 }
@@ -107,7 +107,7 @@ pub enum SetSubstateEvent<'a> {
         &'a NodeId,
         &'a PartitionNumber,
         &'a SubstateKey,
-        &'a IndexedScryptoValue,
+        &'a IndexedScryptoValue<'a>,
     ),
     IOAccess(&'a IOAccess),
 }
@@ -266,7 +266,7 @@ pub trait KernelCallbackObject: Sized {
     fn invoke_upstream<Y: KernelApi<Self>>(
         args: &IndexedScryptoValue,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>;
+    ) -> Result<IndexedOwnedScryptoValue, RuntimeError>;
 
     /// Callback after invocation during call frame cleanup and nodes are still owned by the executed
     /// call frame

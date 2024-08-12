@@ -8,7 +8,7 @@ use radix_engine_interface::api::ModuleId;
 #[derive(Debug, Clone)]
 pub struct Event {
     pub type_identifier: EventTypeIdentifier,
-    pub payload: Vec<u8>,
+    pub payload: ScryptoOwnedRawPayload,
     pub flags: EventFlags,
 }
 
@@ -68,7 +68,10 @@ impl TransactionRuntimeModule {
     pub fn finalize(
         self,
         is_success: bool,
-    ) -> (Vec<(EventTypeIdentifier, Vec<u8>)>, Vec<(Level, String)>) {
+    ) -> (
+        Vec<(EventTypeIdentifier, ScryptoOwnedRawPayload)>,
+        Vec<(Level, String)>,
+    ) {
         let mut results = Vec::new();
 
         for Event {

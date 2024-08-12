@@ -50,7 +50,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> BootStore for Trac
 
         self.substate_db
             .get_substate(&db_partition_key, &db_sort_key)
-            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"))
+            .map(|e| {
+                IndexedScryptoValue::from_untrusted_payload_vec(e)
+                    .expect("Failed to decode substate")
+            })
     }
 }
 
@@ -81,12 +84,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         sort_key: &DbSortKey,
         on_io_access: &mut F,
         canonical_substate_key: CanonicalSubstateKey,
-    ) -> Result<Option<IndexedScryptoValue>, E> {
-        let result = substate_db
-            .get_substate(partition_key, sort_key)
-            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
+    ) -> Result<Option<IndexedOwnedScryptoValue>, E> {
+        let result = substate_db.get_substate(partition_key, sort_key).map(|e| {
+            IndexedScryptoValue::from_untrusted_payload_vec(e).expect("Failed to decode substate")
+        });
         if let Some(x) = &result {
-            on_io_access(IOAccess::ReadFromDb(canonical_substate_key, x.len()))?;
+            on_io_access(IOAccess::ReadFromDb(
+                canonical_substate_key,
+                x.payload_len(),
+            ))?;
         } else {
             on_io_access(IOAccess::ReadFromDbNotFound(canonical_substate_key))?;
         }
@@ -104,8 +110,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
         partition_key: &DbPartitionKey,
         on_io_access: &'x mut F,
         canonical_partition: CanonicalPartition,
-    ) -> Box<dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>> + 'x>
-    {
+    ) -> Box<
+        dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedOwnedScryptoValue)), E>> + 'x,
+    > {
         struct TracedIterator<
             'a,
             E,
@@ -129,7 +136,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                 K: SubstateKeyContent + 'static,
             > Iterator for TracedIterator<'a, E, F, M, K>
         {
-            type Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>;
+            type Item = Result<(DbSortKey, (SubstateKey, IndexedOwnedScryptoValue)), E>;
 
             fn next(&mut self) -> Option<Self::Item> {
                 if self.errored_out {
@@ -139,11 +146,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> Track<'s, S, M> {
                 let result = self.iterator.next();
                 if let Some(x) = result {
                     let substate_key = M::from_db_sort_key::<K>(&x.0);
-                    let substate_value =
-                        IndexedScryptoValue::from_vec(x.1).expect("Failed to decode substate");
+                    let substate_value = IndexedScryptoValue::from_untrusted_payload_vec(x.1)
+                        .expect("Failed to decode substate");
                     let io_access = IOAccess::ReadFromDb(
                         CanonicalSubstateKey::of(self.canonical_partition, substate_key.clone()),
-                        substate_value.len(),
+                        substate_value.payload_len(),
                     );
                     let result = (self.on_io_access)(io_access);
                     match result {
@@ -430,7 +437,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_io_access: &mut F,
-    ) -> Result<Option<&IndexedScryptoValue>, E> {
+    ) -> Result<Option<&IndexedOwnedScryptoValue>, E> {
         // Load the substate from state track
         let tracked =
             self.get_tracked_substate(node_id, partition_num, substate_key.clone(), on_io_access)?;
@@ -445,7 +452,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         node_id: NodeId,
         partition_number: PartitionNumber,
         substate_key: SubstateKey,
-        substate_value: IndexedScryptoValue,
+        substate_value: IndexedOwnedScryptoValue,
         on_io_access: &mut F,
     ) -> Result<(), E> {
         let tracked_partition = self
@@ -545,7 +552,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         partition_number: PartitionNumber,
         substate_key: &SubstateKey,
         on_io_access: &mut F,
-    ) -> Result<Option<IndexedScryptoValue>, E> {
+    ) -> Result<Option<IndexedOwnedScryptoValue>, E> {
         let tracked = self.get_tracked_substate(
             node_id,
             partition_number,
@@ -650,7 +657,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         partition_number: PartitionNumber,
         limit: u32,
         on_io_access: &mut F,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
+    ) -> Result<Vec<(SubstateKey, IndexedOwnedScryptoValue)>, E> {
         let limit: usize = limit.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -777,7 +784,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         partition_number: PartitionNumber,
         limit: u32,
         on_io_access: &mut F,
-    ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, E> {
+    ) -> Result<Vec<(SortedKey, IndexedOwnedScryptoValue)>, E> {
         // TODO: ensure we abort if any substates are write locked.
         let limit: usize = limit.try_into().unwrap();
 
@@ -794,7 +801,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
         // initialize the "from db" iterator: use `dyn`, since we want to skip it altogether if the node is marked as `is_new` in our track
         let mut db_values_count = 0u32;
         let raw_db_entries: Box<
-            dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedScryptoValue)), E>>,
+            dyn Iterator<Item = Result<(DbSortKey, (SubstateKey, IndexedOwnedScryptoValue)), E>>,
         > = if tracked_node.is_new {
             Box::new(empty()) // optimization: avoid touching the database altogether
         } else {
@@ -881,7 +888,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                         TrackedSubstateValue::New(v) => {
                             store_commit.push(StoreCommit::Insert {
                                 canonical_substate_key,
-                                size: v.value.len(),
+                                size: v.value.payload_len(),
                             });
                         }
                         TrackedSubstateValue::ReadOnly(_) => {
@@ -891,21 +898,21 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                             Write::Update(x) => {
                                 store_commit.push(StoreCommit::Update {
                                     canonical_substate_key,
-                                    size: x.value.len(),
-                                    old_size: old_value.len(),
+                                    size: x.value.payload_len(),
+                                    old_size: old_value.payload_len(),
                                 });
                             }
                             Write::Delete => {
                                 store_commit.push(StoreCommit::Delete {
                                     canonical_substate_key,
-                                    old_size: old_value.len(),
+                                    old_size: old_value.payload_len(),
                                 });
                             }
                         },
                         TrackedSubstateValue::ReadNonExistAndWrite(value) => {
                             store_commit.push(StoreCommit::Insert {
                                 canonical_substate_key,
-                                size: value.value.len(),
+                                size: value.value.payload_len(),
                             });
                         }
                         TrackedSubstateValue::WriteOnly(write) => {
@@ -921,7 +928,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                                 (Some(old_size), Write::Update(x)) => {
                                     store_commit.push(StoreCommit::Update {
                                         canonical_substate_key,
-                                        size: x.value.len(),
+                                        size: x.value.payload_len(),
                                         old_size,
                                     });
                                 }
@@ -934,7 +941,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper + 'static> CommitableSubstate
                                 (None, Write::Update(x)) => {
                                     store_commit.push(StoreCommit::Insert {
                                         canonical_substate_key,
-                                        size: x.value.len(),
+                                        size: x.value.payload_len(),
                                     });
                                 }
                                 (None, Write::Delete) => {

@@ -2,7 +2,6 @@
 mod tests {
     use radix_common::prelude::*;
     use radix_engine_interface::prelude::*;
-    use sbor::validate_payload_against_schema;
 
     #[test]
     fn test_custom_type_values_are_valid() {
@@ -60,16 +59,14 @@ mod tests {
     fn test_statically_valid<T: ScryptoEncode>(id: WellKnownTypeId, value: T) {
         let type_name = core::any::type_name::<T>();
 
-        validate_payload_against_schema::<ScryptoCustomExtension, _>(
-            &scrypto_encode(&value).unwrap(),
-            &ScryptoCustomSchema::empty_schema(),
-            id.into(),
-            &(),
-            10,
-        )
-        .unwrap_or_else(|err| {
-            panic!("Expected value for {type_name} to match well known type but got: {err:?}")
-        });
+        let schema = ScryptoCustomSchema::empty_schema();
+        let context = ();
+        scrypto_encode_to_payload(&value)
+            .unwrap()
+            .validate_against_type(&schema, id.into(), &context)
+            .unwrap_or_else(|err| {
+                panic!("Expected value for {type_name} to match well known type but got: {err:?}")
+            });
     }
 
     fn test_type_data_equivalent<T: ScryptoDescribe>(id: WellKnownTypeId) {

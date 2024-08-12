@@ -69,20 +69,6 @@ pub struct SerializationContext<'s, 'a, E: SerializableCustomExtension> {
     pub custom_context: E::CustomDisplayContext<'a>,
 }
 
-pub(crate) fn serialize_payload<S: Serializer, E: SerializableCustomExtension>(
-    serializer: S,
-    payload: &[u8],
-    context: &SerializationContext<'_, '_, E>,
-    type_id: LocalTypeId,
-    depth_limit: usize,
-) -> Result<S::Ok, S::Error> {
-    let mut traverser = traverse_payload_with_types(payload, context.schema, type_id, depth_limit);
-    let success =
-        serialize_value_tree::<S, E>(serializer, &mut traverser, context, &ValueContext::Default)?;
-    consume_end_event::<S, E>(&mut traverser)?;
-    Ok(success)
-}
-
 pub(crate) fn serialize_partial_payload<S: Serializer, E: SerializableCustomExtension>(
     serializer: S,
     partial_payload: &[u8],
@@ -796,15 +782,13 @@ mod tests {
             ]
         ]);
 
-        let payload = basic_encode(&value).unwrap();
+        let payload = basic_encode_to_payload(&value).unwrap();
         assert_json_eq(
-            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
-                .unwrap()
-                .serializable(SerializationParameters::Schemaless {
-                    mode: SerializationMode::Natural,
-                    custom_context: (),
-                    depth_limit: 64,
-                }),
+            payload.serializable(SerializationParameters::Schemaless {
+                mode: SerializationMode::Natural,
+                custom_context: (),
+                depth_limit: 64,
+            }),
             expected_simple,
         );
     }
@@ -884,7 +868,7 @@ mod tests {
                 ],
             },
         );
-        let payload = basic_encode(&value).unwrap();
+        let payload = basic_encode_to_payload(&value).unwrap();
 
         let expected_programmatic = json!({
             "kind": "Tuple",
@@ -1168,15 +1152,13 @@ mod tests {
         });
 
         assert_json_eq(
-            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
-                .unwrap()
-                .serializable(SerializationParameters::WithSchema {
-                    mode: SerializationMode::Programmatic,
-                    schema: schema.v1(),
-                    custom_context: (),
-                    type_id,
-                    depth_limit: 64,
-                }),
+            payload.serializable(SerializationParameters::WithSchema {
+                mode: SerializationMode::Programmatic,
+                schema: schema.v1(),
+                custom_context: (),
+                type_id,
+                depth_limit: 64,
+            }),
             expected_programmatic,
         );
 
@@ -1214,15 +1196,13 @@ mod tests {
         ]);
 
         assert_json_eq(
-            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
-                .unwrap()
-                .serializable(SerializationParameters::WithSchema {
-                    mode: SerializationMode::Natural,
-                    schema: schema.v1(),
-                    custom_context: (),
-                    type_id,
-                    depth_limit: 64,
-                }),
+            payload.serializable(SerializationParameters::WithSchema {
+                mode: SerializationMode::Natural,
+                schema: schema.v1(),
+                custom_context: (),
+                type_id,
+                depth_limit: 64,
+            }),
             expected_natural,
         );
 
@@ -1453,15 +1433,13 @@ mod tests {
         });
 
         assert_json_eq(
-            BasicRawPayload::new_from_valid_slice_with_checks(&payload)
-                .unwrap()
-                .serializable(SerializationParameters::WithSchema {
-                    mode: SerializationMode::Model,
-                    schema: schema.v1(),
-                    custom_context: (),
-                    type_id,
-                    depth_limit: 64,
-                }),
+            payload.serializable(SerializationParameters::WithSchema {
+                mode: SerializationMode::Model,
+                schema: schema.v1(),
+                custom_context: (),
+                type_id,
+                depth_limit: 64,
+            }),
             expected_model,
         );
     }

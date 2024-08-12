@@ -33,7 +33,7 @@ fn cannot_define_more_than_50_roles() {
             _input: &IndexedScryptoValue,
             _api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
@@ -94,7 +94,7 @@ fn cannot_define_role_name_larger_than_max() {
             _input: &IndexedScryptoValue,
             _api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
@@ -156,7 +156,7 @@ fn cannot_setup_more_than_50_roles() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let mut data = index_map_new();
@@ -226,7 +226,7 @@ fn cannot_set_role_before_attachment() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
             _vm_api: &V,
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
+        ) -> Result<IndexedOwnedScryptoValue, RuntimeError> {
             match export_name {
                 "test" => {
                     let role_assignment =

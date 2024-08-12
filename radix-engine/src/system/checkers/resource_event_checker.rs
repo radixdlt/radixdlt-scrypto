@@ -5,9 +5,8 @@ use crate::blueprints::resource::{
 use crate::system::checkers::ApplicationEventChecker;
 use radix_common::constants::RESOURCE_PACKAGE;
 use radix_common::math::{CheckedAdd, CheckedSub, Decimal};
-use radix_common::prelude::{scrypto_decode, ResourceAddress};
+use radix_common::prelude::*;
 use radix_common::traits::ScryptoEvent;
-use radix_common::types::NodeId;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_VAULT_BLUEPRINT,
@@ -16,7 +15,6 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::prelude::{BlueprintInfo, Emitter};
 use radix_engine_interface::types::EventTypeIdentifier;
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
 
 #[derive(Debug, Default)]
 pub struct ResourceEventChecker {
@@ -37,7 +35,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
         &mut self,
         info: BlueprintInfo,
         event_id: EventTypeIdentifier,
-        event_payload: &Vec<u8>,
+        event_payload: &ScryptoRawPayload,
     ) {
         if info.blueprint_id.package_address.ne(&RESOURCE_PACKAGE) {
             return;
@@ -50,13 +48,13 @@ impl ApplicationEventChecker for ResourceEventChecker {
                     match event_name.as_str() {
                         MintFungibleResourceEvent::EVENT_NAME => {
                             let event: MintFungibleResourceEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.resource_tracker.entry(address).or_default();
                             *tracked = tracked.checked_add(event.amount).unwrap();
                         }
                         BurnFungibleResourceEvent::EVENT_NAME => {
                             let event: BurnFungibleResourceEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.resource_tracker.entry(address).or_default();
                             *tracked = tracked.checked_sub(event.amount).unwrap();
 
@@ -75,14 +73,14 @@ impl ApplicationEventChecker for ResourceEventChecker {
                     match event_name.as_str() {
                         MintNonFungibleResourceEvent::EVENT_NAME => {
                             let event: MintNonFungibleResourceEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let amount: Decimal = event.ids.len().into();
                             let tracked = self.resource_tracker.entry(address).or_default();
                             *tracked = tracked.checked_add(amount).unwrap();
                         }
                         BurnNonFungibleResourceEvent::EVENT_NAME => {
                             let event: BurnNonFungibleResourceEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let amount: Decimal = event.ids.len().into();
                             let tracked = self.resource_tracker.entry(address).or_default();
                             *tracked = tracked.checked_sub(amount).unwrap();
@@ -101,13 +99,13 @@ impl ApplicationEventChecker for ResourceEventChecker {
                     match event_name.as_str() {
                         fungible_vault::DepositEvent::EVENT_NAME => {
                             let event: fungible_vault::DepositEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             *tracked = tracked.checked_add(event.amount).unwrap();
                         }
                         fungible_vault::WithdrawEvent::EVENT_NAME => {
                             let event: fungible_vault::WithdrawEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             *tracked = tracked.checked_sub(event.amount).unwrap();
                             if tracked.is_negative() {
@@ -116,7 +114,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                         }
                         fungible_vault::RecallEvent::EVENT_NAME => {
                             let event: fungible_vault::RecallEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             *tracked = tracked.checked_sub(event.amount).unwrap();
                             if tracked.is_negative() {
@@ -125,7 +123,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                         }
                         fungible_vault::PayFeeEvent::EVENT_NAME => {
                             let event: fungible_vault::PayFeeEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             *tracked = tracked.checked_sub(event.amount).unwrap();
                             if tracked.is_negative() {
@@ -142,14 +140,14 @@ impl ApplicationEventChecker for ResourceEventChecker {
                     match event_name.as_str() {
                         non_fungible_vault::DepositEvent::EVENT_NAME => {
                             let event: non_fungible_vault::DepositEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();
                             *tracked = tracked.checked_add(amount).unwrap();
                         }
                         non_fungible_vault::WithdrawEvent::EVENT_NAME => {
                             let event: non_fungible_vault::WithdrawEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();
                             *tracked = tracked.checked_sub(amount).unwrap();
@@ -159,7 +157,7 @@ impl ApplicationEventChecker for ResourceEventChecker {
                         }
                         fungible_vault::RecallEvent::EVENT_NAME => {
                             let event: non_fungible_vault::RecallEvent =
-                                scrypto_decode(event_payload).unwrap();
+                                event_payload.decode_as().unwrap();
                             let tracked = self.vault_tracker.entry(node_id).or_default();
                             let amount: Decimal = event.ids.len().into();
                             *tracked = tracked.checked_sub(amount).unwrap();

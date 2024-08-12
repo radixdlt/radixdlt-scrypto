@@ -63,14 +63,7 @@ impl<'s, 'a, 'b, E: SerializableCustomExtension>
         serializer: S,
         context: &SerializationParameters<'s, 'a, E>,
     ) -> Result<S::Ok, S::Error> {
-        let (context, type_id, depth_limit) = context.get_context_params();
-        serialize_payload(
-            serializer,
-            self.payload_bytes(),
-            &context,
-            type_id,
-            depth_limit,
-        )
+        self.as_value().contextual_serialize(serializer, context)
     }
 }
 
@@ -85,7 +78,7 @@ impl<'s, 'a, 'b, E: SerializableCustomExtension>
         let (context, type_id, depth_limit) = context.get_context_params();
         serialize_partial_payload(
             serializer,
-            self.value_body_bytes(),
+            self.value_body(),
             ExpectedStart::ValueBody(self.value_kind()),
             true,
             0,
