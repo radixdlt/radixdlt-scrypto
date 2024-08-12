@@ -8,6 +8,7 @@ use crate::object_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::*;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
@@ -314,20 +315,16 @@ impl CostingModule {
 }
 
 pub fn apply_royalty_cost(
-    api: &mut impl SystemModuleApi,
+    api: &mut impl SystemModuleApiFor<CostingModule>,
     royalty_amount: RoyaltyAmount,
     recipient: RoyaltyRecipient,
 ) -> Result<(), RuntimeError> {
-    api.kernel_get_system()
-        .modules
-        .costing
+    api.module()
         .on_apply_cost
         .on_call()
         .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
-    api.kernel_get_system()
-        .modules
-        .costing
+    api.module()
         .fee_reserve
         .consume_royalty(royalty_amount, recipient)
         .map_err(|e| {
@@ -353,6 +350,12 @@ impl InitSystemModule for CostingModule {
             .map_err(BootloadingError::FailedToApplyDeferredCosts)?;
 
         Ok(())
+    }
+}
+
+impl ResolvableSystemModule for CostingModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
+        &mut system.modules.costing
     }
 }
 
@@ -426,13 +429,14 @@ impl CostingModule {
     }
 }
 
-impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
+impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingModule {
     fn before_invoke(
         api: &mut ModuleApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
+        let depth = api.current_stack_depth();
+        let costing_module = &mut api.module();
+
         // Add invocation information to the execution cost breakdown.
         if let Some(ref mut detailed_cost_breakdown) = costing_module.detailed_cost_breakdown {
             detailed_cost_breakdown
@@ -466,11 +470,10 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
 
     #[inline(always)]
     fn after_invoke(api: &mut ModuleApi, output: &IndexedScryptoValue) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
+        let depth = api.current_stack_depth();
 
         // Add invocation information to the execution cost breakdown.
-        if let Some(ref mut detailed_cost_breakdown) = costing_module.detailed_cost_breakdown {
+        if let Some(ref mut detailed_cost_breakdown) = api.module().detailed_cost_breakdown {
             detailed_cost_breakdown
                 .detailed_execution_cost_breakdown
                 .push(DetailedExecutionCostBreakdownEntry {
@@ -484,8 +487,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
             return Ok(());
         }
 
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = depth;
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::AfterInvoke {
                 output_size: output.len(),
             })
@@ -495,10 +498,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
     }
 
     fn on_create_node(api: &mut ModuleApi, event: &CreateNodeEvent) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = api.current_stack_depth();
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::CreateNode { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -506,8 +507,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
     }
 
     fn on_pin_node(api: &mut ModuleApi, node_id: &NodeId) -> Result<(), RuntimeError> {
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::PinNode { node_id })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -515,10 +515,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
     }
 
     fn on_drop_node(api: &mut ModuleApi, event: &DropNodeEvent) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = api.current_stack_depth();
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::DropNode { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -526,10 +524,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
     }
 
     fn on_move_module(api: &mut ModuleApi, event: &MoveModuleEvent) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = api.current_stack_depth();
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::MoveModule { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -540,10 +536,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         api: &mut ModuleApi,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = api.current_stack_depth();
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::OpenSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -556,8 +550,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<(), RuntimeError> {
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::MarkSubstateAsTransient {
                 node_id,
                 partition_number,
@@ -572,10 +565,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         api: &mut ModuleApi,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = api.current_stack_depth();
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::ReadSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -586,10 +577,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         api: &mut ModuleApi,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = api.current_stack_depth();
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::WriteSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -600,10 +589,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         api: &mut ModuleApi,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = api.current_stack_depth();
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::CloseSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -611,8 +598,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
     }
 
     fn on_set_substate(api: &mut ModuleApi, event: &SetSubstateEvent) -> Result<(), RuntimeError> {
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::SetSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -623,8 +609,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         api: &mut ModuleApi,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::RemoveSubstate { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -632,8 +617,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
     }
 
     fn on_scan_keys(api: &mut ModuleApi, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::ScanKeys { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -644,8 +628,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         api: &mut ModuleApi,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::DrainSubstates { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -656,8 +639,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         api: &mut ModuleApi,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::ScanSortedSubstates { event })
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 
@@ -668,10 +650,8 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for CostingModule {
         api: &mut ModuleApi,
         _entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        let depth = api.kernel_get_current_depth();
-        let costing_module = &mut api.kernel_get_system().modules.costing;
-        costing_module.current_depth = depth;
-        costing_module
+        api.module().current_depth = api.current_stack_depth();
+        api.module()
             .apply_execution_cost(ExecutionCostingEntry::AllocateNodeId)
             .map_err(|e| RuntimeError::SystemModuleError(SystemModuleError::CostingError(e)))?;
 

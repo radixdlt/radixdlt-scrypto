@@ -6,7 +6,6 @@ use radix_engine::system::actor::*;
 #[cfg(not(feature = "alloc"))]
 use radix_engine::system::system::SystemService;
 use radix_engine::system::system_callback::*;
-use radix_engine::system::system_modules::execution_trace::*;
 use radix_engine::track::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
@@ -188,12 +187,8 @@ impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
     fn kernel_get_node_visibility(&self, _: &NodeId) -> NodeVisibility {
         panic1!()
     }
-
-    fn kernel_read_bucket(&self, _: &NodeId) -> Option<BucketSnapshot> {
-        panic1!()
-    }
-
-    fn kernel_read_proof(&self, _: &NodeId) -> Option<ProofSnapshot> {
+    
+    fn kernel_read_substate_uncosted(&self, _node_id: &NodeId, _partition_num: PartitionNumber, _substate_key: &SubstateKey) -> Option<&IndexedScryptoValue> {
         panic1!()
     }
 }

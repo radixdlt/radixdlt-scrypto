@@ -4,6 +4,7 @@ use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::*;
+use crate::system::system_callback_api::*;
 use crate::track::interface::IOAccess;
 use crate::transaction::LimitParameters;
 use crate::{errors::RuntimeError, errors::SystemModuleError};
@@ -179,16 +180,19 @@ impl LimitsModule {
 }
 
 impl InitSystemModule for LimitsModule {}
-
-impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
+impl ResolvableSystemModule for LimitsModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
+        &mut system.modules.limits
+    }
+}
+impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for LimitsModule {
     fn before_invoke(
         api: &mut ModuleApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         // Check depth
-        let current_depth = api.kernel_get_current_depth();
-        let limits = &mut api.kernel_get_system().modules.limits.config;
-        if current_depth == limits.max_call_depth {
+        let current_depth = api.current_stack_depth();
+        if current_depth == api.module().config.max_call_depth {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxCallDepthLimitReached,
@@ -198,8 +202,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
 
         // Check input size
         let input_size = invocation.len();
-        let limits = &mut api.kernel_get_system().modules.limits.config;
-        if input_size > limits.max_invoke_payload_size {
+        if input_size > api.module().config.max_invoke_payload_size {
             return Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::MaxInvokePayloadSizeExceeded(input_size),
@@ -211,7 +214,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
     }
 
     fn on_create_node(api: &mut ModuleApi, event: &CreateNodeEvent) -> Result<(), RuntimeError> {
-        let limits = &mut api.kernel_get_system().modules.limits;
+        let limits = api.module();
 
         match event {
             CreateNodeEvent::Start(_node_id, node_substates) => {
@@ -232,11 +235,9 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
     }
 
     fn on_drop_node(api: &mut ModuleApi, event: &DropNodeEvent) -> Result<(), RuntimeError> {
-        let limits = &mut api.kernel_get_system().modules.limits;
-
         match event {
             DropNodeEvent::IOAccess(io_access) => {
-                limits.process_io_access(io_access)?;
+                api.module().process_io_access(io_access)?;
             }
             DropNodeEvent::Start(..) | DropNodeEvent::End(..) => {}
         }
@@ -247,10 +248,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
     fn on_move_module(api: &mut ModuleApi, event: &MoveModuleEvent) -> Result<(), RuntimeError> {
         match event {
             MoveModuleEvent::IOAccess(io_access) => {
-                api.kernel_get_system()
-                    .modules
-                    .limits
-                    .process_io_access(io_access)?;
+                api.module().process_io_access(io_access)?;
             }
         }
 
@@ -263,16 +261,10 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
     ) -> Result<(), RuntimeError> {
         match event {
             OpenSubstateEvent::Start { substate_key, .. } => {
-                api.kernel_get_system()
-                    .modules
-                    .limits
-                    .process_substate_key(substate_key)?;
+                api.module().process_substate_key(substate_key)?;
             }
             OpenSubstateEvent::IOAccess(io_access) => {
-                api.kernel_get_system()
-                    .modules
-                    .limits
-                    .process_io_access(io_access)?;
+                api.module().process_io_access(io_access)?;
             }
             OpenSubstateEvent::End { .. } => {}
         }
@@ -286,10 +278,7 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
     ) -> Result<(), RuntimeError> {
         match event {
             ReadSubstateEvent::IOAccess(io_access) => {
-                api.kernel_get_system()
-                    .modules
-                    .limits
-                    .process_io_access(io_access)?;
+                api.module().process_io_access(io_access)?;
             }
             ReadSubstateEvent::OnRead { .. } => {}
         }
@@ -301,17 +290,12 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
         api: &mut ModuleApi,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let limits = &mut api.kernel_get_system().modules.limits;
-
         match event {
             WriteSubstateEvent::Start { value, .. } => {
-                limits.process_substate_value(value)?;
+                api.module().process_substate_value(value)?;
             }
             WriteSubstateEvent::IOAccess(io_access) => {
-                api.kernel_get_system()
-                    .modules
-                    .limits
-                    .process_io_access(io_access)?;
+                api.module().process_io_access(io_access)?;
             }
         }
 
@@ -319,14 +303,13 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
     }
 
     fn on_set_substate(api: &mut ModuleApi, event: &SetSubstateEvent) -> Result<(), RuntimeError> {
-        let limits_module = &mut api.kernel_get_system().modules.limits;
         match event {
             SetSubstateEvent::Start(_node_id, _partition_num, substate_key, substate_value) => {
-                limits_module.process_substate_key(substate_key)?;
-                limits_module.process_substate_value(substate_value)?;
+                api.module().process_substate_key(substate_key)?;
+                api.module().process_substate_value(substate_value)?;
             }
             SetSubstateEvent::IOAccess(io_access) => {
-                limits_module.process_io_access(io_access)?;
+                api.module().process_io_access(io_access)?;
             }
         }
 
@@ -337,13 +320,12 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
         api: &mut ModuleApi,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let limits_module = &mut api.kernel_get_system().modules.limits;
         match event {
             RemoveSubstateEvent::Start(_node_id, _partition_num, substate_key) => {
-                limits_module.process_substate_key(substate_key)?;
+                api.module().process_substate_key(substate_key)?;
             }
             RemoveSubstateEvent::IOAccess(io_access) => {
-                limits_module.process_io_access(io_access)?;
+                api.module().process_io_access(io_access)?;
             }
         }
 
@@ -351,12 +333,11 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
     }
 
     fn on_scan_keys(api: &mut ModuleApi, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
-        let limits_module = &mut api.kernel_get_system().modules.limits;
         match event {
-            ScanKeysEvent::IOAccess(io_access) => {
-                limits_module.process_io_access(io_access)?;
-            }
             ScanKeysEvent::Start => {}
+            ScanKeysEvent::IOAccess(io_access) => {
+                api.module().process_io_access(io_access)?;
+            }
         }
 
         Ok(())
@@ -366,12 +347,11 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
         api: &mut ModuleApi,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        let limits_module = &mut api.kernel_get_system().modules.limits;
         match event {
-            DrainSubstatesEvent::IOAccess(io_access) => {
-                limits_module.process_io_access(io_access)?;
-            }
             DrainSubstatesEvent::Start(_) => {}
+            DrainSubstatesEvent::IOAccess(io_access) => {
+                api.module().process_io_access(io_access)?;
+            }
         }
 
         Ok(())
@@ -381,12 +361,11 @@ impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for LimitsModule {
         api: &mut ModuleApi,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        let limits_module = &mut api.kernel_get_system().modules.limits;
         match event {
-            ScanSortedSubstatesEvent::IOAccess(io_access) => {
-                limits_module.process_io_access(io_access)?;
-            }
             ScanSortedSubstatesEvent::Start => {}
+            ScanSortedSubstatesEvent::IOAccess(io_access) => {
+                api.module().process_io_access(io_access)?;
+            }
         }
 
         Ok(())

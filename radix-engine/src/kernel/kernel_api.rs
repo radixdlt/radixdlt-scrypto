@@ -2,7 +2,6 @@ use super::call_frame::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_modules::execution_trace::*;
 use crate::track::interface::*;
 use radix_engine_interface::api::field_api::*;
 use radix_substate_store_interface::db_key_mapper::*;
@@ -197,9 +196,13 @@ pub trait KernelInternalApi {
     /// Returns the visibility of a node
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
-    /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
-    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot>;
+    /// Only intended for use in debug modules
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue>;
 }
 
 pub trait KernelApi:

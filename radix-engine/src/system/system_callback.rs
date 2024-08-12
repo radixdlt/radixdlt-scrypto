@@ -110,7 +110,7 @@ impl SystemLockData {
     }
 }
 
-/// Effectively a trait alias for KernelApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>
+/// Effectively a trait alias for `KernelApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>`
 pub trait SystemBasedKernelApi:
     KernelApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>
 {
@@ -125,15 +125,31 @@ impl<V: SystemCallbackObject, E, K: KernelApi<CallbackObject = System<V, E>>> Sy
     type Executable = E;
 }
 
-/// Effectively a trait alias for KernelInternalApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>
-///
-/// TODO: Remove the bound on KernelInternalApi, but only implement it on KernelInternalApi.
-/// Create "nicer" methods to make this less of a kernel API and more of a system API
-pub trait SystemModuleApi:
+/// Effectively a trait alias for `KernelInternalApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>`
+pub trait SystemBasedKernelInternalApi:
     KernelInternalApi<System = System<Self::SystemCallback, Self::Executable>>
 {
     type SystemCallback: SystemCallbackObject;
     type Executable;
+}
+
+impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
+    SystemBasedKernelInternalApi for K
+{
+    type SystemCallback = V;
+    type Executable = E;
+}
+
+pub trait SystemModuleApi {
+    type SystemCallback: SystemCallbackObject;
+    type Executable;
+
+    fn system(&mut self) -> &mut System<Self::SystemCallback, Self::Executable>;
+
+    fn system_state(&mut self) -> SystemState<'_, System<Self::SystemCallback, Self::Executable>>;
+
+    /// Gets the number of call frames that are currently in the call frame stack
+    fn current_stack_depth(&self) -> usize;
 }
 
 impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>> SystemModuleApi
@@ -141,6 +157,37 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>> Sy
 {
     type SystemCallback = V;
     type Executable = E;
+
+    fn system(&mut self) -> &mut K::System {
+        self.kernel_get_system()
+    }
+
+    fn system_state(&mut self) -> SystemState<'_, K::System> {
+        self.kernel_get_system_state()
+    }
+
+    fn current_stack_depth(&self) -> usize {
+        self.kernel_get_current_depth()
+    }
+}
+
+pub trait ResolvableSystemModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self;
+}
+
+pub trait SystemModuleApiFor<M: ResolvableSystemModule + ?Sized>: SystemModuleApi {
+    fn module(&mut self) -> &mut M {
+        M::resolve_from_system(self.system())
+    }
+}
+
+impl<
+        V: SystemCallbackObject,
+        E,
+        K: KernelInternalApi<System = System<V, E>>,
+        M: ResolvableSystemModule + ?Sized,
+    > SystemModuleApiFor<M> for K
+{
 }
 
 #[derive(Clone)]

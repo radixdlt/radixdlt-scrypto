@@ -6,6 +6,7 @@ use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system_callback::*;
+use crate::system::system_callback_api::SystemCallbackObject;
 use colored::Colorize;
 use radix_engine_interface::types::SubstateKey;
 use sbor::rust::collections::BTreeMap;
@@ -17,7 +18,7 @@ pub struct KernelTraceModule;
 macro_rules! log {
     ( $api: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
-        println!("{}[{}] {}", "    ".repeat($api.kernel_get_current_depth()), $api.kernel_get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
+        println!("{}[{}] {}", "    ".repeat($api.current_stack_depth()), $api.current_stack_depth(), sbor::rust::format!($msg, $( $arg ),*));
     };
 }
 
@@ -27,9 +28,14 @@ impl InitSystemModule for KernelTraceModule {
         panic!("KernelTraceModule should be disabled for feature resource_tracker!")
     }
 }
+impl ResolvableSystemModule for KernelTraceModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
+        &mut system.modules.kernel_trace
+    }
+}
 
 #[allow(unused_variables)] // for no_std
-impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for KernelTraceModule {
+impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for KernelTraceModule {
     fn before_invoke(
         api: &mut ModuleApi,
         invocation: &KernelInvocation<Actor>,

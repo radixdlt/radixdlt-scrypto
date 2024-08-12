@@ -10,7 +10,6 @@ use crate::kernel::kernel_api::*;
 use crate::system::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::system::node_init::type_info_partition;
 use crate::system::system_callback::*;
-use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::system::system_substates::{KeyValueEntrySubstate, LockStatus};
@@ -2982,11 +2981,13 @@ impl<'a, Y: SystemBasedKernelApi> KernelInternalApi for SystemService<'a, Y> {
         self.api.kernel_get_node_visibility(node_id)
     }
 
-    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        self.api.kernel_read_bucket(bucket_id)
-    }
-
-    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        self.api.kernel_read_proof(proof_id)
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.api
+            .kernel_read_substate_uncosted(node_id, partition_num, substate_key)
     }
 }

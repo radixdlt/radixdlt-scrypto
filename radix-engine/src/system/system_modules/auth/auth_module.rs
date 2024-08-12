@@ -11,6 +11,7 @@ use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::node_init::type_info_partition;
 use crate::system::system::SystemService;
 use crate::system::system_callback::*;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::{AttachedModuleId, LockFlags, ModuleId, SystemBlueprintApi};
 use radix_engine_interface::blueprints::package::{
@@ -516,4 +517,9 @@ impl AuthModule {
 }
 
 impl InitSystemModule for AuthModule {}
-impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for AuthModule {}
+impl ResolvableSystemModule for AuthModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
+        &mut system.modules.auth
+    }
+}
+impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for AuthModule {}

@@ -22,7 +22,9 @@ pub trait InitSystemModule {
     }
 }
 
-pub trait SystemModule<ModuleApi: SystemModuleApi>: InitSystemModule {
+pub trait SystemModule<ModuleApi: SystemModuleApiFor<Self>>:
+    InitSystemModule + ResolvableSystemModule
+{
     //======================
     // Invocation events
     //

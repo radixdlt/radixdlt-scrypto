@@ -1,6 +1,5 @@
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
-use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::*;
@@ -9,12 +8,9 @@ use crate::kernel::kernel_callback_api::*;
 use crate::kernel::kernel_callback_api::{ExecutionReceipt, KernelTransactionCallbackObject};
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::type_info::TypeInfoSubstate;
 use crate::track::interface::*;
 use crate::track::Track;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
@@ -462,12 +458,15 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
         }
     }
 
-    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        read_bucket_uncosted(&self.substate_io.heap, bucket_id)
-    }
-
-    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        read_proof_uncosted(&self.substate_io.heap, proof_id)
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.substate_io
+            .heap
+            .get_substate(node_id, partition_num, substate_key)
     }
 }
 
@@ -507,152 +506,13 @@ impl<'g, M: KernelCallbackObject> KernelInternalApi for KernelReadOnly<'g, M> {
         }
     }
 
-    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        read_bucket_uncosted(&self.heap, bucket_id)
-    }
-
-    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        read_proof_uncosted(&self.heap, proof_id)
-    }
-}
-
-fn read_bucket_uncosted(heap: &Heap, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-    let (is_fungible_bucket, resource_address) = if let Some(substate) = heap.get_substate(
-        &bucket_id,
-        TYPE_INFO_FIELD_PARTITION,
-        &TypeInfoField::TypeInfo.into(),
-    ) {
-        let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-        match type_info {
-            TypeInfoSubstate::Object(info)
-                if info.blueprint_info.blueprint_id.package_address == RESOURCE_PACKAGE
-                    && (info.blueprint_info.blueprint_id.blueprint_name
-                        == FUNGIBLE_BUCKET_BLUEPRINT
-                        || info.blueprint_info.blueprint_id.blueprint_name
-                            == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
-            {
-                let is_fungible = info
-                    .blueprint_info
-                    .blueprint_id
-                    .blueprint_name
-                    .eq(FUNGIBLE_BUCKET_BLUEPRINT);
-                let parent = info.get_outer_object();
-                let resource_address: ResourceAddress =
-                    ResourceAddress::new_or_panic(parent.as_bytes().try_into().unwrap());
-                (is_fungible, resource_address)
-            }
-            _ => {
-                return None;
-            }
-        }
-    } else {
-        return None;
-    };
-
-    if is_fungible_bucket {
-        let substate = heap
-            .get_substate(
-                bucket_id,
-                MAIN_BASE_PARTITION,
-                &FungibleBucketField::Liquid.into(),
-            )
-            .unwrap();
-        let liquid: FieldSubstate<LiquidFungibleResource> = substate.as_typed().unwrap();
-
-        Some(BucketSnapshot::Fungible {
-            resource_address,
-            liquid: liquid.into_payload().amount(),
-        })
-    } else {
-        let substate = heap
-            .get_substate(
-                bucket_id,
-                MAIN_BASE_PARTITION,
-                &NonFungibleBucketField::Liquid.into(),
-            )
-            .unwrap();
-        let liquid: FieldSubstate<LiquidNonFungibleResource> = substate.as_typed().unwrap();
-
-        Some(BucketSnapshot::NonFungible {
-            resource_address,
-            liquid: liquid.into_payload().ids().clone(),
-        })
-    }
-}
-
-fn read_proof_uncosted(heap: &Heap, proof_id: &NodeId) -> Option<ProofSnapshot> {
-    let is_fungible = if let Some(substate) = heap.get_substate(
-        &proof_id,
-        TYPE_INFO_FIELD_PARTITION,
-        &TypeInfoField::TypeInfo.into(),
-    ) {
-        let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-        match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                blueprint_info: BlueprintInfo { blueprint_id, .. },
-                ..
-            }) if blueprint_id.package_address == RESOURCE_PACKAGE
-                && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
-                    || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
-            {
-                blueprint_id.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
-            }
-            _ => {
-                return None;
-            }
-        }
-    } else {
-        return None;
-    };
-
-    if is_fungible {
-        let substate = heap
-            .get_substate(
-                proof_id,
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-            )
-            .unwrap();
-        let info: TypeInfoSubstate = substate.as_typed().unwrap();
-        let resource_address = ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
-
-        let substate = heap
-            .get_substate(
-                proof_id,
-                MAIN_BASE_PARTITION,
-                &FungibleProofField::ProofRefs.into(),
-            )
-            .unwrap();
-        let proof: FieldSubstate<FungibleProofSubstate> = substate.as_typed().unwrap();
-
-        Some(ProofSnapshot::Fungible {
-            resource_address,
-            total_locked: proof.into_payload().amount(),
-        })
-    } else {
-        let substate = heap
-            .get_substate(
-                proof_id,
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-            )
-            .unwrap();
-        let info: TypeInfoSubstate = substate.as_typed().unwrap();
-        let resource_address = ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
-
-        let substate = heap
-            .get_substate(
-                proof_id,
-                MAIN_BASE_PARTITION,
-                &NonFungibleProofField::ProofRefs.into(),
-            )
-            .unwrap();
-        let proof: FieldSubstate<NonFungibleProofSubstate> = substate.as_typed().unwrap();
-
-        Some(ProofSnapshot::NonFungible {
-            resource_address,
-            total_locked: proof.into_payload().non_fungible_local_ids().clone(),
-        })
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.heap.get_substate(node_id, partition_num, substate_key)
     }
 }
 

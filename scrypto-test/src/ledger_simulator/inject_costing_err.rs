@@ -2,24 +2,13 @@ use radix_common::prelude::*;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage, NodeVisibility};
-use radix_engine::kernel::kernel_api::{
-    DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
-    KernelSubstateApi, SystemState,
-};
-use radix_engine::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
-    KernelTransactionCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
-    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
-    WriteSubstateEvent,
-};
+use radix_engine::kernel::kernel_api::*;
+use radix_engine::kernel::kernel_callback_api::*;
 use radix_engine::system::actor::Actor;
 use radix_engine::system::system_callback::{System, SystemInit, SystemLockData};
 use radix_engine::system::system_callback_api::SystemCallbackObject;
 use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError, OnApplyCost};
-use radix_engine::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use radix_engine::track::{
-    BootStore, CommitableSubstateStore, NodeSubstates, StoreCommitInfo, Track,
-};
+use radix_engine::track::*;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::Vm;
@@ -525,12 +514,14 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingErr
         self.api.kernel_get_node_visibility(node_id)
     }
 
-    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        self.api.kernel_read_bucket(bucket_id)
-    }
-
-    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        self.api.kernel_read_proof(proof_id)
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.api
+            .kernel_read_substate_uncosted(node_id, partition_num, substate_key)
     }
 }
 
@@ -570,11 +561,13 @@ impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingErr
         self.api.kernel_get_node_visibility(node_id)
     }
 
-    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        self.api.kernel_read_bucket(bucket_id)
-    }
-
-    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        self.api.kernel_read_proof(proof_id)
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.api
+            .kernel_read_substate_uncosted(node_id, partition_num, substate_key)
     }
 }
