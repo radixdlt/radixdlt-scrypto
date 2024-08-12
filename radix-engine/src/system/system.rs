@@ -2770,42 +2770,6 @@ impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemThreadApi
         to_stack_id: Hash,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_switch_stack(to_stack_id)?;
-
-        let cur_frame = self.api.kernel_get_system_state().current_call_frame;
-        match cur_frame {
-            Actor::Root => {
-                let (virtual_resources, virtual_non_fungibles) = {
-                    let auth_module = &self.api.kernel_get_system().modules.auth;
-                    if let Some(params) = auth_module.params.get(&to_stack_id) {
-                        (
-                            params.virtual_resources.clone(),
-                            params.initial_proofs.clone(),
-                        )
-                    } else {
-                        (BTreeSet::new(), BTreeSet::new())
-                    }
-                };
-
-                let auth_zone = AuthModule::create_auth_zone(
-                    self,
-                    None,
-                    virtual_resources,
-                    virtual_non_fungibles,
-                )?;
-
-                self.api
-                    .kernel_set_call_frame_data(Actor::Function(FunctionActor {
-                        blueprint_id: BlueprintId::new(
-                            &TRANSACTION_PROCESSOR_PACKAGE,
-                            TRANSACTION_PROCESSOR_BLUEPRINT,
-                        ),
-                        ident: "run".to_string(),
-                        auth_zone,
-                    }))?;
-            }
-            _ => {}
-        }
-
         Ok(())
     }
 
@@ -2815,7 +2779,6 @@ impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemThreadApi
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_send_to_stack(to_stack_id, value)?;
-
         Ok(())
     }
 

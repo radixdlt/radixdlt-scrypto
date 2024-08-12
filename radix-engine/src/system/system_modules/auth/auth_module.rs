@@ -6,7 +6,7 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::actor::Actor;
+use crate::system::actor::{Actor, FunctionActor};
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::node_init::type_info_partition;
 use crate::system::system::SystemService;
@@ -18,7 +18,7 @@ use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
+use radix_engine_interface::blueprints::transaction_processor::{TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT};
 use radix_engine_interface::types::*;
 use radix_transactions::model::AuthZoneParams;
 
@@ -75,6 +75,29 @@ impl AuthModule {
         Self { root, params }
     }
 
+    pub fn create_root_auth_zone<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(api: &mut SystemService<Y, V, E>, intent_hash: Hash) -> Result<NodeId, RuntimeError> {
+        let auth_module = &api.kernel_get_system().modules.auth;
+
+        let (virtual_resources, virtual_non_fungibles) =
+        if let Some(params) = auth_module.params.get(&intent_hash) {
+            (
+                params.virtual_resources.clone(),
+                params.initial_proofs.clone(),
+            )
+        } else {
+            (BTreeSet::new(), BTreeSet::new())
+        };
+
+        let auth_zone = AuthModule::create_auth_zone(
+            api,
+            None,
+            virtual_resources,
+            virtual_non_fungibles,
+        )?;
+
+        Ok(auth_zone)
+    }
+
     pub fn on_call_function<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
         api: &mut SystemService<Y, V, E>,
         blueprint_id: &BlueprintId,
@@ -91,22 +114,12 @@ impl AuthModule {
                     .blueprint_name
                     .eq(TRANSACTION_PROCESSOR_BLUEPRINT);
             let is_at_root = api.kernel_get_current_depth() == 0;
-            let (virtual_resources, virtual_non_fungibles) =
-                if is_transaction_processor_blueprint && is_at_root {
-                    let auth_module = &api.kernel_get_system().modules.auth;
-                    if let Some(params) = auth_module.params.get(&auth_module.root) {
-                        (
-                            params.virtual_resources.clone(),
-                            params.initial_proofs.clone(),
-                        )
-                    } else {
-                        (BTreeSet::new(), BTreeSet::new())
-                    }
-                } else {
-                    (BTreeSet::new(), BTreeSet::new())
-                };
-
-            Self::create_auth_zone(api, None, virtual_resources, virtual_non_fungibles)?
+            if is_transaction_processor_blueprint && is_at_root {
+                let root_intent = api.kernel_get_system().modules.auth.root;
+                Self::create_root_auth_zone(api, root_intent)?
+            } else {
+                Self::create_auth_zone(api, None, BTreeSet::new(), BTreeSet::new())?
+            }
         };
 
         // Check authorization
