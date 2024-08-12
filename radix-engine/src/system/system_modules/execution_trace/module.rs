@@ -2,12 +2,11 @@ use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
+use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent};
 use crate::system::actor::{Actor, FunctionActor, MethodActor};
 use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::System;
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_callback::*;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
 use radix_common::math::Decimal;
 use radix_engine_interface::blueprints::resource::*;
@@ -256,10 +255,7 @@ impl ResourceSummary {
         self.buckets.is_empty() && self.proofs.is_empty()
     }
 
-    pub fn from_message<Y: KernelApi<M>, M: KernelCallbackObject>(
-        api: &mut Y,
-        message: &CallFrameMessage,
-    ) -> Self {
+    pub fn from_message(api: &mut impl SystemModuleApi, message: &CallFrameMessage) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         for node_id in &message.move_nodes {
@@ -273,10 +269,7 @@ impl ResourceSummary {
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelInternalApi<M>, M: KernelCallbackObject>(
-        api: &mut Y,
-        node_id: &NodeId,
-    ) -> Self {
+    pub fn from_node_id(api: &mut impl SystemModuleApi, node_id: &NodeId) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         if let Some(x) = api.kernel_read_bucket(node_id) {
@@ -291,11 +284,8 @@ impl ResourceSummary {
 
 impl InitSystemModule for ExecutionTraceModule {}
 
-impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for ExecutionTraceModule {
-    fn on_create_node<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
-        event: &CreateNodeEvent,
-    ) -> Result<(), RuntimeError> {
+impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for ExecutionTraceModule {
+    fn on_create_node(api: &mut ModuleApi, event: &CreateNodeEvent) -> Result<(), RuntimeError> {
         match event {
             CreateNodeEvent::Start(..) => {
                 api.kernel_get_system_state()
@@ -324,10 +314,7 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
-        event: &DropNodeEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_drop_node(api: &mut ModuleApi, event: &DropNodeEvent) -> Result<(), RuntimeError> {
         match event {
             DropNodeEvent::Start(node_id) => {
                 let resource_summary = ResourceSummary::from_node_id(api, node_id);
@@ -352,8 +339,8 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn before_invoke<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
+    fn before_invoke(
+        api: &mut ModuleApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         let message = CallFrameMessage::from_input(&invocation.args, &invocation.call_frame_data);
@@ -374,8 +361,8 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
+    fn on_execution_finish(
+        api: &mut ModuleApi,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();

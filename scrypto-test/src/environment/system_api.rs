@@ -64,7 +64,6 @@ macro_rules! implement_system_api {
                         let rtn = self.0.with_kernel_mut(|kernel| {
                             SystemService {
                                 api: kernel,
-                                phantom: PhantomData,
                             }.$func_ident( $($input_ident),* )
                         });
 

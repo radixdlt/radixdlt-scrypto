@@ -1,8 +1,8 @@
 use crate::blueprints::package::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system_callback::{System, SystemLockData};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::system_callback::{SystemLockData, SystemModuleApi};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::track::BootStore;
@@ -100,10 +100,9 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
     fn invoke<
         Y: SystemApi<RuntimeError>
-            + KernelInternalApi<System<Self, T>>
+            + SystemModuleApi<SystemCallback = Self>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
-        T,
     >(
         address: &PackageAddress,
         export: PackageExport,

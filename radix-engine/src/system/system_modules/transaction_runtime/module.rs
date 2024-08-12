@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::{InitSystemModule, SystemModule};
+use crate::system::system_callback::*;
 use radix_common::crypto::Hash;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::ModuleId;
@@ -104,7 +104,7 @@ impl TransactionRuntimeModule {
 }
 
 impl InitSystemModule for TransactionRuntimeModule {}
-impl<K: KernelCallbackObject> SystemModule<K> for TransactionRuntimeModule {}
+impl<ModuleApi: SystemModuleApi> SystemModule<ModuleApi> for TransactionRuntimeModule {}
 
 #[cfg(test)]
 mod tests {

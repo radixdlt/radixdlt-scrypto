@@ -8,7 +8,7 @@ use radix_engine::kernel::kernel_api::{
     KernelSubstateApi,
 };
 use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
-use radix_engine::track::{Track};
+use radix_engine::track::Track;
 use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -50,110 +50,156 @@ impl ExecutionReceipt for TestReceipt {
 }
 
 struct TestCallbackObject;
-
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
 
-    fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_create_node<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: CreateNodeEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_drop_node<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: DropNodeEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_move_module<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: MoveModuleEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_open_substate<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: OpenSubstateEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_close_substate<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: CloseSubstateEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_read_substate<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: ReadSubstateEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_write_substate<Y: KernelInternalApi<Self>>(_api: &mut Y, _event: WriteSubstateEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_set_substate(&mut self, _event: SetSubstateEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_remove_substate(&mut self, _event: RemoveSubstateEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_scan_keys(&mut self, _event: ScanKeysEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_drain_substates(&mut self, _event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_scan_sorted_substates(
-        &mut self,
-        _event: ScanSortedSubstatesEvent,
+    fn on_pin_node<Y: KernelInternalApi<System = Self>>(
+        _node_id: &NodeId,
+        _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn before_invoke<Y: KernelApi<Self>>(
+    fn on_create_node<Y: KernelInternalApi<System = Self>>(
+        _event: CreateNodeEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_drop_node<Y: KernelInternalApi<System = Self>>(
+        _event: DropNodeEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_move_module<Y: KernelInternalApi<System = Self>>(
+        _event: MoveModuleEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_open_substate<Y: KernelInternalApi<System = Self>>(
+        _event: OpenSubstateEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_close_substate<Y: KernelInternalApi<System = Self>>(
+        _event: CloseSubstateEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_read_substate<Y: KernelInternalApi<System = Self>>(
+        _event: ReadSubstateEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_write_substate<Y: KernelInternalApi<System = Self>>(
+        _event: WriteSubstateEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_set_substate<Y: KernelInternalApi<System = Self>>(
+        _event: SetSubstateEvent,
+        _api: &mut Y,) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_remove_substate<Y: KernelInternalApi<System = Self>>(
+        _event: RemoveSubstateEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_scan_keys<Y: KernelInternalApi<System = Self>>(
+        _event: ScanKeysEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_drain_substates<Y: KernelInternalApi<System = Self>>(
+        _event: DrainSubstatesEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_scan_sorted_substates<Y: KernelInternalApi<System = Self>>(
+        _event: ScanSortedSubstatesEvent,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn before_invoke<Y: KernelApi<CallbackObject = Self>>(
         _invocation: &KernelInvocation<Self::CallFrameData>,
         _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelApi<Self>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_invoke<Y: KernelApi<CallbackObject = Self>>(
+        _output: &IndexedScryptoValue,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn invoke_upstream<Y: KernelApi<Self>>(
+    fn on_execution_start<Y: KernelInternalApi<System = Self>>(_api: &mut Y) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_execution_finish<Y: KernelInternalApi<System = Self>>(
+        _message: &CallFrameMessage,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_allocate_node_id<Y: KernelInternalApi<System = Self>>(
+        _entity_type: EntityType,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn invoke_upstream<Y: KernelApi<CallbackObject = Self>>(
         args: &IndexedScryptoValue,
         _api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         Ok(args.clone())
     }
 
-    fn auto_drop<Y: KernelApi<Self>>(_nodes: Vec<NodeId>, _api: &mut Y) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_execution_finish<Y: KernelApi<Self>>(_message: &CallFrameMessage, _api: &mut Y) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn after_invoke<Y: KernelApi<Self>>(_output: &IndexedScryptoValue, _api: &mut Y) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_allocate_node_id<Y: KernelApi<Self>>(_entity_type: EntityType, _api: &mut Y) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn on_mark_substate_as_transient(
-        &mut self,
-        _node_id: &NodeId,
-        _partition_number: &PartitionNumber,
-        _substate_key: &SubstateKey,
+    fn auto_drop<Y: KernelApi<CallbackObject = Self>>(
+        _nodes: Vec<NodeId>,
+        _api: &mut Y,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
-    fn on_substate_lock_fault<Y: KernelApi<Self>>(
+    fn on_mark_substate_as_transient<Y: KernelInternalApi<System = Self>>(
+        _node_id: &NodeId,
+        _partition_number: &PartitionNumber,
+        _substate_key: &SubstateKey,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    fn on_substate_lock_fault<Y: KernelApi<CallbackObject = Self>>(
         _node_id: NodeId,
         _partition_num: PartitionNumber,
         _offset: &SubstateKey,
@@ -162,7 +208,10 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(false)
     }
 
-    fn on_drop_node_mut<Y: KernelApi<Self>>(_node_id: &NodeId, _api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_drop_node_mut<Y: KernelApi<CallbackObject = Self>>(
+        _node_id: &NodeId,
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 }

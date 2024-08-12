@@ -180,13 +180,16 @@ pub struct SystemState<'a, M: KernelCallbackObject> {
 
 /// Internal API for kernel modules.
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
-pub trait KernelInternalApi<M: KernelCallbackObject> {
+pub trait KernelInternalApi {
+    type System: KernelCallbackObject;
+
     /// Retrieves data associated with the kernel upstream layer (system)
-    fn kernel_get_system(&mut self) -> &mut M {
+    #[inline]
+    fn kernel_get_system(&mut self) -> &mut Self::System {
         self.kernel_get_system_state().system
     }
 
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, M>;
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System>;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
@@ -195,14 +198,15 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
-    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot>;
+    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
+    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
-pub trait KernelApi<M: KernelCallbackObject>:
+pub trait KernelApi:
     KernelNodeApi
-    + KernelSubstateApi<M::LockData>
-    + KernelInvokeApi<M::CallFrameData>
-    + KernelInternalApi<M>
+    + KernelSubstateApi<<Self::CallbackObject as KernelCallbackObject>::LockData>
+    + KernelInvokeApi<<Self::CallbackObject as KernelCallbackObject>::CallFrameData>
+    + KernelInternalApi<System = Self::CallbackObject>
 {
+    type CallbackObject: KernelCallbackObject;
 }

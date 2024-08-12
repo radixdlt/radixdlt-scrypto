@@ -67,19 +67,13 @@ impl<K: SystemCallbackObject> InjectCostingError<K> {
 
 macro_rules! wrapped_api {
     ($api:ident) => {
-        WrappedKernelApi {
-            api: $api,
-            phantom: PhantomData::default(),
-        }
+        WrappedKernelApi { api: $api }
     };
 }
 
 macro_rules! wrapped_internal_api {
     ($api:ident) => {
-        WrappedKernelInternalApi {
-            api: $api,
-            phantom: PhantomData::default(),
-        }
+        WrappedKernelInternalApi { api: $api }
     };
 }
 
@@ -105,7 +99,9 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
         Ok((Self { fail_after, system }, call_frame_init))
     }
 
-    fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
+    fn start<Y: KernelApi<CallbackObject = Self>>(
+        api: &mut Y,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
         System::start(&mut api)
     }
@@ -124,175 +120,208 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
     }
 }
 
-impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
+type InternalSystem<V> = System<V, Executable>;
+
+impl<V: SystemCallbackObject> KernelCallbackObject for InjectCostingError<V> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 
-    fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
-        self.maybe_err()?;
-        self.system.on_pin_node(node_id)
+    fn on_pin_node<Y: KernelInternalApi<System = Self>>(
+        node_id: &NodeId,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_pin_node(node_id, &mut api)
     }
 
-    fn on_create_node<Y: KernelInternalApi<Self>>(
-        api: &mut Y,
+    fn on_create_node<Y: KernelInternalApi<System = Self>>(
         event: CreateNodeEvent,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::<_, Executable>::on_create_node(&mut api, event)
+        InternalSystem::<V>::on_create_node(event, &mut api)
     }
 
-    fn on_drop_node<Y: KernelInternalApi<Self>>(
-        api: &mut Y,
+    fn on_drop_node<Y: KernelInternalApi<System = Self>>(
         event: DropNodeEvent,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::<_, Executable>::on_drop_node(&mut api, event)
+        InternalSystem::<V>::on_drop_node(event, &mut api)
     }
 
-    fn on_move_module<Y: KernelInternalApi<Self>>(
-        api: &mut Y,
+    fn on_move_module<Y: KernelInternalApi<System = Self>>(
         event: MoveModuleEvent,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::<_, Executable>::on_move_module(&mut api, event)
+        InternalSystem::<V>::on_move_module(event, &mut api)
     }
 
-    fn on_open_substate<Y: KernelInternalApi<Self>>(
-        api: &mut Y,
+    fn on_open_substate<Y: KernelInternalApi<System = Self>>(
         event: OpenSubstateEvent,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::<_, Executable>::on_open_substate(&mut api, event)
+        InternalSystem::<V>::on_open_substate(event, &mut api)
     }
 
-    fn on_close_substate<Y: KernelInternalApi<Self>>(
-        api: &mut Y,
+    fn on_close_substate<Y: KernelInternalApi<System = Self>>(
         event: CloseSubstateEvent,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::<_, Executable>::on_close_substate(&mut api, event)
+        InternalSystem::<V>::on_close_substate(event, &mut api)
     }
 
-    fn on_read_substate<Y: KernelInternalApi<Self>>(
-        api: &mut Y,
+    fn on_read_substate<Y: KernelInternalApi<System = Self>>(
         event: ReadSubstateEvent,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_internal_api!(api);
-        System::<_, Executable>::on_read_substate(&mut api, event)
-    }
-
-    fn on_write_substate<Y: KernelInternalApi<Self>>(
         api: &mut Y,
-        event: WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::<_, Executable>::on_write_substate(&mut api, event)
+        InternalSystem::<V>::on_read_substate(event, &mut api)
     }
 
-    fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError> {
-        self.maybe_err()?;
-        self.system.on_set_substate(event)
-    }
-
-    fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError> {
-        self.maybe_err()?;
-        self.system.on_remove_substate(event)
-    }
-
-    fn on_scan_keys(&mut self, event: ScanKeysEvent) -> Result<(), RuntimeError> {
-        self.maybe_err()?;
-        self.system.on_scan_keys(event)
-    }
-
-    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
-        self.maybe_err()?;
-        self.system.on_drain_substates(event)
-    }
-
-    fn on_scan_sorted_substates(
-        &mut self,
-        event: ScanSortedSubstatesEvent,
+    fn on_write_substate<Y: KernelInternalApi<System = Self>>(
+        event: WriteSubstateEvent,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        self.maybe_err()?;
-        self.system.on_scan_sorted_substates(event)
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_write_substate(event, &mut api)
     }
 
-    fn before_invoke<Y: KernelApi<Self>>(
+    fn on_set_substate<Y: KernelInternalApi<System = Self>>(
+        event: SetSubstateEvent,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_set_substate(event, &mut api)
+    }
+
+    fn on_remove_substate<Y: KernelInternalApi<System = Self>>(
+        event: RemoveSubstateEvent,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_remove_substate(event, &mut api)
+    }
+
+    fn on_scan_keys<Y: KernelInternalApi<System = Self>>(
+        event: ScanKeysEvent,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_scan_keys(event, &mut api)
+    }
+
+    fn on_drain_substates<Y: KernelInternalApi<System = Self>>(
+        event: DrainSubstatesEvent,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_drain_substates(event, &mut api)
+    }
+
+    fn on_scan_sorted_substates<Y: KernelInternalApi<System = Self>>(
+        event: ScanSortedSubstatesEvent,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_scan_sorted_substates(event, &mut api)
+    }
+
+    fn before_invoke<Y: KernelApi<CallbackObject = Self>>(
         invocation: &KernelInvocation<Self::CallFrameData>,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::<_, Executable>::before_invoke(invocation, &mut api)
+        InternalSystem::<V>::before_invoke(invocation, &mut api)
     }
 
-    fn on_execution_start<Y: KernelApi<Self>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_execution_start<Y: KernelInternalApi<System = Self>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::<_, Executable>::on_execution_start(&mut api)
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_execution_start(&mut api)
     }
 
-    fn invoke_upstream<Y: KernelApi<Self>>(
+    fn invoke_upstream<Y: KernelApi<CallbackObject = Self>>(
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::<_, Executable>::invoke_upstream(args, &mut api)
+        InternalSystem::<V>::invoke_upstream(args, &mut api)
     }
 
-    fn auto_drop<Y: KernelApi<Self>>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError> {
-        api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::<_, Executable>::auto_drop(nodes, &mut api)
-    }
-
-    fn on_execution_finish<Y: KernelApi<Self>>(
-        message: &CallFrameMessage,
+    fn auto_drop<Y: KernelApi<CallbackObject = Self>>(
+        nodes: Vec<NodeId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::<_, Executable>::on_execution_finish(message, &mut api)
+        InternalSystem::<V>::auto_drop(nodes, &mut api)
     }
 
-    fn after_invoke<Y: KernelApi<Self>>(
+    fn on_execution_finish<Y: KernelInternalApi<System = Self>>(
+        message: &CallFrameMessage,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_execution_finish(message, &mut api)
+    }
+
+    fn after_invoke<Y: KernelApi<CallbackObject = Self>>(
         output: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::<_, Executable>::after_invoke(output, &mut api)
+        InternalSystem::<V>::after_invoke(output, &mut api)
     }
 
-    fn on_allocate_node_id<Y: KernelApi<Self>>(
+    fn on_allocate_node_id<Y: KernelInternalApi<System = Self>>(
         entity_type: EntityType,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
-        let mut api = wrapped_api!(api);
-        System::<_, Executable>::on_allocate_node_id(entity_type, &mut api)
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_allocate_node_id(entity_type, &mut api)
     }
 
-    fn on_mark_substate_as_transient(
-        &mut self,
+    fn on_mark_substate_as_transient<Y: KernelInternalApi<System = Self>>(
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        self.maybe_err()?;
-        self.system
-            .on_mark_substate_as_transient(node_id, partition_number, substate_key)
+        api.kernel_get_system_state().system.maybe_err()?;
+        let mut api = wrapped_internal_api!(api);
+        InternalSystem::<V>::on_mark_substate_as_transient(
+            node_id,
+            partition_number,
+            substate_key,
+            &mut api,
+        )
     }
 
-    fn on_substate_lock_fault<Y: KernelApi<Self>>(
+    fn on_substate_lock_fault<Y: KernelApi<CallbackObject = Self>>(
         node_id: NodeId,
         partition_num: PartitionNumber,
         offset: &SubstateKey,
@@ -300,26 +329,29 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<bool, RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::<_, Executable>::on_substate_lock_fault(node_id, partition_num, offset, &mut api)
+        InternalSystem::<V>::on_substate_lock_fault(node_id, partition_num, offset, &mut api)
     }
 
-    fn on_drop_node_mut<Y: KernelApi<Self>>(
+    fn on_drop_node_mut<Y: KernelApi<CallbackObject = Self>>(
         node_id: &NodeId,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::<_, Executable>::on_drop_node_mut(node_id, &mut api)
+        InternalSystem::<V>::on_drop_node_mut(node_id, &mut api)
     }
 }
 
-pub struct WrappedKernelApi<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> {
+pub struct WrappedKernelApi<
+    'a,
+    M: SystemCallbackObject + 'a,
+    K: KernelApi<CallbackObject = InjectCostingError<M>>,
+> {
     api: &'a mut K,
-    phantom: PhantomData<M>,
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelNodeApi
-    for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
+    KernelNodeApi for WrappedKernelApi<'a, M, K>
 {
     fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
         self.api.kernel_pin_node(node_id)
@@ -350,7 +382,7 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelNod
     }
 }
 
-impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
+impl<'a, M: SystemCallbackObject, Y: KernelApi<CallbackObject = InjectCostingError<M>>>
     KernelSubstateApi<SystemLockData> for WrappedKernelApi<'a, M, Y>
 {
     fn kernel_mark_substate_as_transient(
@@ -460,8 +492,8 @@ impl<'a, M: SystemCallbackObject, Y: KernelApi<InjectCostingError<M>>>
     }
 }
 
-impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> KernelInvokeApi<Actor>
-    for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<CallbackObject = InjectCostingError<M>>>
+    KernelInvokeApi<Actor> for WrappedKernelApi<'a, M, K>
 {
     fn kernel_invoke(
         &mut self,
@@ -471,9 +503,11 @@ impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> Kern
     }
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>>
-    KernelInternalApi<System<M, Executable>> for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
+    KernelInternalApi for WrappedKernelApi<'a, M, K>
 {
+    type System = System<M, Executable>;
+
     fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, Executable>> {
         let state = self.api.kernel_get_system_state();
         SystemState {
@@ -491,32 +525,34 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>>
         self.api.kernel_get_node_visibility(node_id)
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
+    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         self.api.kernel_read_bucket(bucket_id)
     }
 
-    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         self.api.kernel_read_proof(proof_id)
     }
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>>
-    KernelApi<System<M, Executable>> for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>> KernelApi
+    for WrappedKernelApi<'a, M, K>
 {
+    type CallbackObject = System<M, Executable>;
 }
 
 pub struct WrappedKernelInternalApi<
     'a,
     M: SystemCallbackObject + 'a,
-    K: KernelInternalApi<InjectCostingError<M>>,
+    K: KernelInternalApi<System = InjectCostingError<M>>,
 > {
     api: &'a mut K,
-    phantom: PhantomData<M>,
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelInternalApi<InjectCostingError<M>>>
-    KernelInternalApi<System<M, Executable>> for WrappedKernelInternalApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingError<M>>>
+    KernelInternalApi for WrappedKernelInternalApi<'a, M, K>
 {
+    type System = System<M, Executable>;
+
     fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, Executable>> {
         let state = self.api.kernel_get_system_state();
         SystemState {
@@ -534,11 +570,11 @@ impl<'a, M: SystemCallbackObject, K: KernelInternalApi<InjectCostingError<M>>>
         self.api.kernel_get_node_visibility(node_id)
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
+    fn kernel_read_bucket(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
         self.api.kernel_read_bucket(bucket_id)
     }
 
-    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+    fn kernel_read_proof(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
         self.api.kernel_read_proof(proof_id)
     }
 }

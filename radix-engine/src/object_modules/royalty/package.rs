@@ -1,27 +1,20 @@
 use crate::errors::*;
 use crate::internal_prelude::*;
+use crate::system::system_callback::SystemBasedKernelApi;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
-use radix_blueprint_schema_init::{
-    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    FunctionSchemaInit, TypeRef,
-};
+use radix_blueprint_schema_init::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{FieldValue, GenericArgs, KVEntry, SystemApi, ACTOR_STATE_SELF};
+use radix_engine_interface::api::*;
 use radix_engine_interface::object_modules::royalty::*;
 use radix_native_sdk::resource::NativeVault;
 
 // Re-export substates
 use crate::blueprints::package::PackageError;
-use crate::kernel::kernel_api::KernelApi;
 use crate::roles_template;
-use crate::system::system_callback::{System, SystemLockData};
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_callback::*;
 use crate::system::system_substates::FieldSubstate;
 use crate::system::system_substates::KeyValueEntrySubstate;
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
-    PackageDefinition,
-};
+use radix_engine_interface::blueprints::package::*;
 
 declare_native_blueprint_state! {
     blueprint_ident: ComponentRoyalty,
@@ -312,9 +305,9 @@ impl RoyaltyUtil {
 pub struct ComponentRoyaltyBlueprint;
 
 impl ComponentRoyaltyBlueprint {
-    pub(crate) fn create<Y: SystemApi<RuntimeError>>(
+    pub(crate) fn create(
         royalty_config: ComponentRoyaltyConfig,
-        api: &mut Y,
+        api: &mut impl SystemApi<RuntimeError>,
     ) -> Result<Own, RuntimeError> {
         // Create a royalty vault
         let accumulator_substate = ComponentRoyaltySubstate {
@@ -364,10 +357,10 @@ impl ComponentRoyaltyBlueprint {
         Ok(Own(component_id))
     }
 
-    pub(crate) fn set_royalty<Y: SystemApi<RuntimeError>>(
+    pub(crate) fn set_royalty(
         method: String,
         amount: RoyaltyAmount,
-        api: &mut Y,
+        api: &mut impl SystemApi<RuntimeError>,
     ) -> Result<(), RuntimeError> {
         RoyaltyUtil::verify_royalty_amounts(vec![amount.clone()].iter(), true, api)?;
 
@@ -386,9 +379,9 @@ impl ComponentRoyaltyBlueprint {
         Ok(())
     }
 
-    pub(crate) fn lock_royalty<Y: SystemApi<RuntimeError>>(
+    pub(crate) fn lock_royalty(
         method: String,
-        api: &mut Y,
+        api: &mut impl SystemApi<RuntimeError>,
     ) -> Result<(), RuntimeError> {
         let handle = api.actor_open_key_value_entry(
             ACTOR_STATE_SELF,
@@ -402,8 +395,8 @@ impl ComponentRoyaltyBlueprint {
         Ok(())
     }
 
-    pub(crate) fn claim_royalties<Y: SystemApi<RuntimeError>>(
-        api: &mut Y,
+    pub(crate) fn claim_royalties(
+        api: &mut impl SystemApi<RuntimeError>,
     ) -> Result<Bucket, RuntimeError> {
         let handle = api.actor_open_field(
             ACTOR_STATE_SELF,
@@ -421,15 +414,11 @@ impl ComponentRoyaltyBlueprint {
         Ok(bucket)
     }
 
-    pub fn charge_component_royalty<Y, V, E>(
+    pub fn charge_component_royalty(
         receiver: &NodeId,
         ident: &str,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<System<V, E>>,
-    {
+        api: &mut impl SystemBasedKernelApi,
+    ) -> Result<(), RuntimeError> {
         let accumulator_handle = api.kernel_open_substate(
             receiver,
             ROYALTY_BASE_PARTITION

@@ -1,10 +1,8 @@
 use super::payload_validation::*;
 use crate::errors::{RuntimeError, SystemError};
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelApi;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{System, SystemLockData};
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_callback::*;
 use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, LockStatus};
 use crate::track::interface::NodeSubstates;
 use radix_blueprint_schema_init::KeyValueStoreGenericSubstitutions;
@@ -55,7 +53,7 @@ pub enum TypeCheckError {
     MissingSchema,
 }
 
-impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemService<'a, Y, V, E> {
+impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
     /// Validate that the type substitutions match the generic definition of a given blueprint
     pub fn validate_bp_generic_args(
         &mut self,
