@@ -135,11 +135,6 @@ impl TransactionProcessorBlueprint {
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        enum ThreadState {
-            Running,
-            WaitingForChildren,
-        }
-
         let root_thread = manifests.get(0).unwrap().id;
         let mut threads = {
             let mut threads = btreemap!();
@@ -156,65 +151,33 @@ impl TransactionProcessorBlueprint {
                 } else {
                     Some(root_thread)
                 };
-                threads.insert(id, (thread, parent, ThreadState::Running, BTreeSet::new()));
+                threads.insert(id, (thread, parent));
             }
             threads
         };
 
         let mut output = vec![];
         let mut cur_thread = root_thread;
+        let mut received_value = None;
         loop {
-            let (processor, _, status, children) = threads.get_mut(&cur_thread).unwrap();
-            let result = processor.execute(api)?;
+            let (processor, parent) = threads.get_mut(&cur_thread).unwrap();
+            let result = processor.execute(api, received_value.take())?;
             if cur_thread.eq(&root_thread) {
                 output.extend(result.outputs);
             }
             match result.state {
-                TransactionProcessorState::YieldToChild(hash, ..) => {
-                    children.insert(hash);
+                TransactionProcessorState::YieldToChild(hash, value) => {
+                    received_value = Some(value);
                     todo!()
                 }
-                TransactionProcessorState::YieldToParent(..) => {
+                TransactionProcessorState::YieldToParent(value) => {
+                    received_value = Some(value);
                     todo!()
                 }
                 TransactionProcessorState::Done => {
-                    *status = ThreadState::WaitingForChildren;
-
-                    // 1. Finish executing ourselves
-                    // 2. Wait for children to finish
-                    // 3. Remove self
-                    // 4. Go to step 1 with parent
-                    let next_thread = (|| {
-                        let mut cur = cur_thread;
-                        loop {
-                            let (_, _, status, children) = threads.get(&cur).unwrap();
-                            match *status {
-                                ThreadState::WaitingForChildren => {
-                                    if let Some(next) = children
-                                        .iter()
-                                        .filter(|hash| threads.contains_key(hash))
-                                        .next()
-                                    {
-                                        // A child here should never be waiting for children itself so execute it next
-                                        return Some(*next);
-                                    } else {
-                                        let (_, parent, ..) = threads.remove(&cur).unwrap();
-                                        if let Some(parent) = parent {
-                                            cur = parent;
-                                        } else {
-                                            return None;
-                                        }
-                                    }
-                                }
-                                ThreadState::Running => {
-                                    return Some(cur);
-                                }
-                            }
-                        }
-                    })();
-
-                    if let Some(next_thread) = next_thread {
-                        cur_thread = next_thread;
+                    if let Some(parent) = parent {
+                        // Parent should never be done while children are running
+                        cur_thread = *parent;
                     } else {
                         break;
                     }
@@ -300,7 +263,13 @@ impl TransactionProcessor {
     fn execute<Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>, L: Default>(
         &mut self,
         api: &mut Y,
+        received_value: Option<IndexedScryptoValue>,
     ) -> Result<TransactionProcessorExecuteResult, RuntimeError> {
+        if let Some(value) = received_value {
+            self.processor
+                .handle_call_return_data(&value, &self.worktop, api)?;
+        }
+
         let mut outputs = Vec::new();
 
         for (index, inst) in self
