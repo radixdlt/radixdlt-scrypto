@@ -175,7 +175,9 @@ impl TransactionProcessorBlueprint {
             match result.state {
                 TransactionProcessorState::YieldToChild(hash, ..) => {
                     children.insert(hash);
-
+                    todo!()
+                }
+                TransactionProcessorState::YieldToParent(..) => {
                     todo!()
                 }
                 TransactionProcessorState::Done => {
@@ -230,6 +232,7 @@ struct TransactionProcessorExecuteResult {
 
 enum TransactionProcessorState {
     YieldToChild(Hash, IndexedScryptoValue),
+    YieldToParent(IndexedScryptoValue),
     Done,
 }
 
@@ -620,6 +623,15 @@ impl TransactionProcessor {
                     return Ok(TransactionProcessorExecuteResult {
                         outputs,
                         state: TransactionProcessorState::YieldToChild(child_id, indexed),
+                    });
+                }
+                InstructionV1::YieldToParent { args } => {
+                    let scrypto_value = to_scrypto_value(api, &mut self.processor, &mut self.worktop, args, self.version)?;
+                    let indexed = IndexedScryptoValue::from_scrypto_value(scrypto_value);
+                    self.cur_instruction += 1;
+                    return Ok(TransactionProcessorExecuteResult {
+                        outputs,
+                        state: TransactionProcessorState::YieldToParent(indexed),
                     });
                 }
             };

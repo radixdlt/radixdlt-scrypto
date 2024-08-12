@@ -702,6 +702,11 @@ pub enum InstructionV1 {
     YieldToChild {
         child_id: Hash,
         args: ManifestValue,
+    },
+
+    #[sbor(discriminator(INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR))]
+    YieldToParent {
+        args: ManifestValue,
     }
 }
 
@@ -773,3 +778,4 @@ pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
 pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;
 
 pub const INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR: u8 = 0x53;
+pub const INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR: u8 = 0x54;

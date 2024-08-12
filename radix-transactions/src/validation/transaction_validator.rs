@@ -279,6 +279,10 @@ impl NotarizedTransactionValidator {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
+                InstructionV1::YieldToParent { args } => {
+                    Self::validate_call_args(&args, &mut id_validator)
+                        .map_err(TransactionValidationError::CallDataValidationError)?;
+                }
             }
         }
 
