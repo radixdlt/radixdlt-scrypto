@@ -185,6 +185,33 @@ impl<M: KernelCallbackObject> KernelStacks<M> {
         let _ = core::mem::replace(&mut stack.current_frame, parent);
     }
 
+    pub fn switch(&mut self, id: Hash) {
+        self.stack_pointer = id;
+    }
+
+    pub fn cur_mut_and_other_mut(
+        &mut self,
+        other_stack: Hash,
+    ) -> (
+        &mut CallFrame<M::CallFrameData, M::LockData>,
+        &mut CallFrame<M::CallFrameData, M::LockData>,
+    ) {
+        let mut mut_stacks: Vec<_> = self
+            .stacks
+            .iter_mut()
+            .filter(|(id, _)| (*id).eq(&self.stack_pointer) || (*id).eq(&other_stack))
+            .map(|stack| Some(stack))
+            .collect();
+
+        let (id0, stack0) = mut_stacks[0].take().unwrap();
+        let (_id1, stack1) = mut_stacks[1].take().unwrap();
+        if id0.eq(&self.stack_pointer) {
+            (&mut stack0.current_frame, &mut stack1.current_frame)
+        } else {
+            (&mut stack1.current_frame, &mut stack0.current_frame)
+        }
+    }
+
     pub fn cur_and_prev(
         &self,
     ) -> (
@@ -372,6 +399,43 @@ macro_rules! as_read_only {
             callback: $kernel.callback,
         }
     }};
+}
+
+impl<'g, M, S> KernelStackApi<M::CallFrameData> for Kernel<'g, M, S>
+where
+    M: KernelCallbackObject,
+    S: CommitableSubstateStore,
+{
+    #[trace_resources]
+    fn kernel_send_and_switch_stack(
+        &mut self,
+        to_stack_id: Hash,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        let message = CallFrameMessage::from_output(&value);
+
+        let (cur, other) = self.stacks.cur_mut_and_other_mut(to_stack_id);
+
+        CallFrame::pass_message(&self.substate_io, cur, other, message)
+            .map_err(CallFrameError::PassMessageError)
+            .map_err(KernelError::CallFrameError)?;
+
+        self.stacks.switch(to_stack_id);
+
+        Ok(())
+    }
+
+    #[trace_resources]
+    fn kernel_free_and_switch_stack(&mut self, to_stack_id: Hash) -> Result<(), RuntimeError> {
+        self.stacks.switch(to_stack_id);
+        Ok(())
+    }
+
+    #[trace_resources]
+    fn kernel_set_call_frame_data(&mut self, data: M::CallFrameData) -> Result<(), RuntimeError> {
+        *self.stacks.cur_mut().data_mut() = data;
+        Ok(())
+    }
 }
 
 impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>

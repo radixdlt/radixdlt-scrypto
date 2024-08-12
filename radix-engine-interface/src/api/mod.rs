@@ -9,6 +9,7 @@ pub mod field_api;
 pub mod key_value_entry_api;
 pub mod key_value_store_api;
 pub mod object_api;
+pub mod thread_api;
 pub mod transaction_runtime_api;
 
 // Re-exports
@@ -40,6 +41,7 @@ pub const ACTOR_REF_AUTH_ZONE: ActorRefHandle = 8u32;
 pub type FieldIndex = u8;
 pub type CollectionIndex = u8;
 
+use crate::prelude::thread_api::SystemThreadApi;
 use radix_common::prelude::*;
 
 pub trait SystemApiError: fmt::Debug + ScryptoCategorize + ScryptoDecode {}
@@ -58,6 +60,7 @@ pub trait SystemApi<E: SystemApiError>:
     + SystemFieldApi<E>
     + SystemBlueprintApi<E>
     + SystemCostingApi<E>
+    + SystemThreadApi<E>
     + SystemTransactionRuntimeApi<E>
     + SystemExecutionTraceApi<E>
 {

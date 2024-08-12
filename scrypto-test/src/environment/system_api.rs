@@ -5,6 +5,7 @@
 //! [`TestEnvironment`]: crate::prelude::TestEnvironment
 
 use crate::prelude::*;
+use radix_engine_interface::api::thread_api::SystemThreadApi;
 
 /// Implements the [`SystemApi`] for the [`TestEnvironment`] struct.
 ///
@@ -102,6 +103,10 @@ macro_rules! implement_system_api {
 }
 implement_system_api! {
     SystemApi: {},
+    SystemThreadApi: {
+        send_and_switch_stack: (&mut self, to_stack_id: Hash, value: IndexedScryptoValue) -> Result<(), RuntimeError>,
+        free_and_switch_stack: (&mut self, to_stack_id: Hash) -> Result<(), RuntimeError>,
+    },
     SystemActorApi: {
         actor_get_blueprint_id: (&mut self) -> Result<BlueprintId, RuntimeError>,
         actor_open_field: (

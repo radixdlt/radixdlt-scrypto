@@ -17,6 +17,7 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, System, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::system::system_modules::transaction_runtime::Event;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
@@ -42,6 +43,8 @@ use radix_engine_interface::api::object_api::ModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
+use radix_engine_interface::prelude::thread_api::SystemThreadApi;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::rust::string::ToString;
@@ -2752,6 +2755,72 @@ impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>
             .modules
             .update_instruction_index(new_index);
         Ok(())
+    }
+}
+
+#[cfg_attr(
+    feature = "std",
+    catch_unwind(crate::utils::catch_unwind_system_panic_transformer)
+)]
+impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemThreadApi<RuntimeError>
+    for SystemService<'a, Y, V, E>
+{
+    fn send_and_switch_stack(
+        &mut self,
+        to_stack_id: Hash,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.api.kernel_send_and_switch_stack(to_stack_id, value)?;
+
+        let cur_frame = self.api.kernel_get_system_state().current_call_frame;
+        match cur_frame {
+            Actor::Root => {
+                let (virtual_resources, virtual_non_fungibles) = {
+                    let auth_module = &self.api.kernel_get_system().modules.auth;
+                    if let Some(params) = auth_module.params.get(&to_stack_id) {
+                        (
+                            params.virtual_resources.clone(),
+                            params.initial_proofs.clone(),
+                        )
+                    } else {
+                        (BTreeSet::new(), BTreeSet::new())
+                    }
+                };
+
+                let auth_zone = AuthModule::create_auth_zone(
+                    self,
+                    None,
+                    virtual_resources,
+                    virtual_non_fungibles,
+                )?;
+
+                self.api
+                    .kernel_set_call_frame_data(Actor::Function(FunctionActor {
+                        blueprint_id: BlueprintId::new(
+                            &TRANSACTION_PROCESSOR_PACKAGE,
+                            TRANSACTION_PROCESSOR_BLUEPRINT,
+                        ),
+                        ident: "run".to_string(),
+                        auth_zone,
+                    }))?;
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn free_and_switch_stack(&mut self, to_stack_id: Hash) -> Result<(), RuntimeError> {
+        let cur_frame = self.api.kernel_get_system_state().current_call_frame;
+        match cur_frame {
+            Actor::Function(FunctionActor { auth_zone, .. }) => {
+                let auth_zone = auth_zone.clone();
+                self.api.kernel_drop_node(&auth_zone)?;
+            }
+            _ => {}
+        }
+
+        self.api.kernel_free_and_switch_stack(to_stack_id)
     }
 }
 

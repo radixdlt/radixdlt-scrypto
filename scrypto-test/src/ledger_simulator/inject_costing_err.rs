@@ -4,7 +4,7 @@ use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
-    KernelSubstateApi, SystemState,
+    KernelStackApi, KernelSubstateApi, SystemState,
 };
 use radix_engine::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
@@ -316,6 +316,26 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
 pub struct WrappedKernelApi<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> {
     api: &'a mut K,
     phantom: PhantomData<M>,
+}
+
+impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelStackApi<Actor>
+    for WrappedKernelApi<'a, M, K>
+{
+    fn kernel_free_and_switch_stack(&mut self, to_stack_id: Hash) -> Result<(), RuntimeError> {
+        self.api.kernel_free_and_switch_stack(to_stack_id)
+    }
+
+    fn kernel_send_and_switch_stack(
+        &mut self,
+        to_stack_id: Hash,
+        value: IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.api.kernel_send_and_switch_stack(to_stack_id, value)
+    }
+
+    fn kernel_set_call_frame_data(&mut self, data: Actor) -> Result<(), RuntimeError> {
+        self.api.kernel_set_call_frame_data(data)
+    }
 }
 
 impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelNodeApi
