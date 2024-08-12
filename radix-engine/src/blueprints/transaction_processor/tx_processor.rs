@@ -105,7 +105,6 @@ fn to_scrypto_value<'a, 'p, 'w, Y: SystemApi<RuntimeError> + KernelSubstateApi<L
     transform(args, &mut processor_with_api)
 }
 
-
 fn handle_invocation<'a, 'p, 'w, Y: SystemApi<RuntimeError> + KernelSubstateApi<L>, L: Default>(
     api: &'a mut Y,
     processor: &'p mut TransactionProcessorMapping,
@@ -136,7 +135,6 @@ impl TransactionProcessorBlueprint {
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-
         enum ThreadState {
             Running,
             WaitingForChildren,
@@ -162,7 +160,6 @@ impl TransactionProcessorBlueprint {
             }
             threads
         };
-
 
         let mut output = vec![];
         let mut cur_thread = root_thread;
@@ -193,7 +190,11 @@ impl TransactionProcessorBlueprint {
                             let (_, _, status, children) = threads.get(&cur).unwrap();
                             match *status {
                                 ThreadState::WaitingForChildren => {
-                                    if let Some(next) = children.iter().filter(|hash| threads.contains_key(hash)).next() {
+                                    if let Some(next) = children
+                                        .iter()
+                                        .filter(|hash| threads.contains_key(hash))
+                                        .next()
+                                    {
                                         // A child here should never be waiting for children itself so execute it next
                                         return Some(*next);
                                     } else {
@@ -300,10 +301,14 @@ impl TransactionProcessor {
         &mut self,
         api: &mut Y,
     ) -> Result<TransactionProcessorExecuteResult, RuntimeError> {
-
         let mut outputs = Vec::new();
 
-        for (index, inst) in self.instructions.iter().enumerate().skip(self.cur_instruction) {
+        for (index, inst) in self
+            .instructions
+            .iter()
+            .enumerate()
+            .skip(self.cur_instruction)
+        {
             api.update_instruction_index(index)?;
 
             let inst = inst.clone();
@@ -617,7 +622,13 @@ impl TransactionProcessor {
                     InstructionOutput::None
                 }
                 InstructionV1::YieldToChild { child_id, args } => {
-                    let scrypto_value = to_scrypto_value(api, &mut self.processor, &mut self.worktop, args, self.version)?;
+                    let scrypto_value = to_scrypto_value(
+                        api,
+                        &mut self.processor,
+                        &mut self.worktop,
+                        args,
+                        self.version,
+                    )?;
                     let indexed = IndexedScryptoValue::from_scrypto_value(scrypto_value);
                     self.cur_instruction += 1;
                     return Ok(TransactionProcessorExecuteResult {
@@ -626,7 +637,13 @@ impl TransactionProcessor {
                     });
                 }
                 InstructionV1::YieldToParent { args } => {
-                    let scrypto_value = to_scrypto_value(api, &mut self.processor, &mut self.worktop, args, self.version)?;
+                    let scrypto_value = to_scrypto_value(
+                        api,
+                        &mut self.processor,
+                        &mut self.worktop,
+                        args,
+                        self.version,
+                    )?;
                     let indexed = IndexedScryptoValue::from_scrypto_value(scrypto_value);
                     self.cur_instruction += 1;
                     return Ok(TransactionProcessorExecuteResult {

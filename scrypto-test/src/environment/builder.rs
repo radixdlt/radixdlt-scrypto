@@ -304,8 +304,7 @@ where
                         pinned_to_heap: Default::default(),
                     },
                     id_allocator,
-                    CallFrame::new_root(Default::default()),
-                    vec![],
+                    KernelStack::new(Default::default()),
                     system_config,
                 )
             },
