@@ -283,12 +283,14 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
     }
 }
 
+/// A transaction which has a unique id, useful for creating an IdAllocator which
+/// requires a unique input
 pub trait UniqueTransaction {
-    fn uniqe_id(&self) -> Hash;
+    fn unique_id(&self) -> Hash;
 }
 
 impl UniqueTransaction for Executable {
-    fn uniqe_id(&self) -> Hash {
+    fn unique_id(&self) -> Hash {
         self.intent_hash().to_hash()
     }
 }
@@ -317,7 +319,7 @@ where
 
     pub fn execute(&mut self, executable: V::Executable) -> V::Receipt {
         let kernel_boot = BootLoader {
-            id_allocator: IdAllocator::new(executable.uniqe_id()),
+            id_allocator: IdAllocator::new(executable.unique_id()),
             track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
             init: self.system_init.clone(),
             phantom: PhantomData::<V>::default(),
