@@ -115,7 +115,7 @@ pub trait SystemModule<ModuleApi: SystemModuleApiFor<Self>>:
 
     #[inline(always)]
     fn before_invoke(
-        _api: &mut ModuleApi, // For charge_package_royalty in the Costing Module
+        _api: &mut ModuleApi,
         _invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         Ok(())
