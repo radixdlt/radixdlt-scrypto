@@ -2,7 +2,7 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
-use crate::system::module::{InitSystemModule, SystemModule};
+use crate::system::module::*;
 use crate::system::system_callback::*;
 use crate::system::system_callback_api::*;
 use crate::track::interface::IOAccess;

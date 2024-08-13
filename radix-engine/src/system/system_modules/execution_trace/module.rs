@@ -5,7 +5,7 @@ use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::*;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::{Actor, FunctionActor, MethodActor};
-use crate::system::module::{InitSystemModule, SystemModule};
+use crate::system::module::*;
 use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
@@ -103,12 +103,12 @@ trait SystemModuleApiResourceSnapshotExtension {
     fn read_proof_uncosted(&self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
-impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
-    SystemModuleApiResourceSnapshotExtension for K
+impl<'a, V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
+    SystemModuleApiResourceSnapshotExtension for SystemModuleApiImpl<'a, K>
 {
     fn read_bucket_uncosted(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        let (is_fungible_bucket, resource_address) = if let Some(substate) = self
-            .kernel_read_substate_uncosted(
+        let (is_fungible_bucket, resource_address) = if let Some(substate) =
+            self.api_ref().kernel_read_substate_uncosted(
                 &bucket_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
@@ -142,6 +142,7 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
 
         if is_fungible_bucket {
             let substate = self
+                .api_ref()
                 .kernel_read_substate_uncosted(
                     bucket_id,
                     MAIN_BASE_PARTITION,
@@ -156,6 +157,7 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
             })
         } else {
             let substate = self
+                .api_ref()
                 .kernel_read_substate_uncosted(
                     bucket_id,
                     MAIN_BASE_PARTITION,
@@ -172,7 +174,7 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
     }
 
     fn read_proof_uncosted(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        let is_fungible = if let Some(substate) = self.kernel_read_substate_uncosted(
+        let is_fungible = if let Some(substate) = self.api_ref().kernel_read_substate_uncosted(
             &proof_id,
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
@@ -198,6 +200,7 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
 
         if is_fungible {
             let substate = self
+                .api_ref()
                 .kernel_read_substate_uncosted(
                     proof_id,
                     TYPE_INFO_FIELD_PARTITION,
@@ -209,6 +212,7 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
                 ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
             let substate = self
+                .api_ref()
                 .kernel_read_substate_uncosted(
                     proof_id,
                     MAIN_BASE_PARTITION,
@@ -223,6 +227,7 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
             })
         } else {
             let substate = self
+                .api_ref()
                 .kernel_read_substate_uncosted(
                     proof_id,
                     TYPE_INFO_FIELD_PARTITION,
@@ -234,6 +239,7 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
                 ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
             let substate = self
+                .api_ref()
                 .kernel_read_substate_uncosted(
                     proof_id,
                     MAIN_BASE_PARTITION,

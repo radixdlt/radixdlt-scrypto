@@ -87,14 +87,14 @@ pub struct SystemModuleMixer {
 macro_rules! internal_call_dispatch {
     (
         $system:expr,
-        $fn:ident ( $($param:ident),* )
+        $fn:ident ( $($param:expr),* )
         $(, PRIVILEGED: {
-            $(kernel_trace: $privileged_kernel_trace_fn:ident ( $($privileged_kernel_trace_fn_param:ident),* ),)?
-            $(limits: $privileged_limits_fn:ident ( $($privileged_limits_fn_param:ident),* ),)?
-            $(costing: $privileged_costing_fn:ident ( $($privileged_costing_fn_param:ident),* ),)?
-            $(auth: $privileged_auth_fn:ident ( $($privileged_auth_fn_param:ident),* ),)?
-            $(runtime: $privileged_runtime_fn:ident ( $($privileged_runtime_fn_param:ident),* ),)?
-            $(execution_trace: $privileged_execution_trace_fn:ident ( $($privileged_execution_trace_fn_param:ident),* ),)?
+            $(kernel_trace: $privileged_kernel_trace_fn:ident ( $($privileged_kernel_trace_fn_param:expr),* ),)?
+            $(limits: $privileged_limits_fn:ident ( $($privileged_limits_fn_param:expr),* ),)?
+            $(costing: $privileged_costing_fn:ident ( $($privileged_costing_fn_param:expr),* ),)?
+            $(auth: $privileged_auth_fn:ident ( $($privileged_auth_fn_param:expr),* ),)?
+            $(runtime: $privileged_runtime_fn:ident ( $($privileged_runtime_fn_param:expr),* ),)?
+            $(execution_trace: $privileged_execution_trace_fn:ident ( $($privileged_execution_trace_fn_param:expr),* ),)?
         })?
     ) => {
         paste! {
@@ -238,7 +238,7 @@ impl SystemModuleMixer {
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api.kernel_get_system(),
-            before_invoke(api, invocation),
+            before_invoke(&mut api.system_module_api(), invocation),
             PRIVILEGED: {
                 costing: privileged_before_invoke(api, invocation),
             }
@@ -249,7 +249,10 @@ impl SystemModuleMixer {
     pub fn on_execution_start(
         api: &mut impl SystemBasedKernelInternalApi,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_execution_start(api))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_execution_start(&mut api.system_module_api())
+        )
     }
 
     #[trace_resources]
@@ -257,7 +260,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_execution_finish(api, message))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_execution_finish(&mut api.system_module_api(), message)
+        )
     }
 
     #[trace_resources]
@@ -265,7 +271,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), after_invoke(api, output))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            after_invoke(&mut api.system_module_api(), output)
+        )
     }
 
     #[trace_resources]
@@ -273,7 +282,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_pin_node(api, node_id))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_pin_node(&mut api.system_module_api(), node_id)
+        )
     }
 
     #[trace_resources(log=entity_type)]
@@ -283,7 +295,7 @@ impl SystemModuleMixer {
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api.kernel_get_system(),
-            on_allocate_node_id(api, entity_type)
+            on_allocate_node_id(&mut api.system_module_api(), entity_type)
         )
     }
 
@@ -292,7 +304,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_create_node(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_create_node(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -300,7 +315,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_move_module(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_move_module(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -308,7 +326,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_drop_node(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_drop_node(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -320,7 +341,12 @@ impl SystemModuleMixer {
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api.kernel_get_system(),
-            on_mark_substate_as_transient(api, node_id, partition_number, substate_key)
+            on_mark_substate_as_transient(
+                &mut api.system_module_api(),
+                node_id,
+                partition_number,
+                substate_key
+            )
         )
     }
 
@@ -329,7 +355,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_open_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources(log=event.is_about_heap())]
@@ -337,7 +366,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_read_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_read_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -345,7 +377,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_write_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_write_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -353,7 +388,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_close_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_close_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -361,7 +399,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_set_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_set_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -369,7 +410,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_remove_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_remove_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -377,7 +421,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &ScanKeysEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_scan_keys(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_scan_keys(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -385,7 +432,10 @@ impl SystemModuleMixer {
         api: &mut impl SystemBasedKernelInternalApi,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_drain_substates(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_drain_substates(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
@@ -395,7 +445,7 @@ impl SystemModuleMixer {
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api.kernel_get_system(),
-            on_scan_sorted_substates(api, event)
+            on_scan_sorted_substates(&mut api.system_module_api(), event)
         )
     }
 }

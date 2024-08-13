@@ -17,7 +17,7 @@ pub trait SystemCallbackObject: Sized {
     /// Invoke a function
     fn invoke<
         Y: SystemApi<RuntimeError>
-            + SystemModuleApi<SystemCallback = Self>
+            + SystemBasedKernelInternalApi<SystemCallback = Self>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
     >(

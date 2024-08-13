@@ -326,20 +326,20 @@ impl RoleAssignmentNativePackage {
         receiver: &NodeId,
         module: ModuleId,
         role_key: &RoleKey,
-        api: &mut SystemService<Y>,
+        service: &mut SystemService<Y>,
     ) -> Result<RoleList, RuntimeError> {
         if Self::is_role_key_reserved(&role_key) || module.eq(&ModuleId::RoleAssignment) {
             return Ok(RoleList::none());
         }
 
-        let blueprint_id = api
+        let blueprint_id = service
             .get_blueprint_info(receiver, module.into())?
             .blueprint_id;
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             blueprint_id.package_address.as_node_id(),
             &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-            api.api,
+            service.api(),
         )?
         .method_auth;
 

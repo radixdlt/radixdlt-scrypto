@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use crate::system::module::{InitSystemModule, SystemModule};
+use crate::system::module::*;
 use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
 use radix_common::crypto::Hash;

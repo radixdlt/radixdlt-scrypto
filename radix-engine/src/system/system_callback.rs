@@ -1,3 +1,4 @@
+use super::module::*;
 use super::system_modules::costing::{CostingModuleConfig, ExecutionCostingEntry};
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_PREALLOCATED_ED25519_ID;
@@ -116,6 +117,10 @@ pub trait SystemBasedKernelApi:
 {
     type SystemCallback: SystemCallbackObject;
     type Executable;
+
+    fn system_service(&mut self) -> SystemService<'_, Self> {
+        SystemService::new(self)
+    }
 }
 
 impl<V: SystemCallbackObject, E, K: KernelApi<CallbackObject = System<V, E>>> SystemBasedKernelApi
@@ -131,6 +136,10 @@ pub trait SystemBasedKernelInternalApi:
 {
     type SystemCallback: SystemCallbackObject;
     type Executable;
+
+    fn system_module_api(&mut self) -> SystemModuleApiImpl<Self> {
+        SystemModuleApiImpl::new(self)
+    }
 }
 
 impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
@@ -138,56 +147,6 @@ impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
 {
     type SystemCallback = V;
     type Executable = E;
-}
-
-pub trait SystemModuleApi {
-    type SystemCallback: SystemCallbackObject;
-    type Executable;
-
-    fn system(&mut self) -> &mut System<Self::SystemCallback, Self::Executable>;
-
-    fn system_state(&mut self) -> SystemState<'_, System<Self::SystemCallback, Self::Executable>>;
-
-    /// Gets the number of call frames that are currently in the call frame stack
-    fn current_stack_depth(&self) -> usize;
-}
-
-impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>> SystemModuleApi
-    for K
-{
-    type SystemCallback = V;
-    type Executable = E;
-
-    fn system(&mut self) -> &mut K::System {
-        self.kernel_get_system()
-    }
-
-    fn system_state(&mut self) -> SystemState<'_, K::System> {
-        self.kernel_get_system_state()
-    }
-
-    fn current_stack_depth(&self) -> usize {
-        self.kernel_get_current_depth()
-    }
-}
-
-pub trait ResolvableSystemModule {
-    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self;
-}
-
-pub trait SystemModuleApiFor<M: ResolvableSystemModule + ?Sized>: SystemModuleApi {
-    fn module(&mut self) -> &mut M {
-        M::resolve_from_system(self.system())
-    }
-}
-
-impl<
-        V: SystemCallbackObject,
-        E,
-        K: KernelInternalApi<System = System<V, E>>,
-        M: ResolvableSystemModule + ?Sized,
-    > SystemModuleApiFor<M> for K
-{
 }
 
 #[derive(Clone)]

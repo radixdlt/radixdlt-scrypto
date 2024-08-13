@@ -472,7 +472,7 @@ impl ComponentRoyaltyBlueprint {
             let component_address = ComponentAddress::new_or_panic(receiver.0);
 
             apply_royalty_cost(
-                api,
+                &mut api.system_module_api(),
                 royalty_charge,
                 RoyaltyRecipient::Component(component_address, vault_id.into()),
             )?;

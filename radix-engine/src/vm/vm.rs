@@ -2,7 +2,7 @@ use crate::blueprints::package::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::system_callback::{SystemLockData, SystemModuleApi};
+use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_substates::KeyValueEntrySubstate;
 use crate::track::BootStore;
@@ -100,7 +100,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
     fn invoke<
         Y: SystemApi<RuntimeError>
-            + SystemModuleApi<SystemCallback = Self>
+            + SystemBasedKernelInternalApi<SystemCallback = Self>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
     >(
@@ -131,7 +131,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 .unwrap_or_else(|| panic!("Vm type not found: {:?}", export))
         };
 
-        let vm_api = api.system().callback.vm_boot.clone();
+        let vm_api = api.kernel_get_system().callback.vm_boot.clone();
 
         let output = match vm_type.fully_update_and_into_latest_version().vm_type {
             VmType::Native => {
@@ -158,7 +158,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                         .unwrap_or_else(|| panic!("Original code not found: {:?}", export))
                 };
 
-                let mut vm_instance = api.system().callback.native_vm.create_instance(
+                let mut vm_instance = api.kernel_get_system().callback.native_vm.create_instance(
                     address,
                     &original_code.fully_update_and_into_latest_version().code,
                 )?;
@@ -193,7 +193,7 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
                 };
 
                 let mut scrypto_vm_instance = {
-                    api.system().callback.scrypto_vm.create_instance(
+                    api.kernel_get_system().callback.scrypto_vm.create_instance(
                         address,
                         export.code_hash,
                         &instrumented_code.instrumented_code,

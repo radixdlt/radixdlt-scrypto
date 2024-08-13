@@ -4,7 +4,7 @@ use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
-use crate::system::module::{InitSystemModule, SystemModule};
+use crate::system::module::*;
 use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
 use colored::Colorize;

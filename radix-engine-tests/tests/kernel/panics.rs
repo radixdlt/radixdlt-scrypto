@@ -18,9 +18,7 @@ use scrypto_test::prelude::SystemCallbackObject;
 fn panics_at_the_system_layer_or_below_can_be_caught() {
     // Arrange
     let mut kernel = MockKernel(PhantomData::<Vm<DefaultWasmEngine, NoExtension>>);
-    let mut system_service = SystemService {
-        api: &mut kernel,
-    };
+    let mut system_service = SystemService::new(&mut kernel);
 
     // Act
     let actor = system_service.actor_get_blueprint_id();

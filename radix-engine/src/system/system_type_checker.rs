@@ -375,17 +375,12 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         node_id: &NodeId,
         schema_hash: &SchemaHash,
     ) -> Result<Rc<VersionedScryptoSchema>, RuntimeError> {
-        let def = self
-            .api
-            .kernel_get_system_state()
-            .system
-            .schema_cache
-            .get(schema_hash);
+        let def = self.system().schema_cache.get(schema_hash);
         if let Some(schema) = def {
             return Ok(schema.clone());
         }
 
-        let handle = self.api.kernel_open_substate_with_default(
+        let handle = self.api().kernel_open_substate_with_default(
             node_id,
             SCHEMAS_PARTITION,
             &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
@@ -398,14 +393,12 @@ impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
         )?;
 
         let substate: KeyValueEntrySubstate<VersionedScryptoSchema> =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        self.api.kernel_close_substate(handle)?;
+            self.api().kernel_read_substate(handle)?.as_typed().unwrap();
+        self.api().kernel_close_substate(handle)?;
 
         let schema = Rc::new(substate.into_value().unwrap());
 
-        self.api
-            .kernel_get_system_state()
-            .system
+        self.system()
             .schema_cache
             .insert(schema_hash.clone(), schema.clone());
 

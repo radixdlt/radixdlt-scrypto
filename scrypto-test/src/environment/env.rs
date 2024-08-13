@@ -825,10 +825,10 @@ where
         O: ScryptoEncode,
     {
         let object_info = self.0.with_kernel_mut(|kernel| {
-            SystemService { api: kernel }.get_object_info(&node_id.into())
+            SystemService::new(kernel).get_object_info(&node_id.into())
         })?;
         let auth_zone = self.0.with_kernel_mut(|kernel| {
-            let mut system_service = SystemService { api: kernel };
+            let mut system_service = SystemService::new(kernel);
             AuthModule::on_call_fn_mock(
                 &mut system_service,
                 Some((&node_id.into(), false)),

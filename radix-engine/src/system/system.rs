@@ -39,11 +39,6 @@ use radix_substate_store_interface::db_key_mapper::SubstateKeyContent;
 
 pub const BOOT_LOADER_SYSTEM_VERSION_FIELD_KEY: FieldKey = 1u8;
 
-/// Provided to upper layers (VM and System) for invoking lower layer service
-pub struct SystemService<'a, Y: SystemBasedKernelApi> {
-    pub api: &'a mut Y,
-}
-
 enum ActorStateRef {
     SELF,
     OuterObject,
@@ -89,9 +84,32 @@ enum EmitterActor {
     AsObject(NodeId, Option<AttachedModuleId>),
 }
 
-impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
+/// A wrapper offering a comprehensive system api to callers. It is built on top
+/// of a [`SystemBasedKernelApi`], and you are free to access it.
+/// You can also construct a [`SystemService`] from the api with `api.system_service()`.
+///
+/// Like [`SystemModuleApiImpl`], we use a wrapper type rather than implementing this functionality
+/// directly on a `SystemBasedKernelApi` for a few reasons:
+/// * Trait coherence - the System traits aren't defined in this crate, so it prevents us
+///   from implementing them on any type implementing `SystemBasedKernelApi`.
+/// * Separation of APIs - we avoid exposing the methods of a [`SystemServiceApi`] directly
+///   if someone happens to have a [`SystemBasedKernelApi`], which prevents some
+///   possible confusion.
+pub struct SystemService<'a, Y: SystemBasedKernelApi + ?Sized> {
+    api: &'a mut Y,
+}
+
+impl<'a, Y: SystemBasedKernelApi + ?Sized> SystemService<'a, Y> {
     pub fn new(api: &'a mut Y) -> Self {
         Self { api }
+    }
+
+    pub fn api(&mut self) -> &mut Y {
+        self.api
+    }
+
+    pub fn system(&mut self) -> &mut System<Y::SystemCallback, Y::Executable> {
+        self.api.kernel_get_system()
     }
 }
 

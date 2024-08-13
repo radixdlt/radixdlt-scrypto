@@ -1531,7 +1531,7 @@ impl PackageRoyaltyNativeBlueprint {
                 .0;
             let package_address = PackageAddress::new_or_panic(receiver.0);
             apply_royalty_cost(
-                api,
+                &mut api.system_module_api(),
                 royalty_charge,
                 RoyaltyRecipient::Package(package_address, vault_id.0),
             )?;

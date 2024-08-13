@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::*;
 use crate::kernel::kernel_callback_api::*;
 use crate::object_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
-use crate::system::module::{InitSystemModule, SystemModule};
+use crate::system::module::*;
 use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::{
