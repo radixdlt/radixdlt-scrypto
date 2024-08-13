@@ -366,6 +366,13 @@ impl CostingModule {
         api: &mut impl SystemBasedKernelApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
+        let depth = api.kernel_get_current_depth();
+
+        // Skip invocation costing for transaction processor
+        if depth == 0 {
+            return Ok(());
+        }
+
         // Identify the function, and optional component address
         let (optional_blueprint_id, ident, maybe_object_royalties) = {
             let (maybe_component, ident) = match &invocation.call_frame_data {
@@ -435,7 +442,7 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for CostingMod
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         let depth = api.current_stack_depth();
-        let costing_module = &mut api.module();
+        let costing_module = api.module();
 
         // Add invocation information to the execution cost breakdown.
         if let Some(ref mut detailed_cost_breakdown) = costing_module.detailed_cost_breakdown {
