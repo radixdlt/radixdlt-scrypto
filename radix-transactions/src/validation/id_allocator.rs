@@ -1,6 +1,6 @@
 use crate::internal_prelude::*;
 
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ManifestIdAllocator {
     next_bucket_id: u32,
     next_proof_id: u32,

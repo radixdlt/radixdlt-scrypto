@@ -10,7 +10,7 @@ use crate::data::manifest::*;
 use crate::*;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 #[must_use]
 pub struct ManifestProof(pub u32);
 

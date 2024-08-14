@@ -13,8 +13,9 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
+use crate::blueprints::resource::FungibleResourceManagerStateSchemaInit;
 
-use super::TransactionProcessorBlueprint;
+use super::{SubTransactionProcessorStateSchemaInit, TransactionProcessorBlueprint, TransactionProcessorNewInput, TransactionProcessorNewOutput};
 use super::TransactionProcessorRunInput;
 use super::TransactionProcessorV1MinorVersion;
 
@@ -24,7 +25,8 @@ impl TransactionProcessorNativePackage {
     pub fn definition() -> PackageDefinition {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
-        let fields = Vec::new();
+
+        let state = SubTransactionProcessorStateSchemaInit::create_schema_init(&mut aggregator);
 
         let mut functions = index_map_new();
         functions.insert(
@@ -40,6 +42,19 @@ impl TransactionProcessorNativePackage {
                 export: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
             },
         );
+        functions.insert(
+            TRANSACTION_PROCESSOR_NEW_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: None,
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TransactionProcessorNewInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TransactionProcessorNewOutput>(),
+                ),
+                export: TRANSACTION_PROCESSOR_NEW_IDENT.to_string(),
+            },
+        );
 
         let schema = generate_full_schema(aggregator);
         let blueprints = indexmap!(
@@ -51,10 +66,7 @@ impl TransactionProcessorNativePackage {
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
-                    state: BlueprintStateSchemaInit {
-                        fields,
-                        collections: vec![],
-                    },
+                    state,
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
@@ -67,7 +79,7 @@ impl TransactionProcessorNativePackage {
                     // Only allow the root call frame to call any function in transaction processor.
                     // This is a safety precaution to reduce surface area of attack. This may be removed
                     // if/when the transaction processor is verified to be safe.
-                    function_auth: FunctionAuth::RootOnly,
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
@@ -95,6 +107,19 @@ impl TransactionProcessorNativePackage {
                     input.global_address_reservations,
                     input.references,
                     version,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            TRANSACTION_PROCESSOR_NEW_IDENT => {
+                let input: TransactionProcessorNewInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = TransactionProcessorBlueprint::new(
+                    input.manifest,
+                    input.global_address_reservations,
                     api,
                 )?;
 

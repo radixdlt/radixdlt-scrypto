@@ -152,6 +152,7 @@ blueprint_partition_offset!(
     }
 );
 
+
 //===========
 // Blueprints
 //===========
@@ -200,6 +201,19 @@ blueprint_partition_offset!(
         NonFungibleIndex,
     }
 );
+
+blueprint_partition_offset!(
+    pub enum SubTransactionProcessorPartitionOffset {
+        Field,
+    }
+);
+
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+pub enum SubTransactionProcessorField {
+    ExecutionState,
+}
+
 
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]

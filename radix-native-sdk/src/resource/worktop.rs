@@ -2,6 +2,7 @@ use radix_common::constants::RESOURCE_PACKAGE;
 use radix_common::data::scrypto::model::*;
 use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_common::math::Decimal;
+use radix_common::ScryptoSbor;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -9,7 +10,7 @@ use sbor::rust::collections::IndexSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Worktop(pub Own);
 
 impl Worktop {

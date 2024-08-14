@@ -10,7 +10,7 @@ use crate::data::manifest::*;
 use crate::*;
 
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ScryptoSbor)]
 #[must_use]
 pub struct ManifestBucket(pub u32);
 

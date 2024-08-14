@@ -20,6 +20,7 @@ use radix_transactions::data::TransformHandler;
 use radix_transactions::model::*;
 use radix_transactions::validation::*;
 use sbor::rust::prelude::*;
+use crate::blueprints::transaction_processor::SubTransactionProcessorExecutionStateFieldPayload;
 
 #[cfg(not(feature = "coverage"))]
 pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 1024 * 1024;
@@ -61,6 +62,15 @@ pub struct TransactionProcessorRunInputEfficientEncodable {
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: IndexSet<Reference>,
 }
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct TransactionProcessorNewInput {
+    pub manifest: TransactionManifest,
+    pub global_address_reservations: Vec<GlobalAddressReservation>,
+}
+
+pub type TransactionProcessorNewOutput = Own;
+
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionProcessorError {
@@ -129,23 +139,41 @@ impl TransactionProcessorBlueprint {
         Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
         L: Default,
     >(
-        manifests: Vec<TransactionManifest>,
+        mut manifests: Vec<TransactionManifest>,
         global_address_reservations: Vec<GlobalAddressReservation>,
         _references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let root_thread = manifests.get(0).unwrap().id;
-        let mut threads = {
+        let mut main_thread = TransactionProcessor::init(
+            manifests.remove(0),
+            global_address_reservations.clone(),
+            version,
+            api,
+        )?;
+        let mut child_threads = {
             let mut threads = btreemap!();
-            for manifest in manifests.into_iter() {
+            for manifest in manifests {
                 let id = manifest.id;
+                let thread: Own = scrypto_decode(&api.call_function(
+                    TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                    TRANSACTION_PROCESSOR_NEW_IDENT,
+                    scrypto_encode(&TransactionProcessorNewInput {
+                        manifest,
+                        global_address_reservations: global_address_reservations.clone(),
+                    }).unwrap()
+                )?).unwrap();
+
+                /*
                 let thread = TransactionProcessor::init(
                     manifest,
                     global_address_reservations.clone(),
                     version,
                     api,
                 )?;
+                 */
                 let parent = if id.eq(&root_thread) {
                     None
                 } else {
@@ -160,12 +188,17 @@ impl TransactionProcessorBlueprint {
         let mut cur_thread = root_thread;
         let mut received_value = None;
         loop {
-            let (processor, parent) = threads.get_mut(&cur_thread).unwrap();
-            let result = processor.execute(api, received_value.take())?;
-            if cur_thread.eq(&root_thread) {
+            let (parent, state) = if cur_thread.eq(&root_thread) {
+                let result = main_thread.execute(api, received_value.take())?;
                 output.extend(result.outputs);
+                (Option::<Hash>::None, result.state)
+            } else {
+                let (processor, parent) = child_threads.get_mut(&cur_thread).unwrap();
+                todo!();
+            };
+            if cur_thread.eq(&root_thread) {
             }
-            match result.state {
+            match state {
                 TransactionProcessorState::YieldToChild(hash, value) => {
                     received_value = Some(value);
                     todo!()
@@ -177,7 +210,7 @@ impl TransactionProcessorBlueprint {
                 TransactionProcessorState::Done => {
                     if let Some(parent) = parent {
                         // Parent should never be done while children are running
-                        cur_thread = *parent;
+                        cur_thread = parent;
                     } else {
                         break;
                     }
@@ -187,7 +220,30 @@ impl TransactionProcessorBlueprint {
 
         Ok(output)
     }
+
+    pub(crate) fn new<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
+        L: Default,
+    >(
+        manifest: TransactionManifest,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+        api: &mut Y,
+    ) -> Result<TransactionProcessorNewOutput, RuntimeError> {
+        let processor = TransactionProcessor::init(
+            manifest,
+            global_address_reservations,
+            TransactionProcessorV1MinorVersion::One,
+            api,
+        )?;
+        let node = api.new_simple_object(
+            TRANSACTION_PROCESSOR_BLUEPRINT,
+            indexmap!(0 => FieldValue::new(SubTransactionProcessorExecutionStateFieldPayload::from_content_source(processor)))
+        )?;
+        Ok(Own(node))
+    }
 }
+
+
 
 struct TransactionProcessorExecuteResult {
     outputs: Vec<InstructionOutput>,
@@ -200,12 +256,13 @@ enum TransactionProcessorState {
     Done,
 }
 
-struct TransactionProcessor {
-    version: TransactionProcessorV1MinorVersion,
-    worktop: Worktop,
-    cur_instruction: usize,
-    instructions: Vec<InstructionV1>,
-    processor: TransactionProcessorMapping,
+#[derive(ScryptoSbor, Debug, PartialEq, Eq)]
+pub struct TransactionProcessor {
+    pub version: TransactionProcessorV1MinorVersion,
+    pub worktop: Worktop,
+    pub cur_instruction: usize,
+    pub instructions: Vec<u8>,
+    pub processor: TransactionProcessorMapping,
 }
 
 impl TransactionProcessor {
@@ -240,14 +297,7 @@ impl TransactionProcessor {
         api.kernel_pin_node(worktop_node_id)?;
 
         let worktop = Worktop(Own(worktop_node_id));
-        let instructions =
-            manifest_decode::<Vec<InstructionV1>>(&manifest.manifest_encoded_instructions)
-                .map_err(|e| {
-                    // This error should never occur if being called from root since this is constructed
-                    // by the transaction executor. This error is more to protect against application
-                    // space calling this function if/when possible
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+
         let processor =
             TransactionProcessorMapping::new(manifest.blobs, global_address_reservations);
 
@@ -255,7 +305,7 @@ impl TransactionProcessor {
             version,
             worktop,
             cur_instruction: 0usize,
-            instructions,
+            instructions: manifest.manifest_encoded_instructions,
             processor,
         })
     }
@@ -270,10 +320,18 @@ impl TransactionProcessor {
                 .handle_call_return_data(&value, &self.worktop, api)?;
         }
 
+        let instructions =
+            manifest_decode::<Vec<InstructionV1>>(&self.instructions)
+                .map_err(|e| {
+                    // This error should never occur if being called from root since this is constructed
+                    // by the transaction executor. This error is more to protect against application
+                    // space calling this function if/when possible
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
         let mut outputs = Vec::new();
 
-        for (index, inst) in self
-            .instructions
+        for (index, inst) in instructions
             .iter()
             .enumerate()
             .skip(self.cur_instruction)
@@ -635,11 +693,12 @@ impl TransactionProcessor {
     }
 }
 
+#[derive(ScryptoSbor, Debug, PartialEq, Eq)]
 struct TransactionProcessorMapping {
-    bucket_mapping: NonIterMap<ManifestBucket, NodeId>,
+    bucket_mapping: IndexMap<ManifestBucket, NodeId>,
     proof_mapping: IndexMap<ManifestProof, NodeId>,
-    address_reservation_mapping: NonIterMap<ManifestAddressReservation, NodeId>,
-    address_mapping: NonIterMap<u32, NodeId>,
+    address_reservation_mapping: IndexMap<ManifestAddressReservation, NodeId>,
+    address_mapping: IndexMap<u32, NodeId>,
     id_allocator: ManifestIdAllocator,
     blobs_by_hash: IndexMap<Hash, Vec<u8>>,
 }
@@ -652,9 +711,9 @@ impl TransactionProcessorMapping {
         let mut processor = Self {
             blobs_by_hash,
             proof_mapping: index_map_new(),
-            bucket_mapping: NonIterMap::new(),
-            address_reservation_mapping: NonIterMap::new(),
-            address_mapping: NonIterMap::new(),
+            bucket_mapping: index_map_new(),
+            address_reservation_mapping: index_map_new(),
+            address_mapping: index_map_new(),
             id_allocator: ManifestIdAllocator::new(),
         };
 
