@@ -67,6 +67,7 @@ pub struct TransactionProcessorRunInputEfficientEncodable {
 pub struct TransactionProcessorNewInput {
     pub manifest: TransactionManifest,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
+    pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
 }
 
 pub type TransactionProcessorExecuteInput = ScryptoValue;
@@ -144,7 +145,7 @@ impl TransactionProcessorBlueprint {
     >(
         mut manifests: Vec<TransactionManifest>,
         global_address_reservations: Vec<GlobalAddressReservation>,
-        _references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
+        references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
         version: TransactionProcessorV1MinorVersion,
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
@@ -153,6 +154,7 @@ impl TransactionProcessorBlueprint {
             manifests.remove(0),
             global_address_reservations.clone(),
             version,
+            references.clone(),
             api,
         )?;
         let mut child_threads = {
@@ -166,6 +168,7 @@ impl TransactionProcessorBlueprint {
                     scrypto_encode(&TransactionProcessorNewInput {
                         manifest,
                         global_address_reservations: global_address_reservations.clone(),
+                        references: references.clone(),
                     }).unwrap()
                 )?).unwrap();
 
@@ -210,22 +213,29 @@ impl TransactionProcessorBlueprint {
                 };
                 (*parent, rtn)
             };
-            if cur_thread.eq(&root_thread) {
-            }
             match state {
                 TransactionProcessorState::YieldToChild(hash, value) => {
                     received_value = Some(value);
-                    todo!()
+                    cur_thread = hash;
                 }
                 TransactionProcessorState::YieldToParent(value) => {
                     received_value = Some(value);
-                    todo!()
+                    cur_thread = parent.unwrap();
                 }
                 TransactionProcessorState::Done => {
                     if let Some(parent) = parent {
+                        let (processor, _) = child_threads.remove(&cur_thread).unwrap();
+                        let dropped_obj = api.drop_object(processor.as_node_id())?;
+                        let payload: SubTransactionProcessorExecutionStateFieldPayload = scrypto_decode(&dropped_obj[0]).unwrap();
+                        payload.into_unique_version().worktop.drop(api)?;
+
                         // Parent should never be done while children are running
                         cur_thread = parent;
                     } else {
+                        main_thread.worktop.drop(api)?;
+                        if !child_threads.is_empty() {
+                            println!("OOPS");
+                        }
                         break;
                     }
                 }
@@ -241,12 +251,14 @@ impl TransactionProcessorBlueprint {
     >(
         manifest: TransactionManifest,
         global_address_reservations: Vec<GlobalAddressReservation>,
+        references: Vec<Reference>,
         api: &mut Y,
     ) -> Result<TransactionProcessorNewOutput, RuntimeError> {
         let processor = TransactionProcessor::init(
             manifest,
             global_address_reservations,
             TransactionProcessorV1MinorVersion::One,
+            references,
             api,
         )?;
         let node = api.new_simple_object(
@@ -267,6 +279,7 @@ impl TransactionProcessorBlueprint {
         let payload: SubTransactionProcessorExecutionStateFieldPayload = api.field_read_typed(field)?;
         let mut state = payload.into_unique_version();
         let output = state.execute(api, Some(IndexedScryptoValue::from_scrypto_value(input)))?;
+        api.field_write_typed(field, &SubTransactionProcessorExecutionStateFieldPayload::from_content_source(state))?;
         let rtn = match output.state {
             TransactionProcessorState::Done => TransactionProcessorExecutionOutput::Done,
             TransactionProcessorState::YieldToParent(value) => TransactionProcessorExecutionOutput::YieldToParent(value.to_scrypto_value()),
@@ -304,6 +317,7 @@ pub struct TransactionProcessor {
     pub cur_instruction: usize,
     pub instructions: Vec<u8>,
     pub processor: TransactionProcessorMapping,
+    pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
 }
 
 impl TransactionProcessor {
@@ -311,6 +325,7 @@ impl TransactionProcessor {
         manifest: TransactionManifest,
         global_address_reservations: Vec<GlobalAddressReservation>,
         version: TransactionProcessorV1MinorVersion,
+        references: Vec<Reference>,
         api: &mut Y,
     ) -> Result<Self, RuntimeError> {
         // Create a worktop
@@ -348,6 +363,7 @@ impl TransactionProcessor {
             cur_instruction: 0usize,
             instructions: manifest.manifest_encoded_instructions,
             processor,
+            references,
         })
     }
 
@@ -725,7 +741,7 @@ impl TransactionProcessor {
             outputs.push(result);
         }
 
-        self.worktop.drop(api)?;
+        // self.worktop.drop(api)?;
 
         Ok(TransactionProcessorExecuteResult {
             outputs,

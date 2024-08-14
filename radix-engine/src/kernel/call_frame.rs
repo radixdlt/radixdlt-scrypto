@@ -604,7 +604,9 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         // Copy references and move nodes
         Self::pass_message(substate_io, parent, &mut frame, message)
-            .map_err(CreateFrameError::PassMessageError)?;
+            .map_err(|e| {
+                CreateFrameError::PassMessageError(e)
+            })?;
 
         Ok(frame)
     }

@@ -133,6 +133,7 @@ impl TransactionProcessorNativePackage {
                 let rtn = TransactionProcessorBlueprint::new(
                     input.manifest,
                     input.global_address_reservations,
+                    input.references,
                     api,
                 )?;
 

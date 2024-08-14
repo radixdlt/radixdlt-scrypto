@@ -52,6 +52,10 @@ fn swap_with_intents_should_work() {
 
     let execution_config = {
         let mut execution_config = ExecutionConfig::for_test_transaction();
+        execution_config.system_overrides = Some(SystemOverrides {
+            disable_auth: true,
+            ..Default::default()
+        });
         execution_config.enable_kernel_trace = false;
         execution_config
     };
