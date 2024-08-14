@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::transaction_processor::*;
 use crate::blueprints::resource::FungibleResourceManagerStateSchemaInit;
 
-use super::{SubTransactionProcessorStateSchemaInit, TransactionProcessorBlueprint, TransactionProcessorNewInput, TransactionProcessorNewOutput};
+use super::{SubTransactionProcessorStateSchemaInit, TransactionProcessorBlueprint, TransactionProcessorExecuteInput, TransactionProcessorExecuteOutput, TransactionProcessorNewInput, TransactionProcessorNewOutput};
 use super::TransactionProcessorRunInput;
 use super::TransactionProcessorV1MinorVersion;
 
@@ -53,6 +53,19 @@ impl TransactionProcessorNativePackage {
                     aggregator.add_child_type_and_descendents::<TransactionProcessorNewOutput>(),
                 ),
                 export: TRANSACTION_PROCESSOR_NEW_IDENT.to_string(),
+            },
+        );
+        functions.insert(
+            TRANSACTION_PROCESSOR_EXECUTE_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TransactionProcessorExecuteInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<TransactionProcessorExecuteOutput>(),
+                ),
+                export: TRANSACTION_PROCESSOR_EXECUTE_IDENT.to_string(),
             },
         );
 
@@ -120,6 +133,18 @@ impl TransactionProcessorNativePackage {
                 let rtn = TransactionProcessorBlueprint::new(
                     input.manifest,
                     input.global_address_reservations,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            TRANSACTION_PROCESSOR_EXECUTE_IDENT => {
+                let input: TransactionProcessorExecuteInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+
+                let rtn = TransactionProcessorBlueprint::execute(
+                    input,
                     api,
                 )?;
 

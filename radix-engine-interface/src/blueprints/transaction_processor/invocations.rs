@@ -8,6 +8,8 @@ pub const TRANSACTION_PROCESSOR_RUN_IDENT: &str = "run";
 
 pub const TRANSACTION_PROCESSOR_NEW_IDENT: &str = "new";
 
+pub const TRANSACTION_PROCESSOR_EXECUTE_IDENT: &str = "execute";
+
 // TransactionProcessorInput in the engine
 
 pub type TransactionProcessorRunOutput = Vec<InstructionOutput>;

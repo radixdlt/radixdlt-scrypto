@@ -20,7 +20,7 @@ use radix_transactions::data::TransformHandler;
 use radix_transactions::model::*;
 use radix_transactions::validation::*;
 use sbor::rust::prelude::*;
-use crate::blueprints::transaction_processor::SubTransactionProcessorExecutionStateFieldPayload;
+use crate::blueprints::transaction_processor::{SubTransactionProcessorExecutionStateFieldPayload, SubTransactionProcessorExecutionStateFieldSubstate};
 
 #[cfg(not(feature = "coverage"))]
 pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 1024 * 1024;
@@ -68,6 +68,9 @@ pub struct TransactionProcessorNewInput {
     pub manifest: TransactionManifest,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
 }
+
+pub type TransactionProcessorExecuteInput = ScryptoValue;
+pub type TransactionProcessorExecuteOutput = TransactionProcessorExecutionOutput;
 
 pub type TransactionProcessorNewOutput = Own;
 
@@ -194,7 +197,18 @@ impl TransactionProcessorBlueprint {
                 (Option::<Hash>::None, result.state)
             } else {
                 let (processor, parent) = child_threads.get_mut(&cur_thread).unwrap();
-                todo!();
+                let rtn = api.call_method(
+                    processor.as_node_id(),
+                    TRANSACTION_PROCESSOR_EXECUTE_IDENT,
+                    scrypto_encode(&received_value.take().map(|i| i.to_scrypto_value())).unwrap()
+                )?;
+                let rtn: TransactionProcessorExecutionOutput = scrypto_decode(&rtn).unwrap();
+                let rtn = match rtn {
+                    TransactionProcessorExecutionOutput::Done => TransactionProcessorState::Done,
+                    TransactionProcessorExecutionOutput::YieldToChild(child, value) => TransactionProcessorState::YieldToChild(child, IndexedScryptoValue::from_scrypto_value(value)),
+                    TransactionProcessorExecutionOutput::YieldToParent(value) => TransactionProcessorState::YieldToParent(IndexedScryptoValue::from_scrypto_value(value)),
+                };
+                (*parent, rtn)
             };
             if cur_thread.eq(&root_thread) {
             }
@@ -241,6 +255,26 @@ impl TransactionProcessorBlueprint {
         )?;
         Ok(Own(node))
     }
+
+    pub(crate) fn execute<
+        Y: SystemApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<L>,
+        L: Default,
+    >(
+        input: ScryptoValue,
+        api: &mut Y,
+    ) -> Result<TransactionProcessorExecuteOutput, RuntimeError> {
+        let field = api.actor_open_field(ACTOR_STATE_SELF, 0, LockFlags::MUTABLE)?;
+        let payload: SubTransactionProcessorExecutionStateFieldPayload = api.field_read_typed(field)?;
+        let mut state = payload.into_unique_version();
+        let output = state.execute(api, Some(IndexedScryptoValue::from_scrypto_value(input)))?;
+        let rtn = match output.state {
+            TransactionProcessorState::Done => TransactionProcessorExecutionOutput::Done,
+            TransactionProcessorState::YieldToParent(value) => TransactionProcessorExecutionOutput::YieldToParent(value.to_scrypto_value()),
+            TransactionProcessorState::YieldToChild(hash, value) => TransactionProcessorExecutionOutput::YieldToChild(hash, value.to_scrypto_value()),
+        };
+
+        Ok(rtn)
+    }
 }
 
 
@@ -248,6 +282,13 @@ impl TransactionProcessorBlueprint {
 struct TransactionProcessorExecuteResult {
     outputs: Vec<InstructionOutput>,
     state: TransactionProcessorState,
+}
+
+#[derive(ScryptoSbor, Debug, PartialEq, Eq)]
+pub enum TransactionProcessorExecutionOutput {
+    YieldToChild(Hash, ScryptoValue),
+    YieldToParent(ScryptoValue),
+    Done,
 }
 
 enum TransactionProcessorState {
