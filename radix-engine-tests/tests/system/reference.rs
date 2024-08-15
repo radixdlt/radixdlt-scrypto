@@ -514,7 +514,10 @@ fn test_send_and_receive_reference_wrapped_in_transient_wrapper() {
     //
     // BUT:
     // * Currently scrypto components can't be set to be "transient"
-    // * And also, relatedly, drop isn't supported in scrypto, so this test errors during clean up with an undropped node error
+    // * And also, relatedly, drop isn't supported in scrypto, so this test would error during clean up with an undropped node error
+    //
+    // As such, at present, the only place this pattern is used is in Proofs - notably proofs
+    // against buckets and vaults.
 
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
