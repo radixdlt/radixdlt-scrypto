@@ -97,19 +97,59 @@ mod reference_test {
 
         pub fn send_and_receive_reference() {
             let bucket = Bucket::new(XRD.into());
-            Blueprint::<ChildReferenceHolder>::bounce_back(Reference(bucket.0.as_node_id().clone()));
+            Blueprint::<ChildReferenceHolder>::bounce_back_reference(Reference(
+                bucket.0.as_node_id().clone(),
+            ));
             bucket.drop_empty();
+        }
+
+        pub fn send_and_receive_reference_wrapped_in_owned() {
+            let bucket = Bucket::new(XRD.into());
+            let bucket_reference = Reference(bucket.0.as_node_id().clone());
+            // Instantiating a new object is possible
+            let wrapper = ChildReferenceHolder {
+                reference: Some(bucket_reference),
+            }
+            .instantiate();
+            let mut wrapper: Owned<ChildReferenceHolder> =
+                Blueprint::<ChildReferenceHolder>::bounce_back_owned(wrapper);
+
+            // CLEANUP
+            wrapper.take_reference();
+            // Q: Do we need to somehow drop the reference before dropping the bucket?
+            bucket.drop_empty();
+            // We have set `ChildReferenceHolder` to be transient, but we can't drop it, as it's not exposed to scrypto
+            // So we expect some kind of undropped node error
         }
     }
 }
 
 #[blueprint]
 mod child_reference_holder {
-    struct ChildReferenceHolder {}
+    struct ChildReferenceHolder {
+        pub reference: Option<Reference>,
+    }
 
     impl ChildReferenceHolder {
-        pub fn bounce_back(reference: Reference) -> Reference {
+        pub fn bounce_back_reference(reference: Reference) -> Reference {
             reference
+        }
+
+        pub fn bounce_back_owned(
+            owned: Owned<ChildReferenceHolder>,
+        ) -> Owned<ChildReferenceHolder> {
+            owned
+        }
+
+        pub fn new_with_reference(reference: Reference) -> Owned<ChildReferenceHolder> {
+            ChildReferenceHolder {
+                reference: Some(reference),
+            }
+            .instantiate()
+        }
+
+        pub fn take_reference(&mut self) -> Option<Reference> {
+            self.reference.take()
         }
     }
 }

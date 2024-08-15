@@ -479,3 +479,73 @@ fn test_send_and_receive_reference_from_child_call_frame() {
     // Assert
     receipt.expect_specific_failure(|e| format!("{e:?}").contains("DirectRefNotFound"));
 }
+
+#[test]
+fn test_send_and_receive_reference_wrapped_in_non_transient_wrapper() {
+    // This test just checks the limits of engine/scrypto behaviour with a "fake proof" style model.
+    // * Creating a normal `ChildReferenceHolder` means it's not transient, so it's a validation
+    //   error when we try to create an object with a non-global reference.
+
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
+
+    // Act
+    let receipt = ledger.call_function(
+        package_address,
+        "ReferenceTest",
+        "send_and_receive_reference_wrapped_in_owned",
+        manifest_args!(),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        let error_message = format!("{e:?}");
+        return error_message.contains("BlueprintPayloadValidationError")
+            && error_message.contains("Non Global Reference is not allowed")
+    });
+}
+
+#[test]
+fn test_send_and_receive_reference_wrapped_in_transient_wrapper() {
+    // This test just checks the limits of engine/scrypto behaviour with a "fake proof" style model.
+    // * Having the `ChildReferenceHolder` be transient would allow for it to be created with an internal
+    // reference in its substates.
+    //
+    // BUT:
+    // * Currently scrypto components can't be set to be "transient"
+    // * And also, relatedly, drop isn't supported in scrypto, so this test errors during clean up with an undropped node error
+
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let upload_package_manifest = manifest_to_publish_package_with_transient_blueprints(
+        PackageLoader::get("reference"),
+        Default::default(),
+        OwnerRole::None,
+        indexset!("ChildReferenceHolder".to_string()),
+    );
+
+    let upload_package_receipt = ledger.execute_manifest(upload_package_manifest, vec![]);
+
+    upload_package_receipt.expect_specific_failure(|e| {
+        let error_message = format!("{e:?}");
+        return error_message.contains("Transient blueprints not supported");
+    });
+}
+
+fn manifest_to_publish_package_with_transient_blueprints<P: Into<PackagePublishingSource>>(
+    source: P,
+    metadata: BTreeMap<String, MetadataValue>,
+    owner_role: OwnerRole,
+    transient_blueprints: IndexSet<String>,
+) -> TransactionManifestV1 {
+    let (code, mut definition) = source.into().code_and_definition();
+    for blueprint in transient_blueprints.into_iter() {
+        let bp_definition_init = definition.blueprints.get_mut(&blueprint).expect("Blueprint was not found");
+        bp_definition_init.is_transient = true;
+    }
+    ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .publish_package_advanced(None, code, definition, metadata, owner_role)
+        .build()
+}
