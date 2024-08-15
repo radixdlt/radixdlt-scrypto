@@ -2,8 +2,7 @@ use super::jellyfish::TreeUpdateBatch;
 use super::tier_framework::*;
 use super::tree_store::*;
 use super::types::*;
-use radix_common::crypto::{hash, Hash};
-use radix_rust::prelude::*;
+use radix_common::prelude::*;
 use radix_substate_store_interface::interface::*;
 
 /// The bottom tier of the 3-tier JMT, corresponding to the `DbSortKey` part of a substate key.
@@ -219,8 +218,8 @@ impl<'s, S: ReadableTreeStore + WriteableTreeStore> SubstateTier<'s, S> {
             let substate_value = substate_updates
                 .get_substate_change(&sort_key)
                 .map(|change| match change {
-                    SubstateChange::Upsert(value) => AssociatedSubstateValue::Upserted(value),
-                    SubstateChange::Delete => {
+                    DatabaseUpdateRef::Set(value) => AssociatedSubstateValue::Upserted(value),
+                    DatabaseUpdateRef::Delete => {
                         panic!("deletes are not represented by new tree leafs")
                     }
                 })

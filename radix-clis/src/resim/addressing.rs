@@ -16,7 +16,6 @@ pub enum AddressError {
     InvalidAddress(String),
 }
 
-#[cfg(not(feature = "alloc"))]
 impl std::error::Error for AddressError {}
 
 impl fmt::Display for AddressError {

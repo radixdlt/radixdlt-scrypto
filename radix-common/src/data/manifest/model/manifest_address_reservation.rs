@@ -60,6 +60,11 @@ manifest_type!(
     ManifestCustomValueKind::AddressReservation,
     4
 );
+scrypto_describe_for_manifest_type!(
+    ManifestAddressReservation,
+    OWN_GLOBAL_ADDRESS_RESERVATION_TYPE,
+    own_global_address_reservation_type_data,
+);
 
 #[cfg(test)]
 mod tests {

@@ -18,6 +18,8 @@ pub mod data;
 pub mod math;
 /// RE network identifier model.
 pub mod network;
+/// Common models for state changes in RE
+pub mod state;
 /// RE time library.
 pub mod time;
 /// RE types.
@@ -60,7 +62,8 @@ pub mod prelude {
     // Exports from upstream libraries
     pub use radix_sbor_derive::{
         ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
-        ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor, ScryptoSborAssertion,
+        ScryptoDecode, ScryptoDescribe, ScryptoEncode, ScryptoEvent, ScryptoSbor,
+        ScryptoSborAssertion,
     };
     pub use sbor::prelude::*;
     pub use sbor::*;
@@ -73,6 +76,7 @@ pub mod prelude {
     pub use super::data::scrypto::prelude::*;
     pub use super::math::*;
     pub use super::network::*;
+    pub use super::state::*;
     pub use super::time::*;
     pub use super::traits::*;
     pub use super::types::*;

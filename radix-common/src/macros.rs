@@ -13,7 +13,7 @@ macro_rules! i {
 #[macro_export]
 macro_rules! well_known_scrypto_custom_type {
     // with describe
-    ($t:ty, $value_kind:expr, $schema_type:expr, $size:expr, $well_known_type:ident, $well_known_type_data_method:ident) => {
+    ($t:ty, $value_kind:expr, $schema_type:expr, $size:expr, $well_known_type:ident, $well_known_type_data_method:ident$(,)?) => {
         impl sbor::Categorize<$crate::data::scrypto::ScryptoCustomValueKind> for $t {
             #[inline]
             fn value_kind() -> sbor::ValueKind<$crate::data::scrypto::ScryptoCustomValueKind> {
@@ -62,8 +62,8 @@ macro_rules! well_known_scrypto_custom_type {
 
 #[macro_export]
 macro_rules! manifest_type {
-    // without describe
-    ($t:ty, $value_kind:expr, $size: expr) => {
+    // Without describe - if you need describe, also use scrypto_describe_for_manifest_type!
+    ($t:ty, $value_kind:expr, $size: expr$(,)?) => {
         impl sbor::Categorize<$crate::data::manifest::ManifestCustomValueKind> for $t {
             #[inline]
             fn value_kind() -> sbor::ValueKind<$crate::data::manifest::ManifestCustomValueKind> {
@@ -98,6 +98,21 @@ macro_rules! manifest_type {
             }
         }
     };
+}
+
+#[macro_export]
+macro_rules! scrypto_describe_for_manifest_type {
+    ($t:ty, $well_known_type:ident, $well_known_type_data_method:ident$(,)?) => {
+        impl sbor::Describe<$crate::data::scrypto::ScryptoCustomTypeKind> for $t {
+            const TYPE_ID: sbor::RustTypeId = sbor::RustTypeId::WellKnown(
+                $crate::data::scrypto::well_known_scrypto_custom_types::$well_known_type,
+            );
+
+            fn type_data() -> sbor::TypeData<$crate::data::scrypto::ScryptoCustomTypeKind, sbor::RustTypeId> {
+                $crate::data::scrypto::well_known_scrypto_custom_types::$well_known_type_data_method()
+            }
+        }
+    }
 }
 
 #[macro_export]

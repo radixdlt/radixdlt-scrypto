@@ -56,6 +56,7 @@ impl ManifestBucket {
 }
 
 manifest_type!(ManifestBucket, ManifestCustomValueKind::Bucket, 4);
+scrypto_describe_for_manifest_type!(ManifestBucket, OWN_BUCKET_TYPE, own_bucket_type_data,);
 
 #[cfg(test)]
 mod tests {

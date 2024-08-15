@@ -1,7 +1,7 @@
 use super::*;
 use crate::internal_prelude::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct InstructionsV1(pub Rc<Vec<InstructionV1>>);
 

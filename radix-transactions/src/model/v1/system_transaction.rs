@@ -2,7 +2,7 @@ use super::{ExecutionContext, TransactionCostingParameters};
 use crate::internal_prelude::*;
 use crate::model::{AuthZoneParams, Executable};
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SystemTransactionV1 {
     pub instructions: InstructionsV1,
     pub blobs: BlobsV1,

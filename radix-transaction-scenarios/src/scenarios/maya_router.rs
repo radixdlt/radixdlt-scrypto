@@ -9,25 +9,13 @@ use radix_engine_interface::*;
 pub struct MayaRouterScenarioConfig {
     pub owner_private_key: PrivateKey,
     pub swapper_private_key: PrivateKey,
-    pub asgard_vault_1_private_key: PrivateKey,
-    pub asgard_vault_2_private_key: PrivateKey,
-    pub asgard_vault_1_public_key: PublicKey,
-    pub asgard_vault_2_public_key: PublicKey,
 }
 
 impl Default for MayaRouterScenarioConfig {
     fn default() -> Self {
-        let key_1 = new_secp256k1_private_key(2);
-        let key_2 = new_ed25519_private_key(2);
-        let pub_key_1 = key_1.public_key();
-        let pub_key_2 = key_2.public_key();
         Self {
             owner_private_key: new_ed25519_private_key(3).into(),
             swapper_private_key: new_secp256k1_private_key(1).into(),
-            asgard_vault_1_private_key: key_1.into(),
-            asgard_vault_2_private_key: key_2.into(),
-            asgard_vault_1_public_key: pub_key_1.into(),
-            asgard_vault_2_public_key: pub_key_2.into(),
         }
     }
 }

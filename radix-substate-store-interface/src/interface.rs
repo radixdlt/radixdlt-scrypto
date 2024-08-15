@@ -1,3 +1,4 @@
+use super::db_key_mapper::DatabaseKeyMapper;
 use radix_common::prelude::*;
 
 pub type DbNodeKey = Vec<u8>;
@@ -23,11 +24,15 @@ pub struct DbSortKey(pub Vec<u8>);
 /// A fully-specified key of a substate (i.e. specifying its partition and sort key).
 pub type DbSubstateKey = (DbPartitionKey, DbSortKey);
 
-/// A raw substate value stored by the database.
-pub type DbSubstateValue = Vec<u8>;
-
 /// A key-value entry of a substate within a known partition.
 pub type PartitionEntry = (DbSortKey, DbSubstateValue);
+
+pub trait CreateDatabaseUpdates {
+    type DatabaseUpdates;
+
+    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
+    fn create_database_updates<M: DatabaseKeyMapper>(&self) -> Self::DatabaseUpdates;
+}
 
 /// A canonical description of all database updates to be applied.
 /// Note: this struct can be migrated to an enum if we ever have a need for database-wide batch
@@ -38,6 +43,25 @@ pub struct DatabaseUpdates {
     pub node_updates: IndexMap<DbNodeKey, NodeDatabaseUpdates>,
 }
 
+impl CreateDatabaseUpdates for StateUpdates {
+    type DatabaseUpdates = DatabaseUpdates;
+
+    fn create_database_updates<M: DatabaseKeyMapper>(&self) -> DatabaseUpdates {
+        DatabaseUpdates {
+            node_updates: self
+                .by_node
+                .iter()
+                .map(|(node_id, node_state_updates)| {
+                    (
+                        M::to_db_node_key(node_id),
+                        node_state_updates.create_database_updates::<M>(),
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
 /// A canonical description of specific Node's updates to be applied.
 /// Note: this struct can be migrated to an enum if we ever have a need for Node-wide batch changes
 /// (see [`PartitionDatabaseUpdates`] enum).
@@ -45,6 +69,26 @@ pub struct DatabaseUpdates {
 pub struct NodeDatabaseUpdates {
     /// Partition-level updates.
     pub partition_updates: IndexMap<DbPartitionNum, PartitionDatabaseUpdates>,
+}
+
+impl CreateDatabaseUpdates for NodeStateUpdates {
+    type DatabaseUpdates = NodeDatabaseUpdates;
+
+    fn create_database_updates<M: DatabaseKeyMapper>(&self) -> NodeDatabaseUpdates {
+        match self {
+            NodeStateUpdates::Delta { by_partition } => NodeDatabaseUpdates {
+                partition_updates: by_partition
+                    .iter()
+                    .map(|(partition_num, partition_state_updates)| {
+                        (
+                            M::to_db_partition_num(*partition_num),
+                            partition_state_updates.create_database_updates::<M>(),
+                        )
+                    })
+                    .collect(),
+            },
+        }
+    }
 }
 
 /// A canonical description of specific Partition's updates to be applied.
@@ -67,51 +111,61 @@ impl PartitionDatabaseUpdates {
     ///
     /// This method is useful for index-updating logic which does not care about the nature of the
     /// Partition update (i.e. delta vs reset).
-    pub fn get_substate_change(&self, sort_key: &DbSortKey) -> Option<SubstateChange> {
+    pub fn get_substate_change(&self, sort_key: &DbSortKey) -> Option<DatabaseUpdateRef> {
         match self {
             Self::Delta { substate_updates } => {
                 substate_updates.get(sort_key).map(|update| match update {
-                    DatabaseUpdate::Set(value) => SubstateChange::Upsert(value),
-                    DatabaseUpdate::Delete => SubstateChange::Delete,
+                    DatabaseUpdate::Set(value) => DatabaseUpdateRef::Set(value),
+                    DatabaseUpdate::Delete => DatabaseUpdateRef::Delete,
                 })
             }
             Self::Reset {
                 new_substate_values,
             } => new_substate_values
                 .get(sort_key)
-                .map(|value| SubstateChange::Upsert(value))
-                .or_else(|| Some(SubstateChange::Delete)),
+                .map(|value| DatabaseUpdateRef::Set(value))
+                .or_else(|| Some(DatabaseUpdateRef::Delete)),
         }
     }
 }
 
-/// A change applied to a Substate - see [`PartitionDatabaseUpdates::get_substate_change`].
-/// Technically, this is a 1:1 counterpart of [`DatabaseUpdate`], but operating on references.
-pub enum SubstateChange<'v> {
-    Upsert(&'v DbSubstateValue),
-    Delete,
+impl CreateDatabaseUpdates for PartitionStateUpdates {
+    type DatabaseUpdates = PartitionDatabaseUpdates;
+
+    fn create_database_updates<M: DatabaseKeyMapper>(&self) -> PartitionDatabaseUpdates {
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => PartitionDatabaseUpdates::Delta {
+                substate_updates: by_substate
+                    .iter()
+                    .map(|(key, update)| (M::to_db_sort_key(key), update.clone()))
+                    .collect(),
+            },
+            PartitionStateUpdates::Batch(batch) => batch.create_database_updates::<M>(),
+        }
+    }
+}
+
+impl CreateDatabaseUpdates for BatchPartitionStateUpdate {
+    type DatabaseUpdates = PartitionDatabaseUpdates;
+
+    fn create_database_updates<M: DatabaseKeyMapper>(&self) -> PartitionDatabaseUpdates {
+        match self {
+            BatchPartitionStateUpdate::Reset {
+                new_substate_values,
+            } => PartitionDatabaseUpdates::Reset {
+                new_substate_values: new_substate_values
+                    .iter()
+                    .map(|(key, value)| (M::to_db_sort_key(key), value.clone()))
+                    .collect(),
+            },
+        }
+    }
 }
 
 impl Default for PartitionDatabaseUpdates {
     fn default() -> Self {
         Self::Delta {
             substate_updates: index_map_new(),
-        }
-    }
-}
-
-/// An update of a single substate's value.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Sbor, PartialOrd, Ord)]
-pub enum DatabaseUpdate {
-    Set(DbSubstateValue),
-    Delete,
-}
-
-impl DatabaseUpdate {
-    pub fn as_change(&self) -> SubstateChange<'_> {
-        match self {
-            DatabaseUpdate::Set(update) => SubstateChange::Upsert(update),
-            DatabaseUpdate::Delete => SubstateChange::Delete,
         }
     }
 }

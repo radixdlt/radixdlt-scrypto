@@ -17,6 +17,7 @@ macro_rules! trace {
     }};
 }
 
+#[allow(dead_code)] // Fields for tokens from parse for completeness
 pub struct GlobalComponent {
     pub ident: Ident,
     pub comma: Comma,
@@ -36,6 +37,7 @@ impl Parse for GlobalComponent {
     }
 }
 
+#[allow(dead_code)] // Fields for tokens from parse for completeness
 pub struct ImportBlueprintFn {
     pub sig: Signature,
     pub semi_token: Token![;],
@@ -49,6 +51,7 @@ impl Parse for ImportBlueprintFn {
     }
 }
 
+#[allow(dead_code)] // Fields for tokens from parse for completeness
 pub struct ImportBlueprint {
     pub package: Expr,
     pub comma0: Comma,

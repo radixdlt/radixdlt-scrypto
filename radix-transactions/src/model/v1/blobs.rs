@@ -3,11 +3,11 @@ use radix_common::constants::MAX_NUMBER_OF_BLOBS;
 use super::*;
 use crate::internal_prelude::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct BlobV1(pub Vec<u8>);
 
-#[derive(Default, Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct BlobsV1 {
     pub blobs: Vec<BlobV1>,

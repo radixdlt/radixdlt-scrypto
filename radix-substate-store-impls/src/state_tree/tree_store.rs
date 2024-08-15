@@ -3,17 +3,10 @@ use super::tier_framework::StoredNode;
 pub use super::types::{Nibble, NibblePath, TreeNodeKey, Version};
 use super::{Node, StorageError, TreeReader};
 
-use radix_common::crypto::Hash;
-use radix_common::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_rust::rust::collections::VecDeque;
-use radix_rust::rust::collections::{hash_map_new, HashMap};
-use radix_rust::rust::vec::Vec;
-use radix_substate_store_interface::interface::{
-    DbPartitionKey, DbSortKey, DbSubstateKey, DbSubstateValue,
-};
+use radix_common::prelude::*;
+use radix_substate_store_interface::interface::*;
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::RefCell;
-use sbor::*;
 
 define_single_versioned! {
     #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
@@ -177,7 +170,7 @@ pub trait WriteableTreeStore {
 /// avoid this potential performance implication by having an explicit way of associating an
 /// "unchanged" Substate with its new tree leaf.
 pub enum AssociatedSubstateValue<'v> {
-    Upserted(&'v DbSubstateValue),
+    Upserted(&'v [u8]),
     Unchanged,
 }
 
@@ -256,7 +249,7 @@ impl WriteableTreeStore for TypedInMemoryTreeStore {
     ) {
         if self.store_associated_substates {
             let substate_value = match substate_value {
-                AssociatedSubstateValue::Upserted(value) => Some(value.clone()),
+                AssociatedSubstateValue::Upserted(value) => Some(value.to_owned()),
                 AssociatedSubstateValue::Unchanged => None,
             };
             self.associated_substates.borrow_mut().insert(

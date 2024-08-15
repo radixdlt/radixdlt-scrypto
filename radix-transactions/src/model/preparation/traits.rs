@@ -6,7 +6,6 @@ pub trait TransactionPayload:
     ManifestEncode
     + ManifestDecode
     + ManifestCategorize
-    + ManifestSborTuple
     + ManifestSborEnumVariantFor<VersionedTransactionPayload>
 where
     Self::OwnedVariant: ManifestDecode,
@@ -14,6 +13,10 @@ where
 {
     type Prepared: TransactionPayloadPreparable<Raw = Self::Raw>;
     type Raw: RawTransactionPayload;
+
+    fn discriminator() -> u8 {
+        Self::DISCRIMINATOR
+    }
 
     fn to_raw(&self) -> Result<Self::Raw, EncodeError> {
         Ok(self.to_payload_bytes()?.into())
@@ -29,6 +32,10 @@ where
 
     fn from_payload_bytes(payload_bytes: &[u8]) -> Result<Self, DecodeError> {
         Ok(Self::from_decoded_variant(manifest_decode(payload_bytes)?))
+    }
+
+    fn from_payload_variant(payload_variant: Self::OwnedVariant) -> Self {
+        Self::from_decoded_variant(payload_variant)
     }
 
     fn prepare(&self) -> Result<Self::Prepared, PrepareError> {

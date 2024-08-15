@@ -6,7 +6,7 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct IntentV1 {
     pub header: TransactionHeaderV1,
     pub instructions: InstructionsV1,

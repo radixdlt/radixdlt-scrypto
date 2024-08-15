@@ -26,6 +26,7 @@ use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
+use scrypto_test::prelude::CreateDatabaseUpdates;
 
 #[derive(Default)]
 struct TestCallFrameData;

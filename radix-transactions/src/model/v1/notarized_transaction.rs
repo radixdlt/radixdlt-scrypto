@@ -6,7 +6,11 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe, ScryptoSborAssertion)]
+#[sbor_assert(
+    fixed("FILE:notarized_transaction_v1_schema.txt"),
+    settings(allow_name_changes)
+)]
 pub struct NotarizedTransactionV1 {
     pub signed_intent: SignedIntentV1,
     pub notary_signature: NotarySignatureV1,

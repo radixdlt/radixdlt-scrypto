@@ -12,7 +12,7 @@ use radix_rust::ContextualDisplay;
 use radix_substate_store_interface::interface::DatabaseUpdates;
 use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
-    interface::{CommittableSubstateDatabase, DatabaseUpdate},
+    interface::*,
 };
 use radix_substate_store_queries::typed_substate_layout::*;
 use std::ffi::OsStr;

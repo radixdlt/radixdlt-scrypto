@@ -7,14 +7,9 @@ use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::*;
 use crate::system::system_substate_schemas::*;
-use crate::track::BatchPartitionStateUpdate;
-use crate::track::NodeStateUpdates;
-use crate::track::PartitionStateUpdates;
-use crate::track::StateUpdates;
 use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_substate_store_interface::interface::DatabaseUpdate;
 use radix_transactions::model::Executable;
 use radix_transactions::prelude::TransactionCostingParametersReceipt;
 use sbor::representations::*;
@@ -1102,7 +1097,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                                         node_id,
                                         partition_number,
                                         substate_key,
-                                        update.as_change(),
+                                        update.as_ref(),
                                     )?;
                                 }
                             }
@@ -1127,7 +1122,7 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                                         node_id,
                                         partition_number,
                                         substate_key,
-                                        SubstateChange::Upsert(value),
+                                        DatabaseUpdateRef::Set(value),
                                     )?;
                                 }
                             }
@@ -1231,7 +1226,7 @@ fn display_substate_change<'a, F: fmt::Write>(
     node_id: &NodeId,
     partition_number: &PartitionNumber,
     substate_key: &SubstateKey,
-    change: SubstateChange,
+    change: DatabaseUpdateRef,
 ) -> Result<(), fmt::Error> {
     let substate_structure = system_structure
         .substate_system_structures
@@ -1242,13 +1237,13 @@ fn display_substate_change<'a, F: fmt::Write>(
         .get(substate_key)
         .unwrap();
     match change {
-        SubstateChange::Upsert(substate_value) => {
+        DatabaseUpdateRef::Set(substate_value) => {
             write!(f, "\n    {prefix} Set: ")?;
             format_substate_key(f, substate_structure, receipt_context, substate_key)?;
             write!(f, "\n       Value: ")?;
             format_substate_value(f, substate_structure, receipt_context, substate_value)?;
         }
-        SubstateChange::Delete => {
+        DatabaseUpdateRef::Delete => {
             write!(f, "\n    {prefix} Delete: ")?;
             format_substate_key(f, substate_structure, receipt_context, substate_key)?;
         }
@@ -1329,7 +1324,7 @@ fn format_substate_value<'a, F: fmt::Write>(
     f: &mut F,
     substate_structure: &SubstateSystemStructure,
     receipt_context: &TransactionReceiptDisplayContext<'a>,
-    substate_value: &DbSubstateValue,
+    substate_value: &[u8],
 ) -> Result<(), fmt::Error> {
     let print_mode = PrintMode::MultiLine {
         indent_size: 2,
