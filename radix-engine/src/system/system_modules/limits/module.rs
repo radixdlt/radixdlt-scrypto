@@ -185,6 +185,8 @@ impl ResolvableSystemModule for LimitsModule {
         &mut system.modules.limits
     }
 }
+impl PrivilegedSystemModule for LimitsModule {}
+
 impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for LimitsModule {
     fn before_invoke(
         api: &mut ModuleApi,

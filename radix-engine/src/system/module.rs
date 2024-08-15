@@ -101,8 +101,18 @@ pub trait InitSystemModule {
     }
 }
 
+pub trait PrivilegedSystemModule {
+    #[inline(always)]
+    fn privileged_before_invoke(
+        _api: &mut impl SystemBasedKernelApi,
+        _invocation: &KernelInvocation<Actor>,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+}
+
 pub trait SystemModule<ModuleApi: SystemModuleApiFor<Self>>:
-    InitSystemModule + ResolvableSystemModule
+    InitSystemModule + ResolvableSystemModule + PrivilegedSystemModule
 {
     //======================
     // Invocation events

@@ -110,6 +110,7 @@ impl ResolvableSystemModule for TransactionRuntimeModule {
         &mut system.modules.transaction_runtime
     }
 }
+impl PrivilegedSystemModule for TransactionRuntimeModule {}
 impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for TransactionRuntimeModule {}
 
 #[cfg(test)]

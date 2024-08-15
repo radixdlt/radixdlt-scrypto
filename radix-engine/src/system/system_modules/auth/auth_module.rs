@@ -527,4 +527,5 @@ impl ResolvableSystemModule for AuthModule {
         &mut system.modules.auth
     }
 }
+impl PrivilegedSystemModule for AuthModule {}
 impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for AuthModule {}

@@ -359,10 +359,10 @@ impl ResolvableSystemModule for CostingModule {
     }
 }
 
-impl CostingModule {
+impl PrivilegedSystemModule for CostingModule {
     /// Runs after SystemModule::before_invoke
     /// Called from the Module Mixer
-    pub fn privileged_before_invoke(
+    fn privileged_before_invoke(
         api: &mut impl SystemBasedKernelApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {

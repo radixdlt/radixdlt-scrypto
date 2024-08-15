@@ -6,6 +6,7 @@ use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::*;
 use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
+use crate::system::module::PrivilegedSystemModule;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
 use crate::system::system_callback::*;
@@ -88,45 +89,37 @@ macro_rules! internal_call_dispatch {
     (
         $system:expr,
         $fn:ident ( $($param:expr),* )
-        $(, PRIVILEGED: {
-            $(kernel_trace: $privileged_kernel_trace_fn:ident ( $($privileged_kernel_trace_fn_param:expr),* ),)?
-            $(limits: $privileged_limits_fn:ident ( $($privileged_limits_fn_param:expr),* ),)?
-            $(costing: $privileged_costing_fn:ident ( $($privileged_costing_fn_param:expr),* ),)?
-            $(auth: $privileged_auth_fn:ident ( $($privileged_auth_fn_param:expr),* ),)?
-            $(runtime: $privileged_runtime_fn:ident ( $($privileged_runtime_fn_param:expr),* ),)?
-            $(execution_trace: $privileged_execution_trace_fn:ident ( $($privileged_execution_trace_fn_param:expr),* ),)?
-        })?
+        $(, $privileged_fn:ident ( $($privileged_fn_param:expr),* ))?
     ) => {
-        paste! {
-        {
+        paste! {{
             let modules: EnabledModules = $system.modules.enabled_modules;
             if modules.contains(EnabledModules::KERNEL_TRACE) {
                 KernelTraceModule::[< $fn >]($($param, )*)?;
-                $($(KernelTraceModule::[< $privileged_kernel_trace_fn >]($($privileged_kernel_trace_fn_param, )*)?)?)?
+                $(KernelTraceModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::LIMITS) {
                 LimitsModule::[< $fn >]($($param, )*)?;
-                $($(LimitsModule::[< $privileged_limits_fn >]($($privileged_limits_fn_param, )*)?)?)?
+                $(LimitsModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::COSTING) {
                 CostingModule::[< $fn >]($($param, )*)?;
-                $($(CostingModule::[< $privileged_costing_fn >]($($privileged_costing_fn_param, )*)?)?)?
+                $(CostingModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::AUTH) {
                 AuthModule::[< $fn >]($($param, )*)?;
-                $($(AuthModule::[< $privileged_auth_fn >]($($privileged_auth_fn_param, )*)?)?)?
+                $(AuthModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
                 TransactionRuntimeModule::[< $fn >]($($param, )*)?;
-                $($(TransactionRuntimeModule::[< $privileged_runtime_fn >]($($privileged_runtime_fn_param, )*)?)?)?
+                $(TransactionRuntimeModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::EXECUTION_TRACE) {
                 ExecutionTraceModule::[< $fn >]($($param, )*)?;
-                $($(ExecutionTraceModule::[< $privileged_execution_trace_fn >]($($privileged_execution_trace_fn_param, )*)?)?)?
+                $(ExecutionTraceModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             Ok(())
-        }
-    }};
+        }}
+    };
 }
 
 impl SystemModuleMixer {
@@ -239,9 +232,7 @@ impl SystemModuleMixer {
         internal_call_dispatch!(
             api.kernel_get_system(),
             before_invoke(&mut api.system_module_api(), invocation),
-            PRIVILEGED: {
-                costing: privileged_before_invoke(api, invocation),
-            }
+            privileged_before_invoke(api, invocation)
         )
     }
 

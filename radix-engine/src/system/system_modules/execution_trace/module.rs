@@ -454,6 +454,7 @@ impl ResolvableSystemModule for ExecutionTraceModule {
         &mut system.modules.execution_trace
     }
 }
+impl PrivilegedSystemModule for ExecutionTraceModule {}
 
 impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtension>
     SystemModule<ModuleApi> for ExecutionTraceModule

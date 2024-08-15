@@ -207,3 +207,5 @@ impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for KernelTrac
         Ok(())
     }
 }
+
+impl PrivilegedSystemModule for KernelTraceModule {}
