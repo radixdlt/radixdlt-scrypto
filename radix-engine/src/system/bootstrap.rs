@@ -412,7 +412,7 @@ where
             self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
-            &transaction
+            transaction
                 .prepare()
                 .expect("Expected system bootstrap transaction to be preparable")
                 .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
@@ -441,7 +441,7 @@ where
             self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
-            &transaction
+            transaction
                 .prepare()
                 .expect("Expected genesis data chunk transaction to be preparable")
                 .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
@@ -465,7 +465,7 @@ where
             self.vm_init.clone(),
             &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
                 .with_kernel_trace(self.trace),
-            &transaction
+            transaction
                 .prepare()
                 .expect("Expected genesis wrap up transaction to be preparable")
                 .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
@@ -1334,7 +1334,7 @@ pub fn create_system_bootstrap_transaction(
     }
 
     SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
+        instructions: InstructionsV1(Rc::new(instructions)),
         pre_allocated_addresses: pre_allocated_addresses
             .into_iter()
             .map(|allocation_pair| allocation_pair.into())
@@ -1360,7 +1360,7 @@ pub fn create_genesis_data_ingestion_transaction(
     });
 
     SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
+        instructions: InstructionsV1(Rc::new(instructions)),
         pre_allocated_addresses,
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Data Chunk: {}", chunk_number)),
@@ -1432,7 +1432,7 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
     });
 
     SystemTransactionV1 {
-        instructions: InstructionsV1(instructions),
+        instructions: InstructionsV1(Rc::new(instructions)),
         pre_allocated_addresses: vec![],
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),

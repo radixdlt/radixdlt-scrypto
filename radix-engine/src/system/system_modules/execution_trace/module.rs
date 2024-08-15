@@ -291,8 +291,8 @@ impl ResourceSummary {
 
 impl InitSystemModule for ExecutionTraceModule {}
 
-impl<V: SystemCallbackObject> SystemModule<System<V>> for ExecutionTraceModule {
-    fn on_create_node<Y: KernelInternalApi<System<V>>>(
+impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for ExecutionTraceModule {
+    fn on_create_node<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -324,7 +324,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for ExecutionTraceModule {
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -352,7 +352,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for ExecutionTraceModule {
         Ok(())
     }
 
-    fn before_invoke<Y: KernelApi<System<V>>>(
+    fn before_invoke<Y: KernelApi<System<V, E>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -374,7 +374,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for ExecutionTraceModule {
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<System<V>>>(
+    fn on_execution_finish<Y: KernelApi<System<V, E>>>(
         api: &mut Y,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {

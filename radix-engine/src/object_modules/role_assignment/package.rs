@@ -155,11 +155,11 @@ impl RoleAssignmentNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn authorization<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
+    pub fn authorization<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
         global_address: &GlobalAddress,
         ident: &str,
         input: &IndexedScryptoValue,
-        api: &mut SystemService<Y, V>,
+        api: &mut SystemService<Y, V, E>,
     ) -> Result<ResolvedPermission, RuntimeError> {
         let permission = match ident {
             ROLE_ASSIGNMENT_SET_IDENT => {
@@ -298,11 +298,12 @@ impl RoleAssignmentNativePackage {
     }
 
     fn resolve_update_owner_role_method_permission<
-        Y: KernelApi<System<V>>,
+        Y: KernelApi<System<V, E>>,
         V: SystemCallbackObject,
+        E,
     >(
         receiver: &NodeId,
-        api: &mut SystemService<Y, V>,
+        api: &mut SystemService<Y, V, E>,
     ) -> Result<ResolvedPermission, RuntimeError> {
         let handle = api.kernel_open_substate(
             receiver,
@@ -333,11 +334,15 @@ impl RoleAssignmentNativePackage {
         Ok(ResolvedPermission::AccessRule(rule))
     }
 
-    fn resolve_update_role_method_permission<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
+    fn resolve_update_role_method_permission<
+        Y: KernelApi<System<V, E>>,
+        V: SystemCallbackObject,
+        E,
+    >(
         receiver: &NodeId,
         module: ModuleId,
         role_key: &RoleKey,
-        api: &mut SystemService<Y, V>,
+        api: &mut SystemService<Y, V, E>,
     ) -> Result<RoleList, RuntimeError> {
         if Self::is_role_key_reserved(&role_key) || module.eq(&ModuleId::RoleAssignment) {
             return Ok(RoleList::none());

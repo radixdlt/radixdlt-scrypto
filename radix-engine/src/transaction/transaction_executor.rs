@@ -283,7 +283,19 @@ impl<'a, S: SubstateDatabase> BootStore for SubstateBootStore<'a, S> {
     }
 }
 
-pub struct TransactionExecutor<'s, S, V: KernelCallbackObject>
+/// A transaction which has a unique id, useful for creating an IdAllocator which
+/// requires a unique input
+pub trait UniqueTransaction {
+    fn unique_id(&self) -> Hash;
+}
+
+impl UniqueTransaction for Executable {
+    fn unique_id(&self) -> Hash {
+        self.intent_hash().to_hash()
+    }
+}
+
+pub struct TransactionExecutor<'s, S, V: KernelTransactionCallbackObject>
 where
     S: SubstateDatabase,
 {
@@ -295,7 +307,7 @@ where
 impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    V: KernelCallbackObject,
+    V: KernelTransactionCallbackObject<Executable: UniqueTransaction>,
 {
     pub fn new(substate_db: &'s S, system_init: V::Init) -> Self {
         Self {
@@ -305,9 +317,9 @@ where
         }
     }
 
-    pub fn execute(&mut self, executable: &Executable) -> V::Receipt {
+    pub fn execute(&mut self, executable: V::Executable) -> V::Receipt {
         let kernel_boot = BootLoader {
-            id_allocator: IdAllocator::new(executable.intent_hash().to_hash()),
+            id_allocator: IdAllocator::new(executable.unique_id()),
             track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
             init: self.system_init.clone(),
             phantom: PhantomData::<V>::default(),
@@ -321,9 +333,9 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
     substate_db: &S,
     vms: V::Init,
     execution_config: &ExecutionConfig,
-    transaction: &Executable,
+    executable: Executable,
 ) -> TransactionReceipt {
-    let mut executor = TransactionExecutor::<_, System<V>>::new(
+    let mut executor = TransactionExecutor::<_, System<V, Executable>>::new(
         substate_db,
         SystemInit {
             enable_kernel_trace: execution_config.enable_kernel_trace,
@@ -335,20 +347,20 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
         },
     );
 
-    executor.execute(transaction)
+    executor.execute(executable)
 }
 
 pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
     substate_db: &S,
     vm_init: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
-    transaction: &Executable,
+    executable: Executable,
 ) -> TransactionReceipt {
     execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
         substate_db,
         vm_init,
         execution_config,
-        transaction,
+        executable,
     )
 }
 
@@ -361,7 +373,7 @@ pub fn execute_and_commit_transaction<
     substate_db: &mut S,
     vms: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
-    transaction: &Executable,
+    transaction: Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
         substate_db,

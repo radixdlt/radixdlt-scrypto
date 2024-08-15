@@ -4,7 +4,7 @@ use radix_common::constants::AuthAddresses;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ValidatedNotarizedTransactionV1 {
     pub prepared: PreparedNotarizedTransactionV1,
-    pub encoded_instructions: Vec<u8>,
+    pub encoded_instructions: Rc<Vec<u8>>,
     pub signer_keys: Vec<PublicKey>,
     pub num_of_signature_validations: usize,
 }
@@ -28,16 +28,16 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
 }
 
 impl ValidatedNotarizedTransactionV1 {
-    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
+    pub fn get_executable(&self) -> Executable {
         let intent = &self.prepared.signed_intent.intent;
         let header = &intent.header.inner;
         let intent_hash = intent.intent_hash();
         let summary = &self.prepared.summary;
 
         Executable::new(
-            &self.encoded_instructions,
-            &intent.instructions.references,
-            &intent.blobs.blobs_by_hash,
+            self.encoded_instructions.clone(),
+            intent.instructions.references.clone(),
+            intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 intent_hash: TransactionIntentHash::ToCheck {
                     intent_hash: intent_hash.into_hash(),

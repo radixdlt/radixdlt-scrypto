@@ -85,7 +85,7 @@ mod tests {
 
         let instructions = vec![InstructionV1::DropAuthZoneProofs];
         let expected_instructions_hash = hash_manifest_encoded_without_prefix_byte(&instructions);
-        let instructions_v1 = InstructionsV1(instructions);
+        let instructions_v1 = InstructionsV1(Rc::new(instructions));
 
         let blob1: Vec<u8> = vec![0, 1, 2, 3];
         let blob2: Vec<u8> = vec![5, 6];
@@ -282,7 +282,7 @@ mod tests {
     pub fn v1_system_transaction_structure() {
         let instructions = vec![InstructionV1::DropAuthZoneProofs];
         let expected_instructions_hash = hash_manifest_encoded_without_prefix_byte(&instructions);
-        let instructions_v1 = InstructionsV1(instructions);
+        let instructions_v1 = InstructionsV1(Rc::new(instructions));
 
         let blob1: Vec<u8> = vec![0, 1, 2, 3];
         let blob2: Vec<u8> = vec![5, 6];

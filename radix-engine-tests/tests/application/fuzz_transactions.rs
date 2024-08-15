@@ -61,7 +61,7 @@ impl TransactionFuzzer {
             &mut self.substate_db,
             vm_init,
             &execution_config,
-            &validated.get_executable(),
+            validated.get_executable(),
         );
     }
 

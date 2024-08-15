@@ -1,8 +1,6 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{
-    BootloadingError, RejectionReason, RuntimeError, TransactionExecutionError,
-};
-use radix_engine::kernel::call_frame::{CallFrameMessage, StableReferenceType};
+use radix_engine::errors::{RejectionReason, RuntimeError};
+use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::{
@@ -16,28 +14,23 @@ use radix_engine::kernel::kernel_callback_api::{
     WriteSubstateEvent,
 };
 use radix_engine::system::checkers::KernelDatabaseChecker;
-use radix_engine::track::{
-    to_state_updates, BootStore, CommitableSubstateStore, StoreCommitInfo, Track,
-};
+use radix_engine::track::{to_state_updates, CommitableSubstateStore, Track};
 use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::interface::{CommittableSubstateDatabase, SubstateDatabase};
-use radix_transactions::model::{Executable, PreAllocatedAddress};
+use radix_substate_store_interface::interface::CommittableSubstateDatabase;
+use radix_transactions::model::Executable;
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
+#[derive(Default)]
 struct TestCallFrameData;
 
 impl CallFrameReferences for TestCallFrameData {
-    fn root() -> Self {
-        TestCallFrameData
-    }
-
     fn global_references(&self) -> Vec<NodeId> {
         Default::default()
     }
@@ -58,7 +51,9 @@ impl CallFrameReferences for TestCallFrameData {
 struct TestReceipt;
 
 impl ExecutionReceipt for TestReceipt {
-    fn from_rejection(_executable: &Executable, _reason: RejectionReason) -> Self {
+    type Executed = Executable;
+
+    fn from_rejection(_executable: Executable, _reason: RejectionReason) -> Self {
         TestReceipt
     }
 
@@ -69,48 +64,6 @@ struct TestCallbackObject;
 impl KernelCallbackObject for TestCallbackObject {
     type LockData = ();
     type CallFrameData = TestCallFrameData;
-    type Init = ();
-    type ExecutionOutput = ();
-    type Receipt = TestReceipt;
-
-    fn init<S: BootStore + CommitableSubstateStore>(
-        _store: &mut S,
-        _executable: &Executable,
-        _init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
-        Ok(Self)
-    }
-
-    fn start<Y: KernelApi<Self>>(
-        _: &mut Y,
-        _: &[u8],
-        _: &Vec<PreAllocatedAddress>,
-        _: &IndexSet<Reference>,
-        _: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<(), RuntimeError> {
-        unreachable!()
-    }
-
-    fn finish(&mut self, _info: StoreCommitInfo) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    fn create_receipt<S: SubstateDatabase>(
-        self,
-        _track: Track<S, SpreadPrefixKeyMapper>,
-        _executable: &Executable,
-        _result: Result<(), TransactionExecutionError>,
-    ) -> Self::Receipt {
-        TestReceipt
-    }
-
-    fn verify_boot_ref_value(
-        &mut self,
-        _node_id: &NodeId,
-        _value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        Ok(StableReferenceType::Global)
-    }
 
     fn on_pin_node(&mut self, _node_id: &NodeId) -> Result<(), RuntimeError> {
         Ok(())

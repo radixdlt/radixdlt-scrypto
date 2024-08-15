@@ -74,8 +74,8 @@ impl AuthModule {
         Self { params }
     }
 
-    pub fn on_call_function<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        api: &mut SystemService<Y, V>,
+    pub fn on_call_function<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        api: &mut SystemService<Y, V, E>,
         blueprint_id: &BlueprintId,
         ident: &str,
     ) -> Result<NodeId, RuntimeError> {
@@ -125,15 +125,15 @@ impl AuthModule {
         Ok(auth_zone)
     }
 
-    pub fn on_call_function_finish<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        api: &mut SystemService<Y, V>,
+    pub fn on_call_function_finish<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        api: &mut SystemService<Y, V, E>,
         auth_zone: NodeId,
     ) -> Result<(), RuntimeError> {
         Self::teardown_auth_zone(api, auth_zone)
     }
 
-    pub fn on_call_method<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        api: &mut SystemService<Y, V>,
+    pub fn on_call_method<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        api: &mut SystemService<Y, V, E>,
         receiver: &NodeId,
         module_id: ModuleId,
         direct_access: bool,
@@ -172,16 +172,16 @@ impl AuthModule {
         Ok(auth_zone)
     }
 
-    pub fn on_call_method_finish<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        api: &mut SystemService<Y, V>,
+    pub fn on_call_method_finish<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        api: &mut SystemService<Y, V, E>,
         auth_zone: NodeId,
     ) -> Result<(), RuntimeError> {
         Self::teardown_auth_zone(api, auth_zone)
     }
 
     /// On CALL_FUNCTION or CALL_METHOD, when auth module is disabled.
-    pub fn on_call_fn_mock<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        system: &mut SystemService<Y, V>,
+    pub fn on_call_fn_mock<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        system: &mut SystemService<Y, V, E>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
@@ -189,8 +189,8 @@ impl AuthModule {
         Self::create_auth_zone(system, receiver, virtual_resources, virtual_non_fungibles)
     }
 
-    fn copy_global_caller<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        system: &mut SystemService<Y, V>,
+    fn copy_global_caller<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        system: &mut SystemService<Y, V, E>,
         node_id: &NodeId,
     ) -> Result<(Option<(GlobalCaller, Reference)>, Option<SubstateHandle>), RuntimeError> {
         let handle = system.kernel_open_substate(
@@ -208,8 +208,8 @@ impl AuthModule {
         Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
 
-    fn create_auth_zone<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        system: &mut SystemService<Y, V>,
+    fn create_auth_zone<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        system: &mut SystemService<Y, V, E>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
@@ -331,8 +331,8 @@ impl AuthModule {
         Ok(new_auth_zone)
     }
 
-    pub fn teardown_auth_zone<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        api: &mut SystemService<Y, V>,
+    pub fn teardown_auth_zone<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        api: &mut SystemService<Y, V, E>,
         self_auth_zone: NodeId,
     ) -> Result<(), RuntimeError> {
         // Detach proofs from the auth zone
@@ -372,11 +372,11 @@ impl AuthModule {
         Ok(())
     }
 
-    fn check_permission<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
+    fn check_permission<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
         auth_zone: &NodeId,
         resolved_permission: ResolvedPermission,
         fn_identifier: FnIdentifier,
-        api: &mut SystemService<Y, V>,
+        api: &mut SystemService<Y, V, E>,
     ) -> Result<(), RuntimeError> {
         match resolved_permission {
             ResolvedPermission::AllowAll => return Ok(()),
@@ -426,8 +426,8 @@ impl AuthModule {
         }
     }
 
-    fn resolve_method_permission<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
-        api: &mut SystemService<Y, V>,
+    fn resolve_method_permission<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+        api: &mut SystemService<Y, V, E>,
         blueprint_id: &BlueprintId,
         receiver: &NodeId,
         module_id: &ModuleId,
@@ -517,4 +517,4 @@ impl AuthModule {
 }
 
 impl InitSystemModule for AuthModule {}
-impl<V: SystemCallbackObject> SystemModule<System<V>> for AuthModule {}
+impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for AuthModule {}
