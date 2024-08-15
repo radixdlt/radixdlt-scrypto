@@ -19,7 +19,7 @@ type PreparedPreAllocatedAddresses = SummarizedRawFullBody<Vec<PreAllocatedAddre
 type PreparedHash = SummarizedHash;
 
 pub struct PreparedSystemTransactionV1 {
-    pub encoded_instructions: Vec<u8>,
+    pub encoded_instructions: Rc<Vec<u8>>,
     pub references: IndexSet<Reference>,
     pub blobs: PreparedBlobsV1,
     pub pre_allocated_addresses: PreparedPreAllocatedAddresses,
@@ -51,7 +51,7 @@ impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
                 PreparedHash,
             )>(decoder, TransactionDiscriminator::V1System)?;
         Ok(Self {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
+            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
             references: prepared_instructions.references,
             blobs,
             pre_allocated_addresses,
@@ -71,7 +71,7 @@ impl TransactionFullChildPreparable for PreparedSystemTransactionV1 {
                 PreparedHash,
             )>(decoder, TransactionDiscriminator::V1System)?;
         Ok(Self {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
+            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
             references: prepared_instructions.references,
             blobs,
             pre_allocated_addresses,
@@ -95,14 +95,11 @@ impl SystemTransactionV1 {
 }
 
 impl PreparedSystemTransactionV1 {
-    pub fn get_executable<'a>(
-        &'a self,
-        initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> Executable<'a> {
+    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> Executable {
         Executable::new(
-            &self.encoded_instructions,
-            &self.references,
-            &self.blobs.blobs_by_hash,
+            self.encoded_instructions.clone(),
+            self.references.clone(),
+            self.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 intent_hash: TransactionIntentHash::NotToCheck {
                     intent_hash: self.hash_for_execution.hash,

@@ -40,6 +40,6 @@ pub fn execute_preview<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtens
         substate_db,
         vm_init,
         &execution_config,
-        &validated.get_executable(),
+        validated.get_executable(),
     ))
 }

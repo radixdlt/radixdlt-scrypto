@@ -399,7 +399,7 @@ fn can_move_restricted_proofs_internally() {
 }
 
 #[test]
-fn can_move_locked_bucket() {
+fn can_return_locked_bucket() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
@@ -420,6 +420,97 @@ fn can_move_locked_bucket() {
                 manifest_args!(lookup.bucket("bucket")),
             )
         })
+        .try_deposit_entire_worktop_or_abort(account, None)
+        .build();
+    let receipt = ledger.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_pass_locked_bucket_into_method_call_and_back() {
+    // This method demonstrates the surprising number of things you can do with a locked bucket,
+    // whilst there is an outstanding proof against the bucket.
+    //
+    // Instead, the main protection mechanisms are currently three-fold:
+    // * An error when passing non-global-non-direct-references via argument payloads, meaning the
+    //   only way to pass references is on substates of owned objects.
+    //   See `test_send_and_receive_reference_from_child_call_frame` in `references.rs`
+    // * Checks on references in substates to prevent dropping a bucket with references (e.g. proofs) against it:
+    //   - Only transient nodes can store in their substates (See the tests in references.rs)
+    //     See `test_send_and_receive_reference_wrapped_in_non_transient_wrapper` in `references.rs`
+    //   - non_global_node_refs - The kernel keeps track of the reference count of outstanding references
+    //     in open substates. By the previous point, only transient nodes can have references, so this is
+    //     a complete list of references. Then the kernel prevents dropping a node if it has outstanding
+    //     references.
+    // * Application-specific logic in the bucket / proof to prevent withdrawing non-liquid balance.
+    //
+    // Note that this test depends on the fact that the worktop returns a bucket as-is if there's
+    // only one bucket. So, despite appearances, in the below, bucket2 IS bucket1 which IS the bucket
+    // orginally created in the account, and all the proofs are against this same bucket.
+    //
+    // This test breaks if any of these things change:
+    // * We withdraw a 0.5 and a 0.5 instead of withdrawing a 1
+    // * The method "check_balance_and_bounce" changed to move the balance to a new bucket
+    // * We call "split_bucket" at any point to partially separate the bucket
+
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let (public_key, _, account) = ledger.new_allocated_account();
+    let resource_address =
+        ledger.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = ledger.publish_package_simple(PackageLoader::get("proof"));
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, dec!(1))
+        .take_all_from_worktop(resource_address, "bucket1")
+        .create_proof_from_bucket_of_all("bucket1", "proof1_for_holding")
+        .create_proof_from_bucket_of_all("bucket1", "proof1_for_auth_zone")
+        .push_to_auth_zone("proof1_for_auth_zone")
+        .call_function_with_name_lookup(
+            package_address,
+            "BucketProof",
+            "check_balance_and_bounce",
+            |lookup| manifest_args!(lookup.bucket("bucket1"), dec!(1)),
+        )
+        .take_all_from_worktop(resource_address, "bucket2")
+        .create_proof_from_bucket_of_all("bucket2", "proof2_for_holding")
+        .create_proof_from_bucket_of_all("bucket2", "proof2_for_auth_zone")
+        .push_to_auth_zone("proof2_for_auth_zone")
+        .call_function_with_name_lookup(
+            package_address,
+            "BucketProof",
+            "check_balance_and_bounce",
+            |lookup| manifest_args!(lookup.bucket("bucket2"), dec!(1)),
+        )
+        // Now we check the proofs
+        .call_function_with_name_lookup(
+            package_address,
+            "BucketProof",
+            "check_proof_amount_and_drop",
+            |lookup| manifest_args!(lookup.proof("proof1_for_holding"), dec!(1)),
+        )
+        .call_function_with_name_lookup(
+            package_address,
+            "BucketProof",
+            "check_proof_amount_and_drop",
+            |lookup| manifest_args!(lookup.proof("proof2_for_holding"), dec!(1)),
+        )
+        // Create composite proof -- note this proof is just of the single bucket (going by two names), so has a total of 1
+        .create_proof_from_auth_zone_of_all(resource_address, "proof_total")
+        .call_function_with_name_lookup(
+            package_address,
+            "BucketProof",
+            "check_proof_amount_and_drop",
+            |lookup| manifest_args!(lookup.proof("proof_total"), dec!(1)),
+        )
+        .drop_auth_zone_proofs()
         .try_deposit_entire_worktop_or_abort(account, None)
         .build();
     let receipt = ledger.execute_manifest(

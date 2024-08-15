@@ -1,16 +1,16 @@
 use radix_common::prelude::*;
-use radix_engine::errors::BootloadingError;
 use radix_engine::errors::{RejectionReason, TransactionExecutionError};
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, NodeVisibility, StableReferenceType};
+use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::{
     DroppedNode, KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi, SystemState,
 };
 use radix_engine::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
-    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+    KernelTransactionCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
+    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
+    WriteSubstateEvent,
 };
 use radix_engine::system::actor::Actor;
 use radix_engine::system::system_callback::{System, SystemInit, SystemLockData};
@@ -28,7 +28,6 @@ use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
-use radix_transactions::prelude::PreAllocatedAddress;
 
 pub type InjectSystemCostingError<'a, E> = InjectCostingError<Vm<'a, DefaultWasmEngine, E>>;
 
@@ -40,7 +39,7 @@ pub struct InjectCostingErrorInput<I> {
 
 pub struct InjectCostingError<K: SystemCallbackObject> {
     fail_after: Rc<RefCell<u64>>,
-    system: System<K>,
+    system: System<K, Executable>,
 }
 
 impl<K: SystemCallbackObject> InjectCostingError<K> {
@@ -84,52 +83,31 @@ macro_rules! wrapped_internal_api {
     };
 }
 
-impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
-    type LockData = SystemLockData;
-    type CallFrameData = Actor;
-
+impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingError<K> {
     type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
+    type Executable = Executable;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &Executable,
+        executable: Executable,
         init_input: Self::Init,
-    ) -> Result<Self, RejectionReason> {
-        let mut system = System::<K>::init(store, executable, init_input.system_input)?;
+    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
+        let (mut system, call_frame_init) =
+            System::<K, _>::init(store, executable, init_input.system_input)?;
 
         let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
         system.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
             fail_after: fail_after.clone(),
         };
 
-        Ok(Self { fail_after, system })
+        Ok((Self { fail_after, system }, call_frame_init))
     }
 
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        self.system.verify_boot_ref_value(node_id, value)
-    }
-
-    fn start<Y: KernelApi<Self>>(
-        api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+    fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
-        System::start(
-            &mut api,
-            manifest_encoded_instructions,
-            pre_allocated_addresses,
-            references,
-            blobs,
-        )
+        System::start(&mut api)
     }
 
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
@@ -140,11 +118,15 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     fn create_receipt<S: SubstateDatabase>(
         self,
         track: Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
         result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
-        self.system.create_receipt(track, executable, result)
+        self.system.create_receipt(track, result)
     }
+}
+
+impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
+    type LockData = SystemLockData;
+    type CallFrameData = Actor;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
         self.maybe_err()?;
@@ -157,7 +139,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::on_create_node(&mut api, event)
+        System::<_, Executable>::on_create_node(&mut api, event)
     }
 
     fn on_drop_node<Y: KernelInternalApi<Self>>(
@@ -166,7 +148,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::on_drop_node(&mut api, event)
+        System::<_, Executable>::on_drop_node(&mut api, event)
     }
 
     fn on_move_module<Y: KernelInternalApi<Self>>(
@@ -175,7 +157,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::on_move_module(&mut api, event)
+        System::<_, Executable>::on_move_module(&mut api, event)
     }
 
     fn on_open_substate<Y: KernelInternalApi<Self>>(
@@ -184,7 +166,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::on_open_substate(&mut api, event)
+        System::<_, Executable>::on_open_substate(&mut api, event)
     }
 
     fn on_close_substate<Y: KernelInternalApi<Self>>(
@@ -193,7 +175,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::on_close_substate(&mut api, event)
+        System::<_, Executable>::on_close_substate(&mut api, event)
     }
 
     fn on_read_substate<Y: KernelInternalApi<Self>>(
@@ -202,7 +184,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::on_read_substate(&mut api, event)
+        System::<_, Executable>::on_read_substate(&mut api, event)
     }
 
     fn on_write_substate<Y: KernelInternalApi<Self>>(
@@ -211,7 +193,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_internal_api!(api);
-        System::on_write_substate(&mut api, event)
+        System::<_, Executable>::on_write_substate(&mut api, event)
     }
 
     fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError> {
@@ -248,13 +230,13 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::before_invoke(invocation, &mut api)
+        System::<_, Executable>::before_invoke(invocation, &mut api)
     }
 
     fn on_execution_start<Y: KernelApi<Self>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::on_execution_start(&mut api)
+        System::<_, Executable>::on_execution_start(&mut api)
     }
 
     fn invoke_upstream<Y: KernelApi<Self>>(
@@ -263,13 +245,13 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::invoke_upstream(args, &mut api)
+        System::<_, Executable>::invoke_upstream(args, &mut api)
     }
 
     fn auto_drop<Y: KernelApi<Self>>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::auto_drop(nodes, &mut api)
+        System::<_, Executable>::auto_drop(nodes, &mut api)
     }
 
     fn on_execution_finish<Y: KernelApi<Self>>(
@@ -278,7 +260,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::on_execution_finish(message, &mut api)
+        System::<_, Executable>::on_execution_finish(message, &mut api)
     }
 
     fn after_invoke<Y: KernelApi<Self>>(
@@ -287,7 +269,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::after_invoke(output, &mut api)
+        System::<_, Executable>::after_invoke(output, &mut api)
     }
 
     fn on_allocate_node_id<Y: KernelApi<Self>>(
@@ -296,7 +278,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::on_allocate_node_id(entity_type, &mut api)
+        System::<_, Executable>::on_allocate_node_id(entity_type, &mut api)
     }
 
     fn on_mark_substate_as_transient(
@@ -318,7 +300,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<bool, RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::on_substate_lock_fault(node_id, partition_num, offset, &mut api)
+        System::<_, Executable>::on_substate_lock_fault(node_id, partition_num, offset, &mut api)
     }
 
     fn on_drop_node_mut<Y: KernelApi<Self>>(
@@ -327,7 +309,7 @@ impl<K: SystemCallbackObject> KernelCallbackObject for InjectCostingError<K> {
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system_state().system.maybe_err()?;
         let mut api = wrapped_api!(api);
-        System::on_drop_node_mut(node_id, &mut api)
+        System::<_, Executable>::on_drop_node_mut(node_id, &mut api)
     }
 }
 
@@ -489,10 +471,10 @@ impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<InjectCostingError<M>>> Kern
     }
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInternalApi<System<M>>
-    for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>>
+    KernelInternalApi<System<M, Executable>> for WrappedKernelApi<'a, M, K>
 {
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M>> {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, Executable>> {
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.system,
@@ -518,8 +500,8 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelInt
     }
 }
 
-impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>> KernelApi<System<M>>
-    for WrappedKernelApi<'a, M, K>
+impl<'a, M: SystemCallbackObject, K: KernelApi<InjectCostingError<M>>>
+    KernelApi<System<M, Executable>> for WrappedKernelApi<'a, M, K>
 {
 }
 
@@ -533,9 +515,9 @@ pub struct WrappedKernelInternalApi<
 }
 
 impl<'a, M: SystemCallbackObject, K: KernelInternalApi<InjectCostingError<M>>>
-    KernelInternalApi<System<M>> for WrappedKernelInternalApi<'a, M, K>
+    KernelInternalApi<System<M, Executable>> for WrappedKernelInternalApi<'a, M, K>
 {
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M>> {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, Executable>> {
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.system,

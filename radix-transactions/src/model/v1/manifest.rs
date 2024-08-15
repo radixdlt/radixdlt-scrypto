@@ -1,5 +1,6 @@
 use super::*;
 use crate::internal_prelude::*;
+use std::ops::Deref;
 
 //=================================================================================
 // NOTE:
@@ -16,7 +17,7 @@ pub struct TransactionManifestV1 {
 impl TransactionManifestV1 {
     pub fn from_intent(intent: &IntentV1) -> Self {
         Self {
-            instructions: intent.instructions.0.clone(),
+            instructions: intent.instructions.0.deref().clone(),
             blobs: intent
                 .blobs
                 .blobs
@@ -28,7 +29,7 @@ impl TransactionManifestV1 {
 
     pub fn for_intent(self) -> (InstructionsV1, BlobsV1) {
         (
-            InstructionsV1(self.instructions),
+            InstructionsV1(Rc::new(self.instructions)),
             BlobsV1 {
                 blobs: self
                     .blobs

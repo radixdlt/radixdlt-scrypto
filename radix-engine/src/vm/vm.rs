@@ -100,9 +100,10 @@ impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'
 
     fn invoke<
         Y: SystemApi<RuntimeError>
-            + KernelInternalApi<System<Self>>
+            + KernelInternalApi<System<Self, T>>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
+        T,
     >(
         address: &PackageAddress,
         export: PackageExport,

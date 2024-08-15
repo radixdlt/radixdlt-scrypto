@@ -27,7 +27,8 @@ impl RoundUpdateTransactionV1 {
     }
 
     pub fn prepare(&self) -> Result<PreparedRoundUpdateTransactionV1, PrepareError> {
-        let prepared_instructions = InstructionsV1(self.create_instructions()).prepare_partial()?;
+        let prepared_instructions =
+            InstructionsV1(Rc::new(self.create_instructions())).prepare_partial()?;
         let encoded_source = manifest_encode(&self)?;
         // Minor TODO - for a slight performance improvement, change this to be read from the decoder
         // As per the other hashes, don't include the prefix byte
@@ -44,9 +45,9 @@ impl RoundUpdateTransactionV1 {
             .update(instructions_hash)
             .finalize();
         Ok(PreparedRoundUpdateTransactionV1 {
-            encoded_instructions: manifest_encode(&prepared_instructions.inner.0)?,
+            encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
             references: prepared_instructions.references,
-            blobs: index_map_new(),
+            blobs: Rc::new(index_map_new()),
             summary: Summary {
                 effective_length: prepared_instructions.summary.effective_length,
                 total_bytes_hashed: prepared_instructions.summary.total_bytes_hashed,
@@ -62,9 +63,9 @@ impl TransactionPayload for RoundUpdateTransactionV1 {
 }
 
 pub struct PreparedRoundUpdateTransactionV1 {
-    pub encoded_instructions: Vec<u8>,
+    pub encoded_instructions: Rc<Vec<u8>>,
     pub references: IndexSet<Reference>,
-    pub blobs: IndexMap<Hash, Vec<u8>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub summary: Summary,
 }
 
@@ -93,11 +94,11 @@ impl TransactionFullChildPreparable for PreparedRoundUpdateTransactionV1 {
 }
 
 impl PreparedRoundUpdateTransactionV1 {
-    pub fn get_executable(&self) -> Executable<'_> {
+    pub fn get_executable(&self) -> Executable {
         Executable::new(
-            &self.encoded_instructions,
-            &self.references,
-            &self.blobs,
+            self.encoded_instructions.clone(),
+            self.references.clone(),
+            self.blobs.clone(),
             ExecutionContext {
                 intent_hash: TransactionIntentHash::NotToCheck {
                     intent_hash: self.summary.hash,

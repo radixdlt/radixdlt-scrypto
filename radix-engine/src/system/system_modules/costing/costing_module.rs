@@ -318,7 +318,7 @@ impl CostingModule {
     }
 }
 
-pub fn apply_royalty_cost<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
+pub fn apply_royalty_cost<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
     api: &mut Y,
     royalty_amount: RoyaltyAmount,
     recipient: RoyaltyRecipient,
@@ -361,8 +361,8 @@ impl InitSystemModule for CostingModule {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
-    fn before_invoke<Y: KernelApi<System<V>>>(
+impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for CostingModule {
+    fn before_invoke<Y: KernelApi<System<V, E>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
@@ -463,7 +463,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
     }
 
     #[inline(always)]
-    fn after_invoke<Y: KernelApi<System<V>>>(
+    fn after_invoke<Y: KernelApi<System<V, E>>>(
         api: &mut Y,
         output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
@@ -500,7 +500,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_create_node<Y: KernelInternalApi<System<V>>>(
+    fn on_create_node<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -514,7 +514,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_pin_node(system: &mut System<V>, node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn on_pin_node(system: &mut System<V, E>, node_id: &NodeId) -> Result<(), RuntimeError> {
         system
             .modules
             .costing
@@ -524,7 +524,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<System<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
@@ -538,7 +538,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_move_module<Y: KernelInternalApi<System<V>>>(
+    fn on_move_module<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
@@ -552,7 +552,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_open_substate<Y: KernelInternalApi<System<V>>>(
+    fn on_open_substate<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -567,7 +567,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
     }
 
     fn on_mark_substate_as_transient(
-        system: &mut System<V>,
+        system: &mut System<V, E>,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -585,7 +585,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelInternalApi<System<V>>>(
+    fn on_read_substate<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -599,7 +599,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelInternalApi<System<V>>>(
+    fn on_write_substate<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -613,7 +613,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_close_substate<Y: KernelInternalApi<System<V>>>(
+    fn on_close_substate<Y: KernelInternalApi<System<V, E>>>(
         api: &mut Y,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
@@ -628,7 +628,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
     }
 
     fn on_set_substate(
-        system: &mut System<V>,
+        system: &mut System<V, E>,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -641,7 +641,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
     }
 
     fn on_remove_substate(
-        system: &mut System<V>,
+        system: &mut System<V, E>,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -653,7 +653,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_scan_keys(system: &mut System<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
+    fn on_scan_keys(system: &mut System<V, E>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
         system
             .modules
             .costing
@@ -664,7 +664,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
     }
 
     fn on_drain_substates(
-        system: &mut System<V>,
+        system: &mut System<V, E>,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -677,7 +677,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
     }
 
     fn on_scan_sorted_substates(
-        system: &mut System<V>,
+        system: &mut System<V, E>,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         system
@@ -689,7 +689,7 @@ impl<V: SystemCallbackObject> SystemModule<System<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelApi<System<V>>>(
+    fn on_allocate_node_id<Y: KernelApi<System<V, E>>>(
         api: &mut Y,
         _entity_type: EntityType,
     ) -> Result<(), RuntimeError> {

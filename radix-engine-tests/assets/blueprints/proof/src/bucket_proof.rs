@@ -31,5 +31,19 @@ mod bucket_proof {
             let _proof = bucket.create_proof_of_all();
             bucket
         }
+
+        pub fn check_balance_and_bounce(bucket: Bucket, balance: Decimal) -> Bucket {
+            assert_eq!(bucket.as_fungible().amount(), balance);
+            bucket
+        }
+
+        pub fn split_bucket(mut bucket: Bucket, balance: Decimal) -> (Bucket, Bucket) {
+            let taken = bucket.take(balance);
+            (bucket, taken)
+        }
+
+        pub fn check_proof_amount_and_drop(proof: Proof, balance: Decimal) {
+            assert_eq!(proof.skip_checking().amount(), balance);
+        }
     }
 }

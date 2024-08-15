@@ -258,7 +258,7 @@ impl ValidatedLedgerTransaction {
     }
 
     /// Note - panics if it's a genesis flash
-    pub fn get_executable(&self) -> Executable<'_> {
+    pub fn get_executable(&self) -> Executable {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
                 PreparedGenesisTransaction::Flash(_) => {

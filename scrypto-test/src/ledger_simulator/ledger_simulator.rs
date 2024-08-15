@@ -1156,7 +1156,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
         let receipt = self.execute_transaction(
             SystemTransactionV1 {
-                instructions: InstructionsV1(vec![InstructionV1::CallFunction {
+                instructions: InstructionsV1(Rc::new(vec![InstructionV1::CallFunction {
                     package_address: PACKAGE_PACKAGE.into(),
                     blueprint_name: PACKAGE_BLUEPRINT.to_string(),
                     function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
@@ -1167,7 +1167,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         package_address: Some(ManifestAddressReservation(0)),
                         owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),
-                }]),
+                }])),
                 blobs: BlobsV1 {
                     blobs: vec![BlobV1(code)],
                 },
@@ -1385,7 +1385,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             },
         );
 
-        let transaction_receipt = executor.execute(&executable);
+        let transaction_receipt = executor.execute(executable);
 
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit
@@ -1427,7 +1427,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
         self.execute_transaction(
             SystemTransactionV1 {
-                instructions: InstructionsV1(instructions),
+                instructions: InstructionsV1(Rc::new(instructions)),
                 blobs: BlobsV1 { blobs: vec![] },
                 hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
                 pre_allocated_addresses,
@@ -1464,7 +1464,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             _,
             Vm<'_, DefaultWasmEngine, E>,
         >(
-            &mut self.database, vm_init, &execution_config, &executable
+            &mut self.database, vm_init, &execution_config, executable
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit
@@ -1527,7 +1527,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         notary_is_signatory: false,
                         tip_percentage,
                     },
-                    instructions: InstructionsV1(manifest.instructions),
+                    instructions: InstructionsV1(Rc::new(manifest.instructions)),
                     blobs: BlobsV1 {
                         blobs: manifest.blobs.values().map(|x| BlobV1(x.clone())).collect(),
                     },

@@ -19,15 +19,15 @@ use crate::blueprints::transaction_tracker::{
 };
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::call_frame::{CallFrameMessage, StableReferenceType};
+use crate::kernel::call_frame::{CallFrameInit, CallFrameMessage, StableReferenceType};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
-use crate::kernel::kernel_callback_api::RefCheckEvent;
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
     MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
     ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
 };
+use crate::kernel::kernel_callback_api::{KernelTransactionCallbackObject, RefCheckEvent};
 use crate::system::actor::Actor;
 use crate::system::actor::BlueprintHookActor;
 use crate::system::actor::FunctionActor;
@@ -152,15 +152,65 @@ pub struct SystemInit<C> {
     pub system_overrides: Option<SystemOverrides>,
 }
 
-pub struct System<C: SystemCallbackObject> {
+pub struct System<C: SystemCallbackObject, E> {
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
+    pub executable: E,
 }
 
-impl<C: SystemCallbackObject> System<C> {
+impl<C: SystemCallbackObject, E> System<C, E> {
+    fn on_move_node<Y: KernelApi<Self>>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => {
+                let mut service = SystemService::new(api);
+                let definition = service.load_blueprint_definition(
+                    object_info.blueprint_info.blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: object_info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
+                        version: BlueprintVersion::default(),
+                    },
+                )?;
+                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
+                            receiver: Some(node_id.clone()),
+                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
+                            hook: BlueprintHook::OnMove,
+                        }),
+                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
+                            is_moving_down,
+                            is_to_barrier,
+                            destination_blueprint_id,
+                        }),
+                    }))
+                    .map(|_| ())
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
+        }
+    }
+}
+
+impl<C: SystemCallbackObject> System<C, Executable> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
         println!("{:-^120}", "Executable");
@@ -722,66 +772,113 @@ impl<C: SystemCallbackObject> System<C> {
         println!("{:-^120}", "Finish");
     }
 
-    fn on_move_node<Y: KernelApi<Self>>(
-        node_id: &NodeId,
-        is_moving_down: bool,
-        is_to_barrier: bool,
-        destination_blueprint_id: Option<BlueprintId>,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+    /// Checks that references exist in the store
+    fn check_references<S: BootStore + CommitableSubstateStore>(
+        &mut self,
+        store: &mut S,
+    ) -> Result<CallFrameInit<Actor>, BootloadingError> {
+        let mut global_addresses = indexset!();
+        let mut direct_accesses = indexset!();
 
-        match type_info {
-            TypeInfoSubstate::Object(object_info) => {
-                let mut service = SystemService::new(api);
-                let definition = service.load_blueprint_definition(
-                    object_info.blueprint_info.blueprint_id.package_address,
-                    &BlueprintVersionKey {
-                        blueprint: object_info
-                            .blueprint_info
-                            .blueprint_id
-                            .blueprint_name
-                            .clone(),
-                        version: BlueprintVersion::default(),
-                    },
-                )?;
-                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
-                    api.kernel_invoke(Box::new(KernelInvocation {
-                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
-                            receiver: Some(node_id.clone()),
-                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
-                            hook: BlueprintHook::OnMove,
-                        }),
-                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
-                            is_moving_down,
-                            is_to_barrier,
-                            destination_blueprint_id,
-                        }),
-                    }))
-                    .map(|_| ())
-                } else {
-                    Ok(())
+        for reference in self.executable.references().iter() {
+            let node_id = &reference.0;
+
+            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                // Allow always visible node and do not add reference
+                continue;
+            }
+
+            if node_id.is_global_virtual() {
+                // Allow global virtual and add reference
+                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                continue;
+            }
+
+            let ref_value = store
+                .read_substate(
+                    node_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+
+            match Self::verify_boot_ref_value(&mut self.modules, node_id, ref_value)? {
+                StableReferenceType::Global => {
+                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                }
+                StableReferenceType::DirectAccess => {
+                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
                 }
             }
-            TypeInfoSubstate::KeyValueStore(_)
-            | TypeInfoSubstate::GlobalAddressReservation(_)
-            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
+
+        Ok(CallFrameInit {
+            data: Actor::Root,
+            global_addresses,
+            direct_accesses,
+        })
+    }
+
+    fn verify_boot_ref_value(
+        modules: &mut SystemModuleMixer,
+        node_id: &NodeId,
+        ref_value: &IndexedScryptoValue,
+    ) -> Result<StableReferenceType, BootloadingError> {
+        if let Some(costing) = modules.costing_mut() {
+            let io_access = IOAccess::ReadFromDb(
+                CanonicalSubstateKey {
+                    node_id: *node_id,
+                    partition_number: TYPE_INFO_FIELD_PARTITION,
+                    substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
+                },
+                ref_value.len(),
+            );
+            let event = RefCheckEvent::IOAccess(&io_access);
+
+            costing
+                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
+                .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
+        }
+
+        let type_substate: TypeInfoSubstate = ref_value.as_typed().unwrap();
+        return match &type_substate {
+            TypeInfoSubstate::Object(
+                info @ ObjectInfo {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
+                    ..
+                },
+            ) => {
+                if info.is_global() {
+                    Ok(StableReferenceType::Global)
+                } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                    && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                        || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                {
+                    Ok(StableReferenceType::DirectAccess)
+                } else {
+                    Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
+                        node_id.clone(),
+                    ))
+                }
+            }
+            _ => Err(BootloadingError::ReferencedNodeIsNotAnObject(
+                node_id.clone(),
+            )),
+        };
     }
 }
 
-impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
-    type LockData = SystemLockData;
-    type CallFrameData = Actor;
+impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Executable> {
     type Init = SystemInit<C::Init>;
+    type Executable = Executable;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &Executable,
+        executable: Executable,
         init_input: SystemInit<C::Init>,
-    ) -> Result<Self, RejectionReason> {
+    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.enable_kernel_trace {
@@ -919,95 +1016,52 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
             }
         }
 
-        let system = System {
+        let mut system = System {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
             callback,
             modules,
+            executable,
         };
-        Ok(system)
+
+        let call_frame_init = system
+            .check_references(store)
+            .map_err(RejectionReason::BootloadingError)?;
+
+        Ok((system, call_frame_init))
     }
 
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        ref_value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError> {
-        if let Some(costing) = self.modules.costing_mut() {
-            let io_access = IOAccess::ReadFromDb(
-                CanonicalSubstateKey {
-                    node_id: *node_id,
-                    partition_number: TYPE_INFO_FIELD_PARTITION,
-                    substate_key: SubstateKey::Field(TypeInfoField::TypeInfo.field_index()),
-                },
-                ref_value.len(),
-            );
-            let event = RefCheckEvent::IOAccess(&io_access);
-
-            costing
-                .apply_deferred_execution_cost(ExecutionCostingEntry::RefCheck { event: &event })
-                .map_err(|e| BootloadingError::FailedToApplyDeferredCosts(e))?;
-        }
-
-        let type_substate: TypeInfoSubstate = ref_value.as_typed().unwrap();
-        return match &type_substate {
-            TypeInfoSubstate::Object(
-                info @ ObjectInfo {
-                    blueprint_info: BlueprintInfo { blueprint_id, .. },
-                    ..
-                },
-            ) => {
-                if info.is_global() {
-                    Ok(StableReferenceType::Global)
-                } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
-                    && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                        || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
-                {
-                    Ok(StableReferenceType::DirectAccess)
-                } else {
-                    Err(BootloadingError::ReferencedNodeDoesNotAllowDirectAccess(
-                        node_id.clone(),
-                    ))
-                }
-            }
-            _ => Err(BootloadingError::ReferencedNodeIsNotAnObject(
-                node_id.clone(),
-            )),
-        };
-    }
-
-    fn start<Y: KernelApi<Self>>(
-        api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
-        let mut system = SystemService::new(api);
+    fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Vec<InstructionOutput>, RuntimeError> {
+        let mut system_service = SystemService::new(api);
+        let executable = system_service
+            .kernel_get_system_state()
+            .system
+            .executable
+            .clone();
 
         // Allocate global addresses
         let mut global_address_reservations = Vec::new();
         for PreAllocatedAddress {
             blueprint_id,
             address,
-        } in pre_allocated_addresses
+        } in executable.pre_allocated_addresses()
         {
             let global_address_reservation =
-                system.prepare_global_address(blueprint_id.clone(), address.clone())?;
+                system_service.prepare_global_address(blueprint_id.clone(), address.clone())?;
             global_address_reservations.push(global_address_reservation);
         }
 
         // Call TX processor
-        let rtn = system.call_function(
+        let rtn = system_service.call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions,
+                manifest_encoded_instructions: executable.encoded_instructions(),
                 global_address_reservations,
-                references,
-                blobs,
+                references: executable.references(),
+                blobs: executable.blobs(),
             })
             .unwrap(),
         )?;
@@ -1064,7 +1118,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     fn create_receipt<S: SubstateDatabase>(
         self,
         mut track: Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
         interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
         // Panic if an error is encountered in the system layer or below. The following code
@@ -1149,7 +1202,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                         &mut track,
                         costing_module.fee_reserve,
                         is_success,
-                        executable.costing_parameters().free_credit_in_xrd,
+                        self.executable.costing_parameters().free_credit_in_xrd,
                     );
                 let fee_destination = FeeDestination {
                     to_proposer: fee_reserve_finalization.to_proposer_amount(),
@@ -1163,7 +1216,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     Self::update_transaction_tracker(
                         &mut track,
                         next_epoch,
-                        executable.intent_hash(),
+                        self.executable.intent_hash(),
                         is_success,
                     );
                 }
@@ -1198,7 +1251,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
                     StateUpdateSummary::new(substate_db, new_node_ids, &state_updates);
 
                 // Resource reconciliation does not currently work in preview mode
-                if executable.costing_parameters().free_credit_in_xrd.is_zero() {
+                if self
+                    .executable
+                    .costing_parameters()
+                    .free_credit_in_xrd
+                    .is_zero()
+                {
                     let system_reader =
                         SystemDatabaseReader::new_with_overlay(substate_db, &state_updates);
                     reconcile_resource_state_and_events(
@@ -1245,7 +1303,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         let receipt = TransactionReceipt {
             costing_parameters,
-            transaction_costing_parameters: executable.costing_parameters().clone().into(),
+            transaction_costing_parameters: self.executable.costing_parameters().clone().into(),
             fee_summary,
             fee_details,
             result,
@@ -1261,6 +1319,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
 
         receipt
     }
+}
+
+impl<C: SystemCallbackObject, E> KernelCallbackObject for System<C, E> {
+    type LockData = SystemLockData;
+    type CallFrameData = Actor;
 
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_pin_node(self, node_id)
@@ -1358,51 +1421,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         SystemModuleMixer::before_invoke(api, invocation)
     }
 
-    fn after_invoke<Y: KernelApi<Self>>(
-        output: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        let current_actor = api.kernel_get_system_state().current_call_frame;
-        let is_to_barrier = current_actor.is_barrier();
-        let destination_blueprint_id = current_actor.blueprint_id();
-        for node_id in output.owned_nodes() {
-            Self::on_move_node(
-                node_id,
-                false,
-                is_to_barrier,
-                destination_blueprint_id.clone(),
-                api,
-            )?;
-        }
-
-        SystemModuleMixer::after_invoke(api, output)
-    }
-
     fn on_execution_start<Y: KernelApi<Self>>(api: &mut Y) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y: KernelApi<Self>>(
-        message: &CallFrameMessage,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_execution_finish(api, message)?;
-
-        Ok(())
-    }
-
-    fn on_allocate_node_id<Y: KernelApi<Self>>(
-        entity_type: EntityType,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_allocate_node_id(api, entity_type)
-    }
-
-    //--------------------------------------------------------------------------
-    // Note that the following logic doesn't go through mixer and is not costed
-    //--------------------------------------------------------------------------
-
-    fn invoke_upstream<Y: KernelApi<System<C>>>(
+    fn invoke_upstream<Y: KernelApi<System<C, E>>>(
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
@@ -1594,6 +1617,46 @@ impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
         }
 
         Ok(())
+    }
+
+    fn on_execution_finish<Y: KernelApi<Self>>(
+        message: &CallFrameMessage,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_execution_finish(api, message)?;
+
+        Ok(())
+    }
+
+    //--------------------------------------------------------------------------
+    // Note that the following logic doesn't go through mixer and is not costed
+    //--------------------------------------------------------------------------
+
+    fn after_invoke<Y: KernelApi<Self>>(
+        output: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let current_actor = api.kernel_get_system_state().current_call_frame;
+        let is_to_barrier = current_actor.is_barrier();
+        let destination_blueprint_id = current_actor.blueprint_id();
+        for node_id in output.owned_nodes() {
+            Self::on_move_node(
+                node_id,
+                false,
+                is_to_barrier,
+                destination_blueprint_id.clone(),
+                api,
+            )?;
+        }
+
+        SystemModuleMixer::after_invoke(api, output)
+    }
+
+    fn on_allocate_node_id<Y: KernelApi<Self>>(
+        entity_type: EntityType,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
 
     fn on_mark_substate_as_transient(

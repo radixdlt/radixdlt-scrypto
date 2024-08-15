@@ -7,6 +7,7 @@ use radix_transactions::manifest::{decompile, DecompileError};
 use radix_transactions::prelude::*;
 use std::fmt;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::str::FromStr;
 
 /// Radix transaction manifest decompiler
@@ -98,11 +99,16 @@ pub fn run() -> Result<(), String> {
                             blobs,
                             ..
                         }) => (instructions.0, blobs.blobs),
-                        other_type => return Err(format!("Transaction type with discriminator {} not currently supported", other_type.get_discriminator())),
+                        other_type => {
+                            return Err(format!(
+                                "Transaction type with discriminator {} not currently supported",
+                                other_type.get_discriminator()
+                            ))
+                        }
                     };
 
                     let blobs: Vec<Vec<u8>> = blobs.into_iter().map(|item| item.0).collect();
-                    (manifest_instructions, blobs)
+                    (Rc::try_unwrap(manifest_instructions).unwrap(), blobs)
                 }
                 Err(_) => {
                     // return original error

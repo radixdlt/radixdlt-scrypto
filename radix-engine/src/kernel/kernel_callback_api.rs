@@ -1,4 +1,4 @@
-use super::call_frame::{CallFrameMessage, StableReferenceType};
+use super::call_frame::{CallFrameInit, CallFrameMessage};
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -10,11 +10,8 @@ use crate::transaction::ResourcesUsage;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::Executable;
-use radix_transactions::prelude::PreAllocatedAddress;
 
 pub trait CallFrameReferences {
-    fn root() -> Self;
     fn global_references(&self) -> Vec<NodeId>;
     fn direct_access_references(&self) -> Vec<NodeId>;
     fn stable_transient_references(&self) -> Vec<NodeId>;
@@ -138,46 +135,32 @@ pub enum ScanSortedSubstatesEvent<'a> {
 
 /// A receipt created from executing a transaction
 pub trait ExecutionReceipt {
-    fn from_rejection(executable: &Executable, reason: RejectionReason) -> Self;
+    type Executed;
+
+    fn from_rejection(executable: Self::Executed, reason: RejectionReason) -> Self;
 
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
 
-/// Upper layer callback object which a kernel interacts with during execution
-pub trait KernelCallbackObject: Sized {
-    /// Data to be stored with each substate lock
-    type LockData: Default + Clone;
-    /// Data to be stored with every call frame
-    type CallFrameData: CallFrameReferences;
+pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     /// Initialization object
     type Init: Clone;
+    /// Executable type
+    type Executable: Clone;
     /// Output to be returned at the end of execution
     type ExecutionOutput;
     /// Final receipt to be created after transaction execution
-    type Receipt: ExecutionReceipt;
+    type Receipt: ExecutionReceipt<Executed = Self::Executable>;
 
-    /// Create the callback object (system layer) with data loaded from the substate store
+    /// Create the callback object (system layer) and the initial call frame configuration
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &Executable,
+        executable: Self::Executable,
         init: Self::Init,
-    ) -> Result<Self, RejectionReason>;
-
-    /// Verifies and returns the type of a given reference used during boot
-    fn verify_boot_ref_value(
-        &mut self,
-        node_id: &NodeId,
-        value: &IndexedScryptoValue,
-    ) -> Result<StableReferenceType, BootloadingError>;
+    ) -> Result<(Self, CallFrameInit<Self::CallFrameData>), RejectionReason>;
 
     /// Start execution
-    fn start<Y: KernelApi<Self>>(
-        api: &mut Y,
-        manifest_encoded_instructions: &[u8],
-        pre_allocated_addresses: &Vec<PreAllocatedAddress>,
-        references: &IndexSet<Reference>,
-        blobs: &IndexMap<Hash, Vec<u8>>,
-    ) -> Result<Self::ExecutionOutput, RuntimeError>;
+    fn start<Y: KernelApi<Self>>(api: &mut Y) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError>;
@@ -186,9 +169,16 @@ pub trait KernelCallbackObject: Sized {
     fn create_receipt<S: SubstateDatabase>(
         self,
         track: Track<S, SpreadPrefixKeyMapper>,
-        executable: &Executable,
         result: Result<Self::ExecutionOutput, TransactionExecutionError>,
     ) -> Self::Receipt;
+}
+
+/// Upper layer callback object which a kernel interacts with during execution
+pub trait KernelCallbackObject: Sized {
+    /// Data to be stored with each substate lock
+    type LockData: Default + Clone;
+    /// Data to be stored with every call frame
+    type CallFrameData: CallFrameReferences;
 
     /// Callback before a node is pinned to it's device
     fn on_pin_node(&mut self, node_id: &NodeId) -> Result<(), RuntimeError>;

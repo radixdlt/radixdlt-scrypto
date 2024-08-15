@@ -1464,7 +1464,7 @@ impl PackageNativePackage {
 pub struct PackageRoyaltyNativeBlueprint;
 
 impl PackageRoyaltyNativeBlueprint {
-    pub fn charge_package_royalty<Y: KernelApi<System<V>>, V: SystemCallbackObject>(
+    pub fn charge_package_royalty<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         ident: &str,
@@ -1576,8 +1576,9 @@ pub struct PackageAuthNativeBlueprint;
 
 impl PackageAuthNativeBlueprint {
     pub fn resolve_function_permission<
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V>>,
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V, E>>,
         V: SystemCallbackObject,
+        E,
     >(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
@@ -1613,13 +1614,13 @@ impl PackageAuthNativeBlueprint {
         }
     }
 
-    pub fn get_bp_auth_template<Y, V>(
+    pub fn get_bp_auth_template<Y, V, E>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         api: &mut Y,
     ) -> Result<AuthConfig, RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V>>,
+        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V, E>>,
         V: SystemCallbackObject,
     {
         let package_bp_version_id = CanonicalBlueprintId {

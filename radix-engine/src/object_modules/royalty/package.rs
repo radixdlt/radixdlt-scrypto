@@ -421,14 +421,14 @@ impl ComponentRoyaltyBlueprint {
         Ok(bucket)
     }
 
-    pub fn charge_component_royalty<Y, V>(
+    pub fn charge_component_royalty<Y, V, E>(
         receiver: &NodeId,
         ident: &str,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         V: SystemCallbackObject,
-        Y: KernelApi<System<V>>,
+        Y: KernelApi<System<V, E>>,
     {
         let accumulator_handle = api.kernel_open_substate(
             receiver,

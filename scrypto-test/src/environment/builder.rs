@@ -289,6 +289,7 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
+                    executable: (),
                 }
             },
             |system_config, track, id_allocator| {
@@ -304,7 +305,7 @@ where
                         pinned_to_heap: Default::default(),
                     },
                     id_allocator,
-                    CallFrame::new_root(Actor::Root),
+                    CallFrame::new_root(Default::default()),
                     vec![],
                     system_config,
                 )
