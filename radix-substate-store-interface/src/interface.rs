@@ -46,7 +46,6 @@ pub struct DatabaseUpdates {
 impl CreateDatabaseUpdates for StateUpdates {
     type DatabaseUpdates = DatabaseUpdates;
 
-    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
     fn create_database_updates<M: DatabaseKeyMapper>(&self) -> DatabaseUpdates {
         DatabaseUpdates {
             node_updates: self
@@ -75,7 +74,6 @@ pub struct NodeDatabaseUpdates {
 impl CreateDatabaseUpdates for NodeStateUpdates {
     type DatabaseUpdates = NodeDatabaseUpdates;
 
-    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
     fn create_database_updates<M: DatabaseKeyMapper>(&self) -> NodeDatabaseUpdates {
         match self {
             NodeStateUpdates::Delta { by_partition } => NodeDatabaseUpdates {
@@ -134,7 +132,6 @@ impl PartitionDatabaseUpdates {
 impl CreateDatabaseUpdates for PartitionStateUpdates {
     type DatabaseUpdates = PartitionDatabaseUpdates;
 
-    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
     fn create_database_updates<M: DatabaseKeyMapper>(&self) -> PartitionDatabaseUpdates {
         match self {
             PartitionStateUpdates::Delta { by_substate } => PartitionDatabaseUpdates::Delta {
@@ -151,7 +148,6 @@ impl CreateDatabaseUpdates for PartitionStateUpdates {
 impl CreateDatabaseUpdates for BatchPartitionStateUpdate {
     type DatabaseUpdates = PartitionDatabaseUpdates;
 
-    /// Uses the given [`DatabaseKeyMapper`] to express self using database-level key encoding.
     fn create_database_updates<M: DatabaseKeyMapper>(&self) -> PartitionDatabaseUpdates {
         match self {
             BatchPartitionStateUpdate::Reset {
