@@ -643,12 +643,8 @@ fn publishing_of_package_with_transient_blueprints_fails() {
 
     // Assert
     receipt.expect_specific_failure(|error| {
-        matches!(
-            error,
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::WasmUnsupported(..)
-            ))
-        )
+        let error_message = format!("{error:?}");
+        return error_message.contains("Transient blueprints not supported");
     })
 }
 
