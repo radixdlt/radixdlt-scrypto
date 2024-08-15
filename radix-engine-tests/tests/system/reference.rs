@@ -457,3 +457,25 @@ fn test_internal_typed_reference() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn test_send_and_receive_reference_from_child_call_frame() {
+    // This test checks what happens if I create a reference to an owned node, send it to a child, and receive it back.
+    // At present, the "send to child" check requires that the reference is a direct reference, which can only
+    // be created by the root call frame - therefore this errors with a "DirectRefNotFound".
+
+    // Arrange
+    let mut ledger = LedgerSimulatorBuilder::new().build();
+    let package_address = ledger.publish_package_simple(PackageLoader::get("reference"));
+
+    // Act
+    let receipt = ledger.call_function(
+        package_address,
+        "ReferenceTest",
+        "send_and_receive_reference",
+        manifest_args!(),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| format!("{e:?}").contains("DirectRefNotFound"));
+}

@@ -2,6 +2,8 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod reference_test {
+    use child_reference_holder::*;
+
     struct ReferenceTest {
         reference: Option<Reference>,
         vault: Option<Vault>,
@@ -91,6 +93,23 @@ mod reference_test {
                 scrypto_args!(Decimal::ONE),
             ))
             .unwrap()
+        }
+
+        pub fn send_and_receive_reference() {
+            let bucket = Bucket::new(XRD.into());
+            Blueprint::<ChildReferenceHolder>::bounce_back(Reference(bucket.0.as_node_id().clone()));
+            bucket.drop_empty();
+        }
+    }
+}
+
+#[blueprint]
+mod child_reference_holder {
+    struct ChildReferenceHolder {}
+
+    impl ChildReferenceHolder {
+        pub fn bounce_back(reference: Reference) -> Reference {
+            reference
         }
     }
 }
