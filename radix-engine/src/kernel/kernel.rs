@@ -1,35 +1,31 @@
-use super::call_frame::{CallFrame, CallFrameInit, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
-use crate::blueprints::resource::*;
-use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::internal_prelude::*;
-use crate::kernel::call_frame::{
-    CallFrameIOAccessHandler, CallFrameMessage, CallFrameSubstateReadHandler, NonGlobalNodeRefs,
-    TransientSubstates,
-};
+use crate::kernel::call_frame::*;
 use crate::kernel::kernel_api::*;
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
-    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::*;
 use crate::kernel::kernel_callback_api::{ExecutionReceipt, KernelTransactionCallbackObject};
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::system::type_info::TypeInfoSubstate;
-use crate::track::interface::{
-    BootStore, CallbackError, CommitableSubstateStore, IOAccess, NodeSubstates,
-};
+use crate::track::interface::*;
 use crate::track::Track;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::blueprints::resource::*;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
 use sbor::rust::mem;
+
+macro_rules! as_read_only {
+    ($kernel:expr) => {{
+        KernelReadOnly {
+            current_frame: &$kernel.current_frame,
+            prev_frame: $kernel.prev_frame_stack.last(),
+            heap: &$kernel.substate_io.heap,
+            callback: $kernel.callback,
+        }
+    }};
+}
 
 pub const BOOT_LOADER_KERNEL_BOOT_FIELD_KEY: FieldKey = 0u8;
 
@@ -258,25 +254,14 @@ impl<
         };
 
         M::on_read_substate(
-            &mut read_only,
             ReadSubstateEvent::OnRead {
                 handle,
                 value,
                 device,
             },
+            &mut read_only,
         )
     }
-}
-
-macro_rules! as_read_only {
-    ($kernel:expr) => {{
-        KernelReadOnly {
-            current_frame: &$kernel.current_frame,
-            prev_frame: $kernel.prev_frame_stack.last(),
-            heap: &$kernel.substate_io.heap,
-            callback: $kernel.callback,
-        }
-    }};
 }
 
 impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
@@ -286,7 +271,7 @@ where
 {
     #[trace_resources]
     fn kernel_pin_node(&mut self, node_id: NodeId) -> Result<(), RuntimeError> {
-        self.callback.on_pin_node(&node_id)?;
+        M::on_pin_node(&node_id, &mut as_read_only!(self))?;
 
         self.current_frame
             .pin_node(&mut self.substate_io, node_id)
@@ -312,15 +297,15 @@ where
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_create_node(
-            &mut read_only,
             CreateNodeEvent::Start(&node_id, &node_substates),
+            &mut read_only,
         )?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_create_node(api, CreateNodeEvent::IOAccess(&io_access))
+                M::on_create_node(CreateNodeEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -334,7 +319,7 @@ where
             })?;
 
         let mut read_only = as_read_only!(self);
-        M::on_create_node(&mut read_only, CreateNodeEvent::End(&node_id))?;
+        M::on_create_node(CreateNodeEvent::End(&node_id), &mut read_only)?;
 
         Ok(())
     }
@@ -349,15 +334,15 @@ where
             let node_substates = NodeSubstates::new();
             let mut read_only = as_read_only!(self);
             M::on_create_node(
-                &mut read_only,
                 CreateNodeEvent::Start(&node_id, &node_substates),
+                &mut read_only,
             )?;
 
             let mut handler = KernelHandler {
                 callback: self.callback,
                 prev_frame: self.prev_frame_stack.last(),
                 on_io_access: |api, io_access| {
-                    M::on_create_node(api, CreateNodeEvent::IOAccess(&io_access))
+                    M::on_create_node(CreateNodeEvent::IOAccess(&io_access), api)
                 },
             };
 
@@ -376,7 +361,7 @@ where
                 })?;
 
             let mut read_only = as_read_only!(self);
-            M::on_create_node(&mut read_only, CreateNodeEvent::End(&node_id))?;
+            M::on_create_node(CreateNodeEvent::End(&node_id), &mut read_only)?;
         }
 
         {
@@ -384,7 +369,7 @@ where
                 callback: self.callback,
                 prev_frame: self.prev_frame_stack.last(),
                 on_io_access: |api, io_access| {
-                    M::on_move_module(api, MoveModuleEvent::IOAccess(&io_access))
+                    M::on_move_module(MoveModuleEvent::IOAccess(&io_access), api)
                 },
             };
 
@@ -413,7 +398,7 @@ where
     #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<DroppedNode, RuntimeError> {
         let mut read_only = as_read_only!(self);
-        M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
+        M::on_drop_node(DropNodeEvent::Start(node_id), &mut read_only)?;
 
         M::on_drop_node_mut(node_id, self)?;
 
@@ -421,7 +406,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_drop_node(api, DropNodeEvent::IOAccess(&io_access))
+                M::on_drop_node(DropNodeEvent::IOAccess(&io_access), api)
             },
         };
         let dropped_node = self
@@ -436,8 +421,8 @@ where
 
         let mut read_only = as_read_only!(self);
         M::on_drop_node(
-            &mut read_only,
             DropNodeEvent::End(node_id, &dropped_node.substates),
+            &mut read_only,
         )?;
 
         Ok(dropped_node)
@@ -445,11 +430,11 @@ where
 }
 
 // TODO: Remove
-impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
-where
-    M: KernelCallbackObject,
-    S: CommitableSubstateStore,
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
+    for Kernel<'g, M, S>
 {
+    type System = M;
+
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
     }
@@ -473,14 +458,15 @@ where
         }
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        let mut read_only = as_read_only!(self);
-        read_only.kernel_read_bucket(bucket_id)
-    }
-
-    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        let mut read_only = as_read_only!(self);
-        read_only.kernel_read_proof(proof_id)
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.substate_io
+            .heap
+            .get_substate(node_id, partition_num, substate_key)
     }
 }
 
@@ -494,10 +480,9 @@ where
     callback: &'g mut M,
 }
 
-impl<'g, M> KernelInternalApi<M> for KernelReadOnly<'g, M>
-where
-    M: KernelCallbackObject,
-{
+impl<'g, M: KernelCallbackObject> KernelInternalApi for KernelReadOnly<'g, M> {
+    type System = M;
+
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
     }
@@ -521,152 +506,13 @@ where
         }
     }
 
-    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        let (is_fungible_bucket, resource_address) = if let Some(substate) = self.heap.get_substate(
-            &bucket_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        ) {
-            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-            match type_info {
-                TypeInfoSubstate::Object(info)
-                    if info.blueprint_info.blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (info.blueprint_info.blueprint_id.blueprint_name
-                            == FUNGIBLE_BUCKET_BLUEPRINT
-                            || info.blueprint_info.blueprint_id.blueprint_name
-                                == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
-                {
-                    let is_fungible = info
-                        .blueprint_info
-                        .blueprint_id
-                        .blueprint_name
-                        .eq(FUNGIBLE_BUCKET_BLUEPRINT);
-                    let parent = info.get_outer_object();
-                    let resource_address: ResourceAddress =
-                        ResourceAddress::new_or_panic(parent.as_bytes().try_into().unwrap());
-                    (is_fungible, resource_address)
-                }
-                _ => {
-                    return None;
-                }
-            }
-        } else {
-            return None;
-        };
-
-        if is_fungible_bucket {
-            let substate = self
-                .heap
-                .get_substate(
-                    bucket_id,
-                    MAIN_BASE_PARTITION,
-                    &FungibleBucketField::Liquid.into(),
-                )
-                .unwrap();
-            let liquid: FieldSubstate<LiquidFungibleResource> = substate.as_typed().unwrap();
-
-            Some(BucketSnapshot::Fungible {
-                resource_address,
-                liquid: liquid.into_payload().amount(),
-            })
-        } else {
-            let substate = self
-                .heap
-                .get_substate(
-                    bucket_id,
-                    MAIN_BASE_PARTITION,
-                    &NonFungibleBucketField::Liquid.into(),
-                )
-                .unwrap();
-            let liquid: FieldSubstate<LiquidNonFungibleResource> = substate.as_typed().unwrap();
-
-            Some(BucketSnapshot::NonFungible {
-                resource_address,
-                liquid: liquid.into_payload().ids().clone(),
-            })
-        }
-    }
-
-    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        let is_fungible = if let Some(substate) = self.heap.get_substate(
-            &proof_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        ) {
-            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-            match type_info {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_info: BlueprintInfo { blueprint_id, .. },
-                    ..
-                }) if blueprint_id.package_address == RESOURCE_PACKAGE
-                    && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
-                        || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
-                {
-                    blueprint_id.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
-                }
-                _ => {
-                    return None;
-                }
-            }
-        } else {
-            return None;
-        };
-
-        if is_fungible {
-            let substate = self
-                .heap
-                .get_substate(
-                    proof_id,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
-                .unwrap();
-            let info: TypeInfoSubstate = substate.as_typed().unwrap();
-            let resource_address =
-                ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
-
-            let substate = self
-                .heap
-                .get_substate(
-                    proof_id,
-                    MAIN_BASE_PARTITION,
-                    &FungibleProofField::ProofRefs.into(),
-                )
-                .unwrap();
-            let proof: FieldSubstate<FungibleProofSubstate> = substate.as_typed().unwrap();
-
-            Some(ProofSnapshot::Fungible {
-                resource_address,
-                total_locked: proof.into_payload().amount(),
-            })
-        } else {
-            let substate = self
-                .heap
-                .get_substate(
-                    proof_id,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
-                .unwrap();
-            let info: TypeInfoSubstate = substate.as_typed().unwrap();
-            let resource_address =
-                ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
-
-            let substate = self
-                .heap
-                .get_substate(
-                    proof_id,
-                    MAIN_BASE_PARTITION,
-                    &NonFungibleProofField::ProofRefs.into(),
-                )
-                .unwrap();
-            let proof: FieldSubstate<NonFungibleProofSubstate> = substate.as_typed().unwrap();
-
-            Some(ProofSnapshot::NonFungible {
-                resource_address,
-                total_locked: proof.into_payload().non_fungible_local_ids().clone(),
-            })
-        }
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
+        self.heap.get_substate(node_id, partition_num, substate_key)
     }
 }
 
@@ -682,8 +528,7 @@ where
         partition_num: PartitionNumber,
         key: SubstateKey,
     ) -> Result<(), RuntimeError> {
-        self.callback
-            .on_mark_substate_as_transient(&node_id, &partition_num, &key)?;
+        M::on_mark_substate_as_transient(&node_id, &partition_num, &key, &mut as_read_only!(self))?;
 
         self.current_frame
             .mark_substate_as_transient(&mut self.substate_io, node_id, partition_num, key)
@@ -704,22 +549,21 @@ where
         default: Option<F>,
         data: M::LockData,
     ) -> Result<SubstateHandle, RuntimeError> {
-        let mut read_only = as_read_only!(self);
         M::on_open_substate(
-            &mut read_only,
             OpenSubstateEvent::Start {
                 node_id: &node_id,
                 partition_num: &partition_num,
                 substate_key,
                 flags: &flags,
             },
+            &mut as_read_only!(self),
         )?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_open_substate(api, OpenSubstateEvent::IOAccess(&io_access))
+                M::on_open_substate(OpenSubstateEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -746,7 +590,7 @@ where
                         callback: self.callback,
                         prev_frame: self.prev_frame_stack.last(),
                         on_io_access: |api, io_access| {
-                            M::on_open_substate(api, OpenSubstateEvent::IOAccess(&io_access))
+                            M::on_open_substate(OpenSubstateEvent::IOAccess(&io_access), api)
                         },
                     };
 
@@ -791,12 +635,12 @@ where
 
         let mut read_only = as_read_only!(self);
         M::on_open_substate(
-            &mut read_only,
             OpenSubstateEvent::End {
                 handle: lock_handle,
                 node_id: &node_id,
                 size: value_size,
             },
+            &mut read_only,
         )?;
 
         Ok(lock_handle)
@@ -823,7 +667,7 @@ where
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_read_substate(api, ReadSubstateEvent::IOAccess(&io_access))
+                M::on_read_substate(ReadSubstateEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -848,18 +692,18 @@ where
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
         M::on_write_substate(
-            &mut read_only,
             WriteSubstateEvent::Start {
                 handle: lock_handle,
                 value: &value,
             },
+            &mut read_only,
         )?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                M::on_write_substate(api, WriteSubstateEvent::IOAccess(&io_access))
+                M::on_write_substate(WriteSubstateEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -882,7 +726,7 @@ where
         // certain invariants might break such as a costing error occurring after a vault
         // lock_fee has been force committed.
         let mut read_only = as_read_only!(self);
-        M::on_close_substate(&mut read_only, CloseSubstateEvent::Start(lock_handle))?;
+        M::on_close_substate(CloseSubstateEvent::Start(lock_handle), &mut read_only)?;
 
         self.current_frame
             .close_substate(&mut self.substate_io, lock_handle)
@@ -903,19 +747,16 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        self.callback.on_set_substate(SetSubstateEvent::Start(
-            node_id,
-            &partition_num,
-            &substate_key,
-            &value,
-        ))?;
+        M::on_set_substate(
+            SetSubstateEvent::Start(node_id, &partition_num, &substate_key, &value),
+            &mut as_read_only!(self),
+        )?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                api.callback
-                    .on_set_substate(SetSubstateEvent::IOAccess(&io_access))
+                M::on_set_substate(SetSubstateEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -945,19 +786,16 @@ where
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        self.callback
-            .on_remove_substate(RemoveSubstateEvent::Start(
-                node_id,
-                &partition_num,
-                substate_key,
-            ))?;
+        M::on_remove_substate(
+            RemoveSubstateEvent::Start(node_id, &partition_num, substate_key),
+            &mut as_read_only!(self),
+        )?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                api.callback
-                    .on_remove_substate(RemoveSubstateEvent::IOAccess(&io_access))
+                M::on_remove_substate(RemoveSubstateEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -987,14 +825,13 @@ where
         partition_num: PartitionNumber,
         limit: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
-        self.callback.on_scan_keys(ScanKeysEvent::Start)?;
+        M::on_scan_keys(ScanKeysEvent::Start, &mut as_read_only!(self))?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                api.callback
-                    .on_scan_keys(ScanKeysEvent::IOAccess(&io_access))
+                M::on_scan_keys(ScanKeysEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -1024,15 +861,13 @@ where
         partition_num: PartitionNumber,
         limit: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
-        self.callback
-            .on_drain_substates(DrainSubstatesEvent::Start(limit))?;
+        M::on_drain_substates(DrainSubstatesEvent::Start(limit), &mut as_read_only!(self))?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                api.callback
-                    .on_drain_substates(DrainSubstatesEvent::IOAccess(&io_access))
+                M::on_drain_substates(DrainSubstatesEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -1062,15 +897,13 @@ where
         partition_num: PartitionNumber,
         limit: u32,
     ) -> Result<Vec<(SortedKey, IndexedScryptoValue)>, RuntimeError> {
-        self.callback
-            .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
+        M::on_scan_sorted_substates(ScanSortedSubstatesEvent::Start, &mut as_read_only!(self))?;
 
         let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
             on_io_access: |api, io_access| {
-                api.callback
-                    .on_scan_sorted_substates(ScanSortedSubstatesEvent::IOAccess(&io_access))
+                M::on_scan_sorted_substates(ScanSortedSubstatesEvent::IOAccess(&io_access), api)
             },
         };
 
@@ -1132,7 +965,7 @@ where
 
             // Auto drop locks
             for handle in self.current_frame.open_substates() {
-                M::on_close_substate(self, CloseSubstateEvent::Start(handle))?;
+                M::on_close_substate(CloseSubstateEvent::Start(handle), self)?;
             }
             self.current_frame
                 .close_all_substates(&mut self.substate_io);
@@ -1143,7 +976,7 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             for handle in self.current_frame.open_substates() {
-                M::on_close_substate(self, CloseSubstateEvent::Start(handle))?;
+                M::on_close_substate(CloseSubstateEvent::Start(handle), self)?;
             }
             self.current_frame
                 .close_all_substates(&mut self.substate_io);
@@ -1193,19 +1026,12 @@ where
     }
 }
 
-impl<'g, M, S> KernelApi<M> for Kernel<'g, M, S>
-where
-    M: KernelCallbackObject,
-    S: CommitableSubstateStore,
-{
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelApi for Kernel<'g, M, S> {
+    type CallbackObject = M;
 }
 
 #[cfg(feature = "radix_engine_tests")]
-impl<'g, M, S> Kernel<'g, M, S>
-where
-    M: KernelCallbackObject,
-    S: CommitableSubstateStore,
-{
+impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> Kernel<'g, M, S> {
     pub fn kernel_create_kernel_for_testing(
         substate_io: SubstateIO<'g, S>,
         id_allocator: &'g mut IdAllocator,

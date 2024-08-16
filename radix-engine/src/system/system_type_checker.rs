@@ -1,10 +1,8 @@
 use super::payload_validation::*;
 use crate::errors::{RuntimeError, SystemError};
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelApi;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{System, SystemLockData};
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_callback::*;
 use crate::system::system_substates::{FieldSubstate, KeyValueEntrySubstate, LockStatus};
 use crate::track::interface::NodeSubstates;
 use radix_blueprint_schema_init::KeyValueStoreGenericSubstitutions;
@@ -55,7 +53,7 @@ pub enum TypeCheckError {
     MissingSchema,
 }
 
-impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemService<'a, Y, V, E> {
+impl<'a, Y: SystemBasedKernelApi> SystemService<'a, Y> {
     /// Validate that the type substitutions match the generic definition of a given blueprint
     pub fn validate_bp_generic_args(
         &mut self,
@@ -377,17 +375,12 @@ impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemService<'
         node_id: &NodeId,
         schema_hash: &SchemaHash,
     ) -> Result<Rc<VersionedScryptoSchema>, RuntimeError> {
-        let def = self
-            .api
-            .kernel_get_system_state()
-            .system
-            .schema_cache
-            .get(schema_hash);
+        let def = self.system().schema_cache.get(schema_hash);
         if let Some(schema) = def {
             return Ok(schema.clone());
         }
 
-        let handle = self.api.kernel_open_substate_with_default(
+        let handle = self.api().kernel_open_substate_with_default(
             node_id,
             SCHEMAS_PARTITION,
             &SubstateKey::Map(scrypto_encode(schema_hash).unwrap()),
@@ -400,14 +393,12 @@ impl<'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> SystemService<'
         )?;
 
         let substate: KeyValueEntrySubstate<VersionedScryptoSchema> =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        self.api.kernel_close_substate(handle)?;
+            self.api().kernel_read_substate(handle)?.as_typed().unwrap();
+        self.api().kernel_close_substate(handle)?;
 
         let schema = Rc::new(substate.into_value().unwrap());
 
-        self.api
-            .kernel_get_system_state()
-            .system
+        self.system()
             .schema_cache
             .insert(schema_hash.clone(), schema.clone());
 

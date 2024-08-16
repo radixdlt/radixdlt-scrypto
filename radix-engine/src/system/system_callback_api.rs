@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
-use crate::system::system_callback::{System, SystemLockData};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use crate::system::system_callback::*;
 use crate::track::BootStore;
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::package::PackageExport;
@@ -17,10 +17,9 @@ pub trait SystemCallbackObject: Sized {
     /// Invoke a function
     fn invoke<
         Y: SystemApi<RuntimeError>
-            + KernelInternalApi<System<Self, E>>
+            + SystemBasedKernelInternalApi<SystemCallback = Self>
             + KernelNodeApi
             + KernelSubstateApi<SystemLockData>,
-        E,
     >(
         package_address: &PackageAddress,
         package_export: PackageExport,

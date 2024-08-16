@@ -1,15 +1,12 @@
+use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
-use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DropNodeEvent, OpenSubstateEvent, ReadSubstateEvent,
-    WriteSubstateEvent,
-};
+use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
-use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::System;
+use crate::system::module::*;
+use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::types::SubstateKey;
 use sbor::rust::collections::BTreeMap;
@@ -21,7 +18,7 @@ pub struct KernelTraceModule;
 macro_rules! log {
     ( $api: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
-        println!("{}[{}] {}", "    ".repeat($api.kernel_get_current_depth()), $api.kernel_get_current_depth(), sbor::rust::format!($msg, $( $arg ),*));
+        println!("{}[{}] {}", "    ".repeat($api.current_stack_depth()), $api.current_stack_depth(), sbor::rust::format!($msg, $( $arg ),*));
     };
 }
 
@@ -31,11 +28,16 @@ impl InitSystemModule for KernelTraceModule {
         panic!("KernelTraceModule should be disabled for feature resource_tracker!")
     }
 }
+impl ResolvableSystemModule for KernelTraceModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
+        &mut system.modules.kernel_trace
+    }
+}
 
 #[allow(unused_variables)] // for no_std
-impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModule {
-    fn before_invoke<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
+impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for KernelTraceModule {
+    fn before_invoke(
+        api: &mut ModuleApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         let message = format!(
@@ -51,8 +53,8 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
+    fn on_execution_finish(
+        api: &mut ModuleApi,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", message.move_nodes);
@@ -60,26 +62,20 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModul
         Ok(())
     }
 
-    fn after_invoke<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
-        output: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
+    fn after_invoke(api: &mut ModuleApi, output: &IndexedScryptoValue) -> Result<(), RuntimeError> {
         log!(api, "Exiting: output size = {}", output.len());
         Ok(())
     }
 
-    fn on_allocate_node_id<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
+    fn on_allocate_node_id(
+        api: &mut ModuleApi,
         entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
         log!(api, "Allocating node id: entity_type = {:?}", entity_type);
         Ok(())
     }
 
-    fn on_create_node<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
-        event: &CreateNodeEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_create_node(api: &mut ModuleApi, event: &CreateNodeEvent) -> Result<(), RuntimeError> {
         match event {
             CreateNodeEvent::Start(node_id, node_module_init) => {
                 let mut module_substate_keys =
@@ -108,10 +104,7 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
-        event: &DropNodeEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_drop_node(api: &mut ModuleApi, event: &DropNodeEvent) -> Result<(), RuntimeError> {
         match event {
             DropNodeEvent::Start(node_id) => {
                 log!(api, "Dropping node: id = {:?}", node_id);
@@ -121,8 +114,8 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_open_substate<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    fn on_open_substate(
+        api: &mut ModuleApi,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -159,8 +152,8 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    fn on_read_substate(
+        api: &mut ModuleApi,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -183,8 +176,8 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    fn on_write_substate(
+        api: &mut ModuleApi,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -202,8 +195,8 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_close_substate<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    fn on_close_substate(
+        api: &mut ModuleApi,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
@@ -214,3 +207,5 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for KernelTraceModul
         Ok(())
     }
 }
+
+impl PrivilegedSystemModule for KernelTraceModule {}

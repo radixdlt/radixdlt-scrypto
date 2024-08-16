@@ -3,18 +3,13 @@ use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
-use crate::kernel::kernel_api::KernelInvocation;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
-    OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_api::*;
+use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
+use crate::system::module::PrivilegedSystemModule;
 use crate::system::module::{InitSystemModule, SystemModule};
 use crate::system::system::SystemService;
-use crate::system::system_callback::System;
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_callback::*;
 use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::costing::CostingModule;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
@@ -91,31 +86,40 @@ pub struct SystemModuleMixer {
 
 // Macro generates default modules dispatches call based on passed function name and arguments.
 macro_rules! internal_call_dispatch {
-    ($system:expr, $fn:ident ( $($param:ident),*) ) => {
-        paste! {
-        {
+    (
+        $system:expr,
+        $fn:ident ( $($param:expr),* )
+        $(, $privileged_fn:ident ( $($privileged_fn_param:expr),* ))?
+    ) => {
+        paste! {{
             let modules: EnabledModules = $system.modules.enabled_modules;
             if modules.contains(EnabledModules::KERNEL_TRACE) {
                 KernelTraceModule::[< $fn >]($($param, )*)?;
+                $(KernelTraceModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::LIMITS) {
-                 LimitsModule::[< $fn >]($($param, )*)?;
+                LimitsModule::[< $fn >]($($param, )*)?;
+                $(LimitsModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::COSTING) {
                 CostingModule::[< $fn >]($($param, )*)?;
+                $(CostingModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::AUTH) {
                 AuthModule::[< $fn >]($($param, )*)?;
+                $(AuthModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
                 TransactionRuntimeModule::[< $fn >]($($param, )*)?;
+                $(TransactionRuntimeModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             if modules.contains(EnabledModules::EXECUTION_TRACE) {
                 ExecutionTraceModule::[< $fn >]($($param, )*)?;
+                $(ExecutionTraceModule::[< $privileged_fn >]($($privileged_fn_param, )*)?;)?
             }
             Ok(())
-        }
-    }};
+        }}
+    };
 }
 
 impl SystemModuleMixer {
@@ -219,156 +223,221 @@ impl InitSystemModule for SystemModuleMixer {
     }
 }
 
-impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for SystemModuleMixer {
+impl SystemModuleMixer {
     #[trace_resources(log=invocation.len())]
-    fn before_invoke<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
+    pub fn before_invoke(
+        api: &mut impl SystemBasedKernelApi,
         invocation: &KernelInvocation<Actor>,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), before_invoke(api, invocation))
-    }
-
-    #[trace_resources]
-    fn on_execution_start<Y: KernelApi<System<V, E>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_execution_start(api))
-    }
-
-    #[trace_resources]
-    fn on_execution_finish<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
-        message: &CallFrameMessage,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_execution_finish(api, message))
-    }
-
-    #[trace_resources]
-    fn after_invoke<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
-        output: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), after_invoke(api, output))
-    }
-
-    #[trace_resources]
-    fn on_pin_node(system: &mut System<V, E>, node_id: &NodeId) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_pin_node(system, node_id))
-    }
-
-    #[trace_resources(log=entity_type)]
-    fn on_allocate_node_id<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
-        entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api.kernel_get_system(),
-            on_allocate_node_id(api, entity_type)
+            before_invoke(&mut api.system_module_api(), invocation),
+            privileged_before_invoke(api, invocation)
         )
     }
 
     #[trace_resources]
-    fn on_create_node<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    pub fn on_execution_start(
+        api: &mut impl SystemBasedKernelInternalApi,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_execution_start(&mut api.system_module_api())
+        )
+    }
+
+    #[trace_resources]
+    pub fn on_execution_finish(
+        api: &mut impl SystemBasedKernelInternalApi,
+        message: &CallFrameMessage,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_execution_finish(&mut api.system_module_api(), message)
+        )
+    }
+
+    #[trace_resources]
+    pub fn after_invoke(
+        api: &mut impl SystemBasedKernelInternalApi,
+        output: &IndexedScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            after_invoke(&mut api.system_module_api(), output)
+        )
+    }
+
+    #[trace_resources]
+    pub fn on_pin_node(
+        api: &mut impl SystemBasedKernelInternalApi,
+        node_id: &NodeId,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_pin_node(&mut api.system_module_api(), node_id)
+        )
+    }
+
+    #[trace_resources(log=entity_type)]
+    pub fn on_allocate_node_id(
+        api: &mut impl SystemBasedKernelInternalApi,
+        entity_type: EntityType,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_allocate_node_id(&mut api.system_module_api(), entity_type)
+        )
+    }
+
+    #[trace_resources]
+    pub fn on_create_node(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_create_node(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_create_node(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_move_module<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    pub fn on_move_module(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &MoveModuleEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_move_module(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_move_module(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_drop_node<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    pub fn on_drop_node(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_drop_node(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_drop_node(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_mark_substate_as_transient(
-        system: &mut System<V, E>,
+    pub fn on_mark_substate_as_transient(
+        api: &mut impl SystemBasedKernelInternalApi,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
-            system,
-            on_mark_substate_as_transient(system, node_id, partition_number, substate_key)
+            api.kernel_get_system(),
+            on_mark_substate_as_transient(
+                &mut api.system_module_api(),
+                node_id,
+                partition_number,
+                substate_key
+            )
         )
     }
 
     #[trace_resources]
-    fn on_open_substate<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    pub fn on_open_substate(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_open_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources(log=event.is_about_heap())]
-    fn on_read_substate<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    pub fn on_read_substate(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_read_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_read_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_write_substate<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    pub fn on_write_substate(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_write_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_write_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_close_substate<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
+    pub fn on_close_substate(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_close_substate(api, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_close_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_set_substate(
-        system: &mut System<V, E>,
+    pub fn on_set_substate(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_set_substate(system, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_set_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_remove_substate(
-        system: &mut System<V, E>,
+    pub fn on_remove_substate(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_remove_substate(system, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_remove_substate(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_scan_keys(system: &mut System<V, E>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_scan_keys(system, event))
+    pub fn on_scan_keys(
+        api: &mut impl SystemBasedKernelInternalApi,
+        event: &ScanKeysEvent,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_scan_keys(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_drain_substates(
-        system: &mut System<V, E>,
+    pub fn on_drain_substates(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_drain_substates(system, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_drain_substates(&mut api.system_module_api(), event)
+        )
     }
 
     #[trace_resources]
-    fn on_scan_sorted_substates(
-        system: &mut System<V, E>,
+    pub fn on_scan_sorted_substates(
+        api: &mut impl SystemBasedKernelInternalApi,
         event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(system, on_scan_sorted_substates(system, event))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_scan_sorted_substates(&mut api.system_module_api(), event)
+        )
     }
 }
 
@@ -377,8 +446,8 @@ impl SystemModuleMixer {
     // - Kernel uses the `SystemModule<SystemConfig<V>>` trait above;
     // - System uses methods defined below (TODO: add a trait?)
 
-    pub fn on_call_method<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn on_call_method<Y: SystemBasedKernelApi>(
+        api: &mut SystemService<Y>,
         receiver: &NodeId,
         module_id: ModuleId,
         direct_access: bool,
@@ -405,15 +474,15 @@ impl SystemModuleMixer {
         Ok(auth_zone)
     }
 
-    pub fn on_call_method_finish<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn on_call_method_finish<Y: SystemBasedKernelApi>(
+        api: &mut SystemService<Y>,
         auth_zone: NodeId,
     ) -> Result<(), RuntimeError> {
         AuthModule::on_call_method_finish(api, auth_zone)
     }
 
-    pub fn on_call_function<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn on_call_function<Y: SystemBasedKernelApi>(
+        api: &mut SystemService<Y>,
         blueprint_id: &BlueprintId,
         ident: &str,
     ) -> Result<NodeId, RuntimeError> {
@@ -432,8 +501,8 @@ impl SystemModuleMixer {
         Ok(auth_zone)
     }
 
-    pub fn on_call_function_finish<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn on_call_function_finish<Y: SystemBasedKernelApi>(
+        api: &mut SystemService<Y>,
         auth_zone: NodeId,
     ) -> Result<(), RuntimeError> {
         AuthModule::on_call_function_finish(api, auth_zone)

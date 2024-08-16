@@ -6,22 +6,19 @@ use radix_engine::system::actor::*;
 #[cfg(not(feature = "alloc"))]
 use radix_engine::system::system::SystemService;
 use radix_engine::system::system_callback::*;
-use radix_engine::system::system_modules::execution_trace::*;
 use radix_engine::track::*;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::*;
+use scrypto_test::prelude::SystemCallbackObject;
 
 #[cfg(feature = "std")]
 #[test]
 fn panics_at_the_system_layer_or_below_can_be_caught() {
     // Arrange
-    let mut kernel = MockKernel;
-    let mut system_service = SystemService {
-        api: &mut kernel,
-        phantom: Default::default(),
-    };
+    let mut kernel = MockKernel(PhantomData::<Vm<DefaultWasmEngine, NoExtension>>);
+    let mut system_service = SystemService::new(&mut kernel);
 
     // Act
     let actor = system_service.actor_get_blueprint_id();
@@ -39,11 +36,13 @@ macro_rules! panic1 {
     };
 }
 
-pub struct MockKernel;
+pub struct MockKernel<M: SystemCallbackObject>(PhantomData<M>);
 
-impl<'g> KernelApi<System<Vm<'g, DefaultWasmEngine, NoExtension>, ()>> for MockKernel {}
+impl<M: SystemCallbackObject> KernelApi for MockKernel<M> {
+    type CallbackObject = System::<M, ()>;
+}
 
-impl KernelNodeApi for MockKernel {
+impl<M: SystemCallbackObject> KernelNodeApi for MockKernel<M> {
     fn kernel_pin_node(&mut self, _: NodeId) -> Result<(), RuntimeError> {
         panic1!()
     }
@@ -69,7 +68,7 @@ impl KernelNodeApi for MockKernel {
     }
 }
 
-impl KernelSubstateApi<SystemLockData> for MockKernel {
+impl<M: SystemCallbackObject> KernelSubstateApi<SystemLockData> for MockKernel<M> {
     fn kernel_mark_substate_as_transient(
         &mut self,
         _: NodeId,
@@ -161,7 +160,7 @@ impl KernelSubstateApi<SystemLockData> for MockKernel {
     }
 }
 
-impl KernelInvokeApi<Actor> for MockKernel {
+impl<M: SystemCallbackObject> KernelInvokeApi<Actor> for MockKernel<M> {
     fn kernel_invoke(
         &mut self,
         _: Box<KernelInvocation<Actor>>,
@@ -170,10 +169,12 @@ impl KernelInvokeApi<Actor> for MockKernel {
     }
 }
 
-impl<'g> KernelInternalApi<System<Vm<'g, DefaultWasmEngine, NoExtension>, ()>> for MockKernel {
+impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
+    type System = System<M, ()>;
+    
     fn kernel_get_system_state(
         &mut self,
-    ) -> SystemState<'_, System<Vm<'g, DefaultWasmEngine, NoExtension>, ()>> {
+    ) -> SystemState<'_, Self::System> {
         panic1!()
     }
 
@@ -184,12 +185,8 @@ impl<'g> KernelInternalApi<System<Vm<'g, DefaultWasmEngine, NoExtension>, ()>> f
     fn kernel_get_node_visibility(&self, _: &NodeId) -> NodeVisibility {
         panic1!()
     }
-
-    fn kernel_read_bucket(&mut self, _: &NodeId) -> Option<BucketSnapshot> {
-        panic1!()
-    }
-
-    fn kernel_read_proof(&mut self, _: &NodeId) -> Option<ProofSnapshot> {
+    
+    fn kernel_read_substate_uncosted(&self, _node_id: &NodeId, _partition_num: PartitionNumber, _substate_key: &SubstateKey) -> Option<&IndexedScryptoValue> {
         panic1!()
     }
 }

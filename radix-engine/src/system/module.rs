@@ -1,14 +1,90 @@
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
-use crate::kernel::kernel_api::KernelInvocation;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
-    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_api::*;
+use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
+
+use super::system_callback::*;
+use super::system_callback_api::*;
+
+/// We use a zero-cost `SystemModuleApiImpl` wrapper instead of just implementing
+/// on `K` for a few reasons:
+/// * Separation of APIs - we avoid exposing a `SystemModuleApi` directly if someone
+///   happens to have a SystemBasedKernelApi, as that might be confusing.
+/// * Trait coherence - even if `SystemModuleApi` were moved to a different crate,
+///   this would still work
+pub struct SystemModuleApiImpl<'a, K: KernelInternalApi + ?Sized> {
+    api: &'a mut K,
+}
+
+impl<'a, K: KernelInternalApi + ?Sized> SystemModuleApiImpl<'a, K> {
+    #[inline]
+    pub fn new(api: &'a mut K) -> Self {
+        Self { api }
+    }
+
+    #[inline]
+    pub fn api_ref(&self) -> &K {
+        &self.api
+    }
+
+    #[inline]
+    pub fn api(&mut self) -> &mut K {
+        &mut self.api
+    }
+}
+
+pub trait SystemModuleApi {
+    type SystemCallback: SystemCallbackObject;
+    type Executable;
+
+    fn system(&mut self) -> &mut System<Self::SystemCallback, Self::Executable>;
+
+    fn system_state(&mut self) -> SystemState<'_, System<Self::SystemCallback, Self::Executable>>;
+
+    /// Gets the number of call frames that are currently in the call frame stack
+    fn current_stack_depth(&self) -> usize;
+}
+
+impl<'a, V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>> + ?Sized>
+    SystemModuleApi for SystemModuleApiImpl<'a, K>
+{
+    type SystemCallback = V;
+    type Executable = E;
+
+    fn system(&mut self) -> &mut K::System {
+        self.api.kernel_get_system()
+    }
+
+    fn system_state(&mut self) -> SystemState<'_, K::System> {
+        self.api.kernel_get_system_state()
+    }
+
+    fn current_stack_depth(&self) -> usize {
+        self.api.kernel_get_current_depth()
+    }
+}
+
+pub trait ResolvableSystemModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self;
+}
+
+pub trait SystemModuleApiFor<M: ResolvableSystemModule + ?Sized>: SystemModuleApi {
+    fn module(&mut self) -> &mut M {
+        M::resolve_from_system(self.system())
+    }
+}
+
+impl<
+        'a,
+        V: SystemCallbackObject,
+        E,
+        K: KernelInternalApi<System = System<V, E>> + ?Sized,
+        M: ResolvableSystemModule + ?Sized,
+    > SystemModuleApiFor<M> for SystemModuleApiImpl<'a, K>
+{
+}
 
 pub trait InitSystemModule {
     //======================
@@ -25,7 +101,19 @@ pub trait InitSystemModule {
     }
 }
 
-pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
+pub trait PrivilegedSystemModule {
+    #[inline(always)]
+    fn privileged_before_invoke(
+        _api: &mut impl SystemBasedKernelApi,
+        _invocation: &KernelInvocation<Actor>,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+}
+
+pub trait SystemModule<ModuleApi: SystemModuleApiFor<Self>>:
+    InitSystemModule + ResolvableSystemModule + PrivilegedSystemModule
+{
     //======================
     // Invocation events
     //
@@ -36,29 +124,29 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     //======================
 
     #[inline(always)]
-    fn before_invoke<Y: KernelApi<M>>(
-        _api: &mut Y,
+    fn before_invoke(
+        _api: &mut ModuleApi,
         _invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_execution_start<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_execution_start(_api: &mut ModuleApi) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_execution_finish<Y: KernelApi<M>>(
-        _api: &mut Y,
+    fn on_execution_finish(
+        _api: &mut ModuleApi,
         _message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn after_invoke<Y: KernelApi<M>>(
-        _api: &mut Y,
+    fn after_invoke(
+        _api: &mut ModuleApi,
         _output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -69,39 +157,30 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     //======================
 
     #[inline(always)]
-    fn on_pin_node(_system: &mut M, _node_id: &NodeId) -> Result<(), RuntimeError> {
+    fn on_pin_node(_api: &mut ModuleApi, _node_id: &NodeId) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_allocate_node_id<Y: KernelApi<M>>(
-        _api: &mut Y,
+    fn on_allocate_node_id(
+        _api: &mut ModuleApi,
         _entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_create_node<Y: KernelInternalApi<M>>(
-        _api: &mut Y,
-        _event: &CreateNodeEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_create_node(_api: &mut ModuleApi, _event: &CreateNodeEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_move_module<Y: KernelInternalApi<M>>(
-        _api: &mut Y,
-        _event: &MoveModuleEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_move_module(_api: &mut ModuleApi, _event: &MoveModuleEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_drop_node<Y: KernelInternalApi<M>>(
-        _api: &mut Y,
-        _event: &DropNodeEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_drop_node(_api: &mut ModuleApi, _event: &DropNodeEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -110,7 +189,7 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     //======================
     #[inline(always)]
     fn on_mark_substate_as_transient(
-        _system: &mut M,
+        _api: &mut ModuleApi,
         _node_id: &NodeId,
         _partition_number: &PartitionNumber,
         _substate_key: &SubstateKey,
@@ -119,58 +198,61 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
     }
 
     #[inline(always)]
-    fn on_open_substate<Y: KernelInternalApi<M>>(
-        _api: &mut Y,
+    fn on_open_substate(
+        _api: &mut ModuleApi,
         _event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_read_substate<Y: KernelInternalApi<M>>(
-        _api: &mut Y,
+    fn on_read_substate(
+        _api: &mut ModuleApi,
         _event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_write_substate<Y: KernelInternalApi<M>>(
-        _api: &mut Y,
+    fn on_write_substate(
+        _api: &mut ModuleApi,
         _event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_close_substate<Y: KernelInternalApi<M>>(
-        _api: &mut Y,
+    fn on_close_substate(
+        _api: &mut ModuleApi,
         _event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_set_substate(_system: &mut M, _event: &SetSubstateEvent) -> Result<(), RuntimeError> {
+    fn on_set_substate(
+        _api: &mut ModuleApi,
+        _event: &SetSubstateEvent,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
     fn on_remove_substate(
-        _system: &mut M,
+        _api: &mut ModuleApi,
         _event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_scan_keys(_system: &mut M, _event: &ScanKeysEvent) -> Result<(), RuntimeError> {
+    fn on_scan_keys(_api: &mut ModuleApi, _event: &ScanKeysEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
     fn on_drain_substates(
-        _system: &mut M,
+        _api: &mut ModuleApi,
         _event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -178,7 +260,7 @@ pub trait SystemModule<M: KernelCallbackObject>: InitSystemModule {
 
     #[inline(always)]
     fn on_scan_sorted_substates(
-        _system: &mut M,
+        _api: &mut ModuleApi,
         _event: &ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())

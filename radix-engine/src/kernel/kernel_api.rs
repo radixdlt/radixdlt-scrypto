@@ -2,7 +2,6 @@ use super::call_frame::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::*;
-use crate::system::system_modules::execution_trace::*;
 use crate::track::interface::*;
 use radix_engine_interface::api::field_api::*;
 use radix_substate_store_interface::db_key_mapper::*;
@@ -180,13 +179,16 @@ pub struct SystemState<'a, M: KernelCallbackObject> {
 
 /// Internal API for kernel modules.
 /// No kernel state changes are expected as of a result of invoking such APIs, except updating returned references.
-pub trait KernelInternalApi<M: KernelCallbackObject> {
+pub trait KernelInternalApi {
+    type System: KernelCallbackObject;
+
     /// Retrieves data associated with the kernel upstream layer (system)
-    fn kernel_get_system(&mut self) -> &mut M {
+    #[inline]
+    fn kernel_get_system(&mut self) -> &mut Self::System {
         self.kernel_get_system_state().system
     }
 
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, M>;
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System>;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
@@ -194,15 +196,20 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Returns the visibility of a node
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
-    /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
-    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
-    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot>;
+    /// Only intended for use in debug modules
+    fn kernel_read_substate_uncosted(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue>;
 }
 
-pub trait KernelApi<M: KernelCallbackObject>:
+pub trait KernelApi:
     KernelNodeApi
-    + KernelSubstateApi<M::LockData>
-    + KernelInvokeApi<M::CallFrameData>
-    + KernelInternalApi<M>
+    + KernelSubstateApi<<Self::CallbackObject as KernelCallbackObject>::LockData>
+    + KernelInvokeApi<<Self::CallbackObject as KernelCallbackObject>::CallFrameData>
+    + KernelInternalApi<System = Self::CallbackObject>
 {
+    type CallbackObject: KernelCallbackObject;
 }

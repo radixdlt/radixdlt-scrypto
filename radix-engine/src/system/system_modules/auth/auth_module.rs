@@ -4,13 +4,13 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::ReferenceOrigin;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::actor::Actor;
-use crate::system::module::{InitSystemModule, SystemModule};
+use crate::system::module::*;
 use crate::system::node_init::type_info_partition;
 use crate::system::system::SystemService;
-use crate::system::system_callback::{System, SystemLockData};
+use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::type_info::TypeInfoSubstate;
 use radix_engine_interface::api::{AttachedModuleId, LockFlags, ModuleId, SystemBlueprintApi};
@@ -74,8 +74,8 @@ impl AuthModule {
         Self { params }
     }
 
-    pub fn on_call_function<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn on_call_function<Y: SystemBasedKernelApi>(
+        system: &mut SystemService<Y>,
         blueprint_id: &BlueprintId,
         ident: &str,
     ) -> Result<NodeId, RuntimeError> {
@@ -89,10 +89,10 @@ impl AuthModule {
                 && blueprint_id
                     .blueprint_name
                     .eq(TRANSACTION_PROCESSOR_BLUEPRINT);
-            let is_at_root = api.kernel_get_current_depth() == 0;
+            let is_at_root = system.kernel_get_current_depth() == 0;
             let (virtual_resources, virtual_non_fungibles) =
                 if is_transaction_processor_blueprint && is_at_root {
-                    let auth_module = &api.kernel_get_system().modules.auth;
+                    let auth_module = &system.kernel_get_system().modules.auth;
                     (
                         auth_module.params.virtual_resources.clone(),
                         auth_module.params.initial_proofs.clone(),
@@ -101,7 +101,7 @@ impl AuthModule {
                     (BTreeSet::new(), BTreeSet::new())
                 };
 
-            Self::create_auth_zone(api, None, virtual_resources, virtual_non_fungibles)?
+            Self::create_auth_zone(system, None, virtual_resources, virtual_non_fungibles)?
         };
 
         // Check authorization
@@ -111,7 +111,7 @@ impl AuthModule {
                 blueprint_id.package_address.as_node_id(),
                 &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
                 ident,
-                api.api,
+                system.api(),
             )?;
 
             // Step 2: Check permission
@@ -119,21 +119,21 @@ impl AuthModule {
                 blueprint_id: blueprint_id.clone(),
                 ident: ident.to_string(),
             };
-            Self::check_permission(&auth_zone, permission, fn_identifier, api)?;
+            Self::check_permission(&auth_zone, permission, fn_identifier, system)?;
         }
 
         Ok(auth_zone)
     }
 
-    pub fn on_call_function_finish<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn on_call_function_finish<Y: SystemBasedKernelApi>(
+        api: &mut SystemService<Y>,
         auth_zone: NodeId,
     ) -> Result<(), RuntimeError> {
         Self::teardown_auth_zone(api, auth_zone)
     }
 
-    pub fn on_call_method<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn on_call_method<Y: SystemBasedKernelApi>(
+        api: &mut SystemService<Y>,
         receiver: &NodeId,
         module_id: ModuleId,
         direct_access: bool,
@@ -172,16 +172,16 @@ impl AuthModule {
         Ok(auth_zone)
     }
 
-    pub fn on_call_method_finish<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn on_call_method_finish<Y: SystemBasedKernelApi>(
+        api: &mut SystemService<Y>,
         auth_zone: NodeId,
     ) -> Result<(), RuntimeError> {
         Self::teardown_auth_zone(api, auth_zone)
     }
 
     /// On CALL_FUNCTION or CALL_METHOD, when auth module is disabled.
-    pub fn on_call_fn_mock<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        system: &mut SystemService<Y, V, E>,
+    pub fn on_call_fn_mock<Y: SystemBasedKernelApi>(
+        system: &mut SystemService<Y>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
@@ -189,8 +189,8 @@ impl AuthModule {
         Self::create_auth_zone(system, receiver, virtual_resources, virtual_non_fungibles)
     }
 
-    fn copy_global_caller<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        system: &mut SystemService<Y, V, E>,
+    fn copy_global_caller<Y: SystemBasedKernelApi>(
+        system: &mut SystemService<Y>,
         node_id: &NodeId,
     ) -> Result<(Option<(GlobalCaller, Reference)>, Option<SubstateHandle>), RuntimeError> {
         let handle = system.kernel_open_substate(
@@ -208,8 +208,8 @@ impl AuthModule {
         Ok((auth_zone.into_payload().global_caller, Some(handle)))
     }
 
-    fn create_auth_zone<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        system: &mut SystemService<Y, V, E>,
+    fn create_auth_zone<Y: SystemBasedKernelApi>(
+        system: &mut SystemService<Y>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
@@ -301,10 +301,10 @@ impl AuthModule {
 
         // Create node
         let new_auth_zone = system
-            .api
+            .api()
             .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
 
-        system.api.kernel_create_node(
+        system.api().kernel_create_node(
             new_auth_zone,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
@@ -322,7 +322,7 @@ impl AuthModule {
                 }))
             ),
         )?;
-        system.api.kernel_pin_node(new_auth_zone)?;
+        system.api().kernel_pin_node(new_auth_zone)?;
 
         if let Some(parent_lock_handle) = parent_lock_handle {
             system.kernel_close_substate(parent_lock_handle)?;
@@ -331,8 +331,8 @@ impl AuthModule {
         Ok(new_auth_zone)
     }
 
-    pub fn teardown_auth_zone<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    pub fn teardown_auth_zone<Y: SystemBasedKernelApi>(
+        api: &mut SystemService<Y>,
         self_auth_zone: NodeId,
     ) -> Result<(), RuntimeError> {
         // Detach proofs from the auth zone
@@ -372,11 +372,11 @@ impl AuthModule {
         Ok(())
     }
 
-    fn check_permission<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+    fn check_permission<Y: SystemBasedKernelApi>(
         auth_zone: &NodeId,
         resolved_permission: ResolvedPermission,
         fn_identifier: FnIdentifier,
-        api: &mut SystemService<Y, V, E>,
+        api: &mut SystemService<Y>,
     ) -> Result<(), RuntimeError> {
         match resolved_permission {
             ResolvedPermission::AllowAll => return Ok(()),
@@ -426,8 +426,8 @@ impl AuthModule {
         }
     }
 
-    fn resolve_method_permission<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
-        api: &mut SystemService<Y, V, E>,
+    fn resolve_method_permission<Y: SystemBasedKernelApi>(
+        system: &mut SystemService<Y>,
         blueprint_id: &BlueprintId,
         receiver: &NodeId,
         module_id: &ModuleId,
@@ -439,17 +439,22 @@ impl AuthModule {
         if let ModuleId::RoleAssignment = module_id {
             // Only global objects have role assignment modules
             let global_address = GlobalAddress::new_or_panic(receiver.0);
-            return RoleAssignmentNativePackage::authorization(&global_address, ident, args, api);
+            return RoleAssignmentNativePackage::authorization(
+                &global_address,
+                ident,
+                args,
+                system,
+            );
         }
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             blueprint_id.package_address.as_node_id(),
             &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-            api.api,
+            system.api(),
         )?
         .method_auth;
 
-        let receiver_object_info = api.get_object_info(&receiver)?;
+        let receiver_object_info = system.get_object_info(&receiver)?;
 
         let (role_assignment_of, method_permissions) = match auth_template {
             MethodAuthTemplate::StaticRoleDefinition(static_roles) => {
@@ -517,4 +522,10 @@ impl AuthModule {
 }
 
 impl InitSystemModule for AuthModule {}
-impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for AuthModule {}
+impl ResolvableSystemModule for AuthModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
+        &mut system.modules.auth
+    }
+}
+impl PrivilegedSystemModule for AuthModule {}
+impl<ModuleApi: SystemModuleApiFor<Self>> SystemModule<ModuleApi> for AuthModule {}

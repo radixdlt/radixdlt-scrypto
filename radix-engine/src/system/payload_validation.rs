@@ -1,6 +1,5 @@
 use crate::errors::RuntimeError;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::KernelApi;
 use radix_common::constants::*;
 use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
@@ -10,8 +9,7 @@ use sbor::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
 
 use super::system::SystemService;
-use super::system_callback::System;
-use super::system_callback_api::SystemCallbackObject;
+use super::system_callback::*;
 use super::type_info::TypeInfoSubstate;
 
 //=======================================================================================================
@@ -49,24 +47,16 @@ pub enum SchemaOrigin {
 // SYSTEM ADAPTERS
 //==================
 
-pub struct SystemServiceTypeInfoLookup<
-    's,
-    'a,
-    Y: KernelApi<System<V, E>>,
-    V: SystemCallbackObject,
-    E,
-> {
-    system_service: RefCell<&'s mut SystemService<'a, Y, V, E>>,
+pub struct SystemServiceTypeInfoLookup<'s, 'a, Y: SystemBasedKernelApi> {
+    system_service: RefCell<&'s mut SystemService<'a, Y>>,
     schema_origin: SchemaOrigin,
     allow_ownership: bool,
     allow_non_global_ref: bool,
 }
 
-impl<'s, 'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>
-    SystemServiceTypeInfoLookup<'s, 'a, Y, V, E>
-{
+impl<'s, 'a, Y: SystemBasedKernelApi> SystemServiceTypeInfoLookup<'s, 'a, Y> {
     pub fn new(
-        system_service: &'s mut SystemService<'a, Y, V, E>,
+        system_service: &'s mut SystemService<'a, Y>,
         schema_origin: SchemaOrigin,
         allow_ownership: bool,
         allow_non_global_ref: bool,
@@ -80,9 +70,7 @@ impl<'s, 'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>
     }
 }
 
-impl<'s, 'a, Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E> ValidationContext
-    for SystemServiceTypeInfoLookup<'s, 'a, Y, V, E>
-{
+impl<'s, 'a, Y: SystemBasedKernelApi> ValidationContext for SystemServiceTypeInfoLookup<'s, 'a, Y> {
     type Error = RuntimeError;
 
     fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, RuntimeError> {

@@ -1,7 +1,6 @@
 use super::substates::*;
 use crate::blueprints::util::{check_name, InvalidNameError, SecurifiedRoleAssignment};
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::object_modules::metadata::MetadataNativePackage;
 use crate::system::node_init::type_info_partition;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
@@ -25,8 +24,7 @@ use crate::object_modules::role_assignment::*;
 use crate::object_modules::royalty::RoyaltyUtil;
 use crate::roles_template;
 use crate::system::system::*;
-use crate::system::system_callback::{System, SystemLockData};
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_callback::*;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::system::system_type_checker::SystemMapper;
 use crate::vm::{VmApi, VmPackageValidation};
@@ -1464,7 +1462,7 @@ impl PackageNativePackage {
 pub struct PackageRoyaltyNativeBlueprint;
 
 impl PackageRoyaltyNativeBlueprint {
-    pub fn charge_package_royalty<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+    pub fn charge_package_royalty<Y: SystemBasedKernelApi>(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         ident: &str,
@@ -1533,7 +1531,7 @@ impl PackageRoyaltyNativeBlueprint {
                 .0;
             let package_address = PackageAddress::new_or_panic(receiver.0);
             apply_royalty_cost(
-                api,
+                &mut api.system_module_api(),
                 royalty_charge,
                 RoyaltyRecipient::Package(package_address, vault_id.0),
             )?;
@@ -1575,15 +1573,11 @@ impl PackageRoyaltyNativeBlueprint {
 pub struct PackageAuthNativeBlueprint;
 
 impl PackageAuthNativeBlueprint {
-    pub fn resolve_function_permission<
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V, E>>,
-        V: SystemCallbackObject,
-        E,
-    >(
+    pub fn resolve_function_permission(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
         ident: &str,
-        api: &mut Y,
+        api: &mut impl SystemBasedKernelApi,
     ) -> Result<ResolvedPermission, RuntimeError> {
         let auth_config = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
         match auth_config.function_auth {
@@ -1614,15 +1608,11 @@ impl PackageAuthNativeBlueprint {
         }
     }
 
-    pub fn get_bp_auth_template<Y, V, E>(
+    pub fn get_bp_auth_template(
         receiver: &NodeId,
         bp_version_key: &BlueprintVersionKey,
-        api: &mut Y,
-    ) -> Result<AuthConfig, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + KernelApi<System<V, E>>,
-        V: SystemCallbackObject,
-    {
+        api: &mut impl SystemBasedKernelApi,
+    ) -> Result<AuthConfig, RuntimeError> {
         let package_bp_version_id = CanonicalBlueprintId {
             address: PackageAddress::new_or_panic(receiver.0.clone()),
             blueprint: bp_version_key.blueprint.to_string(),

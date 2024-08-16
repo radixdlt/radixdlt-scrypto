@@ -2,25 +2,17 @@ use crate::blueprints::models::*;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::util::*;
 use crate::internal_prelude::*;
-use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::object_modules::role_assignment::{LockOwnerRoleEvent, SetOwnerRoleEvent};
 use crate::system::system::SystemService;
-use crate::system::system_callback::{System, SystemLockData};
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system_callback::*;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::system::system_substates::FieldSubstate;
 use crate::{errors::*, event_schema};
-use radix_blueprint_schema_init::{
-    BlueprintFunctionsSchemaInit, BlueprintSchemaInit, FunctionSchemaInit, TypeRef,
-};
+use radix_blueprint_schema_init::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{
-    FieldValue, GenericArgs, KVEntry, ModuleId, SystemApi, ACTOR_STATE_SELF,
-};
-use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, BlueprintVersionKey, FunctionAuth,
-    MethodAuthTemplate, PackageDefinition, RoleSpecification,
-};
+use radix_engine_interface::api::*;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::types::*;
@@ -155,11 +147,11 @@ impl RoleAssignmentNativePackage {
         PackageDefinition { blueprints }
     }
 
-    pub fn authorization<Y: KernelApi<System<V, E>>, V: SystemCallbackObject, E>(
+    pub fn authorization<Y: SystemBasedKernelApi>(
         global_address: &GlobalAddress,
         ident: &str,
         input: &IndexedScryptoValue,
-        api: &mut SystemService<Y, V, E>,
+        api: &mut SystemService<Y>,
     ) -> Result<ResolvedPermission, RuntimeError> {
         let permission = match ident {
             ROLE_ASSIGNMENT_SET_IDENT => {
@@ -297,13 +289,9 @@ impl RoleAssignmentNativePackage {
         access_rule.dfs_traverse_nodes(&mut AccessRuleVerifier(0))
     }
 
-    fn resolve_update_owner_role_method_permission<
-        Y: KernelApi<System<V, E>>,
-        V: SystemCallbackObject,
-        E,
-    >(
+    fn resolve_update_owner_role_method_permission<Y: SystemBasedKernelApi>(
         receiver: &NodeId,
-        api: &mut SystemService<Y, V, E>,
+        api: &mut SystemService<Y>,
     ) -> Result<ResolvedPermission, RuntimeError> {
         let handle = api.kernel_open_substate(
             receiver,
@@ -334,28 +322,24 @@ impl RoleAssignmentNativePackage {
         Ok(ResolvedPermission::AccessRule(rule))
     }
 
-    fn resolve_update_role_method_permission<
-        Y: KernelApi<System<V, E>>,
-        V: SystemCallbackObject,
-        E,
-    >(
+    fn resolve_update_role_method_permission<Y: SystemBasedKernelApi>(
         receiver: &NodeId,
         module: ModuleId,
         role_key: &RoleKey,
-        api: &mut SystemService<Y, V, E>,
+        service: &mut SystemService<Y>,
     ) -> Result<RoleList, RuntimeError> {
         if Self::is_role_key_reserved(&role_key) || module.eq(&ModuleId::RoleAssignment) {
             return Ok(RoleList::none());
         }
 
-        let blueprint_id = api
+        let blueprint_id = service
             .get_blueprint_info(receiver, module.into())?
             .blueprint_id;
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             blueprint_id.package_address.as_node_id(),
             &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-            api.api,
+            service.api(),
         )?
         .method_auth;
 

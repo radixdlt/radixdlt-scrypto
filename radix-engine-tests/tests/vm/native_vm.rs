@@ -109,10 +109,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     let mut id_allocator = IdAllocator::new(intent_hash);
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 
-    let mut api = SystemService {
-        api: &mut kernel,
-        phantom: Default::default(),
-    };
+    let mut api = SystemService::new(&mut kernel);
 
     // Act
     let rtn = api.call_function(
@@ -190,10 +187,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 
     let mut id_allocator = IdAllocator::new(intent_hash);
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
-    let mut api = SystemService {
-        api: &mut kernel,
-        phantom: Default::default(),
-    };
+    let mut api = SystemService::new(&mut kernel);
 
     // Act
     let rtn = api.call_function(

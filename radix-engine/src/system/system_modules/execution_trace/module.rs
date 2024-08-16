@@ -1,13 +1,14 @@
-use crate::blueprints::resource::VaultUtil;
+use crate::blueprints::resource::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
 use crate::kernel::call_frame::CallFrameMessage;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
+use crate::kernel::kernel_api::*;
+use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::{Actor, FunctionActor, MethodActor};
-use crate::system::module::{InitSystemModule, SystemModule};
-use crate::system::system_callback::System;
+use crate::system::module::*;
+use crate::system::system_callback::*;
 use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::type_info::TypeInfoSubstate;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
 use radix_common::math::Decimal;
 use radix_engine_interface::blueprints::resource::*;
@@ -95,6 +96,164 @@ pub enum VaultOp {
     TakeAdvanced(ResourceAddress, Decimal),
     Recall(ResourceAddress, Decimal),
     LockFee(Decimal, bool),
+}
+
+trait SystemModuleApiResourceSnapshotExtension {
+    fn read_bucket_uncosted(&self, bucket_id: &NodeId) -> Option<BucketSnapshot>;
+    fn read_proof_uncosted(&self, proof_id: &NodeId) -> Option<ProofSnapshot>;
+}
+
+impl<'a, V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
+    SystemModuleApiResourceSnapshotExtension for SystemModuleApiImpl<'a, K>
+{
+    fn read_bucket_uncosted(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
+        let (is_fungible_bucket, resource_address) = if let Some(substate) =
+            self.api_ref().kernel_read_substate_uncosted(
+                &bucket_id,
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            ) {
+            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            match type_info {
+                TypeInfoSubstate::Object(info)
+                    if info.blueprint_info.blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (info.blueprint_info.blueprint_id.blueprint_name
+                            == FUNGIBLE_BUCKET_BLUEPRINT
+                            || info.blueprint_info.blueprint_id.blueprint_name
+                                == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+                {
+                    let is_fungible = info
+                        .blueprint_info
+                        .blueprint_id
+                        .blueprint_name
+                        .eq(FUNGIBLE_BUCKET_BLUEPRINT);
+                    let parent = info.get_outer_object();
+                    let resource_address: ResourceAddress =
+                        ResourceAddress::new_or_panic(parent.as_bytes().try_into().unwrap());
+                    (is_fungible, resource_address)
+                }
+                _ => {
+                    return None;
+                }
+            }
+        } else {
+            return None;
+        };
+
+        if is_fungible_bucket {
+            let substate = self
+                .api_ref()
+                .kernel_read_substate_uncosted(
+                    bucket_id,
+                    MAIN_BASE_PARTITION,
+                    &FungibleBucketField::Liquid.into(),
+                )
+                .unwrap();
+            let liquid: FieldSubstate<LiquidFungibleResource> = substate.as_typed().unwrap();
+
+            Some(BucketSnapshot::Fungible {
+                resource_address,
+                liquid: liquid.into_payload().amount(),
+            })
+        } else {
+            let substate = self
+                .api_ref()
+                .kernel_read_substate_uncosted(
+                    bucket_id,
+                    MAIN_BASE_PARTITION,
+                    &NonFungibleBucketField::Liquid.into(),
+                )
+                .unwrap();
+            let liquid: FieldSubstate<LiquidNonFungibleResource> = substate.as_typed().unwrap();
+
+            Some(BucketSnapshot::NonFungible {
+                resource_address,
+                liquid: liquid.into_payload().ids().clone(),
+            })
+        }
+    }
+
+    fn read_proof_uncosted(&self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+        let is_fungible = if let Some(substate) = self.api_ref().kernel_read_substate_uncosted(
+            &proof_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        ) {
+            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            match type_info {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
+                    ..
+                }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                    && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                        || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                {
+                    blueprint_id.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
+                }
+                _ => {
+                    return None;
+                }
+            }
+        } else {
+            return None;
+        };
+
+        if is_fungible {
+            let substate = self
+                .api_ref()
+                .kernel_read_substate_uncosted(
+                    proof_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address =
+                ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
+
+            let substate = self
+                .api_ref()
+                .kernel_read_substate_uncosted(
+                    proof_id,
+                    MAIN_BASE_PARTITION,
+                    &FungibleProofField::ProofRefs.into(),
+                )
+                .unwrap();
+            let proof: FieldSubstate<FungibleProofSubstate> = substate.as_typed().unwrap();
+
+            Some(ProofSnapshot::Fungible {
+                resource_address,
+                total_locked: proof.into_payload().amount(),
+            })
+        } else {
+            let substate = self
+                .api_ref()
+                .kernel_read_substate_uncosted(
+                    proof_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .unwrap();
+            let info: TypeInfoSubstate = substate.as_typed().unwrap();
+            let resource_address =
+                ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
+
+            let substate = self
+                .api_ref()
+                .kernel_read_substate_uncosted(
+                    proof_id,
+                    MAIN_BASE_PARTITION,
+                    &NonFungibleProofField::ProofRefs.into(),
+                )
+                .unwrap();
+            let proof: FieldSubstate<NonFungibleProofSubstate> = substate.as_typed().unwrap();
+
+            Some(ProofSnapshot::NonFungible {
+                resource_address,
+                total_locked: proof.into_payload().non_fungible_local_ids().clone(),
+            })
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, ScryptoSbor)]
@@ -256,33 +415,33 @@ impl ResourceSummary {
         self.buckets.is_empty() && self.proofs.is_empty()
     }
 
-    pub fn from_message<Y: KernelApi<M>, M: KernelCallbackObject>(
-        api: &mut Y,
+    fn from_message(
+        api: &mut impl SystemModuleApiResourceSnapshotExtension,
         message: &CallFrameMessage,
     ) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
         for node_id in &message.move_nodes {
-            if let Some(x) = api.kernel_read_bucket(node_id) {
+            if let Some(x) = api.read_bucket_uncosted(node_id) {
                 buckets.insert(*node_id, x);
             }
-            if let Some(x) = api.kernel_read_proof(node_id) {
+            if let Some(x) = api.read_proof_uncosted(node_id) {
                 proofs.insert(*node_id, x);
             }
         }
         Self { buckets, proofs }
     }
 
-    pub fn from_node_id<Y: KernelInternalApi<M>, M: KernelCallbackObject>(
-        api: &mut Y,
+    fn from_node_id(
+        api: &mut impl SystemModuleApiResourceSnapshotExtension,
         node_id: &NodeId,
     ) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
-        if let Some(x) = api.kernel_read_bucket(node_id) {
+        if let Some(x) = api.read_bucket_uncosted(node_id) {
             buckets.insert(*node_id, x);
         }
-        if let Some(x) = api.kernel_read_proof(node_id) {
+        if let Some(x) = api.read_proof_uncosted(node_id) {
             proofs.insert(*node_id, x);
         }
         Self { buckets, proofs }
@@ -290,56 +449,46 @@ impl ResourceSummary {
 }
 
 impl InitSystemModule for ExecutionTraceModule {}
+impl ResolvableSystemModule for ExecutionTraceModule {
+    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
+        &mut system.modules.execution_trace
+    }
+}
+impl PrivilegedSystemModule for ExecutionTraceModule {}
 
-impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for ExecutionTraceModule {
-    fn on_create_node<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
-        event: &CreateNodeEvent,
-    ) -> Result<(), RuntimeError> {
+impl<ModuleApi: SystemModuleApiFor<Self> + SystemModuleApiResourceSnapshotExtension>
+    SystemModule<ModuleApi> for ExecutionTraceModule
+{
+    fn on_create_node(api: &mut ModuleApi, event: &CreateNodeEvent) -> Result<(), RuntimeError> {
         match event {
             CreateNodeEvent::Start(..) => {
-                api.kernel_get_system_state()
-                    .system
-                    .modules
-                    .execution_trace
-                    .handle_before_create_node();
+                api.module().handle_before_create_node();
             }
             CreateNodeEvent::IOAccess(..) => {}
             CreateNodeEvent::End(node_id) => {
-                let current_depth = api.kernel_get_current_depth();
+                let current_depth = api.current_stack_depth();
                 let resource_summary = ResourceSummary::from_node_id(api, node_id);
-                let system_state = api.kernel_get_system_state();
-                system_state
-                    .system
-                    .modules
-                    .execution_trace
-                    .handle_after_create_node(
-                        system_state.current_call_frame,
-                        current_depth,
-                        resource_summary,
-                    );
+                let system_state = api.system_state();
+                Self::resolve_from_system(system_state.system).handle_after_create_node(
+                    system_state.current_call_frame,
+                    current_depth,
+                    resource_summary,
+                );
             }
         }
 
         Ok(())
     }
 
-    fn on_drop_node<Y: KernelInternalApi<System<V, E>>>(
-        api: &mut Y,
-        event: &DropNodeEvent,
-    ) -> Result<(), RuntimeError> {
+    fn on_drop_node(api: &mut ModuleApi, event: &DropNodeEvent) -> Result<(), RuntimeError> {
         match event {
             DropNodeEvent::Start(node_id) => {
                 let resource_summary = ResourceSummary::from_node_id(api, node_id);
-                api.kernel_get_system_state()
-                    .system
-                    .modules
-                    .execution_trace
-                    .handle_before_drop_node(resource_summary);
+                api.module().handle_before_drop_node(resource_summary);
             }
             DropNodeEvent::End(..) => {
-                let current_depth = api.kernel_get_current_depth();
-                let system_state = api.kernel_get_system_state();
+                let current_depth = api.current_stack_depth();
+                let system_state = api.system_state();
                 system_state
                     .system
                     .modules
@@ -352,15 +501,15 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn before_invoke<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
+    fn before_invoke(
+        api: &mut ModuleApi,
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         let message = CallFrameMessage::from_input(&invocation.args, &invocation.call_frame_data);
         let resource_summary = ResourceSummary::from_message(api, &message);
         let callee = &invocation.call_frame_data;
         let args = &invocation.args;
-        let system_state = api.kernel_get_system_state();
+        let system_state = api.system_state();
         system_state
             .system
             .modules
@@ -374,14 +523,14 @@ impl<V: SystemCallbackObject, E> SystemModule<System<V, E>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn on_execution_finish<Y: KernelApi<System<V, E>>>(
-        api: &mut Y,
+    fn on_execution_finish(
+        api: &mut ModuleApi,
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
-        let current_depth = api.kernel_get_current_depth();
+        let current_depth = api.current_stack_depth();
         let resource_summary = ResourceSummary::from_message(api, message);
 
-        let system_state = api.kernel_get_system_state();
+        let system_state = api.system_state();
 
         let caller = TraceActor::from_actor(system_state.caller_call_frame);
 
