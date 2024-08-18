@@ -1064,19 +1064,18 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
                         "\n{} {}",
                         prefix!(i, outputs),
                         match output {
-                            InstructionOutput::CallReturn(x) =>
-                                IndexedScryptoValue::from_slice(&x)
-                                    .expect("Impossible case! Instruction output can't be decoded")
-                                    .to_string(ValueDisplayParameters::Schemaless {
-                                        display_mode: DisplayMode::RustLike,
-                                        print_mode: PrintMode::MultiLine {
-                                            indent_size: 2,
-                                            base_indent: 3,
-                                            first_line_indent: 0
-                                        },
-                                        custom_context: scrypto_value_display_context,
-                                        depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH
-                                    }),
+                            InstructionOutput::CallReturn(x) => IndexedScryptoValue::from_slice(&x)
+                                .expect("Impossible case! Instruction output can't be decoded")
+                                .to_string(ValueDisplayParameters::Schemaless {
+                                    display_mode: DisplayMode::RustLike,
+                                    print_mode: PrintMode::MultiLine {
+                                        indent_size: 2,
+                                        base_indent: 3,
+                                        first_line_indent: 0
+                                    },
+                                    custom_context: scrypto_value_display_context,
+                                    depth_limit: SCRYPTO_SBOR_V1_MAX_DEPTH
+                                }),
                             InstructionOutput::None => "None".to_string(),
                         }
                     )?;
