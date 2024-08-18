@@ -10,8 +10,7 @@ pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoTraverser<'a> = VecTraverser<'a, ScryptoCustomTraversal>;
 pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
 pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
-pub type RawScryptoValue<'a> = RawValue<'a, ScryptoCustomExtension>;
-pub type RawScryptoPayload<'a> = RawPayload<'a, ScryptoCustomExtension>;
+// ScryptoRawValue and friends are defined in custom_payload_wrappers.rs
 
 // The following trait "aliases" are to be used in parameters.
 //
