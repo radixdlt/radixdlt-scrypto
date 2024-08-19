@@ -10,6 +10,7 @@ pub use protocol_builder::*;
 pub use protocol_updates::*;
 
 // TODO AFTER MERGE WITH NODE: Replace with node's UpdateTransaction
+#[derive(Clone)]
 pub enum ProtocolUpdateTransactionDetails {
     FlashV1Transaction(FlashProtocolUpdateTransactionDetails),
 }
@@ -21,9 +22,18 @@ impl ProtocolUpdateTransactionDetails {
             state_updates,
         })
     }
+
+    pub fn name(&self) -> Option<&str> {
+        match self {
+            ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) => {
+                Some(flash.name.as_str())
+            }
+        }
+    }
 }
 
 // TODO AFTER MERGE WITH NODE: Merge replace with node's FlashTransactionV1
+#[derive(Clone)]
 pub struct FlashProtocolUpdateTransactionDetails {
     pub name: String,
     pub state_updates: StateUpdates,

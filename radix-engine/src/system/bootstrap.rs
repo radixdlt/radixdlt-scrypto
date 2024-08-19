@@ -194,6 +194,25 @@ impl From<FlashReceipt> for TransactionReceipt {
 }
 
 impl FlashReceipt {
+    pub fn from_state_updates(
+        state_updates: StateUpdates,
+        before_store: &impl SubstateDatabase,
+    ) -> Self {
+        let state_update_summary =
+            StateUpdateSummary::new_from_state_updates_on_db(before_store, &state_updates);
+        let substate_system_structures = {
+            let after_store = SystemDatabaseReader::new_with_overlay(before_store, &state_updates);
+            let mut substate_schema_mapper = SubstateSchemaMapper::new(after_store);
+            substate_schema_mapper.add_for_all_individually_updated(&state_updates);
+            substate_schema_mapper.done()
+        };
+        Self {
+            state_updates,
+            state_update_summary,
+            substate_system_structures,
+        }
+    }
+
     // Merge system_flash_receipt into system_bootstrap_receipt
     // This is currently a necessary hack in order to not change GenesisReceipt with
     // the addition of a new system_flash_receipt.

@@ -945,7 +945,7 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
         self
     }
 
-    pub fn schema_lookup_from_db(mut self, db: &'a impl SubstateDatabase) -> Self {
+    pub fn schema_lookup_from_db(mut self, db: &'a dyn SubstateDatabase) -> Self {
         self.0.system_database_reader = Some(SystemDatabaseReader::new(db));
         self
     }

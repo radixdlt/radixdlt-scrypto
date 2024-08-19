@@ -1,6 +1,7 @@
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
+use radix_engine::vm::NoExtension;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_impls::substate_database_overlay::*;
 use radix_substate_store_interface::db_key_mapper::*;
@@ -465,16 +466,32 @@ fn run_scenarios(
     ));
     let network_definition = NetworkDefinition::simulator();
 
+    struct ProtocolUpdateHooks<'a> {
+        ledger_with_overlay: Rc<RefCell<LedgerSimulator<NoExtension, SubstateDatabaseOverlay<&'a InMemorySubstateDatabase, InMemorySubstateDatabase>>>>,
+    }
+
+    impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
+        const IS_ENABLED: bool = true;
+        
+        fn on_transaction_executed(
+            &mut self,
+            _protocol_version: ProtocolVersion,
+            _batch_index: u32,
+            _transaction_num: usize,
+            _transaction: &ProtocolUpdateTransactionDetails,
+            receipt: &TransactionReceipt,
+            _resultant_store: &dyn SubstateDatabase,
+        ) {
+            // We copy the protocol updates onto the ledger_with_overlay
+            let database_updates = receipt.expect_commit_success().state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.ledger_with_overlay.borrow_mut().substate_db_mut().commit(&database_updates);
+        }
+    }
+
     DefaultTransactionScenarioExecutor::new(
         InMemorySubstateDatabase::standard(),
         &network_definition,
     )
-    .on_before_protocol_update_executed(|executor| {
-        // We copy the protocol updates onto the ledger_with_overlay
-        executor
-            .clone()
-            .run_and_commit(ledger_with_overlay.borrow_mut().substate_db_mut())
-    })
     .on_transaction_executed(|_, transaction, receipt, db| {
         // Execute the same transaction on the ledger simulator.
         let receipt_from_overlay = ledger_with_overlay
@@ -490,6 +507,13 @@ fn run_scenarios(
             ),
         );
     })
-    .execute_every_protocol_update_and_scenario()
+    .execute_protocol_updates_and_scenarios(
+        ProtocolBuilder::for_network(&network_definition).until_latest_protocol_version(),
+        ScenarioTrigger::AtStartOfEveryProtocolVersion,
+        ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
+        &mut ProtocolUpdateHooks {
+            ledger_with_overlay: ledger_with_overlay.clone(),
+        },
+    )
     .expect("Must succeed!");
 }
