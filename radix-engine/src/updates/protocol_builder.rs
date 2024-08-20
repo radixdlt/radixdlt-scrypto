@@ -288,11 +288,7 @@ impl ProtocolBuilder {
     }
 
     pub fn post_bootstrap_until(self, protocol_version: ProtocolVersion) -> ProtocolExecutor {
-        ProtocolExecutor::new(
-            Some(ProtocolVersion::EARLIEST),
-            protocol_version,
-            self.settings,
-        )
+        self.from_until(ProtocolVersion::EARLIEST, protocol_version)
     }
 
     pub fn from_until(
