@@ -5,7 +5,6 @@ use core::ops::*;
 use self::internal_prelude::*;
 use super::*;
 use radix_engine::blueprints::consensus_manager::*;
-use radix_engine::system::bootstrap::*;
 use radix_engine::system::system_db_reader::*;
 use radix_engine::updates::*;
 use radix_engine::vm::wasm::*;
@@ -63,7 +62,6 @@ where
     /// A callback that is called when a new scenario is started.
     on_scenario_started: Box<dyn FnMut(&ScenarioMetadata) + 'a>,
     on_scenario_ended: Box<dyn FnMut(&ScenarioMetadata, &EndState, &D) + 'a>,
-    on_before_protocol_update_executed: Box<dyn FnMut(&ProtocolUpdateExecutor) + 'a>,
 
     /* Phantom */
     /// The lifetime of the callbacks used in the executor.
@@ -100,7 +98,6 @@ where
             on_transaction_executed: Box::new(|_, _, _, _| {}),
             on_scenario_started: Box::new(|_| {}),
             on_scenario_ended: Box::new(|_, _, _| {}),
-            on_before_protocol_update_executed: Box::new(|_| {}),
             /* Phantom */
             callback_lifetime: Default::default(),
         }
@@ -125,7 +122,6 @@ where
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_started: self.on_scenario_started,
             on_scenario_ended: self.on_scenario_ended,
-            on_before_protocol_update_executed: self.on_before_protocol_update_executed,
             /* Phantom */
             callback_lifetime: self.callback_lifetime,
         }
@@ -150,7 +146,6 @@ where
             on_transaction_executed: self.on_transaction_executed,
             on_scenario_started: self.on_scenario_started,
             on_scenario_ended: self.on_scenario_ended,
-            on_before_protocol_update_executed: self.on_before_protocol_update_executed,
             /* Phantom */
             callback_lifetime: self.callback_lifetime,
         }
@@ -200,15 +195,6 @@ where
         self
     }
 
-    /// A callback that is called before a protocol update is executed.
-    pub fn on_before_protocol_update_executed<F: FnMut(&ProtocolUpdateExecutor) + 'a>(
-        mut self,
-        callback: F,
-    ) -> Self {
-        self.on_before_protocol_update_executed = Box::new(callback);
-        self
-    }
-
     pub fn into_database(self) -> D {
         self.database
     }
@@ -218,9 +204,11 @@ where
         &mut self,
     ) -> Result<(), ScenarioExecutorError> {
         self.execute_protocol_updates_and_scenarios(
-            ProtocolBuilder::for_network(self.network_definition).until_latest_protocol_version(),
+            ProtocolBuilder::for_network(self.network_definition)
+                .bootstrap_then_until(ProtocolVersion::LATEST),
             ScenarioTrigger::AtStartOfEveryProtocolVersion,
             ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
+            &mut (),
         )
     }
 
@@ -229,42 +217,22 @@ where
         protocol_executor: ProtocolExecutor,
         trigger: ScenarioTrigger,
         filter: ScenarioFilter,
+        protocol_update_hooks: &mut impl ProtocolUpdateExecutionHooks,
     ) -> Result<(), ScenarioExecutorError> {
-        // TODO: Remove me once genesis/babylon is a protocol update.
-        //
-        // Bootstrapping fails if the database has already been bootstrapped, if the error from that
-        // is bubbled up then execution of scenarios on an already bootstrapped database would fail.
-        // Therefore, we attempt to bootstrap and ignore whatever the outcome of the bootstrap is.
-        drop(
-            Bootstrapper::new(
-                self.network_definition.clone(),
-                &mut self.database,
-                VmInit::new(&self.scrypto_vm, self.native_vm_extension.clone()),
-                false,
-            )
-            .bootstrap_test_default(),
-        );
-
-        let mut current_protocol_version = ProtocolVersion::Babylon;
+        let last_version = protocol_executor.each_target_protocol_version().last();
 
         for protocol_update_executor in protocol_executor.each_protocol_update_executor() {
+            let new_protocol_version = protocol_update_executor.protocol_version;
+            protocol_update_executor
+                .run_and_commit_with_hooks(&mut self.database, protocol_update_hooks);
+
             self.execute_scenarios_at_new_protocol_version(
-                current_protocol_version,
+                new_protocol_version,
                 &trigger,
                 &filter,
-                false,
+                Some(new_protocol_version) == last_version,
             )?;
-            current_protocol_version = protocol_update_executor.protocol_update.into();
-            (self.on_before_protocol_update_executed)(&protocol_update_executor);
-            protocol_update_executor.run_and_commit(&mut self.database);
         }
-
-        self.execute_scenarios_at_new_protocol_version(
-            current_protocol_version,
-            &trigger,
-            &filter,
-            true,
-        )?;
 
         Ok(())
     }

@@ -15,7 +15,7 @@ use radix_engine::transaction::{
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::updates::*;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
+use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
@@ -192,7 +192,6 @@ impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabas
 pub type DefaultLedgerSimulator = LedgerSimulator<NoExtension, InMemorySubstateDatabase>;
 
 pub struct LedgerSimulatorBuilder<E, D> {
-    custom_genesis: Option<CustomGenesis>,
     custom_extension: E,
     custom_database: D,
     protocol_executor: ProtocolExecutor,
@@ -205,11 +204,10 @@ pub struct LedgerSimulatorBuilder<E, D> {
 impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
     pub fn new() -> Self {
         LedgerSimulatorBuilder {
-            custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
             protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
-                .until_latest_protocol_version(),
+                .post_bootstrap_until(ProtocolVersion::LATEST),
             with_kernel_trace: true,
             with_receipt_substate_check: true,
         }
@@ -223,18 +221,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
     pub fn with_state_hashing(self) -> LedgerSimulatorBuilder<E, StateTreeUpdatingDatabase<D>> {
         LedgerSimulatorBuilder {
-            custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: StateTreeUpdatingDatabase::new(self.custom_database),
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
-    }
-
-    pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
-        self.custom_genesis = Some(genesis);
-        self
     }
 
     pub fn with_kernel_trace(mut self) -> Self {
@@ -262,7 +254,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         extension: NE,
     ) -> LedgerSimulatorBuilder<NE, D> {
         LedgerSimulatorBuilder::<NE, D> {
-            custom_genesis: self.custom_genesis,
             custom_extension: extension,
             custom_database: self.custom_database,
             protocol_executor: self.protocol_executor,
@@ -276,13 +267,29 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         database: ND,
     ) -> LedgerSimulatorBuilder<E, ND> {
         LedgerSimulatorBuilder::<E, ND> {
-            custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: database,
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
+    }
+
+    /// Note - this overwrites any other protocol overrides.
+    /// Use with_custom_protocol for full control
+    pub fn with_custom_genesis(self, genesis: CustomGenesis) -> Self {
+        self.with_custom_protocol(|builder| {
+            builder
+                .with_babylon(BabylonSettings {
+                    genesis_data_chunks: genesis.genesis_data_chunks,
+                    genesis_epoch: genesis.genesis_epoch,
+                    consensus_manager_config: genesis.initial_config,
+                    initial_time_ms: genesis.initial_time_ms,
+                    initial_current_leader: genesis.initial_current_leader,
+                    faucet_supply: genesis.faucet_supply,
+                })
+                .bootstrap_then_until(ProtocolVersion::LATEST)
+        })
     }
 
     pub fn with_custom_protocol(
@@ -294,8 +301,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         self
     }
 
+    /// Note - this overwrites any other protocol overrides.
+    /// Use with_custom_protocol for full control.
     pub fn with_protocol_version(self, protocol_version: ProtocolVersion) -> Self {
-        self.with_custom_protocol(|builder| builder.until(protocol_version))
+        self.with_custom_protocol(|builder| builder.bootstrap_then_until(protocol_version))
     }
 
     pub fn build_from_snapshot(
@@ -324,58 +333,59 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         #[cfg(feature = "resource_tracker")]
         let with_kernel_trace = false;
         //----------------------------------------------------------------
-
-        let scrypto_vm = ScryptoVm {
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_validator_config: WasmValidatorConfigV1::new(),
-        };
-        let vm_init = VmInit::new(&scrypto_vm, self.custom_extension.clone());
-        let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(
-            NetworkDefinition::simulator(),
-            &mut substate_db,
-            vm_init,
-            bootstrap_trace,
-        );
-        let GenesisReceipts {
-            system_bootstrap_receipt,
-            data_ingestion_receipts,
-            wrap_up_receipt,
-        } = match self.custom_genesis {
-            Some(custom_genesis) => bootstrapper
-                .bootstrap_with_genesis_data(
-                    custom_genesis.genesis_data_chunks,
-                    custom_genesis.genesis_epoch,
-                    custom_genesis.initial_config,
-                    custom_genesis.initial_time_ms,
-                    custom_genesis.initial_current_leader,
-                    custom_genesis.faucet_supply,
-                )
-                .unwrap(),
-            None => bootstrapper.bootstrap_test_default().unwrap(),
-        };
-
-        let mut events = Vec::new();
-
-        events.push(
-            system_bootstrap_receipt
-                .expect_commit_success()
-                .application_events
-                .clone(),
-        );
-        for receipt in data_ingestion_receipts {
-            events.push(receipt.expect_commit_success().application_events.clone());
+        struct ProtocolUpdateHooks<E2: NativeVmExtension> {
+            vm_extension: E2,
+            bootstrap_trace: bool,
+            events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+            next_epoch: Option<EpochChangeEvent>,
         }
-        events.push(
-            wrap_up_receipt
-                .expect_commit_success()
-                .application_events
-                .clone(),
-        );
+
+        impl<E2: NativeVmExtension> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<E2> {
+            const IS_ENABLED: bool = true;
+
+            type WasmEngine = DefaultWasmEngine;
+
+            type NativeVmExtension = E2;
+
+            fn get_vm_extension(&mut self) -> Self::NativeVmExtension {
+                self.vm_extension.clone()
+            }
+
+            fn adapt_execution_config(&mut self, config: ExecutionConfig) -> ExecutionConfig {
+                config.with_kernel_trace(self.bootstrap_trace)
+            }
+
+            fn on_transaction_executed(
+                &mut self,
+                _protocol_version: ProtocolVersion,
+                _batch_group_index: usize,
+                _batch_group_name: &str,
+                _batch_index: usize,
+                _transaction_index: usize,
+                _transaction: &ProtocolUpdateTransactionDetails,
+                receipt: &TransactionReceipt,
+                _resultant_store: &dyn SubstateDatabase,
+            ) {
+                self.events
+                    .push(receipt.expect_commit_success().application_events.clone());
+                if let Some(next_epoch) = receipt.expect_commit_success().next_epoch() {
+                    self.next_epoch = Some(next_epoch);
+                }
+            }
+        }
+
+        let mut substate_db = self.custom_database;
+
+        let mut hooks = ProtocolUpdateHooks {
+            vm_extension: self.custom_extension.clone(),
+            bootstrap_trace,
+            events: vec![],
+            next_epoch: None,
+        };
 
         // Protocol Updates
         self.protocol_executor
-            .commit_each_protocol_update(&mut substate_db);
+            .commit_each_protocol_update_with_hooks(&mut substate_db, &mut hooks);
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -384,22 +394,24 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         let next_transaction_nonce = 100;
 
         let runner = LedgerSimulator {
-            scrypto_vm,
+            scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
             native_vm_extension: self.custom_extension.clone(),
             database: substate_db,
             next_private_key,
             next_transaction_nonce,
-            collected_events: events,
+            collected_events: hooks.events,
             xrd_free_credits_used: false,
             with_kernel_trace: with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         };
 
-        let next_epoch = wrap_up_receipt
-            .expect_commit_success()
-            .next_epoch()
-            .unwrap();
-        (runner, next_epoch.validator_set)
+        (
+            runner,
+            hooks
+                .next_epoch
+                .expect("Expected an epoch change event from the protocol update")
+                .validator_set,
+        )
     }
 
     pub fn build(self) -> LedgerSimulator<E, D> {

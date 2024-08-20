@@ -569,6 +569,12 @@ impl TransactionReceipt {
         }
     }
 
+    pub fn empty_commit_success() -> Self {
+        Self::empty_with_commit(CommitResult::empty_with_outcome(
+            TransactionOutcome::Success(vec![]),
+        ))
+    }
+
     pub fn is_commit_success(&self) -> bool {
         matches!(
             self.result,

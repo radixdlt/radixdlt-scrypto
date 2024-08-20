@@ -586,7 +586,7 @@ fn after_protocol_update_calling_any_method_on_an_access_controller_with_v1_stat
         }
 
         ProtocolBuilder::for_simulator()
-            .until(ProtocolVersion::Bottlenose)
+            .from_until(ProtocolVersion::Babylon, ProtocolVersion::Bottlenose)
             .commit_each_protocol_update(ledger.substate_db_mut());
 
         // Act

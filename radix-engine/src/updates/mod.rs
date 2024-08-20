@@ -1,18 +1,26 @@
 use crate::internal_prelude::*;
 mod anemone;
+mod babylon;
 mod bottlenose;
 mod protocol_builder;
 mod protocol_updates;
 
 pub use anemone::*;
+pub use babylon::*;
 pub use bottlenose::*;
 pub use protocol_builder::*;
 pub use protocol_updates::*;
+use radix_transactions::model::SystemTransactionV1;
 
 // TODO AFTER MERGE WITH NODE: Replace with node's UpdateTransaction
 #[derive(Clone)]
 pub enum ProtocolUpdateTransactionDetails {
     FlashV1Transaction(FlashProtocolUpdateTransactionDetails),
+    SystemTransactionV1 {
+        name: String,
+        is_genesis: bool,
+        transaction: SystemTransactionV1,
+    },
 }
 
 impl ProtocolUpdateTransactionDetails {
@@ -23,10 +31,21 @@ impl ProtocolUpdateTransactionDetails {
         })
     }
 
+    pub fn genesis_transaction(name: &str, transaction: SystemTransactionV1) -> Self {
+        Self::SystemTransactionV1 {
+            name: name.to_string(),
+            is_genesis: true,
+            transaction,
+        }
+    }
+
     pub fn name(&self) -> Option<&str> {
         match self {
             ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) => {
                 Some(flash.name.as_str())
+            }
+            ProtocolUpdateTransactionDetails::SystemTransactionV1 { name, .. } => {
+                Some(name.as_str())
             }
         }
     }
@@ -45,8 +64,18 @@ pub struct ProtocolUpdateBatch {
     pub transactions: Vec<ProtocolUpdateTransactionDetails>,
 }
 
+impl ProtocolUpdateBatch {
+    pub fn single(single_transaction: ProtocolUpdateTransactionDetails) -> Self {
+        Self {
+            transactions: vec![single_transaction],
+        }
+    }
+}
+
 pub trait UpdateSettings: Sized {
     type BatchGenerator: ProtocolUpdateBatchGenerator;
+
+    fn protocol_version() -> ProtocolVersion;
 
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self;
 
@@ -133,12 +162,28 @@ pub trait ProtocolUpdateBatchGenerator: ProtocolUpdateBatchGeneratorDynClone {
     ///
     /// TODO(potential API improvement): This is the interface currently needed by the Node, to
     /// allow the update to be resumed; it is not great, and we could improve this in future.
-    fn generate_batch(&self, store: &dyn SubstateDatabase, batch_index: u32)
-        -> ProtocolUpdateBatch;
+    fn generate_batch(
+        &self,
+        store: &dyn SubstateDatabase,
+        batch_group_index: usize,
+        batch_index: usize,
+    ) -> ProtocolUpdateBatch;
+
+    /// Returns the number of contained batch groups.
+    /// Each batch group is a logical grouping of batches.
+    /// For example, at genesis, there are three batch groups:
+    /// * Bootstrap (Flash + Bootstrap Txn)
+    /// * Chunk Execution
+    /// * Wrap up
+    ///
+    /// The [`Self::generate_batch()`] expects the `batch_group_index`
+    /// to be in the range `[0, self.batch_group_descriptors().len() - 1]`.
+    fn batch_group_descriptors(&self) -> Vec<String>;
 
     /// Returns the number of contained batches.
-    /// The [`Self::generate_batch()`] expects indices in range `[0, self.batch_count() - 1]`.
-    fn batch_count(&self) -> u32;
+    /// For a fixed batch group, [`Self::generate_batch()`] expects `batch_index`
+    /// to be in the range `[0, self.batch_count() - 1]`.
+    fn batch_count(&self, batch_group_index: usize) -> usize;
 }
 
 pub trait ProtocolUpdateBatchGeneratorDynClone {

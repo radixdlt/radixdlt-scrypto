@@ -42,16 +42,8 @@ impl SimulatorEnvironment {
     }
 
     fn bootstrap(&mut self) {
-        let vm = VmInit::new(&self.scrypto_vm, NoExtension);
-
-        // Bootstrap
-        Bootstrapper::new(self.network_definition.clone(), &mut self.db, vm, false)
-            .bootstrap_test_default();
-
-        // Run the protocol updates - for now, unlike the test runner, the user has no way in whether they
-        // get these protocol updates or not.
         ProtocolBuilder::for_network(&self.network_definition)
-            .until_latest_protocol_version()
+            .bootstrap_then_until(ProtocolVersion::LATEST)
             .commit_each_protocol_update(&mut self.db);
     }
 }

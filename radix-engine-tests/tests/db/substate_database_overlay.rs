@@ -10,6 +10,7 @@ use radix_transaction_scenarios::executor::*;
 use radix_transactions::builder::*;
 use scrypto::prelude::*;
 use scrypto_test::ledger_simulator::*;
+use scrypto_test::prelude::DefaultWasmEngine;
 
 #[test]
 fn substates_written_to_root_database_can_be_read() {
@@ -472,11 +473,19 @@ fn run_scenarios(
 
     impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
         const IS_ENABLED: bool = true;
+        type WasmEngine = DefaultWasmEngine;
+        type NativeVmExtension = NoExtension;
+        
+        fn get_vm_extension(&mut self) -> NoExtension {
+            NoExtension
+        }
         
         fn on_transaction_executed(
             &mut self,
             _protocol_version: ProtocolVersion,
-            _batch_index: u32,
+            _batch_group_index: usize,
+            _batch_group_name: &str,
+            _batch_index: usize,
             _transaction_num: usize,
             _transaction: &ProtocolUpdateTransactionDetails,
             receipt: &TransactionReceipt,
@@ -508,7 +517,7 @@ fn run_scenarios(
         );
     })
     .execute_protocol_updates_and_scenarios(
-        ProtocolBuilder::for_network(&network_definition).until_latest_protocol_version(),
+        ProtocolBuilder::for_network(&network_definition).bootstrap_then_until(ProtocolVersion::LATEST),
         ScenarioTrigger::AtStartOfEveryProtocolVersion,
         ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
         &mut ProtocolUpdateHooks {

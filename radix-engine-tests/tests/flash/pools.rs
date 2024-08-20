@@ -66,20 +66,11 @@ fn database_is_consistent_before_and_after_protocol_update() {
 
     // Act
     {
-        let anemone_protocol_update_batch_generator = AnemoneSettings::all_disabled()
-            .enable(|item| &mut item.pools_update)
-            .create_batch_generator();
-        for batch_index in 0..anemone_protocol_update_batch_generator.batch_count() {
-            let batch = anemone_protocol_update_batch_generator
-                .generate_batch(ledger.substate_db(), batch_index);
-            for ProtocolUpdateTransactionDetails::FlashV1Transaction(
-                FlashProtocolUpdateTransactionDetails { state_updates, .. },
-            ) in batch.transactions {
-                ledger
-                    .substate_db_mut()
-                    .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
-            }
-        }
+        ProtocolUpdateExecutor::new(
+            NetworkDefinition::simulator(),
+            AnemoneSettings::all_disabled()
+                .enable(|item| &mut item.pools_update),
+        ).run_and_commit(ledger.substate_db_mut());
     }
 
     // Assert
@@ -204,20 +195,11 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
 
     // Act
     {
-        let anemone_protocol_update_batch_generator = AnemoneSettings::all_disabled()
-            .enable(|item| &mut item.pools_update)
-            .create_batch_generator();
-        for batch_index in 0..anemone_protocol_update_batch_generator.batch_count() {
-            let batch = anemone_protocol_update_batch_generator
-                .generate_batch(ledger.substate_db(), batch_index);
-            for ProtocolUpdateTransactionDetails::FlashV1Transaction(
-                FlashProtocolUpdateTransactionDetails { state_updates, .. },
-            ) in batch.transactions {
-                ledger
-                    .substate_db_mut()
-                    .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
-            }
-        }
+        ProtocolUpdateExecutor::new(
+            NetworkDefinition::simulator(),
+            AnemoneSettings::all_disabled()
+                .enable(|item| &mut item.pools_update),
+        ).run_and_commit(ledger.substate_db_mut());
     }
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
@@ -368,20 +350,11 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
 
     // Act
     {
-        let anemone_protocol_update_batch_generator = AnemoneSettings::all_disabled()
-            .enable(|item| &mut item.pools_update)
-            .create_batch_generator();
-        for batch_index in 0..anemone_protocol_update_batch_generator.batch_count() {
-            let batch = anemone_protocol_update_batch_generator
-                .generate_batch(ledger.substate_db(), batch_index);
-            for ProtocolUpdateTransactionDetails::FlashV1Transaction(
-                FlashProtocolUpdateTransactionDetails { state_updates, .. },
-            ) in batch.transactions {
-                ledger
-                    .substate_db_mut()
-                    .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
-            }
-        }
+        ProtocolUpdateExecutor::new(
+            NetworkDefinition::simulator(),
+            AnemoneSettings::all_disabled()
+                .enable(|item| &mut item.pools_update),
+        ).run_and_commit(ledger.substate_db_mut());
     }
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()

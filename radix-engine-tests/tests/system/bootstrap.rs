@@ -663,7 +663,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     let mut total_burn_amount = Decimal::ZERO;
     for tx_events in ledger.collected_events() {
         for event in tx_events {
-            match &event.0 .0 {
+            match &event.0.0 {
                 Emitter::Method(x, _) if x.eq(XRD.as_node_id()) => {}
                 _ => {
                     continue;

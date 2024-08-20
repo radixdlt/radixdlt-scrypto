@@ -29,20 +29,11 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
         .build();
 
     if flash_substates {
-        let anemone_protocol_update_batch_generator = AnemoneSettings::all_disabled()
-            .enable(|item| &mut item.vm_boot_to_enable_bls128_and_keccak256)
-            .create_batch_generator();
-        for batch_index in 0..anemone_protocol_update_batch_generator.batch_count() {
-            let batch = anemone_protocol_update_batch_generator
-                .generate_batch(ledger.substate_db(), batch_index);
-            for ProtocolUpdateTransactionDetails::FlashV1Transaction(
-                FlashProtocolUpdateTransactionDetails { state_updates, .. },
-            ) in batch.transactions {
-                ledger
-                    .substate_db_mut()
-                    .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
-            }
-        }
+        ProtocolUpdateExecutor::new(
+            NetworkDefinition::simulator(),
+            AnemoneSettings::all_disabled()
+                .enable(|item| &mut item.vm_boot_to_enable_bls128_and_keccak256),
+        ).run_and_commit(ledger.substate_db_mut());
     }
 
     // Act
@@ -81,7 +72,7 @@ fn run_flash_test_test_environment(enable_bls: bool, expect_success: bool) {
                 .with_anemone(AnemoneSettings::all_disabled().set(|s| {
                     s.vm_boot_to_enable_bls128_and_keccak256 = UpdateSetting::new(enable_bls)
                 }))
-                .until(ProtocolVersion::Anemone)
+                .bootstrap_then_until(ProtocolVersion::Anemone)
         })
         .build();
 

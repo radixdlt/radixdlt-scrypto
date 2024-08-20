@@ -6,12 +6,15 @@ mod test {
     use crate::scenarios::ALL_SCENARIOS;
     use fmt::Write;
     use itertools::Itertools;
+    use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::utils::CostingTaskMode;
     use radix_engine::{updates::*, utils::*, vm::*};
     use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
+    use radix_substate_store_interface::interface::SubstateDatabase;
     use radix_transactions::manifest::decompiler::decompile_with_known_naming;
     use radix_transactions::manifest::*;
     use std::{ffi::OsString, fs, path::*};
+    use wasm::DefaultWasmEngine;
 
     #[derive(Copy, Clone)]
     pub enum DumperMode {
@@ -137,7 +140,161 @@ mod test {
         }
     }
 
-    pub fn run_all(mode: DumperMode) {
+    pub fn run_all_protocol_updates(mode: DumperMode) {
+        let network_definition = NetworkDefinition::simulator();
+        let address_encoder = AddressBech32Encoder::new(&network_definition);
+        let root_path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-protocol-updates");
+
+        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let vm_init = VmInit::new(&scrypto_vm, NoExtension);
+        let mut db = InMemorySubstateDatabase::standard();
+
+        struct ProtocolUpdateHooks<'a> {
+            network_definition: &'a NetworkDefinition,
+            address_encoder: &'a AddressBech32Encoder,
+            manifests_folder: FolderAligner,
+            receipts_folder: FolderAligner,
+            event_hasher: HashAccumulator,
+            state_change_hasher: HashAccumulator,
+        }
+
+        impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
+            const IS_ENABLED: bool = true;
+            type WasmEngine = DefaultWasmEngine;
+            type NativeVmExtension = NoExtension;
+
+            fn get_vm_extension(&mut self) -> NoExtension {
+                NoExtension
+            }
+
+            fn adapt_execution_config(&mut self, mut config: ExecutionConfig) -> ExecutionConfig {
+                config.enable_cost_breakdown = true;
+                config
+            }
+
+            fn on_transaction_executed(
+                &mut self,
+                _protocol_version: ProtocolVersion,
+                batch_group_index: usize,
+                _batch_group_name: &str,
+                batch_index: usize,
+                transaction_num: usize,
+                transaction: &ProtocolUpdateTransactionDetails,
+                receipt: &TransactionReceipt,
+                resultant_store: &dyn SubstateDatabase,
+            ) {
+                let transaction_file_prefix = if let Some(name) = transaction.name() {
+                    format!("{batch_group_index:02}-{batch_index:02}-{transaction_num:02}--{name}")
+                } else {
+                    format!("{batch_group_index:02}-{batch_index:02}-{transaction_num:02}")
+                };
+
+                match &receipt.result {
+                    TransactionResult::Commit(c) => {
+                        self.event_hasher
+                            .update_no_chain(scrypto_encode(&c.application_events).unwrap());
+                        self.state_change_hasher
+                            .update_no_chain(scrypto_encode(&c.state_updates).unwrap())
+                    }
+                    TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
+                }
+
+                match transaction {
+                    ProtocolUpdateTransactionDetails::FlashV1Transaction(_) => {}
+                    ProtocolUpdateTransactionDetails::SystemTransactionV1 {
+                        transaction, ..
+                    } => {
+                        // Write manifest
+                        let manifest_string =
+                            decompile(&transaction.instructions.0, &self.network_definition)
+                                .unwrap();
+                        self.manifests_folder
+                            .put_file(format!("{transaction_file_prefix}.rtm"), &manifest_string);
+                    }
+                }
+
+                let receipt_display_context = TransactionReceiptDisplayContextBuilder::new()
+                    .encoder(&self.address_encoder)
+                    .schema_lookup_from_db(resultant_store)
+                    .display_state_updates(true)
+                    .use_ansi_colors(false)
+                    .set_max_substate_length_to_display(10 * 1024)
+                    .build();
+                self.receipts_folder.put_file(
+                    format!("{transaction_file_prefix}.txt"),
+                    receipt.to_string(receipt_display_context),
+                );
+            }
+        }
+
+        let protocol_executor = ProtocolBuilder::for_network(&network_definition)
+            .with_babylon(BabylonSettings::test_complex())
+            .bootstrap_then_until(ProtocolVersion::LATEST);
+        for protocol_update_exector in protocol_executor.each_protocol_update_executor() {
+            let protocol_version = protocol_update_exector.protocol_version;
+            let mut version_folder =
+                FolderAligner::new(root_path.join(protocol_version.logical_name()), mode);
+            let mut hooks = ProtocolUpdateHooks {
+                network_definition: &network_definition,
+                address_encoder: &address_encoder,
+                manifests_folder: version_folder.register_child_folder("manifests"),
+                receipts_folder: version_folder.register_child_folder("receipts"),
+                event_hasher: HashAccumulator::new(),
+                state_change_hasher: HashAccumulator::new(),
+            };
+
+            protocol_update_exector.run_and_commit_with_hooks(&mut db, &mut hooks);
+
+            let mut summary = String::new();
+            let protocol_version_display_name = protocol_version.display_name();
+            writeln!(&mut summary, "Name: {protocol_version_display_name}").unwrap();
+            writeln!(&mut summary).unwrap();
+
+            let state_change_digest =
+                hooks.state_change_hasher.finalize().to_string()[0..16].to_string();
+            let event_digest = hooks.event_hasher.finalize().to_string()[0..16].to_string();
+
+            writeln!(&mut summary, "== SUMMARY HASHES ==").unwrap();
+
+            if protocol_version == ProtocolVersion::LATEST {
+                writeln!(&mut summary, "These {protocol_version_display_name} hashes are permitted to change only until the protocol update is deployed to a permanent network, else it can cause divergence.").unwrap();
+                writeln!(&mut summary, "State changes: {state_change_digest} (allowed to change if not deployed to any network)").unwrap();
+                writeln!(&mut summary, "Events       : {event_digest} (allowed to change if not deployed to any network)").unwrap();
+            } else {
+                writeln!(&mut summary, "These {protocol_version_display_name} hashes should NEVER change, else they will cause divergence when run historically.").unwrap();
+                writeln!(
+                    &mut summary,
+                    "State changes: {state_change_digest} (should never change)"
+                )
+                .unwrap();
+                writeln!(
+                    &mut summary,
+                    "Events       : {event_digest} (should never change)"
+                )
+                .unwrap();
+            };
+
+            writeln!(&mut summary).unwrap();
+
+            version_folder.put_file("protocol_update_summary.txt", summary);
+
+            version_folder.verify_complete_recursive();
+        }
+    }
+
+    #[test]
+    #[ignore = "Run this test to update the generated protocol update receipts"]
+    pub fn update_all_generated_protocol_update_receipts() {
+        run_all_protocol_updates(DumperMode::Write)
+    }
+
+    #[test]
+    pub fn validate_all_generated_protocol_update_receipts() {
+        run_all_protocol_updates(DumperMode::Assert)
+    }
+
+    pub fn run_all_scenarios(mode: DumperMode) {
         let network_definition = NetworkDefinition::simulator();
         let address_encoder = AddressBech32Encoder::new(&network_definition);
         let execution_config = {
@@ -152,8 +309,6 @@ mod test {
                 .into_iter()
                 .filter(|p| *p >= min_requirement);
             for protocol_version in valid_versions {
-                let protocol_version_display_name = protocol_version.display_name();
-
                 let mut db = InMemorySubstateDatabase::standard();
                 let mut event_hasher = RefCell::new(Some(HashAccumulator::new()));
                 let mut state_change_hasher = RefCell::new(Some(HashAccumulator::new()));
@@ -252,6 +407,8 @@ mod test {
                             .borrow_mut().take().unwrap().finalize().to_string()[0..16].to_string();
 
                         writeln!(&mut summary, "== SUMMARY HASHES ==").unwrap();
+
+                        let protocol_version_display_name = protocol_version.display_name();
                         if protocol_version == ProtocolVersion::LATEST {
                             writeln!(&mut summary, "These {protocol_version_display_name} hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.").unwrap();
                             writeln!(&mut summary, "State changes: {state_change_digest} (allowed to change if not deployed to any network)").unwrap();
@@ -279,11 +436,13 @@ mod test {
                 // Now execute just the single scenario, after executing protocol updates up to
                 // the given protocol version
                 executor.execute_protocol_updates_and_scenarios(
-                    ProtocolBuilder::for_network(&network_definition).until(protocol_version),
+                    ProtocolBuilder::for_network(&network_definition)
+                        .bootstrap_then_until(protocol_version),
                     ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
                     ScenarioFilter::SpecificScenariosByName(btreeset!(
                         scenario_logical_name.to_string()
                     )),
+                    &mut (),
                 );
 
                 scenario_folder.verify_complete_recursive();
@@ -294,12 +453,12 @@ mod test {
     #[test]
     #[ignore = "Run this test to update the generated scenarios"]
     pub fn update_all_generated_scenarios() {
-        run_all(DumperMode::Write)
+        run_all_scenarios(DumperMode::Write)
     }
 
     #[test]
     pub fn validate_all_generated_scenarios() {
-        run_all(DumperMode::Assert)
+        run_all_scenarios(DumperMode::Assert)
     }
 
     #[test]

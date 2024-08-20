@@ -25,6 +25,10 @@ pub struct AnemoneSettings {
 impl UpdateSettings for AnemoneSettings {
     type BatchGenerator = AnemoneBatchGenerator;
 
+    fn protocol_version() -> ProtocolVersion {
+        ProtocolVersion::Anemone
+    }
+
     fn all_enabled_as_default_for_network(network: &NetworkDefinition) -> Self {
         Self {
             validator_fee_fix: UpdateSetting::enabled_as_default_for_network(network),
@@ -61,17 +65,29 @@ impl ProtocolUpdateBatchGenerator for AnemoneBatchGenerator {
     fn generate_batch(
         &self,
         store: &dyn SubstateDatabase,
-        batch_index: u32,
+        batch_group_index: usize,
+        batch_index: usize,
     ) -> ProtocolUpdateBatch {
-        if batch_index != 0 {
-            panic!("batch index out of range")
+        match (batch_group_index, batch_index) {
+            (0, 0) => {
+                // Just a single batch for Anemone, perhaps in future updates we should have separate batches for each update?
+                generate_principal_batch(store, &self.settings)
+            }
+            _ => {
+                panic!("batch index out of range")
+            }
         }
-        // Just a single batch for Anemone, perhaps in future updates we should have separate batches for each update?
-        generate_principal_batch(store, &self.settings)
     }
 
-    fn batch_count(&self) -> u32 {
-        1
+    fn batch_count(&self, batch_group_index: usize) -> usize {
+        match batch_group_index {
+            0 => 1,
+            _ => panic!("Invalid batch_group_index: {batch_group_index}"),
+        }
+    }
+
+    fn batch_group_descriptors(&self) -> Vec<String> {
+        vec!["Principal".to_string()]
     }
 }
 

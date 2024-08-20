@@ -1,0 +1,20 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6")
+    "ingest_data_chunk"
+    Enum<2u8>(
+        Array<Tuple>(
+            Tuple(
+                AddressReservation(0u32),
+                Array<Tuple>(
+                    Tuple(
+                        "symbol",
+                        Enum<0u8>(
+                            "TST"
+                        )
+                    )
+                ),
+                Enum<0u8>()
+            )
+        )
+    )
+;

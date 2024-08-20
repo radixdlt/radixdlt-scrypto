@@ -19,10 +19,7 @@ use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::type_info::TypeInfoSubstate;
-use crate::transaction::{
-    execute_transaction, CommitResult, ExecutionConfig, StateUpdateSummary, SubstateSchemaMapper,
-    SubstateSystemStructures, TransactionOutcome, TransactionReceipt, TransactionResult,
-};
+use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
 use crate::vm::{NativeVmExtension, VmBoot, VmInit};
 use lazy_static::lazy_static;
@@ -30,8 +27,8 @@ use radix_common::crypto::Secp256k1PublicKey;
 use radix_common::math::traits::*;
 use radix_common::types::ComponentAddress;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
-    CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
+    ConsensusManagerConfig, ConsensusManagerCreateManifestInput, CONSENSUS_MANAGER_BLUEPRINT,
+    CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -186,8 +183,7 @@ impl From<FlashReceipt> for TransactionReceipt {
     fn from(value: FlashReceipt) -> Self {
         // This is used by the node for allowing the flash to execute before the
         // genesis bootstrap transaction
-        let commit_result = CommitResult::empty_with_outcome(TransactionOutcome::Success(vec![]));
-        let mut transaction_receipt = TransactionReceipt::empty_with_commit(commit_result);
+        let mut transaction_receipt = TransactionReceipt::empty_commit_success();
         value.merge_genesis_flash_into_transaction_receipt(&mut transaction_receipt);
         transaction_receipt
     }
@@ -328,20 +324,7 @@ where
         self.bootstrap_with_genesis_data(
             vec![],
             Epoch::of(1),
-            ConsensusManagerConfig {
-                max_validators: 10,
-                epoch_change_condition: EpochChangeCondition {
-                    min_round_count: 1,
-                    max_round_count: 1,
-                    target_duration_millis: 0,
-                },
-                num_unstake_epochs: 1,
-                total_emission_xrd_per_epoch: Decimal::one(),
-                min_validator_reliability: Decimal::one(),
-                num_owner_stake_units_unlock_epochs: 2,
-                num_fee_increase_delay_epochs: 1,
-                validator_creation_usd_cost: *DEFAULT_VALIDATOR_USD_COST,
-            },
+            ConsensusManagerConfig::test_default(),
             1,
             Some(0),
             *DEFAULT_TESTING_FAUCET_SUPPLY,
