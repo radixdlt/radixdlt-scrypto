@@ -10,7 +10,7 @@ use scrypto_test::prelude::*;
 fn database_is_consistent_before_and_after_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_protocol_version(ProtocolVersion::Babylon)
+        .with_custom_protocol(|builder| builder.only_babylon())
         .without_kernel_trace()
         .build();
 
@@ -81,7 +81,7 @@ fn database_is_consistent_before_and_after_protocol_update() {
 fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_protocol_version(ProtocolVersion::Babylon)
+        .with_custom_protocol(|builder| builder.only_babylon())
         .without_kernel_trace()
         .build();
 
@@ -236,7 +236,7 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
 fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_protocol_version(ProtocolVersion::Babylon)
+        .with_custom_protocol(|builder| builder.only_babylon())
         .without_kernel_trace()
         .build();
 

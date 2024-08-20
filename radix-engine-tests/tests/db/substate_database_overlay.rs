@@ -461,7 +461,7 @@ fn run_scenarios(
     let ledger_with_overlay = Rc::new(RefCell::new(
         LedgerSimulatorBuilder::new()
             .with_custom_database(overlay)
-            .with_protocol_version(ProtocolVersion::Babylon)
+            .with_custom_protocol(|builder| builder.only_babylon())
             .without_kernel_trace()
             .build(),
     ));
@@ -517,7 +517,7 @@ fn run_scenarios(
         );
     })
     .execute_protocol_updates_and_scenarios(
-        ProtocolBuilder::for_network(&network_definition).bootstrap_then_until(ProtocolVersion::LATEST),
+        ProtocolBuilder::for_network(&network_definition).from_bootstrap_to_latest(),
         ScenarioTrigger::AtStartOfEveryProtocolVersion,
         ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
         &mut ProtocolUpdateHooks {

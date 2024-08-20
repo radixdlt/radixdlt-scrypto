@@ -204,8 +204,7 @@ where
         &mut self,
     ) -> Result<(), ScenarioExecutorError> {
         self.execute_protocol_updates_and_scenarios(
-            ProtocolBuilder::for_network(self.network_definition)
-                .bootstrap_then_until(ProtocolVersion::LATEST),
+            ProtocolBuilder::for_network(self.network_definition).from_bootstrap_to_latest(),
             ScenarioTrigger::AtStartOfEveryProtocolVersion,
             ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
             &mut (),

@@ -225,7 +225,7 @@ mod test {
 
         let protocol_executor = ProtocolBuilder::for_network(&network_definition)
             .with_babylon(BabylonSettings::test_complex())
-            .bootstrap_then_until(ProtocolVersion::LATEST);
+            .from_bootstrap_to_latest();
         for protocol_update_exector in protocol_executor.each_protocol_update_executor() {
             let protocol_version = protocol_update_exector.protocol_version;
             let mut version_folder =
@@ -432,7 +432,7 @@ mod test {
                 // the given protocol version
                 executor.execute_protocol_updates_and_scenarios(
                     ProtocolBuilder::for_network(&network_definition)
-                        .bootstrap_then_until(protocol_version),
+                        .from_bootstrap_to(protocol_version),
                     ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
                     ScenarioFilter::SpecificScenariosByName(btreeset!(
                         scenario_logical_name.to_string()

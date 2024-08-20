@@ -12,12 +12,98 @@ pub struct BabylonSettings {
 }
 
 impl BabylonSettings {
-    pub fn test_default() -> Self {
+    /// Note - this is traditionally the basic version used for tests, but it fails
+    /// to execute any round changes due to a validator error.
+    ///
+    /// So instead, we have changed to using test_default
+    pub fn test_minimal() -> Self {
         Self {
             genesis_data_chunks: vec![],
             genesis_epoch: Epoch::of(1),
             consensus_manager_config: ConsensusManagerConfig::test_default(),
             initial_time_ms: 1,
+            initial_current_leader: Some(0),
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
+        }
+    }
+
+    pub fn test_default() -> Self {
+        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+        let genesis_epoch = Epoch::of(1);
+        let consensus_manager_config = ConsensusManagerConfig::test_default();
+        Self::single_validator_and_staker(
+            pub_key,
+            Decimal::one(),
+            Decimal::zero(),
+            ComponentAddress::preallocated_account_from_public_key(&pub_key),
+            genesis_epoch,
+            consensus_manager_config,
+        )
+    }
+
+    pub fn single_validator_and_staker(
+        validator_public_key: Secp256k1PublicKey,
+        stake_xrd_amount: Decimal,
+        staker_account_xrd_amount: Decimal,
+        staker_account: ComponentAddress,
+        genesis_epoch: Epoch,
+        consensus_manager_config: ConsensusManagerConfig,
+    ) -> Self {
+        Self::validators_and_single_staker(
+            vec![(validator_public_key, stake_xrd_amount)],
+            staker_account,
+            staker_account_xrd_amount,
+            genesis_epoch,
+            consensus_manager_config,
+        )
+    }
+
+    pub fn validators_and_single_staker(
+        validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
+        staker_account: ComponentAddress,
+        staker_account_xrd_amount: Decimal,
+        genesis_epoch: Epoch,
+        consensus_manager_config: ConsensusManagerConfig,
+    ) -> Self {
+        let genesis_validators: Vec<GenesisValidator> = validators_and_stakes
+            .iter()
+            .map(|(key, _)| key.clone().into())
+            .collect();
+        let stake_allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)> =
+            validators_and_stakes
+                .into_iter()
+                .map(|(key, stake_xrd_amount)| {
+                    (
+                        key,
+                        vec![GenesisStakeAllocation {
+                            account_index: 0,
+                            xrd_amount: stake_xrd_amount,
+                        }],
+                    )
+                })
+                .collect();
+        let genesis_data_chunks = vec![
+            GenesisDataChunk::Validators(genesis_validators),
+            GenesisDataChunk::Stakes {
+                accounts: vec![staker_account],
+                allocations: stake_allocations,
+            },
+            GenesisDataChunk::ResourceBalances {
+                accounts: vec![staker_account],
+                allocations: vec![(
+                    XRD,
+                    vec![GenesisResourceAllocation {
+                        account_index: 0u32,
+                        amount: staker_account_xrd_amount,
+                    }],
+                )],
+            },
+        ];
+        Self {
+            genesis_data_chunks,
+            genesis_epoch,
+            consensus_manager_config,
+            initial_time_ms: 0,
             initial_current_leader: Some(0),
             faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
         }
@@ -87,6 +173,24 @@ impl BabylonSettings {
             faucet_supply: Decimal::zero(),
         }
     }
+
+    pub fn with_faucet_supply(mut self, faucet_supply: Decimal) -> Self {
+        self.faucet_supply = faucet_supply;
+        self
+    }
+
+    pub fn with_genesis_epoch(mut self, genesis_epoch: Epoch) -> Self {
+        self.genesis_epoch = genesis_epoch;
+        self
+    }
+
+    pub fn with_consensus_manager_config(
+        mut self,
+        consensus_manager_config: ConsensusManagerConfig,
+    ) -> Self {
+        self.consensus_manager_config = consensus_manager_config;
+        self
+    }
 }
 
 impl UpdateSettings for BabylonSettings {
@@ -97,11 +201,11 @@ impl UpdateSettings for BabylonSettings {
     }
 
     fn all_enabled_as_default_for_network(_network: &NetworkDefinition) -> Self {
-        Self::test_default()
+        Self::test_minimal()
     }
 
     fn all_disabled() -> Self {
-        Self::test_default()
+        Self::test_minimal()
     }
 
     fn create_batch_generator(&self) -> Self::BatchGenerator {

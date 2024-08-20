@@ -9,10 +9,6 @@ use scrypto_test::prelude::*;
 fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 
@@ -71,10 +67,6 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
 fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 

@@ -19,13 +19,7 @@ use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
-    ConsensusManagerGetCurrentTimeInputV2, ConsensusManagerNextRoundInput, EpochChangeCondition,
-    LeaderProposalHistory, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
-    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-    VALIDATOR_STAKE_AS_OWNER_IDENT,
-};
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::pool::{
     OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
@@ -44,141 +38,6 @@ use radix_transactions::validation::{
 use std::path::{Path, PathBuf};
 
 use super::Compile;
-
-pub struct CustomGenesis {
-    pub genesis_data_chunks: Vec<GenesisDataChunk>,
-    pub genesis_epoch: Epoch,
-    pub initial_config: ConsensusManagerConfig,
-    pub initial_time_ms: i64,
-    pub initial_current_leader: Option<ValidatorIndex>,
-    pub faucet_supply: Decimal,
-}
-
-impl CustomGenesis {
-    pub fn default(genesis_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
-        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-        Self::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            Decimal::zero(),
-            ComponentAddress::preallocated_account_from_public_key(&pub_key),
-            genesis_epoch,
-            initial_config,
-        )
-    }
-
-    pub fn with_faucet_supply(faucet_supply: Decimal) -> CustomGenesis {
-        CustomGenesis {
-            genesis_data_chunks: vec![],
-            genesis_epoch: Epoch::of(1u64),
-            initial_config: Self::default_consensus_manager_config(),
-            initial_time_ms: 0,
-            initial_current_leader: None,
-            faucet_supply,
-        }
-    }
-
-    pub fn default_with_xrd_amount(
-        xrd_amount: Decimal,
-        genesis_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-    ) -> CustomGenesis {
-        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-        Self::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            xrd_amount,
-            ComponentAddress::preallocated_account_from_public_key(&pub_key),
-            genesis_epoch,
-            initial_config,
-        )
-    }
-
-    pub fn default_consensus_manager_config() -> ConsensusManagerConfig {
-        ConsensusManagerConfig {
-            max_validators: 10,
-            epoch_change_condition: EpochChangeCondition {
-                min_round_count: 1,
-                max_round_count: 1,
-                target_duration_millis: 0,
-            },
-            num_unstake_epochs: 1,
-            total_emission_xrd_per_epoch: Decimal::one(),
-            min_validator_reliability: Decimal::one(),
-            num_owner_stake_units_unlock_epochs: 2,
-            num_fee_increase_delay_epochs: 4,
-            validator_creation_usd_cost: *DEFAULT_VALIDATOR_USD_COST,
-        }
-    }
-
-    pub fn single_validator_and_staker(
-        validator_public_key: Secp256k1PublicKey,
-        stake_xrd_amount: Decimal,
-        xrd_amount: Decimal,
-        staker_account: ComponentAddress,
-        genesis_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-    ) -> CustomGenesis {
-        Self::validators_and_single_staker(
-            vec![(validator_public_key, stake_xrd_amount)],
-            staker_account,
-            xrd_amount,
-            genesis_epoch,
-            initial_config,
-        )
-    }
-
-    pub fn validators_and_single_staker(
-        validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
-        staker_account: ComponentAddress,
-        stacker_account_xrd_amount: Decimal,
-        genesis_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-    ) -> CustomGenesis {
-        let genesis_validators: Vec<GenesisValidator> = validators_and_stakes
-            .iter()
-            .map(|(key, _)| key.clone().into())
-            .collect();
-        let stake_allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)> =
-            validators_and_stakes
-                .into_iter()
-                .map(|(key, stake_xrd_amount)| {
-                    (
-                        key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount,
-                        }],
-                    )
-                })
-                .collect();
-        let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(genesis_validators),
-            GenesisDataChunk::Stakes {
-                accounts: vec![staker_account],
-                allocations: stake_allocations,
-            },
-            GenesisDataChunk::ResourceBalances {
-                accounts: vec![staker_account],
-                allocations: vec![(
-                    XRD,
-                    vec![GenesisResourceAllocation {
-                        account_index: 0u32,
-                        amount: stacker_account_xrd_amount,
-                    }],
-                )],
-            },
-        ];
-        CustomGenesis {
-            genesis_data_chunks,
-            genesis_epoch,
-            initial_config,
-            initial_time_ms: 0,
-            initial_current_leader: Some(0),
-            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
-        }
-    }
-}
 
 pub trait TestDatabase:
     SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase
@@ -207,7 +66,7 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
             protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
-                .bootstrap_then_until(ProtocolVersion::LATEST),
+                .from_bootstrap_to_latest(),
             with_kernel_trace: true,
             with_receipt_substate_check: true,
         }
@@ -275,20 +134,15 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         }
     }
 
-    /// Note - this overwrites any other protocol overrides.
-    /// Use with_custom_protocol for full control
-    pub fn with_custom_genesis(self, genesis: CustomGenesis) -> Self {
+    /// Note - this overwrites / is overwritten by any other protocol overrides.
+    /// Use [`Self::with_custom_protocol`] for full control.
+    ///
+    /// If you previously just used `CustomGenesis::test_default` in order to get round
+    /// change tests to pass, this is no longer necessary.
+    #[deprecated = "Use with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest()) instead"]
+    pub fn with_custom_genesis(self, genesis: BabylonSettings) -> Self {
         self.with_custom_protocol(|builder| {
-            builder
-                .with_babylon(BabylonSettings {
-                    genesis_data_chunks: genesis.genesis_data_chunks,
-                    genesis_epoch: genesis.genesis_epoch,
-                    consensus_manager_config: genesis.initial_config,
-                    initial_time_ms: genesis.initial_time_ms,
-                    initial_current_leader: genesis.initial_current_leader,
-                    faucet_supply: genesis.faucet_supply,
-                })
-                .bootstrap_then_until(ProtocolVersion::LATEST)
+            builder.with_babylon(genesis).from_bootstrap_to_latest()
         })
     }
 
@@ -301,10 +155,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         self
     }
 
-    /// Note - this overwrites any other protocol overrides.
-    /// Use with_custom_protocol for full control.
+    /// Note - this overwrites / is overwritten by any other protocol overrides.
+    /// Use [`Self::with_custom_protocol`] for full control.
+    #[deprecated = "Use with_custom_protocol(|builder| builder.from_bootstrap_to(protocol_version)) instead"]
     pub fn with_protocol_version(self, protocol_version: ProtocolVersion) -> Self {
-        self.with_custom_protocol(|builder| builder.bootstrap_then_until(protocol_version))
+        self.with_custom_protocol(|builder| builder.from_bootstrap_to(protocol_version))
     }
 
     pub fn build_from_snapshot(

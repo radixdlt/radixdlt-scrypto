@@ -1,7 +1,6 @@
 use radix_common::constants::CONSENSUS_MANAGER;
 use radix_common::prelude::*;
 use radix_common::prelude::{manifest_args, Round};
-use radix_common::types::Epoch;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::updates::*;
@@ -26,11 +25,8 @@ fn get_current_time_rounded_to_seconds_with_state_flash_should_succeed() {
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
-        .with_protocol_version(ProtocolVersion::Babylon)
+
+        .with_custom_protocol(|builder| builder.only_babylon())
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 

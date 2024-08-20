@@ -180,10 +180,6 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 fn test_preview_no_auth() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
         .build();
     let network = NetworkDefinition::simulator();
 

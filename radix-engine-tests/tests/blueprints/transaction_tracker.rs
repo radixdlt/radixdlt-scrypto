@@ -1,6 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::ExecutionConfig;
+use radix_engine::updates::BabylonSettings;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
 use radix_transactions::errors::TransactionValidationError;
 use scrypto_test::prelude::*;
@@ -11,18 +12,23 @@ use radix_transactions::validation::*;
 fn test_transaction_replay_protection() {
     let init_epoch = Epoch::of(1);
     let rounds_per_epoch = 5;
-    let genesis = CustomGenesis::default(
-        init_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
-            EpochChangeCondition {
-                min_round_count: rounds_per_epoch,
-                max_round_count: rounds_per_epoch,
-                target_duration_millis: 1000,
-            },
-        ),
-    );
+    let genesis = BabylonSettings::test_default()
+        .with_consensus_manager_config(
+            ConsensusManagerConfig::test_default()
+                .with_epoch_change_condition(
+                    EpochChangeCondition {
+                        min_round_count: rounds_per_epoch,
+                        max_round_count: rounds_per_epoch,
+                        target_duration_millis: 1000,
+                    },
+                )
+        );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| {
+            builder
+                .with_babylon(genesis)
+                .from_bootstrap_to_latest()
+        })
         .build();
 
     // 1. Run a notarized transaction

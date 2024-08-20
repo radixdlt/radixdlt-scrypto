@@ -6,7 +6,6 @@ use radix_engine::updates::*;
 use radix_engine_tests::common::PackageLoader;
 use radix_engine_tests::common::*;
 use scrypto_test::prelude::*;
-use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder};
 
 #[test]
 fn publishing_crypto_utils_without_state_flash_should_fail() {
@@ -21,11 +20,7 @@ fn publishing_crypto_utils_with_state_flash_should_succeed() {
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
-        .with_protocol_version(ProtocolVersion::Babylon)
+        .with_custom_protocol(|builder| builder.only_babylon())
         .build();
 
     if flash_substates {
@@ -72,7 +67,7 @@ fn run_flash_test_test_environment(enable_bls: bool, expect_success: bool) {
                 .with_anemone(AnemoneSettings::all_disabled().set(|s| {
                     s.vm_boot_to_enable_bls128_and_keccak256 = UpdateSetting::new(enable_bls)
                 }))
-                .bootstrap_then_until(ProtocolVersion::Anemone)
+                .from_bootstrap_to(ProtocolVersion::Anemone)
         })
         .build();
 

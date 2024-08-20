@@ -66,8 +66,7 @@ impl TestEnvironmentBuilder<InMemorySubstateDatabase> {
             database: InMemorySubstateDatabase::standard(),
             flash_database: FlashSubstateDatabase::standard(),
             added_global_references: Default::default(),
-            protocol_executor: ProtocolBuilder::for_simulator()
-                .bootstrap_then_until(ProtocolVersion::LATEST),
+            protocol_executor: ProtocolBuilder::for_simulator().from_bootstrap_to_latest(),
         }
     }
 }

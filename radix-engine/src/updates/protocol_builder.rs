@@ -279,25 +279,27 @@ impl ProtocolBuilder {
         self
     }
 
-    pub fn only_bootstrap(self) -> ProtocolExecutor {
-        self.bootstrap_then_until(ProtocolVersion::EARLIEST)
+    pub fn from_bootstrap_to_latest(self) -> ProtocolExecutor {
+        self.from_bootstrap_to(ProtocolVersion::LATEST)
     }
 
-    pub fn bootstrap_then_until(self, protocol_version: ProtocolVersion) -> ProtocolExecutor {
+    pub fn from_bootstrap_to(self, protocol_version: ProtocolVersion) -> ProtocolExecutor {
         ProtocolExecutor::new(None, protocol_version, self.settings)
     }
 
-    pub fn post_bootstrap_until(self, protocol_version: ProtocolVersion) -> ProtocolExecutor {
-        self.from_until(ProtocolVersion::EARLIEST, protocol_version)
+    pub fn only_babylon(self) -> ProtocolExecutor {
+        self.from_bootstrap_to(ProtocolVersion::EARLIEST)
     }
 
-    pub fn from_until(
+    /// The `start_protocol_version` is assumed to be currently active.
+    /// If you want to also run bootstrap (i.e. enact `ProtocolVersion::Babylon`), use the `from_bootstrap_to` method.
+    pub fn from_to(
         self,
-        start_protocol_verison: ProtocolVersion,
+        start_protocol_version: ProtocolVersion,
         end_protocol_version: ProtocolVersion,
     ) -> ProtocolExecutor {
         ProtocolExecutor::new(
-            Some(start_protocol_verison),
+            Some(start_protocol_version),
             end_protocol_version,
             self.settings,
         )

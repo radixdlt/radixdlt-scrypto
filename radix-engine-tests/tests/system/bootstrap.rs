@@ -9,6 +9,7 @@ use radix_engine::system::checkers::{
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
+use radix_engine::updates::BabylonSettings;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
@@ -19,8 +20,7 @@ use radix_substate_store_interface::db_key_mapper::{
 };
 use radix_substate_store_queries::typed_substate_layout::*;
 use radix_transactions::prelude::*;
-use scrypto_test::prelude::KeyValueEntrySubstate;
-use scrypto_test::prelude::{CustomGenesis, LedgerSimulatorBuilder, SubtreeVaults};
+use scrypto_test::prelude::*;
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
@@ -55,7 +55,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             genesis_epoch,
-            CustomGenesis::default_consensus_manager_config(),
+            ConsensusManagerConfig::test_default(),
             1,
             Some(0),
             Decimal::zero(),
@@ -160,7 +160,7 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             genesis_epoch,
-            CustomGenesis::default_consensus_manager_config(),
+            ConsensusManagerConfig::test_default(),
             1,
             Some(0),
             Decimal::zero(),
@@ -259,7 +259,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
+            ConsensusManagerConfig::test_default(),
             1,
             Some(0),
             Decimal::zero(),
@@ -356,7 +356,7 @@ fn test_bootstrap_with_exceeded_validator_count() {
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let mut initial_config = CustomGenesis::default_consensus_manager_config();
+    let mut initial_config = ConsensusManagerConfig::test_default();
 
     // exceeding max validator count - expecting a panic now
     initial_config.max_validators = ValidatorIndex::MAX as u32 + 1;
@@ -438,7 +438,7 @@ fn test_genesis_stake_allocation() {
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
             Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
+            ConsensusManagerConfig::test_default(),
             1,
             Some(0),
             Decimal::zero(),
@@ -517,7 +517,7 @@ fn test_genesis_time() {
         .bootstrap_with_genesis_data(
             vec![],
             Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
+            ConsensusManagerConfig::test_default(),
             123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
             Some(0),
             Decimal::zero(),
@@ -629,16 +629,18 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
         GenesisDataChunk::XrdBalances(vec![(staker_0, dec!(200)), (staker_1, dec!(300))]),
     ];
 
+    let genesis = BabylonSettings {
+        genesis_data_chunks,
+        genesis_epoch: Epoch::of(1),
+        consensus_manager_config: ConsensusManagerConfig::test_default(),
+        initial_time_ms: 0,
+        initial_current_leader: Some(0),
+        faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
+    };
+
     // Bootstrap
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis {
-            genesis_data_chunks: genesis_data_chunks,
-            genesis_epoch: Epoch::of(1),
-            initial_config: CustomGenesis::default_consensus_manager_config(),
-            initial_time_ms: 0,
-            initial_current_leader: Some(0),
-            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
-        })
+        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
         .build();
 
     // Act
@@ -731,7 +733,7 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
         .bootstrap_with_genesis_data(
             validator_chunks,
             Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
+            ConsensusManagerConfig::test_default(),
             1,
             Some(0),
             Decimal::zero(),

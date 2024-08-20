@@ -45,7 +45,7 @@ extern_blueprint_internal! {
             validator_owner_token_address: GlobalAddressReservation,
             component_address: GlobalAddressReservation,
             initial_epoch: Epoch,
-            initial_config: ConsensusManagerConfig,
+            consensus_manager_config: ConsensusManagerConfig,
             initial_time_ms: i64,
             initial_current_leader: Option<u8>,
         );

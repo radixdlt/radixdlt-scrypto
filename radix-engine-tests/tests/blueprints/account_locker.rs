@@ -16,7 +16,7 @@ fn account_locker_cant_be_instantiated_before_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_kernel_trace()
-        .with_protocol_version(ProtocolVersion::Anemone)
+        .with_custom_protocol(|builder| builder.from_bootstrap_to(ProtocolVersion::Anemone))
         .build();
     let (_, _, account) = ledger.new_account(false);
 
