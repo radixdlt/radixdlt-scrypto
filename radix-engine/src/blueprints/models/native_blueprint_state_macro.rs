@@ -762,7 +762,7 @@ mod helper_macros {
                 // Anyone needing a type implementing content can use the payload type itself
                 pub trait [<$ident_core ContentMarker>]: ScryptoEncode + ScryptoDecode {}
                 impl [<$ident_core ContentMarker>] for ScryptoValue {}
-                impl [<$ident_core ContentMarker>] for RawScryptoValue<'_> {}
+                impl [<$ident_core ContentMarker>] for ScryptoRawValue<'_> {}
             }
         };
     }
