@@ -1,9 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::transaction::TransactionResult;
-use radix_engine::updates::{BabylonSettings, ProtocolBuilder, ProtocolUpdateExecutionHooks, ProtocolUpdateTransactionDetails, ProtocolVersion};
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::*;
+use radix_engine::updates::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
 use radix_transaction_scenarios::executor::*;
@@ -16,15 +14,6 @@ fn test_bootstrap_and_protocol_update_receipts_have_substate_changes_which_can_b
 
     struct Hooks;
     impl ProtocolUpdateExecutionHooks for Hooks {
-        const IS_ENABLED: bool = true;
-    
-        type WasmEngine = DefaultWasmEngine;
-        type NativeVmExtension = NoExtension;
-    
-        fn get_vm_extension(&mut self) -> Self::NativeVmExtension {
-            NoExtension
-        }
-        
         fn on_transaction_executed(
             &mut self,
             _protocol_version: ProtocolVersion,
@@ -43,7 +32,7 @@ fn test_bootstrap_and_protocol_update_receipts_have_substate_changes_which_can_b
     ProtocolBuilder::for_simulator()
         .with_babylon(BabylonSettings::test_complex())
         .from_bootstrap_to_latest()
-        .commit_each_protocol_update_with_hooks(&mut substate_db, &mut hooks);
+        .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &mut VmModules::default());
 }
 
 #[test]
@@ -52,15 +41,6 @@ fn test_bootstrap_and_protocol_update_receipts_have_events_that_can_be_typed() {
 
     struct Hooks;
     impl ProtocolUpdateExecutionHooks for Hooks {
-        const IS_ENABLED: bool = true;
-    
-        type WasmEngine = DefaultWasmEngine;
-        type NativeVmExtension = NoExtension;
-    
-        fn get_vm_extension(&mut self) -> Self::NativeVmExtension {
-            NoExtension
-        }
-        
         fn on_transaction_executed(
             &mut self,
             _protocol_version: ProtocolVersion,
@@ -79,7 +59,7 @@ fn test_bootstrap_and_protocol_update_receipts_have_events_that_can_be_typed() {
     ProtocolBuilder::for_simulator()
         .with_babylon(BabylonSettings::test_complex())
         .from_bootstrap_to_latest()
-        .commit_each_protocol_update_with_hooks(&mut substate_db, &mut hooks);
+        .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &mut VmModules::default());
 }
 
 #[test]

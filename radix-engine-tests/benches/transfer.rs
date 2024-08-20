@@ -1,10 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_common::prelude::*;
-use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::ExecutionConfig;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
+use radix_engine::updates::ProtocolBuilder;
+use radix_engine::vm::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::rule;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -13,20 +12,11 @@ use radix_transactions::prelude::*;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
-    let scrypto_vm = ScryptoVm {
-        wasm_engine: DefaultWasmEngine::default(),
-        wasm_validator_config: WasmValidatorConfigV1::new(),
-    };
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        vm_init.clone(),
-        false,
-    )
-    .bootstrap_test_default()
-    .unwrap();
+    let vm_modules = VmModules::default();
+    ProtocolBuilder::for_simulator()
+        .from_bootstrap_to_latest()
+        .commit_each_protocol_update(&mut substate_db);
 
     // Create a key pair
     let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
@@ -44,7 +34,7 @@ fn bench_transfer(c: &mut Criterion) {
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_db,
-                vm_init.clone(),
+                vm_modules.create_vm_init(),
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 TestTransaction::new_from_nonce(manifest, 1)
                     .prepare()
@@ -70,7 +60,7 @@ fn bench_transfer(c: &mut Criterion) {
     for nonce in 0..1000 {
         execute_and_commit_transaction(
             &mut substate_db,
-            vm_init.clone(),
+            vm_modules.create_vm_init(),
             &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
             TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
@@ -93,7 +83,7 @@ fn bench_transfer(c: &mut Criterion) {
         b.iter(|| {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
-                vm_init.clone(),
+                vm_modules.create_vm_init(),
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()

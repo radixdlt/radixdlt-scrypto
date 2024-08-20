@@ -1,7 +1,11 @@
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_transactions::model::TransactionPayload;
 
-use crate::{system::bootstrap::FlashReceipt, transaction::*, vm::wasm::*, vm::*};
+use crate::{
+    system::bootstrap::FlashReceipt,
+    transaction::*,
+    vm::{VmInitialize, VmModules},
+};
 
 use super::*;
 
@@ -36,18 +40,19 @@ impl ProtocolUpdateExecutor {
     }
 
     pub fn run_and_commit(self, store: &mut (impl SubstateDatabase + CommittableSubstateDatabase)) {
-        self.run_and_commit_with_hooks(store, &mut ());
+        self.run_and_commit_advanced(store, &mut (), &VmModules::default());
     }
 
-    pub fn run_and_commit_with_hooks<
+    pub fn run_and_commit_advanced<
         S: SubstateDatabase + CommittableSubstateDatabase,
         H: ProtocolUpdateExecutionHooks,
+        M: VmInitialize,
     >(
         self,
         store: &mut S,
         hooks: &mut H,
+        modules: &M,
     ) {
-        let scrypto_vm = hooks.create_scrypto_vm();
         if H::IS_ENABLED {
             hooks.on_before_protocol_update(self.protocol_version, &*store);
         }
@@ -111,7 +116,7 @@ impl ProtocolUpdateExecutor {
                             let execution_config = hooks.adapt_execution_config(execution_config);
                             let receipt = execute_and_commit_transaction(
                                 store,
-                                hooks.create_vm_init(&scrypto_vm),
+                                modules.create_vm_init(),
                                 &execution_config,
                                 transaction
                                     .prepare()
@@ -149,22 +154,7 @@ impl ProtocolUpdateExecutor {
 #[allow(unused_variables)]
 pub trait ProtocolUpdateExecutionHooks {
     // If false, hooks aren't called, so opt out of constructing things like receipts.
-    const IS_ENABLED: bool;
-    type WasmEngine: WasmEngine + Default;
-    type NativeVmExtension: NativeVmExtension;
-
-    fn get_vm_extension(&mut self) -> Self::NativeVmExtension;
-
-    fn create_scrypto_vm(&mut self) -> ScryptoVm<Self::WasmEngine> {
-        ScryptoVm::default()
-    }
-
-    fn create_vm_init<'g>(
-        &mut self,
-        scrypto_vm: &'g ScryptoVm<Self::WasmEngine>,
-    ) -> VmInit<'g, Self::WasmEngine, Self::NativeVmExtension> {
-        VmInit::new(scrypto_vm, self.get_vm_extension())
-    }
+    const IS_ENABLED: bool = true;
 
     fn on_before_protocol_update(
         &mut self,
@@ -212,12 +202,6 @@ pub trait ProtocolUpdateExecutionHooks {
 
 impl ProtocolUpdateExecutionHooks for () {
     const IS_ENABLED: bool = false;
-    type WasmEngine = DefaultWasmEngine;
-    type NativeVmExtension = NoExtension;
-
-    fn get_vm_extension(&mut self) -> NoExtension {
-        NoExtension
-    }
 }
 
 #[derive(Clone)]
@@ -334,13 +318,17 @@ impl ProtocolExecutor {
         }
     }
 
-    pub fn commit_each_protocol_update_with_hooks(
+    /// For defaults:
+    /// * For the hooks, you can use `&mut ()`
+    /// * For the modules you can use `&mut VmModules::default()`
+    pub fn commit_each_protocol_update_advanced(
         self,
         store: &mut (impl SubstateDatabase + CommittableSubstateDatabase),
         hooks: &mut impl ProtocolUpdateExecutionHooks,
+        modules: &impl VmInitialize,
     ) {
         for update_execution in self.each_protocol_update_executor() {
-            update_execution.run_and_commit_with_hooks(store, hooks);
+            update_execution.run_and_commit_advanced(store, hooks, modules);
         }
     }
 

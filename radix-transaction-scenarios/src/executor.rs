@@ -208,6 +208,7 @@ where
             ScenarioTrigger::AtStartOfEveryProtocolVersion,
             ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
             &mut (),
+            &VmModules::default(),
         )
     }
 
@@ -217,13 +218,17 @@ where
         trigger: ScenarioTrigger,
         filter: ScenarioFilter,
         protocol_update_hooks: &mut impl ProtocolUpdateExecutionHooks,
+        modules: &impl VmInitialize,
     ) -> Result<(), ScenarioExecutorError> {
         let last_version = protocol_executor.each_target_protocol_version().last();
 
         for protocol_update_executor in protocol_executor.each_protocol_update_executor() {
             let new_protocol_version = protocol_update_executor.protocol_version;
-            protocol_update_executor
-                .run_and_commit_with_hooks(&mut self.database, protocol_update_hooks);
+            protocol_update_executor.run_and_commit_advanced(
+                &mut self.database,
+                protocol_update_hooks,
+                modules,
+            );
 
             self.execute_scenarios_at_new_protocol_version(
                 new_protocol_version,

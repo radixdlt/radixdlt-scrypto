@@ -6,7 +6,6 @@ mod test {
     use crate::scenarios::ALL_SCENARIOS;
     use fmt::Write;
     use itertools::Itertools;
-    use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::utils::CostingTaskMode;
     use radix_engine::{updates::*, utils::*, vm::*};
     use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -161,12 +160,6 @@ mod test {
 
         impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
             const IS_ENABLED: bool = true;
-            type WasmEngine = DefaultWasmEngine;
-            type NativeVmExtension = NoExtension;
-
-            fn get_vm_extension(&mut self) -> NoExtension {
-                NoExtension
-            }
 
             fn on_transaction_executed(
                 &mut self,
@@ -239,7 +232,11 @@ mod test {
                 state_change_hasher: HashAccumulator::new(),
             };
 
-            protocol_update_exector.run_and_commit_with_hooks(&mut db, &mut hooks);
+            protocol_update_exector.run_and_commit_advanced(
+                &mut db,
+                &mut hooks,
+                &mut VmModules::default(),
+            );
 
             let mut summary = String::new();
             let protocol_version_display_name = protocol_version.display_name();
@@ -438,6 +435,7 @@ mod test {
                         scenario_logical_name.to_string()
                     )),
                     &mut (),
+                    &VmModules::default(),
                 );
 
                 scenario_folder.verify_complete_recursive();

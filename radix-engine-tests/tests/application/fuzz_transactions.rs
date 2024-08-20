@@ -1,8 +1,8 @@
 use radix_common::prelude::*;
-use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig,
 };
+use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -32,12 +32,9 @@ impl TransactionFuzzer {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let vms = VmInit::new(&scrypto_vm, NoExtension);
 
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vms, false)
-            .bootstrap_test_default()
-            .unwrap();
+        ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
         Self {
             rng,

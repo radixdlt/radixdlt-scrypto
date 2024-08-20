@@ -9,9 +9,7 @@ use radix_engine::system::checkers::{
 use radix_engine::system::system_db_reader::{ObjectCollectionKey, SystemDatabaseReader};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::{BalanceChange, CommitResult, SystemStructure};
-use radix_engine::updates::BabylonSettings;
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::*;
+use radix_engine::updates::{BabylonSettings, ProtocolBuilder};
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -24,8 +22,7 @@ use scrypto_test::prelude::*;
 
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
+    let vm_modules = VmModules::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::preallocated_account_from_public_key(
@@ -44,25 +41,27 @@ fn test_bootstrap_receipt_should_match_constants() {
         },
     ];
 
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
+    let mut hooks = GenesisReceiptExtractionHooks::new();
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings {
+            genesis_data_chunks,
+            genesis_epoch,
+            consensus_manager_config: ConsensusManagerConfig::test_default(),
+            initial_time_ms: 1,
+            initial_current_leader: Some(0),
+            faucet_supply: Decimal::zero(),
+        })
+        .only_babylon()
+        .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &vm_modules);
 
     let GenesisReceipts {
+        system_flash_receipt,
         system_bootstrap_receipt,
         data_ingestion_receipts,
         wrap_up_receipt,
-    } = bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            genesis_epoch,
-            ConsensusManagerConfig::test_default(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
+    } = hooks.into_genesis_receipts();
 
-    assert!(system_bootstrap_receipt
+    assert!(system_flash_receipt
         .expect_commit_success()
         .new_package_addresses()
         .contains(&PACKAGE_PACKAGE));
@@ -130,8 +129,7 @@ fn test_bootstrap_receipt_should_match_constants() {
 
 #[test]
 fn test_bootstrap_receipts_should_have_complete_system_structure() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
+    let vm_modules = VmModules::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::preallocated_account_from_public_key(
@@ -149,23 +147,25 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
             allocations: vec![(validator_key, vec![stake])],
         },
     ];
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
+    let mut hooks = GenesisReceiptExtractionHooks::new();
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings {
+            genesis_data_chunks,
+            genesis_epoch,
+            consensus_manager_config: ConsensusManagerConfig::test_default(),
+            initial_time_ms: 1,
+            initial_current_leader: Some(0),
+            faucet_supply: Decimal::zero(),
+        })
+        .only_babylon()
+        .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &vm_modules);
 
     let GenesisReceipts {
+        system_flash_receipt: _,
         system_bootstrap_receipt,
         data_ingestion_receipts,
         wrap_up_receipt,
-    } = bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            genesis_epoch,
-            ConsensusManagerConfig::test_default(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
+    } = hooks.into_genesis_receipts();
 
     assert_complete_system_structure(system_bootstrap_receipt.expect_commit_success());
     for data_ingestion_receipt in data_ingestion_receipts {
@@ -209,8 +209,7 @@ fn assert_complete_system_structure(result: &CommitResult) {
 }
 
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
+    let vm_modules = VmModules::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
     let token_holder = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
@@ -249,22 +248,24 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
             allocations: vec![(resource_address.clone(), vec![resource_allocation])],
         },
     ];
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, false);
+
+    let mut hooks = GenesisReceiptExtractionHooks::new();
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings {
+            genesis_data_chunks,
+            genesis_epoch: Epoch::of(1),
+            consensus_manager_config: ConsensusManagerConfig::test_default(),
+            initial_time_ms: 1,
+            initial_current_leader: Some(0),
+            faucet_supply: Decimal::zero(),
+        })
+        .only_babylon()
+        .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &vm_modules);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
         ..
-    } = bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            Epoch::of(1),
-            ConsensusManagerConfig::test_default(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
+    } = hooks.into_genesis_receipts();
 
     let total_supply = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplyFieldSubstate>(
@@ -352,25 +353,24 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
 // But since it is a bootstrap stage we believe it is good enough.
 #[should_panic(expected = "Failure(ApplicationError(ConsensusManagerError(ExceededValidatorCount")]
 fn test_bootstrap_with_exceeded_validator_count() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     let mut initial_config = ConsensusManagerConfig::test_default();
 
     // exceeding max validator count - expecting a panic now
     initial_config.max_validators = ValidatorIndex::MAX as u32 + 1;
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
 
-    let _ = bootstrapper.bootstrap_with_genesis_data(
-        vec![],
-        Epoch::of(1),
-        initial_config,
-        1,
-        Some(0),
-        Decimal::zero(),
-    );
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings {
+            genesis_data_chunks: vec![],
+            genesis_epoch: Epoch::of(1),
+            consensus_manager_config: initial_config,
+            initial_time_ms: 1,
+            initial_current_leader: Some(0),
+            faucet_supply: Decimal::zero(),
+        })
+        .only_babylon()
+        .commit_each_protocol_update(&mut substate_db);
 }
 
 #[test]
@@ -385,8 +385,7 @@ fn test_genesis_resource_with_initial_unowned_allocation() {
 
 #[test]
 fn test_genesis_stake_allocation() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
+    let vm_modules = VmModules::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     // There are two genesis validators
@@ -428,22 +427,24 @@ fn test_genesis_stake_allocation() {
         },
     ];
 
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
+
+    let mut hooks = GenesisReceiptExtractionHooks::new();
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings {
+            genesis_data_chunks,
+            genesis_epoch: Epoch::of(1),
+            consensus_manager_config: ConsensusManagerConfig::test_default(),
+            initial_time_ms: 1,
+            initial_current_leader: Some(0),
+            faucet_supply: Decimal::zero(),
+        })
+        .only_babylon()
+        .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &vm_modules);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
         ..
-    } = bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            Epoch::of(1),
-            ConsensusManagerConfig::test_default(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
+    } = hooks.into_genesis_receipts();
 
     let allocate_stakes_receipt = data_ingestion_receipts.pop().unwrap();
 
@@ -506,23 +507,19 @@ fn test_genesis_stake_allocation() {
 
 #[test]
 fn test_genesis_time() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, true);
-
-    let _ = bootstrapper
-        .bootstrap_with_genesis_data(
-            vec![],
-            Epoch::of(1),
-            ConsensusManagerConfig::test_default(),
-            123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings {
+            genesis_data_chunks: vec![],
+            genesis_epoch: Epoch::of(1),
+            consensus_manager_config: ConsensusManagerConfig::test_default(),
+            initial_time_ms: 123 * 60 * 1000 + 22, // 123 full minutes + 22 ms (which should be rounded down)
+            initial_current_leader: Some(0),
+            faucet_supply: Decimal::zero(),
+        })
+        .only_babylon()
+        .commit_each_protocol_update(&mut substate_db);
 
     let reader = SystemDatabaseReader::new(&mut substate_db);
     let timestamp = reader
@@ -640,7 +637,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
 
     // Bootstrap
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.with_babylon(genesis).only_babylon())
         .build();
 
     // Act
@@ -706,8 +703,6 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
 
 #[test]
 fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let staker_address = ComponentAddress::preallocated_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
@@ -726,19 +721,17 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
         },
     ];
 
-    let mut bootstrapper =
-        Bootstrapper::new(NetworkDefinition::simulator(), &mut substate_db, vm_init, false);
-
-    bootstrapper
-        .bootstrap_with_genesis_data(
-            validator_chunks,
-            Epoch::of(1),
-            ConsensusManagerConfig::test_default(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings {
+            genesis_data_chunks: validator_chunks,
+            genesis_epoch: Epoch::of(1),
+            consensus_manager_config: ConsensusManagerConfig::test_default(),
+            initial_time_ms: 1,
+            initial_current_leader: Some(0),
+            faucet_supply: Decimal::zero(),
+        })
+        .only_babylon()
+        .commit_each_protocol_update(&mut substate_db);
 
     let reader = SystemDatabaseReader::new(&substate_db);
 

@@ -1,8 +1,8 @@
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
-use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::ExecutionConfig;
+use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -99,14 +99,7 @@ fn test_normal_transaction_flow() {
     let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        vm_init.clone(),
-        true,
-    )
-    .bootstrap_test_default()
-    .unwrap();
+    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
     let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
     let raw_transaction = create_notarized_transaction(

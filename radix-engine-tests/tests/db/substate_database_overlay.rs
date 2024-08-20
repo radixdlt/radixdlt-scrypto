@@ -2,6 +2,7 @@ use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
 use radix_engine::vm::NoExtension;
+use radix_engine::vm::VmModules;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_impls::substate_database_overlay::*;
 use radix_substate_store_interface::db_key_mapper::*;
@@ -10,7 +11,6 @@ use radix_transaction_scenarios::executor::*;
 use radix_transactions::builder::*;
 use scrypto::prelude::*;
 use scrypto_test::ledger_simulator::*;
-use scrypto_test::prelude::DefaultWasmEngine;
 
 #[test]
 fn substates_written_to_root_database_can_be_read() {
@@ -472,14 +472,6 @@ fn run_scenarios(
     }
 
     impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
-        const IS_ENABLED: bool = true;
-        type WasmEngine = DefaultWasmEngine;
-        type NativeVmExtension = NoExtension;
-        
-        fn get_vm_extension(&mut self) -> NoExtension {
-            NoExtension
-        }
-        
         fn on_transaction_executed(
             &mut self,
             _protocol_version: ProtocolVersion,
@@ -523,6 +515,7 @@ fn run_scenarios(
         &mut ProtocolUpdateHooks {
             ledger_with_overlay: ledger_with_overlay.clone(),
         },
+        &VmModules::default(),
     )
     .expect("Must succeed!");
 }
