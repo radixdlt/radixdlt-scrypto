@@ -53,9 +53,6 @@ impl ProtocolUpdateExecutor {
         hooks: &mut H,
         modules: &M,
     ) {
-        if H::IS_ENABLED {
-            hooks.on_before_protocol_update(self.protocol_version, &*store);
-        }
         for (batch_group_index, batch_group_name) in self
             .batch_generator
             .batch_group_descriptors()
@@ -67,18 +64,6 @@ impl ProtocolUpdateExecutor {
                     self.batch_generator
                         .generate_batch(store, batch_group_index, batch_index);
                 for (transaction_index, transaction) in batch.transactions.into_iter().enumerate() {
-                    if H::IS_ENABLED {
-                        hooks.on_before_transaction_executed(
-                            self.protocol_version,
-                            batch_group_index,
-                            &batch_group_name,
-                            batch_index,
-                            transaction_index,
-                            &transaction,
-                            &*store,
-                        );
-                    }
-
                     let receipt = match &transaction {
                         ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) => {
                             let db_updates = flash
@@ -131,22 +116,19 @@ impl ProtocolUpdateExecutor {
                     };
 
                     if H::IS_ENABLED {
-                        hooks.on_transaction_executed(
-                            self.protocol_version,
+                        hooks.on_transaction_executed(OnTransactionExecuted {
+                            protocol_version: self.protocol_version,
                             batch_group_index,
-                            &batch_group_name,
+                            batch_group_name: &batch_group_name,
                             batch_index,
                             transaction_index,
-                            &transaction,
-                            &receipt,
-                            &*store,
-                        );
+                            transaction: &transaction,
+                            receipt: &receipt,
+                            resultant_store: store,
+                        });
                     }
                 }
             }
-        }
-        if H::IS_ENABLED {
-            hooks.on_protocol_update_completed(self.protocol_version, &*store);
         }
     }
 }
@@ -156,48 +138,24 @@ pub trait ProtocolUpdateExecutionHooks {
     // If false, hooks aren't called, so opt out of constructing things like receipts.
     const IS_ENABLED: bool = true;
 
-    fn on_before_protocol_update(
-        &mut self,
-        new_protocol_version: ProtocolVersion,
-        store: &dyn SubstateDatabase,
-    ) {
-    }
-
-    fn on_before_transaction_executed(
-        &mut self,
-        protocol_version: ProtocolVersion,
-        batch_group_index: usize,
-        batch_group_name: &str,
-        batch_index: usize,
-        transaction_index: usize,
-        transaction: &ProtocolUpdateTransactionDetails,
-        store: &dyn SubstateDatabase,
-    ) {
-    }
-
     fn adapt_execution_config(&mut self, config: ExecutionConfig) -> ExecutionConfig {
         config
     }
 
-    fn on_transaction_executed(
-        &mut self,
-        protocol_version: ProtocolVersion,
-        batch_group_index: usize,
-        batch_group_name: &str,
-        batch_index: usize,
-        transaction_index: usize,
-        transaction: &ProtocolUpdateTransactionDetails,
-        receipt: &TransactionReceipt,
-        resultant_store: &dyn SubstateDatabase,
-    ) {
-    }
+    fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {}
+}
 
-    fn on_protocol_update_completed(
-        &mut self,
-        new_protocol_version: ProtocolVersion,
-        resultant_store: &dyn SubstateDatabase,
-    ) {
-    }
+/// Using a struct allows lots of parameters to be passed, without
+/// having a large number of method arguments
+pub struct OnTransactionExecuted<'a> {
+    pub protocol_version: ProtocolVersion,
+    pub batch_group_index: usize,
+    pub batch_group_name: &'a str,
+    pub batch_index: usize,
+    pub transaction_index: usize,
+    pub transaction: &'a ProtocolUpdateTransactionDetails,
+    pub receipt: &'a TransactionReceipt,
+    pub resultant_store: &'a mut dyn SubstateDatabase,
 }
 
 impl ProtocolUpdateExecutionHooks for () {

@@ -472,17 +472,11 @@ fn run_scenarios(
     }
 
     impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
-        fn on_transaction_executed(
-            &mut self,
-            _protocol_version: ProtocolVersion,
-            _batch_group_index: usize,
-            _batch_group_name: &str,
-            _batch_index: usize,
-            _transaction_num: usize,
-            _transaction: &ProtocolUpdateTransactionDetails,
-            receipt: &TransactionReceipt,
-            _resultant_store: &dyn SubstateDatabase,
-        ) {
+        fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
+            let OnTransactionExecuted {
+                receipt,
+                ..
+            } = event;
             // We copy the protocol updates onto the ledger_with_overlay
             let database_updates = receipt.expect_commit_success().state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
             self.ledger_with_overlay.borrow_mut().substate_db_mut().commit(&database_updates);

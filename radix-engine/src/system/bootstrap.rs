@@ -14,7 +14,7 @@ use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::transaction::*;
-use crate::updates::{ProtocolUpdateExecutionHooks, ProtocolVersion};
+use crate::updates::*;
 use crate::vm::VmBoot;
 use lazy_static::lazy_static;
 use radix_common::crypto::Secp256k1PublicKey;
@@ -195,19 +195,13 @@ impl GenesisReceiptExtractionHooks {
 }
 
 impl ProtocolUpdateExecutionHooks for GenesisReceiptExtractionHooks {
-    const IS_ENABLED: bool = true;
-
-    fn on_transaction_executed(
-        &mut self,
-        protocol_version: crate::updates::ProtocolVersion,
-        batch_group_index: usize,
-        _batch_group_name: &str,
-        _batch_index: usize,
-        _transaction_index: usize,
-        _transaction: &crate::updates::ProtocolUpdateTransactionDetails,
-        receipt: &TransactionReceipt,
-        _resultant_store: &dyn SubstateDatabase,
-    ) {
+    fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
+        let OnTransactionExecuted {
+            protocol_version,
+            batch_group_index,
+            receipt,
+            ..
+        } = event;
         if protocol_version == ProtocolVersion::EARLIEST {
             match batch_group_index {
                 0 => self.bootstrap_receipts.push(receipt.clone()),

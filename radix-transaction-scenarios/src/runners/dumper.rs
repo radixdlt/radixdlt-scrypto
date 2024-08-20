@@ -163,23 +163,22 @@ mod test {
         }
 
         impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
-            const IS_ENABLED: bool = true;
-
-            fn on_transaction_executed(
-                &mut self,
-                _protocol_version: ProtocolVersion,
-                batch_group_index: usize,
-                _batch_group_name: &str,
-                batch_index: usize,
-                transaction_num: usize,
-                transaction: &ProtocolUpdateTransactionDetails,
-                receipt: &TransactionReceipt,
-                resultant_store: &dyn SubstateDatabase,
-            ) {
+            fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
+                let OnTransactionExecuted {
+                    batch_group_index,
+                    batch_index,
+                    transaction_index,
+                    transaction,
+                    receipt,
+                    resultant_store,
+                    ..
+                } = event;
                 let transaction_file_prefix = if let Some(name) = transaction.name() {
-                    format!("{batch_group_index:02}-{batch_index:02}-{transaction_num:02}--{name}")
+                    format!(
+                        "{batch_group_index:02}-{batch_index:02}-{transaction_index:02}--{name}"
+                    )
                 } else {
-                    format!("{batch_group_index:02}-{batch_index:02}-{transaction_num:02}")
+                    format!("{batch_group_index:02}-{batch_index:02}-{transaction_index:02}")
                 };
 
                 match &receipt.result {

@@ -14,17 +14,11 @@ fn test_bootstrap_and_protocol_update_receipts_have_substate_changes_which_can_b
 
     struct Hooks;
     impl ProtocolUpdateExecutionHooks for Hooks {
-        fn on_transaction_executed(
-            &mut self,
-            _protocol_version: ProtocolVersion,
-            _batch_group_index: usize,
-            _batch_group_name: &str,
-            _batch_index: usize,
-            _transaction_index: usize,
-            _transaction: &ProtocolUpdateTransactionDetails,
-            receipt: &TransactionReceipt,
-            _resultant_store: &dyn SubstateDatabase,
-        ) {
+        fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
+            let OnTransactionExecuted {
+                receipt,
+                ..
+            } = event;
             assert_receipt_substate_changes_can_be_typed(receipt.expect_commit_success())
         }
     }
@@ -41,17 +35,11 @@ fn test_bootstrap_and_protocol_update_receipts_have_events_that_can_be_typed() {
 
     struct Hooks;
     impl ProtocolUpdateExecutionHooks for Hooks {
-        fn on_transaction_executed(
-            &mut self,
-            _protocol_version: ProtocolVersion,
-            _batch_group_index: usize,
-            _batch_group_name: &str,
-            _batch_index: usize,
-            _transaction_index: usize,
-            _transaction: &ProtocolUpdateTransactionDetails,
-            receipt: &TransactionReceipt,
-            _resultant_store: &dyn SubstateDatabase,
-        ) {
+        fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
+            let OnTransactionExecuted {
+                receipt,
+                ..
+            } = event;
             assert_receipt_events_can_be_typed(receipt.expect_commit_success())
         }
     }

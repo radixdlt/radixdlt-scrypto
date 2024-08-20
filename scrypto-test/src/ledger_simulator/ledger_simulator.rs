@@ -193,7 +193,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         struct ProtocolUpdateHooks {
             bootstrap_trace: bool,
             events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
-            next_epoch: Option<EpochChangeEvent>,
+            genesis_next_epoch: Option<EpochChangeEvent>,
         }
 
         impl ProtocolUpdateExecutionHooks for ProtocolUpdateHooks {
@@ -201,21 +201,18 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 config.with_kernel_trace(self.bootstrap_trace)
             }
 
-            fn on_transaction_executed(
-                &mut self,
-                _protocol_version: ProtocolVersion,
-                _batch_group_index: usize,
-                _batch_group_name: &str,
-                _batch_index: usize,
-                _transaction_index: usize,
-                _transaction: &ProtocolUpdateTransactionDetails,
-                receipt: &TransactionReceipt,
-                _resultant_store: &dyn SubstateDatabase,
-            ) {
+            fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
+                let OnTransactionExecuted {
+                    protocol_version,
+                    receipt,
+                    ..
+                } = event;
                 self.events
                     .push(receipt.expect_commit_success().application_events.clone());
-                if let Some(next_epoch) = receipt.expect_commit_success().next_epoch() {
-                    self.next_epoch = Some(next_epoch);
+                if protocol_version == ProtocolVersion::EARLIEST {
+                    if let Some(next_epoch) = receipt.expect_commit_success().next_epoch() {
+                        self.genesis_next_epoch = Some(next_epoch);
+                    }
                 }
             }
         }
@@ -225,7 +222,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         let mut hooks = ProtocolUpdateHooks {
             bootstrap_trace,
             events: vec![],
-            next_epoch: None,
+            genesis_next_epoch: None,
         };
         let vm_modules = VmModules::default_with_extension(self.custom_extension);
 
@@ -256,7 +253,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         (
             runner,
             hooks
-                .next_epoch
+                .genesis_next_epoch
                 .expect("Expected an epoch change event from the protocol update")
                 .validator_set,
         )
