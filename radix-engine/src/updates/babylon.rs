@@ -201,11 +201,11 @@ impl UpdateSettings for BabylonSettings {
     }
 
     fn all_enabled_as_default_for_network(_network: &NetworkDefinition) -> Self {
-        Self::test_minimal()
+        Self::test_default()
     }
 
     fn all_disabled() -> Self {
-        Self::test_minimal()
+        Self::test_default()
     }
 
     fn create_batch_generator(&self) -> Self::BatchGenerator {

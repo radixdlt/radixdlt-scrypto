@@ -8,8 +8,7 @@ use scrypto_test::prelude::*;
 #[test]
 fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 
     let time_to_set_ms = 1669663688996;
