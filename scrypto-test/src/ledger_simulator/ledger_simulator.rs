@@ -201,8 +201,8 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
                 config.with_kernel_trace(self.bootstrap_trace)
             }
 
-            fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
-                let OnTransactionExecuted {
+            fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
+                let OnProtocolTransactionExecuted {
                     protocol_version,
                     receipt,
                     ..

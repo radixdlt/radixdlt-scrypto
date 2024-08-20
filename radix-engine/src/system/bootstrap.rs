@@ -195,8 +195,8 @@ impl GenesisReceiptExtractionHooks {
 }
 
 impl ProtocolUpdateExecutionHooks for GenesisReceiptExtractionHooks {
-    fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
-        let OnTransactionExecuted {
+    fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
+        let OnProtocolTransactionExecuted {
             protocol_version,
             batch_group_index,
             receipt,

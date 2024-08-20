@@ -116,7 +116,7 @@ impl ProtocolUpdateExecutor {
                     };
 
                     if H::IS_ENABLED {
-                        hooks.on_transaction_executed(OnTransactionExecuted {
+                        hooks.on_transaction_executed(OnProtocolTransactionExecuted {
                             protocol_version: self.protocol_version,
                             batch_group_index,
                             batch_group_name: &batch_group_name,
@@ -142,12 +142,12 @@ pub trait ProtocolUpdateExecutionHooks {
         config
     }
 
-    fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {}
+    fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {}
 }
 
 /// Using a struct allows lots of parameters to be passed, without
 /// having a large number of method arguments
-pub struct OnTransactionExecuted<'a> {
+pub struct OnProtocolTransactionExecuted<'a> {
     pub protocol_version: ProtocolVersion,
     pub batch_group_index: usize,
     pub batch_group_name: &'a str,

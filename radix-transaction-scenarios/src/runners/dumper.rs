@@ -163,8 +163,8 @@ mod test {
         }
 
         impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
-            fn on_transaction_executed(&mut self, event: OnTransactionExecuted) {
-                let OnTransactionExecuted {
+            fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
+                let OnProtocolTransactionExecuted {
                     batch_group_index,
                     batch_index,
                     transaction_index,
@@ -289,14 +289,171 @@ mod test {
         run_all_protocol_updates(DumperMode::Assert)
     }
 
-    pub fn run_all_scenarios(mode: DumperMode) {
-        let network_definition = NetworkDefinition::simulator();
-        let address_encoder = AddressBech32Encoder::new(&network_definition);
-        let execution_config = {
-            let mut config = ExecutionConfig::for_notarized_transaction(network_definition.clone());
+    struct ScenarioDumpingHooks {
+        event_hasher: HashAccumulator,
+        state_update_hasher: HashAccumulator,
+        scenario_folder: FolderAligner,
+        manifests_folder: FolderAligner,
+        transactions_folder: FolderAligner,
+        receipts_folder: FolderAligner,
+        costings_folder: FolderAligner,
+    }
+
+    impl ScenarioDumpingHooks {
+        fn new(scenario_folder: FolderAligner) -> Self {
+            let mut manifests_folder = scenario_folder.register_child_folder("manifests");
+            let mut transactions_folder = scenario_folder.register_child_folder("transactions");
+            let mut receipts_folder = scenario_folder.register_child_folder("receipts");
+            let mut costings_folder = scenario_folder.register_child_folder("costings");
+
+            Self {
+                event_hasher: HashAccumulator::new(),
+                state_update_hasher: HashAccumulator::new(),
+                scenario_folder,
+                manifests_folder,
+                transactions_folder,
+                receipts_folder,
+                costings_folder,
+            }
+        }
+    }
+
+    impl<S: SubstateDatabase> ScenarioExecutionHooks<S> for ScenarioDumpingHooks {
+        fn adapt_execution_config(&mut self, mut config: ExecutionConfig) -> ExecutionConfig {
             config.enable_cost_breakdown = true;
             config
-        };
+        }
+
+        fn on_transaction_executed(&mut self, event: OnScenarioTransactionExecuted<S>) {
+            let OnScenarioTransactionExecuted {
+                transaction,
+                receipt,
+                database,
+                network_definition,
+                ..
+            } = event;
+            match &receipt.result {
+                TransactionResult::Commit(c) => {
+                    self.event_hasher
+                        .update_no_chain(scrypto_encode(&c.application_events).unwrap());
+                    self.state_update_hasher
+                        .update_no_chain(scrypto_encode(&c.state_updates).unwrap())
+                }
+                TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
+            }
+
+            let transaction_file_prefix = format!(
+                "{:03}--{}",
+                transaction.stage_counter, transaction.logical_name,
+            );
+
+            self.transactions_folder.put_file(
+                format!("{transaction_file_prefix}.bin"),
+                &transaction.raw_transaction.0,
+            );
+
+            // Write manifest
+            // NB: We purposefully don't write the blobs as they're contained in the raw transactions
+            let manifest_string = decompile_with_known_naming(
+                &transaction.manifest.instructions,
+                network_definition,
+                transaction.naming.clone(),
+            )
+            .unwrap();
+            // Whilst we're here, let's validate that the manifest can be recompiled
+            compile(
+                &manifest_string,
+                network_definition,
+                BlobProvider::new_with_blobs(
+                    transaction.manifest.blobs.values().cloned().collect(),
+                ),
+            )
+            .unwrap();
+            self.manifests_folder
+                .put_file(format!("{transaction_file_prefix}.rtm"), &manifest_string);
+
+            // Write receipt
+            let address_encoder = AddressBech32Encoder::new(network_definition);
+            let receipt_display_context = TransactionReceiptDisplayContextBuilder::new()
+                .encoder(&address_encoder)
+                .schema_lookup_from_db(&*database)
+                .display_state_updates(true)
+                .use_ansi_colors(false)
+                .build();
+            self.receipts_folder.put_file(
+                format!("{transaction_file_prefix}.txt"),
+                receipt.to_string(receipt_display_context),
+            );
+
+            let cost_breakdown =
+                format_cost_breakdown(&receipt.fee_summary, receipt.fee_details.as_ref().unwrap());
+            self.costings_folder
+                .put_file(format!("{transaction_file_prefix}.txt"), cost_breakdown);
+        }
+
+        fn on_scenario_ended(&mut self, event: OnScenarioEnded<S>) {
+            let OnScenarioEnded {
+                metadata,
+                end_state,
+                current_protocol_version,
+                network_definition,
+                ..
+            } = event;
+            let scenario_logical_name = metadata.logical_name;
+
+            let mut summary = String::new();
+            writeln!(&mut summary, "Name: {scenario_logical_name}").unwrap();
+            writeln!(&mut summary).unwrap();
+
+            let state_change_digest = mem::take(&mut self.state_update_hasher)
+                .finalize()
+                .to_string()[0..16]
+                .to_string();
+            let event_digest =
+                mem::take(&mut self.event_hasher).finalize().to_string()[0..16].to_string();
+
+            writeln!(&mut summary, "== SUMMARY HASHES ==").unwrap();
+
+            let protocol_version_display_name = current_protocol_version.display_name();
+            if current_protocol_version == ProtocolVersion::LATEST {
+                writeln!(&mut summary, "These {protocol_version_display_name} hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.").unwrap();
+                writeln!(&mut summary, "State changes: {state_change_digest} (allowed to change if not deployed to any network)").unwrap();
+                writeln!(&mut summary, "Events       : {event_digest} (allowed to change if not deployed to any network)").unwrap();
+            } else {
+                writeln!(&mut summary, "These {protocol_version_display_name} hashes should NEVER change, else they will cause divergence when run historically.").unwrap();
+                writeln!(
+                    &mut summary,
+                    "State changes: {state_change_digest} (should never change)"
+                )
+                .unwrap();
+                writeln!(
+                    &mut summary,
+                    "Events       : {event_digest} (should never change)"
+                )
+                .unwrap();
+            };
+
+            writeln!(&mut summary).unwrap();
+            writeln!(&mut summary, "== INTERESTING ADDRESSES ==").unwrap();
+
+            let address_encoder = AddressBech32Encoder::new(network_definition);
+            for (name, address) in end_state.output.interesting_addresses.0.iter() {
+                writeln!(
+                    &mut summary,
+                    "- {name}: {}",
+                    address.display(&address_encoder)
+                )
+                .unwrap();
+            }
+            writeln!(&mut summary).unwrap();
+
+            self.scenario_folder
+                .put_file("scenario_summary.txt", summary);
+            self.scenario_folder.verify_no_extra_content_exists()
+        }
+    }
+
+    pub fn run_all_scenarios(mode: DumperMode) {
         let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");
         for (scenario_logical_name, scenario_creator) in ALL_SCENARIOS.iter() {
             let min_requirement = scenario_creator.metadata().protocol_min_requirement;
@@ -305,143 +462,28 @@ mod test {
                 .filter(|p| *p >= min_requirement);
             for protocol_version in valid_versions {
                 let mut db = InMemorySubstateDatabase::standard();
-                let mut event_hasher = RefCell::new(Some(HashAccumulator::new()));
-                let mut state_change_hasher = RefCell::new(Some(HashAccumulator::new()));
 
-                let mut scenario_folder = FolderAligner::new(
+                let scenario_folder = FolderAligner::new(
                     root_path
                         .join(protocol_version.logical_name())
                         .join(&*scenario_logical_name),
                     mode,
                 );
-                let mut manifests_folder = scenario_folder.register_child_folder("manifests");
-                let mut transactions_folder = scenario_folder.register_child_folder("transactions");
-                let mut receipts_folder = scenario_folder.register_child_folder("receipts");
-                let mut costings_folder = scenario_folder.register_child_folder("costings");
-
-                let mut executor = DefaultTransactionScenarioExecutor::new(db, &network_definition)
-                    .scenario_execution_config(execution_config.clone())
-                    .on_transaction_executed(|_, transaction_details, receipt, db| {
-                        match &receipt.result {
-                            TransactionResult::Commit(c) => {
-                                event_hasher
-                                    .borrow_mut()
-                                    .as_mut()
-                                    .unwrap()
-                                    .update_no_chain(scrypto_encode(&c.application_events).unwrap());
-                                state_change_hasher
-                                    .borrow_mut()
-                                    .as_mut()
-                                    .unwrap()
-                                    .update_no_chain(scrypto_encode(&c.state_updates).unwrap())
-                            }
-                            TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
-                        }
-
-                        let transaction_file_prefix = format!(
-                            "{:03}--{}",
-                            transaction_details.stage_counter,
-                            transaction_details.logical_name,
-                        );
-
-                        transactions_folder.put_file(
-                            format!("{transaction_file_prefix}.bin"),
-                            &transaction_details.raw_transaction.0,
-                        );
-
-                        // Write manifest
-                        // NB: We purposefully don't write the blobs as they're contained in the raw transactions
-                        let manifest_string = decompile_with_known_naming(
-                            &transaction_details.manifest.instructions,
-                            &network_definition,
-                            transaction_details.naming.clone()
-                        ).unwrap();
-                        // Whilst we're here, let's validate that the manifest can be recompiled
-                        compile(
-                            &manifest_string,
-                            &network_definition,
-                            BlobProvider::new_with_blobs(
-                                transaction_details.manifest.blobs.values().cloned().collect()
-                            ),
-                        )
-                        .unwrap();
-                        manifests_folder.put_file(
-                            format!("{transaction_file_prefix}.rtm"),
-                            &manifest_string,
-                        );
-
-                        // Write receipt
-                        let receipt_display_context = TransactionReceiptDisplayContextBuilder::new()
-                            .encoder(&address_encoder)
-                            .schema_lookup_from_db(db)
-                            .display_state_updates(true)
-                            .use_ansi_colors(false)
-                            .build();
-                        receipts_folder.put_file(
-                            format!("{transaction_file_prefix}.txt"),
-                            receipt.to_string(receipt_display_context),
-                        );
-
-                        let cost_breakdown = format_cost_breakdown(
-                            &receipt.fee_summary,
-                            receipt.fee_details.as_ref().unwrap(),
-                        );
-                        costings_folder.put_file(
-                            format!("{transaction_file_prefix}.txt"),
-                            cost_breakdown,
-                        );
-                    })
-                    .on_scenario_ended(|_, end_state, _| {
-                        let mut summary = String::new();
-                        writeln!(&mut summary, "Name: {scenario_logical_name}").unwrap();
-                        writeln!(&mut summary).unwrap();
-
-                        let state_change_digest = state_change_hasher
-                            .borrow_mut().take().unwrap().finalize().to_string()[0..16].to_string();
-                        let event_digest = event_hasher
-                            .borrow_mut().take().unwrap().finalize().to_string()[0..16].to_string();
-
-                        writeln!(&mut summary, "== SUMMARY HASHES ==").unwrap();
-
-                        let protocol_version_display_name = protocol_version.display_name();
-                        if protocol_version == ProtocolVersion::LATEST {
-                            writeln!(&mut summary, "These {protocol_version_display_name} hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.").unwrap();
-                            writeln!(&mut summary, "State changes: {state_change_digest} (allowed to change if not deployed to any network)").unwrap();
-                            writeln!(&mut summary, "Events       : {event_digest} (allowed to change if not deployed to any network)").unwrap();
-                        } else {
-                            writeln!(&mut summary, "These {protocol_version_display_name} hashes should NEVER change, else they will cause divergence when run historically.").unwrap();
-                            writeln!(&mut summary, "State changes: {state_change_digest} (should never change)").unwrap();
-                            writeln!(&mut summary, "Events       : {event_digest} (should never change)").unwrap();
-                        };
-
-                        writeln!(&mut summary).unwrap();
-                        writeln!(&mut summary, "== INTERESTING ADDRESSES ==").unwrap();
-
-                        for (name, address) in end_state.output.interesting_addresses.0.iter() {
-                            writeln!(&mut summary, "- {name}: {}", address.display(&address_encoder)).unwrap();
-                        }
-                        writeln!(&mut summary).unwrap();
-
-                        scenario_folder.put_file(
-                            "scenario_summary.txt",
-                            summary
-                        );
-                    });
 
                 // Now execute just the single scenario, after executing protocol updates up to
                 // the given protocol version
-                executor.execute_protocol_updates_and_scenarios(
-                    ProtocolBuilder::for_network(&network_definition)
-                        .from_bootstrap_to(protocol_version),
-                    ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
-                    ScenarioFilter::SpecificScenariosByName(btreeset!(
-                        scenario_logical_name.to_string()
-                    )),
-                    &mut (),
-                    &VmModules::default(),
-                );
-
-                scenario_folder.verify_no_extra_content_exists();
+                let mut executor =
+                    TransactionScenarioExecutor::new(db, NetworkDefinition::simulator())
+                        .execute_protocol_updates_and_scenarios(
+                            |builder| builder.from_bootstrap_to(protocol_version),
+                            ScenarioTrigger::AfterCompletionOfAllProtocolUpdates,
+                            ScenarioFilter::SpecificScenariosByName(btreeset!(
+                                scenario_logical_name.to_string()
+                            )),
+                            &mut ScenarioDumpingHooks::new(scenario_folder),
+                            &mut (),
+                            &VmModules::default(),
+                        );
             }
         }
     }
@@ -459,8 +501,10 @@ mod test {
 
     #[test]
     pub fn validate_the_metadata_of_all_scenarios() {
-        DefaultTransactionScenarioExecutor::new(InMemorySubstateDatabase::standard(), &NetworkDefinition::simulator())
-            .on_scenario_started(|metadata| {
+        struct Hooks;
+        impl<S: SubstateDatabase> ScenarioExecutionHooks<S> for Hooks {
+            fn on_scenario_started(&mut self, event: OnScenarioStarted<S>) {
+                let OnScenarioStarted { metadata, .. } = event;
                 if let Some(testnet_run_at) = metadata.testnet_run_at {
                     assert!(
                         testnet_run_at >= metadata.protocol_min_requirement,
@@ -474,7 +518,12 @@ mod test {
                     "Scenario logical name contains a space: {}",
                     metadata.logical_name
                 );
-            })
-            .execute_every_protocol_update_and_scenario();
+            }
+        }
+        TransactionScenarioExecutor::new(
+            InMemorySubstateDatabase::standard(),
+            NetworkDefinition::simulator(),
+        )
+        .execute_every_protocol_update_and_scenario(&mut Hooks);
     }
 }
