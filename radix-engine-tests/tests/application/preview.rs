@@ -179,8 +179,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 #[test]
 fn test_preview_no_auth() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
 
     let preview_flags = PreviewFlags {

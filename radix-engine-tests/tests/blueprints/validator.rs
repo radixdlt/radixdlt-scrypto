@@ -87,8 +87,7 @@ fn cannot_signal_protocol_update_if_wrong_length() {
 #[test]
 fn check_if_validator_accepts_delegated_stake() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pub_key, _, account) = ledger.new_account(false);
 
     let validator_address = ledger.new_validator_with_pub_key(pub_key, account);

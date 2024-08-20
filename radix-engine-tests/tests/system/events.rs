@@ -1639,8 +1639,7 @@ fn validator_claim_xrd_emits_correct_events() {
 #[test]
 fn validator_update_stake_delegation_status_emits_correct_event() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pub_key, _, account) = ledger.new_account(false);
 
     let validator_address = ledger.new_validator_with_pub_key(pub_key, account);

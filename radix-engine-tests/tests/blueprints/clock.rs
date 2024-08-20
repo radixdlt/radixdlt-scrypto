@@ -65,8 +65,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
 #[test]
 fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 
     // Act
