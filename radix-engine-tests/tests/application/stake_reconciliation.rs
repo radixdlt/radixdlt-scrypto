@@ -1,4 +1,5 @@
 use radix_common::prelude::*;
+use radix_engine::updates::BabylonSettings;
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use scrypto_test::prelude::*;
 use core::fmt::Write;
@@ -18,7 +19,10 @@ fn test_stake_reconciliation() {
     // Arrange
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.only_babylon())
+        .with_custom_protocol(|builder| builder
+            .with_babylon(BabylonSettings::test_minimal())
+            .only_babylon()
+        )
         .build();
     let (account_pk, _, account) = ledger.new_account(false);
 

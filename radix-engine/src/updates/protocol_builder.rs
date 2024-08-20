@@ -1,4 +1,4 @@
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
+use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use radix_transactions::model::TransactionPayload;
 
 use crate::{
@@ -306,6 +306,28 @@ impl ProtocolExecutor {
             starting_at,
             update_until,
             settings,
+        }
+    }
+
+    // Ideally if we stored "protocol update state" in the database we could automate discovery of where to start.
+    pub fn commit_each_protocol_update_if_not_already_bootstrapped<
+        S: SubstateDatabase + CommittableSubstateDatabase,
+    >(
+        self,
+        store: &mut S,
+    ) {
+        let is_bootstrapped = store
+            .get_substate(
+                &SpreadPrefixKeyMapper::to_db_partition_key(
+                    PACKAGE_PACKAGE.as_node_id(),
+                    TYPE_INFO_FIELD_PARTITION,
+                ),
+                &SpreadPrefixKeyMapper::to_db_sort_key(&TypeInfoField::TypeInfo.into()),
+            )
+            .is_some();
+
+        if !is_bootstrapped {
+            self.commit_each_protocol_update(store);
         }
     }
 

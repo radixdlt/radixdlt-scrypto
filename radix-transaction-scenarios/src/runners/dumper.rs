@@ -31,7 +31,7 @@ mod test {
         folder: PathBuf,
         mode: DumperMode,
         files_touched: Rc<RefCell<IndexSet<OsString>>>,
-        folders_touched: Rc<RefCell<IndexMap<OsString, FolderAligner>>>,
+        registered_folders: Rc<RefCell<IndexMap<OsString, FolderAligner>>>,
     }
 
     impl FolderAligner {
@@ -50,7 +50,7 @@ mod test {
                 folder,
                 mode,
                 files_touched: Rc::new(RefCell::new(indexset!())),
-                folders_touched: Rc::new(RefCell::new(indexmap!())),
+                registered_folders: Rc::new(RefCell::new(indexmap!())),
             }
         }
 
@@ -82,16 +82,20 @@ mod test {
             let child_folder = child_folder.as_ref();
             let path = self.folder.join(child_folder);
             let folder_aligner = FolderAligner::new(path, self.mode);
-            self.folders_touched
+            self.registered_folders
                 .borrow_mut()
                 .insert(child_folder.into(), folder_aligner.clone());
             folder_aligner
         }
 
-        pub fn verify_complete_recursive(&self) {
+        pub fn verify_no_extra_content_exists(&self) {
             match self.mode {
                 DumperMode::Write => {}
                 DumperMode::Assert => {
+                    // If the folder doesn't exist, then it can't contain any contents, so this check is fine
+                    if !self.folder.exists() {
+                        return;
+                    }
                     for entry in walkdir::WalkDir::new(&self.folder)
                         .min_depth(1)
                         .max_depth(1)
@@ -110,7 +114,7 @@ mod test {
                                 }
                             }
                             (false, true) => {
-                                if !self.folders_touched.borrow().contains_key(file_name) {
+                                if !self.registered_folders.borrow().contains_key(file_name) {
                                     panic!(
                                         "Folder {} should not exist",
                                         entry.path().to_string_lossy()
@@ -131,8 +135,8 @@ mod test {
                             }
                         }
                     }
-                    for (_, child_folder) in self.folders_touched.borrow().iter() {
-                        child_folder.verify_complete_recursive();
+                    for (_, child_folder) in self.registered_folders.borrow().iter() {
+                        child_folder.verify_no_extra_content_exists();
                     }
                 }
             }
@@ -271,7 +275,7 @@ mod test {
 
             version_folder.put_file("protocol_update_summary.txt", summary);
 
-            version_folder.verify_complete_recursive();
+            version_folder.verify_no_extra_content_exists();
         }
     }
 
@@ -438,7 +442,7 @@ mod test {
                     &VmModules::default(),
                 );
 
-                scenario_folder.verify_complete_recursive();
+                scenario_folder.verify_no_extra_content_exists();
             }
         }
     }

@@ -44,7 +44,7 @@ impl SimulatorEnvironment {
     fn bootstrap(&mut self) {
         ProtocolBuilder::for_network(&self.network_definition)
             .from_bootstrap_to_latest()
-            .commit_each_protocol_update(&mut self.db);
+            .commit_each_protocol_update_if_not_already_bootstrapped(&mut self.db);
     }
 }
 
