@@ -168,11 +168,6 @@ mod test {
                 NoExtension
             }
 
-            fn adapt_execution_config(&mut self, mut config: ExecutionConfig) -> ExecutionConfig {
-                config.enable_cost_breakdown = true;
-                config
-            }
-
             fn on_transaction_executed(
                 &mut self,
                 _protocol_version: ProtocolVersion,
