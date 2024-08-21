@@ -33,6 +33,7 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
         logical_name: "account_authorized_depositors",
         protocol_min_requirement: ProtocolVersion::Babylon,
         testnet_run_at: Some(ProtocolVersion::Babylon),
+        safe_to_run_on_used_ledger: false,
     };
 
     fn create_with_config_and_state(

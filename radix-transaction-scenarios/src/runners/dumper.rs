@@ -449,7 +449,6 @@ mod test {
 
             self.scenario_folder
                 .put_file("scenario_summary.txt", summary);
-            self.scenario_folder.verify_no_extra_content_exists()
         }
     }
 
@@ -480,10 +479,12 @@ mod test {
                             ScenarioFilter::SpecificScenariosByName(btreeset!(
                                 scenario_logical_name.to_string()
                             )),
-                            &mut ScenarioDumpingHooks::new(scenario_folder),
+                            &mut ScenarioDumpingHooks::new(scenario_folder.clone()),
                             &mut (),
                             &VmModules::default(),
                         );
+
+                scenario_folder.verify_no_extra_content_exists();
             }
         }
     }
@@ -518,6 +519,36 @@ mod test {
                     "Scenario logical name contains a space: {}",
                     metadata.logical_name
                 );
+            }
+
+            fn on_scenario_ended(&mut self, event: OnScenarioEnded<S>) {
+                let OnScenarioEnded {
+                    metadata,
+                    end_state,
+                    ..
+                } = event;
+                if let Some(testnet_run_at) = metadata.testnet_run_at {
+                    if testnet_run_at > ProtocolVersion::EARLIEST {
+                        assert!(
+                            metadata.safe_to_run_on_used_ledger,
+                            "Scenario \"{}\" is set to run on non-Babylon testnets, but is not marked as `safe_to_run_on_used_ledger`. This could break stokenet. Change the scenario to not use pre-allocated addresses, and set `safe_to_run_on_used_ledger` to `true`.",
+                            metadata.logical_name
+                        );
+                    }
+                }
+                if metadata.safe_to_run_on_used_ledger {
+                    for (address_name, address) in end_state.output.interesting_addresses.0.iter() {
+                        if let DescribedAddress::Global(address) = address {
+                            let entity_type = address.as_node_id().entity_type().unwrap();
+                            assert!(
+                                !entity_type.is_global_preallocated(),
+                                "Scenario \"{}\" is marked as `safe_to_run_on_used_ledger`, but its interesting address {} is pre-allocated - which suggests the scenario can be broken by someone messing with this address before the scenario runs. Change the scenario to explicitly create accounts/identities (see e.g. `maya-router.rs`).",
+                                metadata.logical_name,
+                                address_name,
+                            );
+                        }
+                    }
+                }
             }
         }
         TransactionScenarioExecutor::new(

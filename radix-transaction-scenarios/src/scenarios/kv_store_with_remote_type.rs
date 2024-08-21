@@ -16,6 +16,7 @@ impl ScenarioCreator for KVStoreScenarioCreator {
         logical_name: "kv_store_with_remote_type",
         protocol_min_requirement: ProtocolVersion::Babylon,
         testnet_run_at: Some(ProtocolVersion::Babylon),
+        safe_to_run_on_used_ledger: true,
     };
 
     fn create_with_config_and_state(
