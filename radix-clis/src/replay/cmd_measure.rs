@@ -122,7 +122,7 @@ impl TxnMeasure {
                         output,
                         "{},{},{},{}",
                         TransactionHashBech32Encoder::new(&network)
-                            .encode(&IntentHash(tx.signed_intent.intent.summary.hash))
+                            .encode(&TransactionIntentHash(tx.signed_intent.intent.summary.hash))
                             .unwrap(),
                         tx_processing_time.as_micros(),
                         execution_cost_units.unwrap(),

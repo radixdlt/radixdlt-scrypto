@@ -2991,6 +2991,10 @@ impl<'a, Y: SystemBasedKernelApi> KernelInternalApi for SystemService<'a, Y> {
         self.api.kernel_get_system_state()
     }
 
+    fn kernel_get_intent_index(&self) -> usize {
+        self.api.kernel_get_intent_index()
+    }
+
     fn kernel_get_current_depth(&self) -> usize {
         self.api.kernel_get_current_depth()
     }

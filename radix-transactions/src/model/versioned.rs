@@ -134,7 +134,7 @@ mod tests {
             blobs: blobs_v1.clone(),
             message: message_v1.clone(),
         };
-        let expected_intent_hash = IntentHash::from_hash(hash(
+        let expected_intent_hash = TransactionIntentHash::from_hash(hash(
             [
                 [
                     TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
@@ -165,9 +165,12 @@ mod tests {
 
         let prepared_intent =
             PreparedIntentV1::prepare_from_payload(&intent_payload_bytes).unwrap();
-        assert_eq!(expected_intent_hash, prepared_intent.intent_hash());
+        assert_eq!(
+            expected_intent_hash,
+            prepared_intent.transaction_intent_hash()
+        );
 
-        let intent_hash = prepared_intent.intent_hash();
+        let intent_hash = prepared_intent.transaction_intent_hash();
 
         assert_eq!(
             intent_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
@@ -194,7 +197,7 @@ mod tests {
             intent: intent_v1.clone(),
             intent_signatures: intent_signatures_v1.clone(),
         };
-        let expected_signed_intent_hash = SignedIntentHash::from_hash(hash(
+        let expected_signed_intent_hash = SignedTransactionIntentHash::from_hash(hash(
             [
                 [
                     TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
@@ -223,7 +226,10 @@ mod tests {
             expected_signed_intent_hash,
             prepared_signed_intent.signed_intent_hash()
         );
-        assert_eq!(intent_hash, prepared_signed_intent.intent_hash());
+        assert_eq!(
+            intent_hash,
+            prepared_signed_intent.transaction_intent_hash()
+        );
 
         let signed_intent_hash = expected_signed_intent_hash;
 
@@ -287,7 +293,10 @@ mod tests {
             signed_intent_hash,
             prepared_notarized_transaction.signed_intent_hash()
         );
-        assert_eq!(intent_hash, prepared_notarized_transaction.intent_hash());
+        assert_eq!(
+            intent_hash,
+            prepared_notarized_transaction.transaction_intent_hash()
+        );
 
         assert_eq!(
             notarized_transaction_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),

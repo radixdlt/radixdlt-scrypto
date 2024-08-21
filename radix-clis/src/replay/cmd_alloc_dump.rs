@@ -152,7 +152,9 @@ impl TxnAllocDump {
                                 output,
                                 "user,{},{},{},{},{}",
                                 TransactionHashBech32Encoder::new(&network)
-                                    .encode(&IntentHash(tx.signed_intent.intent.summary.hash))
+                                    .encode(&TransactionIntentHash(
+                                        tx.signed_intent.intent.summary.hash
+                                    ))
                                     .unwrap(),
                                 execution_cost_units.unwrap(),
                                 heap_allocations_sum,

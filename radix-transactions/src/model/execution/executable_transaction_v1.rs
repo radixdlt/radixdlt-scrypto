@@ -2,35 +2,42 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionContext {
-    pub intent_hash: TransactionIntentHash,
+    /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
+    pub unique_hash: Hash,
+    pub intent_hash_check: IntentHashCheck,
     pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub num_of_signature_validations: usize,
-    pub auth_zone_params: AuthZoneParams,
+    pub auth_zone_init: AuthZoneInit,
     pub costing_parameters: TransactionCostingParameters,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TransactionIntentHash {
+pub enum IntentHashCheck {
     /// Should be checked with transaction tracker.
-    ToCheck {
-        intent_hash: Hash,
+    TransactionIntent {
+        intent_hash: TransactionIntentHash,
         expiry_epoch: Epoch,
     },
-    /// Should not be checked by transaction tracker.
-    NotToCheck { intent_hash: Hash },
+    /// Subintent
+    Subintent {
+        intent_hash: SubintentHash,
+        expiry_epoch: Epoch,
+    },
+    /// For where there's no intent hash
+    None,
 }
 
-impl TransactionIntentHash {
-    pub fn as_hash(&self) -> &Hash {
+impl IntentHashCheck {
+    pub fn intent_hash(&self) -> Option<IntentHash> {
         match self {
-            TransactionIntentHash::ToCheck { intent_hash, .. }
-            | TransactionIntentHash::NotToCheck { intent_hash } => intent_hash,
+            IntentHashCheck::TransactionIntent { intent_hash, .. } => {
+                Some(IntentHash::Transaction(*intent_hash))
+            }
+            IntentHashCheck::Subintent { intent_hash, .. } => Some(IntentHash::Sub(*intent_hash)),
+            IntentHashCheck::None => None,
         }
-    }
-    pub fn to_hash(&self) -> Hash {
-        self.as_hash().clone()
     }
 }
 
@@ -44,8 +51,12 @@ impl TransactionIntentHash {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct TransactionCostingParameters {
     pub tip_percentage: u16,
+
     /// Free credit for execution, for preview only!
     pub free_credit_in_xrd: Decimal,
+
+    /// Whether to abort the transaction run when the loan is repaid.
+    /// This is used when test-executing pending transactions.
     pub abort_when_loan_repaid: bool,
 }
 
@@ -53,7 +64,7 @@ impl Default for TransactionCostingParameters {
     fn default() -> Self {
         Self {
             tip_percentage: DEFAULT_TIP_PERCENTAGE,
-            free_credit_in_xrd: Default::default(),
+            free_credit_in_xrd: Decimal::ZERO,
             abort_when_loan_repaid: false,
         }
     }
@@ -104,12 +115,13 @@ impl ExecutableTransactionV1 {
     ) -> Self {
         let mut references = references;
 
-        for proof in &context.auth_zone_params.initial_proofs {
+        for proof in &context.auth_zone_init.initial_non_fungible_id_proofs {
             references.insert(proof.resource_address().clone().into());
         }
-        for resource in &context.auth_zone_params.virtual_resources {
+        for resource in &context.auth_zone_init.simulate_every_proof_under_resources {
             references.insert(resource.clone().into());
         }
+
         for preallocated_address in &context.pre_allocated_addresses {
             references.insert(
                 preallocated_address
@@ -131,20 +143,6 @@ impl ExecutableTransactionV1 {
 
     // Consuming builder-like customization methods:
 
-    pub fn enable_limits_and_costing_modules(&self) -> bool {
-        !self.system
-    }
-
-    pub fn overwrite_intent_hash(mut self, hash: Hash) -> Self {
-        match &mut self.context.intent_hash {
-            TransactionIntentHash::ToCheck { intent_hash, .. }
-            | TransactionIntentHash::NotToCheck { intent_hash } => {
-                *intent_hash = hash;
-            }
-        }
-        self
-    }
-
     pub fn skip_epoch_range_check(mut self) -> Self {
         self.context.epoch_range = None;
         self
@@ -159,46 +157,62 @@ impl ExecutableTransactionV1 {
         self.context.costing_parameters.abort_when_loan_repaid = true;
         self
     }
+}
 
-    // Getters:
+impl TransactionParameters for ExecutableTransactionV1 {
+    type Intent = Self;
 
-    pub fn intent_hash(&self) -> &TransactionIntentHash {
-        &self.context.intent_hash
+    fn unique_hash(&self) -> &Hash {
+        &self.context.unique_hash
     }
 
-    pub fn epoch_range(&self) -> Option<&EpochRange> {
+    fn overall_epoch_range(&self) -> Option<&EpochRange> {
         self.context.epoch_range.as_ref()
     }
 
-    pub fn costing_parameters(&self) -> &TransactionCostingParameters {
+    fn costing_parameters(&self) -> &TransactionCostingParameters {
         &self.context.costing_parameters
     }
 
-    pub fn blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.blobs
-    }
-
-    pub fn encoded_instructions(&self) -> &[u8] {
-        &self.encoded_instructions
-    }
-
-    pub fn references(&self) -> &IndexSet<Reference> {
-        &self.references
-    }
-
-    pub fn auth_zone_params(&self) -> &AuthZoneParams {
-        &self.context.auth_zone_params
-    }
-
-    pub fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {
+    fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {
         &self.context.pre_allocated_addresses
     }
 
-    pub fn payload_size(&self) -> usize {
+    fn payload_size(&self) -> usize {
         self.context.payload_size
     }
 
-    pub fn num_of_signature_validations(&self) -> usize {
+    fn num_of_signature_validations(&self) -> usize {
         self.context.num_of_signature_validations
+    }
+
+    fn disable_limits_and_costing_modules(&self) -> bool {
+        self.system
+    }
+
+    fn intents(&self) -> Vec<&Self::Intent> {
+        vec![&self]
+    }
+}
+
+impl IntentParameters for ExecutableTransactionV1 {
+    fn intent_hash_check(&self) -> &IntentHashCheck {
+        &self.context.intent_hash_check
+    }
+
+    fn auth_zone_init(&self) -> &AuthZoneInit {
+        &self.context.auth_zone_init
+    }
+
+    fn blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
+        &self.blobs
+    }
+
+    fn encoded_instructions(&self) -> &[u8] {
+        &self.encoded_instructions
+    }
+
+    fn references(&self) -> &IndexSet<Reference> {
+        &self.references
     }
 }

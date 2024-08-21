@@ -161,6 +161,26 @@ Enum<3u8>(
             .validate_from_payload_bytes(&payload)
             .unwrap();
         let executable = validated.get_executable();
+        let expected_intent_hash = TransactionIntentHash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V1Intent as u8,
+                ]
+                .as_slice(),
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.header)
+                    .as_slice(),
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.instructions)
+                    .as_slice(),
+                hash(
+                    hash(&[1, 2]), // one blob only
+                )
+                .as_slice(),
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.message)
+                    .as_slice(),
+            ]
+            .concat(),
+        ));
         assert_eq!(
             executable,
             ExecutableTransactionV1::new(
@@ -175,33 +195,9 @@ Enum<3u8>(
                     hash(&[1, 2]) => vec![1, 2]
                 )),
                 ExecutionContext {
-                    intent_hash: TransactionIntentHash::ToCheck {
-                        intent_hash: hash(
-                            [
-                                [
-                                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                                    TransactionDiscriminator::V1Intent as u8,
-                                ]
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.header
-                                )
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.instructions
-                                )
-                                .as_slice(),
-                                hash(
-                                    hash(&[1, 2]) // one blob only
-                                )
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.message
-                                )
-                                .as_slice(),
-                            ]
-                            .concat(),
-                        ),
+                    unique_hash: expected_intent_hash.0,
+                    intent_hash_check: IntentHashCheck::TransactionIntent {
+                        intent_hash: expected_intent_hash,
                         expiry_epoch: Epoch::of(66)
                     },
                     epoch_range: Some(EpochRange {
@@ -215,13 +211,10 @@ Enum<3u8>(
                     // * Enum variant header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
                     payload_size: payload.len() - 3,
                     num_of_signature_validations: 3,
-                    auth_zone_params: AuthZoneParams {
-                        initial_proofs: btreeset!(
-                            NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
-                            NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
-                        ),
-                        virtual_resources: btreeset!()
-                    },
+                    auth_zone_init: AuthZoneInit::proofs(btreeset!(
+                        NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
+                        NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
+                    )),
                     costing_parameters: TransactionCostingParameters {
                         tip_percentage: 4,
                         free_credit_in_xrd: dec!(0),

@@ -64,6 +64,12 @@ pub enum RejectionReason {
     SuccessButFeeLoanNotRepaid,
 }
 
+impl From<BootloadingError> for RejectionReason {
+    fn from(value: BootloadingError) -> Self {
+        RejectionReason::BootloadingError(value)
+    }
+}
+
 impl fmt::Display for RejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)

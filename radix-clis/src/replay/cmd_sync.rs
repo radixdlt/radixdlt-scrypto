@@ -226,8 +226,8 @@ pub enum TypedTransactionIdentifiers {
         system_transaction_hash: SystemTransactionHash,
     },
     User {
-        intent_hash: IntentHash,
-        signed_intent_hash: SignedIntentHash,
+        intent_hash: TransactionIntentHash,
+        signed_intent_hash: SignedTransactionIntentHash,
         notarized_transaction_hash: NotarizedTransactionHash,
     },
     RoundUpdateV1 {

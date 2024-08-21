@@ -20,7 +20,7 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
-use radix_transactions::model::AuthZoneParams;
+use radix_transactions::model::AuthZoneInit;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -69,6 +69,19 @@ pub enum ResolvedPermission {
     AllowAll,
 }
 
+#[derive(Debug, Clone)]
+pub struct AuthZoneParams {
+    pub auth_zone_init_for_each_intent: Vec<AuthZoneInit>,
+}
+
+impl Default for AuthZoneParams {
+    fn default() -> Self {
+        Self {
+            auth_zone_init_for_each_intent: vec![Default::default()],
+        }
+    }
+}
+
 impl AuthModule {
     pub fn new(params: AuthZoneParams) -> Self {
         Self { params }
@@ -92,10 +105,18 @@ impl AuthModule {
             let is_at_root = system.kernel_get_current_depth() == 0;
             let (virtual_resources, virtual_non_fungibles) =
                 if is_transaction_processor_blueprint && is_at_root {
+                    let intent_index = system.kernel_get_intent_index();
                     let auth_module = &system.kernel_get_system().modules.auth;
+                    // TODO - Can optionally replace this panic with a runtime error when we can change
+                    //        runtime error
+                    let auth_zone_init = auth_module
+                        .params
+                        .auth_zone_init_for_each_intent
+                        .get(intent_index)
+                        .expect("Executable has too few auth zone inits for the number of intents");
                     (
-                        auth_module.params.virtual_resources.clone(),
-                        auth_module.params.initial_proofs.clone(),
+                        auth_zone_init.simulate_every_proof_under_resources.clone(),
+                        auth_zone_init.initial_non_fungible_id_proofs.clone(),
                     )
                 } else {
                     (BTreeSet::new(), BTreeSet::new())

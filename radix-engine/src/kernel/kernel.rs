@@ -51,7 +51,7 @@ pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabas
 
 impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Executes a transaction
-    pub fn execute(self, executable: M::Executable) -> M::Receipt {
+    pub fn execute(self, executable: M::TransactionExecutable) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker =
@@ -59,15 +59,12 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
 
         #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
         {
-            self.execute_internal(executable.clone())
-                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason))
+            self.execute_internal(executable)
         }
 
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         {
-            let mut receipt = self
-                .execute_internal(executable.clone())
-                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason));
+            let mut receipt = self.execute_internal(executable);
 
             // Stop hardware resource usage tracker
             receipt.set_resource_usage(resources_tracker.end_measurement());
@@ -76,10 +73,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
         }
     }
 
-    fn execute_internal(
-        mut self,
-        executable: M::Executable,
-    ) -> Result<M::Receipt, RejectionReason> {
+    fn execute_internal(mut self, executable: M::TransactionExecutable) -> M::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
@@ -98,15 +92,24 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
             .unwrap_or(KernelBoot::babylon());
 
         // Upper Layer Initialization
-        let (mut callback, call_frame_init) =
-            M::init(&mut self.track, executable, self.init.clone())?;
+        let system_init_result = M::init(&mut self.track, executable, self.init.clone());
+
+        let (mut system, call_frame_inits) = match system_init_result {
+            Ok(success) => success,
+            Err(receipt) => return receipt,
+        };
 
         // Kernel Initialization
         let mut kernel = Kernel::new(
             &mut self.track,
             &mut self.id_allocator,
-            &mut callback,
-            call_frame_init,
+            &mut system,
+            // TODO: Fix to take call frame inits for each intent
+            {
+                let mut call_frame_inits = call_frame_inits;
+                let first_call_frame_init = call_frame_inits.drain(..).next().unwrap();
+                first_call_frame_init
+            },
         );
 
         // Execution
@@ -129,9 +132,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
         .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
         // Create receipt representing the result of a transaction
-        let receipt = M::create_receipt(callback, self.track, result);
-
-        Ok(receipt)
+        system.create_receipt(self.track, result)
     }
 }
 
@@ -438,6 +439,11 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
         self.current_frame.get_node_visibility(node_id)
     }
 
+    fn kernel_get_intent_index(&self) -> usize {
+        // TODO: Fix when intent threading is implemented
+        0
+    }
+
     fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth()
     }
@@ -484,6 +490,11 @@ impl<'g, M: KernelCallbackObject> KernelInternalApi for KernelReadOnly<'g, M> {
 
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
+    }
+
+    fn kernel_get_intent_index(&self) -> usize {
+        // TODO - fix when threading is implemented!
+        unimplemented!()
     }
 
     fn kernel_get_current_depth(&self) -> usize {

@@ -1301,8 +1301,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         let executable = executable.into();
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
-        if executable.uses_free_credits()
-        {
+        if executable.uses_free_credits() {
             self.xrd_free_credits_used = true;
         }
 

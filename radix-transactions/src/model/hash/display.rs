@@ -48,8 +48,8 @@ macro_rules! impl_contextual_display {
 }
 
 impl_contextual_display![
-    IntentHash,
-    SignedIntentHash,
+    TransactionIntentHash,
+    SignedTransactionIntentHash,
     NotarizedTransactionHash,
     SystemTransactionHash
 ];

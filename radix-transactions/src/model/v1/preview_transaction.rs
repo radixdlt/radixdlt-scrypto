@@ -28,10 +28,10 @@ impl ValidatedPreviewIntent {
         let intent = &self.intent;
         let flags = &self.flags;
 
-        let mut virtual_resources = BTreeSet::new();
+        let mut simulate_every_proof_under_resources = BTreeSet::new();
         if self.flags.assume_all_signature_proofs {
-            virtual_resources.insert(SECP256K1_SIGNATURE_RESOURCE);
-            virtual_resources.insert(ED25519_SIGNATURE_RESOURCE);
+            simulate_every_proof_under_resources.insert(SECP256K1_SIGNATURE_RESOURCE);
+            simulate_every_proof_under_resources.insert(ED25519_SIGNATURE_RESOURCE);
         }
 
         let header = &intent.header.inner;
@@ -52,20 +52,19 @@ impl ValidatedPreviewIntent {
             ));
         }
 
-        let intent_hash = intent.intent_hash();
+        let intent_hash = intent.transaction_intent_hash();
 
         ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
-                intent_hash: if flags.skip_epoch_check {
-                    TransactionIntentHash::NotToCheck {
-                        intent_hash: intent_hash.into_hash(),
-                    }
+                unique_hash: intent_hash.0,
+                intent_hash_check: if flags.skip_epoch_check {
+                    IntentHashCheck::None
                 } else {
-                    TransactionIntentHash::ToCheck {
-                        intent_hash: intent_hash.into_hash(),
+                    IntentHashCheck::TransactionIntent {
+                        intent_hash,
                         expiry_epoch: intent.header.inner.end_epoch_exclusive,
                     }
                 },
@@ -79,10 +78,10 @@ impl ValidatedPreviewIntent {
                 },
                 payload_size: self.intent.summary.effective_length,
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
-                auth_zone_params: AuthZoneParams {
+                auth_zone_init: AuthZoneInit::new(
                     initial_proofs,
-                    virtual_resources,
-                },
+                    simulate_every_proof_under_resources,
+                ),
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],
             },

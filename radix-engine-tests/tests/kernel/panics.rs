@@ -178,6 +178,10 @@ impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
         panic1!()
     }
 
+    fn kernel_get_intent_index(&self) -> usize {
+        panic1!()
+    }
+
     fn kernel_get_current_depth(&self) -> usize {
         panic1!()
     }

@@ -1,4 +1,5 @@
 use super::module::*;
+use super::system_modules::auth::AuthZoneParams;
 use super::system_modules::costing::{CostingModuleConfig, ExecutionCostingEntry};
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_PREALLOCATED_ED25519_ID;
@@ -226,7 +227,7 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &ExecutableTransactionV1) {
         println!("{:-^120}", "Executable");
-        println!("Intent hash: {}", executable.intent_hash().as_hash());
+        println!("Intent hash: {}", executable.unique_hash());
         println!("Payload size: {}", executable.payload_size());
         println!(
             "Transaction costing parameters: {:?}",
@@ -240,7 +241,7 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
         println!("References: {:?}", executable.references());
     }
 
-    fn read_epoch<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
+    fn read_epoch_uncosted<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
         match store.read_substate(
@@ -278,12 +279,12 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
         Ok(())
     }
 
-    fn validate_intent_hash<S: CommitableSubstateStore>(
-        track: &mut S,
-        intent_hash: Hash,
+    fn validate_intent_hash_uncosted<S: CommitableSubstateStore>(
+        store: &mut S,
+        intent_hash: &Hash,
         expiry_epoch: Epoch,
     ) -> Result<(), RejectionReason> {
-        let substate: FieldSubstate<TransactionTrackerSubstate> = track
+        let substate: FieldSubstate<TransactionTrackerSubstate> = store
             .read_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -299,7 +300,7 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
-        let substate = track.read_substate(
+        let substate = store.read_substate(
             TRANSACTION_TRACKER.as_node_id(),
             PartitionNumber(partition_number),
             &SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
@@ -370,15 +371,16 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
         }
     }
 
-    fn finalize_fees<S: SubstateDatabase>(
+    fn finalize_fees_for_commit<S: SubstateDatabase>(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,
-        free_credit: Decimal,
     ) -> (
         FeeReserveFinalizationSummary,
         IndexMap<NodeId, Decimal>,
         Vec<(EventTypeIdentifier, Vec<u8>)>,
+        CostingParameters,
+        TransactionCostingParameters,
     ) {
         let mut events = Vec::<(EventTypeIdentifier, Vec<u8>)>::new();
 
@@ -416,7 +418,8 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
         }
 
         // Take fee payments
-        let fee_reserve_finalization = fee_reserve.finalize();
+        let (fee_reserve_finalization, costing_parameters, transaction_costing_parameters) =
+            fee_reserve.finalize();
         let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
         let mut required = fee_reserve_finalization.total_cost();
         let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
@@ -479,6 +482,7 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
             ));
         }
         // Free credit is locked first and thus used last
+        let free_credit = transaction_costing_parameters.free_credit_in_xrd;
         if free_credit.is_positive() {
             let amount = Decimal::min(free_credit, required);
             collected_fees.put(LiquidFungibleResource::new(amount));
@@ -609,13 +613,19 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
             ));
         }
 
-        (fee_reserve_finalization, fee_payments, events)
+        (
+            fee_reserve_finalization,
+            fee_payments,
+            events,
+            costing_parameters,
+            transaction_costing_parameters,
+        )
     }
 
     fn update_transaction_tracker<S: SubstateDatabase>(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         next_epoch: Epoch,
-        intent_hash: &TransactionIntentHash,
+        intent_hash_check: &IntentHashCheck,
         is_success: bool,
     ) {
         // Read the intent hash store
@@ -633,10 +643,10 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
         let mut transaction_tracker = transaction_tracker.into_v1();
 
         // Update the status of the intent hash
-        if let TransactionIntentHash::ToCheck {
+        if let IntentHashCheck::TransactionIntent {
             expiry_epoch,
             intent_hash,
-        } = intent_hash
+        } = intent_hash_check
         {
             if let Some(partition_number) =
                 transaction_tracker.partition_for_expiry_epoch(*expiry_epoch)
@@ -785,14 +795,16 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
     }
 
     /// Checks that references exist in the store
-    fn check_references<S: BootStore + CommitableSubstateStore>(
-        &mut self,
-        store: &mut S,
+    fn build_call_frame_init_with_reference_check(
+        intent: &impl IntentParameters,
+        modules: &mut SystemModuleMixer,
+        store: &mut (impl BootStore + CommitableSubstateStore),
     ) -> Result<CallFrameInit<Actor>, BootloadingError> {
         let mut global_addresses = indexset!();
         let mut direct_accesses = indexset!();
 
-        for reference in self.executable.references().iter() {
+        // Check references
+        for reference in intent.references().iter() {
             let node_id = &reference.0;
 
             if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
@@ -814,7 +826,7 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
                 )
                 .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
 
-            match Self::verify_boot_ref_value(&mut self.modules, node_id, ref_value)? {
+            match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
                 StableReferenceType::Global => {
                     global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                 }
@@ -878,51 +890,236 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
             )),
         };
     }
-}
 
-impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, ExecutableTransactionV1> {
-    type Init = SystemInit<C::Init>;
-    type Executable = ExecutableTransactionV1;
-    type ExecutionOutput = Vec<InstructionOutput>;
-    type Receipt = TransactionReceipt;
+    fn create_non_commit_receipt(
+        result: TransactionResult,
+        modules: SystemModuleMixer,
+    ) -> TransactionReceiptV1 {
+        let print_execution_summary = modules.is_kernel_trace_enabled();
+        let costing_module = modules.unpack_costing();
+        let (fee_reserve, cost_breakdown, detailed_cost_breakdown) =
+            costing_module.unpack_for_receipt();
+        let (finalization_summary, costing_parameters, transaction_costing_parameters) =
+            fee_reserve.finalize();
+        let fee_summary = finalization_summary.into();
 
-    fn init<S: BootStore + CommitableSubstateStore>(
-        store: &mut S,
-        executable: ExecutableTransactionV1,
-        init_input: SystemInit<C::Init>,
-    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
-        // Dump executable
-        #[cfg(not(feature = "alloc"))]
-        if init_input.enable_kernel_trace {
-            Self::print_executable(&executable);
+        Self::create_receipt_internal(
+            print_execution_summary,
+            costing_parameters,
+            cost_breakdown,
+            detailed_cost_breakdown,
+            transaction_costing_parameters,
+            fee_summary,
+            result,
+        )
+    }
+
+    fn create_rejection_receipt(
+        reason: impl Into<RejectionReason>,
+        modules: SystemModuleMixer,
+    ) -> TransactionReceiptV1 {
+        Self::create_non_commit_receipt(
+            TransactionResult::Reject(RejectResult {
+                reason: reason.into(),
+            }),
+            modules,
+        )
+    }
+
+    fn create_abort_receipt(
+        reason: impl Into<AbortReason>,
+        modules: SystemModuleMixer,
+    ) -> TransactionReceiptV1 {
+        Self::create_non_commit_receipt(
+            TransactionResult::Abort(AbortResult {
+                reason: reason.into(),
+            }),
+            modules,
+        )
+    }
+
+    fn create_commit_receipt<S: SubstateDatabase>(
+        outcome: Result<Vec<InstructionOutput>, RuntimeError>,
+        mut track: Track<S, SpreadPrefixKeyMapper>,
+        modules: SystemModuleMixer,
+        transaction: impl TransactionParameters,
+    ) -> TransactionReceiptV1 {
+        let print_execution_summary = modules.is_kernel_trace_enabled();
+        let execution_trace_enabled = modules.is_execution_trace_enabled();
+        let (costing_module, runtime_module, execution_trace_module) = modules.unpack();
+        let (mut fee_reserve, cost_breakdown, detailed_cost_breakdown) =
+            costing_module.unpack_for_receipt();
+        let is_success = outcome.is_ok();
+
+        // Commit/revert
+        if !is_success {
+            fee_reserve.revert_royalty();
+            track.revert_non_force_write_changes();
         }
 
-        let mut system_parameters = {
-            let system_boot = store
-                .read_boot_substate(
-                    TRANSACTION_TRACKER.as_node_id(),
-                    BOOT_LOADER_PARTITION,
-                    &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
-                )
-                .map(|v| scrypto_decode(v.as_slice()).unwrap())
-                .unwrap_or(SystemBoot::V1(SystemParameters {
-                    network_definition: NetworkDefinition::mainnet(),
-                    costing_parameters: CostingParameters::babylon_genesis(),
-                    costing_module_config: CostingModuleConfig::babylon_genesis(),
-                    limit_parameters: LimitParameters::babylon_genesis(),
-                }));
+        // Distribute fees
+        let (
+            fee_reserve_finalization,
+            paying_vaults,
+            finalization_events,
+            costing_parameters,
+            transaction_costing_parameters,
+        ) = Self::finalize_fees_for_commit(&mut track, fee_reserve, is_success);
 
-            match system_boot {
-                SystemBoot::V1(system_parameters) => system_parameters,
+        let fee_destination = FeeDestination {
+            to_proposer: fee_reserve_finalization.to_proposer_amount(),
+            to_validator_set: fee_reserve_finalization.to_validator_set_amount(),
+            to_burn: fee_reserve_finalization.to_burn_amount(),
+            to_royalty_recipients: fee_reserve_finalization.royalty_cost_breakdown.clone(),
+        };
+
+        // Update intent hash status
+        if let Some(next_epoch) = Self::read_epoch_uncosted(&mut track) {
+            for intent in transaction.intents() {
+                Self::update_transaction_tracker(
+                    &mut track,
+                    next_epoch,
+                    intent.intent_hash_check(),
+                    is_success,
+                );
+            }
+        }
+
+        // Finalize events and logs
+        let (mut application_events, application_logs) = runtime_module.finalize(is_success);
+        application_events.extend(finalization_events);
+
+        // Finalize track
+        let (tracked_substates, substate_db) = {
+            match track.finalize() {
+                Ok(result) => result,
+                Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
+                    panic!("System invariants should prevent transient substate from owning nodes");
+                }
             }
         };
 
-        let callback =
-            C::init(store, init_input.callback_init).map_err(RejectionReason::BootloadingError)?;
+        // Generate state updates from tracked substates
+        // Note that this process will prune invalid reads
+        let (new_node_ids, state_updates) =
+            to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
+
+        // Summarizes state updates
+        let system_structure =
+            SystemStructure::resolve(substate_db, &state_updates, &application_events);
+        let state_update_summary =
+            StateUpdateSummary::new(substate_db, new_node_ids, &state_updates);
+
+        // Resource reconciliation does not currently work in preview mode
+        if transaction_costing_parameters.free_credit_in_xrd.is_zero() {
+            reconcile_resource_state_and_events(
+                &state_update_summary,
+                &application_events,
+                SystemDatabaseReader::new_with_overlay(substate_db, &state_updates),
+            );
+        }
+
+        let execution_trace = if execution_trace_enabled {
+            Some(execution_trace_module.finalize(&paying_vaults, is_success))
+        } else {
+            None
+        };
+
+        let fee_summary = fee_reserve_finalization.into();
+        let result = TransactionResult::Commit(CommitResult {
+            state_updates,
+            state_update_summary,
+            fee_source: FeeSource { paying_vaults },
+            fee_destination,
+            outcome: match outcome {
+                Ok(o) => TransactionOutcome::Success(o),
+                Err(e) => TransactionOutcome::Failure(e),
+            },
+            application_events,
+            application_logs,
+            system_structure,
+            execution_trace,
+        });
+
+        Self::create_receipt_internal(
+            print_execution_summary,
+            costing_parameters,
+            cost_breakdown,
+            detailed_cost_breakdown,
+            transaction_costing_parameters,
+            fee_summary,
+            result,
+        )
+    }
+
+    fn create_receipt_internal(
+        print_execution_summary: bool,
+        costing_parameters: CostingParameters,
+        cost_breakdown: Option<CostBreakdown>,
+        detailed_cost_breakdown: Option<DetailedCostBreakdown>,
+        transaction_costing_parameters: TransactionCostingParameters,
+        fee_summary: TransactionFeeSummary,
+        result: TransactionResult,
+    ) -> TransactionReceiptV1 {
+        let transaction_costing_parameters = TransactionCostingParametersReceipt {
+            tip_percentage: transaction_costing_parameters.tip_percentage,
+            free_credit_in_xrd: transaction_costing_parameters.free_credit_in_xrd,
+        };
+
+        let fee_details = cost_breakdown.map(|b| TransactionFeeDetails {
+            execution_cost_breakdown: b.execution_cost_breakdown.into_iter().collect(),
+            finalization_cost_breakdown: b.finalization_cost_breakdown.into_iter().collect(),
+        });
+
+        let debug_information = detailed_cost_breakdown.map(|b| TransactionDebugInformation {
+            detailed_execution_cost_breakdown: b.detailed_execution_cost_breakdown,
+        });
+
+        let receipt = TransactionReceipt {
+            costing_parameters,
+            transaction_costing_parameters,
+            fee_summary,
+            fee_details,
+            result,
+            resources_usage: None,
+            debug_information,
+        };
+
+        // Dump summary
+        #[cfg(not(feature = "alloc"))]
+        if print_execution_summary {
+            Self::print_execution_summary(&receipt);
+        }
+
+        receipt
+    }
+
+    fn resolve_modules(
+        store: &mut impl BootStore,
+        executable: &impl TransactionParameters,
+        init_input: &SystemInit<C::Init>,
+    ) -> SystemModuleMixer {
+        let system_boot = store
+            .read_boot_substate(
+                TRANSACTION_TRACKER.as_node_id(),
+                BOOT_LOADER_PARTITION,
+                &SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY),
+            )
+            .map(|v| scrypto_decode(v.as_slice()).unwrap())
+            .unwrap_or(SystemBoot::V1(SystemParameters {
+                network_definition: NetworkDefinition::mainnet(),
+                costing_parameters: CostingParameters::babylon_genesis(),
+                costing_module_config: CostingModuleConfig::babylon_genesis(),
+                limit_parameters: LimitParameters::babylon_genesis(),
+            }));
+
+        let mut system_parameters = match system_boot {
+            SystemBoot::V1(system_parameters) => system_parameters,
+        };
 
         let mut enabled_modules = {
             let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
-            if executable.enable_limits_and_costing_modules() {
+            if !executable.disable_limits_and_costing_modules() {
                 enabled_modules |= EnabledModules::LIMITS;
                 enabled_modules |= EnabledModules::COSTING;
             };
@@ -938,17 +1135,17 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
         };
 
         // Override system configuration
-        if let Some(system_overrides) = init_input.system_overrides {
-            if let Some(costing_override) = system_overrides.costing_parameters {
-                system_parameters.costing_parameters = costing_override;
+        if let Some(system_overrides) = &init_input.system_overrides {
+            if let Some(costing_override) = &system_overrides.costing_parameters {
+                system_parameters.costing_parameters = costing_override.clone();
             }
 
-            if let Some(limits_override) = system_overrides.limit_parameters {
-                system_parameters.limit_parameters = limits_override;
+            if let Some(limits_override) = &system_overrides.limit_parameters {
+                system_parameters.limit_parameters = limits_override.clone();
             }
 
-            if let Some(network_definition) = system_overrides.network_definition {
-                system_parameters.network_definition = network_definition;
+            if let Some(network_definition) = &system_overrides.network_definition {
+                system_parameters.network_definition = network_definition.clone();
             }
 
             if system_overrides.disable_auth {
@@ -964,71 +1161,125 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
             }
         }
 
-        let txn_runtime_module = TransactionRuntimeModule::new(
-            system_parameters.network_definition,
-            executable.intent_hash().to_hash(),
-        );
-
-        let auth_module = AuthModule::new(executable.auth_zone_params().clone());
-        let limits_module = { LimitsModule::from_params(system_parameters.limit_parameters) };
-
-        let costing_module = CostingModule {
-            // The current depth is set to zero since at the start of the execution of transactions
-            // there are no callframes expect for the root callframe.
-            current_depth: 0,
-            fee_reserve: SystemLoanFeeReserve::new(
-                &system_parameters.costing_parameters,
-                executable.costing_parameters(),
-            ),
-            fee_table: FeeTable::new(),
-            tx_payload_len: executable.payload_size(),
-            tx_num_of_signature_validations: executable.num_of_signature_validations(),
-            config: system_parameters.costing_module_config,
-            cost_breakdown: if init_input.enable_cost_breakdown {
-                Some(Default::default())
-            } else {
-                None
-            },
-            detailed_cost_breakdown: if init_input.enable_debug_information {
-                Some(Default::default())
-            } else {
-                None
-            },
-            on_apply_cost: Default::default(),
-        };
-
-        let mut modules = SystemModuleMixer::new(
+        SystemModuleMixer::new(
             enabled_modules,
             KernelTraceModule,
-            txn_runtime_module,
-            auth_module,
-            limits_module,
-            costing_module,
+            TransactionRuntimeModule::new(
+                system_parameters.network_definition,
+                *executable.unique_hash(),
+            ),
+            AuthModule::new(AuthZoneParams {
+                auth_zone_init_for_each_intent: executable
+                    .intents()
+                    .into_iter()
+                    .map(|i| i.auth_zone_init().clone())
+                    .collect(),
+            }),
+            LimitsModule::from_params(system_parameters.limit_parameters),
+            CostingModule {
+                // The current depth is set to zero since at the start of the execution of transactions
+                // there are no callframes expect for the root callframe.
+                current_depth: 0,
+                fee_reserve: SystemLoanFeeReserve::new(
+                    system_parameters.costing_parameters,
+                    executable.costing_parameters().clone(),
+                ),
+                fee_table: FeeTable::new(),
+                tx_payload_len: executable.payload_size(),
+                tx_num_of_signature_validations: executable.num_of_signature_validations(),
+                config: system_parameters.costing_module_config,
+                cost_breakdown: if init_input.enable_cost_breakdown {
+                    Some(Default::default())
+                } else {
+                    None
+                },
+                detailed_cost_breakdown: if init_input.enable_debug_information {
+                    Some(Default::default())
+                } else {
+                    None
+                },
+                on_apply_cost: Default::default(),
+            },
             ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(0)),
-        );
+        )
+    }
+}
 
-        modules.init().map_err(RejectionReason::BootloadingError)?;
+impl<C: SystemCallbackObject> KernelTransactionCallbackObject
+    for System<C, ExecutableTransactionV1>
+{
+    type Init = SystemInit<C::Init>;
+    type TransactionExecutable = ExecutableTransactionV1;
+    type ExecutionOutput = Vec<InstructionOutput>;
+    type Receipt = TransactionReceiptV1;
+
+    fn init<S: BootStore + CommitableSubstateStore>(
+        store: &mut S,
+        executable: ExecutableTransactionV1,
+        init_input: SystemInit<C::Init>,
+    ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
+        // Dump executable
+        #[cfg(not(feature = "alloc"))]
+        if init_input.enable_kernel_trace {
+            Self::print_executable(&executable);
+        }
+
+        let mut modules = Self::resolve_modules(store, &executable, &init_input);
+
+        // NOTE: Have to use match pattern rather than map_err to appease the borrow checker
+        let callback = match C::init(store, init_input.callback_init) {
+            Ok(callback) => callback,
+            Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
+        };
+
+        match modules.init() {
+            Ok(()) => {}
+            Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
+        }
 
         // Perform runtime validation.
         // TODO: the following assumptions can be removed with better interface.
         // We are assuming that intent hash store is ready when epoch manager is ready.
-        let current_epoch = Self::read_epoch(store);
+        let current_epoch = Self::read_epoch_uncosted(store);
         if let Some(current_epoch) = current_epoch {
-            if let Some(range) = executable.epoch_range() {
-                Self::validate_epoch_range(
+            if let Some(range) = executable.overall_epoch_range() {
+                let epoch_validation_result = Self::validate_epoch_range(
                     current_epoch,
                     range.start_epoch_inclusive,
                     range.end_epoch_exclusive,
-                )?;
-                Self::validate_intent_hash(
-                    store,
-                    executable.intent_hash().to_hash(),
-                    range.end_epoch_exclusive,
-                )?;
+                );
+                match epoch_validation_result {
+                    Ok(()) => {}
+                    Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
+                }
+            }
+        }
+        if let IntentHashCheck::TransactionIntent {
+            intent_hash,
+            expiry_epoch,
+        } = executable.intent_hash_check()
+        {
+            let intent_hash_validation_result =
+                Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch);
+
+            match intent_hash_validation_result {
+                Ok(()) => {}
+                Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
             }
         }
 
-        let mut system = System {
+        let intents = executable.intents();
+        let mut call_frame_inits = Vec::with_capacity(intents.len());
+        for intent in intents {
+            match Self::build_call_frame_init_with_reference_check(intent, &mut modules, store) {
+                Ok(call_frame_init) => {
+                    call_frame_inits.push(call_frame_init);
+                }
+                Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
+            }
+        }
+
+        let system = System {
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
@@ -1037,14 +1288,10 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
             executable,
         };
 
-        let call_frame_init = system
-            .check_references(store)
-            .map_err(RejectionReason::BootloadingError)?;
-
-        Ok((system, call_frame_init))
+        Ok((system, call_frame_inits))
     }
 
-    fn start<Y: SystemBasedKernelApi<Executable = Self::Executable>>(
+    fn start<Y: SystemBasedKernelApi<Executable = Self::TransactionExecutable>>(
         api: &mut Y,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system_service = SystemService::new(api);
@@ -1130,8 +1377,8 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
     }
 
     fn create_receipt<S: SubstateDatabase>(
-        self,
-        mut track: Track<S, SpreadPrefixKeyMapper>,
+        mut self,
+        track: Track<S, SpreadPrefixKeyMapper>,
         interpretation_result: Result<Vec<InstructionOutput>, TransactionExecutionError>,
     ) -> TransactionReceipt {
         // Panic if an error is encountered in the system layer or below. The following code
@@ -1146,192 +1393,27 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
         }
 
         #[cfg(not(feature = "alloc"))]
-        if self
-            .modules
-            .enabled_modules
-            .contains(EnabledModules::KERNEL_TRACE)
-        {
+        if self.modules.is_kernel_trace_enabled() {
             println!("{:-^120}", "Interpretation Results");
             println!("{:?}", interpretation_result);
         }
 
-        let execution_trace_enabled = self
-            .modules
-            .enabled_modules
-            .contains(EnabledModules::EXECUTION_TRACE);
+        let result_type = Self::determine_result_type(
+            interpretation_result,
+            &mut self.modules.costing_mut_even_if_disabled().fee_reserve,
+        );
 
-        #[cfg(not(feature = "alloc"))]
-        let kernel_trace_enabled = self
-            .modules
-            .enabled_modules
-            .contains(EnabledModules::KERNEL_TRACE);
-
-        let (mut costing_module, runtime_module, execution_trace_module) = self.modules.unpack();
-
-        let costing_parameters = costing_module.fee_reserve.costing_parameters();
-
-        let fee_details = if let Some(cost_breakdown) = &costing_module.cost_breakdown {
-            let cost_breakdown = cost_breakdown.clone();
-            let execution_cost_breakdown = cost_breakdown
-                .execution_cost_breakdown
-                .into_iter()
-                .map(|(k, v)| (k.to_string(), v))
-                .collect();
-            let finalization_cost_breakdown = cost_breakdown
-                .finalization_cost_breakdown
-                .into_iter()
-                .map(|(k, v)| (k.to_string(), v))
-                .collect();
-            Some(TransactionFeeDetails {
-                execution_cost_breakdown,
-                finalization_cost_breakdown,
-            })
-        } else {
-            None
-        };
-
-        let debug_information = match (costing_module.detailed_cost_breakdown,) {
-            (Some(detailed_cost_breakdown),) => Some(TransactionDebugInformation {
-                detailed_execution_cost_breakdown: detailed_cost_breakdown
-                    .detailed_execution_cost_breakdown,
-            }),
-            _ => None,
-        };
-
-        let result_type =
-            Self::determine_result_type(interpretation_result, &mut costing_module.fee_reserve);
-        let (fee_summary, fee_details, result) = match result_type {
-            TransactionResultType::Commit(outcome) => {
-                let is_success = outcome.is_ok();
-
-                // Commit/revert
-                if !is_success {
-                    costing_module.fee_reserve.revert_royalty();
-                    track.revert_non_force_write_changes();
-                }
-
-                // Distribute fees
-                let (fee_reserve_finalization, paying_vaults, finalization_events) =
-                    Self::finalize_fees(
-                        &mut track,
-                        costing_module.fee_reserve,
-                        is_success,
-                        self.executable.costing_parameters().free_credit_in_xrd,
-                    );
-                let fee_destination = FeeDestination {
-                    to_proposer: fee_reserve_finalization.to_proposer_amount(),
-                    to_validator_set: fee_reserve_finalization.to_validator_set_amount(),
-                    to_burn: fee_reserve_finalization.to_burn_amount(),
-                    to_royalty_recipients: fee_reserve_finalization.royalty_cost_breakdown.clone(),
-                };
-
-                // Update intent hash status
-                if let Some(next_epoch) = Self::read_epoch(&mut track) {
-                    Self::update_transaction_tracker(
-                        &mut track,
-                        next_epoch,
-                        self.executable.intent_hash(),
-                        is_success,
-                    );
-                }
-
-                // Finalize events and logs
-                let (mut application_events, application_logs) =
-                    runtime_module.finalize(is_success);
-                application_events.extend(finalization_events);
-
-                // Finalize execution trace
-                let execution_trace = execution_trace_module.finalize(&paying_vaults, is_success);
-
-                // Finalize track
-                let (tracked_substates, substate_db) = {
-                    match track.finalize() {
-                        Ok(result) => result,
-                        Err(TrackFinalizeError::TransientSubstateOwnsNode) => {
-                            panic!("System invariants should prevent transient substate from owning nodes");
-                        }
-                    }
-                };
-
-                // Generate state updates from tracked substates
-                // Note that this process will prune invalid reads
-                let (new_node_ids, state_updates) =
-                    to_state_updates::<SpreadPrefixKeyMapper>(tracked_substates);
-
-                // Summarizes state updates
-                let system_structure =
-                    SystemStructure::resolve(substate_db, &state_updates, &application_events);
-                let state_update_summary =
-                    StateUpdateSummary::new(substate_db, new_node_ids, &state_updates);
-
-                // Resource reconciliation does not currently work in preview mode
-                if self
-                    .executable
-                    .costing_parameters()
-                    .free_credit_in_xrd
-                    .is_zero()
-                {
-                    let system_reader =
-                        SystemDatabaseReader::new_with_overlay(substate_db, &state_updates);
-                    reconcile_resource_state_and_events(
-                        &state_update_summary,
-                        &application_events,
-                        system_reader,
-                    );
-                }
-
-                (
-                    fee_reserve_finalization.into(),
-                    fee_details,
-                    TransactionResult::Commit(CommitResult {
-                        state_updates,
-                        state_update_summary,
-                        fee_source: FeeSource { paying_vaults },
-                        fee_destination,
-                        outcome: match outcome {
-                            Ok(o) => TransactionOutcome::Success(o),
-                            Err(e) => TransactionOutcome::Failure(e),
-                        },
-                        application_events,
-                        application_logs,
-                        system_structure,
-                        execution_trace: if execution_trace_enabled {
-                            Some(execution_trace)
-                        } else {
-                            None
-                        },
-                    }),
-                )
+        match result_type {
+            TransactionResultType::Reject(reason) => {
+                Self::create_rejection_receipt(reason, self.modules)
             }
-            TransactionResultType::Reject(reason) => (
-                costing_module.fee_reserve.finalize().into(),
-                fee_details,
-                TransactionResult::Reject(RejectResult { reason }),
-            ),
-            TransactionResultType::Abort(reason) => (
-                costing_module.fee_reserve.finalize().into(),
-                fee_details,
-                TransactionResult::Abort(AbortResult { reason }),
-            ),
-        };
-
-        let receipt = TransactionReceipt {
-            costing_parameters,
-            transaction_costing_parameters: self.executable.costing_parameters().clone().into(),
-            fee_summary,
-            fee_details,
-            result,
-            resources_usage: None,
-            debug_information,
-        };
-
-        // Dump summary
-        #[cfg(not(feature = "alloc"))]
-        if kernel_trace_enabled {
-            Self::print_execution_summary(&receipt);
+            TransactionResultType::Abort(reason) => {
+                Self::create_abort_receipt(reason, self.modules)
+            }
+            TransactionResultType::Commit(outcome) => {
+                Self::create_commit_receipt(outcome, track, self.modules, self.executable)
+            }
         }
-
-        receipt
     }
 }
 

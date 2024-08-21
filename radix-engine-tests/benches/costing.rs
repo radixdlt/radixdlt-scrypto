@@ -197,8 +197,8 @@ fn bench_spin_loop(c: &mut Criterion) {
     c.bench_function("costing::spin_loop", |b| {
         b.iter(|| {
             let fee_reserve = SystemLoanFeeReserve::new(
-                &CostingParameters::babylon_genesis(),
-                &TransactionCostingParameters {
+                CostingParameters::babylon_genesis(),
+                TransactionCostingParameters {
                     free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
                     tip_percentage: DEFAULT_TIP_PERCENTAGE,
                     abort_when_loan_repaid: false,

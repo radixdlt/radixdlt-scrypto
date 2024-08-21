@@ -24,6 +24,8 @@ pub struct HrpSet {
     /* Transaction Parts */
     pub transaction_intent: String,
     pub signed_transaction_intent: String,
+    pub subintent: String,
+    pub signed_subintent: String,
     pub notarized_transaction: String,
     pub round_update_transaction: String,
     pub system_transaction: String,
@@ -82,6 +84,8 @@ impl From<&NetworkDefinition> for HrpSet {
             /* Transaction Parts */
             transaction_intent: format!("txid_{}", suffix),
             signed_transaction_intent: format!("signedintent_{}", suffix),
+            subintent: format!("subtxid_{}", suffix),
+            signed_subintent: format!("signedsubintent_{}", suffix),
             notarized_transaction: format!("notarizedtransaction_{}", suffix),
             round_update_transaction: format!("roundupdatetransaction_{}", suffix),
             system_transaction: format!("systemtransaction_{}", suffix),

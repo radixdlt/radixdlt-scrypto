@@ -10,7 +10,6 @@ use crate::system::system_substate_schemas::*;
 use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_transactions::model::ExecutableTransactionV1;
 use radix_transactions::prelude::TransactionCostingParametersReceipt;
 use sbor::representations::*;
 
@@ -210,19 +209,7 @@ impl TransactionReceiptV1 {
     }
 }
 
-impl ExecutionReceipt<ExecutableTransactionV1> for TransactionReceiptV1 {
-    fn from_rejection(executable: ExecutableTransactionV1, reason: RejectionReason) -> Self {
-        TransactionReceipt {
-            costing_parameters: CostingParameters::babylon_genesis(),
-            transaction_costing_parameters: executable.costing_parameters().clone().into(),
-            fee_summary: Default::default(),
-            fee_details: Default::default(),
-            result: TransactionResult::Reject(RejectResult { reason }),
-            resources_usage: Default::default(),
-            debug_information: Default::default(),
-        }
-    }
-
+impl ExecutionReceipt for TransactionReceiptV1 {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage) {
         self.resources_usage = Some(resources_usage);
     }

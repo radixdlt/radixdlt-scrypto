@@ -8,13 +8,13 @@ where
     fn hrp<'h>(hrp_set: &'h HrpSet) -> &'h str;
 }
 
-impl HashHasHrp for IntentHash {
+impl HashHasHrp for TransactionIntentHash {
     fn hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
         &hrp_set.transaction_intent
     }
 }
 
-impl HashHasHrp for SignedIntentHash {
+impl HashHasHrp for SignedTransactionIntentHash {
     fn hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
         &hrp_set.signed_transaction_intent
     }

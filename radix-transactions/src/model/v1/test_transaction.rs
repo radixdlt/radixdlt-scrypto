@@ -47,24 +47,23 @@ impl TestTransaction {
 }
 
 impl PreparedTestTransaction {
-    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> ExecutableTransactionV1 {
+    pub fn get_executable(
+        &self,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> ExecutableTransactionV1 {
         ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             self.references.clone(),
             self.blobs.clone(),
             ExecutionContext {
-                intent_hash: TransactionIntentHash::NotToCheck {
-                    intent_hash: self.hash,
-                },
+                unique_hash: self.hash,
+                intent_hash_check: IntentHashCheck::None,
                 epoch_range: None,
                 payload_size: self.encoded_instructions.len()
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),
                 // For testing purpose, assume `num_of_signature_validations = num_of_initial_proofs + 1`
                 num_of_signature_validations: initial_proofs.len() + 1,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_init: AuthZoneInit::proofs(initial_proofs),
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: DEFAULT_TIP_PERCENTAGE,
                     free_credit_in_xrd: Decimal::ZERO,

@@ -266,12 +266,12 @@ impl ExecutionConfig {
 /// A transaction which has a unique id, useful for creating an IdAllocator which
 /// requires a unique input
 pub trait UniqueTransaction {
-    fn unique_id(&self) -> Hash;
+    fn unique_seed_for_id_allocator(&self) -> Hash;
 }
 
-impl UniqueTransaction for ExecutableTransactionV1 {
-    fn unique_id(&self) -> Hash {
-        self.intent_hash().to_hash()
+impl<T: TransactionParameters> UniqueTransaction for T {
+    fn unique_seed_for_id_allocator(&self) -> Hash {
+        *self.unique_hash()
     }
 }
 
@@ -287,7 +287,7 @@ where
 impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    V: KernelTransactionCallbackObject<Executable: UniqueTransaction>,
+    V: KernelTransactionCallbackObject<TransactionExecutable: UniqueTransaction>,
 {
     pub fn new(substate_db: &'s S, system_init: V::Init) -> Self {
         Self {
@@ -297,9 +297,9 @@ where
         }
     }
 
-    pub fn execute(&mut self, executable: V::Executable) -> V::Receipt {
+    pub fn execute(&mut self, executable: V::TransactionExecutable) -> V::Receipt {
         let kernel_boot = BootLoader {
-            id_allocator: IdAllocator::new(executable.unique_id()),
+            id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
             track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
             init: self.system_init.clone(),
             phantom: PhantomData::<V>::default(),
@@ -324,13 +324,14 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
         system_overrides: execution_config.system_overrides.clone(),
     };
     match executable {
-        ExecutableTransaction::V1(executable_v1) => {
-            TransactionExecutor::<_, System<V, ExecutableTransactionV1>>::new(substate_db, system_init)
-                .execute(executable_v1)
-        },
+        ExecutableTransaction::V1(executable_v1) => TransactionExecutor::<
+            _,
+            System<V, ExecutableTransactionV1>,
+        >::new(substate_db, system_init)
+        .execute(executable_v1),
         ExecutableTransaction::V2(_) => {
             unimplemented!()
-        },
+        }
     }
 }
 

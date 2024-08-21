@@ -39,7 +39,7 @@ impl TransactionBuilder {
         let intent = self.transaction_intent();
         let prepared = intent.prepare().expect("Intent could be prepared");
         self.intent_signatures
-            .push(signer.sign_with_public_key(&prepared.intent_hash()));
+            .push(signer.sign_with_public_key(&prepared.transaction_intent_hash()));
         self
     }
 
@@ -48,7 +48,7 @@ impl TransactionBuilder {
         let prepared = intent.prepare().expect("Intent could be prepared");
         for signer in signers {
             self.intent_signatures
-                .push(signer.sign_with_public_key(&prepared.intent_hash()));
+                .push(signer.sign_with_public_key(&prepared.transaction_intent_hash()));
         }
         self
     }

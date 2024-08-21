@@ -1,19 +1,14 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{CallFrameError, KernelError, RejectionReason, RuntimeError};
-use radix_engine::kernel::call_frame::{CallFrameMessage, CloseSubstateError, CreateFrameError, CreateNodeError, MovePartitionError, PassMessageError, ProcessSubstateError, TakeNodeError, WriteSubstateError};
+use radix_engine::errors::*;
+use radix_engine::kernel::call_frame::*;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
-use radix_engine::kernel::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
-    KernelSubstateApi,
-};
+use radix_engine::kernel::kernel_api::*;
 use radix_engine::kernel::kernel_callback_api::*;
 use radix_engine::track::Track;
-use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_transactions::model::ExecutableTransaction;
 
 #[derive(Default)]
 struct TestCallFrameData;
@@ -33,17 +28,6 @@ impl CallFrameReferences for TestCallFrameData {
 
     fn len(&self) -> usize {
         0usize
-    }
-}
-
-struct TestReceipt;
-
-impl ExecutionReceipt<ExecutableTransaction> for TestReceipt {
-    fn from_rejection(_executable: ExecutableTransaction, _reason: RejectionReason) -> Self {
-        Self
-    }
-
-    fn set_resource_usage(&mut self, _resources_usage: ResourcesUsage) {
     }
 }
 

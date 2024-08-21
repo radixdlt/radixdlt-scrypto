@@ -66,7 +66,7 @@ mod tests {
         // Arrange
         let encoder = TransactionHashBech32Encoder::for_simulator();
         let transaction = transaction();
-        let hash = transaction.prepare().unwrap().intent_hash();
+        let hash = transaction.prepare().unwrap().transaction_intent_hash();
 
         // Act
         let encoded = encoder.encode(&hash).unwrap();

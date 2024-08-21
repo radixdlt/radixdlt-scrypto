@@ -9,14 +9,14 @@ pub struct ValidatedNotarizedTransactionV1 {
     pub num_of_signature_validations: usize,
 }
 
-impl HasIntentHash for ValidatedNotarizedTransactionV1 {
-    fn intent_hash(&self) -> IntentHash {
-        self.prepared.intent_hash()
+impl HasTransactionIntentHash for ValidatedNotarizedTransactionV1 {
+    fn transaction_intent_hash(&self) -> TransactionIntentHash {
+        self.prepared.transaction_intent_hash()
     }
 }
 
-impl HasSignedIntentHash for ValidatedNotarizedTransactionV1 {
-    fn signed_intent_hash(&self) -> SignedIntentHash {
+impl HasSignedTransactionIntentHash for ValidatedNotarizedTransactionV1 {
+    fn signed_intent_hash(&self) -> SignedTransactionIntentHash {
         self.prepared.signed_intent_hash()
     }
 }
@@ -31,7 +31,7 @@ impl ValidatedNotarizedTransactionV1 {
     pub fn get_executable(&self) -> ExecutableTransactionV1 {
         let intent = &self.prepared.signed_intent.intent;
         let header = &intent.header.inner;
-        let intent_hash = intent.intent_hash();
+        let intent_hash = intent.transaction_intent_hash();
         let summary = &self.prepared.summary;
 
         ExecutableTransactionV1::new(
@@ -39,8 +39,9 @@ impl ValidatedNotarizedTransactionV1 {
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
-                intent_hash: TransactionIntentHash::ToCheck {
-                    intent_hash: intent_hash.into_hash(),
+                unique_hash: intent_hash.0,
+                intent_hash_check: IntentHashCheck::TransactionIntent {
+                    intent_hash,
                     expiry_epoch: header.end_epoch_exclusive,
                 },
                 epoch_range: Some(EpochRange {
@@ -49,10 +50,7 @@ impl ValidatedNotarizedTransactionV1 {
                 }),
                 payload_size: summary.effective_length,
                 num_of_signature_validations: self.num_of_signature_validations,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_init: AuthZoneInit::proofs(AuthAddresses::signer_set(&self.signer_keys)),
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: intent.header.inner.tip_percentage,
                     free_credit_in_xrd: Decimal::ZERO,

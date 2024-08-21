@@ -210,14 +210,13 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
         references,
         Rc::new(blobs),
         ExecutionContext {
-            intent_hash: TransactionIntentHash::NotToCheck {
-                intent_hash: Hash([0; 32]),
-            },
+            unique_hash: Hash([0; 32]),
+            intent_hash_check: IntentHashCheck::None,
             epoch_range: Default::default(),
             pre_allocated_addresses: Default::default(),
             payload_size: 4,
             num_of_signature_validations: 0,
-            auth_zone_params: Default::default(),
+            auth_zone_init: Default::default(),
             costing_parameters: Default::default(),
         },
         false,

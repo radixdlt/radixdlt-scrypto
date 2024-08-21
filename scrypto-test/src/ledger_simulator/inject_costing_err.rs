@@ -1,6 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{RejectionReason, TransactionExecutionError};
-use radix_engine::errors::{RuntimeError, SystemModuleError};
+use radix_engine::errors::*;
 use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::*;
 use radix_engine::kernel::kernel_callback_api::*;
@@ -68,7 +67,7 @@ macro_rules! wrapped_internal_api {
 
 impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingError<K> {
     type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
-    type Executable = ExecutableTransactionV1;
+    type TransactionExecutable = ExecutableTransactionV1;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
@@ -76,8 +75,8 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
         store: &mut S,
         executable: ExecutableTransactionV1,
         init_input: Self::Init,
-    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
-        let (mut system, call_frame_init) =
+    ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
+        let (mut system, call_frame_inits) =
             System::<K, _>::init(store, executable, init_input.system_input)?;
 
         let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
@@ -85,7 +84,7 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
             fail_after: fail_after.clone(),
         };
 
-        Ok((Self { fail_after, system }, call_frame_init))
+        Ok((Self { fail_after, system }, call_frame_inits))
     }
 
     fn start<Y: KernelApi<CallbackObject = Self>>(
@@ -506,6 +505,10 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingErr
         }
     }
 
+    fn kernel_get_intent_index(&self) -> usize {
+        self.api.kernel_get_intent_index()
+    }
+
     fn kernel_get_current_depth(&self) -> usize {
         self.api.kernel_get_current_depth()
     }
@@ -551,6 +554,10 @@ impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingErr
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
+    }
+
+    fn kernel_get_intent_index(&self) -> usize {
+        self.api.kernel_get_intent_index()
     }
 
     fn kernel_get_current_depth(&self) -> usize {

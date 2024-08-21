@@ -312,6 +312,20 @@ impl CostingModule {
     ) {
         self.fee_reserve.lock_fee(vault_id, locked_fee, contingent);
     }
+
+    pub fn unpack_for_receipt(
+        self,
+    ) -> (
+        SystemLoanFeeReserve,
+        Option<CostBreakdown>,
+        Option<DetailedCostBreakdown>,
+    ) {
+        (
+            self.fee_reserve,
+            self.cost_breakdown,
+            self.detailed_cost_breakdown,
+        )
+    }
 }
 
 pub fn apply_royalty_cost(
