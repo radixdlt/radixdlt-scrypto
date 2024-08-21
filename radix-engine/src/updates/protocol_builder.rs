@@ -173,6 +173,7 @@ pub struct ProtocolSettings {
     babylon: BabylonSettings,
     anemone: AnemoneSettings,
     bottlenose: BottlenoseSettings,
+    cuttlefish: CuttlefishSettings,
 }
 
 impl ProtocolSettings {
@@ -184,6 +185,7 @@ impl ProtocolSettings {
             ProtocolVersion::Babylon => Box::new(self.babylon.create_batch_generator()),
             ProtocolVersion::Anemone => Box::new(self.anemone.create_batch_generator()),
             ProtocolVersion::Bottlenose => Box::new(self.bottlenose.create_batch_generator()),
+            ProtocolVersion::Cuttlefish => Box::new(self.cuttlefish.create_batch_generator()),
         }
     }
 }
@@ -202,6 +204,9 @@ impl ProtocolBuilder {
                 bottlenose: BottlenoseSettings::all_enabled_as_default_for_network(
                     network_definition,
                 ),
+                cuttlefish: CuttlefishSettings::all_enabled_as_default_for_network(
+                    network_definition,
+                ),
             },
         }
     }
@@ -218,6 +223,11 @@ impl ProtocolBuilder {
 
     pub fn with_bottlenose(mut self, settings: BottlenoseSettings) -> Self {
         self.settings.bottlenose = settings;
+        self
+    }
+
+    pub fn with_cuttlefish(mut self, settings: CuttlefishSettings) -> Self {
+        self.settings.cuttlefish = settings;
         self
     }
 

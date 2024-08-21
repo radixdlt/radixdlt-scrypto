@@ -2,12 +2,14 @@ use crate::internal_prelude::*;
 mod anemone;
 mod babylon;
 mod bottlenose;
+mod cuttlefish;
 mod protocol_builder;
 mod protocol_updates;
 
 pub use anemone::*;
 pub use babylon::*;
 pub use bottlenose::*;
+pub use cuttlefish::*;
 pub use protocol_builder::*;
 pub use protocol_updates::*;
 use radix_transactions::model::SystemTransactionV1;

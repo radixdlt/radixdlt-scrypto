@@ -1,0 +1,879 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 50.39836305485 XRD
+├─ Network execution: 1.0507501 XRD, 21015002 execution cost units
+├─ Network finalization: 0.2910838 XRD, 5821676 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 49.05652915485 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 9
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: WithdrawEvent {
+     amount: Decimal("10000"),
+   }
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("58ba36606a8b992659069ecd39b385c1780e51f3cbd17da21fe8f761c89a")),
+   }
+├─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("581620dea16b826ea7d0282e3d26d93a65a79d43884bc345c7172543e9a2")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tqtzph4pdwpxaf7s9qhr6fke8fj6082r3p9ux3w8zuj586dzlj2eh4, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("10000"),
+   }
+├─ Emitter: Method { node: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+     Decimal("10000"),
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("50.39836305485"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("25.199181527425"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("25.199181527425"),
+   }
+
+STATE UPDATES: 10 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("12.5995907637125"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("8fec08691653c4c927e075cd45c4a5f121ed7af61c6848e42dbb35bca219ccfb"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999989949.60163694515")),
+       )
+├─ internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Hash(hex("8fec08691653c4c927e075cd45c4a5f121ed7af61c6848e42dbb35bca219ccfb"))
+       Value: Epoch(2u64)
+├─ package_sim1p5pjdx5g7h0ygzc3ev2r5vj3zprctn6vr7p7t3mqvzjp2r6frahcq3 across 12 partitions
+  ├─ Partition(1): 1 change
+    └─ Set: SchemaHash(fc576798205de598b3e321b336374a66f21d56c8f495bc3c9ad8b2c3e30611b4)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Custom(
+                     ScryptoCustomTypeKind::Reference,
+                   ),
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(171u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(129u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         8u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Array {
+                     element_type: LocalTypeId::WellKnown(
+                       WellKnownTypeId(129u8),
+                     ),
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(12u8),
+                       ),
+                     ],
+                   },
+                 ],
+                 type_metadata: [
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_new_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "GlobalMetadataTest",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_new_with_address_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "address_reservation",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_new_with_initial_metadata_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "key",
+                           "value",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_set_string_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "key",
+                           "value",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_set_address_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "key",
+                           "value",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_set_array_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "key",
+                           "value",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_get_string_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "key",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_get_address_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "key",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "MetadataTest_get_array_Input",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "key",
+                         ],
+                       ),
+                     ),
+                   },
+                 ],
+                 type_validations: [
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::Custom(
+                     ScryptoCustomTypeValidation::Reference(
+                       ReferenceValidation::IsGlobalTyped(
+                         Option::None,
+                         "MetadataTest",
+                       ),
+                     ),
+                   ),
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                 ],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+  ├─ Partition(2): 32 changes
+    ├─ Set: "origin"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Origin(
+           Origin("https://www.radixdlt.com"),
+         ),
+       )
+    ├─ Set: "public_key"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKey(
+           PublicKey::Ed25519(
+             Ed25519PublicKey(hex("0000000000000000000000000000000000000000000000000000000000000000")),
+           ),
+         ),
+       )
+    ├─ Set: "url"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Url(
+           Url("https://www.radixdlt.com"),
+         ),
+       )
+    ├─ Set: "non_fungible_local_id"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleLocalId(
+           NonFungibleLocalId("<Hello_world>"),
+         ),
+       )
+    ├─ Set: "non_fungible_global_id_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleGlobalIdArray(
+           [
+             NonFungibleGlobalId {
+               resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l")),
+               local_id: NonFungibleLocalId("[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]"),
+             },
+           ],
+         ),
+       )
+    ├─ Set: "bool"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Bool(
+           true,
+         ),
+       )
+    ├─ Set: "decimal_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::DecimalArray(
+           [
+             Decimal("1"),
+             Decimal("2.1"),
+           ],
+         ),
+       )
+    ├─ Set: "address_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::GlobalAddressArray(
+           [
+             GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+           ],
+         ),
+       )
+    ├─ Set: "non_fungible_local_id_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleLocalIdArray(
+           [
+             NonFungibleLocalId("<Hello_world>"),
+             NonFungibleLocalId("#42#"),
+             NonFungibleLocalId("[01]"),
+             NonFungibleLocalId("{0101010101010101-0101010101010101-0101010101010101-0101010101010101}"),
+           ],
+         ),
+       )
+    ├─ Set: "public_key_hash_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKeyHashArray(
+           [
+             PublicKeyHash::Ed25519(
+               Ed25519PublicKeyHash(hex("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")),
+             ),
+             PublicKeyHash::Secp256k1(
+               Secp256k1PublicKeyHash(hex("165dee785924e7421a0fd0418a19d5daeec395fd505a92a0fd3117e428")),
+             ),
+           ],
+         ),
+       )
+    ├─ Set: "u64"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U64(
+           3u64,
+         ),
+       )
+    ├─ Set: "string_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::StringArray(
+           [
+             "Hello",
+             "world!",
+           ],
+         ),
+       )
+    ├─ Set: "i64_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::I64Array(
+           [
+             5i64,
+             6i64,
+           ],
+         ),
+       )
+    ├─ Set: "bool_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::BoolArray(
+           [
+             true,
+             false,
+           ],
+         ),
+       )
+    ├─ Set: "decimal"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Decimal(
+           Decimal("1"),
+         ),
+       )
+    ├─ Set: "url_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::UrlArray(
+           [
+             Url("https://www.radixdlt.com"),
+           ],
+         ),
+       )
+    ├─ Set: "u8"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U8(
+           1u8,
+         ),
+       )
+    ├─ Set: "public_key_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKeyArray(
+           [
+             PublicKey::Ed25519(
+               Ed25519PublicKey(hex("0000000000000000000000000000000000000000000000000000000000000000")),
+             ),
+             PublicKey::Secp256k1(
+               Secp256k1PublicKey(hex("000000000000000000000000000000000000000000000000000000000000000000")),
+             ),
+           ],
+         ),
+       )
+    ├─ Set: "i32_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::I32Array(
+           [
+             4i32,
+             5i32,
+           ],
+         ),
+       )
+    ├─ Set: "origin_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::OriginArray(
+           [
+             Origin("https://www.radixdlt.com"),
+           ],
+         ),
+       )
+    ├─ Set: "u32_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U32Array(
+           [
+             2u32,
+             3u32,
+           ],
+         ),
+       )
+    ├─ Set: "u64_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U64Array(
+           [
+             3u64,
+             4u64,
+           ],
+         ),
+       )
+    ├─ Set: "address"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::GlobalAddress(
+           GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+         ),
+       )
+    ├─ Set: "i32"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::I32(
+           4i32,
+         ),
+       )
+    ├─ Set: "non_fungible_global_id"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleGlobalId(
+           NonFungibleGlobalId {
+             resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l")),
+             local_id: NonFungibleLocalId("[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]"),
+           },
+         ),
+       )
+    ├─ Set: "string"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Hello",
+         ),
+       )
+    ├─ Set: "u32"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U32(
+           2u32,
+         ),
+       )
+    ├─ Set: "i64"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::I64(
+           5i64,
+         ),
+       )
+    ├─ Set: "instant"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::Instant(
+           Instant(1687446137i64),
+         ),
+       )
+    ├─ Set: "instant_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::InstantArray(
+           [
+             Instant(1687446137i64),
+           ],
+         ),
+       )
+    ├─ Set: "u8_array"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::U8Array(
+           hex("0102"),
+         ),
+       )
+    └─ Set: "public_key_hash"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKeyHash(
+           PublicKeyHash::Ed25519(
+             Ed25519PublicKeyHash(hex("6a8a691dae2cd15ed0369931ce0a949ecafa5c3f93f8121833646e15c3")),
+           ),
+         ),
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::Protected(
+             AccessRuleNode::ProofRule(
+               ProofRule::Require(
+                 ResourceOrNonFungible::NonFungible(
+                   NonFungibleGlobalId {
+                     resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5")),
+                     local_id: NonFungibleLocalId("[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]"),
+                   },
+                 ),
+               ),
+             ),
+           ),
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED PackageRoyaltyAccumulatorFieldPayload::V1(
+         PackageRoyaltyAccumulatorV1 {
+           royalty_vault: Vault(Own("internal_vault_sim1tzarvcr23wvjvkgxnmxnnvu9c9uqu50ne0ghmgslarmkrjy6ntjgve")),
+         },
+       )
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MetadataTest", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: (Hidden as longer than 1024 bytes. Hash: f3be1641e3afaff1048d839bc4b4b5019c30b6a46619899c765ef69ae0cf54ef)
+  ├─ Partition(66): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MetadataTest", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDependenciesEntryPayload::V1(
+         BlueprintDependencies([]),
+       )
+  ├─ Partition(67): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MetadataTest", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionRoyaltyConfigEntryPayload::V1(
+         PackageRoyaltyConfig::Disabled,
+       )
+  ├─ Partition(68): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "MetadataTest", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionAuthConfigEntryPayload::V1(
+         AuthConfig {
+           function_auth: FunctionAuth::AllowAll,
+           method_auth: MethodAuthTemplate::AllowAll,
+         },
+       )
+  ├─ Partition(69): 1 change
+    └─ Set: CodeHash(hex("dcabb93864d75f15c0fe452dd12bab9bb461a7c4ac6eb4363e28c34fb4120e6f"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::ScryptoV1,
+       )
+  ├─ Partition(70): 1 change
+    └─ Set: CodeHash(hex("dcabb93864d75f15c0fe452dd12bab9bb461a7c4ac6eb4363e28c34fb4120e6f"))
+       Value: (Hidden as longer than 1024 bytes. Hash: 51dcf6f6cf197291245f78ca3d7d1d3c61ab2723307bb23efb4ce7a57dec421b)
+  ├─ Partition(71): 1 change
+    └─ Set: CodeHash(hex("dcabb93864d75f15c0fe452dd12bab9bb461a7c4ac6eb4363e28c34fb4120e6f"))
+       Value: (Hidden as longer than 1024 bytes. Hash: a036135afa04a8af93d2de8587f9124d02e4a46f17a0c22d1a4eea84f135c659)
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")),
+               blueprint_name: "Package",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [
+               "package_royalty",
+             ],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ internal_vault_sim1tzarvcr23wvjvkgxnmxnnvu9c9uqu50ne0ghmgslarmkrjy6ntjgve across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("0")),
+       )
+├─ account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw across 6 partitions
+  ├─ Partition(2): 2 changes
+    ├─ Set: "owner_badge"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::NonFungibleLocalId(
+           NonFungibleLocalId("[d14bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]"),
+         ),
+       )
+    └─ Set: "owner_keys"
+       Value: UNLOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::PublicKeyHashArray(
+           [
+             PublicKeyHash::Secp256k1(
+               Secp256k1PublicKeyHash(hex("4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e")),
+             ),
+           ],
+         ),
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::Protected(
+             AccessRuleNode::ProofRule(
+               ProofRule::Require(
+                 ResourceOrNonFungible::NonFungible(
+                   NonFungibleGlobalId {
+                     resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5")),
+                     local_id: NonFungibleLocalId("[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]"),
+                   },
+                 ),
+               ),
+             ),
+           ),
+           updater: OwnerRoleUpdater::Object,
+         },
+       )
+  ├─ Partition(6): 1 change
+    └─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("securify") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5")),
+                   local_id: NonFungibleLocalId("[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+       )
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED AccountDepositRuleFieldPayload::V1(
+         AccountSubstate {
+           default_deposit_rule: DefaultDepositRule::Accept,
+         },
+       )
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6")),
+               blueprint_name: "Account",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: ResourceAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tqtzph4pdwpxaf7s9qhr6fke8fj6082r3p9ux3w8zuj586dzlj2eh4")),
+       )
+├─ internal_vault_sim1tqtzph4pdwpxaf7s9qhr6fke8fj6082r3p9ux3w8zuj586dzlj2eh4 across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("10000")),
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("25.199181527425")),
+       )
+
+OUTPUTS: 5
+├─ Unit
+├─ None
+├─ Own("internal_component_sim1lrxulhjlavx2ld9qhvxtrswpmc7gppqqzg5w2tkys9d3cdu3a4xr82")
+├─ Reference("package_sim1p5pjdx5g7h0ygzc3ev2r5vj3zprctn6vr7p7t3mqvzjp2r6frahcq3")
+└─ Unit
+
+BALANCE CHANGES: 3
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -10050.39836305485
+├─ Vault: internal_vault_sim1tqtzph4pdwpxaf7s9qhr6fke8fj6082r3p9ux3w8zuj586dzlj2eh4
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 10000
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 25.199181527425
+
+NEW ENTITIES: 2
+└─ Package: package_sim1p5pjdx5g7h0ygzc3ev2r5vj3zprctn6vr7p7t3mqvzjp2r6frahcq3
+└─ Component: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw

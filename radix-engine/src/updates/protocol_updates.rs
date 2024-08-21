@@ -158,6 +158,11 @@ define_protocol_version_and_updates! {
             variant_name: Bottlenose,
             logical_name: "bottlenose",
             display_name: "Bottlenose",
+        },
+        {
+            variant_name: Cuttlefish,
+            logical_name: "cuttlefish",
+            display_name: "Cuttlefish",
         }
     ]
 }
@@ -167,23 +172,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn assert_earliest_protocol_update_is_as_expected() {
-        assert_eq!(ProtocolUpdate::EARLIEST, ProtocolUpdate::Anemone);
-    }
-
-    #[test]
     fn assert_earliest_protocol_version_is_as_expected() {
         assert_eq!(ProtocolVersion::EARLIEST, ProtocolVersion::Babylon);
     }
 
     #[test]
-    fn assert_latest_protocol_update_is_as_expected() {
-        assert_eq!(ProtocolUpdate::LATEST, ProtocolUpdate::Bottlenose);
-    }
-
-    #[test]
     fn assert_latest_protocol_version_is_as_expected() {
-        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::Bottlenose);
+        assert_eq!(ProtocolVersion::LATEST, ProtocolVersion::Cuttlefish);
     }
 
     #[test]
@@ -195,10 +190,21 @@ mod tests {
             [
                 ProtocolVersion::Babylon,
                 ProtocolVersion::Anemone,
-                ProtocolVersion::Bottlenose
+                ProtocolVersion::Bottlenose,
+                ProtocolVersion::Cuttlefish,
             ]
         );
         assert!(variants.windows(2).all(|item| item[0] < item[1]))
+    }
+
+    #[test]
+    fn assert_earliest_protocol_update_is_as_expected() {
+        assert_eq!(ProtocolUpdate::EARLIEST, ProtocolUpdate::Anemone);
+    }
+
+    #[test]
+    fn assert_latest_protocol_update_is_as_expected() {
+        assert_eq!(ProtocolUpdate::LATEST, ProtocolUpdate::Cuttlefish);
     }
 
     #[test]
@@ -207,7 +213,11 @@ mod tests {
 
         assert_eq!(
             variants,
-            [ProtocolUpdate::Anemone, ProtocolUpdate::Bottlenose]
+            [
+                ProtocolUpdate::Anemone,
+                ProtocolUpdate::Bottlenose,
+                ProtocolUpdate::Cuttlefish
+            ]
         );
         assert!(variants.windows(2).all(|item| item[0] < item[1]))
     }
