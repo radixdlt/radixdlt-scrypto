@@ -94,8 +94,8 @@ impl TransactionFullChildPreparable for PreparedRoundUpdateTransactionV1 {
 }
 
 impl PreparedRoundUpdateTransactionV1 {
-    pub fn get_executable(&self) -> Executable {
-        Executable::new(
+    pub fn get_executable(&self) -> ExecutableTransactionV1 {
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             self.references.clone(),
             self.blobs.clone(),

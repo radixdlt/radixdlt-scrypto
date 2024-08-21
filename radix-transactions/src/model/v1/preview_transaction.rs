@@ -24,7 +24,7 @@ pub struct ValidatedPreviewIntent {
 }
 
 impl ValidatedPreviewIntent {
-    pub fn get_executable(&self) -> Executable {
+    pub fn get_executable(&self) -> ExecutableTransactionV1 {
         let intent = &self.intent;
         let flags = &self.flags;
 
@@ -54,7 +54,7 @@ impl ValidatedPreviewIntent {
 
         let intent_hash = intent.intent_hash();
 
-        Executable::new(
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),

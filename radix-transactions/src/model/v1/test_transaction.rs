@@ -47,8 +47,8 @@ impl TestTransaction {
 }
 
 impl PreparedTestTransaction {
-    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> Executable {
-        Executable::new(
+    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> ExecutableTransactionV1 {
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             self.references.clone(),
             self.blobs.clone(),

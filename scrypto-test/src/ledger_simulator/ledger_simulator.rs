@@ -1294,16 +1294,14 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn execute_transaction(
         &mut self,
-        executable: Executable,
+        executable: impl Into<ExecutableTransaction>,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
+        let executable = executable.into();
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
-        if executable
-            .costing_parameters()
-            .free_credit_in_xrd
-            .is_positive()
+        if executable.uses_free_credits()
         {
             self.xrd_free_credits_used = true;
         }

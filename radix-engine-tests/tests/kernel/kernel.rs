@@ -7,13 +7,13 @@ use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
 };
-use radix_engine::kernel::kernel_callback_api::{CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
+use radix_engine::kernel::kernel_callback_api::*;
 use radix_engine::track::Track;
 use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_transactions::model::Executable;
+use radix_transactions::model::ExecutableTransaction;
 
 #[derive(Default)]
 struct TestCallFrameData;
@@ -38,10 +38,8 @@ impl CallFrameReferences for TestCallFrameData {
 
 struct TestReceipt;
 
-impl ExecutionReceipt for TestReceipt {
-    type Executed = Executable;
-
-    fn from_rejection(_executable: Executable, _reason: RejectionReason) -> Self {
+impl ExecutionReceipt<ExecutableTransaction> for TestReceipt {
+    fn from_rejection(_executable: ExecutableTransaction, _reason: RejectionReason) -> Self {
         Self
     }
 

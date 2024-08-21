@@ -205,7 +205,7 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
     let references = Default::default();
     let blobs = Default::default();
 
-    let executable = Executable::new(
+    let executable = ExecutableTransactionV1::new(
         Rc::new(invalid_encoded_instructions),
         references,
         Rc::new(blobs),

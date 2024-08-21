@@ -258,18 +258,18 @@ impl ValidatedLedgerTransaction {
     }
 
     /// Note - panics if it's a genesis flash
-    pub fn get_executable(&self) -> Executable {
+    pub fn get_executable(&self) -> ExecutableTransaction {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
                 PreparedGenesisTransaction::Flash(_) => {
                     panic!("Should not call get_executable on a genesis flash")
                 }
                 PreparedGenesisTransaction::Transaction(t) => {
-                    t.get_executable(btreeset!(system_execution(SystemExecution::Protocol)))
+                    t.get_executable(btreeset!(system_execution(SystemExecution::Protocol))).into()
                 }
             },
-            ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),
-            ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable(),
+            ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable().into(),
+            ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable().into(),
             ValidatedLedgerTransactionInner::FlashV1(_) => {
                 panic!("Should not call get_executable on a flash transaction")
             }

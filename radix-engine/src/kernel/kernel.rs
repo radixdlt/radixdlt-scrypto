@@ -5,7 +5,6 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::*;
 use crate::kernel::kernel_api::*;
 use crate::kernel::kernel_callback_api::*;
-use crate::kernel::kernel_callback_api::{ExecutionReceipt, KernelTransactionCallbackObject};
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::*;

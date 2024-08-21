@@ -1,5 +1,5 @@
 mod concepts;
-mod executable;
+mod execution;
 mod hash;
 mod ledger_transaction;
 mod preparation;
@@ -7,7 +7,7 @@ mod v1;
 mod versioned;
 
 pub use concepts::*;
-pub use executable::*;
+pub use execution::*;
 pub use hash::*;
 pub use ledger_transaction::*;
 pub use preparation::*;
@@ -163,18 +163,18 @@ Enum<3u8>(
         let executable = validated.get_executable();
         assert_eq!(
             executable,
-            Executable {
-                encoded_instructions: Rc::new(manifest_encode(&manifest.instructions).unwrap()),
-                references: indexset!(
+            ExecutableTransactionV1::new(
+                Rc::new(manifest_encode(&manifest.instructions).unwrap()),
+                indexset!(
                     Reference(FAUCET.into_node_id()),
                     // NOTE: not needed
                     Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
                     Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
                 ),
-                blobs: Rc::new(indexmap!(
+                Rc::new(indexmap!(
                     hash(&[1, 2]) => vec![1, 2]
                 )),
-                context: ExecutionContext {
+                ExecutionContext {
                     intent_hash: TransactionIntentHash::ToCheck {
                         intent_hash: hash(
                             [
@@ -228,8 +228,8 @@ Enum<3u8>(
                         abort_when_loan_repaid: false,
                     }
                 },
-                system: false,
-            }
+                false,
+            )
         );
 
         // Test unexpected transaction type

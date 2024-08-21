@@ -269,7 +269,7 @@ pub trait UniqueTransaction {
     fn unique_id(&self) -> Hash;
 }
 
-impl UniqueTransaction for Executable {
+impl UniqueTransaction for ExecutableTransactionV1 {
     fn unique_id(&self) -> Hash {
         self.intent_hash().to_hash()
     }
@@ -313,34 +313,38 @@ pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCall
     substate_db: &S,
     vms: V::Init,
     execution_config: &ExecutionConfig,
-    executable: Executable,
+    executable: ExecutableTransaction,
 ) -> TransactionReceipt {
-    let mut executor = TransactionExecutor::<_, System<V, Executable>>::new(
-        substate_db,
-        SystemInit {
-            enable_kernel_trace: execution_config.enable_kernel_trace,
-            enable_cost_breakdown: execution_config.enable_cost_breakdown,
-            enable_debug_information: execution_config.enable_debug_information,
-            execution_trace: execution_config.execution_trace,
-            callback_init: vms,
-            system_overrides: execution_config.system_overrides.clone(),
+    let system_init = SystemInit {
+        enable_kernel_trace: execution_config.enable_kernel_trace,
+        enable_cost_breakdown: execution_config.enable_cost_breakdown,
+        enable_debug_information: execution_config.enable_debug_information,
+        execution_trace: execution_config.execution_trace,
+        callback_init: vms,
+        system_overrides: execution_config.system_overrides.clone(),
+    };
+    match executable {
+        ExecutableTransaction::V1(executable_v1) => {
+            TransactionExecutor::<_, System<V, ExecutableTransactionV1>>::new(substate_db, system_init)
+                .execute(executable_v1)
         },
-    );
-
-    executor.execute(executable)
+        ExecutableTransaction::V2(_) => {
+            unimplemented!()
+        },
+    }
 }
 
 pub fn execute_transaction<'s, S: SubstateDatabase, W: WasmEngine, E: NativeVmExtension>(
     substate_db: &S,
     vm_init: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
-    executable: Executable,
+    executable: impl Into<ExecutableTransaction>,
 ) -> TransactionReceipt {
     execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
         substate_db,
         vm_init,
         execution_config,
-        executable,
+        executable.into(),
     )
 }
 
@@ -353,13 +357,13 @@ pub fn execute_and_commit_transaction<
     substate_db: &mut S,
     vms: VmInit<'s, W, E>,
     execution_config: &ExecutionConfig,
-    transaction: Executable,
+    transaction: impl Into<ExecutableTransaction>,
 ) -> TransactionReceipt {
     let receipt = execute_transaction_with_configuration::<S, Vm<'s, W, E>>(
         substate_db,
         vms,
         execution_config,
-        transaction,
+        transaction.into(),
     );
     if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(

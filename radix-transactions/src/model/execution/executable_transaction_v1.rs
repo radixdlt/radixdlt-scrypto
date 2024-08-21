@@ -1,18 +1,6 @@
 use crate::internal_prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub struct AuthZoneParams {
-    pub initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    pub virtual_resources: BTreeSet<ResourceAddress>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct EpochRange {
-    pub start_epoch_inclusive: Epoch,
-    pub end_epoch_exclusive: Epoch,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionContext {
     pub intent_hash: TransactionIntentHash,
     pub epoch_range: Option<EpochRange>,
@@ -43,21 +31,6 @@ impl TransactionIntentHash {
     }
     pub fn to_hash(&self) -> Hash {
         self.as_hash().clone()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoSbor)]
-pub struct PreAllocatedAddress {
-    pub blueprint_id: BlueprintId,
-    pub address: GlobalAddress,
-}
-
-impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
-    fn from((blueprint_id, address): (BlueprintId, GlobalAddress)) -> Self {
-        PreAllocatedAddress {
-            blueprint_id,
-            address,
-        }
     }
 }
 
@@ -113,7 +86,7 @@ impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt 
 
 /// Executable form of transaction, post stateless validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Executable {
+pub struct ExecutableTransactionV1 {
     pub(crate) encoded_instructions: Rc<Vec<u8>>,
     pub(crate) references: IndexSet<Reference>,
     pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
@@ -121,7 +94,7 @@ pub struct Executable {
     pub(crate) system: bool,
 }
 
-impl Executable {
+impl ExecutableTransactionV1 {
     pub fn new(
         encoded_instructions: Rc<Vec<u8>>,
         references: IndexSet<Reference>,
@@ -158,8 +131,8 @@ impl Executable {
 
     // Consuming builder-like customization methods:
 
-    pub fn is_system(&self) -> bool {
-        self.system
+    pub fn enable_limits_and_costing_modules(&self) -> bool {
+        !self.system
     }
 
     pub fn overwrite_intent_hash(mut self, hash: Hash) -> Self {

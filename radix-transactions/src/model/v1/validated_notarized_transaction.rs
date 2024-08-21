@@ -28,13 +28,13 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
 }
 
 impl ValidatedNotarizedTransactionV1 {
-    pub fn get_executable(&self) -> Executable {
+    pub fn get_executable(&self) -> ExecutableTransactionV1 {
         let intent = &self.prepared.signed_intent.intent;
         let header = &intent.header.inner;
         let intent_hash = intent.intent_hash();
         let summary = &self.prepared.summary;
 
-        Executable::new(
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),

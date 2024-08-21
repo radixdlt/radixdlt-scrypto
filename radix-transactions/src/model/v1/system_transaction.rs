@@ -1,6 +1,4 @@
-use super::{ExecutionContext, TransactionCostingParameters};
 use crate::internal_prelude::*;
-use crate::model::{AuthZoneParams, Executable};
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SystemTransactionV1 {
@@ -95,8 +93,8 @@ impl SystemTransactionV1 {
 }
 
 impl PreparedSystemTransactionV1 {
-    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> Executable {
-        Executable::new(
+    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> ExecutableTransactionV1 {
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             self.references.clone(),
             self.blobs.blobs_by_hash.clone(),

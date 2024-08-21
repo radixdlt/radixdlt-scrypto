@@ -134,10 +134,8 @@ pub enum ScanSortedSubstatesEvent<'a> {
 }
 
 /// A receipt created from executing a transaction
-pub trait ExecutionReceipt {
-    type Executed;
-
-    fn from_rejection(executable: Self::Executed, reason: RejectionReason) -> Self;
+pub trait ExecutionReceipt<Executed> {
+    fn from_rejection(executable: Executed, reason: RejectionReason) -> Self;
 
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage);
 }
@@ -150,7 +148,7 @@ pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     /// Output to be returned at the end of execution
     type ExecutionOutput;
     /// Final receipt to be created after transaction execution
-    type Receipt: ExecutionReceipt<Executed = Self::Executable>;
+    type Receipt: ExecutionReceipt<Self::Executable>;
 
     /// Create the callback object (system layer) and the initial call frame configuration
     fn init<S: BootStore + CommitableSubstateStore>(

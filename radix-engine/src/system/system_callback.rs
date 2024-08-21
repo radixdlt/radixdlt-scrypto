@@ -44,7 +44,7 @@ use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_substate_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
-use radix_transactions::model::{Executable, PreAllocatedAddress, TransactionIntentHash};
+use radix_transactions::model::*;
 
 pub const BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY: FieldKey = 1u8;
 
@@ -222,9 +222,9 @@ impl<C: SystemCallbackObject, E> System<C, E> {
     }
 }
 
-impl<C: SystemCallbackObject> System<C, Executable> {
+impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
     #[cfg(not(feature = "alloc"))]
-    fn print_executable(executable: &Executable) {
+    fn print_executable(executable: &ExecutableTransactionV1) {
         println!("{:-^120}", "Executable");
         println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
@@ -880,15 +880,15 @@ impl<C: SystemCallbackObject> System<C, Executable> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Executable> {
+impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, ExecutableTransactionV1> {
     type Init = SystemInit<C::Init>;
-    type Executable = Executable;
+    type Executable = ExecutableTransactionV1;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: Executable,
+        executable: ExecutableTransactionV1,
         init_input: SystemInit<C::Init>,
     ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
         // Dump executable
@@ -922,7 +922,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C, Exec
 
         let mut enabled_modules = {
             let mut enabled_modules = EnabledModules::AUTH | EnabledModules::TRANSACTION_RUNTIME;
-            if !executable.is_system() {
+            if executable.enable_limits_and_costing_modules() {
                 enabled_modules |= EnabledModules::LIMITS;
                 enabled_modules |= EnabledModules::COSTING;
             };
