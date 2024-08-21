@@ -85,10 +85,10 @@ fn test_transaction_replay_protection() {
     // ... and it had empty new contents.
     assert!(partition_resets[0].is_empty());
 
-    // 5. Run the transaction the 3rd time (with epoch range check disabled)
+    // 5. Run the transaction the 3rd time (with epoch range and intent hash checks disabled)
     // Note that in production, this won't be possible.
     let receipt = ledger.execute_transaction(
-        validated.get_executable().skip_epoch_range_check(),
+        validated.get_executable().skip_epoch_range_check().skip_intent_hash_check(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();

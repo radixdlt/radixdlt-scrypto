@@ -148,6 +148,11 @@ impl ExecutableTransactionV1 {
         self
     }
 
+    pub fn skip_intent_hash_check(mut self) -> Self {
+        self.context.intent_hash_check = IntentHashCheck::None;
+        self
+    }
+
     pub fn apply_free_credit(mut self, free_credit_in_xrd: Decimal) -> Self {
         self.context.costing_parameters.free_credit_in_xrd = free_credit_in_xrd;
         self
