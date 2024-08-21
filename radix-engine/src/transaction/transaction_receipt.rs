@@ -1670,3 +1670,36 @@ pub enum FlamegraphError {
     CreationError,
     DetailedCostBreakdownNotAvailable,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // This is an effective copy of the V1 contents of the local transaction execution store in the node.
+    // This needs to be decodable!
+    // By all means introduce _new versions_ of the included types, with conversions between them,
+    // and we can introduce a higher LocalTransactionExecutionVX in the node.
+    // But this schema can't change, else we won't be able to decode existing executions in the node.
+    // NOTE: This is just copied here to catch issues / changes earlier; an identical test exists in the node.
+    #[derive(ScryptoSbor, ScryptoSborAssertion)]
+    #[sbor_assert(
+        backwards_compatible(
+            bottlenose = "FILE:node_local_transaction_execution_v1_bottlenose.txt",
+        ),
+        settings(allow_name_changes)
+    )]
+    struct LocalTransactionExecutionV1 {
+        outcome: Result<(), RuntimeError>,
+        fee_summary: TransactionFeeSummary,
+        fee_source: FeeSource,
+        fee_destination: FeeDestination,
+        engine_costing_parameters: CostingParameters,
+        transaction_costing_parameters: TransactionCostingParametersReceipt,
+        application_logs: Vec<(Level, String)>,
+        state_update_summary: StateUpdateSummary,
+        global_balance_summary: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+        substates_system_structure: Vec<SubstateSystemStructure>,
+        events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
+        next_epoch: Option<EpochChangeEvent>,
+    }
+}

@@ -88,12 +88,7 @@ pub struct EventSystemStructure {
 pub type SubstateSystemStructures =
     IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, SubstateSystemStructure>>>;
 
-#[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq, ScryptoSborAssertion)]
-// This is currently persisted in the node's `LocalTransactionExecution` store,
-// so needs to be backwards compatible to avoid breaking the Core API transaction stream.
-// This assertion can be removed when `radixdlt-scrypto` is merged into the node,
-// because there will be an equivalent assertion against the `LocalTransactionExecution` itself.
-#[sbor_assert(backwards_compatible(bottlenose = "FILE:system_structure_v1.txt"))]
+#[derive(Default, Debug, Clone, ScryptoSbor, PartialEq, Eq)]
 pub struct SystemStructure {
     pub substate_system_structures: SubstateSystemStructures,
     pub event_system_structures: IndexMap<EventTypeIdentifier, EventSystemStructure>,

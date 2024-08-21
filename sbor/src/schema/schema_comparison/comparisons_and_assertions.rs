@@ -184,20 +184,22 @@ fn assert_schema_compatibility<S: CustomSchema, C: ComparableSchema<S>>(
         writeln!(&mut error).unwrap();
         write!(&mut error, "{error_message}").unwrap();
         writeln!(&mut error).unwrap();
-        writeln!(&mut error, "You will either want to:").unwrap();
         writeln!(
             &mut error,
-            "(A) Add a new named version to the list, to be supported going forward."
+            "You will likely want to do one of the following:"
+        )
+        .unwrap();
+        writeln!(&mut error, "(A) Revert an unintended change to some model.").unwrap();
+        writeln!(
+            &mut error,
+            "(B) Add a new named version to the list, to be supported going forward. You must then generate its schema with `#[sbor_assert(backwards_compatible(..), generate)]`, running the test, and removing `generate`."
         )
         .unwrap();
         writeln!(
             &mut error,
-            "(B) Replace the latest version. ONLY do this if the version has not yet been in use."
+            "(C) If the latest version is under development, and has not been used / release, you can regenerate it with `#[sbor_assert(backwards_compatible(..), regenerate)]`, running the test, and removing `regenerate`."
         )
         .unwrap();
-        writeln!(&mut error).unwrap();
-        writeln!(&mut error, "The latest version is:").unwrap();
-        writeln!(&mut error, "{}", current.encode_to_hex()).unwrap();
         panic!("{error}");
     }
 

@@ -172,31 +172,34 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// A macro for outputting tests and marker traits to assert that a type has maintained its shape over time.
 ///
 /// There are two types of assertion modes:
-/// * "fixed" mode is used to ensure that a type is unchanged.
-/// * "backwards_compatible" mode is used when multiple versions of the type are permissible, but
+/// * `fixed` mode is used to ensure that a type is unchanged.
+/// * `backwards_compatible` mode is used when multiple versions of the type are permissible, but
 ///   newer versions of the type must be compatible with the older version where they align.
 ///   This mode (A) ensures that the type's current schema is equivalent to the latest version, and
 ///   (B) ensures that each of the schemas is a strict extension of the previous mode.
 ///
-/// There is also a "generate" mode which can be used to export the current schema. Upon running the generated test,
-/// the schema is either written to a file, or output in a panic message.
+/// ## Initial schema generation and regeneration
 ///
-/// ## Initial schema generation
+/// To output a generated schema, temporarily add a `generate` parameter or a `regenerate` parameter,
+/// after the `fixed` or `backwards_compatible` parameter, and then run the created test.
+/// If using Rust Analyzer this can be run from the IDE, or it can be run via `cargo test`.
 ///
-/// To output the generated schema to a file path relative to the source file, add an attribute like this -
-/// and then run the test which gets generated. If using Rust Analyzer this can be run from the IDE,
-/// or it can be run via `cargo test`.
+/// To protect against accidentally doing the wrong thing, `generate` can only be used for initial generation,
+/// whereas `regenerate` can only be used for replacing an existing generation.
+///
+/// If a "FILE:.." path is specified, it will (re)generate that file, else it will output to the console:
+/// * In `fixed` mode, this will (re)generate against the given schema location.
+/// * In `backwards_compatible` mode, this will (re)generate against the latest schema location (the last in the list).
+///
+/// The test will then panic to ensure it fails, and can't be left accidentally in (re)generate state.
 ///
 /// ```no_run
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
-/// #[sbor_assert(generate("FILE:MyType-schema-v1.txt"))]
+/// #[sbor_assert(fixed("FILE:MyType-schema-v1.txt"), generate)]
 /// struct MyType {
 ///     // ...
 /// }
 /// ```
-///
-/// The test should generate the given file and then panic. If you wish to only generate the schema
-/// in the panic message, you can with `#[sbor_assert(generate("INLINE"))]`.
 ///
 /// ## Fixed schema verification
 ///
