@@ -5,6 +5,7 @@ use crate::{
     transaction::{AbortReason, CostingParameters},
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_transactions::model::TipSpecifier;
 use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::rust::cmp::min;
 
@@ -171,22 +172,16 @@ impl SystemLoanFeeReserve {
             .free_credit_in_xrd
             .is_negative());
 
-        let tip_percentage = Decimal::ONE
-            .checked_add(
-                Decimal::ONE_HUNDREDTH
-                    .checked_mul(transaction_costing_parameters.tip_percentage)
-                    .unwrap(),
-            )
-            .unwrap();
+        let tip_multiplier = transaction_costing_parameters.tip.fee_multiplier();
 
         let effective_execution_cost_unit_price = costing_parameters
             .execution_cost_unit_price
-            .checked_mul(tip_percentage)
+            .checked_mul(tip_multiplier)
             .unwrap();
 
         let effective_finalization_cost_unit_price = costing_parameters
             .finalization_cost_unit_price
-            .checked_mul(tip_percentage)
+            .checked_mul(tip_multiplier)
             .unwrap();
 
         let system_loan_in_xrd = effective_execution_cost_unit_price
@@ -253,8 +248,8 @@ impl SystemLoanFeeReserve {
         self.costing_parameters.usd_price
     }
 
-    pub fn tip_percentage(&self) -> u32 {
-        self.transaction_costing_parameters.tip_percentage.into()
+    pub fn tip(&self) -> TipSpecifier {
+        self.transaction_costing_parameters.tip
     }
 
     pub fn fee_balance(&self) -> Decimal {
@@ -530,15 +525,13 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             .checked_mul(Decimal::from(self.finalization_cost_units_committed))
             .unwrap();
 
-        let tip_percentage = Decimal::from(self.transaction_costing_parameters.tip_percentage)
-            .checked_div(dec!(100))
-            .unwrap();
+        let tip_proportion = self.transaction_costing_parameters.tip.proportion();
         let total_tipping_cost_in_xrd = total_execution_cost_in_xrd
-            .checked_mul(tip_percentage)
+            .checked_mul(tip_proportion)
             .unwrap()
             .checked_add(
                 total_finalization_cost_in_xrd
-                    .checked_mul(tip_percentage)
+                    .checked_mul(tip_proportion)
                     .unwrap(),
             )
             .unwrap();
@@ -596,7 +589,7 @@ mod tests {
         costing_parameters.usd_price = usd_price;
         costing_parameters.state_storage_price = state_storage_price;
         let mut transaction_costing_parameters = TransactionCostingParameters::default();
-        transaction_costing_parameters.tip_percentage = tip_percentage;
+        transaction_costing_parameters.tip = TipSpecifier::Percentage(tip_percentage);
         transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 
         SystemLoanFeeReserve::new(costing_parameters, transaction_costing_parameters)

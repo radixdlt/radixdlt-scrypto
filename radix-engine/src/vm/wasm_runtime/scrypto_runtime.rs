@@ -542,9 +542,7 @@ impl<'y, Y: SystemApi<RuntimeError>> WasmRuntime for ScryptoRuntime<'y, Y> {
     }
 
     fn costing_get_tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>> {
-        let tip_percentage = self.api.tip_percentage()?;
-
-        Ok(tip_percentage.into())
+        Ok(self.api.tip_percentage_truncated()?)
     }
 
     fn costing_get_fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

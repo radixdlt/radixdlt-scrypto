@@ -36,7 +36,7 @@ impl ValidatedPreviewIntent {
 
         let header = &intent.header.inner;
         let fee_payment = TransactionCostingParameters {
-            tip_percentage: header.tip_percentage,
+            tip: TipSpecifier::Percentage(header.tip_percentage),
             free_credit_in_xrd: if self.flags.use_free_credit {
                 Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap()
             } else {
@@ -60,13 +60,10 @@ impl ValidatedPreviewIntent {
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: intent_hash.0,
-                intent_hash_check: if flags.skip_epoch_check {
-                    IntentHashCheck::None
-                } else {
-                    IntentHashCheck::TransactionIntent {
-                        intent_hash,
-                        expiry_epoch: intent.header.inner.end_epoch_exclusive,
-                    }
+                intent_hash_nullification: IntentHashNullification::TransactionIntent {
+                    intent_hash,
+                    expiry_epoch: intent.header.inner.end_epoch_exclusive,
+                    ignore_duplicate: flags.skip_epoch_check,
                 },
                 epoch_range: if flags.skip_epoch_check {
                     None

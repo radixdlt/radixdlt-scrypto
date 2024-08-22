@@ -103,13 +103,13 @@ impl PreparedSystemTransactionV1 {
             self.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: self.hash_for_execution.hash,
-                intent_hash_check: IntentHashCheck::None,
+                intent_hash_nullification: IntentHashNullification::None,
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
                 auth_zone_init: AuthZoneInit::proofs(initial_proofs),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: 0,
+                    tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

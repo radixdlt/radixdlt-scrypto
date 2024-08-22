@@ -1,10 +1,23 @@
 use crate::internal_prelude::*;
 
+/// This is an executable form of the transaction, post stateless validation.
+///
+/// [`ExecutableTransactionV1`] originally launched with Babylon.
+/// Uses [`InstructionV1`] and [`NotarizedTransactionV1`]`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutableTransactionV1 {
+    pub(crate) encoded_instructions_v1: Rc<Vec<u8>>,
+    pub(crate) references: IndexSet<Reference>,
+    pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub(crate) context: ExecutionContext,
+    pub(crate) system: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionContext {
     /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
     pub unique_hash: Hash,
-    pub intent_hash_check: IntentHashCheck,
+    pub intent_hash_nullification: IntentHashNullification,
     pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
@@ -13,101 +26,9 @@ pub struct ExecutionContext {
     pub costing_parameters: TransactionCostingParameters,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum IntentHashCheck {
-    /// Should be checked with transaction tracker.
-    TransactionIntent {
-        intent_hash: TransactionIntentHash,
-        expiry_epoch: Epoch,
-    },
-    /// Subintent
-    Subintent {
-        intent_hash: SubintentHash,
-        expiry_epoch: Epoch,
-    },
-    /// For where there's no intent hash
-    None,
-}
-
-impl IntentHashCheck {
-    pub fn intent_hash(&self) -> Option<IntentHash> {
-        match self {
-            IntentHashCheck::TransactionIntent { intent_hash, .. } => {
-                Some(IntentHash::Transaction(*intent_hash))
-            }
-            IntentHashCheck::Subintent { intent_hash, .. } => Some(IntentHash::Sub(*intent_hash)),
-            IntentHashCheck::None => None,
-        }
-    }
-}
-
-// Note: we have the two models below after finding an issue where a new field was added to the
-// transaction costing parameters struct, which is used in the receipt, without moving to a new
-// version of the receipt.
-//
-// Relevant discussion:
-// https://rdxworks.slack.com/archives/C060RCS9MPW/p1715762426579329?thread_ts=1714585544.709299&cid=C060RCS9MPW
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct TransactionCostingParameters {
-    pub tip_percentage: u16,
-
-    /// Free credit for execution, for preview only!
-    pub free_credit_in_xrd: Decimal,
-
-    /// Whether to abort the transaction run when the loan is repaid.
-    /// This is used when test-executing pending transactions.
-    pub abort_when_loan_repaid: bool,
-}
-
-impl Default for TransactionCostingParameters {
-    fn default() -> Self {
-        Self {
-            tip_percentage: DEFAULT_TIP_PERCENTAGE,
-            free_credit_in_xrd: Decimal::ZERO,
-            abort_when_loan_repaid: false,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
-pub struct TransactionCostingParametersReceipt {
-    pub tip_percentage: u16,
-    /// Free credit for execution, for preview only!
-    pub free_credit_in_xrd: Decimal,
-}
-
-impl Default for TransactionCostingParametersReceipt {
-    fn default() -> Self {
-        Self {
-            tip_percentage: DEFAULT_TIP_PERCENTAGE,
-            free_credit_in_xrd: Default::default(),
-        }
-    }
-}
-
-impl From<TransactionCostingParameters> for TransactionCostingParametersReceipt {
-    fn from(value: TransactionCostingParameters) -> Self {
-        Self {
-            free_credit_in_xrd: value.free_credit_in_xrd,
-            tip_percentage: value.tip_percentage,
-        }
-    }
-}
-
-/// Executable form of transaction, post stateless validation.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutableTransactionV1 {
-    pub(crate) encoded_instructions: Rc<Vec<u8>>,
-    pub(crate) references: IndexSet<Reference>,
-    pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
-    pub(crate) context: ExecutionContext,
-    pub(crate) system: bool,
-}
-
 impl ExecutableTransactionV1 {
     pub fn new(
-        encoded_instructions: Rc<Vec<u8>>,
+        encoded_instructions_v1: Rc<Vec<u8>>,
         references: IndexSet<Reference>,
         blobs: Rc<IndexMap<Hash, Vec<u8>>>,
         context: ExecutionContext,
@@ -133,7 +54,7 @@ impl ExecutableTransactionV1 {
         }
 
         Self {
-            encoded_instructions,
+            encoded_instructions_v1,
             references,
             blobs,
             context,
@@ -148,8 +69,8 @@ impl ExecutableTransactionV1 {
         self
     }
 
-    pub fn skip_intent_hash_check(mut self) -> Self {
-        self.context.intent_hash_check = IntentHashCheck::None;
+    pub fn skip_intent_hash_nullification(mut self) -> Self {
+        self.context.intent_hash_nullification = IntentHashNullification::None;
         self
     }
 
@@ -164,7 +85,7 @@ impl ExecutableTransactionV1 {
     }
 }
 
-impl TransactionParameters for ExecutableTransactionV1 {
+impl Executable for ExecutableTransactionV1 {
     type Intent = Self;
 
     fn unique_hash(&self) -> &Hash {
@@ -200,9 +121,13 @@ impl TransactionParameters for ExecutableTransactionV1 {
     }
 }
 
-impl IntentParameters for ExecutableTransactionV1 {
-    fn intent_hash_check(&self) -> &IntentHashCheck {
-        &self.context.intent_hash_check
+impl IntentDetails for ExecutableTransactionV1 {
+    fn executable_instructions(&self) -> ExecutableInstructions {
+        ExecutableInstructions::V1Processor(self.encoded_instructions_v1.as_ref())
+    }
+
+    fn intent_hash_nullification(&self) -> &IntentHashNullification {
+        &self.context.intent_hash_nullification
     }
 
     fn auth_zone_init(&self) -> &AuthZoneInit {
@@ -214,7 +139,7 @@ impl IntentParameters for ExecutableTransactionV1 {
     }
 
     fn encoded_instructions(&self) -> &[u8] {
-        &self.encoded_instructions
+        &self.encoded_instructions_v1
     }
 
     fn references(&self) -> &IndexSet<Reference> {

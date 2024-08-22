@@ -3,8 +3,7 @@ use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::{
     execute_transaction, ExecutionConfig, TransactionFeeSummary, TransactionReceipt,
 };
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
+use radix_engine::vm::*;
 use radix_engine_interface::prelude::system_execution;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::prelude::*;
@@ -40,13 +39,13 @@ impl LedgerTransactionReceipt {
 
 pub fn execute_ledger_transaction<S: SubstateDatabase>(
     database: &S,
-    scrypto_vm: &ScryptoVm<DefaultWasmEngine>,
+    vm_modules: &impl VmInitialize,
     network: &NetworkDefinition,
     tx_payload: &[u8],
     trace: bool,
 ) -> StateUpdates {
     let prepared = prepare_ledger_transaction(tx_payload);
-    execute_prepared_ledger_transaction(database, scrypto_vm, network, &prepared, trace)
+    execute_prepared_ledger_transaction(database, vm_modules, network, &prepared, trace)
         .into_state_updates()
 }
 
@@ -61,7 +60,7 @@ pub fn prepare_ledger_transaction(tx_payload: &[u8]) -> PreparedLedgerTransactio
 
 pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
     database: &S,
-    scrypto_vm: &ScryptoVm<DefaultWasmEngine>,
+    vm_modules: &impl VmInitialize,
     network: &NetworkDefinition,
     prepared: &PreparedLedgerTransaction,
     trace: bool,
@@ -76,10 +75,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 PreparedGenesisTransaction::Transaction(tx) => {
                     let receipt = execute_transaction(
                         database,
-                        VmInit {
-                            scrypto_vm,
-                            native_vm_extension: NoExtension,
-                        },
+                        vm_modules,
                         &ExecutionConfig::for_genesis_transaction(network.clone())
                             .with_kernel_trace(trace)
                             .with_cost_breakdown(trace),
@@ -92,10 +88,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
         PreparedLedgerTransactionInner::UserV1(tx) => {
             let receipt = execute_transaction(
                 database,
-                VmInit {
-                    scrypto_vm,
-                    native_vm_extension: NoExtension,
-                },
+                vm_modules,
                 &ExecutionConfig::for_notarized_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),
@@ -109,10 +102,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
         PreparedLedgerTransactionInner::RoundUpdateV1(tx) => {
             let receipt = execute_transaction(
                 database,
-                VmInit {
-                    scrypto_vm,
-                    native_vm_extension: NoExtension,
-                },
+                vm_modules,
                 &ExecutionConfig::for_system_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),

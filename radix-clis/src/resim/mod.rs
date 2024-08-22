@@ -57,28 +57,16 @@ use clap::{Parser, Subcommand};
 use radix_common::crypto::{hash, Secp256k1PrivateKey};
 use radix_common::network::NetworkDefinition;
 use radix_common::prelude::*;
-use radix_engine::blueprints::consensus_manager::{
-    ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
-};
+use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::blueprints::models::FieldPayload;
 use radix_engine::system::system_db_reader::*;
-use radix_engine::transaction::execute_and_commit_transaction;
-use radix_engine::transaction::ExecutionConfig;
-use radix_engine::transaction::TransactionOutcome;
-use radix_engine::transaction::TransactionReceipt;
-use radix_engine::transaction::TransactionReceiptDisplayContextBuilder;
-use radix_engine::transaction::TransactionResult;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
+use radix_engine::transaction::*;
 use radix_engine_interface::api::ModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinition, BlueprintInterface, BlueprintPayloadDef, BlueprintVersionKey,
-};
+use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::prelude::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
-use radix_substate_store_queries::typed_substate_layout::*;
 use radix_transactions::manifest::decompile;
 use radix_transactions::model::TestTransaction;
 use radix_transactions::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
@@ -166,9 +154,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
     let SimulatorEnvironment {
-        mut db, scrypto_vm, ..
+        mut db, vm_modules, ..
     } = SimulatorEnvironment::new()?;
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
     let nonce = get_nonce()?;
     let transaction = SystemTransactionV1 {
@@ -182,7 +169,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 
     let receipt = execute_and_commit_transaction(
         &mut db,
-        vm_init,
+        &vm_modules,
         &ExecutionConfig::for_system_transaction(NetworkDefinition::simulator())
             .with_kernel_trace(trace),
         transaction
@@ -237,9 +224,8 @@ pub fn handle_manifest<O: std::io::Write>(
         }
         None => {
             let SimulatorEnvironment {
-                mut db, scrypto_vm, ..
+                mut db, vm_modules, ..
             } = SimulatorEnvironment::new()?;
-            let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -251,7 +237,7 @@ pub fn handle_manifest<O: std::io::Write>(
 
             let receipt = execute_and_commit_transaction(
                 &mut db,
-                vm_init,
+                &vm_modules,
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
                 transaction
                     .prepare()

@@ -10,7 +10,7 @@ use crate::system::system_substate_schemas::*;
 use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_transactions::prelude::TransactionCostingParametersReceipt;
+use radix_transactions::prelude::TransactionCostingParametersReceiptV1;
 use sbor::representations::*;
 
 define_single_versioned! {
@@ -31,7 +31,7 @@ define_single_versioned! {
         //   This will allow us to add new receipt versions, but ensuring they can still map to the preview model.
         // * Change the API to return some kind of explicit extensible preview DTO.
         #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(fixed("FILE:receipt_schema_bottlenose.txt"))]
+        #[sbor_assert(fixed("FILE:receipt_schema_bottlenose.txt"), settings(allow_name_changes))]
     ],
 }
 
@@ -40,7 +40,7 @@ pub struct TransactionReceiptV1 {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters
-    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
+    pub transaction_costing_parameters: TransactionCostingParametersReceiptV1,
     /// Transaction fee summary
     pub fee_summary: TransactionFeeSummary,
     /// Transaction fee detail
@@ -1694,7 +1694,7 @@ mod tests {
         fee_source: FeeSource,
         fee_destination: FeeDestination,
         engine_costing_parameters: CostingParameters,
-        transaction_costing_parameters: TransactionCostingParametersReceipt,
+        transaction_costing_parameters: TransactionCostingParametersReceiptV1,
         application_logs: Vec<(Level, String)>,
         state_update_summary: StateUpdateSummary,
         global_balance_summary: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,

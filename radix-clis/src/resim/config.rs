@@ -1,6 +1,7 @@
 use crate::resim::*;
 use radix_common::prelude::*;
 use radix_engine::updates::*;
+use radix_engine::vm::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -10,7 +11,7 @@ pub struct SimulatorEnvironment {
     // Db
     pub db: RocksdbSubstateStore,
     // VMs
-    pub scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    pub vm_modules: DefaultVmModules,
     pub network_definition: NetworkDefinition,
 }
 
@@ -20,11 +21,11 @@ impl SimulatorEnvironment {
         let db = RocksdbSubstateStore::standard(get_data_dir()?);
 
         // Create the VMs
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let vm_modules = VmModules::default();
 
         let mut env = Self {
             db,
-            scrypto_vm,
+            vm_modules,
             network_definition: NetworkDefinition::simulator(),
         };
         env.bootstrap();

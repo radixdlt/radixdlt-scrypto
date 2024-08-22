@@ -113,41 +113,33 @@ impl SystemLockData {
 }
 
 /// Effectively a trait alias for `KernelApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>`
-pub trait SystemBasedKernelApi:
-    KernelApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>
-{
+pub trait SystemBasedKernelApi: KernelApi<CallbackObject = System<Self::SystemCallback>> {
     type SystemCallback: SystemCallbackObject;
-    type Executable;
 
     fn system_service(&mut self) -> SystemService<'_, Self> {
         SystemService::new(self)
     }
 }
 
-impl<V: SystemCallbackObject, E, K: KernelApi<CallbackObject = System<V, E>>> SystemBasedKernelApi
-    for K
-{
+impl<V: SystemCallbackObject, K: KernelApi<CallbackObject = System<V>>> SystemBasedKernelApi for K {
     type SystemCallback = V;
-    type Executable = E;
 }
 
 /// Effectively a trait alias for `KernelInternalApi<CallbackObject = System<Self::SystemCallback, Self::Executable>>`
 pub trait SystemBasedKernelInternalApi:
-    KernelInternalApi<System = System<Self::SystemCallback, Self::Executable>>
+    KernelInternalApi<System = System<Self::SystemCallback>>
 {
     type SystemCallback: SystemCallbackObject;
-    type Executable;
 
     fn system_module_api(&mut self) -> SystemModuleApiImpl<Self> {
         SystemModuleApiImpl::new(self)
     }
 }
 
-impl<V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
-    SystemBasedKernelInternalApi for K
+impl<V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>> SystemBasedKernelInternalApi
+    for K
 {
     type SystemCallback = V;
-    type Executable = E;
 }
 
 #[derive(Clone)]
@@ -165,16 +157,32 @@ pub struct SystemInit<C> {
     pub system_overrides: Option<SystemOverrides>,
 }
 
-pub struct System<C: SystemCallbackObject, E> {
+pub struct System<C: SystemCallbackObject> {
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
-    pub executable: E,
+    pub finalization: SystemFinalization,
 }
 
-impl<C: SystemCallbackObject, E> System<C, E> {
+pub trait HasModules {
+    fn modules_mut(&mut self) -> &mut SystemModuleMixer;
+}
+
+impl<C: SystemCallbackObject> HasModules for System<C> {
+    #[inline]
+    fn modules_mut(&mut self) -> &mut SystemModuleMixer {
+        &mut self.modules
+    }
+}
+
+#[derive(Default)]
+pub struct SystemFinalization {
+    intent_nullifications: Vec<IntentHashNullification>,
+}
+
+impl<C: SystemCallbackObject> System<C> {
     fn on_move_node<Y: SystemBasedKernelApi>(
         node_id: &NodeId,
         is_moving_down: bool,
@@ -223,9 +231,9 @@ impl<C: SystemCallbackObject, E> System<C, E> {
     }
 }
 
-impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
+impl<C: SystemCallbackObject> System<C> {
     #[cfg(not(feature = "alloc"))]
-    fn print_executable(executable: &ExecutableTransactionV1) {
+    fn print_executable(executable: &impl Executable) {
         println!("{:-^120}", "Executable");
         println!("Intent hash: {}", executable.unique_hash());
         println!("Payload size: {}", executable.payload_size());
@@ -237,8 +245,8 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
             "Pre-allocated addresses: {:?}",
             executable.pre_allocated_addresses()
         );
-        println!("Blobs: {:?}", executable.blobs().keys());
-        println!("References: {:?}", executable.references());
+        println!("Blobs: {:?}", executable.all_blob_hashes());
+        println!("References: {:?}", executable.all_references());
     }
 
     fn read_epoch_uncosted<S: CommitableSubstateStore>(store: &mut S) -> Option<Epoch> {
@@ -625,9 +633,31 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
     fn update_transaction_tracker<S: SubstateDatabase>(
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         next_epoch: Epoch,
-        intent_hash_check: &IntentHashCheck,
+        intent_hash_nullification: IntentHashNullification,
         is_success: bool,
     ) {
+        let (intent_hash, expiry_epoch) = match intent_hash_nullification {
+            IntentHashNullification::TransactionIntent {
+                intent_hash,
+                expiry_epoch,
+                ..
+            } => (intent_hash.into_hash(), expiry_epoch),
+            IntentHashNullification::Subintent {
+                intent_hash,
+                expiry_epoch,
+                ..
+            } => {
+                // Only write subintent nullification on success.
+                // Subintents can't pay fees, so this isn't a problem.
+                if is_success {
+                    (intent_hash.into_hash(), expiry_epoch)
+                } else {
+                    return;
+                }
+            }
+            IntentHashNullification::None => return,
+        };
+
         // Read the intent hash store
         let transaction_tracker = track
             .read_substate(
@@ -643,36 +673,29 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
         let mut transaction_tracker = transaction_tracker.into_v1();
 
         // Update the status of the intent hash
-        if let IntentHashCheck::TransactionIntent {
-            expiry_epoch,
-            intent_hash,
-        } = intent_hash_check
+        if let Some(partition_number) = transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
         {
-            if let Some(partition_number) =
-                transaction_tracker.partition_for_expiry_epoch(*expiry_epoch)
-            {
-                track
-                    .set_substate(
-                        TRANSACTION_TRACKER.into_node_id(),
-                        PartitionNumber(partition_number),
-                        SubstateKey::Map(scrypto_encode(intent_hash).unwrap()),
-                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
-                            KeyValueEntrySubstateV1 {
-                                value: Some(if is_success {
-                                    TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
-                                } else {
-                                    TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
-                                }),
-                                // TODO: maybe make it immutable, but how does this affect partition deletion?
-                                lock_status: LockStatus::Unlocked,
-                            },
-                        )),
-                        &mut |_| -> Result<(), ()> { Ok(()) },
-                    )
-                    .unwrap();
-            } else {
-                panic!("No partition for an expiry epoch")
-            }
+            track
+                .set_substate(
+                    TRANSACTION_TRACKER.into_node_id(),
+                    PartitionNumber(partition_number),
+                    SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
+                    IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
+                        KeyValueEntrySubstateV1 {
+                            value: Some(if is_success {
+                                TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
+                            } else {
+                                TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
+                            }),
+                            // TODO: maybe make it immutable, but how does this affect partition deletion?
+                            lock_status: LockStatus::Unlocked,
+                        },
+                    )),
+                    &mut |_| -> Result<(), ()> { Ok(()) },
+                )
+                .unwrap();
+        } else {
+            panic!("No partition for an expiry epoch")
         }
 
         // Check if all intent hashes in the first epoch have expired, based on the `next_epoch`.
@@ -796,7 +819,7 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
 
     /// Checks that references exist in the store
     fn build_call_frame_init_with_reference_check(
-        intent: &impl IntentParameters,
+        intent: &impl IntentDetails,
         modules: &mut SystemModuleMixer,
         store: &mut (impl BootStore + CommitableSubstateStore),
     ) -> Result<CallFrameInit<Actor>, BootloadingError> {
@@ -942,7 +965,7 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
         outcome: Result<Vec<InstructionOutput>, RuntimeError>,
         mut track: Track<S, SpreadPrefixKeyMapper>,
         modules: SystemModuleMixer,
-        transaction: impl TransactionParameters,
+        system_finalization: SystemFinalization,
     ) -> TransactionReceiptV1 {
         let print_execution_summary = modules.is_kernel_trace_enabled();
         let execution_trace_enabled = modules.is_execution_trace_enabled();
@@ -975,11 +998,11 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
 
         // Update intent hash status
         if let Some(next_epoch) = Self::read_epoch_uncosted(&mut track) {
-            for intent in transaction.intents() {
+            for intent_nullification in system_finalization.intent_nullifications {
                 Self::update_transaction_tracker(
                     &mut track,
                     next_epoch,
-                    intent.intent_hash_check(),
+                    intent_nullification,
                     is_success,
                 );
             }
@@ -1061,8 +1084,12 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
         fee_summary: TransactionFeeSummary,
         result: TransactionResult,
     ) -> TransactionReceiptV1 {
-        let transaction_costing_parameters = TransactionCostingParametersReceipt {
-            tip_percentage: transaction_costing_parameters.tip_percentage,
+        // TODO - change to TransactionCostingParametersReceiptV1 when we have a plan regarding how
+        //        to break TransactionReceipt compatibility
+        let transaction_costing_parameters = TransactionCostingParametersReceiptV1 {
+            tip_percentage: transaction_costing_parameters
+                .tip
+                .truncate_to_percentage_u16(),
             free_credit_in_xrd: transaction_costing_parameters.free_credit_in_xrd,
         };
 
@@ -1096,7 +1123,7 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
 
     fn resolve_modules(
         store: &mut impl BootStore,
-        executable: &impl TransactionParameters,
+        executable: &impl Executable,
         init_input: &SystemInit<C::Init>,
     ) -> SystemModuleMixer {
         let system_boot = store
@@ -1205,26 +1232,23 @@ impl<C: SystemCallbackObject> System<C, ExecutableTransactionV1> {
     }
 }
 
-impl<C: SystemCallbackObject> KernelTransactionCallbackObject
-    for System<C, ExecutableTransactionV1>
-{
+impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     type Init = SystemInit<C::Init>;
-    type TransactionExecutable = ExecutableTransactionV1;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceiptV1;
 
-    fn init<S: BootStore + CommitableSubstateStore>(
+    fn init<S: BootStore + CommitableSubstateStore, E: Executable>(
         store: &mut S,
-        executable: ExecutableTransactionV1,
+        executable: &E,
         init_input: SystemInit<C::Init>,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if init_input.enable_kernel_trace {
-            Self::print_executable(&executable);
+            Self::print_executable(executable);
         }
 
-        let mut modules = Self::resolve_modules(store, &executable, &init_input);
+        let mut modules = Self::resolve_modules(store, executable, &init_input);
 
         // NOTE: Have to use match pattern rather than map_err to appease the borrow checker
         let callback = match C::init(store, init_input.callback_init) {
@@ -1254,14 +1278,41 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject
                 }
             }
         }
-        if let IntentHashCheck::TransactionIntent {
-            intent_hash,
-            expiry_epoch,
-        } = executable.intent_hash_check()
-        {
-            let intent_hash_validation_result =
-                Self::validate_intent_hash_uncosted(store, intent_hash.as_hash(), *expiry_epoch);
 
+        for intent in executable.intents() {
+            let intent_hash_validation_result = match intent.intent_hash_nullification() {
+                IntentHashNullification::TransactionIntent {
+                    intent_hash,
+                    expiry_epoch,
+                    ignore_duplicate,
+                } => {
+                    if *ignore_duplicate {
+                        Ok(())
+                    } else {
+                        Self::validate_intent_hash_uncosted(
+                            store,
+                            intent_hash.as_hash(),
+                            *expiry_epoch,
+                        )
+                    }
+                }
+                IntentHashNullification::Subintent {
+                    intent_hash,
+                    expiry_epoch,
+                    ignore_duplicate,
+                } => {
+                    if *ignore_duplicate {
+                        Ok(())
+                    } else {
+                        Self::validate_intent_hash_uncosted(
+                            store,
+                            intent_hash.as_hash(),
+                            *expiry_epoch,
+                        )
+                    }
+                }
+                IntentHashNullification::None => Ok(()),
+            };
             match intent_hash_validation_result {
                 Ok(()) => {}
                 Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
@@ -1285,21 +1336,24 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject
             schema_cache: NonIterMap::new(),
             callback,
             modules,
-            executable,
+            finalization: SystemFinalization {
+                intent_nullifications: executable
+                    .intents()
+                    .iter()
+                    .map(|i| i.intent_hash_nullification())
+                    .cloned()
+                    .collect(),
+            },
         };
 
         Ok((system, call_frame_inits))
     }
 
-    fn start<Y: SystemBasedKernelApi<Executable = Self::TransactionExecutable>>(
+    fn start<Y: SystemBasedKernelApi, E: Executable>(
         api: &mut Y,
+        executable: E,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system_service = SystemService::new(api);
-        let executable = system_service
-            .kernel_get_system_state()
-            .system
-            .executable
-            .clone();
 
         // Allocate global addresses
         let mut global_address_reservations = Vec::new();
@@ -1313,16 +1367,20 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject
             global_address_reservations.push(global_address_reservation);
         }
 
+        let intents = executable.intents();
+        assert_eq!(intents.len(), 1, "For now we only support one intent");
+        let intent = *intents.get(0).unwrap();
+
         // Call TX processor
         let rtn = system_service.call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions: executable.encoded_instructions(),
+                manifest_encoded_instructions: intent.encoded_instructions(),
                 global_address_reservations,
-                references: executable.references(),
-                blobs: executable.blobs(),
+                references: intent.references(),
+                blobs: intent.blobs(),
             })
             .unwrap(),
         )?;
@@ -1411,13 +1469,13 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject
                 Self::create_abort_receipt(reason, self.modules)
             }
             TransactionResultType::Commit(outcome) => {
-                Self::create_commit_receipt(outcome, track, self.modules, self.executable)
+                Self::create_commit_receipt(outcome, track, self.modules, self.finalization)
             }
         }
     }
 }
 
-impl<C: SystemCallbackObject, E> KernelCallbackObject for System<C, E> {
+impl<C: SystemCallbackObject> KernelCallbackObject for System<C> {
     type LockData = SystemLockData;
     type CallFrameData = Actor;
 

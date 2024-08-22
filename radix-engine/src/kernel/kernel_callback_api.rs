@@ -10,6 +10,7 @@ use crate::transaction::ResourcesUsage;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::Executable;
 
 pub trait CallFrameReferences {
     fn global_references(&self) -> Vec<NodeId>;
@@ -141,23 +142,22 @@ pub trait ExecutionReceipt {
 pub trait KernelTransactionCallbackObject: KernelCallbackObject {
     /// Initialization object
     type Init: Clone;
-    /// Executable type
-    type TransactionExecutable;
     /// Output to be returned at the end of execution
     type ExecutionOutput;
     /// Final receipt to be created after transaction execution
     type Receipt: ExecutionReceipt;
 
     /// Create the callback object (system layer) and the initial call frame configuration for each intent
-    fn init<S: BootStore + CommitableSubstateStore>(
+    fn init<S: BootStore + CommitableSubstateStore, E: Executable>(
         store: &mut S,
-        executable: Self::TransactionExecutable,
+        executable: &E,
         init: Self::Init,
     ) -> Result<(Self, Vec<CallFrameInit<Self::CallFrameData>>), Self::Receipt>;
 
     /// Start execution
-    fn start<Y: KernelApi<CallbackObject = Self>>(
+    fn start<Y: KernelApi<CallbackObject = Self>, E: Executable>(
         api: &mut Y,
+        executable: E,
     ) -> Result<Self::ExecutionOutput, RuntimeError>;
 
     /// Finish execution

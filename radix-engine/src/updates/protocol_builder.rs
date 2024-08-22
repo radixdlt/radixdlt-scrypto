@@ -51,7 +51,7 @@ impl ProtocolUpdateExecutor {
         self,
         store: &mut S,
         hooks: &mut H,
-        modules: &M,
+        vm_modules: &M,
     ) {
         for (batch_group_index, batch_group_name) in self
             .batch_generator
@@ -101,7 +101,7 @@ impl ProtocolUpdateExecutor {
                             let execution_config = hooks.adapt_execution_config(execution_config);
                             let receipt = execute_and_commit_transaction(
                                 store,
-                                modules.create_vm_init(),
+                                vm_modules,
                                 &execution_config,
                                 transaction
                                     .prepare()

@@ -39,7 +39,7 @@ macro_rules! panic1 {
 pub struct MockKernel<M: SystemCallbackObject>(PhantomData<M>);
 
 impl<M: SystemCallbackObject> KernelApi for MockKernel<M> {
-    type CallbackObject = System::<M, ()>;
+    type CallbackObject = System::<M>;
 }
 
 impl<M: SystemCallbackObject> KernelNodeApi for MockKernel<M> {
@@ -170,7 +170,7 @@ impl<M: SystemCallbackObject> KernelInvokeApi<Actor> for MockKernel<M> {
 }
 
 impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
-    type System = System<M, ()>;
+    type System = System<M>;
     
     fn kernel_get_system_state(
         &mut self,

@@ -309,7 +309,7 @@ implement_system_api! {
         finalization_cost_unit_price: (&mut self) -> Result<Decimal, RuntimeError>,
         usd_price: (&mut self) -> Result<Decimal, RuntimeError>,
         max_per_function_royalty_in_xrd: (&mut self) -> Result<Decimal, RuntimeError>,
-        tip_percentage: (&mut self) -> Result<u32, RuntimeError>,
+        tip_percentage_truncated: (&mut self) -> Result<u32, RuntimeError>,
         fee_balance: (&mut self) -> Result<Decimal, RuntimeError>,
     }
 }

@@ -88,7 +88,7 @@ fn test_transaction_replay_protection() {
     // 5. Run the transaction the 3rd time (with epoch range and intent hash checks disabled)
     // Note that in production, this won't be possible.
     let receipt = ledger.execute_transaction(
-        validated.get_executable().skip_epoch_range_check().skip_intent_hash_check(),
+        validated.get_executable().skip_epoch_range_check().skip_intent_hash_nullification(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();

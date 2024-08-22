@@ -40,9 +40,10 @@ impl ValidatedNotarizedTransactionV1 {
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: intent_hash.0,
-                intent_hash_check: IntentHashCheck::TransactionIntent {
+                intent_hash_nullification: IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch: header.end_epoch_exclusive,
+                    ignore_duplicate: false,
                 },
                 epoch_range: Some(EpochRange {
                     start_epoch_inclusive: header.start_epoch_inclusive,
@@ -52,7 +53,7 @@ impl ValidatedNotarizedTransactionV1 {
                 num_of_signature_validations: self.num_of_signature_validations,
                 auth_zone_init: AuthZoneInit::proofs(AuthAddresses::signer_set(&self.signer_keys)),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: intent.header.inner.tip_percentage,
+                    tip: TipSpecifier::Percentage(intent.header.inner.tip_percentage),
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

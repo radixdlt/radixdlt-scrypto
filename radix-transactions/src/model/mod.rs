@@ -184,7 +184,7 @@ Enum<3u8>(
         assert_eq!(
             executable,
             ExecutableTransactionV1::new(
-                Rc::new(manifest_encode(&manifest.instructions).unwrap()),
+                manifest_encode(&manifest.instructions).unwrap().into(),
                 indexset!(
                     Reference(FAUCET.into_node_id()),
                     // NOTE: not needed
@@ -196,9 +196,10 @@ Enum<3u8>(
                 )),
                 ExecutionContext {
                     unique_hash: expected_intent_hash.0,
-                    intent_hash_check: IntentHashCheck::TransactionIntent {
+                    intent_hash_nullification: IntentHashNullification::TransactionIntent {
                         intent_hash: expected_intent_hash,
-                        expiry_epoch: Epoch::of(66)
+                        expiry_epoch: Epoch::of(66),
+                        ignore_duplicate: false,
                     },
                     epoch_range: Some(EpochRange {
                         start_epoch_inclusive: Epoch::of(55),
@@ -216,7 +217,7 @@ Enum<3u8>(
                         NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
                     )),
                     costing_parameters: TransactionCostingParameters {
-                        tip_percentage: 4,
+                        tip: TipSpecifier::Percentage(4),
                         free_credit_in_xrd: dec!(0),
                         abort_when_loan_repaid: false,
                     }

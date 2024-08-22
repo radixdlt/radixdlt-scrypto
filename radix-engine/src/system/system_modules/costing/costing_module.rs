@@ -8,7 +8,6 @@ use crate::object_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::actor::{Actor, FunctionActor, MethodActor, MethodType};
 use crate::system::module::*;
 use crate::system::system_callback::*;
-use crate::system::system_callback_api::SystemCallbackObject;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
@@ -368,8 +367,9 @@ impl InitSystemModule for CostingModule {
 }
 
 impl ResolvableSystemModule for CostingModule {
-    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
-        &mut system.modules.costing
+    #[inline]
+    fn resolve_from_system(system: &mut impl HasModules) -> &mut Self {
+        &mut system.modules_mut().costing
     }
 }
 

@@ -10,13 +10,10 @@ use radix_engine::system::system_db_reader::{
 };
 use radix_engine::system::system_substates::FieldSubstate;
 use radix_engine::system::type_info::TypeInfoSubstate;
-use radix_engine::transaction::{
-    execute_preview, execute_transaction_with_configuration, BalanceChange, CommitResult,
-    CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
-};
+use radix_engine::transaction::*;
 use radix_engine::updates::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
+use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -1294,24 +1291,25 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn execute_transaction(
         &mut self,
-        executable: impl Into<ExecutableTransaction>,
+        executable: impl Executable,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config
-        let executable = executable.into();
         execution_config = execution_config.with_kernel_trace(self.with_kernel_trace);
 
-        if executable.uses_free_credits() {
+        if executable
+            .costing_parameters()
+            .free_credit_in_xrd
+            .is_positive()
+        {
             self.xrd_free_credits_used = true;
         }
 
-        let vm_init = self.vm_modules.create_vm_init();
-
-        let transaction_receipt = execute_transaction_with_configuration::<
-            _,
-            Vm<'_, DefaultWasmEngine, E>,
-        >(
-            &mut self.database, vm_init, &execution_config, executable
+        let transaction_receipt = execute_transaction(
+            &mut self.database,
+            &self.vm_modules,
+            &execution_config,
+            executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.result {
             let database_updates = commit
@@ -1333,11 +1331,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        let vm_init = self.vm_modules.create_vm_init();
-
         execute_preview(
             &self.database,
-            vm_init,
+            &self.vm_modules,
             network,
             preview_intent,
             self.with_kernel_trace,
@@ -1352,10 +1348,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
-        let vm_init = self.vm_modules.create_vm_init();
         execute_preview(
             &mut self.database,
-            vm_init,
+            &self.vm_modules,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {
@@ -2360,7 +2355,7 @@ pub fn create_notarized_transaction_advanced<S: Signer>(
             nonce: ledger.next_transaction_nonce(),
             notary_public_key: notary.public_key().into(),
             notary_is_signatory: notary_is_signatory,
-            tip_percentage: DEFAULT_TIP_PERCENTAGE,
+            tip_percentage: 0,
         })
         .manifest(manifest)
         .multi_sign(&signers)

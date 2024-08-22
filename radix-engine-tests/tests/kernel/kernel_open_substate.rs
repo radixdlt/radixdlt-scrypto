@@ -46,7 +46,6 @@ pub fn test_open_substate_of_invisible_package_address() {
     let auth_zone_inits: Vec<_> = executable.intents().iter().map(|i| i.auth_zone_init().clone()).collect();
     // Create kernel
     let mut system = System {
-        executable: (),
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
@@ -79,6 +78,7 @@ pub fn test_open_substate_of_invisible_package_address() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
+        finalization: Default::default(),
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
     let mut id_allocator = IdAllocator::new(executable.unique_seed_for_id_allocator());

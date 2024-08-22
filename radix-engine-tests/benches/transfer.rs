@@ -34,7 +34,7 @@ fn bench_transfer(c: &mut Criterion) {
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_db,
-                vm_modules.create_vm_init(),
+                &vm_modules,
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 TestTransaction::new_from_nonce(manifest, 1)
                     .prepare()
@@ -60,7 +60,7 @@ fn bench_transfer(c: &mut Criterion) {
     for nonce in 0..1000 {
         execute_and_commit_transaction(
             &mut substate_db,
-            vm_modules.create_vm_init(),
+            &vm_modules,
             &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
             TestTransaction::new_from_nonce(manifest.clone(), nonce)
                 .prepare()
@@ -83,7 +83,7 @@ fn bench_transfer(c: &mut Criterion) {
         b.iter(|| {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
-                vm_modules.create_vm_init(),
+                &vm_modules,
                 &ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
                 TestTransaction::new_from_nonce(manifest.clone(), nonce)
                     .prepare()

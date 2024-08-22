@@ -265,7 +265,7 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
-                    executable: (),
+                    finalization: Default::default(),
                 }
             },
             |system_config, track, id_allocator| {

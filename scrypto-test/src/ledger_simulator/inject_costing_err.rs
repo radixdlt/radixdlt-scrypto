@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::ExecutableTransactionV1;
+use radix_transactions::model::Executable;
 
 pub type InjectSystemCostingError<'a, E> = InjectCostingError<Vm<'a, DefaultWasmEngine, E>>;
 
@@ -27,7 +27,7 @@ pub struct InjectCostingErrorInput<I> {
 
 pub struct InjectCostingError<K: SystemCallbackObject> {
     fail_after: Rc<RefCell<u64>>,
-    system: System<K, ExecutableTransactionV1>,
+    system: System<K>,
 }
 
 impl<K: SystemCallbackObject> InjectCostingError<K> {
@@ -67,17 +67,16 @@ macro_rules! wrapped_internal_api {
 
 impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingError<K> {
     type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
-    type TransactionExecutable = ExecutableTransactionV1;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
-    fn init<S: BootStore + CommitableSubstateStore>(
+    fn init<S: BootStore + CommitableSubstateStore, E: Executable>(
         store: &mut S,
-        executable: ExecutableTransactionV1,
+        executable: &E,
         init_input: Self::Init,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         let (mut system, call_frame_inits) =
-            System::<K, _>::init(store, executable, init_input.system_input)?;
+            System::<K>::init(store, executable, init_input.system_input)?;
 
         let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
         system.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
@@ -87,11 +86,12 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
         Ok((Self { fail_after, system }, call_frame_inits))
     }
 
-    fn start<Y: KernelApi<CallbackObject = Self>>(
+    fn start<Y: KernelApi<CallbackObject = Self>, E: Executable>(
         api: &mut Y,
+        executable: E,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
-        System::start(&mut api)
+        System::start(&mut api, executable)
     }
 
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
@@ -108,7 +108,7 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
     }
 }
 
-type InternalSystem<V> = System<V, ExecutableTransactionV1>;
+type InternalSystem<V> = System<V>;
 
 impl<V: SystemCallbackObject> KernelCallbackObject for InjectCostingError<V> {
     type LockData = SystemLockData;
@@ -494,9 +494,9 @@ impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<CallbackObject = InjectCosti
 impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
     KernelInternalApi for WrappedKernelApi<'a, M, K>
 {
-    type System = System<M, ExecutableTransactionV1>;
+    type System = System<M>;
 
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, ExecutableTransactionV1>> {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M>> {
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.system,
@@ -531,7 +531,7 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingErr
 impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>> KernelApi
     for WrappedKernelApi<'a, M, K>
 {
-    type CallbackObject = System<M, ExecutableTransactionV1>;
+    type CallbackObject = System<M>;
 }
 
 pub struct WrappedKernelInternalApi<
@@ -545,9 +545,9 @@ pub struct WrappedKernelInternalApi<
 impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingError<M>>>
     KernelInternalApi for WrappedKernelInternalApi<'a, M, K>
 {
-    type System = System<M, ExecutableTransactionV1>;
+    type System = System<M>;
 
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, ExecutableTransactionV1>> {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M>> {
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.system,

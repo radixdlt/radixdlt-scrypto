@@ -57,7 +57,7 @@ impl PreparedTestTransaction {
             self.blobs.clone(),
             ExecutionContext {
                 unique_hash: self.hash,
-                intent_hash_check: IntentHashCheck::None,
+                intent_hash_nullification: IntentHashNullification::None,
                 epoch_range: None,
                 payload_size: self.encoded_instructions.len()
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),
@@ -65,7 +65,7 @@ impl PreparedTestTransaction {
                 num_of_signature_validations: initial_proofs.len() + 1,
                 auth_zone_init: AuthZoneInit::proofs(initial_proofs),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: DEFAULT_TIP_PERCENTAGE,
+                    tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

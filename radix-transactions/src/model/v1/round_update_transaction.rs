@@ -101,7 +101,7 @@ impl PreparedRoundUpdateTransactionV1 {
             self.blobs.clone(),
             ExecutionContext {
                 unique_hash: self.summary.hash,
-                intent_hash_check: IntentHashCheck::None,
+                intent_hash_nullification: IntentHashNullification::None,
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
@@ -109,7 +109,7 @@ impl PreparedRoundUpdateTransactionV1 {
                     SystemExecution::Validator
                 ))),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: 0,
+                    tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

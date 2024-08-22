@@ -3,8 +3,7 @@ use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::updates::ProtocolBuilder;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::errors::TransactionValidationError;
 use scrypto_test::prelude::*;
@@ -92,12 +91,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 #[test]
 fn test_normal_transaction_flow() {
     // Arrange
-    let scrypto_vm = ScryptoVm {
-        wasm_engine: DefaultWasmEngine::default(),
-        wasm_validator_config: WasmValidatorConfigV1::new(),
-    };
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
-
+    let vm_modules = VmModules::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
     ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
@@ -129,7 +123,7 @@ fn test_normal_transaction_flow() {
     // Act
     let receipt = execute_and_commit_transaction(
         &mut substate_db,
-        vm_init,
+        &vm_modules,
         &execution_config,
         executable,
     );

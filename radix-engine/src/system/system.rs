@@ -108,7 +108,7 @@ impl<'a, Y: SystemBasedKernelApi + ?Sized> SystemService<'a, Y> {
         self.api
     }
 
-    pub fn system(&mut self) -> &mut System<Y::SystemCallback, Y::Executable> {
+    pub fn system(&mut self) -> &mut System<Y::SystemCallback> {
         self.api.kernel_get_system()
     }
 }
@@ -2384,14 +2384,14 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
         }
     }
 
-    fn tip_percentage(&mut self) -> Result<u32, RuntimeError> {
+    fn tip_percentage_truncated(&mut self) -> Result<u32, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
             .apply_execution_cost(ExecutionCostingEntry::QueryFeeReserve)?;
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
-            Ok(fee_reserve.tip_percentage())
+            Ok(fee_reserve.tip().truncate_to_percentage_u32())
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,
