@@ -636,27 +636,8 @@ impl<C: SystemCallbackObject> System<C> {
         intent_hash_nullification: IntentHashNullification,
         is_success: bool,
     ) {
-        let (intent_hash, expiry_epoch) = match intent_hash_nullification {
-            IntentHashNullification::TransactionIntent {
-                intent_hash,
-                expiry_epoch,
-                ..
-            } => (intent_hash.into_hash(), expiry_epoch),
-            IntentHashNullification::Subintent {
-                intent_hash,
-                expiry_epoch,
-                ..
-            } => {
-                // Only write subintent nullification on success.
-                // Subintents can't pay fees, so this isn't a problem.
-                if is_success {
-                    (intent_hash.into_hash(), expiry_epoch)
-                } else {
-                    return;
-                }
-            }
-            IntentHashNullification::None => return,
-        };
+        // NOTE: In the case of system transactions, we could skip most of this...
+        //       except for backwards compatibility, we can't!
 
         // Read the intent hash store
         let transaction_tracker = track
@@ -672,30 +653,55 @@ impl<C: SystemCallbackObject> System<C> {
 
         let mut transaction_tracker = transaction_tracker.into_v1();
 
-        // Update the status of the intent hash
-        if let Some(partition_number) = transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
-        {
-            track
-                .set_substate(
-                    TRANSACTION_TRACKER.into_node_id(),
-                    PartitionNumber(partition_number),
-                    SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
-                    IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
-                        KeyValueEntrySubstateV1 {
-                            value: Some(if is_success {
-                                TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
-                            } else {
-                                TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
-                            }),
-                            // TODO: maybe make it immutable, but how does this affect partition deletion?
-                            lock_status: LockStatus::Unlocked,
-                        },
-                    )),
-                    &mut |_| -> Result<(), ()> { Ok(()) },
-                )
-                .unwrap();
-        } else {
-            panic!("No partition for an expiry epoch")
+        let mark_intent_result = match intent_hash_nullification {
+            IntentHashNullification::TransactionIntent {
+                intent_hash,
+                expiry_epoch,
+                ..
+            } => Some((intent_hash.into_hash(), expiry_epoch)),
+            IntentHashNullification::Subintent {
+                intent_hash,
+                expiry_epoch,
+                ..
+            } => {
+                // Only write subintent nullification on success.
+                // Subintents can't pay fees, so this isn't a problem.
+                if is_success {
+                    Some((intent_hash.into_hash(), expiry_epoch))
+                } else {
+                    None
+                }
+            }
+            IntentHashNullification::None => None,
+        };
+
+        if let Some((intent_hash, expiry_epoch)) = mark_intent_result {
+            // Update the status of the intent hash
+            if let Some(partition_number) =
+                transaction_tracker.partition_for_expiry_epoch(expiry_epoch)
+            {
+                track
+                    .set_substate(
+                        TRANSACTION_TRACKER.into_node_id(),
+                        PartitionNumber(partition_number),
+                        SubstateKey::Map(scrypto_encode(&intent_hash).unwrap()),
+                        IndexedScryptoValue::from_typed(&KeyValueEntrySubstate::V1(
+                            KeyValueEntrySubstateV1 {
+                                value: Some(if is_success {
+                                    TransactionStatus::V1(TransactionStatusV1::CommittedSuccess)
+                                } else {
+                                    TransactionStatus::V1(TransactionStatusV1::CommittedFailure)
+                                }),
+                                // TODO: maybe make it immutable, but how does this affect partition deletion?
+                                lock_status: LockStatus::Unlocked,
+                            },
+                        )),
+                        &mut |_| -> Result<(), ()> { Ok(()) },
+                    )
+                    .unwrap();
+            } else {
+                panic!("No partition for an expiry epoch")
+            }
         }
 
         // Check if all intent hashes in the first epoch have expired, based on the `next_epoch`.
