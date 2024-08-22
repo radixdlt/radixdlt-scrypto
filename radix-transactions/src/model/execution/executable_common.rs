@@ -166,7 +166,7 @@ impl TipSpecifier {
         Decimal::ONE + self.proportion()
     }
 
-    #[deprecated = "Need to remove this function before releasing bottlenose; once we can change the receipt"]
+    #[deprecated = "Need to remove this function before releasing cuttlefish; once we can change the receipt"]
     pub fn truncate_to_percentage_u16(&self) -> u16 {
         match self {
             TipSpecifier::None => 0,

@@ -67,7 +67,7 @@ fn extract_settings(attributes: &[Attribute]) -> Result<(AssertionMode, Advanced
                     attribute_name_ident.span(),
                 )?)
             }
-            "fixed" => AssertionMode::Fixed(extract_fixed_schema_options(
+            "fixed" => AssertionMode::Fixed(extract_fixed_schema_parameters(
                 attribute_value.as_ref(),
                 error_span,
             )?),
@@ -118,21 +118,25 @@ fn extract_settings(attributes: &[Attribute]) -> Result<(AssertionMode, Advanced
 
 const GENERATE_PARSE_ERROR_MESSAGE: &'static str = "Expected just `generate` or `regenerate` without any value, for example: `#[sbor_assert(fixed(..), generate)]` OR `#[sbor_assert(backwards_compatible(..), settings(..), regenerate)]`";
 
-const FIXED_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(fixed(X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-hex-encoded schema>\"`\n* Either `NAMED_CONSTANT` or `\"CONST:<CONSTANT_NAME>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`";
+const FIXED_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(fixed(X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-hex-encoded schema>\"`\n* Either `NAMED_CONSTANT` or `\"CONST:<CONSTANT_NAME>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }";
 
-fn extract_fixed_schema_options(
+fn extract_fixed_schema_parameters(
     attribute_value: Option<&Vec<&NestedMeta>>,
     error_span: Span,
-) -> Result<SchemaLocation> {
+) -> Result<FixedSchemaParameters> {
     match attribute_value {
         Some(meta_list) if meta_list.len() == 1 => match meta_list[0] {
             NestedMeta::Meta(Meta::Path(path)) => {
-                return Ok(SchemaLocation::FromConstant {
-                    constant_path: path.clone(),
+                return Ok(FixedSchemaParameters::SingleSchema {
+                    location: SchemaLocation::FromConstant {
+                        constant_path: path.clone(),
+                    },
                 });
             }
             NestedMeta::Lit(Lit::Str(lit_str)) => {
-                return extract_schema_location_from_string(lit_str);
+                return Ok(FixedSchemaParameters::SingleSchema {
+                    location: extract_schema_location_from_string(lit_str)?,
+                })
             }
             _ => {}
         },
@@ -141,7 +145,7 @@ fn extract_fixed_schema_options(
     return Err(Error::new(error_span, FIXED_PARSE_ERROR_MESSAGE));
 }
 
-const BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE: &'static str = "Expected EITHER `#[sbor_assert(backwards_compatible(version1 = X, version2 = X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-hex-encoded schema>\"`\n* `\"CONST:<CONSTANT>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n\nOR `#[sbor_assert(backwards_compatible(<CONSTANT_NAME>))]` where `<CONSTANT_NAME>` is the name of a defined constant whose type implements `IntoIterator<Item = (K, V)>, K: AsRef<str>, V: IntoSchema<SingleTypeSchema>`. For example: `const TYPE_X_NAMED_VERSIONS: [(&'static str, &'static str); 1] = [(\"version1\", \"...\")]`";
+const BACKWARDS_COMPATIBLE_PARSE_ERROR_MESSAGE: &'static str = "Expected EITHER `#[sbor_assert(backwards_compatible(version1 = X, version2 = X))]` where `X` is one of:\n* `\"INLINE:<hex-encoded schema>\"`\n* `\"FILE:<relative-file-path-to-hex-encoded schema>\"`\n* `\"CONST:<CONSTANT>\"` where `<CONSTANT_NAME>` is the name of a defined constant string literal or some other type implementing `IntoSchema<SingleTypeSchema>`\n* `\"EXPR:Y\"` where `Y` is some expression generating `SingleTypeSchema<C>`, for `C` the custom schema. For example,\n  calling `generate_schema()` where `fn generate_schema() -> SingleTypeSchema<C> { .. }\nOR `#[sbor_assert(backwards_compatible(\"EXPR:Y\"))]` where `Y` is some expression such as `params_builder()` generating a `SingleTypeSchemaCompatibilityParameters<S>` for `S` the custom schema.";
 
 fn extract_backwards_compatible_schema_parameters(
     attribute_value: Option<&Vec<&NestedMeta>>,
@@ -149,10 +153,12 @@ fn extract_backwards_compatible_schema_parameters(
 ) -> Result<BackwardsCompatibleSchemaParameters> {
     match attribute_value {
         Some(meta_list) => {
-            if let [NestedMeta::Meta(Meta::Path(path))] = meta_list.as_slice() {
-                return Ok(BackwardsCompatibleSchemaParameters::FromConstant {
-                    constant: path.clone(),
-                });
+            if let [NestedMeta::Lit(Lit::Str(lit_str))] = meta_list.as_slice() {
+                if let Some(expression) = extract_prefixed(lit_str, "EXPR:") {
+                    return Ok(BackwardsCompatibleSchemaParameters::FromExpression {
+                        expression: expression.parse()?,
+                    });
+                }
             } else {
                 // Assume key-value based
                 let named_schemas = meta_list
@@ -211,17 +217,21 @@ fn extract_schema_location_from_string(lit_str: &LitStr) -> Result<SchemaLocatio
         SchemaLocation::InlineString {
             inline: inline_schema,
         }
+    } else if let Some(inline_schema) = extract_prefixed(lit_str, "EXPR:") {
+        SchemaLocation::FromExpression {
+            expression: inline_schema.parse()?,
+        }
     } else {
         return Err(Error::new(
             lit_str.span(),
-            "Expected string to be prefixed with FILE:, CONST: or INLINE:",
+            "Expected string to be prefixed with FILE:, CONST:, INLINE: or EXPR:",
         ));
     };
 
     Ok(schema_definition)
 }
 
-const SETTINGS_PARSE_ERROR_MESSAGE: &'static str = "Expected `#[sbor_assert(__, settings(allow_name_changes))]` OR `#[sbor_assert(__, settings(<CONSTANT_NAME>))]` `<CONSTANT_NAME>` is the name of a defined constant with type `SchemaComparisonSettings`";
+const SETTINGS_PARSE_ERROR_MESSAGE: &'static str = "Expected one of:\n* `settings(allow_name_changes)`\n* `settings(<CONSTANT_NAME>)` or `settings(\"CONST:<CONSTANT_NAME>\")` where `<CONSTANT_NAME>` is the name of a defined constant with type `SchemaComparisonSettings`\n* settings(\"EXPR:<Expression>\") where the expression is `impl FnOnce(SchemaComparisonSettings) -> SchemaComparisonSettings`\n* settings(comparison_between_current_and_latest = \"EXPR:F1\", comparison_between_versions = \"EXPR:F2\") where `F1`, `F2` are expressions which `impl FnOnce(SchemaComparisonSettings) -> SchemaComparisonSettings`";
 
 struct SettingsOverrides {
     settings_resolution: Option<ComparisonSettingsResolution>,
@@ -253,8 +263,64 @@ fn extract_settings_overrides(
                     });
                 }
             }
+            NestedMeta::Lit(Lit::Str(lit_str)) => {
+                if let Some(lit_str) = extract_prefixed(lit_str, "CONST:") {
+                    return Ok(SettingsOverrides {
+                        settings_resolution: Some(ComparisonSettingsResolution::FromConstant {
+                            constant_path: lit_str.parse()?,
+                        }),
+                    });
+                } else if let Some(expression) = extract_prefixed(lit_str, "EXPR:") {
+                    return Ok(SettingsOverrides {
+                        settings_resolution: Some(
+                            ComparisonSettingsResolution::FromBuilderExpression {
+                                expression: expression.parse()?,
+                            },
+                        ),
+                    });
+                }
+            }
             _ => {}
         },
+        Some(meta_list) if meta_list.len() == 2 => {
+            let mut comparison_between_current_and_latest = None;
+            let mut comparison_between_versions = None;
+            for meta in meta_list.iter() {
+                if let NestedMeta::Meta(Meta::NameValue(meta_name_value)) = meta {
+                    if let Lit::Str(lit_str) = &meta_name_value.lit {
+                        if let Some(expression) = extract_prefixed(lit_str, "EXPR:") {
+                            let expression = expression.parse()?;
+                            if let Some(ident) = meta_name_value.path.get_ident() {
+                                let key = ident.to_string();
+                                match key.as_str() {
+                                    "comparison_between_current_and_latest" => {
+                                        comparison_between_current_and_latest = Some(expression);
+                                    }
+                                    "comparison_between_versions" => {
+                                        comparison_between_versions = Some(expression);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if let Some(comparison_between_current_and_latest) =
+                comparison_between_current_and_latest
+            {
+                if let Some(comparison_between_versions) = comparison_between_versions {
+                    return Ok(SettingsOverrides {
+                        settings_resolution: Some(
+                            ComparisonSettingsResolution::FromNamedBuilderExpressions {
+                                comparison_between_current_and_latest,
+                                comparison_between_versions,
+                            },
+                        ),
+                    });
+                }
+            }
+        }
         _ => {}
     };
     return Err(Error::new(error_span, SETTINGS_PARSE_ERROR_MESSAGE));
@@ -271,7 +337,7 @@ fn extract_prefixed(lit_str: &LitStr, prefix: &str) -> Option<LitStr> {
 }
 
 enum AssertionMode {
-    Fixed(SchemaLocation),
+    Fixed(FixedSchemaParameters),
     BackwardsCompatible(BackwardsCompatibleSchemaParameters),
 }
 
@@ -286,11 +352,30 @@ enum GenerationTarget {
 enum SchemaLocation {
     InlineString { inline: LitStr },
     FromConstant { constant_path: Path },
+    FromExpression { expression: Expr },
     StringFromFile { file_path: LitStr },
 }
 
+impl SchemaLocation {
+    fn generation_target(&self, is_regenerate: bool) -> GenerationTarget {
+        match self {
+            SchemaLocation::InlineString { .. } => GenerationTarget::Inline,
+            SchemaLocation::FromConstant { .. } => GenerationTarget::Inline,
+            SchemaLocation::FromExpression { .. } => GenerationTarget::Inline,
+            SchemaLocation::StringFromFile { file_path } => GenerationTarget::File {
+                file_path: file_path.clone(),
+                is_regenerate,
+            },
+        }
+    }
+}
+
+enum FixedSchemaParameters {
+    SingleSchema { location: SchemaLocation },
+}
+
 enum BackwardsCompatibleSchemaParameters {
-    FromConstant { constant: Path },
+    FromExpression { expression: Expr },
     NamedSchemas { named_schemas: Vec<NamedSchema> },
 }
 
@@ -309,10 +394,20 @@ enum GenerateMode {
     Generate { is_regenerate: bool },
 }
 
+#[derive(PartialEq, Eq)]
 enum ComparisonSettingsResolution {
     Default,
     DefaultAllowingNameChanges,
-    FromConstant { constant_path: Path },
+    FromConstant {
+        constant_path: Path,
+    },
+    FromBuilderExpression {
+        expression: Expr,
+    },
+    FromNamedBuilderExpressions {
+        comparison_between_current_and_latest: Expr,
+        comparison_between_versions: Expr,
+    },
 }
 
 /// Only supposed to be used as a temporary mode, to assist with generating the schema. The generated test always panics.
@@ -446,24 +541,25 @@ fn handle_generate(
 fn handle_fixed(
     context_custom_schema: &str,
     parsed: DeriveInput,
-    schema_location: SchemaLocation,
+    params: FixedSchemaParameters,
     advanced_settings: AdvancedSettings,
 ) -> Result<TokenStream> {
     let DeriveInput { ident, .. } = &parsed;
 
-    let fixed_schema = schema_location_to_single_type_schema_code(&schema_location);
+    let fixed_schema = match &params {
+        FixedSchemaParameters::SingleSchema { location } => {
+            schema_location_to_single_type_schema_code(location)
+        }
+    };
 
     let custom_schema: Path = parse_str(context_custom_schema)?;
     let test_ident = format_ident!("test_{}_type_is_fixed", ident);
 
     if let GenerateMode::Generate { is_regenerate } = advanced_settings.generate_mode {
-        let generation_target = match schema_location {
-            SchemaLocation::InlineString { .. } => GenerationTarget::Inline,
-            SchemaLocation::FromConstant { .. } => GenerationTarget::Inline,
-            SchemaLocation::StringFromFile { file_path } => GenerationTarget::File {
-                file_path,
-                is_regenerate,
-            },
+        let generation_target = match params {
+            FixedSchemaParameters::SingleSchema { location } => {
+                location.generation_target(is_regenerate)
+            }
         };
         return handle_generate(ident, custom_schema, test_ident, generation_target);
     }
@@ -473,12 +569,23 @@ fn handle_fixed(
             sbor::schema::SchemaComparisonSettings::require_equality()
         },
         ComparisonSettingsResolution::DefaultAllowingNameChanges => quote! {
-            sbor::schema::SchemaComparisonSettings::require_equality()
-                .metadata_settings(sbor::schema::SchemaComparisonMetadataSettings::allow_all_changes())
+            sbor::schema::SchemaComparisonSettings::require_equality().allow_all_name_changes()
         },
         ComparisonSettingsResolution::FromConstant { constant_path } => quote! {
             #constant_path.clone()
         },
+        ComparisonSettingsResolution::FromBuilderExpression { expression } => quote! {
+            #expression
+        },
+        ComparisonSettingsResolution::FromNamedBuilderExpressions {
+            comparison_between_versions,
+            ..
+        } => {
+            return Err(Error::new(
+                comparison_between_versions.span(),
+                "Cannot provide named comparisons to `fixed`",
+            ));
+        }
     };
 
     // NOTE: Generics are explicitly _NOT_ supported for now, because we need a concrete type
@@ -522,6 +629,9 @@ fn schema_location_to_single_type_schema_code(params: &SchemaLocation) -> TokenS
         SchemaLocation::StringFromFile { file_path } => {
             quote! { sbor::schema::SingleTypeSchema::from(include_str!(#file_path)) }
         }
+        SchemaLocation::FromExpression { expression } => {
+            quote! { #expression }
+        }
     }
 }
 
@@ -538,44 +648,49 @@ fn handle_backwards_compatible(
 
     if let GenerateMode::Generate { is_regenerate } = advanced_settings.generate_mode {
         let generation_target = match params {
-            BackwardsCompatibleSchemaParameters::FromConstant { .. } => GenerationTarget::Inline,
+            BackwardsCompatibleSchemaParameters::FromExpression { .. } => GenerationTarget::Inline,
             BackwardsCompatibleSchemaParameters::NamedSchemas { mut named_schemas } => {
                 let Some(latest_named_schema) = named_schemas.pop() else {
                     return Err(Error::new(ident.span(), "At least one named schema placeholder needs adding in order for generation to work, e.g. `#[sbor_assert(backwards_compatible(latest = \"FILE:my_schema.txt\"), generate)]"));
                 };
-                match latest_named_schema.schema {
-                    SchemaLocation::InlineString { .. } => GenerationTarget::Inline,
-                    SchemaLocation::FromConstant { .. } => GenerationTarget::Inline,
-                    SchemaLocation::StringFromFile { file_path } => GenerationTarget::File {
-                        file_path,
-                        is_regenerate,
-                    },
-                }
+                latest_named_schema.schema.generation_target(is_regenerate)
             }
         };
         return handle_generate(ident, custom_schema, test_ident, generation_target);
     }
 
-    let comparison_settings = match advanced_settings.settings_resolution {
-        ComparisonSettingsResolution::Default => quote! {
-            sbor::schema::SchemaComparisonSettings::allow_extension()
-        },
-        ComparisonSettingsResolution::DefaultAllowingNameChanges => quote! {
-            sbor::schema::SchemaComparisonSettings::allow_extension()
-                .metadata_settings(sbor::schema::SchemaComparisonMetadataSettings::allow_all_changes())
-        },
-        ComparisonSettingsResolution::FromConstant { constant_path } => quote! {
-            #constant_path.clone()
-        },
-    };
+    let (comparison_between_current_and_latest, comparison_between_versions) =
+        match &advanced_settings.settings_resolution {
+            ComparisonSettingsResolution::Default => (quote! { |b| b }, quote! { |b| b }),
+            ComparisonSettingsResolution::DefaultAllowingNameChanges => (
+                quote! { |b| b.allow_all_name_changes() },
+                quote! { |b| b.allow_all_name_changes() },
+            ),
+            ComparisonSettingsResolution::FromConstant { constant_path } => (
+                quote! { |_| #constant_path.clone() },
+                quote! { |_| #constant_path.clone() },
+            ),
+            ComparisonSettingsResolution::FromBuilderExpression { expression } => {
+                (quote! { #expression }, quote! { #expression })
+            }
+            ComparisonSettingsResolution::FromNamedBuilderExpressions {
+                comparison_between_current_and_latest,
+                comparison_between_versions,
+                ..
+            } => (
+                quote! { #comparison_between_current_and_latest },
+                quote! { #comparison_between_versions },
+            ),
+        };
 
     let test_content = match params {
-        BackwardsCompatibleSchemaParameters::FromConstant { constant } => {
+        BackwardsCompatibleSchemaParameters::FromExpression { expression } => {
+            if advanced_settings.settings_resolution != ComparisonSettingsResolution::Default {
+                return Err(Error::new(expression.span(), "You can't override comparison settings with EXPR mode - instead configure the settings in the SingleTypeSchemaCompatibilityParameters directly."));
+            }
             quote! {
-                let comparison_settings: sbor::schema::SchemaComparisonSettings = #comparison_settings;
-                sbor::schema::assert_type_compatibility::<#custom_schema, #ident>(
-                    &comparison_settings,
-                    |v| sbor::schema::NamedSchemaVersions::from(#constant),
+                sbor::schema::assert_type_backwards_compatibility::<#custom_schema, #ident>(
+                    |_| #expression
                 );
             }
         }
@@ -592,11 +707,11 @@ fn handle_backwards_compatible(
                 .unzip();
 
             quote! {
-                let comparison_settings: sbor::schema::SchemaComparisonSettings = #comparison_settings;
-                sbor::schema::assert_type_compatibility::<#custom_schema, #ident>(
-                    &comparison_settings,
-                    |v| {
-                        v
+                sbor::schema::assert_type_backwards_compatibility::<#custom_schema, #ident>(
+                    |builder| {
+                        builder
+                            .with_comparison_between_current_and_latest(#comparison_between_current_and_latest)
+                            .with_comparison_between_versions(#comparison_between_versions)
                         #(
                             .register_version(#version_names, #schemas)
                         )*

@@ -1684,7 +1684,7 @@ mod tests {
     #[derive(ScryptoSbor, ScryptoSborAssertion)]
     #[sbor_assert(
         backwards_compatible(
-            bottlenose = "FILE:node_local_transaction_execution_v1_bottlenose.txt",
+            bottlenose = "FILE:node_local_transaction_execution_v1_bottlenose.txt"
         ),
         settings(allow_name_changes)
     )]

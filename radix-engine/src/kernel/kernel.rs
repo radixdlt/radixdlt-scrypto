@@ -430,7 +430,7 @@ where
     }
 }
 
-#[deprecated = "Remove when implemented with threads"]
+#[deprecated = "Deprecated as a reminder to remove this when threads are implemented"]
 fn single_intent_index() -> usize {
     0
 }

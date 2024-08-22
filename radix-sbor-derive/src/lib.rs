@@ -212,7 +212,8 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// }
 /// ```
 ///
-/// Other supported options are `fixed("INLINE:<hex>")` and `fixed("CONST:<Constant>")`.
+/// Instead of `"FILE:X"`, you can also use `"INLINE:<hex>"`, `"CONST:<Constant>"` or `"EXPR:<Expression>"`
+/// where the expression (such as `generate_schema()`) has to generate a `SingleTypeSchema<NoCustomSchema>`.
 ///
 /// ## Backwards compatibility verification
 ///
@@ -228,17 +229,32 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// }
 /// ```
 ///
-/// Instead of `"FILE:X"`, you can also use `"INLINE:<hex>"` and `"CONST:<Constant>"`.
+/// Instead of `"FILE:X"`, you can also use `"INLINE:<hex>"`, `"CONST:<Constant>"` or `"EXPR:<Expression>"`
+/// where the expression (such as `generate_schema()`) has to generate a `SingleTypeSchema<ScryptoCustomSchema>`.
+///
+/// If you wish to configure exactly which schemas are used for comparison of the current schema with
+/// the latest named schema; and each named schema with its predecessor, you can use:
+///
+/// ```ignore
+/// #[sbor_assert(backwards_compatible("EXPR:<Expression>"))
+/// ```
+/// Where the expression (such as `params_builder()`) has to generate a `SingleTypeSchemaCompatibilityParameters<ScryptoCustomSchema>`.
 ///
 /// ## Custom settings
 /// By default, the `fixed` mode will use `SchemaComparisonSettings::require_equality()` and
-/// the `backwards_compatible` mode will use `SchemaComparisonSettings::allow_extension()`.
+/// the `backwards_compatible` mode will use `SchemaComparisonSettings::require_equality()` for the check
+/// of `current` aginst the latest version, and `SchemaComparisonSettings::allow_extension()` for the
+/// checks between consecutive versions.
 ///
 /// You may wish to change these:
 /// * If you just wish to ignore the equality of metadata such as names, you can use the
 ///   `allow_name_changes` flag.
-/// * If you wish to override any settings, you can provide a constant containing your
+/// * If you wish to override all settings, you can provide a constant containing your
 ///   own SchemaComparisonSettings.
+/// * If you wish to specify a builder for settings, you can provide `"EXPR:|builder| builder.<stuff>"`
+/// * If for `backwards_compatible`, you wish to provide a separate configuration for the "latest" and
+///   "named versions" checks, you can use `settings(comparison_between_versions = \"EXPR:F1\", comparison_between_current_and_latest = \"EXPR:F2\") `
+///    
 ///
 /// For example:
 /// ```no_run
@@ -251,17 +267,21 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 ///     // ...
 /// }
 ///
-/// const CUSTOM_COMPARISON_SETTINGS: sbor::schema::SchemaComparisonSettings = sbor::schema::SchemaComparisonSettings::require_equality();
-///
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(
 ///     backwards_compatible(
-///         version1 = "FILE:MyType-schema-v1.txt",
-///         version2 = "FILE:MyType-schema-v2.txt",
+///         v1 = "FILE:MyType-schema-v1.txt",
+///         v2 = "FILE:MyType-schema-v2.txt",
 ///     ),
-///     settings(CUSTOM_COMPARISON_SETTINGS),
+///     settings(
+///         // We allow name changes between versions, but require the current schema to exactly match
+///         // the latest version (v2 in this case).
+///         // This could be useful to e.g. ensure that we have a fixed schema with the latest naming available.
+///         comparison_between_versions = "EXPR: |s| s.allow_all_name_changes()",
+///         comparison_between_current_and_latest = "EXPR: |s| s",
+///     ),
 /// )]
-/// struct MyOtherType {
+/// struct MyType {
 ///     // ...
 /// }
 /// ```
