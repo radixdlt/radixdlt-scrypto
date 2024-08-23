@@ -388,8 +388,8 @@ impl LedgerTransactionHash {
     }
 }
 
-impl HashHasHrp for LedgerTransactionHash {
-    fn hrp(hrp_set: &HrpSet) -> &str {
+impl IsTransactionHashWithStaticHrp for LedgerTransactionHash {
+    fn static_hrp(hrp_set: &HrpSet) -> &str {
         &hrp_set.ledger_transaction
     }
 }

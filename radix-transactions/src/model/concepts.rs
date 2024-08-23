@@ -45,9 +45,24 @@ pub trait HasSignedSubintentHash {
     fn signed_subintent_hash(&self) -> SignedSubintentHash;
 }
 
+/// Note - Because transaction hashes do _not_ have a reserved first byte,
+/// we can't encode them to bech32m unless we know their type.
+///
+/// Therefore this type has to be an enum to ensure we maintain the knowledge
+/// of the underlying intent type, to allow the intent hash to be bech32m encoded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Sbor)]
 pub enum IntentHash {
     Transaction(TransactionIntentHash),
     Sub(SubintentHash),
+}
+
+impl IntentHash {
+    pub fn as_hash(&self) -> &Hash {
+        match self {
+            IntentHash::Transaction(hash) => hash.as_hash(),
+            IntentHash::Sub(hash) => hash.as_hash(),
+        }
+    }
 }
 
 define_raw_transaction_payload!(RawSystemTransaction);

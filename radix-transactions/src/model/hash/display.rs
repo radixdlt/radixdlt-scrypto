@@ -39,7 +39,7 @@ macro_rules! impl_contextual_display {
                     if let Some(encoder) = context.encoder {
                         encoder.encode_to_fmt(f, self).map_err(|_| fmt::Error)
                     } else {
-                        write!(f, "{}", self.0)
+                        write!(f, "{}", self.as_inner_hash())
                     }
                 }
             }
@@ -50,6 +50,10 @@ macro_rules! impl_contextual_display {
 impl_contextual_display![
     TransactionIntentHash,
     SignedTransactionIntentHash,
+    IntentHash,
+    SubintentHash,
+    SignedSubintentHash,
     NotarizedTransactionHash,
-    SystemTransactionHash
+    SystemTransactionHash,
+    LedgerTransactionHash,
 ];
