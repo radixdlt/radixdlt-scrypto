@@ -43,9 +43,14 @@ impl SimulatorEnvironment {
     }
 
     fn bootstrap(&mut self) {
-        ProtocolBuilder::for_network(&self.network_definition)
-            .from_bootstrap_to_latest()
-            .commit_each_protocol_update_if_not_already_bootstrapped(&mut self.db);
+        // Ideally if we stored "protocol update state" in the substate database we could actually
+        // automate discovery of where the protocol should start; and we then can simply
+        // "update to latest" here automatically.
+        if !ProtocolExecutor::is_bootstrapped(&mut self.db) {
+            ProtocolBuilder::for_network(&self.network_definition)
+                .from_bootstrap_to_latest()
+                .commit_each_protocol_update(&mut self.db)
+        }
     }
 }
 

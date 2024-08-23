@@ -231,12 +231,16 @@ impl ProtocolBuilder {
         self
     }
 
-    pub fn from_bootstrap_to_latest(self) -> ProtocolExecutor {
-        self.from_bootstrap_to(ProtocolVersion::LATEST)
+    pub fn unbootstrapped(self) -> ProtocolExecutor {
+        ProtocolExecutor::new(None, None, self.settings)
     }
 
     pub fn from_bootstrap_to(self, protocol_version: ProtocolVersion) -> ProtocolExecutor {
-        ProtocolExecutor::new(None, protocol_version, self.settings)
+        ProtocolExecutor::new(None, Some(protocol_version), self.settings)
+    }
+
+    pub fn from_bootstrap_to_latest(self) -> ProtocolExecutor {
+        self.from_bootstrap_to(ProtocolVersion::LATEST)
     }
 
     pub fn only_babylon(self) -> ProtocolExecutor {
@@ -252,22 +256,24 @@ impl ProtocolBuilder {
     ) -> ProtocolExecutor {
         ProtocolExecutor::new(
             Some(start_protocol_version),
-            end_protocol_version,
+            Some(end_protocol_version),
             self.settings,
         )
     }
 }
 
 pub struct ProtocolExecutor {
+    /// Note: `None` means start from unbootstrapped
     starting_at: Option<ProtocolVersion>,
-    update_until: ProtocolVersion,
+    /// Note: `None` means end unbootstrapped
+    update_until: Option<ProtocolVersion>,
     settings: ProtocolSettings,
 }
 
 impl ProtocolExecutor {
-    pub fn new(
+    fn new(
         starting_at: Option<ProtocolVersion>,
-        update_until: ProtocolVersion,
+        update_until: Option<ProtocolVersion>,
         settings: ProtocolSettings,
     ) -> Self {
         Self {
@@ -277,14 +283,8 @@ impl ProtocolExecutor {
         }
     }
 
-    // Ideally if we stored "protocol update state" in the database we could automate discovery of where to start.
-    pub fn commit_each_protocol_update_if_not_already_bootstrapped<
-        S: SubstateDatabase + CommittableSubstateDatabase,
-    >(
-        self,
-        store: &mut S,
-    ) {
-        let is_bootstrapped = store
+    pub fn is_bootstrapped(store: &mut impl SubstateDatabase) -> bool {
+        store
             .get_substate(
                 &SpreadPrefixKeyMapper::to_db_partition_key(
                     PACKAGE_PACKAGE.as_node_id(),
@@ -292,16 +292,12 @@ impl ProtocolExecutor {
                 ),
                 &SpreadPrefixKeyMapper::to_db_sort_key(&TypeInfoField::TypeInfo.into()),
             )
-            .is_some();
-
-        if !is_bootstrapped {
-            self.commit_each_protocol_update(store);
-        }
+            .is_some()
     }
 
-    pub fn commit_each_protocol_update<S: SubstateDatabase + CommittableSubstateDatabase>(
+    pub fn commit_each_protocol_update(
         self,
-        store: &mut S,
+        store: &mut (impl SubstateDatabase + CommittableSubstateDatabase),
     ) {
         for update_execution in self.each_protocol_update_executor() {
             update_execution.run_and_commit(store);
@@ -330,7 +326,8 @@ impl ProtocolExecutor {
             .filter(move |version| {
                 let satisfies_lower_bound = starting_at.is_none()
                     || starting_at.is_some_and(|start_version| start_version < *version);
-                let satisfies_upper_bound = *version <= until_protocol_version;
+                let satisfies_upper_bound =
+                    until_protocol_version.is_some_and(|end_version| *version <= end_version);
                 satisfies_lower_bound && satisfies_upper_bound
             })
     }

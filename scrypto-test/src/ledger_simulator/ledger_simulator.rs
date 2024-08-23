@@ -178,7 +178,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         }
     }
 
-    pub fn build_and_get_epoch(self) -> (LedgerSimulator<E, D>, ActiveValidatorSet) {
+    /// NOTE: The epoch change isn't available if the protocol builder does not run genesis.
+    pub fn build_and_get_post_genesis_epoch_change(
+        self,
+    ) -> (LedgerSimulator<E, D>, Option<EpochChangeEvent>) {
         //---------- Override configs for resource tracker ---------------
         let bootstrap_trace = false;
 
@@ -247,17 +250,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
             with_receipt_substate_check: self.with_receipt_substate_check,
         };
 
-        (
-            runner,
-            hooks
-                .genesis_next_epoch
-                .expect("Expected an epoch change event from the protocol update")
-                .validator_set,
-        )
+        (runner, hooks.genesis_next_epoch)
     }
 
     pub fn build(self) -> LedgerSimulator<E, D> {
-        self.build_and_get_epoch().0
+        self.build_and_get_post_genesis_epoch_change().0
     }
 }
 
