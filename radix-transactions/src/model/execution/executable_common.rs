@@ -210,14 +210,14 @@ pub struct TransactionCostingParametersReceiptV1 {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor, Default)]
 pub struct TransactionCostingParametersReceiptV2 {
-    pub tip_basis_points: u32,
+    pub tip_proportion: Decimal,
     pub free_credit_in_xrd: Decimal,
 }
 
 impl From<TransactionCostingParametersReceiptV1> for TransactionCostingParametersReceiptV2 {
     fn from(value: TransactionCostingParametersReceiptV1) -> Self {
         Self {
-            tip_basis_points: TipSpecifier::Percentage(value.tip_percentage).basis_points(),
+            tip_proportion: TipSpecifier::Percentage(value.tip_percentage).proportion(),
             free_credit_in_xrd: value.free_credit_in_xrd,
         }
     }
