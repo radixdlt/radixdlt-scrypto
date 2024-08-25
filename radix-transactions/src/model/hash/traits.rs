@@ -59,12 +59,6 @@ impl IsTransactionHashWithStaticHrp for SubintentHash {
     }
 }
 
-impl IsTransactionHashWithStaticHrp for SignedSubintentHash {
-    fn static_hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
-        &hrp_set.signed_subintent
-    }
-}
-
 impl IsTransactionHash for IntentHash {
     fn hrp<'h>(&self, hrp_set: &'h HrpSet) -> &'h str {
         match self {

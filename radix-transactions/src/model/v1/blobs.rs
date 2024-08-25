@@ -29,12 +29,12 @@ impl HasSummary for PreparedBlobsV1 {
     }
 }
 
-impl TransactionFullChildPreparable for PreparedBlobsV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValue for PreparedBlobsV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let (blobs, summary) = ConcatenatedDigest::prepare_from_sbor_array::<
             Vec<SummarizedRawInnerBodyRawBytes>,
             MAX_NUMBER_OF_BLOBS,
-        >(decoder, HashAccumulator::new(), ValueType::Blob)?;
+        >(decoder, ValueType::Blob)?;
 
         let mut blobs_by_hash = index_map_with_capacity(blobs.len());
         for blob in blobs {

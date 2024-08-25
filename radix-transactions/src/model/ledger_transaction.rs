@@ -120,8 +120,8 @@ impl HasSummary for PreparedLedgerTransactionInner {
     }
 }
 
-impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValue for PreparedLedgerTransactionInner {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         decoder.track_stack_depth_increase()?;
         let (discriminator, length) = decoder.read_enum_header()?;
         let prepared_inner = match discriminator {
@@ -139,8 +139,7 @@ impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
                     }
                     GENESIS_TRANSACTION_SYSTEM_TRANSACTION_DISCRIMINATOR => {
                         check_length(length, 1)?;
-                        let prepared =
-                            PreparedSystemTransactionV1::prepare_as_full_body_child(decoder)?;
+                        let prepared = PreparedSystemTransactionV1::prepare_from_value(decoder)?;
                         PreparedGenesisTransaction::Transaction(Box::new(prepared))
                     }
                     _ => return Err(unknown_discriminator(discriminator)),
@@ -149,18 +148,17 @@ impl TransactionFullChildPreparable for PreparedLedgerTransactionInner {
             }
             USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 check_length(length, 1)?;
-                let prepared = PreparedNotarizedTransactionV1::prepare_as_full_body_child(decoder)?;
+                let prepared = PreparedNotarizedTransactionV1::prepare_from_value(decoder)?;
                 PreparedLedgerTransactionInner::UserV1(Box::new(prepared))
             }
             ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 check_length(length, 1)?;
-                let prepared =
-                    PreparedRoundUpdateTransactionV1::prepare_as_full_body_child(decoder)?;
+                let prepared = PreparedRoundUpdateTransactionV1::prepare_from_value(decoder)?;
                 PreparedLedgerTransactionInner::RoundUpdateV1(Box::new(prepared))
             }
             FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR => {
                 check_length(length, 1)?;
-                let prepared = PreparedFlashTransactionV1::prepare_as_full_body_child(decoder)?;
+                let prepared = PreparedFlashTransactionV1::prepare_from_value(decoder)?;
                 PreparedLedgerTransactionInner::FlashV1(Box::new(prepared))
             }
             _ => return Err(unknown_discriminator(discriminator)),
@@ -218,7 +216,7 @@ impl TransactionPayloadPreparable for PreparedLedgerTransaction {
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         decoder.track_stack_depth_increase()?;
         decoder.read_expected_enum_variant_header(TransactionDiscriminator::V1Ledger as u8, 1)?;
-        let inner = PreparedLedgerTransactionInner::prepare_as_full_body_child(decoder)?;
+        let inner = PreparedLedgerTransactionInner::prepare_from_value(decoder)?;
         decoder.track_stack_depth_decrease()?;
 
         let summary = Summary {

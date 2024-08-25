@@ -26,6 +26,7 @@ impl RoundUpdateTransactionV1 {
         }]
     }
 
+    #[allow(deprecated)]
     pub fn prepare(&self) -> Result<PreparedRoundUpdateTransactionV1, PrepareError> {
         let prepared_instructions =
             InstructionsV1(Rc::new(self.create_instructions())).prepare_partial()?;
@@ -86,8 +87,8 @@ impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
     }
 }
 
-impl TransactionFullChildPreparable for PreparedRoundUpdateTransactionV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValue for PreparedRoundUpdateTransactionV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let decoded = decoder.decode::<RoundUpdateTransactionV1>()?;
         decoded.prepare()
     }

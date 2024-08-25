@@ -11,7 +11,7 @@ impl ConcatenatedDigest {
     ) -> Result<(T, Summary), PrepareError> {
         let digest = HashAccumulator::new()
             .update(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
-        T::prepare_into_concatenated_digest(decoder, digest, discriminator as u8)
+        T::prepare_into_concatenated_digest(decoder, digest, discriminator as u8, true)
     }
 
     /// Creates a digest which matches `prepare_from_transaction_payload_enum`
@@ -21,30 +21,47 @@ impl ConcatenatedDigest {
     ) -> Result<(T, Summary), PrepareError> {
         let digest = HashAccumulator::new()
             .update(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
-        T::prepare_into_concatenated_digest(decoder, digest)
+        T::prepare_into_concatenated_digest(decoder, digest, true)
+    }
+
+    /// Creates a digest which matches `prepare_from_transaction_payload_enum`
+    pub fn prepare_from_transaction_child_struct_body<T: TuplePreparable>(
+        decoder: &mut TransactionDecoder,
+        discriminator: TransactionDiscriminator,
+    ) -> Result<(T, Summary), PrepareError> {
+        let digest = HashAccumulator::new()
+            .update(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
+        T::prepare_into_concatenated_digest(decoder, digest, false)
     }
 
     pub fn prepare_from_sbor_array<T: ArrayPreparable, const MAX_LENGTH: usize>(
         decoder: &mut TransactionDecoder,
-        accumulator: HashAccumulator,
         value_type: ValueType,
     ) -> Result<(T, Summary), PrepareError> {
-        T::prepare_into_concatenated_digest::<MAX_LENGTH>(decoder, accumulator, value_type)
+        T::prepare_into_concatenated_digest::<MAX_LENGTH>(
+            decoder,
+            HashAccumulator::new(),
+            value_type,
+            true,
+        )
     }
 
     pub fn prepare_from_sbor_tuple<T: TuplePreparable>(
         decoder: &mut TransactionDecoder,
-        accumulator: HashAccumulator,
     ) -> Result<(T, Summary), PrepareError> {
-        T::prepare_into_concatenated_digest(decoder, accumulator)
+        T::prepare_into_concatenated_digest(decoder, HashAccumulator::new(), true)
     }
 
     pub fn prepare_from_sbor_enum<T: EnumPreparable>(
         decoder: &mut TransactionDecoder,
-        accumulator: HashAccumulator,
         discriminator: u8,
     ) -> Result<(T, Summary), PrepareError> {
-        T::prepare_into_concatenated_digest(decoder, accumulator, discriminator as u8)
+        T::prepare_into_concatenated_digest(
+            decoder,
+            HashAccumulator::new(),
+            discriminator as u8,
+            true,
+        )
     }
 }
 
@@ -53,17 +70,23 @@ pub trait ArrayPreparable: Sized {
         decoder: &mut TransactionDecoder,
         accumulator: HashAccumulator,
         value_type: ValueType,
+        read_value_kind: bool,
     ) -> Result<(Self, Summary), PrepareError>;
 }
 
-impl<T: TransactionChildBodyPreparable> ArrayPreparable for Vec<T> {
+impl<T: TransactionPreparableFromValueBody> ArrayPreparable for Vec<T> {
     fn prepare_into_concatenated_digest<const MAX_LENGTH: usize>(
         decoder: &mut TransactionDecoder,
         mut accumulator: HashAccumulator,
         value_type: ValueType,
+        read_value_kind: bool,
     ) -> Result<(Self, Summary), PrepareError> {
         decoder.track_stack_depth_increase()?;
-        let length = decoder.read_array_header(T::value_kind())?;
+        let length = if read_value_kind {
+            decoder.read_array_header(T::value_kind())?
+        } else {
+            decoder.read_array_header_without_value_kind(T::value_kind())?
+        };
 
         if length > MAX_LENGTH {
             return Err(PrepareError::TooManyValues {
@@ -83,7 +106,7 @@ impl<T: TransactionChildBodyPreparable> ArrayPreparable for Vec<T> {
 
         let mut all_prepared: Vec<T> = Vec::with_capacity(length);
         for _ in 0..length {
-            let prepared = T::prepare_as_inner_body_child(decoder)?;
+            let prepared = T::prepare_from_value_body(decoder)?;
             effective_length = effective_length
                 .checked_add(prepared.get_summary().effective_length)
                 .ok_or(PrepareError::LengthOverflow)?;
@@ -114,6 +137,7 @@ pub trait TuplePreparable: Sized {
     fn prepare_into_concatenated_digest(
         decoder: &mut TransactionDecoder,
         accumulator: HashAccumulator,
+        read_value_kind: bool,
     ) -> Result<(Self, Summary), PrepareError>;
 }
 
@@ -122,16 +146,21 @@ pub trait EnumPreparable: Sized {
         decoder: &mut TransactionDecoder,
         accumulator: HashAccumulator,
         expected_discriminator: u8,
+        read_value_kind: bool,
     ) -> Result<(Self, Summary), PrepareError>;
 }
 
 macro_rules! prepare_tuple {
     ($n:tt$( $var_name:ident $type_name:ident)*) => {
-        impl<$($type_name: TransactionFullChildPreparable,)*> TuplePreparable for ($($type_name,)*) {
+        impl<$($type_name: TransactionPreparableFromValue,)*> TuplePreparable for ($($type_name,)*) {
             #[allow(unused_mut)]
-            fn prepare_into_concatenated_digest(decoder: &mut TransactionDecoder, mut accumulator: HashAccumulator) -> Result<(Self, Summary), PrepareError> {
+            fn prepare_into_concatenated_digest(decoder: &mut TransactionDecoder, mut accumulator: HashAccumulator, read_value_kind: bool) -> Result<(Self, Summary), PrepareError> {
                 decoder.track_stack_depth_increase()?;
-                decoder.read_struct_header($n)?;
+                if read_value_kind {
+                    decoder.read_struct_header($n)?;
+                } else {
+                    decoder.read_struct_header_without_value_kind($n)?;
+                }
 
                 // NOTE: We purposefully don't take the effective_length from the size of the SBOR type header
                 // This is because the SBOR value header isn't included in the hash...
@@ -142,7 +171,7 @@ macro_rules! prepare_tuple {
                 let mut total_bytes_hashed = 0usize;
 
                 $(
-                    let $var_name = <$type_name>::prepare_as_full_body_child(decoder)?;
+                    let $var_name = <$type_name>::prepare_from_value(decoder)?;
                     effective_length = effective_length.checked_add($var_name.get_summary().effective_length).ok_or(PrepareError::LengthOverflow)?;
                     total_bytes_hashed = total_bytes_hashed.checked_add($var_name.get_summary().total_bytes_hashed).ok_or(PrepareError::LengthOverflow)?;
                     accumulator = accumulator.update($var_name.get_summary().hash);
@@ -161,11 +190,15 @@ macro_rules! prepare_tuple {
             }
         }
 
-        impl<$($type_name: TransactionFullChildPreparable,)*> EnumPreparable for ($($type_name,)*) {
+        impl<$($type_name: TransactionPreparableFromValue,)*> EnumPreparable for ($($type_name,)*) {
             #[allow(unused_mut)]
-            fn prepare_into_concatenated_digest(decoder: &mut TransactionDecoder, mut accumulator: HashAccumulator, expected_discriminator: u8) -> Result<(Self, Summary), PrepareError> {
+            fn prepare_into_concatenated_digest(decoder: &mut TransactionDecoder, mut accumulator: HashAccumulator, expected_discriminator: u8, read_value_kind: bool) -> Result<(Self, Summary), PrepareError> {
                 decoder.track_stack_depth_increase()?;
-                decoder.read_expected_enum_variant_header(expected_discriminator, $n)?;
+                if read_value_kind {
+                    decoder.read_expected_enum_variant_header(expected_discriminator, $n)?;
+                } else {
+                    decoder.read_expected_enum_variant_header_without_value_kind(expected_discriminator, $n)?;
+                }
 
                 // NOTE: We purposefully don't take the effective_length from the size of the SBOR type header
                 // This is because the SBOR value header isn't included in the hash...
@@ -176,7 +209,7 @@ macro_rules! prepare_tuple {
                 let mut total_bytes_hashed = 0usize;
 
                 $(
-                    let $var_name = <$type_name>::prepare_as_full_body_child(decoder)?;
+                    let $var_name = <$type_name>::prepare_from_value(decoder)?;
                     effective_length = effective_length.checked_add($var_name.get_summary().effective_length).ok_or(PrepareError::LengthOverflow)?;
                     total_bytes_hashed = total_bytes_hashed.checked_add($var_name.get_summary().total_bytes_hashed).ok_or(PrepareError::LengthOverflow)?;
                     accumulator = accumulator.update($var_name.get_summary().hash);

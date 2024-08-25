@@ -35,6 +35,7 @@ impl TestTransaction {
         }
     }
 
+    #[allow(deprecated)]
     pub fn prepare(self) -> Result<PreparedTestTransaction, PrepareError> {
         let prepared_instructions = self.instructions.prepare_partial()?;
         Ok(PreparedTestTransaction {

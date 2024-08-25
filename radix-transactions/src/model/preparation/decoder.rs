@@ -4,7 +4,10 @@ use sbor::*;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ValueType {
     Blob,
-    Attachment,
+    Message,
+    Subintent,
+    ChildIntentConstraint,
+    IntentSignatures,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -50,6 +53,13 @@ impl<'a> TransactionDecoder<'a> {
 
     pub fn read_struct_header(&mut self, length: usize) -> Result<(), PrepareError> {
         self.0.read_and_check_value_kind(ValueKind::Tuple)?;
+        self.read_struct_header_without_value_kind(length)
+    }
+
+    pub fn read_struct_header_without_value_kind(
+        &mut self,
+        length: usize,
+    ) -> Result<(), PrepareError> {
         self.0.read_and_check_size(length)?;
         Ok(())
     }
@@ -67,6 +77,14 @@ impl<'a> TransactionDecoder<'a> {
         length: usize,
     ) -> Result<(), PrepareError> {
         self.0.read_and_check_value_kind(ValueKind::Enum)?;
+        self.read_expected_enum_variant_header_without_value_kind(expected_discriminator, length)
+    }
+
+    pub fn read_expected_enum_variant_header_without_value_kind(
+        &mut self,
+        expected_discriminator: u8,
+        length: usize,
+    ) -> Result<(), PrepareError> {
         let discriminator = self.0.read_discriminator()?;
         if discriminator != expected_discriminator {
             return Err(PrepareError::UnexpectedDiscriminator {
@@ -83,6 +101,13 @@ impl<'a> TransactionDecoder<'a> {
         element_value_kind: ManifestValueKind,
     ) -> Result<usize, PrepareError> {
         self.0.read_and_check_value_kind(ValueKind::Array)?;
+        self.read_array_header_without_value_kind(element_value_kind)
+    }
+
+    pub fn read_array_header_without_value_kind(
+        &mut self,
+        element_value_kind: ManifestValueKind,
+    ) -> Result<usize, PrepareError> {
         self.0.read_and_check_value_kind(element_value_kind)?;
         Ok(self.0.read_size()?)
     }

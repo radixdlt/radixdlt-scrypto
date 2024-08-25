@@ -27,6 +27,7 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
     }
 }
 
+#[allow(deprecated)]
 impl ValidatedNotarizedTransactionV1 {
     pub fn get_executable(&self) -> ExecutableTransactionV1 {
         let intent = &self.prepared.signed_intent.intent;

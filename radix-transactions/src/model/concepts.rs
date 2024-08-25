@@ -34,16 +34,14 @@ define_wrapped_hash!(
     SubintentHash
 );
 
-pub trait HasSubIntentHash {
+pub trait HasSubintentHash {
     fn subintent_hash(&self) -> SubintentHash;
 }
 
-define_raw_transaction_payload!(RawSignedSubintent);
-define_wrapped_hash!(SignedSubintentHash);
-
-pub trait HasSignedSubintentHash {
-    fn signed_subintent_hash(&self) -> SignedSubintentHash;
-}
+// There are no associated hashes for these things, because they don't need them.
+// A solver can work out their own passing strategy
+define_raw_transaction_payload!(RawPartialTransaction);
+define_raw_transaction_payload!(RawSignedPartialTransaction);
 
 /// Note - Because transaction hashes do _not_ have a reserved first byte,
 /// we can't encode them to bech32m unless we know their type.

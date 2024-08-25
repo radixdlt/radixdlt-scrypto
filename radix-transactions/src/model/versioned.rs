@@ -18,6 +18,12 @@ pub enum TransactionDiscriminator {
     V1RoundUpdate = V1_ROUND_UPDATE_TRANSACTION,
     V1Ledger = V1_LEDGER_TRANSACTION,
     V1Flash = V1_FLASH_TRANSACTION,
+    V2TransactionIntent = V2_TRANSACTION_INTENT,
+    V2SignedTransactionIntent = V2_SIGNED_TRANSACTION_INTENT,
+    V2Subintent = V2_SUBINTENT,
+    V2Notarized = V2_NOTARIZED_TRANSACTION,
+    V2PartialTransaction = V2_PARTIAL_TRANSACTION,
+    V2SignedPartialTransaction = V2_SIGNED_PARTIAL_TRANSACTION,
 }
 
 const V1_INTENT: u8 = 1;
@@ -29,6 +35,12 @@ const V1_ROUND_UPDATE_TRANSACTION: u8 = 5;
 //       but they have never been serialized, so 6 is free for re-use
 const V1_LEDGER_TRANSACTION: u8 = 7;
 const V1_FLASH_TRANSACTION: u8 = 8;
+const V2_TRANSACTION_INTENT: u8 = 9;
+const V2_SIGNED_TRANSACTION_INTENT: u8 = 10;
+const V2_SUBINTENT: u8 = 11;
+const V2_NOTARIZED_TRANSACTION: u8 = 12;
+const V2_PARTIAL_TRANSACTION: u8 = 13;
+const V2_SIGNED_PARTIAL_TRANSACTION: u8 = 14;
 
 /// An enum of a variety of different transaction payload types.
 ///
@@ -54,9 +66,9 @@ const V1_FLASH_TRANSACTION: u8 = 8;
 )]
 pub enum VersionedTransactionPayload {
     #[sbor(flatten, discriminator(V1_INTENT))]
-    IntentV1(IntentV1),
+    TransactionIntentV1(IntentV1),
     #[sbor(flatten, discriminator(V1_SIGNED_INTENT))]
-    SignedIntentV1(SignedIntentV1),
+    SignedTransactionIntentV1(SignedIntentV1),
     #[sbor(flatten, discriminator(V1_NOTARIZED_TRANSACTION))]
     NotarizedTransactionV1(NotarizedTransactionV1),
     #[sbor(flatten, discriminator(V1_SYSTEM_TRANSACTION))]
@@ -67,6 +79,18 @@ pub enum VersionedTransactionPayload {
     LedgerTransaction(LedgerTransaction),
     #[sbor(flatten, discriminator(V1_FLASH_TRANSACTION))]
     FlashTransactionV1(FlashTransactionV1),
+    #[sbor(flatten, discriminator(V2_TRANSACTION_INTENT))]
+    TransactionIntentV2(TransactionIntentV2),
+    #[sbor(flatten, discriminator(V2_SIGNED_TRANSACTION_INTENT))]
+    SignedTransactionIntentV2(SignedTransactionIntentV2),
+    #[sbor(flatten, discriminator(V2_SUBINTENT))]
+    SubintentV2(SubintentV2),
+    #[sbor(flatten, discriminator(V2_NOTARIZED_TRANSACTION))]
+    NotarizedTransactionV2(NotarizedTransactionV2),
+    #[sbor(flatten, discriminator(V2_PARTIAL_TRANSACTION))]
+    PartialTransactionV2(PartialTransactionV2),
+    #[sbor(flatten, discriminator(V2_SIGNED_PARTIAL_TRANSACTION))]
+    SignedPartialTransactionV2(SignedPartialTransactionV2),
 }
 
 #[cfg(test)]
@@ -119,10 +143,9 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 = PreparedBlobsV1::prepare_as_full_body_child_from_payload(
-            &manifest_encode(&blobs_v1).unwrap(),
-        )
-        .unwrap();
+        let prepared_blobs_v1 =
+            PreparedBlobsV1::prepare_from_payload_slice(&manifest_encode(&blobs_v1).unwrap())
+                .unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let message_v1 = MessageV1::default();
@@ -160,7 +183,7 @@ mod tests {
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
         assert_eq!(
             intent_as_versioned,
-            VersionedTransactionPayload::IntentV1(intent_v1.clone())
+            VersionedTransactionPayload::TransactionIntentV1(intent_v1.clone())
         );
 
         let prepared_intent =
@@ -217,7 +240,7 @@ mod tests {
             manifest_decode::<VersionedTransactionPayload>(&signed_intent_payload_bytes).unwrap();
         assert_eq!(
             signed_intent_as_versioned,
-            VersionedTransactionPayload::SignedIntentV1(signed_intent_v1.clone())
+            VersionedTransactionPayload::SignedTransactionIntentV1(signed_intent_v1.clone())
         );
 
         let prepared_signed_intent =
@@ -325,10 +348,9 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 = PreparedBlobsV1::prepare_as_full_body_child_from_payload(
-            &manifest_encode(&blobs_v1).unwrap(),
-        )
-        .unwrap();
+        let prepared_blobs_v1 =
+            PreparedBlobsV1::prepare_from_payload_slice(&manifest_encode(&blobs_v1).unwrap())
+                .unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let pre_allocated_addresses_v1 = vec![PreAllocatedAddress {

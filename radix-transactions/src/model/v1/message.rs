@@ -167,7 +167,8 @@ impl AesWrapped128BitKey {
 // PREPARATION
 //============================================================================
 
-pub type PreparedMessageV1 = SummarizedRawFullBody<MessageV1>;
+#[allow(deprecated)]
+pub type PreparedMessageV1 = SummarizedRawFullValue<MessageV1>;
 
 // TODO: Add tests with a canonical implementation of message encryption/decryption,
 // and corresponding test vectors for other implementers.

@@ -79,15 +79,14 @@ pub fn run() -> Result<(), String> {
             match manifest_decode::<VersionedTransactionPayload>(&content) {
                 Ok(manifest) => {
                     let (manifest_instructions, blobs) = match manifest {
-                        VersionedTransactionPayload::IntentV1(IntentV1 {
+                        VersionedTransactionPayload::TransactionIntentV1(IntentV1 {
                             instructions,
                             blobs,
                             ..
                         }) => (instructions.0, blobs.blobs),
-                        VersionedTransactionPayload::SignedIntentV1(SignedIntentV1 {
-                            intent,
-                            ..
-                        }) => (intent.instructions.0, intent.blobs.blobs),
+                        VersionedTransactionPayload::SignedTransactionIntentV1(
+                            SignedIntentV1 { intent, .. },
+                        ) => (intent.instructions.0, intent.blobs.blobs),
                         VersionedTransactionPayload::NotarizedTransactionV1(
                             NotarizedTransactionV1 { signed_intent, .. },
                         ) => (

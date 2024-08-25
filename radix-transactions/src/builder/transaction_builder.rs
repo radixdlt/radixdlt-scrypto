@@ -125,6 +125,7 @@ mod tests {
     use crate::internal_prelude::Secp256k1PrivateKey;
 
     #[test]
+    #[allow(deprecated)]
     fn notary_as_signatory() {
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
 

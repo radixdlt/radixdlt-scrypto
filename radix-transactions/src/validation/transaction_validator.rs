@@ -95,6 +95,7 @@ pub struct NotarizedTransactionValidator {
     config: ValidationConfig,
 }
 
+#[allow(deprecated)]
 impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransactionValidator {
     type Validated = ValidatedNotarizedTransactionV1;
 
@@ -138,6 +139,7 @@ impl NotarizedTransactionValidator {
         Self { config }
     }
 
+    #[allow(deprecated)]
     pub fn validate_preview_intent_v1(
         &self,
         preview_intent: PreviewIntentV1,
@@ -156,6 +158,7 @@ impl NotarizedTransactionValidator {
         })
     }
 
+    #[allow(deprecated)]
     pub fn validate_intent_v1(
         &self,
         intent: &PreparedIntentV1,
@@ -312,6 +315,7 @@ impl NotarizedTransactionValidator {
         Ok(())
     }
 
+    #[allow(deprecated)]
     pub fn validate_signatures_v1(
         &self,
         transaction: &PreparedNotarizedTransactionV1,

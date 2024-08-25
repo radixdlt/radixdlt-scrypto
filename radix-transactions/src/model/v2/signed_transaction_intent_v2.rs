@@ -6,72 +6,75 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
-/// This should really be `SignedTransactionIntentV1`, but keeping the old name to avoid refactoring in node.
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
-pub struct SignedIntentV1 {
-    pub intent: IntentV1,
-    pub intent_signatures: IntentSignaturesV1,
+pub struct SignedTransactionIntentV2 {
+    pub root_intent: TransactionIntentV2,
+    pub root_intent_signatures: IntentSignaturesV1,
+    pub subintent_signatures: MultipleIntentSignaturesV2,
 }
 
-impl TransactionPayload for SignedIntentV1 {
-    type Prepared = PreparedSignedIntentV1;
+impl TransactionPayload for SignedTransactionIntentV2 {
+    type Prepared = PreparedSignedTransactionIntentV2;
     type Raw = RawSignedTransactionIntent;
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedSignedIntentV1 {
-    pub intent: PreparedIntentV1,
-    pub intent_signatures: PreparedIntentSignaturesV1,
+pub struct PreparedSignedTransactionIntentV2 {
+    pub root_intent: PreparedTransactionIntentV2,
+    pub root_intent_signatures: PreparedIntentSignaturesV1,
+    pub subintent_signatures: PreparedMultipleIntentSignaturesV2,
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedSignedIntentV1 {
+impl HasSummary for PreparedSignedTransactionIntentV2 {
     fn get_summary(&self) -> &Summary {
         &self.summary
     }
 }
 
-impl TransactionPreparableFromValue for PreparedSignedIntentV1 {
+impl TransactionPreparableFromValue for PreparedSignedTransactionIntentV2 {
     fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as an child, it's SBOR encoded as a struct
-        let ((intent, intent_signatures), summary) =
+        let ((root_intent, root_intent_signatures, subintent_signatures), summary) =
             ConcatenatedDigest::prepare_from_transaction_child_struct(
                 decoder,
-                TransactionDiscriminator::V1SignedIntent,
+                TransactionDiscriminator::V2SignedTransactionIntent,
             )?;
         Ok(Self {
-            intent,
-            intent_signatures,
+            root_intent,
+            root_intent_signatures,
+            subintent_signatures,
             summary,
         })
     }
 }
 
-impl TransactionPayloadPreparable for PreparedSignedIntentV1 {
+impl TransactionPayloadPreparable for PreparedSignedTransactionIntentV2 {
     type Raw = RawSignedTransactionIntent;
 
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as full payload, it's SBOR encoded as an enum
-        let ((intent, intent_signatures), summary) =
+        let ((root_intent, root_intent_signatures, subintent_signatures), summary) =
             ConcatenatedDigest::prepare_from_transaction_payload_enum(
                 decoder,
-                TransactionDiscriminator::V1SignedIntent,
+                TransactionDiscriminator::V2SignedTransactionIntent,
             )?;
         Ok(Self {
-            intent,
-            intent_signatures,
+            root_intent,
+            root_intent_signatures,
+            subintent_signatures,
             summary,
         })
     }
 }
 
-impl HasTransactionIntentHash for PreparedSignedIntentV1 {
+impl HasTransactionIntentHash for PreparedSignedTransactionIntentV2 {
     fn transaction_intent_hash(&self) -> TransactionIntentHash {
-        self.intent.transaction_intent_hash()
+        self.root_intent.transaction_intent_hash()
     }
 }
 
-impl HasSignedTransactionIntentHash for PreparedSignedIntentV1 {
+impl HasSignedTransactionIntentHash for PreparedSignedTransactionIntentV2 {
     fn signed_intent_hash(&self) -> SignedTransactionIntentHash {
         SignedTransactionIntentHash::from_hash(self.summary.hash)
     }

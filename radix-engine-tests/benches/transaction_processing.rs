@@ -30,6 +30,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     });
     c.bench_function("transaction_processing::prepare_and_decompile", |b| {
         b.iter(|| {
+            #[allow(deprecated)]
             black_box({
                 let transaction: PreparedNotarizedTransactionV1 =
                     PreparedNotarizedTransactionV1::prepare_from_payload(&compiled_transaction)
@@ -46,6 +47,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
         "transaction_processing::prepare_and_decompile_and_recompile",
         |b| {
             b.iter(|| {
+                #[allow(deprecated)]
                 black_box({
                     let transaction =
                         PreparedNotarizedTransactionV1::prepare_from_payload(&compiled_transaction)

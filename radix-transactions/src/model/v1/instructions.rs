@@ -10,4 +10,5 @@ impl TransactionPartialEncode for InstructionsV1 {
 }
 
 // We summarize all the transactions as a single unit (not transaction-by-transaction)
-pub type PreparedInstructionsV1 = SummarizedRawFullBodyWithReferences<InstructionsV1>;
+#[allow(deprecated)]
+pub type PreparedInstructionsV1 = SummarizedRawFullValueWithReferences<InstructionsV1>;

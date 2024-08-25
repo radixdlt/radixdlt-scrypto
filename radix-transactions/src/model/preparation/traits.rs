@@ -46,32 +46,48 @@ where
 }
 
 pub trait TransactionPartialEncode: ManifestEncode {
-    type Prepared: TransactionFullChildPreparable;
+    type Prepared: TransactionPreparableFromValue;
 
     fn prepare_partial(&self) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare_as_full_body_child_from_payload(
+        Ok(Self::Prepared::prepare_from_payload_slice(
             &manifest_encode(self)?,
         )?)
     }
 }
 
-pub trait TransactionChildBodyPreparable: HasSummary + Sized {
+/// Intended for use when the value is encoded without a prefix byte,
+/// e.g. when it's under an array.
+///
+/// Should only decode the value body, NOT read the SBOR value kind.
+///
+/// NOTE:
+/// * The hash should align with the hash from other means.
+///   Ideally this means the hash should _not_ include the header byte.
+/// * Ideally the summary should not include costing for reading the value kind byte.
+pub trait TransactionPreparableFromValueBody: HasSummary + Sized {
     /// Prepares value from a manifest decoder by reading the inner body (without the value kind)
-    fn prepare_as_inner_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
+    fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
 
     fn value_kind() -> ManifestValueKind;
 }
 
-pub trait TransactionFullChildPreparable: HasSummary + Sized {
-    /// Prepares value from a manifest decoder by reading the full SBOR value body (with the value kind)
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
+/// Should read the SBOR value kind, and then the rest of the SBOR value.
+///
+/// NOTE:
+/// * The hash should align with the hash from other means.
+///   As of V2, it is suggested that this should _not_ include the header byte.
+/// * Ideally the summary should include costing for reading the value kind byte.
+pub trait TransactionPreparableFromValue: HasSummary + Sized {
+    /// Prepares value from a manifest decoder by reading the full SBOR value
+    /// That is - the value kind, and then the value body.
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
 
     /// Only exposed for testing
-    fn prepare_as_full_body_child_from_payload(payload: &[u8]) -> Result<Self, PrepareError> {
+    fn prepare_from_payload_slice(payload: &[u8]) -> Result<Self, PrepareError> {
         let mut manifest_decoder = ManifestDecoder::new(payload, MANIFEST_SBOR_V1_MAX_DEPTH);
         manifest_decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
         let mut transaction_decoder = TransactionDecoder::new(manifest_decoder);
-        let prepared = Self::prepare_as_full_body_child(&mut transaction_decoder)?;
+        let prepared = Self::prepare_from_value(&mut transaction_decoder)?;
         transaction_decoder.destructure().check_end()?;
         Ok(prepared)
     }

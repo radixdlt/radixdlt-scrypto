@@ -52,7 +52,6 @@ impl_contextual_display![
     SignedTransactionIntentHash,
     IntentHash,
     SubintentHash,
-    SignedSubintentHash,
     NotarizedTransactionHash,
     SystemTransactionHash,
     LedgerTransactionHash,
