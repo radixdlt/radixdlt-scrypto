@@ -60,7 +60,8 @@ const V2_SIGNED_PARTIAL_TRANSACTION: u8 = 14;
     // we use `backwards_compatible` here. But most individual transaction models
     // should themselves be `fixed`, e.g. NotarizedTransactionV1
     backwards_compatible(
-        bottlenose = "FILE:any_transaction_payload_schema.txt"
+        bottlenose = "FILE:any_transaction_payload_schema_bottlenose.txt",
+        cuttlefish = "FILE:any_transaction_payload_schema_cuttlefish.txt"
     ),
     settings(allow_name_changes)
 )]

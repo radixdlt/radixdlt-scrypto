@@ -9,8 +9,7 @@ use crate::internal_prelude::*;
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe, ScryptoSborAssertion)]
 #[sbor_assert(
     fixed("FILE:notarized_transaction_v2_schema.txt"),
-    settings(allow_name_changes),
-    generate
+    settings(allow_name_changes)
 )]
 pub struct NotarizedTransactionV2 {
     pub signed_intent: SignedTransactionIntentV2,
