@@ -375,12 +375,12 @@ impl LedgerTransactionHash {
     fn for_kind(discriminator: u8, inner: &Hash) -> Self {
         Self(
             HashAccumulator::new()
-                .update([
+                .concat([
                     TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
                     TransactionDiscriminator::V1Ledger as u8,
                     discriminator,
                 ])
-                .update(inner.as_slice())
+                .concat(inner.as_slice())
                 .finalize(),
         )
     }

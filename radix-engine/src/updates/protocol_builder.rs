@@ -211,23 +211,35 @@ impl ProtocolBuilder {
         }
     }
 
-    pub fn with_babylon(mut self, settings: BabylonSettings) -> Self {
-        self.settings.babylon = settings;
+    pub fn configure_babylon(
+        mut self,
+        creator: impl FnOnce(BabylonSettings) -> BabylonSettings,
+    ) -> Self {
+        self.settings.babylon = creator(self.settings.babylon);
         self
     }
 
-    pub fn with_anemone(mut self, settings: AnemoneSettings) -> Self {
-        self.settings.anemone = settings;
+    pub fn configure_anemone(
+        mut self,
+        creator: impl FnOnce(AnemoneSettings) -> AnemoneSettings,
+    ) -> Self {
+        self.settings.anemone = creator(self.settings.anemone);
         self
     }
 
-    pub fn with_bottlenose(mut self, settings: BottlenoseSettings) -> Self {
-        self.settings.bottlenose = settings;
+    pub fn configure_bottlenose(
+        mut self,
+        creator: impl FnOnce(BottlenoseSettings) -> BottlenoseSettings,
+    ) -> Self {
+        self.settings.bottlenose = creator(self.settings.bottlenose);
         self
     }
 
-    pub fn with_cuttlefish(mut self, settings: CuttlefishSettings) -> Self {
-        self.settings.cuttlefish = settings;
+    pub fn configure_cuttlefish(
+        mut self,
+        creator: impl FnOnce(CuttlefishSettings) -> CuttlefishSettings,
+    ) -> Self {
+        self.settings.cuttlefish = creator(self.settings.cuttlefish);
         self
     }
 

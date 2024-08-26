@@ -30,7 +30,7 @@ where
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| {
             builder
-                .with_babylon(genesis)
+                .configure_babylon(|_| genesis)
                 .from_bootstrap_to_latest()
         })
         .build();

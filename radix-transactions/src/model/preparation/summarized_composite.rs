@@ -10,7 +10,7 @@ impl ConcatenatedDigest {
         discriminator: TransactionDiscriminator,
     ) -> Result<(T, Summary), PrepareError> {
         let digest = HashAccumulator::new()
-            .update(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
+            .concat(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
         T::prepare_into_concatenated_digest(decoder, digest, discriminator as u8, true)
     }
 
@@ -20,7 +20,7 @@ impl ConcatenatedDigest {
         discriminator: TransactionDiscriminator,
     ) -> Result<(T, Summary), PrepareError> {
         let digest = HashAccumulator::new()
-            .update(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
+            .concat(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
         T::prepare_into_concatenated_digest(decoder, digest, true)
     }
 
@@ -30,7 +30,7 @@ impl ConcatenatedDigest {
         discriminator: TransactionDiscriminator,
     ) -> Result<(T, Summary), PrepareError> {
         let digest = HashAccumulator::new()
-            .update(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
+            .concat(&[TRANSACTION_HASHABLE_PAYLOAD_PREFIX, discriminator as u8]);
         T::prepare_into_concatenated_digest(decoder, digest, false)
     }
 
@@ -113,7 +113,7 @@ impl<T: TransactionPreparableFromValueBody> ArrayPreparable for Vec<T> {
             total_bytes_hashed = total_bytes_hashed
                 .checked_add(prepared.get_summary().total_bytes_hashed)
                 .ok_or(PrepareError::LengthOverflow)?;
-            accumulator = accumulator.update(prepared.get_summary().hash);
+            accumulator = accumulator.concat(prepared.get_summary().hash);
             all_prepared.push(prepared);
         }
 
@@ -174,7 +174,7 @@ macro_rules! prepare_tuple {
                     let $var_name = <$type_name>::prepare_from_value(decoder)?;
                     effective_length = effective_length.checked_add($var_name.get_summary().effective_length).ok_or(PrepareError::LengthOverflow)?;
                     total_bytes_hashed = total_bytes_hashed.checked_add($var_name.get_summary().total_bytes_hashed).ok_or(PrepareError::LengthOverflow)?;
-                    accumulator = accumulator.update($var_name.get_summary().hash);
+                    accumulator = accumulator.concat($var_name.get_summary().hash);
                 )*
 
                 decoder.track_stack_depth_decrease()?;
@@ -212,7 +212,7 @@ macro_rules! prepare_tuple {
                     let $var_name = <$type_name>::prepare_from_value(decoder)?;
                     effective_length = effective_length.checked_add($var_name.get_summary().effective_length).ok_or(PrepareError::LengthOverflow)?;
                     total_bytes_hashed = total_bytes_hashed.checked_add($var_name.get_summary().total_bytes_hashed).ok_or(PrepareError::LengthOverflow)?;
-                    accumulator = accumulator.update($var_name.get_summary().hash);
+                    accumulator = accumulator.concat($var_name.get_summary().hash);
                 )*
 
                 decoder.track_stack_depth_decrease()?;

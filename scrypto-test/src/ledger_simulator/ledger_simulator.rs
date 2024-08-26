@@ -139,7 +139,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
     #[deprecated = "Use with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest()) instead"]
     pub fn with_custom_genesis(self, genesis: BabylonSettings) -> Self {
         self.with_custom_protocol(|builder| {
-            builder.with_babylon(genesis).from_bootstrap_to_latest()
+            builder
+                .configure_babylon(|_| genesis)
+                .from_bootstrap_to_latest()
         })
     }
 

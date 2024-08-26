@@ -36,14 +36,14 @@ impl RoundUpdateTransactionV1 {
         let source_hash = hash(&encoded_source[1..]);
         let instructions_hash = prepared_instructions.summary.hash;
         let round_update_hash = HashAccumulator::new()
-            .update([
+            .concat([
                 TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
                 TransactionDiscriminator::V1RoundUpdate as u8,
             ])
             // We include the full source transaction contents
-            .update(source_hash)
+            .concat(source_hash)
             // We also include the instructions hash, so the exact instructions can be proven
-            .update(instructions_hash)
+            .concat(instructions_hash)
             .finalize();
         Ok(PreparedRoundUpdateTransactionV1 {
             encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),

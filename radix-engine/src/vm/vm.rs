@@ -52,7 +52,13 @@ impl VmApi for VmBoot {
     }
 }
 
-/// The canonical implementation is [`VmModules`].
+/// This trait is intended to encapsulate the data and types required to
+/// initalize the VMs in the engine.
+///
+/// The canonical implementation is [`VmModules`] - but we have this trait
+/// as well so that functions can take an `&impl VmInitialize` parameter,
+/// and we can avoid the proliferation of [`WasmEngine`] and
+/// [`NativeVmExtension`] generics across the codebase.
 pub trait VmInitialize {
     type WasmEngine: WasmEngine;
     type NativeVmExtension: NativeVmExtension;

@@ -7,7 +7,7 @@ fn lock_fee_on_empty_faucet_should_give_nice_error() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder
-            .with_babylon(BabylonSettings::test_default().with_faucet_supply(Decimal::ZERO))
+            .configure_babylon(|_| BabylonSettings::test_default().with_faucet_supply(Decimal::ZERO))
             .from_bootstrap_to_latest()
         )
         .build();
@@ -26,7 +26,7 @@ fn fee_xrd_on_empty_faucet_should_give_nice_error() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder
-            .with_babylon(BabylonSettings::test_default().with_faucet_supply(Decimal::ZERO))
+            .configure_babylon(|_| BabylonSettings::test_default().with_faucet_supply(Decimal::ZERO))
             .from_bootstrap_to_latest()
         )
         .build();

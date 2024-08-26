@@ -15,7 +15,7 @@ impl HashAccumulator {
     }
 
     /// Effectively concatenates `data` to the payload-to-be-hashed
-    pub fn update(self, data: impl AsRef<[u8]>) -> Self {
+    pub fn concat(self, data: impl AsRef<[u8]>) -> Self {
         let bytes = data.as_ref();
 
         Self {
@@ -27,7 +27,7 @@ impl HashAccumulator {
         }
     }
 
-    pub fn update_no_chain(&mut self, data: impl AsRef<[u8]>) {
+    pub fn concat_mut(&mut self, data: impl AsRef<[u8]>) {
         let bytes = data.as_ref();
         self.inner.update(bytes);
         self.input_size = self
