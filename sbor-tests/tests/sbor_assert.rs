@@ -46,14 +46,14 @@ pub enum MyTestEnum_WhichHasBeenExtended_Test1 {
     World, // Extension
 }
 
-const TEST_ENUM_NAMED_SCHEMAS: [(&'static str, &'static str); 2] = [
-    // For the purposes of these tests, we use the same schema twice
-    ("version1", TEST_ENUM_SCHEMA),
-    ("version2", TEST_ENUM_V2_SCHEMA),
-];
+fn params_builder() -> SingleTypeSchemaCompatibilityParameters<NoCustomSchema> {
+    SingleTypeSchemaCompatibilityParameters::new()
+        .register_version("version1", TEST_ENUM_SCHEMA)
+        .register_version("version2", TEST_ENUM_V2_SCHEMA)
+}
 
 #[derive(BasicSborAssertion, BasicSbor)]
-#[sbor_assert(backwards_compatible(TEST_ENUM_NAMED_SCHEMAS))]
+#[sbor_assert(backwards_compatible("EXPR:params_builder()"))]
 #[sbor(type_name = "MyTestEnum")]
 pub enum MyTestEnum_WhichHasBeenExtended_Test2 {
     Hello { state: u32 },
@@ -76,8 +76,8 @@ pub enum MyTestEnum_WhichHasBeenExtendedAndFieldNameChanged_WorksWithAllowNameCh
     World, // Extension
 }
 
-const ALLOW_RENAME_SETTINGS: SchemaComparisonSettings = SchemaComparisonSettings::allow_extension()
-    .metadata_settings(SchemaComparisonMetadataSettings::allow_all_changes());
+const ALLOW_RENAME_SETTINGS: SchemaComparisonSettings =
+    SchemaComparisonSettings::allow_extension().allow_all_name_changes();
 
 #[derive(BasicSborAssertion, BasicSbor)]
 #[sbor_assert(
@@ -86,6 +86,22 @@ const ALLOW_RENAME_SETTINGS: SchemaComparisonSettings = SchemaComparisonSettings
         v2 = "CONST:TEST_ENUM_V2_RENAMED_SCHEMA",
     ),
     settings(ALLOW_RENAME_SETTINGS)
+)]
+pub enum MyTestEnum_WhichHasBeenExtendedAndFieldNameChangedAgain_WorksWithOverridenSettings {
+    Hello { state_renamed_again: u32 },
+    World, // Extension
+}
+
+#[derive(BasicSborAssertion, BasicSbor)]
+#[sbor_assert(
+    backwards_compatible(
+        v1 = "FILE:test_enum_v1_schema.txt",
+        v2 = "CONST:TEST_ENUM_V2_RENAMED_SCHEMA",
+    ),
+    settings(
+        comparison_between_versions = "EXPR: |s| s.allow_all_name_changes()",
+        comparison_between_current_and_latest = "EXPR: |s| s",
+    )
 )]
 #[sbor(type_name = "MyTestEnum")]
 pub enum MyTestEnum_WhichHasBeenExtendedAndFieldNameChanged_WorksWithOverridenSettings {

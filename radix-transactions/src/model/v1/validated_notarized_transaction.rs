@@ -9,14 +9,14 @@ pub struct ValidatedNotarizedTransactionV1 {
     pub num_of_signature_validations: usize,
 }
 
-impl HasIntentHash for ValidatedNotarizedTransactionV1 {
-    fn intent_hash(&self) -> IntentHash {
-        self.prepared.intent_hash()
+impl HasTransactionIntentHash for ValidatedNotarizedTransactionV1 {
+    fn transaction_intent_hash(&self) -> TransactionIntentHash {
+        self.prepared.transaction_intent_hash()
     }
 }
 
-impl HasSignedIntentHash for ValidatedNotarizedTransactionV1 {
-    fn signed_intent_hash(&self) -> SignedIntentHash {
+impl HasSignedTransactionIntentHash for ValidatedNotarizedTransactionV1 {
+    fn signed_intent_hash(&self) -> SignedTransactionIntentHash {
         self.prepared.signed_intent_hash()
     }
 }
@@ -28,20 +28,22 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
 }
 
 impl ValidatedNotarizedTransactionV1 {
-    pub fn get_executable(&self) -> Executable {
+    pub fn get_executable(&self) -> ExecutableTransactionV1 {
         let intent = &self.prepared.signed_intent.intent;
         let header = &intent.header.inner;
-        let intent_hash = intent.intent_hash();
+        let intent_hash = intent.transaction_intent_hash();
         let summary = &self.prepared.summary;
 
-        Executable::new(
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
-                intent_hash: TransactionIntentHash::ToCheck {
-                    intent_hash: intent_hash.into_hash(),
+                unique_hash: intent_hash.0,
+                intent_hash_nullification: IntentHashNullification::TransactionIntent {
+                    intent_hash,
                     expiry_epoch: header.end_epoch_exclusive,
+                    ignore_duplicate: false,
                 },
                 epoch_range: Some(EpochRange {
                     start_epoch_inclusive: header.start_epoch_inclusive,
@@ -49,12 +51,9 @@ impl ValidatedNotarizedTransactionV1 {
                 }),
                 payload_size: summary.effective_length,
                 num_of_signature_validations: self.num_of_signature_validations,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs: AuthAddresses::signer_set(&self.signer_keys),
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_init: AuthZoneInit::proofs(AuthAddresses::signer_set(&self.signer_keys)),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: intent.header.inner.tip_percentage,
+                    tip: TipSpecifier::Percentage(intent.header.inner.tip_percentage),
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

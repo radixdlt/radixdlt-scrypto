@@ -5,6 +5,7 @@ use crate::{
     transaction::{AbortReason, CostingParameters},
 };
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
+use radix_transactions::model::TipSpecifier;
 use radix_transactions::prelude::TransactionCostingParameters;
 use sbor::rust::cmp::min;
 
@@ -75,7 +76,13 @@ pub trait ExecutionFeeReserve {
 }
 
 pub trait FinalizingFeeReserve {
-    fn finalize(self) -> FeeReserveFinalizationSummary;
+    fn finalize(
+        self,
+    ) -> (
+        FeeReserveFinalizationSummary,
+        CostingParameters,
+        TransactionCostingParameters,
+    );
 }
 
 pub trait FeeReserve: PreExecutionFeeReserve + ExecutionFeeReserve + FinalizingFeeReserve {}
@@ -96,27 +103,13 @@ impl RoyaltyRecipient {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct SystemLoanFeeReserve {
-    execution_cost_unit_price: Decimal,
-    execution_cost_unit_limit: u32,
-    execution_cost_unit_loan: u32,
-
-    finalization_cost_unit_price: Decimal,
-    finalization_cost_unit_limit: u32,
-
-    usd_price: Decimal,
-    state_storage_price: Decimal,
-    archive_storage_price: Decimal,
+    costing_parameters: CostingParameters,
+    transaction_costing_parameters: TransactionCostingParameters,
 
     /// (Cache) The effective execution cost unit price, with tips considered
     effective_execution_cost_unit_price: Decimal,
     /// (Cache) The effective finalization cost unit price, with tips considered
     effective_finalization_cost_unit_price: Decimal,
-
-    tip_percentage: u16,
-
-    /// Whether to abort the transaction run when the loan is repaid.
-    /// This is used when test-executing pending transactions.
-    abort_when_loan_repaid: bool,
 
     /// The XRD balance
     xrd_balance: Decimal,
@@ -145,8 +138,8 @@ pub struct SystemLoanFeeReserve {
 impl Default for SystemLoanFeeReserve {
     fn default() -> Self {
         Self::new(
-            &CostingParameters::babylon_genesis(),
-            &TransactionCostingParameters::default(),
+            CostingParameters::babylon_genesis(),
+            TransactionCostingParameters::default(),
         )
     }
 }
@@ -164,8 +157,8 @@ fn checked_add_assign(value: &mut u32, summand: u32) -> Result<(), FeeReserveErr
 
 impl SystemLoanFeeReserve {
     pub fn new(
-        costing_parameters: &CostingParameters,
-        transaction_costing_parameters: &TransactionCostingParameters,
+        costing_parameters: CostingParameters,
+        transaction_costing_parameters: TransactionCostingParameters,
     ) -> Self {
         // Sanity checks
         assert!(!costing_parameters.execution_cost_unit_price.is_negative());
@@ -179,57 +172,36 @@ impl SystemLoanFeeReserve {
             .free_credit_in_xrd
             .is_negative());
 
-        let tip_percentage = Decimal::ONE
-            .checked_add(
-                Decimal::ONE_HUNDREDTH
-                    .checked_mul(transaction_costing_parameters.tip_percentage)
-                    .unwrap(),
-            )
-            .unwrap();
+        let tip_multiplier = transaction_costing_parameters.tip.fee_multiplier();
 
         let effective_execution_cost_unit_price = costing_parameters
             .execution_cost_unit_price
-            .checked_mul(tip_percentage)
+            .checked_mul(tip_multiplier)
             .unwrap();
 
         let effective_finalization_cost_unit_price = costing_parameters
             .finalization_cost_unit_price
-            .checked_mul(tip_percentage)
+            .checked_mul(tip_multiplier)
             .unwrap();
 
         let system_loan_in_xrd = effective_execution_cost_unit_price
             .checked_mul(costing_parameters.execution_cost_unit_loan)
             .unwrap();
 
+        let starting_xrd_balance = system_loan_in_xrd
+            .checked_add(transaction_costing_parameters.free_credit_in_xrd)
+            .expect("Invalid system loan or free credit amount");
+
         Self {
-            // Execution costing parameters
-            execution_cost_unit_price: costing_parameters.execution_cost_unit_price,
-            execution_cost_unit_limit: costing_parameters.execution_cost_unit_limit,
-            execution_cost_unit_loan: costing_parameters.execution_cost_unit_loan,
-
-            // Finalization costing parameters
-            finalization_cost_unit_price: costing_parameters.finalization_cost_unit_price,
-            finalization_cost_unit_limit: costing_parameters.finalization_cost_unit_limit,
-
-            // USD and storage price
-            usd_price: costing_parameters.usd_price,
-            state_storage_price: costing_parameters.state_storage_price,
-            archive_storage_price: costing_parameters.archive_storage_price,
+            costing_parameters,
+            transaction_costing_parameters,
 
             // Cache
             effective_execution_cost_unit_price,
             effective_finalization_cost_unit_price,
 
-            // Tipping percentage
-            tip_percentage: transaction_costing_parameters.tip_percentage,
-
-            // Aborting support
-            abort_when_loan_repaid: transaction_costing_parameters.abort_when_loan_repaid,
-
             // Running balance
-            xrd_balance: system_loan_in_xrd
-                .checked_add(transaction_costing_parameters.free_credit_in_xrd)
-                .expect("Invalid system loan or free credit amount"),
+            xrd_balance: starting_xrd_balance,
             xrd_owed: system_loan_in_xrd,
 
             // Internal states
@@ -248,41 +220,36 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    pub fn costing_parameters(&self) -> CostingParameters {
-        CostingParameters {
-            execution_cost_unit_price: self.execution_cost_unit_price,
-            execution_cost_unit_limit: self.execution_cost_unit_limit,
-            execution_cost_unit_loan: self.execution_cost_unit_loan,
-            finalization_cost_unit_price: self.finalization_cost_unit_price,
-            finalization_cost_unit_limit: self.finalization_cost_unit_limit,
-            usd_price: self.usd_price,
-            state_storage_price: self.state_storage_price,
-            archive_storage_price: self.archive_storage_price,
-        }
+    pub fn costing_parameters(&self) -> &CostingParameters {
+        &self.costing_parameters
+    }
+
+    pub fn transaction_costing_parameters(&self) -> &TransactionCostingParameters {
+        &self.transaction_costing_parameters
     }
 
     pub fn execution_cost_unit_limit(&self) -> u32 {
-        self.execution_cost_unit_limit
+        self.costing_parameters.execution_cost_unit_limit
     }
 
     pub fn execution_cost_unit_price(&self) -> Decimal {
-        self.execution_cost_unit_price
+        self.costing_parameters.execution_cost_unit_price
     }
 
     pub fn finalization_cost_unit_limit(&self) -> u32 {
-        self.finalization_cost_unit_limit
+        self.costing_parameters.finalization_cost_unit_limit
     }
 
     pub fn finalization_cost_unit_price(&self) -> Decimal {
-        self.finalization_cost_unit_price
+        self.costing_parameters.finalization_cost_unit_price
     }
 
     pub fn usd_price(&self) -> Decimal {
-        self.usd_price
+        self.costing_parameters.usd_price
     }
 
-    pub fn tip_percentage(&self) -> u32 {
-        self.tip_percentage.into()
+    pub fn tip(&self) -> TipSpecifier {
+        self.transaction_costing_parameters.tip
     }
 
     pub fn fee_balance(&self) -> Decimal {
@@ -295,10 +262,10 @@ impl SystemLoanFeeReserve {
 
     fn check_execution_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
         if checked_add(self.execution_cost_units_committed, cost_units)?
-            > self.execution_cost_unit_limit
+            > self.costing_parameters.execution_cost_unit_limit
         {
             return Err(FeeReserveError::LimitExceeded {
-                limit: self.execution_cost_unit_limit,
+                limit: self.costing_parameters.execution_cost_unit_limit,
                 committed: self.execution_cost_units_committed,
                 new: cost_units,
             });
@@ -308,10 +275,10 @@ impl SystemLoanFeeReserve {
 
     fn check_finalization_cost_unit_limit(&self, cost_units: u32) -> Result<(), FeeReserveError> {
         if checked_add(self.finalization_cost_units_committed, cost_units)?
-            > self.finalization_cost_unit_limit
+            > self.costing_parameters.finalization_cost_unit_limit
         {
             return Err(FeeReserveError::LimitExceeded {
-                limit: self.finalization_cost_unit_limit,
+                limit: self.costing_parameters.finalization_cost_unit_limit,
                 committed: self.finalization_cost_units_committed,
                 new: cost_units,
             });
@@ -365,7 +332,7 @@ impl SystemLoanFeeReserve {
         let amount = match royalty_amount {
             RoyaltyAmount::Xrd(xrd_amount) => xrd_amount,
             RoyaltyAmount::Usd(usd_amount) => usd_amount
-                .checked_mul(self.usd_price)
+                .checked_mul(self.costing_parameters.usd_price)
                 .ok_or(FeeReserveError::Overflow)?,
             RoyaltyAmount::Free => Decimal::ZERO,
         };
@@ -410,7 +377,7 @@ impl SystemLoanFeeReserve {
             });
         }
 
-        if self.abort_when_loan_repaid {
+        if self.transaction_costing_parameters.abort_when_loan_repaid {
             return Err(FeeReserveError::Abort(
                 AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment,
             ));
@@ -463,7 +430,8 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         self.consume_execution_internal(cost_units)?;
 
         if !self.fully_repaid()
-            && self.execution_cost_units_committed >= self.execution_cost_unit_loan
+            && self.execution_cost_units_committed
+                >= self.costing_parameters.execution_cost_unit_loan
         {
             self.repay_all()?;
         }
@@ -504,8 +472,8 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
         size_increase: usize,
     ) -> Result<(), FeeReserveError> {
         let amount = match storage_type {
-            StorageType::State => self.state_storage_price,
-            StorageType::Archive => self.archive_storage_price,
+            StorageType::State => self.costing_parameters.state_storage_price,
+            StorageType::Archive => self.costing_parameters.archive_storage_price,
         }
         .checked_mul(size_increase)
         .ok_or(FeeReserveError::Overflow)?;
@@ -538,31 +506,37 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 }
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
-    fn finalize(self) -> FeeReserveFinalizationSummary {
+    fn finalize(
+        self,
+    ) -> (
+        FeeReserveFinalizationSummary,
+        CostingParameters,
+        TransactionCostingParameters,
+    ) {
         let total_execution_cost_in_xrd = self
+            .costing_parameters
             .execution_cost_unit_price
             .checked_mul(Decimal::from(self.execution_cost_units_committed))
             .unwrap();
 
         let total_finalization_cost_in_xrd = self
+            .costing_parameters
             .finalization_cost_unit_price
             .checked_mul(Decimal::from(self.finalization_cost_units_committed))
             .unwrap();
 
-        let tip_percentage = Decimal::from(self.tip_percentage)
-            .checked_div(dec!(100))
-            .unwrap();
+        let tip_proportion = self.transaction_costing_parameters.tip.proportion();
         let total_tipping_cost_in_xrd = total_execution_cost_in_xrd
-            .checked_mul(tip_percentage)
+            .checked_mul(tip_proportion)
             .unwrap()
             .checked_add(
                 total_finalization_cost_in_xrd
-                    .checked_mul(tip_percentage)
+                    .checked_mul(tip_proportion)
                     .unwrap(),
             )
             .unwrap();
 
-        FeeReserveFinalizationSummary {
+        let summary = FeeReserveFinalizationSummary {
             total_execution_cost_units_consumed: self.execution_cost_units_committed,
             total_finalization_cost_units_consumed: self.finalization_cost_units_committed,
 
@@ -574,7 +548,13 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             total_bad_debt_in_xrd: self.xrd_owed,
             locked_fees: self.locked_fees,
             royalty_cost_breakdown: self.royalty_cost_breakdown,
-        }
+        };
+
+        (
+            summary,
+            self.costing_parameters,
+            self.transaction_costing_parameters,
+        )
     }
 }
 
@@ -609,10 +589,10 @@ mod tests {
         costing_parameters.usd_price = usd_price;
         costing_parameters.state_storage_price = state_storage_price;
         let mut transaction_costing_parameters = TransactionCostingParameters::default();
-        transaction_costing_parameters.tip_percentage = tip_percentage;
+        transaction_costing_parameters.tip = TipSpecifier::Percentage(tip_percentage);
         transaction_costing_parameters.abort_when_loan_repaid = abort_when_loan_repaid;
 
-        SystemLoanFeeReserve::new(&costing_parameters, &transaction_costing_parameters)
+        SystemLoanFeeReserve::new(costing_parameters, transaction_costing_parameters)
     }
 
     #[test]
@@ -621,7 +601,7 @@ mod tests {
         fee_reserve.consume_execution(2).unwrap();
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(3), false);
         fee_reserve.repay_all().unwrap();
-        let summary = fee_reserve.finalize();
+        let (summary, _, _) = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_execution_cost_units_consumed, 2);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("2"));
@@ -641,7 +621,7 @@ mod tests {
             }),
         );
         fee_reserve.repay_all().unwrap();
-        let summary = fee_reserve.finalize();
+        let (summary, _, _) = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_execution_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
@@ -655,7 +635,7 @@ mod tests {
             create_test_fee_reserve(dec!(1), dec!(1), dec!(0), 2, 100, 500, false);
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
         fee_reserve.repay_all().unwrap();
-        let summary = fee_reserve.finalize();
+        let (summary, _, _) = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_execution_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
@@ -669,7 +649,7 @@ mod tests {
             create_test_fee_reserve(dec!(5), dec!(1), dec!(0), 0, 100, 500, false);
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
         fee_reserve.repay_all().unwrap();
-        let summary = fee_reserve.finalize();
+        let (summary, _, _) = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_execution_cost_units_consumed, 0);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("0"));
@@ -688,7 +668,7 @@ mod tests {
                 xrd_owed: dec!("10.1")
             })
         );
-        let summary = fee_reserve.finalize();
+        let (summary, _, _) = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
         assert_eq!(summary.total_execution_cost_units_consumed, 2);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("10"));
@@ -716,7 +696,7 @@ mod tests {
             .unwrap();
         fee_reserve.lock_fee(TEST_VAULT_ID, xrd(100), false);
         fee_reserve.repay_all().unwrap();
-        let summary = fee_reserve.finalize();
+        let (summary, _, _) = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.total_execution_cost_in_xrd, dec!("10"));
         assert_eq!(summary.total_tipping_cost_in_xrd, dec!("0.1"));

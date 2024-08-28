@@ -68,14 +68,14 @@ impl TransactionPayloadPreparable for PreparedNotarizedTransactionV1 {
     }
 }
 
-impl HasIntentHash for PreparedNotarizedTransactionV1 {
-    fn intent_hash(&self) -> IntentHash {
-        self.signed_intent.intent_hash()
+impl HasTransactionIntentHash for PreparedNotarizedTransactionV1 {
+    fn transaction_intent_hash(&self) -> TransactionIntentHash {
+        self.signed_intent.transaction_intent_hash()
     }
 }
 
-impl HasSignedIntentHash for PreparedNotarizedTransactionV1 {
-    fn signed_intent_hash(&self) -> SignedIntentHash {
+impl HasSignedTransactionIntentHash for PreparedNotarizedTransactionV1 {
+    fn signed_intent_hash(&self) -> SignedTransactionIntentHash {
         self.signed_intent.signed_intent_hash()
     }
 }

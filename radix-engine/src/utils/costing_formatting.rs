@@ -11,50 +11,40 @@ pub enum CostingTaskMode {
 impl CostingTaskMode {
     pub fn run(
         &self,
-        folder: impl Into<PathBuf>,
-        file: &str,
+        base_path: impl Into<PathBuf>,
+        relative_file_path: &str,
         fee_summary: &TransactionFeeSummary,
         fee_details: &TransactionFeeDetails,
     ) {
         match self {
             CostingTaskMode::OutputCosting => {
-                write_cost_breakdown(fee_summary, fee_details, folder, file);
+                write_cost_breakdown(fee_summary, fee_details, base_path, relative_file_path);
             }
             CostingTaskMode::AssertCosting => {
-                let expected = load_cost_breakdown(folder, file);
-                assert_eq!(&fee_details.execution_cost_breakdown, &expected.0);
-                assert_eq!(&fee_details.finalization_cost_breakdown, &expected.1);
+                verify_cost_breakdown(fee_summary, fee_details, base_path, relative_file_path)
+                    .unwrap();
             }
         }
     }
 }
 
-fn load_cost_breakdown(
+fn verify_cost_breakdown(
+    fee_summary: &TransactionFeeSummary,
+    fee_details: &TransactionFeeDetails,
     folder: impl Into<PathBuf>,
-    file: &str,
-) -> (BTreeMap<String, u32>, BTreeMap<String, u32>) {
-    let path = folder.into().join(file);
-    let content = std::fs::read_to_string(&path).unwrap();
-    let mut execution_breakdown = BTreeMap::<String, u32>::new();
-    let mut finalization_breakdown = BTreeMap::<String, u32>::new();
-    let lines: Vec<String> = content.split('\n').map(String::from).collect();
-    let mut is_execution = true;
-    for i in 7..lines.len() {
-        if lines[i].starts_with('-') {
-            let mut tokens = lines[i].split(',');
-            let entry = tokens.next().unwrap().trim()[2..].to_string();
-            let cost = tokens.next().unwrap().trim();
-            if is_execution {
-                &mut execution_breakdown
-            } else {
-                &mut finalization_breakdown
-            }
-            .insert(entry, u32::from_str(cost).unwrap());
-        } else {
-            is_execution = false;
-        }
+    relative_file_path: &str,
+) -> Result<(), String> {
+    let path = folder.into().join(relative_file_path);
+    let content = std::fs::read_to_string(&path)
+        .map_err(|err| format!("Costing breakdown read error ({err:?}): {relative_file_path}"))?;
+    let expected = format_cost_breakdown(fee_summary, fee_details);
+    if content != expected {
+        // We don't use an assert_eq here so that it doesn't dump massive text on failure
+        return Err(format!(
+            "Costing breakdown needs updating: {relative_file_path}"
+        ));
     }
-    (execution_breakdown, finalization_breakdown)
+    Ok(())
 }
 
 pub fn write_cost_breakdown(

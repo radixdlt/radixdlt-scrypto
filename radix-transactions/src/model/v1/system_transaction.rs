@@ -1,6 +1,4 @@
-use super::{ExecutionContext, TransactionCostingParameters};
 use crate::internal_prelude::*;
-use crate::model::{AuthZoneParams, Executable};
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SystemTransactionV1 {
@@ -95,24 +93,23 @@ impl SystemTransactionV1 {
 }
 
 impl PreparedSystemTransactionV1 {
-    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> Executable {
-        Executable::new(
+    pub fn get_executable(
+        &self,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> ExecutableTransactionV1 {
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             self.references.clone(),
             self.blobs.blobs_by_hash.clone(),
             ExecutionContext {
-                intent_hash: TransactionIntentHash::NotToCheck {
-                    intent_hash: self.hash_for_execution.hash,
-                },
+                unique_hash: self.hash_for_execution.hash,
+                intent_hash_nullification: IntentHashNullification::None,
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_init: AuthZoneInit::proofs(initial_proofs),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: 0,
+                    tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

@@ -94,24 +94,22 @@ impl TransactionFullChildPreparable for PreparedRoundUpdateTransactionV1 {
 }
 
 impl PreparedRoundUpdateTransactionV1 {
-    pub fn get_executable(&self) -> Executable {
-        Executable::new(
+    pub fn get_executable(&self) -> ExecutableTransactionV1 {
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             self.references.clone(),
             self.blobs.clone(),
             ExecutionContext {
-                intent_hash: TransactionIntentHash::NotToCheck {
-                    intent_hash: self.summary.hash,
-                },
+                unique_hash: self.summary.hash,
+                intent_hash_nullification: IntentHashNullification::None,
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs: btreeset!(system_execution(SystemExecution::Validator)),
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_init: AuthZoneInit::proofs(btreeset!(system_execution(
+                    SystemExecution::Validator
+                ))),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: 0,
+                    tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

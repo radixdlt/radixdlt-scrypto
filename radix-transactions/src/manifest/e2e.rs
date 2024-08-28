@@ -1567,7 +1567,7 @@ CALL_METHOD
 
         let intent_hash = PreparedIntentV1::prepare_from_payload(&intent)
             .unwrap()
-            .intent_hash();
+            .transaction_intent_hash();
 
         print_blob(name, intent);
         print_blob(&format!("{}_HASH", name), intent_hash.0.to_vec());

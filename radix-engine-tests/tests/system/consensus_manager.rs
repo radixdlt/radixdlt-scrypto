@@ -89,9 +89,10 @@ fn genesis_epoch_has_correct_initial_validators() {
     };
 
     // Act
-    let (_, validator_set) = LedgerSimulatorBuilder::new()
+    let (_, epoch_change) = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
-        .build_and_get_epoch();
+        .build_and_get_post_genesis_epoch_change();
+    let validator_set = epoch_change.unwrap().validator_set;
 
     // Assert
     assert_eq!(validator_set.validator_count(), max_validators as usize);

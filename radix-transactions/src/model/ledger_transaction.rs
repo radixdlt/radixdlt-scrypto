@@ -66,7 +66,7 @@ impl PreparedLedgerTransaction {
                     }
                 }
                 PreparedLedgerTransactionInner::UserV1(t) => TypedTransactionIdentifiers::User {
-                    intent_hash: t.intent_hash(),
+                    intent_hash: t.transaction_intent_hash(),
                     signed_intent_hash: t.signed_intent_hash(),
                     notarized_transaction_hash: t.notarized_transaction_hash(),
                 },
@@ -248,28 +248,28 @@ pub enum ValidatedLedgerTransactionInner {
 }
 
 impl ValidatedLedgerTransaction {
-    pub fn intent_hash_if_user(&self) -> Option<IntentHash> {
+    pub fn intent_hash_if_user(&self) -> Option<TransactionIntentHash> {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(_) => None,
-            ValidatedLedgerTransactionInner::UserV1(t) => Some(t.intent_hash()),
+            ValidatedLedgerTransactionInner::UserV1(t) => Some(t.transaction_intent_hash()),
             ValidatedLedgerTransactionInner::RoundUpdateV1(_) => None,
             ValidatedLedgerTransactionInner::FlashV1(_) => None,
         }
     }
 
     /// Note - panics if it's a genesis flash
-    pub fn get_executable(&self) -> Executable {
+    pub fn get_executable(&self) -> ExecutableTransaction {
         match &self.inner {
             ValidatedLedgerTransactionInner::Genesis(genesis) => match genesis.as_ref() {
                 PreparedGenesisTransaction::Flash(_) => {
                     panic!("Should not call get_executable on a genesis flash")
                 }
-                PreparedGenesisTransaction::Transaction(t) => {
-                    t.get_executable(btreeset!(system_execution(SystemExecution::Protocol)))
-                }
+                PreparedGenesisTransaction::Transaction(t) => t
+                    .get_executable(btreeset!(system_execution(SystemExecution::Protocol)))
+                    .into(),
             },
-            ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable(),
-            ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable(),
+            ValidatedLedgerTransactionInner::UserV1(t) => t.get_executable().into(),
+            ValidatedLedgerTransactionInner::RoundUpdateV1(t) => t.get_executable().into(),
             ValidatedLedgerTransactionInner::FlashV1(_) => {
                 panic!("Should not call get_executable on a flash transaction")
             }
@@ -286,7 +286,7 @@ impl ValidatedLedgerTransaction {
                     }
                 }
                 ValidatedLedgerTransactionInner::UserV1(t) => TypedTransactionIdentifiers::User {
-                    intent_hash: t.intent_hash(),
+                    intent_hash: t.transaction_intent_hash(),
                     signed_intent_hash: t.signed_intent_hash(),
                     notarized_transaction_hash: t.notarized_transaction_hash(),
                 },
@@ -317,8 +317,8 @@ pub enum TypedTransactionIdentifiers {
         system_transaction_hash: SystemTransactionHash,
     },
     User {
-        intent_hash: IntentHash,
-        signed_intent_hash: SignedIntentHash,
+        intent_hash: TransactionIntentHash,
+        signed_intent_hash: SignedTransactionIntentHash,
         notarized_transaction_hash: NotarizedTransactionHash,
     },
     RoundUpdateV1 {
@@ -331,8 +331,8 @@ pub enum TypedTransactionIdentifiers {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserTransactionIdentifiers<'a> {
-    pub intent_hash: &'a IntentHash,
-    pub signed_intent_hash: &'a SignedIntentHash,
+    pub intent_hash: &'a TransactionIntentHash,
+    pub signed_intent_hash: &'a SignedTransactionIntentHash,
     pub notarized_transaction_hash: &'a NotarizedTransactionHash,
 }
 

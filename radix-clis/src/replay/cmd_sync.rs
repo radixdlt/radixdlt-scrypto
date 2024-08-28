@@ -4,8 +4,7 @@ use clap::Parser;
 use flume;
 use flume::Sender;
 use radix_common::prelude::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::VmModules;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
@@ -64,12 +63,12 @@ impl TxnSync {
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
         let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
-            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+            let vm_modules = VmModules::default();
             let iter = rx.iter();
             for (tx_payload, expected_state_root_hash) in iter {
                 let state_updates = execute_ledger_transaction(
                     &database,
-                    &scrypto_vm,
+                    &vm_modules,
                     &network,
                     &tx_payload,
                     trace,
@@ -226,8 +225,8 @@ pub enum TypedTransactionIdentifiers {
         system_transaction_hash: SystemTransactionHash,
     },
     User {
-        intent_hash: IntentHash,
-        signed_intent_hash: SignedIntentHash,
+        intent_hash: TransactionIntentHash,
+        signed_intent_hash: SignedTransactionIntentHash,
         notarized_transaction_hash: NotarizedTransactionHash,
     },
     RoundUpdateV1 {

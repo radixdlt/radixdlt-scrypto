@@ -1,5 +1,5 @@
 mod concepts;
-mod executable;
+mod execution;
 mod hash;
 mod ledger_transaction;
 mod preparation;
@@ -7,7 +7,7 @@ mod v1;
 mod versioned;
 
 pub use concepts::*;
-pub use executable::*;
+pub use execution::*;
 pub use hash::*;
 pub use ledger_transaction::*;
 pub use preparation::*;
@@ -161,48 +161,45 @@ Enum<3u8>(
             .validate_from_payload_bytes(&payload)
             .unwrap();
         let executable = validated.get_executable();
+        let expected_intent_hash = TransactionIntentHash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V1Intent as u8,
+                ]
+                .as_slice(),
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.header)
+                    .as_slice(),
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.instructions)
+                    .as_slice(),
+                hash(
+                    hash(&[1, 2]), // one blob only
+                )
+                .as_slice(),
+                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.message)
+                    .as_slice(),
+            ]
+            .concat(),
+        ));
         assert_eq!(
             executable,
-            Executable {
-                encoded_instructions: Rc::new(manifest_encode(&manifest.instructions).unwrap()),
-                references: indexset!(
+            ExecutableTransactionV1::new(
+                manifest_encode(&manifest.instructions).unwrap().into(),
+                indexset!(
                     Reference(FAUCET.into_node_id()),
                     // NOTE: not needed
                     Reference(SECP256K1_SIGNATURE_RESOURCE.into_node_id()),
                     Reference(ED25519_SIGNATURE_RESOURCE.into_node_id())
                 ),
-                blobs: Rc::new(indexmap!(
+                Rc::new(indexmap!(
                     hash(&[1, 2]) => vec![1, 2]
                 )),
-                context: ExecutionContext {
-                    intent_hash: TransactionIntentHash::ToCheck {
-                        intent_hash: hash(
-                            [
-                                [
-                                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                                    TransactionDiscriminator::V1Intent as u8,
-                                ]
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.header
-                                )
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.instructions
-                                )
-                                .as_slice(),
-                                hash(
-                                    hash(&[1, 2]) // one blob only
-                                )
-                                .as_slice(),
-                                hash_manifest_sbor_excluding_prefix(
-                                    &transaction.signed_intent.intent.message
-                                )
-                                .as_slice(),
-                            ]
-                            .concat(),
-                        ),
-                        expiry_epoch: Epoch::of(66)
+                ExecutionContext {
+                    unique_hash: expected_intent_hash.0,
+                    intent_hash_nullification: IntentHashNullification::TransactionIntent {
+                        intent_hash: expected_intent_hash,
+                        expiry_epoch: Epoch::of(66),
+                        ignore_duplicate: false,
                     },
                     epoch_range: Some(EpochRange {
                         start_epoch_inclusive: Epoch::of(55),
@@ -215,21 +212,18 @@ Enum<3u8>(
                     // * Enum variant header: should be 1 + 1 + len(LEB128(size)), instead of fixed 2
                     payload_size: payload.len() - 3,
                     num_of_signature_validations: 3,
-                    auth_zone_params: AuthZoneParams {
-                        initial_proofs: btreeset!(
-                            NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
-                            NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
-                        ),
-                        virtual_resources: btreeset!()
-                    },
+                    auth_zone_init: AuthZoneInit::proofs(btreeset!(
+                        NonFungibleGlobalId::from_public_key(&sig_1_private_key.public_key()),
+                        NonFungibleGlobalId::from_public_key(&sig_2_private_key.public_key())
+                    )),
                     costing_parameters: TransactionCostingParameters {
-                        tip_percentage: 4,
+                        tip: TipSpecifier::Percentage(4),
                         free_credit_in_xrd: dec!(0),
                         abort_when_loan_repaid: false,
                     }
                 },
-                system: false,
-            }
+                false,
+            )
         );
 
         // Test unexpected transaction type

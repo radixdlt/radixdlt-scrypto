@@ -485,7 +485,7 @@ fn run_scenarios_in_memory_and_on_overlay(
     let ledger_with_overlay = Rc::new(RefCell::new(
         LedgerSimulatorBuilder::new()
             .with_custom_database(overlay)
-            .with_custom_protocol(|builder| builder.only_babylon())
+            .with_custom_protocol(|builder| builder.unbootstrapped())
             .without_kernel_trace()
             .build(),
     ));

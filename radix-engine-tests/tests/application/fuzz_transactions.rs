@@ -3,8 +3,7 @@ use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig,
 };
 use radix_engine::updates::ProtocolBuilder;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
+use radix_engine::vm::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -20,7 +19,7 @@ use rand_chacha::ChaCha8Rng;
 
 struct TransactionFuzzer {
     rng: ChaCha8Rng,
-    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    vm_modules: DefaultVmModules,
     substate_db: InMemorySubstateDatabase,
 }
 
@@ -28,17 +27,12 @@ impl TransactionFuzzer {
     fn new() -> Self {
         let rng = ChaCha8Rng::seed_from_u64(1234);
 
-        let scrypto_vm = ScryptoVm {
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_validator_config: WasmValidatorConfigV1::new(),
-        };
-
         let mut substate_db = InMemorySubstateDatabase::standard();
         ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
         Self {
             rng,
-            scrypto_vm,
+            vm_modules: VmModules::default(),
             substate_db,
         }
     }
@@ -52,11 +46,9 @@ impl TransactionFuzzer {
 
         let execution_config = ExecutionConfig::for_test_transaction();
 
-        let vm_init = VmInit::new(&self.scrypto_vm, NoExtension);
-
         execute_and_commit_transaction(
             &mut self.substate_db,
-            vm_init,
+            &self.vm_modules,
             &execution_config,
             validated.get_executable(),
         );

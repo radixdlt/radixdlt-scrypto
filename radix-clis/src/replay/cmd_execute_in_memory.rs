@@ -5,8 +5,7 @@ use clap::Parser;
 use flate2::read::GzDecoder;
 use flume;
 use radix_common::prelude::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::VmModules;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_impls::state_tree_support::StateTreeUpdatingDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
@@ -86,12 +85,12 @@ impl TxnExecuteInMemory {
         let mut database = StateTreeUpdatingDatabase::new(substate_database);
         let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
-            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+            let vm_modules = VmModules::default();
             let iter = rx.iter();
             for tx_payload in iter {
                 let state_updates = execute_ledger_transaction(
                     &database,
-                    &scrypto_vm,
+                    &vm_modules,
                     &network,
                     &tx_payload,
                     trace,

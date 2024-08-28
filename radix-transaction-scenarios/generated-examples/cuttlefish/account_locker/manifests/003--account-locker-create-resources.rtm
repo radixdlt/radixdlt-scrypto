@@ -1,0 +1,91 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CREATE_FUNGIBLE_RESOURCE
+    Enum<0u8>()
+    true
+    0u8
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;
+CREATE_NON_FUNGIBLE_RESOURCE
+    Enum<0u8>()
+    Enum<1u8>()
+    true
+    Enum<0u8>(
+        Enum<0u8>(
+            Tuple(
+                Array<Enum>(),
+                Array<Tuple>(),
+                Array<Enum>()
+            )
+        ),
+        Enum<0u8>(
+            66u8
+        ),
+        Array<String>()
+    )
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Enum<1u8>(
+                    Enum<0u8>()
+                ),
+                Enum<1u8>(
+                    Enum<1u8>()
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
+    )
+    Tuple(
+        Map<String, Tuple>(),
+        Map<String, Enum>()
+    )
+    Enum<0u8>()
+;

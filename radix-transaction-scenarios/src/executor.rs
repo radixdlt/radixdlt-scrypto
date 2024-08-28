@@ -314,7 +314,7 @@ where
 
         let receipt = execute_transaction(
             &self.database,
-            modules.create_vm_init(),
+            modules,
             execution_config,
             validated.get_executable(),
         );

@@ -70,7 +70,7 @@ mod tests {
 
         // Act
         let decoded = decoder
-            .validate_and_decode::<IntentHash>(encoded_hash)
+            .validate_and_decode::<TransactionIntentHash>(encoded_hash)
             .unwrap();
 
         // Assert
@@ -89,7 +89,7 @@ mod tests {
 
         // Act
         let decoded = decoder
-            .validate_and_decode::<SignedIntentHash>(encoded_hash)
+            .validate_and_decode::<SignedTransactionIntentHash>(encoded_hash)
             .unwrap();
 
         // Assert

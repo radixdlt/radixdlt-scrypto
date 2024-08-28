@@ -26,7 +26,6 @@ use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
-use radix_transactions::model::*;
 
 use crate::sdk::PackageFactory;
 
@@ -230,10 +229,7 @@ where
                     Self::DEFAULT_INTENT_HASH,
                 );
 
-                let auth_module = AuthModule::new(AuthZoneParams {
-                    initial_proofs: Default::default(),
-                    virtual_resources: Default::default(),
-                });
+                let auth_module = AuthModule::new(AuthZoneParams::default());
 
                 let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
 
@@ -269,7 +265,7 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
-                    executable: (),
+                    finalization: Default::default(),
                 }
             },
             |system_config, track, id_allocator| {

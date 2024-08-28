@@ -1,0 +1,664 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 2.05331344637 XRD
+├─ Network execution: 0.50998925 XRD, 10199785 execution cost units
+├─ Network finalization: 0.3360679 XRD, 6721358 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 1.20725629637 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 7
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: resource_sim1ntpe4zxy537sl7dduxwpxd3h548wf4dq6z2s6uks94pwzeeapq579l, module_id: Main }
+   Event: MintNonFungibleResourceEvent {
+     ids: [
+       NonFungibleLocalId("#100#"),
+       NonFungibleLocalId("#101#"),
+       NonFungibleLocalId("#102#"),
+       NonFungibleLocalId("#103#"),
+       NonFungibleLocalId("#104#"),
+       NonFungibleLocalId("#105#"),
+       NonFungibleLocalId("#106#"),
+       NonFungibleLocalId("#107#"),
+       NonFungibleLocalId("#108#"),
+       NonFungibleLocalId("#109#"),
+       NonFungibleLocalId("#110#"),
+       NonFungibleLocalId("#111#"),
+       NonFungibleLocalId("#112#"),
+       NonFungibleLocalId("#113#"),
+       NonFungibleLocalId("#114#"),
+       NonFungibleLocalId("#115#"),
+       NonFungibleLocalId("#116#"),
+       NonFungibleLocalId("#117#"),
+       NonFungibleLocalId("#118#"),
+       NonFungibleLocalId("#119#"),
+       NonFungibleLocalId("#120#"),
+       NonFungibleLocalId("#121#"),
+       NonFungibleLocalId("#122#"),
+       NonFungibleLocalId("#123#"),
+       NonFungibleLocalId("#124#"),
+       NonFungibleLocalId("#125#"),
+       NonFungibleLocalId("#126#"),
+       NonFungibleLocalId("#127#"),
+       NonFungibleLocalId("#128#"),
+       NonFungibleLocalId("#129#"),
+       NonFungibleLocalId("#130#"),
+       NonFungibleLocalId("#131#"),
+     ],
+   }
+├─ Emitter: Method { node: internal_vault_sim1nzupesg6es369wqjguu7umf92886ph6w3qj98uxq7tkavev439ut2q, module_id: Main }
+   Event: DepositEvent {
+     ids: [
+       NonFungibleLocalId("#100#"),
+       NonFungibleLocalId("#101#"),
+       NonFungibleLocalId("#102#"),
+       NonFungibleLocalId("#103#"),
+       NonFungibleLocalId("#104#"),
+       NonFungibleLocalId("#105#"),
+       NonFungibleLocalId("#106#"),
+       NonFungibleLocalId("#107#"),
+       NonFungibleLocalId("#108#"),
+       NonFungibleLocalId("#109#"),
+       NonFungibleLocalId("#110#"),
+       NonFungibleLocalId("#111#"),
+       NonFungibleLocalId("#112#"),
+       NonFungibleLocalId("#113#"),
+       NonFungibleLocalId("#114#"),
+       NonFungibleLocalId("#115#"),
+       NonFungibleLocalId("#116#"),
+       NonFungibleLocalId("#117#"),
+       NonFungibleLocalId("#118#"),
+       NonFungibleLocalId("#119#"),
+       NonFungibleLocalId("#120#"),
+       NonFungibleLocalId("#121#"),
+       NonFungibleLocalId("#122#"),
+       NonFungibleLocalId("#123#"),
+       NonFungibleLocalId("#124#"),
+       NonFungibleLocalId("#125#"),
+       NonFungibleLocalId("#126#"),
+       NonFungibleLocalId("#127#"),
+       NonFungibleLocalId("#128#"),
+       NonFungibleLocalId("#129#"),
+       NonFungibleLocalId("#130#"),
+       NonFungibleLocalId("#131#"),
+     ],
+   }
+├─ Emitter: Method { node: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw, module_id: Main }
+   Event: DepositEvent::NonFungible(
+     ResourceAddress(Reference("resource_sim1ntpe4zxy537sl7dduxwpxd3h548wf4dq6z2s6uks94pwzeeapq579l")),
+     [
+       NonFungibleLocalId("#100#"),
+       NonFungibleLocalId("#101#"),
+       NonFungibleLocalId("#102#"),
+       NonFungibleLocalId("#103#"),
+       NonFungibleLocalId("#104#"),
+       NonFungibleLocalId("#105#"),
+       NonFungibleLocalId("#106#"),
+       NonFungibleLocalId("#107#"),
+       NonFungibleLocalId("#108#"),
+       NonFungibleLocalId("#109#"),
+       NonFungibleLocalId("#110#"),
+       NonFungibleLocalId("#111#"),
+       NonFungibleLocalId("#112#"),
+       NonFungibleLocalId("#113#"),
+       NonFungibleLocalId("#114#"),
+       NonFungibleLocalId("#115#"),
+       NonFungibleLocalId("#116#"),
+       NonFungibleLocalId("#117#"),
+       NonFungibleLocalId("#118#"),
+       NonFungibleLocalId("#119#"),
+       NonFungibleLocalId("#120#"),
+       NonFungibleLocalId("#121#"),
+       NonFungibleLocalId("#122#"),
+       NonFungibleLocalId("#123#"),
+       NonFungibleLocalId("#124#"),
+       NonFungibleLocalId("#125#"),
+       NonFungibleLocalId("#126#"),
+       NonFungibleLocalId("#127#"),
+       NonFungibleLocalId("#128#"),
+       NonFungibleLocalId("#129#"),
+       NonFungibleLocalId("#130#"),
+       NonFungibleLocalId("#131#"),
+     ],
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("2.05331344637"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("1.026656723185"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("1.026656723185"),
+   }
+
+STATE UPDATES: 7 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("1.30845409718"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("1770dc6b2ba65c9a3396e0f247ddd97e9e9797341f85366d45e4c0dd30fe4921"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ resource_sim1ntpe4zxy537sl7dduxwpxd3h548wf4dq6z2s6uks94pwzeeapq579l across 1 partitions
+  └─ Partition(65): 32 changes
+    ├─ Set: NonFungibleLocalId("#127#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#126#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#111#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#103#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#109#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#124#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#121#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#101#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#106#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#122#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#117#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#118#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#131#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#128#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#105#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#116#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#104#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#110#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#129#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#108#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#125#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#119#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#115#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#107#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#112#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#114#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#120#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#123#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#130#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#102#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    ├─ Set: NonFungibleLocalId("#113#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+    └─ Set: NonFungibleLocalId("#100#")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999999994.76618361128")),
+       )
+├─ internal_vault_sim1nzupesg6es369wqjguu7umf92886ph6w3qj98uxq7tkavev439ut2q across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED NonFungibleVaultBalanceFieldPayload::V1(
+         LiquidNonFungibleVault(Decimal("33")),
+       )
+  └─ Partition(65): 32 changes
+    ├─ Set: NonFungibleLocalId("#127#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#126#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#111#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#103#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#109#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#124#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#121#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#101#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#106#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#122#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#117#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#118#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#131#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#128#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#105#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#116#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#104#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#110#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#129#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#108#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#125#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#119#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#115#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#107#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#112#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#114#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#120#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#123#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#130#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#102#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    ├─ Set: NonFungibleLocalId("#113#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+    └─ Set: NonFungibleLocalId("#100#")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("2.61690819436")),
+       )
+
+OUTPUTS: 3
+├─ Unit
+├─ Own("internal_component_sim1lza9mrx6gfrdjq39h36vhn36az2lcg5zgzg8shvw4snzdztzma2m43")
+└─ Unit
+
+BALANCE CHANGES: 3
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -2.05331344637
+├─ Vault: internal_vault_sim1nzupesg6es369wqjguu7umf92886ph6w3qj98uxq7tkavev439ut2q
+   ResAddr: resource_sim1ntpe4zxy537sl7dduxwpxd3h548wf4dq6z2s6uks94pwzeeapq579l
+   Change: +{#100#, #101#, #102#, #103#, #104#, #105#, #106#, #107#, #108#, #109#, #110#, #111#, #112#, #113#, #114#, #115#, #116#, #117#, #118#, #119#, #120#, #121#, #122#, #123#, #124#, #125#, #126#, #127#, #128#, #129#, #130#, #131#}, -{}
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 1.026656723185
+
+NEW ENTITIES: 0

@@ -26,6 +26,7 @@ use radix_substate_store_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };
 use radix_transactions::prelude::*;
+use scrypto_test::prelude::{AuthZoneParams, UniqueTransaction};
 
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {
@@ -42,9 +43,9 @@ pub fn test_open_substate_of_invisible_package_address() {
     let native_vm = DefaultNativeVm::new();
     ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut database);
 
+    let auth_zone_inits: Vec<_> = executable.intents().iter().map(|i| i.auth_zone_init().clone()).collect();
     // Create kernel
     let mut system = System {
-        executable: (),
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
@@ -58,16 +59,18 @@ pub fn test_open_substate_of_invisible_package_address() {
             KernelTraceModule,
             TransactionRuntimeModule::new(
                 NetworkDefinition::simulator(),
-                executable.intent_hash().to_hash(),
+                *executable.unique_hash(),
             ),
-            AuthModule::new(executable.auth_zone_params().clone()),
+            AuthModule::new(AuthZoneParams {
+                auth_zone_init_for_each_intent: auth_zone_inits,
+            }),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: executable.payload_size(),
-                tx_num_of_signature_validations: executable.auth_zone_params().initial_proofs.len(),
+                tx_num_of_signature_validations: executable.num_of_signature_validations(),
                 config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
                 detailed_cost_breakdown: None,
@@ -75,9 +78,10 @@ pub fn test_open_substate_of_invisible_package_address() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
+        finalization: Default::default(),
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
-    let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
+    let mut id_allocator = IdAllocator::new(executable.unique_seed_for_id_allocator());
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 
     // Lock package substate

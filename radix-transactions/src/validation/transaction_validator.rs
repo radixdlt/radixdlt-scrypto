@@ -330,7 +330,7 @@ impl NotarizedTransactionValidator {
 
         // verify intent signature
         let mut signers = index_set_new();
-        let intent_hash = transaction.intent_hash().into_hash();
+        let intent_hash = transaction.transaction_intent_hash().into_hash();
         for intent_signature in &transaction.signed_intent.intent_signatures.inner.signatures {
             let public_key = recover(&intent_hash, &intent_signature.0)
                 .ok_or(SignatureValidationError::InvalidIntentSignature)?;

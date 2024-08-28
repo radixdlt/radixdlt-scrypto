@@ -337,7 +337,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             ConsensusManagerConfig::test_default(),
         );
 
-        let (mut ledger, validator_set) = LedgerSimulatorBuilder::new()
+        let (mut ledger, epoch_change) = LedgerSimulatorBuilder::new()
             .with_custom_protocol(|builder| {
                 builder.with_babylon(genesis).from_bootstrap_to_latest()
             })
@@ -345,7 +345,8 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                 CUSTOM_PACKAGE_CODE_ID,
                 ResourceTestInvoke,
             ))
-            .build_and_get_epoch();
+            .build_and_get_post_genesis_epoch_change();
+        let validator_set = epoch_change.unwrap().validator_set;
         let public_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         let account = ComponentAddress::preallocated_account_from_public_key(&public_key);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);

@@ -16,7 +16,7 @@ pub struct IntentV1 {
 
 impl TransactionPayload for IntentV1 {
     type Prepared = PreparedIntentV1;
-    type Raw = RawIntent;
+    type Raw = RawTransactionIntent;
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -53,7 +53,7 @@ impl TransactionFullChildPreparable for PreparedIntentV1 {
 }
 
 impl TransactionPayloadPreparable for PreparedIntentV1 {
-    type Raw = RawIntent;
+    type Raw = RawTransactionIntent;
 
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as full payload, it's SBOR encoded as an enum
@@ -72,8 +72,8 @@ impl TransactionPayloadPreparable for PreparedIntentV1 {
     }
 }
 
-impl HasIntentHash for PreparedIntentV1 {
-    fn intent_hash(&self) -> IntentHash {
-        IntentHash::from_hash(self.summary.hash)
+impl HasTransactionIntentHash for PreparedIntentV1 {
+    fn transaction_intent_hash(&self) -> TransactionIntentHash {
+        TransactionIntentHash::from_hash(self.summary.hash)
     }
 }

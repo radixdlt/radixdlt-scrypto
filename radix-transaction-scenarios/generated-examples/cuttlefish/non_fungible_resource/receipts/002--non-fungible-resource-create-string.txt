@@ -1,0 +1,437 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0.76325286441 XRD
+├─ Network execution: 0.27536605 XRD, 5507321 execution cost units
+├─ Network finalization: 0.1362671 XRD, 2725342 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0.35161971441 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 8
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("5000"),
+   }
+├─ Emitter: Method { node: resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2, module_id: Main }
+   Event: MintNonFungibleResourceEvent {
+     ids: [
+       NonFungibleLocalId("<my_nft>"),
+     ],
+   }
+├─ Emitter: Method { node: resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("9884c5864f5cadd234052f93fe9cf6415f70ccb6d9713cb227faf9defedb")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1nzzvtpj0tjkaydq997fla88kg90hpn9km9cnev38ltuaalkm6qy48j, module_id: Main }
+   Event: DepositEvent {
+     ids: [
+       NonFungibleLocalId("<my_nft>"),
+     ],
+   }
+├─ Emitter: Method { node: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw, module_id: Main }
+   Event: DepositEvent::NonFungible(
+     ResourceAddress(Reference("resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2")),
+     [
+       NonFungibleLocalId("<my_nft>"),
+     ],
+   )
+├─ Emitter: Method { node: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("0.76325286441"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("0.381626432205"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("0.381626432205"),
+   }
+
+STATE UPDATES: 8 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("0.4090958086"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("bea2017bcdb8adef9da4fb8083d1eb32844cc3fe5940f097c26cd42c068b75ef"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED Faucet {
+         vault: Vault(Own("internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u")),
+         transactions: KeyValueStore(Own("internal_keyvaluestore_sim1krn7clzr3qmq2zhwr77mdenksxswf00yeh8tn3vyzesg4kr3p54gv8")),
+       }
+├─ internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("99999999999999998.3636167656")),
+       )
+├─ resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2 across 6 partitions
+  ├─ Partition(1): 1 change
+    └─ Set: SchemaHash(ec27a84c81a682d65cc1330fb5b67dea036a9e7ad8d3a8a50f33b29446ab1d1b)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(9u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         1u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Array {
+                     element_type: LocalTypeId::WellKnown(
+                       WellKnownTypeId(12u8),
+                     ),
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         3u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Map {
+                     key_type: LocalTypeId::WellKnown(
+                       WellKnownTypeId(12u8),
+                     ),
+                     value_type: LocalTypeId::SchemaLocalIndex(
+                       4u64,
+                     ),
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(7u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         5u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(8u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         6u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Array {
+                     element_type: LocalTypeId::WellKnown(
+                       WellKnownTypeId(65u8),
+                     ),
+                   },
+                 ],
+                 type_metadata: [
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "NestedFungibleData",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "a",
+                           "b",
+                           "c",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AnotherObject",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "f1",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                 ],
+                 type_validations: [
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                 ],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(6): 14 changes
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("depositor") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("burner_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("freezer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("freezer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("burner") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recaller") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("withdrawer") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("non_fungible_data_updater_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recaller_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("non_fungible_data_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("depositor_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("minter") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::AllowAll,
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("withdrawer_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+    └─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("minter_updater") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::DenyAll,
+       )
+  ├─ Partition(64): 2 changes
+    ├─ Set: Field(0)
+       Value: LOCKED NonFungibleResourceManagerIdTypeFieldPayload::V1(
+         NonFungibleIdType::String,
+       )
+    └─ Set: Field(1)
+       Value: LOCKED NonFungibleResourceManagerMutableFieldsFieldPayload::V1(
+         NonFungibleResourceManagerMutableFieldsV1 {
+           mutable_field_index: {
+             "a" => 0u64,
+             "c" => 2u64,
+           },
+         },
+       )
+  ├─ Partition(65): 1 change
+    └─ Set: NonFungibleLocalId("<my_nft>")
+       Value: UNLOCKED NestedFungibleData {
+         a: 859u32,
+         b: [
+           "hihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihihi",
+         ],
+         c: AnotherObject {
+           f1: {},
+         },
+       }
+  └─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "NonFungibleResourceManager",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [
+               "vault_freeze",
+               "vault_recall",
+               "mint",
+               "burn",
+             ],
+             generic_substitutions: [
+               GenericSubstitution::Local(
+                 ScopedTypeId(
+                   SchemaHash(hex("ec27a84c81a682d65cc1330fb5b67dea036a9e7ad8d3a8a50f33b29446ab1d1b")),
+                   LocalTypeId::SchemaLocalIndex(
+                     0u64,
+                   ),
+                 ),
+               ),
+             ],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+├─ account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw across 1 partitions
+  └─ Partition(65): 1 change
+    └─ Set: ResourceAddress(Reference("resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1nzzvtpj0tjkaydq997fla88kg90hpn9km9cnev38ltuaalkm6qy48j")),
+       )
+├─ internal_vault_sim1nzzvtpj0tjkaydq997fla88kg90hpn9km9cnev38ltuaalkm6qy48j across 3 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "NonFungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  ├─ Partition(64): 2 changes
+    ├─ Set: Field(0)
+       Value: UNLOCKED NonFungibleVaultBalanceFieldPayload::V1(
+         LiquidNonFungibleVault(Decimal("1")),
+       )
+    └─ Set: Field(2)
+       Value: UNLOCKED NonFungibleVaultFreezeStatusFieldPayload::V1(
+         VaultFrozenFlag {
+           bits: 0u32,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: NonFungibleLocalId("<my_nft>")
+       Value: NonFungibleVaultNonFungibleEntryPayload::V1(
+         Unit,
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("0.8181916172")),
+       )
+
+OUTPUTS: 3
+├─ Unit
+├─ Tuple(
+     Reference("resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2"),
+     Own("internal_component_sim1lqdzummyh3qzddnj96exy7m48jsdfx2s87xh95hfu3vn0vspl20fux"),
+   )
+└─ Unit
+
+BALANCE CHANGES: 3
+├─ Vault: internal_vault_sim1tz9uaalv8g3ahmwep2trlyj2m3zn7rstm9pwessa3k56me2fcduq2u
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.76325286441
+├─ Vault: internal_vault_sim1nzzvtpj0tjkaydq997fla88kg90hpn9km9cnev38ltuaalkm6qy48j
+   ResAddr: resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2
+   Change: +{<my_nft>}, -{}
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 0.381626432205
+
+NEW ENTITIES: 1
+└─ Resource: resource_sim1ngmh9yztljz0kg9pk0d8ul3wlxej866h0mhnvv5zkrmfsy25tdlxv2

@@ -6,7 +6,6 @@ use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
 use crate::system::module::*;
 use crate::system::system_callback::*;
-use crate::system::system_callback_api::SystemCallbackObject;
 use colored::Colorize;
 use radix_engine_interface::types::SubstateKey;
 use sbor::rust::collections::BTreeMap;
@@ -29,8 +28,9 @@ impl InitSystemModule for KernelTraceModule {
     }
 }
 impl ResolvableSystemModule for KernelTraceModule {
-    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
-        &mut system.modules.kernel_trace
+    #[inline]
+    fn resolve_from_system(system: &mut impl HasModules) -> &mut Self {
+        &mut system.modules_mut().kernel_trace
     }
 }
 

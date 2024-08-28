@@ -1,9 +1,9 @@
 Name: kv_store_with_remote_type
 
 == SUMMARY HASHES ==
-These Bottlenose hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: ea5513e054085c12 (allowed to change if not deployed to any network)
-Events       : 5cee7212d12c4efa (allowed to change if not deployed to any network)
+These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
+State changes: ea5513e054085c12 (should never change)
+Events       : 5cee7212d12c4efa (should never change)
 
 == INTERESTING ADDRESSES ==
 - kv_store_with_remote_type_package_address: package_sim1phrx0wcqf0t56shsrygqjvrmll7m39n5jayzkuk2f0w76f698cfwwt

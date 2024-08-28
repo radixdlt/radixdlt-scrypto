@@ -1,9 +1,9 @@
 Name: royalties
 
 == SUMMARY HASHES ==
-These Bottlenose hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: d4e0d282c65f9a66 (allowed to change if not deployed to any network)
-Events       : a392c2748132656e (allowed to change if not deployed to any network)
+These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
+State changes: d4e0d282c65f9a66 (should never change)
+Events       : a392c2748132656e (should never change)
 
 == INTERESTING ADDRESSES ==
 - royalty_package_address: package_sim1p4qz8edl2w0t5mzwt6zcq0nfnc0ax9rkfawnmsg0s974hxcsggr29z

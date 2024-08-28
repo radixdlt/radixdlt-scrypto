@@ -1,7 +1,7 @@
 Name: Bottlenose
 
 == SUMMARY HASHES ==
-These Bottlenose hashes are permitted to change only until the protocol update is deployed to a permanent network, else it can cause divergence.
-State changes: ab0cc6ce75fc39a6 (allowed to change if not deployed to any network)
-Events       : 9ca58416e9131fa1 (allowed to change if not deployed to any network)
+These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
+State changes: ab0cc6ce75fc39a6 (should never change)
+Events       : 9ca58416e9131fa1 (should never change)
 

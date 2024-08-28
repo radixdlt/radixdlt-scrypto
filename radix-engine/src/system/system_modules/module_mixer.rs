@@ -143,6 +143,21 @@ impl SystemModuleMixer {
         }
     }
 
+    #[inline]
+    pub fn is_kernel_trace_enabled(&self) -> bool {
+        self.enabled_modules.contains(EnabledModules::KERNEL_TRACE)
+    }
+
+    #[inline]
+    pub fn is_execution_trace_enabled(&self) -> bool {
+        self.enabled_modules
+            .contains(EnabledModules::EXECUTION_TRACE)
+    }
+
+    pub fn unpack_costing(self) -> CostingModule {
+        self.costing
+    }
+
     pub fn unpack(
         self,
     ) -> (
@@ -629,6 +644,10 @@ impl SystemModuleMixer {
         } else {
             None
         }
+    }
+
+    pub fn costing_mut_even_if_disabled(&mut self) -> &mut CostingModule {
+        &mut self.costing
     }
 
     pub fn limits_mut(&mut self) -> Option<&mut LimitsModule> {
