@@ -608,7 +608,7 @@ fn check_and_convert_receipt_to_runtime_receipt(
     let decoder = AddressBech32Decoder::for_simulator();
     let serializable_toolkit_receipt = SerializableToolkitTransactionReceipt::contextual_try_from(
         runtime_toolkit_receipt.clone(),
-        encoder,
+        &encoder,
     )
     .expect("Failed during runtime -> serializable conversion");
 
@@ -621,7 +621,7 @@ fn check_and_convert_receipt_to_runtime_receipt(
 
     // Convert the serializable model to a runtime model and test the roundtrip property.
     let roundtrip_runtime_toolkit_receipt =
-        RuntimeToolkitTransactionReceipt::contextual_try_from(deserialized_receipt, decoder)
+        RuntimeToolkitTransactionReceipt::contextual_try_from(deserialized_receipt, &decoder)
             .expect("Failed during serializable -> runtime conversion");
     assert_eq!(
         runtime_toolkit_receipt, roundtrip_runtime_toolkit_receipt,

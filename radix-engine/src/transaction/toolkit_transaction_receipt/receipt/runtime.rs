@@ -33,9 +33,7 @@ impl RuntimeToolkitTransactionReceipt {
         self,
         address_encoder: &AddressBech32Encoder,
     ) -> Result<SerializableToolkitTransactionReceipt, ToolkitReceiptError> {
-        self.contextual_try_into(AddressBech32Encoder {
-            hrp_set: address_encoder.hrp_set.clone(),
-        })
+        self.contextual_try_into(address_encoder)
     }
 }
 

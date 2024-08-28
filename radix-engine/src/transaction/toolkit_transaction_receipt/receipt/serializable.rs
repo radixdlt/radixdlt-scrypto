@@ -46,9 +46,7 @@ impl SerializableToolkitTransactionReceipt {
         self,
         address_encoder: &AddressBech32Decoder,
     ) -> Result<RuntimeToolkitTransactionReceipt, ToolkitReceiptError> {
-        self.contextual_try_into(AddressBech32Decoder {
-            hrp_set: address_encoder.hrp_set.clone(),
-        })
+        self.contextual_try_into(address_encoder)
     }
 }
 
@@ -79,7 +77,7 @@ impl ContextualTryFrom<WorktopChange> for RuntimeWorktopChange {
 
     fn contextual_try_from(
         value: WorktopChange,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         match value {
             WorktopChange::Take(value) => value.contextual_try_into(context).map(Self::Take),
@@ -94,7 +92,7 @@ impl ContextualTryFrom<RuntimeWorktopChange> for WorktopChange {
 
     fn contextual_try_from(
         value: RuntimeWorktopChange,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         match value {
             RuntimeWorktopChange::Take(value) => value.contextual_try_into(context).map(Self::Take),
@@ -122,7 +120,7 @@ impl ContextualTryFrom<ResourceSpecifier> for RuntimeResourceSpecifier {
 
     fn contextual_try_from(
         value: ResourceSpecifier,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         match value {
             ResourceSpecifier::Amount {
@@ -151,7 +149,7 @@ impl ContextualTryFrom<RuntimeResourceSpecifier> for ResourceSpecifier {
 
     fn contextual_try_from(
         value: RuntimeResourceSpecifier,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         match value {
             RuntimeResourceSpecifier::Amount(resource_address, amount) => Ok(Self::Amount {
@@ -210,7 +208,7 @@ impl ContextualTryFrom<MetadataValue> for RuntimeMetadataValue {
 
     fn contextual_try_from(
         value: MetadataValue,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         Ok(match value {
             MetadataValue::String(value) => Self::String(value),
@@ -306,7 +304,7 @@ impl ContextualTryFrom<RuntimeMetadataValue> for MetadataValue {
 
     fn contextual_try_from(
         value: RuntimeMetadataValue,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         Ok(match value {
             RuntimeMetadataValue::String(value) => Self::String(value),
@@ -495,7 +493,7 @@ impl ContextualTryFrom<MetadataUpdate<SerializableTypeSelector>>
 
     fn contextual_try_from(
         value: MetadataUpdate<SerializableTypeSelector>,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         match value {
             MetadataUpdate::Set(value) => value.contextual_try_into(context).map(Self::Set),
@@ -512,7 +510,7 @@ impl ContextualTryFrom<MetadataUpdate<RuntimeTypeSelector>>
 
     fn contextual_try_from(
         value: MetadataUpdate<RuntimeTypeSelector>,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         match value {
             MetadataUpdate::Set(value) => value.contextual_try_into(context).map(Self::Set),
@@ -529,7 +527,7 @@ impl ContextualTryFrom<StateUpdatesSummary<SerializableTypeSelector>>
 
     fn contextual_try_from(
         value: StateUpdatesSummary<SerializableTypeSelector>,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             new_entities: value
@@ -566,10 +564,7 @@ impl ContextualTryFrom<StateUpdatesSummary<SerializableTypeSelector>>
                                 .map(|(metadata_key, metadata_update)| {
                                     MetadataUpdate::<RuntimeTypeSelector>::contextual_try_from(
                                         metadata_update,
-                                        // TODO: Clean up - remove this clone.
-                                        AddressBech32Decoder {
-                                            hrp_set: context.hrp_set.clone(),
-                                        },
+                                        context,
                                     )
                                     .map(|value| (metadata_key, value))
                                 })
@@ -583,7 +578,6 @@ impl ContextualTryFrom<StateUpdatesSummary<SerializableTypeSelector>>
                 .into_iter()
                 .map(|(global_id, bytes)| {
                     RuntimeNonFungibleGlobalId::try_from_canonical_string(
-                        // TODO: Clean up - remove this clone.
                         &AddressBech32Decoder {
                             hrp_set: context.hrp_set.clone(),
                         },
@@ -598,7 +592,6 @@ impl ContextualTryFrom<StateUpdatesSummary<SerializableTypeSelector>>
                 .into_iter()
                 .map(|value| {
                     RuntimeNonFungibleGlobalId::try_from_canonical_string(
-                        // TODO: Clean up - remove this clone.
                         &AddressBech32Decoder {
                             hrp_set: context.hrp_set.clone(),
                         },
@@ -619,7 +612,7 @@ impl ContextualTryFrom<StateUpdatesSummary<RuntimeTypeSelector>>
 
     fn contextual_try_from(
         value: StateUpdatesSummary<RuntimeTypeSelector>,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             new_entities: value
@@ -640,9 +633,7 @@ impl ContextualTryFrom<StateUpdatesSummary<RuntimeTypeSelector>>
                                 .map(|(metadata_key, metadata_value)| {
                                     MetadataUpdate::<SerializableTypeSelector>::contextual_try_from(
                                         metadata_value,
-                                        AddressBech32Encoder {
-                                            hrp_set: context.hrp_set.clone(),
-                                        },
+                                        context,
                                     )
                                     .map(|value| (metadata_key, value))
                                 })
@@ -673,7 +664,7 @@ impl ContextualTryFrom<ToolkitTransactionReceipt<SerializableTypeSelector>>
 
     fn contextual_try_from(
         value: ToolkitTransactionReceipt<SerializableTypeSelector>,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         Ok(match value {
             ToolkitTransactionReceipt::CommitSuccess {
@@ -682,21 +673,13 @@ impl ContextualTryFrom<ToolkitTransactionReceipt<SerializableTypeSelector>>
                 fee_summary,
                 locked_fees,
             } => ToolkitTransactionReceipt::CommitSuccess {
-                state_updates_summary: state_updates_summary.contextual_try_into(
-                    AddressBech32Decoder {
-                        hrp_set: context.hrp_set.clone(),
-                    },
-                )?,
+                state_updates_summary: state_updates_summary.contextual_try_into(context)?,
                 worktop_changes: worktop_changes
                     .into_iter()
                     .map(|(key, value)| {
                         value
                             .into_iter()
-                            .map(|value| {
-                                value.contextual_try_into(AddressBech32Decoder {
-                                    hrp_set: context.hrp_set.clone(),
-                                })
-                            })
+                            .map(|value| value.contextual_try_into(context))
                             .collect::<Result<_, _>>()
                             .map(|value| (key.into_inner(), value))
                     })
@@ -725,7 +708,7 @@ impl ContextualTryFrom<ToolkitTransactionReceipt<RuntimeTypeSelector>>
 
     fn contextual_try_from(
         value: ToolkitTransactionReceipt<RuntimeTypeSelector>,
-        context: Self::Context,
+        context: &Self::Context,
     ) -> Result<Self, Self::Error> {
         Ok(match value {
             ToolkitTransactionReceipt::CommitSuccess {
@@ -734,21 +717,13 @@ impl ContextualTryFrom<ToolkitTransactionReceipt<RuntimeTypeSelector>>
                 fee_summary,
                 locked_fees,
             } => ToolkitTransactionReceipt::CommitSuccess {
-                state_updates_summary: state_updates_summary.contextual_try_into(
-                    AddressBech32Encoder {
-                        hrp_set: context.hrp_set.clone(),
-                    },
-                )?,
+                state_updates_summary: state_updates_summary.contextual_try_into(context)?,
                 worktop_changes: worktop_changes
                     .into_iter()
                     .map(|(key, value)| {
                         value
                             .into_iter()
-                            .map(|value| {
-                                value.contextual_try_into(AddressBech32Encoder {
-                                    hrp_set: context.hrp_set.clone(),
-                                })
-                            })
+                            .map(|value| value.contextual_try_into(context))
                             .collect::<Result<_, _>>()
                             .map(|value| (key.into(), value))
                     })
