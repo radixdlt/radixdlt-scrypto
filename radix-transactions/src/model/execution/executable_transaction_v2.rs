@@ -34,6 +34,7 @@ pub struct ExecutableIntentV2 {
     pub(crate) auth_zone_init: AuthZoneInit,
     pub(crate) references: IndexSet<Reference>,
     pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub(crate) children_intent_indices: Vec<usize>,
 }
 
 impl Executable for ExecutableTransactionV2 {
@@ -99,5 +100,9 @@ impl IntentDetails for ExecutableIntentV2 {
 
     fn references(&self) -> &IndexSet<Reference> {
         &self.references
+    }
+
+    fn children_intent_indices(&self) -> &[usize] {
+        &self.children_intent_indices
     }
 }

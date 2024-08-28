@@ -149,4 +149,10 @@ impl IntentDetails for ExecutableTransactionV1 {
     fn references(&self) -> &IndexSet<Reference> {
         &self.references
     }
+
+    fn children_intent_indices(&self) -> &[usize] {
+        &NO_CHILDREN
+    }
 }
+
+static NO_CHILDREN: [usize; 0] = [];
