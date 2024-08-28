@@ -246,7 +246,7 @@ mod tests {
             PreparedSignedIntentV1::prepare_from_payload(&signed_intent_payload_bytes).unwrap();
         assert_eq!(
             expected_signed_intent_hash,
-            prepared_signed_intent.signed_intent_hash()
+            prepared_signed_intent.signed_transaction_intent_hash()
         );
         assert_eq!(
             intent_hash,
@@ -313,7 +313,7 @@ mod tests {
         let notarized_transaction_hash = expected_notarized_transaction_hash;
         assert_eq!(
             signed_intent_hash,
-            prepared_notarized_transaction.signed_intent_hash()
+            prepared_notarized_transaction.signed_transaction_intent_hash()
         );
         assert_eq!(
             intent_hash,
