@@ -96,11 +96,19 @@ impl Executable for ExecutableTransactionV1 {
         self.context.epoch_range.as_ref()
     }
 
+    fn overall_start_timestamp_inclusive(&self) -> Option<Instant> {
+        None
+    }
+
+    fn overall_end_timestamp_exclusive(&self) -> Option<Instant> {
+        None
+    }
+
     fn costing_parameters(&self) -> &TransactionCostingParameters {
         &self.context.costing_parameters
     }
 
-    fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress> {
+    fn pre_allocated_addresses(&self) -> &[PreAllocatedAddress] {
         &self.context.pre_allocated_addresses
     }
 
@@ -138,11 +146,13 @@ impl IntentDetails for ExecutableTransactionV1 {
         &self.blobs
     }
 
-    fn encoded_instructions(&self) -> &[u8] {
-        &self.encoded_instructions_v1
-    }
-
     fn references(&self) -> &IndexSet<Reference> {
         &self.references
     }
+
+    fn children_intent_indices(&self) -> &[usize] {
+        &NO_CHILDREN
+    }
 }
+
+static NO_CHILDREN: [usize; 0] = [];

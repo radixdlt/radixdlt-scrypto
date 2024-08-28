@@ -30,7 +30,7 @@ use radix_substate_store_queries::query::{ResourceAccounter, StateTreeTraverser,
 use radix_substate_store_queries::typed_native_events::to_typed_native_event;
 use radix_substate_store_queries::typed_substate_layout::*;
 use radix_transactions::validation::{
-    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
+    NotarizedTransactionValidatorV1, TransactionValidator, ValidationConfig,
 };
 use std::path::{Path, PathBuf};
 
@@ -139,7 +139,9 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
     #[deprecated = "Use with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest()) instead"]
     pub fn with_custom_genesis(self, genesis: BabylonSettings) -> Self {
         self.with_custom_protocol(|builder| {
-            builder.with_babylon(genesis).from_bootstrap_to_latest()
+            builder
+                .configure_babylon(|_| genesis)
+                .from_bootstrap_to_latest()
         })
     }
 
@@ -1254,7 +1256,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         raw_transaction: &RawNotarizedTransaction,
     ) -> TransactionReceipt {
         let network = NetworkDefinition::simulator();
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
+        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id));
         let validated = validator
             .validate_from_raw(&raw_transaction)
             .expect("Expected raw transaction to be valid");
@@ -2365,7 +2367,7 @@ pub fn validate_notarized_transaction<'a>(
     network: &'a NetworkDefinition,
     transaction: &'a NotarizedTransactionV1,
 ) -> ValidatedNotarizedTransactionV1 {
-    NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+    NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
         .validate(transaction.prepare().unwrap())
         .unwrap()
 }

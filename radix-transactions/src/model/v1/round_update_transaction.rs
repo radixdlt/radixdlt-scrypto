@@ -26,6 +26,7 @@ impl RoundUpdateTransactionV1 {
         }]
     }
 
+    #[allow(deprecated)]
     pub fn prepare(&self) -> Result<PreparedRoundUpdateTransactionV1, PrepareError> {
         let prepared_instructions =
             InstructionsV1(Rc::new(self.create_instructions())).prepare_partial()?;
@@ -35,14 +36,14 @@ impl RoundUpdateTransactionV1 {
         let source_hash = hash(&encoded_source[1..]);
         let instructions_hash = prepared_instructions.summary.hash;
         let round_update_hash = HashAccumulator::new()
-            .update([
+            .concat([
                 TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
                 TransactionDiscriminator::V1RoundUpdate as u8,
             ])
             // We include the full source transaction contents
-            .update(source_hash)
+            .concat(source_hash)
             // We also include the instructions hash, so the exact instructions can be proven
-            .update(instructions_hash)
+            .concat(instructions_hash)
             .finalize();
         Ok(PreparedRoundUpdateTransactionV1 {
             encoded_instructions: Rc::new(manifest_encode(&prepared_instructions.inner.0)?),
@@ -69,11 +70,7 @@ pub struct PreparedRoundUpdateTransactionV1 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedRoundUpdateTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedRoundUpdateTransactionV1);
 
 define_raw_transaction_payload!(RawRoundUpdateTransactionV1);
 
@@ -86,8 +83,8 @@ impl TransactionPayloadPreparable for PreparedRoundUpdateTransactionV1 {
     }
 }
 
-impl TransactionFullChildPreparable for PreparedRoundUpdateTransactionV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValue for PreparedRoundUpdateTransactionV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let decoded = decoder.decode::<RoundUpdateTransactionV1>()?;
         decoded.prepare()
     }

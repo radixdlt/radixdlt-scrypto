@@ -13,8 +13,9 @@ impl TransactionPayload for SystemTransactionV1 {
     type Raw = RawSystemTransaction;
 }
 
-type PreparedPreAllocatedAddresses = SummarizedRawFullBody<Vec<PreAllocatedAddress>>;
-type PreparedHash = SummarizedHash;
+#[allow(deprecated)]
+type PreparedPreAllocatedAddresses = SummarizedRawFullValue<Vec<PreAllocatedAddress>>;
+type PreparedHash = RawHash;
 
 pub struct PreparedSystemTransactionV1 {
     pub encoded_instructions: Rc<Vec<u8>>,
@@ -25,18 +26,15 @@ pub struct PreparedSystemTransactionV1 {
     pub summary: Summary,
 }
 
+impl_has_summary!(PreparedSystemTransactionV1);
+
 impl HasSystemTransactionHash for PreparedSystemTransactionV1 {
     fn system_transaction_hash(&self) -> SystemTransactionHash {
         SystemTransactionHash::from_hash(self.summary.hash)
     }
 }
 
-impl HasSummary for PreparedSystemTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
-
+#[allow(deprecated)]
 impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
     type Raw = RawSystemTransaction;
 
@@ -59,8 +57,9 @@ impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
     }
 }
 
-impl TransactionFullChildPreparable for PreparedSystemTransactionV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+#[allow(deprecated)]
+impl TransactionPreparableFromValue for PreparedSystemTransactionV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let ((prepared_instructions, blobs, pre_allocated_addresses, hash_for_execution), summary) =
             ConcatenatedDigest::prepare_from_transaction_child_struct::<(
                 PreparedInstructionsV1,
@@ -92,6 +91,7 @@ impl SystemTransactionV1 {
     }
 }
 
+#[allow(deprecated)]
 impl PreparedSystemTransactionV1 {
     pub fn get_executable(
         &self,

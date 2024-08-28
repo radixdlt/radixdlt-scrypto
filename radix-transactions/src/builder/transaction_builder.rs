@@ -65,7 +65,7 @@ impl TransactionBuilder {
             .expect("Signed intent could be prepared");
         self.notary_signature = Some(
             signer
-                .sign_with_public_key(&prepared.signed_intent_hash())
+                .sign_with_public_key(&prepared.signed_transaction_intent_hash())
                 .signature(),
         );
         self
@@ -125,6 +125,7 @@ mod tests {
     use crate::internal_prelude::Secp256k1PrivateKey;
 
     #[test]
+    #[allow(deprecated)]
     fn notary_as_signatory() {
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
 

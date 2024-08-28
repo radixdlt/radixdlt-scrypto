@@ -19,7 +19,7 @@ impl TransactionHashBech32Encoder {
 
     pub fn encode<T>(&self, hash: &T) -> Result<String, TransactionHashBech32EncodeError>
     where
-        T: HashHasHrp,
+        T: IsTransactionHash,
     {
         let mut buf = String::new();
         self.encode_to_fmt(&mut buf, hash)?;
@@ -32,11 +32,11 @@ impl TransactionHashBech32Encoder {
         hash: &T,
     ) -> Result<(), TransactionHashBech32EncodeError>
     where
-        T: HashHasHrp,
+        T: IsTransactionHash,
         F: fmt::Write,
     {
-        let hrp = T::hrp(&self.hrp_set);
-        let data = hash.as_bytes();
+        let hrp = hash.hrp(&self.hrp_set);
+        let data = hash.as_inner_hash().as_slice();
         Self::encode_to_fmt_raw(fmt, hrp, data)
     }
 
@@ -83,7 +83,10 @@ mod tests {
         // Arrange
         let encoder = TransactionHashBech32Encoder::for_simulator();
         let transaction = transaction();
-        let hash = transaction.prepare().unwrap().signed_intent_hash();
+        let hash = transaction
+            .prepare()
+            .unwrap()
+            .signed_transaction_intent_hash();
 
         // Act
         let encoded = encoder.encode(&hash).unwrap();

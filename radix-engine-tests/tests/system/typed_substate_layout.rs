@@ -24,7 +24,7 @@ fn test_bootstrap_and_protocol_update_receipts_have_substate_changes_which_can_b
     }
     let mut hooks = Hooks;
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings::test_complex())
+        .configure_babylon(|_| BabylonSettings::test_complex())
         .from_bootstrap_to_latest()
         .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &mut VmModules::default());
 }
@@ -45,7 +45,7 @@ fn test_bootstrap_and_protocol_update_receipts_have_events_that_can_be_typed() {
     }
     let mut hooks = Hooks;
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings::test_complex())
+        .configure_babylon(|_| BabylonSettings::test_complex())
         .from_bootstrap_to_latest()
         .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &mut VmModules::default());
 }

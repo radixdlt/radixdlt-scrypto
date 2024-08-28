@@ -6,6 +6,7 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
+/// This should really be `TransactionIntentV1`, but keeping the old name to avoid refactoring in node.
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct IntentV1 {
     pub header: TransactionHeaderV1,
@@ -28,14 +29,10 @@ pub struct PreparedIntentV1 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedIntentV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedIntentV1);
 
-impl TransactionFullChildPreparable for PreparedIntentV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValue for PreparedIntentV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as an child, it's SBOR encoded as a struct
         let ((header, instructions, blobs, attachments), summary) =
             ConcatenatedDigest::prepare_from_transaction_child_struct(

@@ -96,7 +96,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction_bytes = transaction.to_payload_bytes().unwrap();
     println!("Transaction size: {} bytes", transaction_bytes.len());
 
-    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
 
     c.bench_function("transaction_validation::validate_manifest", |b| {
         b.iter(|| {

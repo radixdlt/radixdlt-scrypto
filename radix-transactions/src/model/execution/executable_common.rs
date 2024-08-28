@@ -6,11 +6,15 @@ pub trait Executable {
     /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
     fn unique_hash(&self) -> &Hash;
     fn overall_epoch_range(&self) -> Option<&EpochRange>;
+    fn overall_start_timestamp_inclusive(&self) -> Option<Instant>;
+    fn overall_end_timestamp_exclusive(&self) -> Option<Instant>;
     fn costing_parameters(&self) -> &TransactionCostingParameters;
-    fn pre_allocated_addresses(&self) -> &Vec<PreAllocatedAddress>;
+    fn pre_allocated_addresses(&self) -> &[PreAllocatedAddress];
     fn payload_size(&self) -> usize;
     fn num_of_signature_validations(&self) -> usize;
     fn disable_limits_and_costing_modules(&self) -> bool;
+
+    /// The first intent at index 0 is required to be the root transaction intent
     fn intents(&self) -> Vec<&Self::Intent>;
 
     fn all_blob_hashes(&self) -> IndexSet<Hash> {
@@ -34,8 +38,11 @@ pub trait IntentDetails {
     fn intent_hash_nullification(&self) -> &IntentHashNullification;
     fn auth_zone_init(&self) -> &AuthZoneInit;
     fn blobs(&self) -> &IndexMap<Hash, Vec<u8>>;
-    fn encoded_instructions(&self) -> &[u8];
     fn references(&self) -> &IndexSet<Reference>;
+
+    /// Indices against the parent Executable.
+    /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
+    fn children_intent_indices(&self) -> &[usize];
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]

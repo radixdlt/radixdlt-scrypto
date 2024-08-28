@@ -523,28 +523,48 @@ impl<S: CustomSchema> SchemaComparisonErrorDetail<S> {
                     f,
                     "EnumSupportedVariantsMismatch {{ base_variants_missing_in_compared: {{"
                 )?;
+                let mut is_first = true;
                 for variant_discriminator in base_variants_missing_in_compared {
                     let variant_data = base_metadata
                         .get_enum_variant_data(*variant_discriminator)
                         .unwrap();
+                    if is_first {
+                        write!(f, " ")?;
+                    } else {
+                        write!(f, ", ")?;
+                    }
                     write!(
                         f,
                         "{variant_discriminator}|{}",
                         variant_data.get_name().unwrap_or("anon")
                     )?;
+                    is_first = false;
+                }
+                if !is_first {
+                    write!(f, " ")?;
                 }
                 write!(f, "}}, compared_variants_missing_in_base: {{")?;
+                let mut is_first = true;
                 for variant_discriminator in compared_variants_missing_in_base {
                     let variant_data = compared_metadata
                         .get_enum_variant_data(*variant_discriminator)
                         .unwrap();
+                    if is_first {
+                        write!(f, " ")?;
+                    } else {
+                        write!(f, ", ")?;
+                    }
                     write!(
                         f,
                         "{variant_discriminator}|{}",
                         variant_data.get_name().unwrap_or("anon")
                     )?;
+                    is_first = false;
                 }
-                write!(f, "}}, }}")?;
+                if !is_first {
+                    write!(f, " ")?;
+                }
+                write!(f, "}} }}")?;
             }
             // All other errors already have their context added in printing the annotated leaf
             _ => {

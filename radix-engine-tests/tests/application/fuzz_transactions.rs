@@ -10,7 +10,7 @@ use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_transactions::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload};
 use radix_transactions::prelude::*;
 use radix_transactions::validation::{
-    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
+    NotarizedTransactionValidatorV1, TransactionValidator, ValidationConfig,
 };
 use rand::Rng;
 use rand_chacha;
@@ -38,7 +38,7 @@ impl TransactionFuzzer {
     }
 
     fn execute_single_transaction(&mut self, transaction: NotarizedTransactionV1) {
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
 
         let validated = validator
             .validate(transaction.prepare().expect("transaction to be preparable"))

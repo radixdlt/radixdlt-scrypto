@@ -254,7 +254,7 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked() {
         .build();
 
     // Act
-    let rtn = NotarizedTransactionValidator::validate_instructions_v1(&manifest.instructions);
+    let rtn = NotarizedTransactionValidatorV1::validate_instructions_v1(&manifest.instructions);
 
     // Assert
     rtn.expect("Validation of the manifest failed")
@@ -275,7 +275,7 @@ fn creating_proof_and_then_dropping_it_should_not_keep_bucket_locked2() {
         .build();
 
     // Act
-    let rtn = NotarizedTransactionValidator::validate_instructions_v1(&manifest.instructions);
+    let rtn = NotarizedTransactionValidatorV1::validate_instructions_v1(&manifest.instructions);
 
     // Assert
     rtn.expect("Validation of the manifest failed")

@@ -7,9 +7,7 @@ use radix_engine::vm::*;
 use radix_engine_interface::prelude::system_execution;
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::prelude::*;
-use radix_transactions::validation::{
-    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
-};
+use radix_transactions::validation::*;
 
 pub enum LedgerTransactionReceipt {
     Flash(FlashReceipt),
@@ -92,7 +90,7 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
                 &ExecutionConfig::for_notarized_transaction(network.clone())
                     .with_kernel_trace(trace)
                     .with_cost_breakdown(trace),
-                NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+                NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
                     .validate(tx.as_ref().clone())
                     .expect("Transaction validation failure")
                     .get_executable(),
@@ -112,6 +110,20 @@ pub fn execute_prepared_ledger_transaction<S: SubstateDatabase>(
         }
         PreparedLedgerTransactionInner::FlashV1(tx) => {
             LedgerTransactionReceipt::ProtocolUpdateFlash(tx.state_updates.clone())
+        }
+        PreparedLedgerTransactionInner::UserV2(tx) => {
+            let receipt = execute_transaction(
+                database,
+                vm_modules,
+                &ExecutionConfig::for_notarized_transaction(network.clone())
+                    .with_kernel_trace(trace)
+                    .with_cost_breakdown(trace),
+                NotarizedTransactionValidatorV2::new(ValidationConfig::default(network.id))
+                    .validate(tx.as_ref().clone())
+                    .expect("Transaction validation failure")
+                    .get_executable(),
+            );
+            LedgerTransactionReceipt::Standard(receipt)
         }
     }
 }

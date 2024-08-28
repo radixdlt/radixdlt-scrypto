@@ -29,4 +29,5 @@ impl From<Ed25519Signature> for SignatureV1 {
 #[sbor(transparent)]
 pub struct NotarySignatureV1(pub SignatureV1);
 
-pub type PreparedNotarySignatureV1 = SummarizedRawFullBody<NotarySignatureV1>;
+#[allow(deprecated)]
+pub type PreparedNotarySignatureV1 = SummarizedRawFullValue<NotarySignatureV1>;

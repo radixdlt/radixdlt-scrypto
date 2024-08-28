@@ -952,7 +952,7 @@ fn consensus_manager_round_update_emits_correct_event() {
             },
         ));
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Act
@@ -1009,7 +1009,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
             },
         ));
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Prepare: skip a few rounds, right to the one just before epoch change
@@ -1064,7 +1064,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
             .with_total_emission_xrd_per_epoch(emission_xrd),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Act
@@ -1109,7 +1109,7 @@ fn validator_registration_emits_correct_event() {
     let genesis = BabylonSettings::test_default()
         .with_genesis_epoch(initial_epoch);
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let (account_pk, _, account) = ledger.new_account(false);
 
@@ -1166,7 +1166,7 @@ fn validator_unregistration_emits_correct_event() {
     let genesis = BabylonSettings::test_default()
         .with_genesis_epoch(initial_epoch);
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let (account_pk, _, account) = ledger.new_account(false);
 
@@ -1238,7 +1238,7 @@ fn validator_staking_emits_correct_event() {
     let genesis = BabylonSettings::test_default()
         .with_genesis_epoch(initial_epoch);
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let (account_pk, _, account) = ledger.new_account(false);
 
@@ -1388,7 +1388,7 @@ fn validator_unstake_emits_correct_events() {
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -1536,7 +1536,7 @@ fn validator_claim_xrd_emits_correct_events() {
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = ledger.get_validator_info(validator_address);

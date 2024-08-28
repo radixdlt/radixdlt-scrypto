@@ -64,7 +64,7 @@ fn run_flash_test_test_environment(enable_bls: bool, expect_success: bool) {
     let mut test_env = TestEnvironmentBuilder::new()
         .with_protocol(|builder| {
             builder
-                .with_anemone(AnemoneSettings::all_disabled().set(|s| {
+                .configure_anemone(|_| AnemoneSettings::all_disabled().set(|s| {
                     s.vm_boot_to_enable_bls128_and_keccak256 = UpdateSetting::new(enable_bls)
                 }))
                 .from_bootstrap_to(ProtocolVersion::Anemone)

@@ -23,6 +23,7 @@ pub struct ValidatedPreviewIntent {
     pub flags: PreviewFlags,
 }
 
+#[allow(deprecated)]
 impl ValidatedPreviewIntent {
     pub fn get_executable(&self) -> ExecutableTransactionV1 {
         let intent = &self.intent;

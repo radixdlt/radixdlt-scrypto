@@ -26,7 +26,7 @@ fn test_transaction_replay_protection() {
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| {
             builder
-                .with_babylon(genesis)
+                .configure_babylon(|_| genesis)
                 .from_bootstrap_to_latest()
         })
         .build();
@@ -97,7 +97,7 @@ fn test_transaction_replay_protection() {
 fn get_validated(
     transaction: &NotarizedTransactionV1,
 ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
 
     validator.validate(transaction.prepare().unwrap())
 }

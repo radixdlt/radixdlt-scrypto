@@ -6,6 +6,7 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
+/// This should really be `SignedTransactionIntentV1`, but keeping the old name to avoid refactoring in node.
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SignedIntentV1 {
     pub intent: IntentV1,
@@ -24,14 +25,10 @@ pub struct PreparedSignedIntentV1 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedSignedIntentV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedSignedIntentV1);
 
-impl TransactionFullChildPreparable for PreparedSignedIntentV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValue for PreparedSignedIntentV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as an child, it's SBOR encoded as a struct
         let ((intent, intent_signatures), summary) =
             ConcatenatedDigest::prepare_from_transaction_child_struct(
@@ -71,7 +68,7 @@ impl HasTransactionIntentHash for PreparedSignedIntentV1 {
 }
 
 impl HasSignedTransactionIntentHash for PreparedSignedIntentV1 {
-    fn signed_intent_hash(&self) -> SignedTransactionIntentHash {
+    fn signed_transaction_intent_hash(&self) -> SignedTransactionIntentHash {
         SignedTransactionIntentHash::from_hash(self.summary.hash)
     }
 }

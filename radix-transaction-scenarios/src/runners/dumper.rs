@@ -184,9 +184,9 @@ mod test {
                 match &receipt.result {
                     TransactionResult::Commit(c) => {
                         self.event_hasher
-                            .update_no_chain(scrypto_encode(&c.application_events).unwrap());
+                            .concat_mut(scrypto_encode(&c.application_events).unwrap());
                         self.state_change_hasher
-                            .update_no_chain(scrypto_encode(&c.state_updates).unwrap())
+                            .concat_mut(scrypto_encode(&c.state_updates).unwrap())
                     }
                     TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
                 }
@@ -220,7 +220,7 @@ mod test {
         }
 
         let protocol_executor = ProtocolBuilder::for_network(&network_definition)
-            .with_babylon(BabylonSettings::test_complex())
+            .configure_babylon(|_| BabylonSettings::test_complex())
             .from_bootstrap_to_latest();
         for protocol_update_exector in protocol_executor.each_protocol_update_executor() {
             let protocol_version = protocol_update_exector.protocol_version;
@@ -335,9 +335,9 @@ mod test {
             match &receipt.result {
                 TransactionResult::Commit(c) => {
                     self.event_hasher
-                        .update_no_chain(scrypto_encode(&c.application_events).unwrap());
+                        .concat_mut(scrypto_encode(&c.application_events).unwrap());
                     self.state_update_hasher
-                        .update_no_chain(scrypto_encode(&c.state_updates).unwrap())
+                        .concat_mut(scrypto_encode(&c.state_updates).unwrap())
                 }
                 TransactionResult::Reject(_) | TransactionResult::Abort(_) => {}
             }

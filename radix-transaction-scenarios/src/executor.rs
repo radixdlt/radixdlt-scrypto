@@ -305,7 +305,7 @@ where
         execution_config: &ExecutionConfig,
         modules: &impl VmInitialize,
     ) -> Result<TransactionReceiptV1, ScenarioExecutorError> {
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(
+        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::default(
             self.network_definition.id,
         ));
         let validated = validator

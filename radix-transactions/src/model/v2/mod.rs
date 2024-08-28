@@ -1,0 +1,33 @@
+use super::*;
+
+mod child_intents_v2;
+mod instructions_v2;
+mod intent_core_v2;
+mod intent_header_v2;
+mod intent_signatures_v2;
+mod message_v2;
+mod notarized_transaction_v2;
+mod partial_transaction_v2;
+mod signed_partial_transaction_v2;
+mod signed_transaction_intent_v2;
+mod subintent_v2;
+mod subintents_v2;
+mod transaction_header_v2;
+mod transaction_intent_v2;
+mod validated_notarized_transaction_v2;
+
+pub use child_intents_v2::*;
+pub use instructions_v2::*;
+pub use intent_core_v2::*;
+pub use intent_header_v2::*;
+pub use intent_signatures_v2::*;
+pub use message_v2::*;
+pub use notarized_transaction_v2::*;
+pub use partial_transaction_v2::*;
+pub use signed_partial_transaction_v2::*;
+pub use signed_transaction_intent_v2::*;
+pub use subintent_v2::*;
+pub use subintents_v2::*;
+pub use transaction_header_v2::*;
+pub use transaction_intent_v2::*;
+pub use validated_notarized_transaction_v2::*;

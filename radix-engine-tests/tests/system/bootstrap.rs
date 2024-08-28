@@ -43,7 +43,7 @@ fn test_bootstrap_receipt_should_match_constants() {
 
     let mut hooks = GenesisReceiptExtractionHooks::new();
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings {
+        .configure_babylon(|_| BabylonSettings {
             genesis_data_chunks,
             genesis_epoch,
             consensus_manager_config: ConsensusManagerConfig::test_default(),
@@ -149,7 +149,7 @@ fn test_bootstrap_receipts_should_have_complete_system_structure() {
     ];
     let mut hooks = GenesisReceiptExtractionHooks::new();
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings {
+        .configure_babylon(|_| BabylonSettings {
             genesis_data_chunks,
             genesis_epoch,
             consensus_manager_config: ConsensusManagerConfig::test_default(),
@@ -251,7 +251,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
 
     let mut hooks = GenesisReceiptExtractionHooks::new();
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings {
+        .configure_babylon(|_| BabylonSettings {
             genesis_data_chunks,
             genesis_epoch: Epoch::of(1),
             consensus_manager_config: ConsensusManagerConfig::test_default(),
@@ -361,7 +361,7 @@ fn test_bootstrap_with_exceeded_validator_count() {
     initial_config.max_validators = ValidatorIndex::MAX as u32 + 1;
 
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings {
+        .configure_babylon(|_| BabylonSettings {
             genesis_data_chunks: vec![],
             genesis_epoch: Epoch::of(1),
             consensus_manager_config: initial_config,
@@ -430,7 +430,7 @@ fn test_genesis_stake_allocation() {
 
     let mut hooks = GenesisReceiptExtractionHooks::new();
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings {
+        .configure_babylon(|_| BabylonSettings {
             genesis_data_chunks,
             genesis_epoch: Epoch::of(1),
             consensus_manager_config: ConsensusManagerConfig::test_default(),
@@ -510,7 +510,7 @@ fn test_genesis_time() {
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings {
+        .configure_babylon(|_| BabylonSettings {
             genesis_data_chunks: vec![],
             genesis_epoch: Epoch::of(1),
             consensus_manager_config: ConsensusManagerConfig::test_default(),
@@ -637,7 +637,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
 
     // Bootstrap
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_protocol(|builder| builder.with_babylon(genesis).only_babylon())
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).only_babylon())
         .build();
 
     // Act
@@ -722,7 +722,7 @@ fn test_bootstrap_should_create_consensus_manager_with_sorted_validator_index() 
     ];
 
     ProtocolBuilder::for_simulator()
-        .with_babylon(BabylonSettings {
+        .configure_babylon(|_| BabylonSettings {
             genesis_data_chunks: validator_chunks,
             genesis_epoch: Epoch::of(1),
             consensus_manager_config: ConsensusManagerConfig::test_default(),

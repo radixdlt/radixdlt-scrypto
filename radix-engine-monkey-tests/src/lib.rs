@@ -339,7 +339,9 @@ impl<T: TxnFuzzer> FuzzTest<T> {
 
         let (mut ledger, epoch_change) = LedgerSimulatorBuilder::new()
             .with_custom_protocol(|builder| {
-                builder.with_babylon(genesis).from_bootstrap_to_latest()
+                builder
+                    .configure_babylon(|_| genesis)
+                    .from_bootstrap_to_latest()
             })
             .with_custom_extension(OverridePackageCode::new(
                 CUSTOM_PACKAGE_CODE_ID,
