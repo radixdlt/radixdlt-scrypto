@@ -103,10 +103,11 @@ pub mod path_macros {
         };
     }
 
-    // Not a macro, because it needs to support a variable folder, but here
-    // for consistency
-    pub fn path_local_metering_assets(folder: &str) -> String {
-        format!("{}/assets/metering/{}", env!("CARGO_MANIFEST_DIR"), folder)
+    #[macro_export]
+    macro_rules! path_local_metering_receipts {
+        () => {
+            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/metering/")
+        };
     }
 
     pub use crate::include_local_wasm_str;

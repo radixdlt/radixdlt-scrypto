@@ -1,9 +1,9 @@
 Name: account_locker
 
 == SUMMARY HASHES ==
-These Bottlenose hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 4125290881db5015 (allowed to change if not deployed to any network)
-Events       : 03ba5fe8dc1932d2 (allowed to change if not deployed to any network)
+These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
+State changes: 4125290881db5015 (should never change)
+Events       : 03ba5fe8dc1932d2 (should never change)
 
 == INTERESTING ADDRESSES ==
 - badge_holder_account: account_sim1cx4qy6q2aa9vgl3x87nny50nephemg6yntq95neulu85hndy5wwzkh

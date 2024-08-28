@@ -1,9 +1,9 @@
 Name: transfer_xrd
 
 == SUMMARY HASHES ==
-These Bottlenose hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 43d1481a49eac9a3 (allowed to change if not deployed to any network)
-Events       : 3be9b145d659b36a (allowed to change if not deployed to any network)
+These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
+State changes: 43d1481a49eac9a3 (should never change)
+Events       : 3be9b145d659b36a (should never change)
 
 == INTERESTING ADDRESSES ==
 - from_account: account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw

@@ -1,0 +1,289 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0.35915695109 XRD
+├─ Network execution: 0.1263619 XRD, 2527238 execution cost units
+├─ Network finalization: 0.0265153 XRD, 530306 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0.20627975109 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 9
+├─ Emitter: Method { node: internal_vault_sim1trlz48lr8t38e6xlc9n304ahr62r8te03exlrh097s495vmk35e6vz, module_id: Main }
+   Event: LockFeeEvent {
+     amount: Decimal("10"),
+   }
+├─ Emitter: Method { node: accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh, module_id: Main }
+   Event: InitiateRecoveryEvent {
+     proposer: Proposer::Primary,
+     proposal: RecoveryProposal {
+       rule_set: RuleSet {
+         primary_role: AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[a0c2219f58abcbc2ebd2da349acb10773ffbc37b6af91fa8df2486c9ea]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+         recovery_role: AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[3aadfdff1d2bfdcf3cd26c653b87f494bb6a990882b403cf0557293778]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+         confirmation_role: AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[ce4a51a5ca01ea8e0e59b1c8abdb520edfb19a24571b5a747498cad627]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+       },
+       timed_recovery_delay_in_minutes: Option::None,
+     },
+   }
+├─ Emitter: Method { node: accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh, module_id: RoleAssignment }
+   Event: SetRoleEvent {
+     role_key: RoleKey("primary"),
+     rule: AccessRule::Protected(
+       AccessRuleNode::ProofRule(
+         ProofRule::Require(
+           ResourceOrNonFungible::NonFungible(
+             NonFungibleGlobalId {
+               resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+               local_id: NonFungibleLocalId("[a0c2219f58abcbc2ebd2da349acb10773ffbc37b6af91fa8df2486c9ea]"),
+             },
+           ),
+         ),
+       ),
+     ),
+   }
+├─ Emitter: Method { node: accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh, module_id: RoleAssignment }
+   Event: SetRoleEvent {
+     role_key: RoleKey("recovery"),
+     rule: AccessRule::Protected(
+       AccessRuleNode::ProofRule(
+         ProofRule::Require(
+           ResourceOrNonFungible::NonFungible(
+             NonFungibleGlobalId {
+               resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+               local_id: NonFungibleLocalId("[3aadfdff1d2bfdcf3cd26c653b87f494bb6a990882b403cf0557293778]"),
+             },
+           ),
+         ),
+       ),
+     ),
+   }
+├─ Emitter: Method { node: accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh, module_id: RoleAssignment }
+   Event: SetRoleEvent {
+     role_key: RoleKey("confirmation"),
+     rule: AccessRule::Protected(
+       AccessRuleNode::ProofRule(
+         ProofRule::Require(
+           ResourceOrNonFungible::NonFungible(
+             NonFungibleGlobalId {
+               resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+               local_id: NonFungibleLocalId("[ce4a51a5ca01ea8e0e59b1c8abdb520edfb19a24571b5a747498cad627]"),
+             },
+           ),
+         ),
+       ),
+     ),
+   }
+├─ Emitter: Method { node: accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh, module_id: Main }
+   Event: RuleSetUpdateEvent {
+     proposer: Proposer::Primary,
+     proposal: RecoveryProposal {
+       rule_set: RuleSet {
+         primary_role: AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[a0c2219f58abcbc2ebd2da349acb10773ffbc37b6af91fa8df2486c9ea]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+         recovery_role: AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[3aadfdff1d2bfdcf3cd26c653b87f494bb6a990882b403cf0557293778]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+         confirmation_role: AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[ce4a51a5ca01ea8e0e59b1c8abdb520edfb19a24571b5a747498cad627]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+       },
+       timed_recovery_delay_in_minutes: Option::None,
+     },
+   }
+├─ Emitter: Method { node: internal_vault_sim1trlz48lr8t38e6xlc9n304ahr62r8te03exlrh097s495vmk35e6vz, module_id: Main }
+   Event: PayFeeEvent {
+     amount: Decimal("0.35915695109"),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("0.179578475545"),
+   }
+└─ Emitter: Method { node: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3, module_id: Main }
+   Event: BurnFungibleResourceEvent {
+     amount: Decimal("0.179578475545"),
+   }
+
+STATE UPDATES: 5 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {
+             0u8 => Decimal("0.435500367095"),
+           },
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+├─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 2 partitions
+  ├─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+  └─ Partition(65): 1 change
+    └─ Set: Hash(hex("369f81484c9747c615316694b403ac12cb13097eb0b00e20da0f2b0af610ebfc"))
+       Value: UNLOCKED TransactionStatus::V1(
+         TransactionStatusV1::CommittedSuccess,
+       )
+├─ accesscontroller_sim1c09uvtxa5efafuetf983dcz5s5d8whtwcxe559kn3ywruchlxh0twh across 2 partitions
+  ├─ Partition(6): 3 changes
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("confirmation") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[ce4a51a5ca01ea8e0e59b1c8abdb520edfb19a24571b5a747498cad627]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+       )
+    ├─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("recovery") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[3aadfdff1d2bfdcf3cd26c653b87f494bb6a990882b403cf0557293778]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+       )
+    └─ Set: ModuleRoleKey { module: ModuleId::Main, key: RoleKey("primary") }
+       Value: UNLOCKED RoleAssignmentAccessRuleEntryPayload::V1(
+         AccessRule::Protected(
+           AccessRuleNode::ProofRule(
+             ProofRule::Require(
+               ResourceOrNonFungible::NonFungible(
+                 NonFungibleGlobalId {
+                   resource_address: ResourceAddress(Reference("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")),
+                   local_id: NonFungibleLocalId("[a0c2219f58abcbc2ebd2da349acb10773ffbc37b6af91fa8df2486c9ea]"),
+                 },
+               ),
+             ),
+           ),
+         ),
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED AccessControllerV2StateFieldPayload::V2(
+         AccessControllerSubstate {
+           controlled_asset: Vault(Own("internal_vault_sim1tz3wnsxw770s9kgtfudv4kktz6juv48d7v59qd7exlq98a53knngw6")),
+           xrd_fee_vault: Option::Some(
+             Vault(Own("internal_vault_sim1trlz48lr8t38e6xlc9n304ahr62r8te03exlrh097s495vmk35e6vz")),
+           ),
+           timed_recovery_delay_in_minutes: Option::None,
+           recovery_badge: ResourceAddress(Reference("resource_sim1ngmpfyymhv8l024qwlrd5c0rf2q43m6umen960ngmk3w826wx7np3r")),
+           state: Tuple(
+             PrimaryRoleLockingState::Unlocked,
+             PrimaryRoleRecoveryAttemptState::NoRecoveryAttempt,
+             PrimaryRoleBadgeWithdrawAttemptState::NoBadgeWithdrawAttempt,
+             RecoveryRoleRecoveryAttemptState::NoRecoveryAttempt,
+             RecoveryRoleBadgeWithdrawAttemptState::NoBadgeWithdrawAttempt,
+           ),
+         },
+       )
+├─ internal_vault_sim1trlz48lr8t38e6xlc9n304ahr62r8te03exlrh097s495vmk35e6vz across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("9999.64084304891")),
+       )
+└─ internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("0.87100073419")),
+       )
+
+OUTPUTS: 3
+├─ Unit
+├─ Unit
+└─ Unit
+
+BALANCE CHANGES: 2
+├─ Vault: internal_vault_sim1trlz48lr8t38e6xlc9n304ahr62r8te03exlrh097s495vmk35e6vz
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: -0.35915695109
+└─ Vault: internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel
+   ResAddr: resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3
+   Change: 0.179578475545
+
+NEW ENTITIES: 0
