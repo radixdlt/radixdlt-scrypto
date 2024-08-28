@@ -3,6 +3,7 @@ use crate::utils::*;
 use radix_engine::blueprints::account::DepositEvent;
 use radix_engine::updates::*;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::blueprints::locker::ResourceSpecifier;
 use radix_engine_interface::*;
 
 pub struct AccountLockerScenarioConfig {

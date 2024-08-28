@@ -5,7 +5,7 @@ use crate::internal_prelude::*;
 use crate::kernel::kernel_callback_api::ExecutionReceipt;
 use crate::system::system_db_reader::SystemDatabaseReader;
 use crate::system::system_modules::costing::*;
-use crate::system::system_modules::execution_trace::*;
+use crate::system::system_modules::execution_trace::{WorktopChange, *};
 use crate::system::system_substate_schemas::*;
 use crate::transaction::SystemStructure;
 use colored::*;

@@ -1,0 +1,71 @@
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+
+use std::fmt::Display;
+use std::str::FromStr;
+
+#[serde_as]
+#[derive(
+    Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,
+)]
+#[serde(transparent)]
+#[schemars(transparent)]
+#[schemars(bound = "")]
+pub struct AsStr<T>(
+    #[schemars(with = "String")]
+    #[serde_as(as = "serde_with::DisplayFromStr")]
+    T,
+)
+where
+    T: Display + FromStr,
+    <T as FromStr>::Err: Display;
+
+impl<T> std::ops::Deref for AsStr<T>
+where
+    T: Display + FromStr,
+    <T as FromStr>::Err: Display,
+{
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T> std::ops::DerefMut for AsStr<T>
+where
+    T: Display + FromStr,
+    <T as FromStr>::Err: Display,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T> From<T> for AsStr<T>
+where
+    T: Display + FromStr,
+    <T as FromStr>::Err: Display,
+{
+    fn from(value: T) -> Self {
+        Self(value)
+    }
+}
+
+impl<T> AsStr<T>
+where
+    T: Display + FromStr,
+    <T as FromStr>::Err: Display,
+{
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+
+impl<T> Copy for AsStr<T>
+where
+    T: Display + FromStr + Copy,
+    <T as FromStr>::Err: Display,
+{
+}
