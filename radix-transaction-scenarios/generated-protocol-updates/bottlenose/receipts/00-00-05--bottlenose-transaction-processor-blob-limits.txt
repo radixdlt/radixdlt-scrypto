@@ -1,0 +1,80 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 1 entity
+└─ package_sim1pkgxxxxxxxxxtxnpxrxxxxxxxxx002962227406xxxxxxxxx4dvqkl across 3 partitions
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "TransactionProcessor", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDefinitionEntryPayload::V1(
+         BlueprintDefinition {
+           interface: BlueprintInterface {
+             blueprint_type: BlueprintType::Outer,
+             is_transient: true,
+             generics: [],
+             feature_set: [],
+             state: IndexedStateSchema {
+               fields: Option::None,
+               collections: [],
+               num_logical_partitions: 0u8,
+             },
+             functions: {
+               "run" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("bc0ce86e5bc91369e09cb6104100045b228d397c48befd270c0200df3d2aaed8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       0u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("bc0ce86e5bc91369e09cb6104100045b228d397c48befd270c0200df3d2aaed8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       5u64,
+                     ),
+                   ),
+                 ),
+               },
+             },
+             events: {},
+             types: {},
+           },
+           function_exports: {
+             "run" => PackageExport {
+               code_hash: CodeHash(hex("a59a3c39f93d5c9e02aaced048264326bcdcc76d41fb19881111ca519ddbe750")),
+               export_name: "run",
+             },
+           },
+           hook_exports: {},
+         },
+       )
+  ├─ Partition(69): 2 changes
+    ├─ Delete: CodeHash(hex("23ea5de7875c804441e4a8a3997fab3e53341d3106f2c6bdd73e7c1de5029725"))
+    └─ Set: CodeHash(hex("a59a3c39f93d5c9e02aaced048264326bcdcc76d41fb19881111ca519ddbe750"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::Native,
+       )
+  └─ Partition(70): 2 changes
+    ├─ Delete: CodeHash(hex("23ea5de7875c804441e4a8a3997fab3e53341d3106f2c6bdd73e7c1de5029725"))
+    └─ Set: CodeHash(hex("a59a3c39f93d5c9e02aaced048264326bcdcc76d41fb19881111ca519ddbe750"))
+       Value: LOCKED PackageCodeOriginalCodeEntryPayload::V1(
+         PackageCodeOriginalCodeV1(hex("0000000000000015")),
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0

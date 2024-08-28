@@ -61,7 +61,6 @@ use radix_engine::blueprints::consensus_manager::{
     ConsensusManagerSubstate, ProposerMilliTimestampSubstate, ProposerMinuteTimestampSubstate,
 };
 use radix_engine::blueprints::models::FieldPayload;
-use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::ExecutionConfig;

@@ -2,9 +2,9 @@
 #[cfg(not(feature = "resource_tracker"))]
 mod multi_threaded_test {
     use radix_common::prelude::*;
-    use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::ExecutionConfig;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
+    use radix_engine::updates::ProtocolBuilder;
     use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::prelude::*;
     use radix_engine_interface::rule;
@@ -30,14 +30,7 @@ mod multi_threaded_test {
             native_vm_extension: NoExtension,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(
-            NetworkDefinition::simulator(),
-            &mut substate_db,
-            vm_init.clone(),
-            false,
-        )
-        .bootstrap_test_default()
-        .unwrap();
+        ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
         // Create a key pair
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();

@@ -1,12 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::blueprints::native_schema::*;
-use radix_engine::system::bootstrap::{
-    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
-    GenesisStakeAllocation,
-};
 use radix_engine::transaction::TransactionResult;
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::*;
+use radix_engine::updates::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_queries::typed_native_events::TypedNativeEvent;
 use radix_transaction_scenarios::executor::*;
@@ -14,175 +9,83 @@ use sbor::rust::ops::Deref;
 use scrypto_test::prelude::*;
 
 #[test]
-fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm_init = VmInit::new(&scrypto_vm, NoExtension);
+fn test_bootstrap_and_protocol_update_receipts_have_substate_changes_which_can_be_typed() {
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let validator_key = Secp256k1PublicKey([0; 33]);
-    let staker_address = ComponentAddress::preallocated_account_from_public_key(
-        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
-    );
-    let stake = GenesisStakeAllocation {
-        account_index: 0,
-        xrd_amount: Decimal::one(),
-    };
-    let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
-        GenesisDataChunk::Stakes {
-            accounts: vec![staker_address],
-            allocations: vec![(validator_key, vec![stake])],
-        },
-    ];
 
-    let mut bootstrapper = Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        vm_init,
-        true,
-    );
-
-    let GenesisReceipts {
-        system_bootstrap_receipt,
-        data_ingestion_receipts,
-        wrap_up_receipt,
-        ..
-    } = bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
-
-    assert_receipt_substate_changes_can_be_typed(system_bootstrap_receipt.expect_commit_success());
-    for receipt in data_ingestion_receipts.into_iter() {
-        assert_receipt_substate_changes_can_be_typed(receipt.expect_commit_success());
+    struct Hooks;
+    impl ProtocolUpdateExecutionHooks for Hooks {
+        fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
+            let OnProtocolTransactionExecuted {
+                receipt,
+                ..
+            } = event;
+            assert_receipt_substate_changes_can_be_typed(receipt.expect_commit_success())
+        }
     }
-    assert_receipt_substate_changes_can_be_typed(wrap_up_receipt.expect_commit_success());
+    let mut hooks = Hooks;
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings::test_complex())
+        .from_bootstrap_to_latest()
+        .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &mut VmModules::default());
 }
 
 #[test]
-fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+fn test_bootstrap_and_protocol_update_receipts_have_events_that_can_be_typed() {
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let validator_key = Secp256k1PublicKey([0; 33]);
-    let staker_address = ComponentAddress::preallocated_account_from_public_key(
-        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
-    );
-    let token_holder = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Secp256k1(
-        Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
-    ));
-    let resource_address = ResourceAddress::new_or_panic(
-        NodeId::new(
-            EntityType::GlobalFungibleResourceManager as u8,
-            &hash(vec![1, 2, 3]).lower_bytes(),
-        )
-        .0,
-    );
-    let stake = GenesisStakeAllocation {
-        account_index: 0,
-        xrd_amount: Decimal::one(),
-    };
-    let mut xrd_balances = Vec::new();
-    let mut pub_key_accounts = Vec::new();
 
-    for i in 0..20 {
-        let pub_key = Secp256k1PrivateKey::from_u64((i + 1).try_into().unwrap())
-            .unwrap()
-            .public_key();
-        let account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
-        pub_key_accounts.push((pub_key, account_address));
-        xrd_balances.push((account_address, dec!("10")));
+    struct Hooks;
+    impl ProtocolUpdateExecutionHooks for Hooks {
+        fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
+            let OnProtocolTransactionExecuted {
+                receipt,
+                ..
+            } = event;
+            assert_receipt_events_can_be_typed(receipt.expect_commit_success())
+        }
     }
-    let genesis_resource = GenesisResource {
-        reserved_resource_address: resource_address,
-        metadata: vec![(
-            "symbol".to_string(),
-            MetadataValue::String("TST".to_string()),
-        )],
-        owner: None,
-    };
-    let resource_allocation = GenesisResourceAllocation {
-        account_index: 0,
-        amount: dec!("10"),
-    };
-    let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
-        GenesisDataChunk::Stakes {
-            accounts: vec![staker_address],
-            allocations: vec![(validator_key, vec![stake])],
-        },
-        GenesisDataChunk::XrdBalances(xrd_balances),
-        GenesisDataChunk::Resources(vec![genesis_resource]),
-        GenesisDataChunk::ResourceBalances {
-            accounts: vec![token_holder.clone()],
-            allocations: vec![(resource_address.clone(), vec![resource_allocation])],
-        },
-    ];
-
-    let mut bootstrapper = Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        VmInit {
-            scrypto_vm: &scrypto_vm,
-            native_vm_extension: NoExtension,
-        },
-        true,
-    );
-
-    let GenesisReceipts {
-        system_bootstrap_receipt,
-        data_ingestion_receipts,
-        wrap_up_receipt,
-        ..
-    } = bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
-
-    assert_receipt_events_can_be_typed(system_bootstrap_receipt.expect_commit_success());
-    for receipt in data_ingestion_receipts.into_iter() {
-        assert_receipt_events_can_be_typed(receipt.expect_commit_success());
-    }
-    assert_receipt_events_can_be_typed(wrap_up_receipt.expect_commit_success());
+    let mut hooks = Hooks;
+    ProtocolBuilder::for_simulator()
+        .with_babylon(BabylonSettings::test_complex())
+        .from_bootstrap_to_latest()
+        .commit_each_protocol_update_advanced(&mut substate_db, &mut hooks, &mut VmModules::default());
 }
 
 #[test]
 fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_typed() {
-    DefaultTransactionScenarioExecutor::new(
+    struct Hooks;
+    impl<S: SubstateDatabase> ScenarioExecutionHooks<S> for Hooks {
+        fn on_transaction_executed(&mut self, event: OnScenarioTransactionExecuted<S>) {
+            let OnScenarioTransactionExecuted { receipt, .. } = event;
+            if let TransactionResult::Commit(ref commit_result) = receipt.result {
+                assert_receipt_substate_changes_can_be_typed(commit_result);
+            };
+        }
+    }
+
+    TransactionScenarioExecutor::new(
         InMemorySubstateDatabase::standard(),
-        &NetworkDefinition::simulator(),
+        NetworkDefinition::simulator(),
     )
-    .on_transaction_executed(|_, _, receipt, _| {
-        if let TransactionResult::Commit(ref commit_result) = receipt.result {
-            assert_receipt_substate_changes_can_be_typed(commit_result);
-        };
-    })
-    .execute_every_protocol_update_and_scenario()
+    .execute_every_protocol_update_and_scenario(&mut Hooks)
     .expect("Must succeed!");
 }
 
 #[test]
 fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
-    DefaultTransactionScenarioExecutor::new(
+    struct Hooks;
+    impl<S: SubstateDatabase> ScenarioExecutionHooks<S> for Hooks {
+        fn on_transaction_executed(&mut self, event: OnScenarioTransactionExecuted<S>) {
+            let OnScenarioTransactionExecuted { receipt, .. } = event;
+            if let TransactionResult::Commit(ref commit_result) = receipt.result {
+                assert_receipt_events_can_be_typed(commit_result);
+            };
+        }
+    }
+    TransactionScenarioExecutor::new(
         InMemorySubstateDatabase::standard(),
-        &NetworkDefinition::simulator(),
+        NetworkDefinition::simulator(),
     )
-    .on_transaction_executed(|_, _, receipt, _| {
-        if let TransactionResult::Commit(ref commit_result) = receipt.result {
-            assert_receipt_events_can_be_typed(commit_result);
-        };
-    })
-    .execute_every_protocol_update_and_scenario()
+    .execute_every_protocol_update_and_scenario(&mut Hooks)
     .expect("Must succeed!");
 }
 

@@ -56,6 +56,23 @@ pub struct ConsensusManagerConfig {
 }
 
 impl ConsensusManagerConfig {
+    pub fn test_default() -> Self {
+        ConsensusManagerConfig {
+            max_validators: 10,
+            epoch_change_condition: EpochChangeCondition {
+                min_round_count: 1,
+                max_round_count: 1,
+                target_duration_millis: 0,
+            },
+            num_unstake_epochs: 1,
+            total_emission_xrd_per_epoch: Decimal::one(),
+            min_validator_reliability: Decimal::one(),
+            num_owner_stake_units_unlock_epochs: 2,
+            num_fee_increase_delay_epochs: 1,
+            validator_creation_usd_cost: dec!(100),
+        }
+    }
+
     pub fn with_max_validators(mut self, new_value: u32) -> Self {
         self.max_validators = new_value;
         self

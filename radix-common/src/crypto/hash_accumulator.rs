@@ -3,6 +3,7 @@ use blake2::Digest as Blake2Digest;
 use crate::prelude::*;
 
 /// Represents a 32-byte hash accumulator.
+#[derive(Default)]
 pub struct HashAccumulator {
     inner: Blake2b256,
     input_size: usize,
@@ -10,10 +11,7 @@ pub struct HashAccumulator {
 
 impl HashAccumulator {
     pub fn new() -> Self {
-        Self {
-            inner: Blake2b256::new(),
-            input_size: 0,
-        }
+        Default::default()
     }
 
     /// Effectively concatenates `data` to the payload-to-be-hashed

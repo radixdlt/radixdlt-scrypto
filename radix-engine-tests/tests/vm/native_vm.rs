@@ -5,7 +5,6 @@ use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::*;
 use radix_engine::kernel::kernel::*;
 use radix_engine::kernel::kernel_api::*;
-use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::auth::AuthModule;
@@ -16,6 +15,7 @@ use radix_engine::system::system_modules::limits::LimitsModule;
 use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use radix_engine::system::system_modules::*;
 use radix_engine::track::*;
+use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::account::*;
@@ -57,15 +57,7 @@ fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
 fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
-
-    let _ = Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
-        false,
-    )
-    .bootstrap_test_default()
-    .unwrap();
+    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -136,15 +128,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
-
-    let _ = Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
-        false,
-    )
-    .bootstrap_test_default()
-    .unwrap();
+    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();

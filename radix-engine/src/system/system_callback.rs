@@ -800,7 +800,7 @@ impl<C: SystemCallbackObject> System<C, Executable> {
                 continue;
             }
 
-            if node_id.is_global_virtual() {
+            if node_id.is_global_preallocated() {
                 // Allow global virtual and add reference
                 global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                 continue;

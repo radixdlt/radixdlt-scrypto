@@ -1,0 +1,95 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 1
+└─ Emitter: Method { node: consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl, module_id: Main }
+   Event: EpochChangeEvent {
+     epoch: Epoch(2u64),
+     validator_set: ActiveValidatorSet({
+       ComponentAddress(Reference("validator_sim1s0a9c9kwjr3dmw79djvhalyz32sywumacv873yr7ms02v725fydvm0")) => Validator {
+         key: Secp256k1PublicKey(hex("000000000000000000000000000000000000000000000000000000000000000000")),
+         stake: Decimal("1"),
+       },
+     }),
+     significant_protocol_update_readiness: {},
+   }
+
+STATE UPDATES: 3 entities
+├─ consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl across 1 partitions
+  └─ Partition(64): 4 changes
+    ├─ Set: Field(1)
+       Value: UNLOCKED ConsensusManagerStateFieldPayload::V1(
+         ConsensusManagerSubstate {
+           started: true,
+           epoch: Epoch(2u64),
+           effective_epoch_start_milli: 1i64,
+           actual_epoch_start_milli: 1i64,
+           round: Round(0u64),
+           current_leader: Option::Some(
+             0u8,
+           ),
+         },
+       )
+    ├─ Set: Field(2)
+       Value: UNLOCKED ConsensusManagerValidatorRewardsFieldPayload::V1(
+         ValidatorRewardsSubstate {
+           proposer_rewards: {},
+           rewards_vault: Vault(Own("internal_vault_sim1tpsesv77qvw782kknjks9g3x2msg8cc8ldshk28pkf6m6lkhun3sel")),
+         },
+       )
+    ├─ Set: Field(3)
+       Value: UNLOCKED ConsensusManagerCurrentValidatorSetFieldPayload::V1(
+         CurrentValidatorSetSubstate {
+           validator_set: ActiveValidatorSet({
+             ComponentAddress(Reference("validator_sim1s0a9c9kwjr3dmw79djvhalyz32sywumacv873yr7ms02v725fydvm0")) => Validator {
+               key: Secp256k1PublicKey(hex("000000000000000000000000000000000000000000000000000000000000000000")),
+               stake: Decimal("1"),
+             },
+           }),
+         },
+       )
+    └─ Set: Field(4)
+       Value: UNLOCKED ConsensusManagerCurrentProposalStatisticFieldPayload::V1(
+         CurrentProposalStatisticSubstate {
+           validator_statistics: [
+             ProposalStatistic {
+               made: 0u64,
+               missed: 0u64,
+             },
+           ],
+         },
+       )
+├─ component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED GenesisHelper {
+         consensus_manager: GlobalConsensusManager(Reference("consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl")),
+         validators: KeyValueStore(Own("internal_keyvaluestore_sim1kpkxjgh28rp2e2fudwfx3ck9sau86xzt3ckc7gnl25rd6dlt6cr7a9")),
+       }
+└─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+
+OUTPUTS: 1
+└─ Unit
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0

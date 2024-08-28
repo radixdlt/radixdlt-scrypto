@@ -13,6 +13,9 @@ use radix_engine_interface::api::SystemApi;
 
 use crate::vm::ScryptoVmVersion;
 
+use super::wasm::DefaultWasmEngine;
+use super::NoExtension;
+
 pub const BOOT_LOADER_VM_BOOT_FIELD_KEY: FieldKey = 2u8;
 
 pub type VmBootSubstate = VmBoot;
@@ -46,6 +49,68 @@ impl VmApi for VmBoot {
             VmBoot::V1 { scrypto_version } => ScryptoVmVersion::try_from(*scrypto_version)
                 .expect(&format!("Unexpected scrypto version: {}", scrypto_version)),
         }
+    }
+}
+
+/// The canonical implementation is [`VmModules`].
+pub trait VmInitialize {
+    type WasmEngine: WasmEngine;
+    type NativeVmExtension: NativeVmExtension;
+
+    fn get_vm_extension(&self) -> Self::NativeVmExtension;
+
+    fn get_scrypto_vm(&self) -> &ScryptoVm<Self::WasmEngine>;
+
+    fn create_vm_init(&self) -> VmInit<Self::WasmEngine, Self::NativeVmExtension> {
+        let vm_extension = self.get_vm_extension();
+        VmInit::new(self.get_scrypto_vm(), vm_extension)
+    }
+}
+
+pub struct VmModules<W: WasmEngine, E: NativeVmExtension> {
+    pub scrypto_vm: ScryptoVm<W>,
+    pub vm_extension: E,
+}
+
+impl<W: WasmEngine, E: NativeVmExtension> VmModules<W, E> {
+    pub fn new(scrypto_vm: ScryptoVm<W>, vm_extension: E) -> Self {
+        Self {
+            scrypto_vm,
+            vm_extension,
+        }
+    }
+}
+
+impl<E: NativeVmExtension> VmModules<DefaultWasmEngine, E> {
+    pub fn default_with_extension(vm_extension: E) -> Self {
+        Self {
+            scrypto_vm: Default::default(),
+            vm_extension,
+        }
+    }
+}
+
+pub type DefaultVmModules = VmModules<DefaultWasmEngine, NoExtension>;
+
+impl DefaultVmModules {
+    pub fn default() -> Self {
+        Self {
+            scrypto_vm: ScryptoVm::default(),
+            vm_extension: NoExtension,
+        }
+    }
+}
+
+impl<W: WasmEngine, E: NativeVmExtension> VmInitialize for VmModules<W, E> {
+    type WasmEngine = W;
+    type NativeVmExtension = E;
+
+    fn get_vm_extension(&self) -> Self::NativeVmExtension {
+        self.vm_extension.clone()
+    }
+
+    fn get_scrypto_vm(&self) -> &ScryptoVm<Self::WasmEngine> {
+        &self.scrypto_vm
     }
 }
 

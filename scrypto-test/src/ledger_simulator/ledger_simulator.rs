@@ -15,17 +15,11 @@ use radix_engine::transaction::{
     CostingParameters, ExecutionConfig, PreviewError, TransactionReceipt, TransactionResult,
 };
 use radix_engine::updates::*;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
+use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::{NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_SECURIFY_IDENT;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
-    ConsensusManagerGetCurrentTimeInputV2, ConsensusManagerNextRoundInput, EpochChangeCondition,
-    LeaderProposalHistory, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
-    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-    VALIDATOR_STAKE_AS_OWNER_IDENT,
-};
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::pool::{
     OneResourcePoolInstantiateManifestInput, ONE_RESOURCE_POOL_INSTANTIATE_IDENT,
 };
@@ -45,141 +39,6 @@ use std::path::{Path, PathBuf};
 
 use super::Compile;
 
-pub struct CustomGenesis {
-    pub genesis_data_chunks: Vec<GenesisDataChunk>,
-    pub genesis_epoch: Epoch,
-    pub initial_config: ConsensusManagerConfig,
-    pub initial_time_ms: i64,
-    pub initial_current_leader: Option<ValidatorIndex>,
-    pub faucet_supply: Decimal,
-}
-
-impl CustomGenesis {
-    pub fn default(genesis_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
-        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-        Self::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            Decimal::zero(),
-            ComponentAddress::preallocated_account_from_public_key(&pub_key),
-            genesis_epoch,
-            initial_config,
-        )
-    }
-
-    pub fn with_faucet_supply(faucet_supply: Decimal) -> CustomGenesis {
-        CustomGenesis {
-            genesis_data_chunks: vec![],
-            genesis_epoch: Epoch::of(1u64),
-            initial_config: Self::default_consensus_manager_config(),
-            initial_time_ms: 0,
-            initial_current_leader: None,
-            faucet_supply,
-        }
-    }
-
-    pub fn default_with_xrd_amount(
-        xrd_amount: Decimal,
-        genesis_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-    ) -> CustomGenesis {
-        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
-        Self::single_validator_and_staker(
-            pub_key,
-            Decimal::one(),
-            xrd_amount,
-            ComponentAddress::preallocated_account_from_public_key(&pub_key),
-            genesis_epoch,
-            initial_config,
-        )
-    }
-
-    pub fn default_consensus_manager_config() -> ConsensusManagerConfig {
-        ConsensusManagerConfig {
-            max_validators: 10,
-            epoch_change_condition: EpochChangeCondition {
-                min_round_count: 1,
-                max_round_count: 1,
-                target_duration_millis: 0,
-            },
-            num_unstake_epochs: 1,
-            total_emission_xrd_per_epoch: Decimal::one(),
-            min_validator_reliability: Decimal::one(),
-            num_owner_stake_units_unlock_epochs: 2,
-            num_fee_increase_delay_epochs: 4,
-            validator_creation_usd_cost: *DEFAULT_VALIDATOR_USD_COST,
-        }
-    }
-
-    pub fn single_validator_and_staker(
-        validator_public_key: Secp256k1PublicKey,
-        stake_xrd_amount: Decimal,
-        xrd_amount: Decimal,
-        staker_account: ComponentAddress,
-        genesis_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-    ) -> CustomGenesis {
-        Self::validators_and_single_staker(
-            vec![(validator_public_key, stake_xrd_amount)],
-            staker_account,
-            xrd_amount,
-            genesis_epoch,
-            initial_config,
-        )
-    }
-
-    pub fn validators_and_single_staker(
-        validators_and_stakes: Vec<(Secp256k1PublicKey, Decimal)>,
-        staker_account: ComponentAddress,
-        stacker_account_xrd_amount: Decimal,
-        genesis_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-    ) -> CustomGenesis {
-        let genesis_validators: Vec<GenesisValidator> = validators_and_stakes
-            .iter()
-            .map(|(key, _)| key.clone().into())
-            .collect();
-        let stake_allocations: Vec<(Secp256k1PublicKey, Vec<GenesisStakeAllocation>)> =
-            validators_and_stakes
-                .into_iter()
-                .map(|(key, stake_xrd_amount)| {
-                    (
-                        key,
-                        vec![GenesisStakeAllocation {
-                            account_index: 0,
-                            xrd_amount: stake_xrd_amount,
-                        }],
-                    )
-                })
-                .collect();
-        let genesis_data_chunks = vec![
-            GenesisDataChunk::Validators(genesis_validators),
-            GenesisDataChunk::Stakes {
-                accounts: vec![staker_account],
-                allocations: stake_allocations,
-            },
-            GenesisDataChunk::ResourceBalances {
-                accounts: vec![staker_account],
-                allocations: vec![(
-                    XRD,
-                    vec![GenesisResourceAllocation {
-                        account_index: 0u32,
-                        amount: stacker_account_xrd_amount,
-                    }],
-                )],
-            },
-        ];
-        CustomGenesis {
-            genesis_data_chunks,
-            genesis_epoch,
-            initial_config,
-            initial_time_ms: 0,
-            initial_current_leader: Some(0),
-            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
-        }
-    }
-}
-
 pub trait TestDatabase:
     SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase
 {
@@ -192,7 +51,6 @@ impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabas
 pub type DefaultLedgerSimulator = LedgerSimulator<NoExtension, InMemorySubstateDatabase>;
 
 pub struct LedgerSimulatorBuilder<E, D> {
-    custom_genesis: Option<CustomGenesis>,
     custom_extension: E,
     custom_database: D,
     protocol_executor: ProtocolExecutor,
@@ -205,11 +63,10 @@ pub struct LedgerSimulatorBuilder<E, D> {
 impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
     pub fn new() -> Self {
         LedgerSimulatorBuilder {
-            custom_genesis: None,
             custom_extension: NoExtension,
             custom_database: InMemorySubstateDatabase::standard(),
             protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
-                .until_latest_protocol_version(),
+                .from_bootstrap_to_latest(),
             with_kernel_trace: true,
             with_receipt_substate_check: true,
         }
@@ -223,18 +80,12 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 
     pub fn with_state_hashing(self) -> LedgerSimulatorBuilder<E, StateTreeUpdatingDatabase<D>> {
         LedgerSimulatorBuilder {
-            custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: StateTreeUpdatingDatabase::new(self.custom_database),
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
-    }
-
-    pub fn with_custom_genesis(mut self, genesis: CustomGenesis) -> Self {
-        self.custom_genesis = Some(genesis);
-        self
     }
 
     pub fn with_kernel_trace(mut self) -> Self {
@@ -262,7 +113,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         extension: NE,
     ) -> LedgerSimulatorBuilder<NE, D> {
         LedgerSimulatorBuilder::<NE, D> {
-            custom_genesis: self.custom_genesis,
             custom_extension: extension,
             custom_database: self.custom_database,
             protocol_executor: self.protocol_executor,
@@ -276,13 +126,24 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         database: ND,
     ) -> LedgerSimulatorBuilder<E, ND> {
         LedgerSimulatorBuilder::<E, ND> {
-            custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
             custom_database: database,
             protocol_executor: self.protocol_executor,
             with_kernel_trace: self.with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         }
+    }
+
+    /// Note - this overwrites / is overwritten by any other protocol overrides.
+    /// Use [`Self::with_custom_protocol`] for full control.
+    ///
+    /// If you previously just used `CustomGenesis::test_default` in order to get round
+    /// change tests to pass, this is no longer necessary.
+    #[deprecated = "Use with_custom_protocol(|builder| builder.with_babylon(genesis).from_bootstrap_to_latest()) instead"]
+    pub fn with_custom_genesis(self, genesis: BabylonSettings) -> Self {
+        self.with_custom_protocol(|builder| {
+            builder.with_babylon(genesis).from_bootstrap_to_latest()
+        })
     }
 
     pub fn with_custom_protocol(
@@ -294,8 +155,11 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         self
     }
 
+    /// Note - this overwrites / is overwritten by any other protocol overrides.
+    /// Use [`Self::with_custom_protocol`] for full control.
+    #[deprecated = "Use with_custom_protocol(|builder| builder.from_bootstrap_to(protocol_version)) instead"]
     pub fn with_protocol_version(self, protocol_version: ProtocolVersion) -> Self {
-        self.with_custom_protocol(|builder| builder.until(protocol_version))
+        self.with_custom_protocol(|builder| builder.from_bootstrap_to(protocol_version))
     }
 
     pub fn build_from_snapshot(
@@ -303,8 +167,10 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         snapshot: LedgerSimulatorSnapshot,
     ) -> LedgerSimulator<E, InMemorySubstateDatabase> {
         LedgerSimulator {
-            scrypto_vm: ScryptoVm::default(),
-            native_vm_extension: self.custom_extension,
+            vm_modules: VmModules {
+                scrypto_vm: ScryptoVm::default(),
+                vm_extension: self.custom_extension,
+            },
             database: snapshot.database,
             next_private_key: snapshot.next_private_key,
             next_transaction_nonce: snapshot.next_transaction_nonce,
@@ -324,58 +190,48 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         #[cfg(feature = "resource_tracker")]
         let with_kernel_trace = false;
         //----------------------------------------------------------------
-
-        let scrypto_vm = ScryptoVm {
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_validator_config: WasmValidatorConfigV1::new(),
-        };
-        let vm_init = VmInit::new(&scrypto_vm, self.custom_extension.clone());
-        let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(
-            NetworkDefinition::simulator(),
-            &mut substate_db,
-            vm_init,
-            bootstrap_trace,
-        );
-        let GenesisReceipts {
-            system_bootstrap_receipt,
-            data_ingestion_receipts,
-            wrap_up_receipt,
-        } = match self.custom_genesis {
-            Some(custom_genesis) => bootstrapper
-                .bootstrap_with_genesis_data(
-                    custom_genesis.genesis_data_chunks,
-                    custom_genesis.genesis_epoch,
-                    custom_genesis.initial_config,
-                    custom_genesis.initial_time_ms,
-                    custom_genesis.initial_current_leader,
-                    custom_genesis.faucet_supply,
-                )
-                .unwrap(),
-            None => bootstrapper.bootstrap_test_default().unwrap(),
-        };
-
-        let mut events = Vec::new();
-
-        events.push(
-            system_bootstrap_receipt
-                .expect_commit_success()
-                .application_events
-                .clone(),
-        );
-        for receipt in data_ingestion_receipts {
-            events.push(receipt.expect_commit_success().application_events.clone());
+        struct ProtocolUpdateHooks {
+            bootstrap_trace: bool,
+            events: Vec<Vec<(EventTypeIdentifier, Vec<u8>)>>,
+            genesis_next_epoch: Option<EpochChangeEvent>,
         }
-        events.push(
-            wrap_up_receipt
-                .expect_commit_success()
-                .application_events
-                .clone(),
-        );
+
+        impl ProtocolUpdateExecutionHooks for ProtocolUpdateHooks {
+            fn adapt_execution_config(&mut self, config: ExecutionConfig) -> ExecutionConfig {
+                config.with_kernel_trace(self.bootstrap_trace)
+            }
+
+            fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
+                let OnProtocolTransactionExecuted {
+                    protocol_version,
+                    receipt,
+                    ..
+                } = event;
+                self.events
+                    .push(receipt.expect_commit_success().application_events.clone());
+                if protocol_version == ProtocolVersion::EARLIEST {
+                    if let Some(next_epoch) = receipt.expect_commit_success().next_epoch() {
+                        self.genesis_next_epoch = Some(next_epoch);
+                    }
+                }
+            }
+        }
+
+        let mut substate_db = self.custom_database;
+
+        let mut hooks = ProtocolUpdateHooks {
+            bootstrap_trace,
+            events: vec![],
+            genesis_next_epoch: None,
+        };
+        let vm_modules = VmModules::default_with_extension(self.custom_extension);
 
         // Protocol Updates
-        self.protocol_executor
-            .commit_each_protocol_update(&mut substate_db);
+        self.protocol_executor.commit_each_protocol_update_advanced(
+            &mut substate_db,
+            &mut hooks,
+            &vm_modules,
+        );
 
         // Note that 0 is not a valid private key
         let next_private_key = 100;
@@ -384,22 +240,23 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
         let next_transaction_nonce = 100;
 
         let runner = LedgerSimulator {
-            scrypto_vm,
-            native_vm_extension: self.custom_extension.clone(),
+            vm_modules,
             database: substate_db,
             next_private_key,
             next_transaction_nonce,
-            collected_events: events,
+            collected_events: hooks.events,
             xrd_free_credits_used: false,
             with_kernel_trace: with_kernel_trace,
             with_receipt_substate_check: self.with_receipt_substate_check,
         };
 
-        let next_epoch = wrap_up_receipt
-            .expect_commit_success()
-            .next_epoch()
-            .unwrap();
-        (runner, next_epoch.validator_set)
+        (
+            runner,
+            hooks
+                .genesis_next_epoch
+                .expect("Expected an epoch change event from the protocol update")
+                .validator_set,
+        )
     }
 
     pub fn build(self) -> LedgerSimulator<E, D> {
@@ -408,8 +265,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulatorBuilder<E, D> {
 }
 
 pub struct LedgerSimulator<E: NativeVmExtension, D: TestDatabase> {
-    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    native_vm_extension: E,
+    vm_modules: VmModules<DefaultWasmEngine, E>,
     database: D,
 
     next_private_key: u64,
@@ -1363,10 +1219,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             .expect("expected transaction to be preparable");
         let executable = txn.get_executable(initial_proofs.into_iter().collect());
 
-        let vm_init = VmInit {
-            scrypto_vm: &self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension.clone(),
-        };
+        let vm_init = self.vm_modules.create_vm_init();
 
         let execution_config =
             ExecutionConfig::for_test_transaction().with_kernel_trace(self.with_kernel_trace);
@@ -1455,10 +1308,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
             self.xrd_free_credits_used = true;
         }
 
-        let vm_init = VmInit {
-            scrypto_vm: &self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension.clone(),
-        };
+        let vm_init = self.vm_modules.create_vm_init();
 
         let transaction_receipt = execute_transaction_with_configuration::<
             _,
@@ -1486,10 +1336,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        let vm_init = VmInit {
-            scrypto_vm: &self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension.clone(),
-        };
+        let vm_init = self.vm_modules.create_vm_init();
 
         execute_preview(
             &self.database,
@@ -1508,10 +1355,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
-        let vm_init = VmInit {
-            scrypto_vm: &self.scrypto_vm,
-            native_vm_extension: self.native_vm_extension.clone(),
-        };
+        let vm_init = self.vm_modules.create_vm_init();
         execute_preview(
             &mut self.database,
             vm_init,

@@ -871,6 +871,7 @@ mod test {
         build_and_decode(arg, type_kind, type_validation).map(|(_, arg)| arg)
     }
 
+    #[allow(dead_code)] // As it's used for displaying the error messages
     #[derive(Debug, Clone)]
     pub enum BuildAndDecodeArgError {
         BuildCallArgumentError(BuildCallArgumentError),

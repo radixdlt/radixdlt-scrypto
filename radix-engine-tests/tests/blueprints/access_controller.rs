@@ -9,7 +9,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::prelude::*;
 use radix_transactions::prelude::*;
-use scrypto_test::prelude::{CustomGenesis, DefaultLedgerSimulator, LedgerSimulatorBuilder};
+use scrypto_test::prelude::{DefaultLedgerSimulator, LedgerSimulatorBuilder};
 
 #[test]
 pub fn creating_an_access_controller_succeeds() {
@@ -1652,10 +1652,6 @@ impl AccessControllerLedgerSimulator {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
         let mut ledger = LedgerSimulatorBuilder::new()
             .without_kernel_trace()
-            .with_custom_genesis(CustomGenesis::default(
-                Epoch::of(1),
-                CustomGenesis::default_consensus_manager_config(),
-            ))
             .build();
 
         // Creating a new account - this is where the badges will be held

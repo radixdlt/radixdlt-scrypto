@@ -2,36 +2,27 @@ use crate::blueprints::access_controller::v1::*;
 use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
-use crate::blueprints::package::{
-    create_package_partition_substates, PackageCollection, PackageNativePackage,
-    PackageOwnerBadgeData, SystemInstruction,
-};
+use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::package::{PoolNativePackage, PoolV1MinorVersion};
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::test_utils::TestUtilsNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
-use crate::blueprints::transaction_tracker::{
-    TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
-};
+use crate::blueprints::transaction_tracker::*;
 use crate::internal_prelude::*;
 use crate::object_modules::metadata::MetadataNativePackage;
 use crate::object_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::object_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_db_reader::SystemDatabaseReader;
-use crate::system::type_info::TypeInfoSubstate;
-use crate::transaction::{
-    execute_transaction, CommitResult, ExecutionConfig, StateUpdateSummary, SubstateSchemaMapper,
-    SubstateSystemStructures, TransactionOutcome, TransactionReceipt, TransactionResult,
-};
-use crate::vm::wasm::WasmEngine;
-use crate::vm::{NativeVmExtension, VmBoot, VmInit};
+use crate::transaction::*;
+use crate::updates::*;
+use crate::vm::VmBoot;
 use lazy_static::lazy_static;
 use radix_common::crypto::Secp256k1PublicKey;
 use radix_common::math::traits::*;
 use radix_common::types::ComponentAddress;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
-    CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
+    ConsensusManagerConfig, ConsensusManagerCreateManifestInput, CONSENSUS_MANAGER_BLUEPRINT,
+    CONSENSUS_MANAGER_CREATE_IDENT,
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -42,12 +33,9 @@ use radix_engine_interface::{
 };
 use radix_substate_store_interface::interface::*;
 use radix_substate_store_interface::{
-    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
-    interface::{CommittableSubstateDatabase, SubstateDatabase},
+    db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
-use radix_transactions::model::{
-    BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
-};
+use radix_transactions::model::*;
 use radix_transactions::prelude::{BlobV1, PreAllocatedAddress};
 use radix_transactions::validation::ManifestIdAllocator;
 
@@ -170,9 +158,59 @@ pub struct ManifestGenesisResource {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct GenesisReceipts {
+    pub system_flash_receipt: TransactionReceipt,
     pub system_bootstrap_receipt: TransactionReceipt,
     pub data_ingestion_receipts: Vec<TransactionReceipt>,
     pub wrap_up_receipt: TransactionReceipt,
+}
+
+#[derive(Default)]
+pub struct GenesisReceiptExtractionHooks {
+    bootstrap_receipts: Vec<TransactionReceipt>,
+    data_ingestion_receipts: Vec<TransactionReceipt>,
+    wrap_up_receipts: Vec<TransactionReceipt>,
+}
+
+impl GenesisReceiptExtractionHooks {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn into_genesis_receipts(self) -> GenesisReceipts {
+        let [system_flash_receipt, system_bootstrap_receipt] = self
+            .bootstrap_receipts
+            .try_into()
+            .expect("Expected two bootstrap receipts (flash and transaction)");
+        let [wrap_up_receipt] = self
+            .wrap_up_receipts
+            .try_into()
+            .expect("Expected one wrap-up receipt");
+        GenesisReceipts {
+            system_flash_receipt,
+            system_bootstrap_receipt,
+            data_ingestion_receipts: self.data_ingestion_receipts,
+            wrap_up_receipt,
+        }
+    }
+}
+
+impl ProtocolUpdateExecutionHooks for GenesisReceiptExtractionHooks {
+    fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
+        let OnProtocolTransactionExecuted {
+            protocol_version,
+            batch_group_index,
+            receipt,
+            ..
+        } = event;
+        if protocol_version == ProtocolVersion::EARLIEST {
+            match batch_group_index {
+                0 => self.bootstrap_receipts.push(receipt.clone()),
+                1 => self.data_ingestion_receipts.push(receipt.clone()),
+                2 => self.wrap_up_receipts.push(receipt.clone()),
+                _ => panic!("Unexpected bootstrap batch group index: {batch_group_index}"),
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -186,292 +224,34 @@ impl From<FlashReceipt> for TransactionReceipt {
     fn from(value: FlashReceipt) -> Self {
         // This is used by the node for allowing the flash to execute before the
         // genesis bootstrap transaction
-        let commit_result = CommitResult::empty_with_outcome(TransactionOutcome::Success(vec![]));
-        let mut transaction_receipt = TransactionReceipt::empty_with_commit(commit_result);
-        value.merge_genesis_flash_into_transaction_receipt(&mut transaction_receipt);
-        transaction_receipt
+        let mut commit_result =
+            CommitResult::empty_with_outcome(TransactionOutcome::Success(vec![]));
+        commit_result.state_updates = value.state_updates;
+        commit_result.state_update_summary = value.state_update_summary;
+        commit_result.system_structure.substate_system_structures =
+            value.substate_system_structures;
+        TransactionReceipt::empty_with_commit(commit_result)
     }
 }
 
 impl FlashReceipt {
-    // Merge system_flash_receipt into system_bootstrap_receipt
-    // This is currently a necessary hack in order to not change GenesisReceipt with
-    // the addition of a new system_flash_receipt.
-    pub fn merge_genesis_flash_into_transaction_receipt(self, receipt: &mut TransactionReceipt) {
-        match &mut receipt.result {
-            TransactionResult::Commit(result) => {
-                let mut new_packages = self.state_update_summary.new_packages;
-                new_packages.extend(result.state_update_summary.new_packages.drain(..));
-                let mut new_components = self.state_update_summary.new_components;
-                new_components.extend(result.state_update_summary.new_components.drain(..));
-                let mut new_resources = self.state_update_summary.new_resources;
-                new_resources.extend(result.state_update_summary.new_resources.drain(..));
-
-                result.state_update_summary.new_packages = new_packages;
-                result.state_update_summary.new_components = new_components;
-                result.state_update_summary.new_resources = new_resources;
-
-                merge_asserting_no_overlap(&mut result.state_updates, self.state_updates);
-
-                let mut substate_system_structures = self.substate_system_structures;
-                for (node_id, by_partition_num) in
-                    result.system_structure.substate_system_structures.drain(..)
-                {
-                    let merged_by_partition_num = substate_system_structures
-                        .entry(node_id)
-                        .or_insert_with(|| index_map_new());
-                    for (partition_num, by_substate_key) in by_partition_num {
-                        merged_by_partition_num
-                            .entry(partition_num)
-                            .or_insert_with(|| index_map_new())
-                            .extend(by_substate_key);
-                    }
-                }
-                result.system_structure.substate_system_structures = substate_system_structures;
-            }
-            _ => {}
-        }
-    }
-}
-
-/// Merges the given `source` into a `target`, asserting no overlap.
-/// This function is not a method on [`StateUpdates`], since it is only used here locally (called
-/// from a method describing itself as "a hack").
-/// Note: the system receipt should not be conflicting with the flash receipt, and this function
-/// will panic if this invariant is broken.
-fn merge_asserting_no_overlap(target: &mut StateUpdates, source: StateUpdates) {
-    for (node_id, source_node_state_updates) in source.by_node {
-        let target_node_state_updates = target.by_node.entry(node_id).or_default();
-        let target_by_partition = match target_node_state_updates {
-            NodeStateUpdates::Delta { by_partition } => by_partition,
+    pub fn from_state_updates(
+        state_updates: StateUpdates,
+        before_store: &impl SubstateDatabase,
+    ) -> Self {
+        let state_update_summary =
+            StateUpdateSummary::new_from_state_updates_on_db(before_store, &state_updates);
+        let substate_system_structures = {
+            let after_store = SystemDatabaseReader::new_with_overlay(before_store, &state_updates);
+            let mut substate_schema_mapper = SubstateSchemaMapper::new(after_store);
+            substate_schema_mapper.add_for_all_individually_updated(&state_updates);
+            substate_schema_mapper.done()
         };
-        match source_node_state_updates {
-            NodeStateUpdates::Delta { by_partition } => {
-                for (partition_num, partition_state_updates) in by_partition {
-                    let previous_target_partition_state_updates =
-                        target_by_partition.insert(partition_num, partition_state_updates);
-                    if !is_noop_partition_state_updates(&previous_target_partition_state_updates) {
-                        panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
-                    }
-                }
-            }
+        Self {
+            state_updates,
+            state_update_summary,
+            substate_system_structures,
         }
-    }
-}
-
-/// Returns true if the given update is effectively no-op (i.e. [`None`] or empty delta).
-/// This check is required since under some circumstances, Track may end up with empty partition
-/// record (in fact, this check was migrated from previous version of the code, from before
-/// [`StateUpdates`] structure refactoring).
-fn is_noop_partition_state_updates(opt_updates: &Option<PartitionStateUpdates>) -> bool {
-    let Some(updates) = opt_updates else {
-        return true;
-    };
-    match updates {
-        PartitionStateUpdates::Delta { by_substate } => by_substate.is_empty(),
-        PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset { .. }) => false,
-    }
-}
-
-pub struct Bootstrapper<'s, S, E, W>
-where
-    S: SubstateDatabase + CommittableSubstateDatabase,
-    E: NativeVmExtension,
-    W: WasmEngine,
-{
-    network_definition: NetworkDefinition,
-    substate_db: &'s mut S,
-    vm_init: VmInit<'s, W, E>,
-    trace: bool,
-}
-
-impl<'s, S, E, W> Bootstrapper<'s, S, E, W>
-where
-    S: SubstateDatabase + CommittableSubstateDatabase,
-    E: NativeVmExtension,
-    W: WasmEngine,
-{
-    pub fn new(
-        network_definition: NetworkDefinition,
-        substate_db: &'s mut S,
-        vm_init: VmInit<'s, W, E>,
-        trace: bool,
-    ) -> Bootstrapper<'s, S, E, W> {
-        Bootstrapper {
-            network_definition,
-            substate_db,
-            vm_init,
-            trace,
-        }
-    }
-
-    pub fn bootstrap_test_default(&mut self) -> Option<GenesisReceipts> {
-        self.bootstrap_with_genesis_data(
-            vec![],
-            Epoch::of(1),
-            ConsensusManagerConfig {
-                max_validators: 10,
-                epoch_change_condition: EpochChangeCondition {
-                    min_round_count: 1,
-                    max_round_count: 1,
-                    target_duration_millis: 0,
-                },
-                num_unstake_epochs: 1,
-                total_emission_xrd_per_epoch: Decimal::one(),
-                min_validator_reliability: Decimal::one(),
-                num_owner_stake_units_unlock_epochs: 2,
-                num_fee_increase_delay_epochs: 1,
-                validator_creation_usd_cost: *DEFAULT_VALIDATOR_USD_COST,
-            },
-            1,
-            Some(0),
-            *DEFAULT_TESTING_FAUCET_SUPPLY,
-        )
-    }
-
-    pub fn bootstrap_with_genesis_data(
-        &mut self,
-        genesis_data_chunks: Vec<GenesisDataChunk>,
-        genesis_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-        initial_time_ms: i64,
-        initial_current_leader: Option<ValidatorIndex>,
-        faucet_supply: Decimal,
-    ) -> Option<GenesisReceipts> {
-        let flash_receipt = create_substate_flash_for_genesis();
-        let first_package = flash_receipt.state_update_summary.new_packages[0];
-        let first_typed_info = self
-            .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                first_package.as_node_id(),
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-            );
-
-        if first_typed_info.is_none() {
-            self.substate_db.commit(
-                &flash_receipt
-                    .state_updates
-                    .create_database_updates::<SpreadPrefixKeyMapper>(),
-            );
-
-            let mut system_bootstrap_receipt = self.execute_system_bootstrap(
-                genesis_epoch,
-                initial_config,
-                initial_time_ms,
-                initial_current_leader,
-                faucet_supply,
-            );
-
-            flash_receipt
-                .merge_genesis_flash_into_transaction_receipt(&mut system_bootstrap_receipt);
-
-            let mut data_ingestion_receipts = vec![];
-            for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
-                let receipt = self.ingest_genesis_data_chunk(chunk, chunk_index);
-                data_ingestion_receipts.push(receipt);
-            }
-
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up();
-
-            Some(GenesisReceipts {
-                system_bootstrap_receipt,
-                data_ingestion_receipts,
-                wrap_up_receipt: genesis_wrap_up_receipt,
-            })
-        } else {
-            None
-        }
-    }
-
-    fn execute_system_bootstrap(
-        &mut self,
-        genesis_epoch: Epoch,
-        initial_config: ConsensusManagerConfig,
-        initial_time_ms: i64,
-        initial_current_leader: Option<ValidatorIndex>,
-        faucet_supply: Decimal,
-    ) -> TransactionReceipt {
-        let transaction = create_system_bootstrap_transaction(
-            genesis_epoch,
-            initial_config,
-            initial_time_ms,
-            initial_current_leader,
-            faucet_supply,
-        );
-
-        let receipt = execute_transaction(
-            self.substate_db,
-            self.vm_init.clone(),
-            &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
-                .with_kernel_trace(self.trace),
-            transaction
-                .prepare()
-                .expect("Expected system bootstrap transaction to be preparable")
-                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
-        );
-
-        let commit_result = receipt.expect_commit(true);
-
-        self.substate_db.commit(
-            &commit_result
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>(),
-        );
-
-        receipt
-    }
-
-    fn ingest_genesis_data_chunk(
-        &mut self,
-        chunk: GenesisDataChunk,
-        chunk_number: usize,
-    ) -> TransactionReceipt {
-        let transaction =
-            create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
-        let receipt = execute_transaction(
-            self.substate_db,
-            self.vm_init.clone(),
-            &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
-                .with_kernel_trace(self.trace),
-            transaction
-                .prepare()
-                .expect("Expected genesis data chunk transaction to be preparable")
-                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
-        );
-
-        let commit_result = receipt.expect_commit(true);
-        self.substate_db.commit(
-            &commit_result
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>(),
-        );
-
-        receipt
-    }
-
-    fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction();
-
-        let receipt = execute_transaction(
-            self.substate_db,
-            self.vm_init.clone(),
-            &ExecutionConfig::for_genesis_transaction(self.network_definition.clone())
-                .with_kernel_trace(self.trace),
-            transaction
-                .prepare()
-                .expect("Expected genesis wrap up transaction to be preparable")
-                .get_executable(btreeset![system_execution(SystemExecution::Protocol)]),
-        );
-
-        let commit_result = receipt.expect_commit(true);
-        self.substate_db.commit(
-            &commit_result
-                .state_updates
-                .create_database_updates::<SpreadPrefixKeyMapper>(),
-        );
-
-        receipt
     }
 }
 

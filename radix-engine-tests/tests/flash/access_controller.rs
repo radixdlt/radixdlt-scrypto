@@ -31,7 +31,7 @@ fn access_controller_instantiated_before_protocol_update_has_v1_state() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .without_kernel_trace()
-        .with_protocol_version(ProtocolVersion::Babylon)
+        .with_custom_protocol(|builder| builder.only_babylon())
         .build();
 
     let access_controller = ledger
@@ -228,7 +228,7 @@ fn before_protocol_update_calling_any_method_on_an_access_controller_with_v1_sta
     for (method_name, args) in invocations {
         let mut ledger = LedgerSimulatorBuilder::new()
             .without_kernel_trace()
-            .with_protocol_version(ProtocolVersion::Babylon)
+            .with_custom_protocol(|builder| builder.only_babylon())
             .build();
         let (_, _, account) = ledger.new_account(false);
 
@@ -498,7 +498,7 @@ fn after_protocol_update_calling_any_method_on_an_access_controller_with_v1_stat
     for (method_name, args) in invocations {
         let mut ledger = LedgerSimulatorBuilder::new()
             .without_kernel_trace()
-            .with_protocol_version(ProtocolVersion::Babylon)
+            .with_custom_protocol(|builder| builder.only_babylon())
             .build();
         let (_, _, account) = ledger.new_account(false);
 
@@ -586,7 +586,7 @@ fn after_protocol_update_calling_any_method_on_an_access_controller_with_v1_stat
         }
 
         ProtocolBuilder::for_simulator()
-            .until(ProtocolVersion::Bottlenose)
+            .from_to(ProtocolVersion::Babylon, ProtocolVersion::Bottlenose)
             .commit_each_protocol_update(ledger.substate_db_mut());
 
         // Act

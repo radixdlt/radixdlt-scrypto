@@ -1,5 +1,5 @@
 use radix_common::time::UtcDateTime;
-use radix_common::types::{Epoch, Round};
+use radix_common::types::Round;
 use radix_engine_interface::blueprints::consensus_manager::TimePrecision;
 use scrypto_test::prelude::*;
 
@@ -7,10 +7,7 @@ use scrypto_test::prelude::*;
 fn advancing_round_changes_app_facing_minute_resolution_clock() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
+
         .build();
 
     let epoch_seconds_rounded_to_minutes = UtcDateTime::new(2022, 1, 1, 0, 0, 0)
@@ -39,10 +36,7 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
 fn advancing_round_changes_internal_milli_timestamp() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
+
         .build();
     let epoch_milli = 123456789;
 

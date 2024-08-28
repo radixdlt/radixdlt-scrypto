@@ -4,6 +4,7 @@ use crate::system::system_db_reader::SystemDatabaseReader;
 use radix_common::data::scrypto::model::*;
 use radix_common::math::*;
 use radix_engine_interface::types::*;
+use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::{
     db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
@@ -45,6 +46,68 @@ impl StateUpdateSummary {
         }
 
         let vault_balance_changes = BalanceAccounter::new(substate_db, &updates).run();
+
+        StateUpdateSummary {
+            new_packages,
+            new_components,
+            new_resources,
+            new_vaults,
+            vault_balance_changes,
+        }
+    }
+
+    pub fn new_from_state_updates_on_db(
+        base_substate_db: &impl SubstateDatabase,
+        updates: &StateUpdates,
+    ) -> Self {
+        let mut new_packages = index_set_new();
+        let mut new_components = index_set_new();
+        let mut new_resources = index_set_new();
+        let mut new_vaults = index_set_new();
+
+        let new_node_ids = updates
+            .by_node
+            .iter()
+            .filter(|(node_id, updates)| {
+                let type_id_partition_number = TYPE_INFO_FIELD_PARTITION;
+                let type_id_substate_key = TypeInfoField::TypeInfo.into();
+                let possible_creation = updates
+                    .of_partition_ref(type_id_partition_number)
+                    .is_some_and(|partition_updates| {
+                        partition_updates.contains_set_update_for(&type_id_substate_key)
+                    });
+                if !possible_creation {
+                    return false;
+                }
+                let node_previously_existed = base_substate_db
+                    .get_substate(
+                        &SpreadPrefixKeyMapper::to_db_partition_key(
+                            node_id,
+                            type_id_partition_number,
+                        ),
+                        &SpreadPrefixKeyMapper::to_db_sort_key(&type_id_substate_key),
+                    )
+                    .is_some();
+                return !node_previously_existed;
+            })
+            .map(|(node_id, _)| node_id);
+
+        for node_id in new_node_ids {
+            if node_id.is_global_package() {
+                new_packages.insert(PackageAddress::new_or_panic(node_id.0));
+            }
+            if node_id.is_global_component() {
+                new_components.insert(ComponentAddress::new_or_panic(node_id.0));
+            }
+            if node_id.is_global_resource_manager() {
+                new_resources.insert(ResourceAddress::new_or_panic(node_id.0));
+            }
+            if node_id.is_internal_vault() {
+                new_vaults.insert(InternalAddress::new_or_panic(node_id.0));
+            }
+        }
+
+        let vault_balance_changes = BalanceAccounter::new(base_substate_db, &updates).run();
 
         StateUpdateSummary {
             new_packages,

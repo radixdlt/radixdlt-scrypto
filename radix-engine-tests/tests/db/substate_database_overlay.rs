@@ -1,6 +1,8 @@
 use radix_engine::system::system_db_reader::*;
 use radix_engine::transaction::*;
 use radix_engine::updates::*;
+use radix_engine::vm::NoExtension;
+use radix_engine::vm::VmModules;
 use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_impls::substate_database_overlay::*;
 use radix_substate_store_interface::db_key_mapper::*;
@@ -400,20 +402,40 @@ fn substates_written_on_a_staging_database_from_transactions_can_be_read_later()
 
 #[test]
 fn transaction_receipts_from_scenarios_are_identical_between_staging_and_non_staging_database() {
-    run_scenarios(|(_, non_staging_receipt), (_, staging_receipt)| {
-        assert_eq!(non_staging_receipt, staging_receipt)
-    })
+    struct Check;
+    impl DatabaseComparisonScenarioCheck for Check {
+        fn check(
+            &mut self,
+            _in_memory_database: &InMemorySubstateDatabase,
+            in_memory_receipt: &TransactionReceipt,
+            _overlay_database: &UnmergeableSubstateDatabaseOverlay<'_, InMemorySubstateDatabase>,
+            overlay_receipt: &TransactionReceipt,
+        ) {
+            assert_eq!(in_memory_receipt, overlay_receipt)
+        }
+    }
+    run_scenarios_in_memory_and_on_overlay(Check);
 }
 
 #[test]
 #[allow(clippy::redundant_closure_call)]
 fn database_hashes_are_identical_between_staging_and_non_staging_database_at_each_scenario_step() {
-    run_scenarios(|(non_staging_database, _), (staging_database, _)| {
-        let non_staging_database_hash = create_database_contents_hash(non_staging_database);
-        let staging_database_hash = create_database_contents_hash(staging_database);
-
-        assert_eq!(non_staging_database_hash, staging_database_hash)
-    })
+    struct Check;
+    impl DatabaseComparisonScenarioCheck for Check {
+        fn check(
+            &mut self,
+            in_memory_database: &InMemorySubstateDatabase,
+            _in_memory_receipt: &TransactionReceipt,
+            overlay_database: &UnmergeableSubstateDatabaseOverlay<'_, InMemorySubstateDatabase>,
+            _overlay_receipt: &TransactionReceipt,
+        ) {
+            let non_staging_database_hash = create_database_contents_hash(in_memory_database);
+            let staging_database_hash = create_database_contents_hash(overlay_database);
+    
+            assert_eq!(non_staging_database_hash, staging_database_hash)
+        }
+    }
+    run_scenarios_in_memory_and_on_overlay(Check);
 }
 
 fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>(
@@ -442,54 +464,89 @@ fn create_database_contents_hash<D: SubstateDatabase + ListableSubstateDatabase>
     accumulator_hash
 }
 
-/// Runs the scenarios on an [`InMemorySubstateDatabase`] and a [`SingleSubstateDatabaseOverlay`] wrapping
+trait DatabaseComparisonScenarioCheck {
+    fn check(
+        &mut self,
+        in_memory_database: &InMemorySubstateDatabase,
+        in_memory_receipt: &TransactionReceipt,
+        overlay_database: &UnmergeableSubstateDatabaseOverlay<'_, InMemorySubstateDatabase>,
+        overlay_receipt: &TransactionReceipt,
+    );
+}
+
+/// Runs the scenarios on an [`InMemorySubstateDatabase`] and a [`UnmergeableSubstateDatabaseOverlay`] wrapping
 /// an [`InMemorySubstateDatabase`]. The passed check function is executed after the execution of
 /// each scenario.
-fn run_scenarios(
-    check_callback: impl Fn(
-        (&InMemorySubstateDatabase, &TransactionReceipt),
-        (
-            &UnmergeableSubstateDatabaseOverlay<'_, InMemorySubstateDatabase>,
-            &TransactionReceipt,
-        ),
-    ),
+fn run_scenarios_in_memory_and_on_overlay(
+    check_callback: impl DatabaseComparisonScenarioCheck,
 ) {
     let overlay_root = InMemorySubstateDatabase::standard();
     let overlay = SubstateDatabaseOverlay::new_unmergeable(&overlay_root);
     let ledger_with_overlay = Rc::new(RefCell::new(
         LedgerSimulatorBuilder::new()
             .with_custom_database(overlay)
-            .with_protocol_version(ProtocolVersion::Babylon)
+            .with_custom_protocol(|builder| builder.only_babylon())
             .without_kernel_trace()
             .build(),
     ));
     let network_definition = NetworkDefinition::simulator();
 
-    DefaultTransactionScenarioExecutor::new(
-        InMemorySubstateDatabase::standard(),
-        &network_definition,
-    )
-    .on_before_protocol_update_executed(|executor| {
-        // We copy the protocol updates onto the ledger_with_overlay
-        executor
-            .clone()
-            .run_and_commit(ledger_with_overlay.borrow_mut().substate_db_mut())
-    })
-    .on_transaction_executed(|_, transaction, receipt, db| {
-        // Execute the same transaction on the ledger simulator.
-        let receipt_from_overlay = ledger_with_overlay
-            .borrow_mut()
-            .execute_notarized_transaction(&transaction.raw_transaction);
+    struct ProtocolUpdateHooks<'a> {
+        ledger_with_overlay: Rc<RefCell<LedgerSimulator<NoExtension, SubstateDatabaseOverlay<&'a InMemorySubstateDatabase, InMemorySubstateDatabase>>>>,
+    }
 
-        // Check that everything matches.
-        check_callback(
-            (db, &receipt),
-            (
-                ledger_with_overlay.borrow().substate_db(),
-                &receipt_from_overlay,
-            ),
-        );
-    })
-    .execute_every_protocol_update_and_scenario()
+    impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
+        fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
+            let OnProtocolTransactionExecuted {
+                receipt,
+                ..
+            } = event;
+            // We copy the protocol updates onto the ledger_with_overlay
+            let database_updates = receipt.expect_commit_success().state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
+            self.ledger_with_overlay.borrow_mut().substate_db_mut().commit(&database_updates);
+        }
+    }
+
+    struct ScenarioHooks<'a, F: DatabaseComparisonScenarioCheck> {
+        ledger_with_overlay: Rc<RefCell<LedgerSimulator<NoExtension, SubstateDatabaseOverlay<&'a InMemorySubstateDatabase, InMemorySubstateDatabase>>>>,
+        check_callback: F,
+    }
+
+    impl<'a, F: DatabaseComparisonScenarioCheck> ScenarioExecutionHooks<InMemorySubstateDatabase> for ScenarioHooks<'a, F> {
+        fn on_transaction_executed(&mut self, event: OnScenarioTransactionExecuted<InMemorySubstateDatabase>) {
+            let OnScenarioTransactionExecuted { transaction, receipt, database, .. } = event;
+
+            // Execute the same transaction on the ledger simulator.
+            let receipt_from_overlay = self.ledger_with_overlay
+                .borrow_mut()
+                .execute_notarized_transaction(&transaction.raw_transaction);
+
+            // Check that everything matches.
+            self.check_callback.check(
+                database,
+                &receipt,
+                self.ledger_with_overlay.borrow().substate_db(),
+                &receipt_from_overlay
+            );
+        }
+    }
+
+    TransactionScenarioExecutor::new(
+        InMemorySubstateDatabase::standard(),
+        network_definition,
+    )
+    .execute_protocol_updates_and_scenarios(
+        |builder| builder.from_bootstrap_to_latest(),
+        ScenarioTrigger::AtStartOfEveryProtocolVersion,
+        ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
+        &mut ScenarioHooks {
+            ledger_with_overlay: ledger_with_overlay.clone(),
+            check_callback,
+        },
+        &mut ProtocolUpdateHooks {
+            ledger_with_overlay: ledger_with_overlay.clone(),
+        },
+        &VmModules::default(),
+    )
     .expect("Must succeed!");
 }

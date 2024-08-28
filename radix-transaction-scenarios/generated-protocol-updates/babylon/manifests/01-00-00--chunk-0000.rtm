@@ -1,0 +1,23 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6")
+    "ingest_data_chunk"
+    Enum<0u8>(
+        Array<Tuple>(
+            Tuple(
+                Bytes("000000000000000000000000000000000000000000000000000000000000000000"),
+                true,
+                true,
+                Decimal("1"),
+                Array<Tuple>(
+                    Tuple(
+                        "url",
+                        Enum<13u8>(
+                            "http://test.local?validator=000000000000000000000000000000000000000000000000000000000000000000"
+                        )
+                    )
+                ),
+                Address("account_sim16yt9mmnctyjwwss6plgyrzse6hdwasu4l4g94y4ql5c30epg07y9ef")
+            )
+        )
+    )
+;

@@ -4,7 +4,6 @@ use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
-use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::auth::AuthModule;
 use radix_engine::system::system_modules::costing::{
@@ -16,8 +15,9 @@ use radix_engine::system::system_modules::limits::LimitsModule;
 use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use radix_engine::system::system_modules::{EnabledModules, SystemModuleMixer};
 use radix_engine::track::Track;
+use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmBoot, VmInit};
+use radix_engine::vm::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -40,16 +40,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     let mut database = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
-    let vm_init = VmInit {
-        scrypto_vm: &scrypto_vm,
-        native_vm_extension: NoExtension,
-    };
-    Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut database,
-        vm_init,
-        false,
-    );
+    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut database);
 
     // Create kernel
     let mut system = System {
