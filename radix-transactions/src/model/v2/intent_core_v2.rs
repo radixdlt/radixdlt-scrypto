@@ -8,41 +8,45 @@ use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct IntentCoreV2 {
-    pub core_header: IntentHeaderV2,
+    pub header: IntentHeaderV2,
     pub instructions: InstructionsV2,
     pub blobs: BlobsV1,
     pub message: MessageV2, // Increase size of the key
-    pub child_intent_constraints: ChildIntentConstraintsV2,
+    pub children: ChildIntentsV2,
+}
+
+impl TransactionPartialPrepare for IntentCoreV2 {
+    type Prepared = PreparedIntentCoreV2;
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedIntentCoreV2 {
-    pub core_header: PreparedIntentHeaderV2,
+    pub header: PreparedIntentHeaderV2,
     pub instructions: PreparedInstructionsV2,
     pub blobs: PreparedBlobsV1,
     pub message: PreparedMessageV2,
-    pub child_intent_constraints: PreparedChildIntentConstraintsV2,
+    pub children: PreparedChildIntentsV2,
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedIntentCoreV2 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedIntentCoreV2);
 
-impl TransactionPreparableFromValue for PreparedIntentCoreV2 {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValueBody for PreparedIntentCoreV2 {
+    fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as an child, it's SBOR encoded as a struct
-        let ((core_header, instructions, blobs, message, child_intent_constraints), summary) =
-            ConcatenatedDigest::prepare_from_sbor_tuple(decoder)?;
+        let ((header, instructions, blobs, message, children), summary) =
+            ConcatenatedDigest::prepare_from_sbor_tuple_value_body(decoder)?;
         Ok(Self {
-            core_header,
+            header,
             instructions,
             blobs,
             message,
-            child_intent_constraints,
+            children,
             summary,
         })
+    }
+
+    fn value_kind() -> ManifestValueKind {
+        ManifestValueKind::Tuple
     }
 }

@@ -70,11 +70,7 @@ pub struct PreparedRoundUpdateTransactionV1 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedRoundUpdateTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedRoundUpdateTransactionV1);
 
 define_raw_transaction_payload!(RawRoundUpdateTransactionV1);
 

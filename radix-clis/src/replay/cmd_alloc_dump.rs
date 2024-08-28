@@ -57,6 +57,7 @@ impl TxnAllocDump {
             Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
             None => NetworkDefinition::mainnet(),
         };
+        let address_encoder = TransactionHashBech32Encoder::new(&network);
 
         let cur_version = {
             let database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
@@ -150,10 +151,8 @@ impl TxnAllocDump {
                             writeln!(
                                 output,
                                 "user,{},{},{},{},{}",
-                                TransactionHashBech32Encoder::new(&network)
-                                    .encode(&TransactionIntentHash(
-                                        tx.signed_intent.intent.summary.hash
-                                    ))
+                                address_encoder
+                                    .encode(&tx.transaction_intent_hash())
                                     .unwrap(),
                                 execution_cost_units.unwrap(),
                                 heap_allocations_sum,
@@ -198,6 +197,22 @@ impl TxnAllocDump {
                                 "flash,{},{},{},{},{}",
                                 tx.summary.hash,
                                 execution_cost_units.unwrap_or_default(),
+                                heap_allocations_sum,
+                                heap_current_level,
+                                heap_peak_memory
+                            )
+                            .map_err(Error::IOError)?
+                        }
+                    }
+                    PreparedLedgerTransactionInner::UserV2(tx) => {
+                        if dump_user {
+                            writeln!(
+                                output,
+                                "user,{},{},{},{},{}",
+                                address_encoder
+                                    .encode(&tx.transaction_intent_hash())
+                                    .unwrap(),
+                                execution_cost_units.unwrap(),
                                 heap_allocations_sum,
                                 heap_current_level,
                                 heap_peak_memory

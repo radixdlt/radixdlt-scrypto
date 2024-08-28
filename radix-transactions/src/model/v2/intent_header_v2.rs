@@ -20,4 +20,8 @@ pub struct IntentHeaderV2 {
     pub intent_discriminator: u64,
 }
 
+impl TransactionPartialPrepare for IntentHeaderV2 {
+    type Prepared = PreparedIntentHeaderV2;
+}
+
 pub type PreparedIntentHeaderV2 = SummarizedRawValueBody<IntentHeaderV2>;

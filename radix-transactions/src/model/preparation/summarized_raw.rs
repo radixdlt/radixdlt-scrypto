@@ -13,12 +13,7 @@ pub struct SummarizedRawFullValue<T: ManifestDecode> {
     pub summary: Summary,
 }
 
-#[allow(deprecated)]
-impl<T: ManifestDecode> HasSummary for SummarizedRawFullValue<T> {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(<T: ManifestDecode> SummarizedRawFullValue<T>);
 
 #[allow(deprecated)]
 impl<T: ManifestDecode> TransactionPreparableFromValue for SummarizedRawFullValue<T> {
@@ -29,7 +24,7 @@ impl<T: ManifestDecode> TransactionPreparableFromValue for SummarizedRawFullValu
         let summary = Summary {
             effective_length: end_offset - start_offset,
             total_bytes_hashed: end_offset - start_offset,
-            hash: hash(&decoder.get_slice(start_offset, end_offset)),
+            hash: hash(&decoder.get_slice_with_valid_bounds(start_offset, end_offset)),
         };
         Ok(Self { inner, summary })
     }
@@ -52,6 +47,10 @@ impl<T: ManifestDecode> HasSummary for SummarizedRawFullValueWithReferences<T> {
     fn get_summary(&self) -> &Summary {
         &self.summary
     }
+
+    fn summary_mut(&mut self) -> &mut Summary {
+        &mut self.summary
+    }
 }
 
 #[allow(deprecated)]
@@ -61,7 +60,7 @@ impl<T: ManifestDecode> TransactionPreparableFromValue for SummarizedRawFullValu
         let inner = decoder.decode::<T>()?;
         let end_offset = decoder.get_offset();
 
-        let slice = decoder.get_slice(start_offset, end_offset);
+        let slice = decoder.get_slice_with_valid_bounds(start_offset, end_offset);
         let references = extract_references(slice, traversal::ExpectedStart::Value);
         let summary = Summary {
             effective_length: end_offset - start_offset,
@@ -87,38 +86,7 @@ pub struct SummarizedRawValueBodyWithReferences<T: ManifestDecode + ManifestCate
     pub references: IndexSet<Reference>,
 }
 
-impl<T: ManifestDecode + ManifestCategorize> HasSummary
-    for SummarizedRawValueBodyWithReferences<T>
-{
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
-
-impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValue
-    for SummarizedRawValueBodyWithReferences<T>
-{
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let start_offset = decoder.get_offset();
-        let value_body_start_offset = start_offset + 1;
-        let inner = decoder.decode::<T>()?;
-        let end_offset = decoder.get_offset();
-
-        let slice = decoder.get_slice(value_body_start_offset, end_offset);
-        let references =
-            extract_references(slice, traversal::ExpectedStart::ValueBody(T::value_kind()));
-        let summary = Summary {
-            effective_length: end_offset - start_offset,
-            total_bytes_hashed: end_offset - value_body_start_offset,
-            hash: hash(slice),
-        };
-        Ok(Self {
-            inner,
-            summary,
-            references,
-        })
-    }
-}
+impl_has_summary!(<T: ManifestDecode + ManifestCategorize> SummarizedRawValueBodyWithReferences<T>);
 
 impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValueBody
     for SummarizedRawValueBodyWithReferences<T>
@@ -127,7 +95,7 @@ impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValueBody
         let start_offset = decoder.get_offset();
         let inner = decoder.decode_deeper_body_with_value_kind::<T>(T::value_kind())?;
         let end_offset = decoder.get_offset();
-        let slice = decoder.get_slice(start_offset, end_offset);
+        let slice = decoder.get_slice_with_valid_bounds(start_offset, end_offset);
         let references =
             extract_references(slice, traversal::ExpectedStart::ValueBody(T::value_kind()));
         let summary = Summary {
@@ -156,11 +124,7 @@ pub struct SummarizedRawValueBody<T: ManifestDecode + ManifestCategorize> {
     pub summary: Summary,
 }
 
-impl<T: ManifestDecode + ManifestCategorize> HasSummary for SummarizedRawValueBody<T> {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(<T: ManifestDecode + ManifestCategorize> SummarizedRawValueBody<T>);
 
 impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValueBody
     for SummarizedRawValueBody<T>
@@ -172,7 +136,7 @@ impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValueBody
         let summary = Summary {
             effective_length: end_offset - start_offset,
             total_bytes_hashed: end_offset - start_offset,
-            hash: hash(&decoder.get_slice(start_offset, end_offset)),
+            hash: hash(&decoder.get_slice_with_valid_bounds(start_offset, end_offset)),
         };
         Ok(Self { inner, summary })
     }
@@ -182,40 +146,19 @@ impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValueBody
     }
 }
 
-impl<T: ManifestDecode + ManifestCategorize> TransactionPreparableFromValue
-    for SummarizedRawValueBody<T>
-{
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let start_offset = decoder.get_offset();
-        let value_body_start_offset = start_offset + 1;
-        let inner = decoder.decode::<T>()?;
-        let end_offset = decoder.get_offset();
-        let summary = Summary {
-            effective_length: end_offset - start_offset,
-            total_bytes_hashed: end_offset - value_body_start_offset,
-            hash: hash(&decoder.get_slice(value_body_start_offset, end_offset)),
-        };
-        Ok(Self { inner, summary })
-    }
-}
-
 /// For use where the value is:
 /// * Contained inside a Vec or Map under its SBOR parent
 /// * AND is actually a Vec<u8> itself
 /// * AND wants a hash which represents a hash of its underlying raw bytes
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct SummarizedRawInnerBodyRawBytes {
+pub struct SummarizedRawValueBodyRawBytes {
     pub inner: Vec<u8>,
     pub summary: Summary,
 }
 
-impl HasSummary for SummarizedRawInnerBodyRawBytes {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(SummarizedRawValueBodyRawBytes);
 
-impl TransactionPreparableFromValueBody for SummarizedRawInnerBodyRawBytes {
+impl TransactionPreparableFromValueBody for SummarizedRawValueBodyRawBytes {
     fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let inner = decoder.decode_deeper_body_with_value_kind::<Vec<u8>>(Self::value_kind())?;
 
@@ -244,21 +187,17 @@ impl TransactionPreparableFromValueBody for SummarizedRawInnerBodyRawBytes {
 /// For use where the value is:
 /// * Already a hash, and it should be prepared as itself
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct SummarizedHash {
+pub struct RawHash {
     pub hash: Hash,
     pub summary: Summary,
 }
 
-impl HasSummary for SummarizedHash {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(RawHash);
 
-impl TransactionPreparableFromValue for SummarizedHash {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValueBody for RawHash {
+    fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let start_offset = decoder.get_offset();
-        let hash = decoder.decode::<Hash>()?;
+        let hash = decoder.decode_deeper_body_with_value_kind::<Hash>(Self::value_kind())?;
         let end_offset = decoder.get_offset();
         let summary = Summary {
             effective_length: end_offset - start_offset,
@@ -267,5 +206,9 @@ impl TransactionPreparableFromValue for SummarizedHash {
             hash,
         };
         Ok(Self { hash, summary })
+    }
+
+    fn value_kind() -> ManifestValueKind {
+        ManifestValueKind::Array
     }
 }

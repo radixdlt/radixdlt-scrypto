@@ -34,7 +34,8 @@ impl ConcatenatedDigest {
         T::prepare_into_concatenated_digest(decoder, digest, false)
     }
 
-    pub fn prepare_from_sbor_array<T: ArrayPreparable, const MAX_LENGTH: usize>(
+    #[deprecated = "Use prepare_from_sbor_array_value_body instead for new models"]
+    pub fn prepare_from_sbor_array_full_value<T: ArrayPreparable, const MAX_LENGTH: usize>(
         decoder: &mut TransactionDecoder,
         value_type: ValueType,
     ) -> Result<(T, Summary), PrepareError> {
@@ -46,10 +47,29 @@ impl ConcatenatedDigest {
         )
     }
 
-    pub fn prepare_from_sbor_tuple<T: TuplePreparable>(
+    pub fn prepare_from_sbor_array_value_body<T: ArrayPreparable, const MAX_LENGTH: usize>(
+        decoder: &mut TransactionDecoder,
+        value_type: ValueType,
+    ) -> Result<(T, Summary), PrepareError> {
+        T::prepare_into_concatenated_digest::<MAX_LENGTH>(
+            decoder,
+            HashAccumulator::new(),
+            value_type,
+            false,
+        )
+    }
+
+    #[deprecated = "Use prepare_from_sbor_tuple_value_body instead for new models"]
+    pub fn prepare_from_sbor_tuple_full_value<T: TuplePreparable>(
         decoder: &mut TransactionDecoder,
     ) -> Result<(T, Summary), PrepareError> {
         T::prepare_into_concatenated_digest(decoder, HashAccumulator::new(), true)
+    }
+
+    pub fn prepare_from_sbor_tuple_value_body<T: TuplePreparable>(
+        decoder: &mut TransactionDecoder,
+    ) -> Result<(T, Summary), PrepareError> {
+        T::prepare_into_concatenated_digest(decoder, HashAccumulator::new(), false)
     }
 
     pub fn prepare_from_sbor_enum<T: EnumPreparable>(

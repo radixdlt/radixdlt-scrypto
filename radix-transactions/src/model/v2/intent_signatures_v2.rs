@@ -7,6 +7,10 @@ pub struct IntentSignaturesV2 {
     pub signatures: Vec<IntentSignatureV1>,
 }
 
+impl TransactionPartialPrepare for IntentSignaturesV2 {
+    type Prepared = PreparedIntentSignaturesV2;
+}
+
 pub type PreparedIntentSignaturesV2 = SummarizedRawValueBody<IntentSignaturesV2>;
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
@@ -21,15 +25,11 @@ pub struct PreparedMultipleIntentSignaturesV2 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedMultipleIntentSignaturesV2 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedMultipleIntentSignaturesV2);
 
-impl TransactionPreparableFromValue for PreparedMultipleIntentSignaturesV2 {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let (by_subintent, summary) = ConcatenatedDigest::prepare_from_sbor_array::<
+impl TransactionPreparableFromValueBody for PreparedMultipleIntentSignaturesV2 {
+    fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        let (by_subintent, summary) = ConcatenatedDigest::prepare_from_sbor_array_value_body::<
             Vec<PreparedIntentSignaturesV2>,
             V2_MAX_NUMBER_OF_SUBINTENTS_IN_TRANSACTION,
         >(decoder, ValueType::IntentSignatures)?;
@@ -38,5 +38,9 @@ impl TransactionPreparableFromValue for PreparedMultipleIntentSignaturesV2 {
             by_subintent,
             summary,
         })
+    }
+
+    fn value_kind() -> ManifestValueKind {
+        ManifestValueKind::Array
     }
 }

@@ -7,4 +7,8 @@ pub struct TransactionHeaderV2 {
     pub tip_basis_points: u32,
 }
 
+impl TransactionPartialPrepare for TransactionHeaderV2 {
+    type Prepared = PreparedTransactionHeaderV2;
+}
+
 pub type PreparedTransactionHeaderV2 = SummarizedRawValueBody<TransactionHeaderV2>;

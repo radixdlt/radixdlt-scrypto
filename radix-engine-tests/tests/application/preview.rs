@@ -4,7 +4,7 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::rule;
 use scrypto_test::prelude::*;
 
-use radix_transactions::validation::NotarizedTransactionValidator;
+use radix_transactions::validation::NotarizedTransactionValidatorV1;
 use radix_transactions::validation::{TransactionValidator, ValidationConfig};
 
 #[test]
@@ -364,7 +364,7 @@ fn validate<'a>(
     network: &'a NetworkDefinition,
     transaction: &'a NotarizedTransactionV1,
 ) -> ValidatedNotarizedTransactionV1 {
-    NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+    NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
         .validate(transaction.prepare().unwrap())
         .unwrap()
 }

@@ -52,7 +52,7 @@ impl<'a> TransactionDecoder<'a> {
     }
 
     pub fn read_struct_header(&mut self, length: usize) -> Result<(), PrepareError> {
-        self.0.read_and_check_value_kind(ValueKind::Tuple)?;
+        self.read_and_check_value_kind(ValueKind::Tuple)?;
         self.read_struct_header_without_value_kind(length)
     }
 
@@ -65,7 +65,7 @@ impl<'a> TransactionDecoder<'a> {
     }
 
     pub fn read_enum_header(&mut self) -> Result<(u8, usize), PrepareError> {
-        self.0.read_and_check_value_kind(ValueKind::Enum)?;
+        self.read_and_check_value_kind(ValueKind::Enum)?;
         let discriminator = self.0.read_discriminator()?;
         let length = self.0.read_size()?;
         Ok((discriminator, length))
@@ -76,7 +76,7 @@ impl<'a> TransactionDecoder<'a> {
         expected_discriminator: u8,
         length: usize,
     ) -> Result<(), PrepareError> {
-        self.0.read_and_check_value_kind(ValueKind::Enum)?;
+        self.read_and_check_value_kind(ValueKind::Enum)?;
         self.read_expected_enum_variant_header_without_value_kind(expected_discriminator, length)
     }
 
@@ -100,7 +100,7 @@ impl<'a> TransactionDecoder<'a> {
         &mut self,
         element_value_kind: ManifestValueKind,
     ) -> Result<usize, PrepareError> {
-        self.0.read_and_check_value_kind(ValueKind::Array)?;
+        self.read_and_check_value_kind(ValueKind::Array)?;
         self.read_array_header_without_value_kind(element_value_kind)
     }
 
@@ -108,8 +108,16 @@ impl<'a> TransactionDecoder<'a> {
         &mut self,
         element_value_kind: ManifestValueKind,
     ) -> Result<usize, PrepareError> {
-        self.0.read_and_check_value_kind(element_value_kind)?;
+        self.read_and_check_value_kind(element_value_kind)?;
         Ok(self.0.read_size()?)
+    }
+
+    pub fn read_and_check_value_kind(
+        &mut self,
+        value_kind: ManifestValueKind,
+    ) -> Result<(), PrepareError> {
+        self.0.read_and_check_value_kind(value_kind)?;
+        Ok(())
     }
 
     /// Should be called after reading all the children following a manual read_X_header call
@@ -132,8 +140,12 @@ impl<'a> TransactionDecoder<'a> {
         self.0.get_offset()
     }
 
-    pub fn get_slice(&self, start_offset: usize, end_offset: usize) -> &[u8] {
+    pub fn get_slice_with_valid_bounds(&self, start_offset: usize, end_offset: usize) -> &[u8] {
         &self.0.get_input_slice()[start_offset..end_offset]
+    }
+
+    pub fn get_input_slice(&self) -> &[u8] {
+        &self.0.get_input_slice()
     }
 
     pub fn destructure(self) -> ManifestDecoder<'a> {

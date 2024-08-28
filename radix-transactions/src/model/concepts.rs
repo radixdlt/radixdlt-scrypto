@@ -17,7 +17,7 @@ define_raw_transaction_payload!(RawSignedTransactionIntent);
 define_wrapped_hash!(SignedTransactionIntentHash);
 
 pub trait HasSignedTransactionIntentHash {
-    fn signed_intent_hash(&self) -> SignedTransactionIntentHash;
+    fn signed_transaction_intent_hash(&self) -> SignedTransactionIntentHash;
 }
 
 define_raw_transaction_payload!(RawNotarizedTransaction);

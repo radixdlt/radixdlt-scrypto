@@ -16,4 +16,30 @@ pub struct Summary {
 
 pub trait HasSummary {
     fn get_summary(&self) -> &Summary;
+    fn summary_mut(&mut self) -> &mut Summary;
 }
+
+macro_rules! impl_has_summary {
+    (
+        $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
+        $prepared:ident
+        $(< $($rt:tt),+ >)?
+    ) => {
+        #[allow(deprecated)]
+        impl
+            $(< $( $lt $( : $clt $(+ $dlt )* )? $( = $deflt)? ),+ >)?
+            HasSummary for $prepared
+            $(< $( $rt ),+ >)?
+        {
+            fn get_summary(&self) -> &Summary {
+                &self.summary
+            }
+
+            fn summary_mut(&mut self) -> &mut Summary {
+                &mut self.summary
+            }
+        }
+    };
+}
+
+pub(crate) use impl_has_summary;

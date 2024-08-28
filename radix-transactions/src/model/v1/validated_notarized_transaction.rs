@@ -16,8 +16,8 @@ impl HasTransactionIntentHash for ValidatedNotarizedTransactionV1 {
 }
 
 impl HasSignedTransactionIntentHash for ValidatedNotarizedTransactionV1 {
-    fn signed_intent_hash(&self) -> SignedTransactionIntentHash {
-        self.prepared.signed_intent_hash()
+    fn signed_transaction_intent_hash(&self) -> SignedTransactionIntentHash {
+        self.prepared.signed_transaction_intent_hash()
     }
 }
 

@@ -65,7 +65,7 @@ impl TransactionBuilder {
             .expect("Signed intent could be prepared");
         self.notary_signature = Some(
             signer
-                .sign_with_public_key(&prepared.signed_intent_hash())
+                .sign_with_public_key(&prepared.signed_transaction_intent_hash())
                 .signature(),
         );
         self

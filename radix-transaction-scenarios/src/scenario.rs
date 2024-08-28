@@ -36,7 +36,7 @@ impl NextTransaction {
 
     pub fn validate(
         &self,
-        validator: &NotarizedTransactionValidator,
+        validator: &NotarizedTransactionValidatorV1,
     ) -> Result<ValidatedNotarizedTransactionV1, ScenarioError> {
         validator
             .validate_from_raw(&self.raw_transaction)

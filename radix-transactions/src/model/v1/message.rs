@@ -25,6 +25,15 @@ pub struct PlaintextMessageV1 {
     pub message: MessageContentsV1,
 }
 
+impl PlaintextMessageV1 {
+    pub fn text(message: impl Into<String>) -> Self {
+        Self {
+            mime_type: "text/plain".to_string(),
+            message: MessageContentsV1::String(message.into()),
+        }
+    }
+}
+
 /// We explicitly mark content as either String or Bytes - this distinguishes (along with the mime type)
 /// whether the message is intended to be displayable as text, or not.
 ///

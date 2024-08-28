@@ -14,60 +14,16 @@ pub struct TransactionIntentV2 {
     pub subintents: SubintentsV2,
 }
 
-impl TransactionPayload for TransactionIntentV2 {
-    type Prepared = PreparedTransactionIntentV2;
-    type Raw = RawTransactionIntent;
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedTransactionIntentV2 {
-    pub root_header: PreparedTransactionHeaderV2,
-    pub root_intent_core: PreparedIntentCoreV2,
-    pub subintents: PreparedSubintentsV2,
-    pub summary: Summary,
-}
-
-impl HasSummary for PreparedTransactionIntentV2 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
-
-impl TransactionPreparableFromValue for PreparedTransactionIntentV2 {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        // When embedded as an child, it's SBOR encoded as a struct
-        let ((root_header, root_intent_core, subintents), summary) =
-            ConcatenatedDigest::prepare_from_transaction_child_struct(
-                decoder,
-                TransactionDiscriminator::V2TransactionIntent,
-            )?;
-        Ok(Self {
-            root_header,
-            root_intent_core,
-            subintents,
-            summary,
-        })
-    }
-}
-
-impl TransactionPayloadPreparable for PreparedTransactionIntentV2 {
-    type Raw = RawTransactionIntent;
-
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        // When embedded as full payload, it's SBOR encoded as an enum
-        let ((root_header, root_intent_core, subintents), summary) =
-            ConcatenatedDigest::prepare_from_transaction_payload_enum(
-                decoder,
-                TransactionDiscriminator::V2TransactionIntent,
-            )?;
-        Ok(Self {
-            root_header,
-            root_intent_core,
-            subintents,
-            summary,
-        })
-    }
-}
+transaction_payload_v2!(
+    TransactionIntentV2,
+    RawTransactionIntent,
+    PreparedTransactionIntentV2 {
+        root_header: PreparedTransactionHeaderV2,
+        root_intent_core: PreparedIntentCoreV2,
+        subintents: PreparedSubintentsV2,
+    },
+    TransactionDiscriminator::V2TransactionIntent,
+);
 
 impl HasTransactionIntentHash for PreparedTransactionIntentV2 {
     fn transaction_intent_hash(&self) -> TransactionIntentHash {

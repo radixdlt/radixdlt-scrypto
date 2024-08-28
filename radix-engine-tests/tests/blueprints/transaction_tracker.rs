@@ -97,7 +97,7 @@ fn test_transaction_replay_protection() {
 fn get_validated(
     transaction: &NotarizedTransactionV1,
 ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
 
     validator.validate(transaction.prepare().unwrap())
 }

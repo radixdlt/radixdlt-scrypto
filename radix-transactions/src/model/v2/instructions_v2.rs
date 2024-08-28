@@ -5,7 +5,7 @@ use crate::internal_prelude::*;
 #[sbor(transparent)]
 pub struct InstructionsV2(pub Rc<Vec<InstructionV1>>);
 
-impl TransactionPartialEncode for InstructionsV2 {
+impl TransactionPartialPrepare for InstructionsV2 {
     type Prepared = PreparedInstructionsV2;
 }
 

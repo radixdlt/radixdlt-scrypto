@@ -11,12 +11,15 @@ pub enum LedgerTransaction {
     RoundUpdateV1(Box<RoundUpdateTransactionV1>),
     #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     FlashV1(Box<FlashTransactionV1>),
+    #[sbor(discriminator(USER_V2_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    UserV2(Box<NotarizedTransactionV2>),
 }
 
 const GENESIS_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 0;
 const USER_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 1;
 const ROUND_UPDATE_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 2;
 const FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 3;
+const USER_V2_LEDGER_TRANSACTION_DISCRIMINATOR: u8 = 4;
 
 define_raw_transaction_payload!(RawLedgerTransaction);
 
@@ -67,7 +70,7 @@ impl PreparedLedgerTransaction {
                 }
                 PreparedLedgerTransactionInner::UserV1(t) => TypedTransactionIdentifiers::User {
                     intent_hash: t.transaction_intent_hash(),
-                    signed_intent_hash: t.signed_intent_hash(),
+                    signed_intent_hash: t.signed_transaction_intent_hash(),
                     notarized_transaction_hash: t.notarized_transaction_hash(),
                 },
                 PreparedLedgerTransactionInner::RoundUpdateV1(t) => {
@@ -80,16 +83,17 @@ impl PreparedLedgerTransaction {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
                 }
+                PreparedLedgerTransactionInner::UserV2(t) => TypedTransactionIdentifiers::User {
+                    intent_hash: t.transaction_intent_hash(),
+                    signed_intent_hash: t.signed_transaction_intent_hash(),
+                    notarized_transaction_hash: t.notarized_transaction_hash(),
+                },
             },
         }
     }
 }
 
-impl HasSummary for PreparedLedgerTransaction {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedLedgerTransaction);
 
 #[derive(BasicCategorize)]
 pub enum PreparedLedgerTransactionInner {
@@ -101,6 +105,8 @@ pub enum PreparedLedgerTransactionInner {
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
     #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     FlashV1(Box<PreparedFlashTransactionV1>),
+    #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    UserV2(Box<PreparedNotarizedTransactionV2>),
 }
 
 impl PreparedLedgerTransactionInner {
@@ -116,6 +122,17 @@ impl HasSummary for PreparedLedgerTransactionInner {
             Self::UserV1(t) => t.get_summary(),
             Self::RoundUpdateV1(t) => t.get_summary(),
             Self::FlashV1(t) => t.get_summary(),
+            Self::UserV2(t) => t.get_summary(),
+        }
+    }
+
+    fn summary_mut(&mut self) -> &mut Summary {
+        match self {
+            Self::Genesis(t) => t.summary_mut(),
+            Self::UserV1(t) => t.summary_mut(),
+            Self::RoundUpdateV1(t) => t.summary_mut(),
+            Self::FlashV1(t) => t.summary_mut(),
+            Self::UserV2(t) => t.summary_mut(),
         }
     }
 }
@@ -161,6 +178,11 @@ impl TransactionPreparableFromValue for PreparedLedgerTransactionInner {
                 let prepared = PreparedFlashTransactionV1::prepare_from_value(decoder)?;
                 PreparedLedgerTransactionInner::FlashV1(Box::new(prepared))
             }
+            USER_V2_LEDGER_TRANSACTION_DISCRIMINATOR => {
+                check_length(length, 1)?;
+                let prepared = PreparedNotarizedTransactionV2::prepare_from_value(decoder)?;
+                PreparedLedgerTransactionInner::UserV2(Box::new(prepared))
+            }
             _ => return Err(unknown_discriminator(discriminator)),
         };
         decoder.track_stack_depth_decrease()?;
@@ -192,9 +214,14 @@ impl HasSummary for PreparedGenesisTransaction {
     fn get_summary(&self) -> &Summary {
         match self {
             PreparedGenesisTransaction::Flash(summary) => summary,
-            PreparedGenesisTransaction::Transaction(system_transaction) => {
-                system_transaction.get_summary()
-            }
+            PreparedGenesisTransaction::Transaction(t) => t.get_summary(),
+        }
+    }
+
+    fn summary_mut(&mut self) -> &mut Summary {
+        match self {
+            PreparedGenesisTransaction::Flash(summary) => summary,
+            PreparedGenesisTransaction::Transaction(t) => t.summary_mut(),
         }
     }
 }
@@ -243,6 +270,8 @@ pub enum ValidatedLedgerTransactionInner {
     RoundUpdateV1(Box<PreparedRoundUpdateTransactionV1>),
     #[sbor(discriminator(FLASH_V1_LEDGER_TRANSACTION_DISCRIMINATOR))]
     FlashV1(Box<PreparedFlashTransactionV1>),
+    #[sbor(discriminator(USER_V2_LEDGER_TRANSACTION_DISCRIMINATOR))]
+    UserV2(Box<ValidatedNotarizedTransactionV2>),
 }
 
 impl ValidatedLedgerTransaction {
@@ -252,6 +281,7 @@ impl ValidatedLedgerTransaction {
             ValidatedLedgerTransactionInner::UserV1(t) => Some(t.transaction_intent_hash()),
             ValidatedLedgerTransactionInner::RoundUpdateV1(_) => None,
             ValidatedLedgerTransactionInner::FlashV1(_) => None,
+            ValidatedLedgerTransactionInner::UserV2(t) => Some(t.transaction_intent_hash()),
         }
     }
 
@@ -271,6 +301,7 @@ impl ValidatedLedgerTransaction {
             ValidatedLedgerTransactionInner::FlashV1(_) => {
                 panic!("Should not call get_executable on a flash transaction")
             }
+            ValidatedLedgerTransactionInner::UserV2(t) => t.get_executable().into(),
         }
     }
 
@@ -285,7 +316,7 @@ impl ValidatedLedgerTransaction {
                 }
                 ValidatedLedgerTransactionInner::UserV1(t) => TypedTransactionIdentifiers::User {
                     intent_hash: t.transaction_intent_hash(),
-                    signed_intent_hash: t.signed_intent_hash(),
+                    signed_intent_hash: t.signed_transaction_intent_hash(),
                     notarized_transaction_hash: t.notarized_transaction_hash(),
                 },
                 ValidatedLedgerTransactionInner::RoundUpdateV1(t) => {
@@ -298,6 +329,11 @@ impl ValidatedLedgerTransaction {
                         flash_transaction_hash: t.flash_transaction_hash(),
                     }
                 }
+                ValidatedLedgerTransactionInner::UserV2(t) => TypedTransactionIdentifiers::User {
+                    intent_hash: t.transaction_intent_hash(),
+                    signed_intent_hash: t.signed_transaction_intent_hash(),
+                    notarized_transaction_hash: t.notarized_transaction_hash(),
+                },
             },
         }
     }

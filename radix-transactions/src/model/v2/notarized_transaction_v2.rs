@@ -16,57 +16,15 @@ pub struct NotarizedTransactionV2 {
     pub notary_signature: NotarySignatureV1,
 }
 
-impl TransactionPayload for NotarizedTransactionV2 {
-    type Prepared = PreparedNotarizedTransactionV2;
-    type Raw = RawNotarizedTransaction;
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct PreparedNotarizedTransactionV2 {
-    pub signed_intent: PreparedSignedTransactionIntentV2,
-    pub notary_signature: PreparedNotarySignatureV1,
-    pub summary: Summary,
-}
-
-impl HasSummary for PreparedNotarizedTransactionV2 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
-
-impl TransactionPreparableFromValue for PreparedNotarizedTransactionV2 {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        // When embedded as an child, it's SBOR encoded as a struct
-        let ((signed_intent, notary_signature), summary) =
-            ConcatenatedDigest::prepare_from_transaction_child_struct(
-                decoder,
-                TransactionDiscriminator::V2Notarized,
-            )?;
-        Ok(Self {
-            signed_intent,
-            notary_signature,
-            summary,
-        })
-    }
-}
-
-impl TransactionPayloadPreparable for PreparedNotarizedTransactionV2 {
-    type Raw = RawNotarizedTransaction;
-
-    fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        // When embedded as full payload, it's SBOR encoded as an enum
-        let ((signed_intent, notary_signature), summary) =
-            ConcatenatedDigest::prepare_from_transaction_payload_enum(
-                decoder,
-                TransactionDiscriminator::V2Notarized,
-            )?;
-        Ok(Self {
-            signed_intent,
-            notary_signature,
-            summary,
-        })
-    }
-}
+transaction_payload_v2!(
+    NotarizedTransactionV2,
+    RawNotarizedTransaction,
+    PreparedNotarizedTransactionV2 {
+        signed_intent: PreparedSignedTransactionIntentV2,
+        notary_signature: PreparedNotarySignatureV1,
+    },
+    TransactionDiscriminator::V2Notarized,
+);
 
 impl HasTransactionIntentHash for PreparedNotarizedTransactionV2 {
     fn transaction_intent_hash(&self) -> TransactionIntentHash {
@@ -75,8 +33,8 @@ impl HasTransactionIntentHash for PreparedNotarizedTransactionV2 {
 }
 
 impl HasSignedTransactionIntentHash for PreparedNotarizedTransactionV2 {
-    fn signed_intent_hash(&self) -> SignedTransactionIntentHash {
-        self.signed_intent.signed_intent_hash()
+    fn signed_transaction_intent_hash(&self) -> SignedTransactionIntentHash {
+        self.signed_intent.signed_transaction_intent_hash()
     }
 }
 

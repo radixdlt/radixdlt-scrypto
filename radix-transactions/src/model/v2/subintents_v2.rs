@@ -10,21 +10,21 @@ use crate::internal_prelude::*;
 #[sbor(transparent)]
 pub struct SubintentsV2(Vec<SubintentV2>);
 
+impl TransactionPartialPrepare for SubintentsV2 {
+    type Prepared = PreparedSubintentsV2;
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedSubintentsV2 {
     subintents_by_hash: Rc<IndexMap<SubintentHash, PreparedSubintentV2>>,
     summary: Summary,
 }
 
-impl HasSummary for PreparedSubintentsV2 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedSubintentsV2);
 
-impl TransactionPreparableFromValue for PreparedSubintentsV2 {
-    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let (subintents, summary) = ConcatenatedDigest::prepare_from_sbor_array::<
+impl TransactionPreparableFromValueBody for PreparedSubintentsV2 {
+    fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        let (subintents, summary) = ConcatenatedDigest::prepare_from_sbor_array_value_body::<
             Vec<PreparedSubintentV2>,
             V2_MAX_NUMBER_OF_SUBINTENTS_IN_TRANSACTION,
         >(decoder, ValueType::Subintent)?;
@@ -38,5 +38,9 @@ impl TransactionPreparableFromValue for PreparedSubintentsV2 {
             subintents_by_hash: Rc::new(subintents_by_hash),
             summary,
         })
+    }
+
+    fn value_kind() -> ManifestValueKind {
+        ManifestValueKind::Array
     }
 }

@@ -20,11 +20,7 @@ impl TransactionPayload for FlashTransactionV1 {
 
 define_raw_transaction_payload!(RawFlashTransactionV1);
 
-impl HasSummary for PreparedFlashTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedFlashTransactionV1);
 
 impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
     fn flash_transaction_hash(&self) -> FlashTransactionHash {

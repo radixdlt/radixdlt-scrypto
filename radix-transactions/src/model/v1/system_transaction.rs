@@ -15,7 +15,7 @@ impl TransactionPayload for SystemTransactionV1 {
 
 #[allow(deprecated)]
 type PreparedPreAllocatedAddresses = SummarizedRawFullValue<Vec<PreAllocatedAddress>>;
-type PreparedHash = SummarizedHash;
+type PreparedHash = RawHash;
 
 pub struct PreparedSystemTransactionV1 {
     pub encoded_instructions: Rc<Vec<u8>>,
@@ -26,15 +26,11 @@ pub struct PreparedSystemTransactionV1 {
     pub summary: Summary,
 }
 
+impl_has_summary!(PreparedSystemTransactionV1);
+
 impl HasSystemTransactionHash for PreparedSystemTransactionV1 {
     fn system_transaction_hash(&self) -> SystemTransactionHash {
         SystemTransactionHash::from_hash(self.summary.hash)
-    }
-}
-
-impl HasSummary for PreparedSystemTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
     }
 }
 

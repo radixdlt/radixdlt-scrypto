@@ -1,29 +1,30 @@
 use crate::internal_prelude::*;
 
-pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
+pub trait TransactionValidator {
+    type Prepared: TransactionPayloadPreparable;
     type Validated;
 
     fn prepare_from_raw(
         &self,
-        raw: &Prepared::Raw,
-    ) -> Result<Prepared, TransactionValidationError> {
+        raw: &<Self::Prepared as TransactionPayloadPreparable>::Raw,
+    ) -> Result<Self::Prepared, TransactionValidationError> {
         self.prepare_from_payload_bytes(raw.as_slice())
     }
 
     fn prepare_from_payload_bytes(
         &self,
         raw_payload_bytes: &[u8],
-    ) -> Result<Prepared, TransactionValidationError> {
+    ) -> Result<Self::Prepared, TransactionValidationError> {
         if raw_payload_bytes.len() > self.max_payload_length() {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
-        Ok(Prepared::prepare_from_payload(raw_payload_bytes)?)
+        Ok(Self::Prepared::prepare_from_payload(raw_payload_bytes)?)
     }
 
     fn validate_from_raw(
         &self,
-        raw: &Prepared::Raw,
+        raw: &<Self::Prepared as TransactionPayloadPreparable>::Raw,
     ) -> Result<Self::Validated, TransactionValidationError> {
         self.validate_from_payload_bytes(raw.as_slice())
     }
@@ -40,7 +41,7 @@ pub trait TransactionValidator<Prepared: TransactionPayloadPreparable> {
 
     fn validate(
         &self,
-        transaction: Prepared,
+        transaction: Self::Prepared,
     ) -> Result<Self::Validated, TransactionValidationError>;
 }
 
@@ -91,12 +92,39 @@ impl Default for MessageValidationConfig {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct NotarizedTransactionValidator {
+pub struct UserTransactionValidator {
+    config: ValidationConfig,
+    v1: NotarizedTransactionValidatorV1,
+    v2: NotarizedTransactionValidatorV2,
+}
+
+impl TransactionValidator for UserTransactionValidator {
+    type Prepared = PreparedUserTransaction;
+    type Validated = ValidatedUserTransaction;
+
+    fn max_payload_length(&self) -> usize {
+        self.config.max_notarized_payload_size
+    }
+
+    fn validate(
+        &self,
+        transaction: Self::Prepared,
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        Ok(match transaction {
+            PreparedUserTransaction::V1(t) => ValidatedUserTransaction::V1(self.v1.validate(t)?),
+            PreparedUserTransaction::V2(t) => ValidatedUserTransaction::V2(self.v2.validate(t)?),
+        })
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct NotarizedTransactionValidatorV1 {
     config: ValidationConfig,
 }
 
 #[allow(deprecated)]
-impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransactionValidator {
+impl TransactionValidator for NotarizedTransactionValidatorV1 {
+    type Prepared = PreparedNotarizedTransactionV1;
     type Validated = ValidatedNotarizedTransactionV1;
 
     fn max_payload_length(&self) -> usize {
@@ -134,7 +162,7 @@ impl TransactionValidator<PreparedNotarizedTransactionV1> for NotarizedTransacti
     }
 }
 
-impl NotarizedTransactionValidator {
+impl NotarizedTransactionValidatorV1 {
     pub fn new(config: ValidationConfig) -> Self {
         Self { config }
     }
@@ -355,7 +383,7 @@ impl NotarizedTransactionValidator {
         }
 
         // verify notary signature
-        let signed_intent_hash = transaction.signed_intent_hash().into_hash();
+        let signed_intent_hash = transaction.signed_transaction_intent_hash().into_hash();
         if !verify(
             &signed_intent_hash,
             &header.notary_public_key,
@@ -439,6 +467,33 @@ impl NotarizedTransactionValidator {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct NotarizedTransactionValidatorV2 {
+    config: ValidationConfig,
+}
+
+impl TransactionValidator for NotarizedTransactionValidatorV2 {
+    type Prepared = PreparedNotarizedTransactionV2;
+    type Validated = ValidatedNotarizedTransactionV2;
+
+    fn max_payload_length(&self) -> usize {
+        self.config.max_notarized_payload_size
+    }
+
+    fn validate(
+        &self,
+        _transaction: Self::Prepared,
+    ) -> Result<Self::Validated, TransactionValidationError> {
+        unimplemented!()
+    }
+}
+
+impl NotarizedTransactionValidatorV2 {
+    pub fn new(config: ValidationConfig) -> Self {
+        Self { config }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use radix_common::network::NetworkDefinition;
@@ -449,7 +504,7 @@ mod tests {
     macro_rules! assert_invalid_tx {
         ($result: expr, ($start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let config: ValidationConfig = ValidationConfig::simulator();
-            let validator = NotarizedTransactionValidator::new(config);
+            let validator = NotarizedTransactionValidatorV1::new(config);
             assert_eq!(
                 $result,
                 validator
@@ -510,7 +565,7 @@ mod tests {
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(Epoch::zero(), Epoch::of(100), 5, vec![1, 2], 2);
 
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
 
         let preview_intent = PreviewIntentV1 {
             intent: tx.signed_intent.intent,
@@ -729,7 +784,7 @@ mod tests {
     fn validate_default(
         transaction: &NotarizedTransactionV1,
     ) -> Result<(), TransactionValidationError> {
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
         validator
             .validate(transaction.prepare().unwrap())
             .map(|_| ())
@@ -818,7 +873,7 @@ mod tests {
                 .drop_proof("proof1")
                 .build(),
         );
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
         assert_eq!(
             validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
             Err(TransactionValidationError::IdValidationError(
@@ -849,7 +904,7 @@ mod tests {
                 })
                 .build(),
         );
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
         assert_eq!(
             validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
             Err(TransactionValidationError::IdValidationError(
@@ -882,7 +937,7 @@ mod tests {
                 })
                 .build(),
         );
-        let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+        let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
         assert_eq!(
             validator.validate_from_payload_bytes(&transaction.to_payload_bytes().unwrap()),
             Err(TransactionValidationError::IdValidationError(

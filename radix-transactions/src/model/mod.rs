@@ -3,6 +3,7 @@ mod execution;
 mod hash;
 mod ledger_transaction;
 mod preparation;
+mod user_transaction;
 mod v1;
 mod v2;
 mod versioned;
@@ -12,6 +13,7 @@ pub use execution::*;
 pub use hash::*;
 pub use ledger_transaction::*;
 pub use preparation::*;
+pub use user_transaction::*;
 pub use v1::*;
 pub use v2::*;
 pub use versioned::*;
@@ -23,7 +25,8 @@ mod tests {
     use radix_common::prelude::*;
     use sbor::representations::*;
 
-    fn hash_manifest_sbor_excluding_prefix<T: ManifestEncode>(value: T) -> Hash {
+    fn hash_encoded_sbor_value<T: ManifestEncode>(value: T) -> Hash {
+        // Ignore the version byte
         hash(&manifest_encode(&value).unwrap()[1..])
     }
 
@@ -159,7 +162,7 @@ Enum<3u8>(
 "###,
         );
 
-        let validated = NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+        let validated = NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
             .validate_from_payload_bytes(&payload)
             .unwrap();
         let executable = validated.get_executable();
@@ -170,16 +173,13 @@ Enum<3u8>(
                     TransactionDiscriminator::V1Intent as u8,
                 ]
                 .as_slice(),
-                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.header)
-                    .as_slice(),
-                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.instructions)
-                    .as_slice(),
+                hash_encoded_sbor_value(&transaction.signed_intent.intent.header).as_slice(),
+                hash_encoded_sbor_value(&transaction.signed_intent.intent.instructions).as_slice(),
                 hash(
                     hash(&[1, 2]), // one blob only
                 )
                 .as_slice(),
-                hash_manifest_sbor_excluding_prefix(&transaction.signed_intent.intent.message)
-                    .as_slice(),
+                hash_encoded_sbor_value(&transaction.signed_intent.intent.message).as_slice(),
             ]
             .concat(),
         ));
@@ -230,8 +230,9 @@ Enum<3u8>(
 
         // Test unexpected transaction type
         payload[2] = 4;
-        let executable = NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
-            .validate_from_payload_bytes(&payload);
+        let executable =
+            NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
+                .validate_from_payload_bytes(&payload);
         assert_eq!(
             executable,
             Err(TransactionValidationError::PrepareError(

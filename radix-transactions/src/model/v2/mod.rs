@@ -1,6 +1,6 @@
 use super::*;
 
-mod child_intent_constraints_v2;
+mod child_intents_v2;
 mod instructions_v2;
 mod intent_core_v2;
 mod intent_header_v2;
@@ -14,8 +14,9 @@ mod subintent_v2;
 mod subintents_v2;
 mod transaction_header_v2;
 mod transaction_intent_v2;
+mod validated_notarized_transaction_v2;
 
-pub use child_intent_constraints_v2::*;
+pub use child_intents_v2::*;
 pub use instructions_v2::*;
 pub use intent_core_v2::*;
 pub use intent_header_v2::*;
@@ -29,3 +30,4 @@ pub use subintent_v2::*;
 pub use subintents_v2::*;
 pub use transaction_header_v2::*;
 pub use transaction_intent_v2::*;
+pub use validated_notarized_transaction_v2::*;

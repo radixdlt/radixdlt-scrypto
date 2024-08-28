@@ -144,9 +144,7 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 =
-            PreparedBlobsV1::prepare_from_payload_slice(&manifest_encode(&blobs_v1).unwrap())
-                .unwrap();
+        let prepared_blobs_v1 = blobs_v1.prepare_partial().unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let message_v1 = MessageV1::default();
@@ -349,9 +347,7 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 =
-            PreparedBlobsV1::prepare_from_payload_slice(&manifest_encode(&blobs_v1).unwrap())
-                .unwrap();
+        let prepared_blobs_v1 = blobs_v1.prepare_partial().unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let pre_allocated_addresses_v1 = vec![PreAllocatedAddress {

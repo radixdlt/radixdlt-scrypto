@@ -29,11 +29,7 @@ pub struct PreparedIntentV1 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedIntentV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedIntentV1);
 
 impl TransactionPreparableFromValue for PreparedIntentV1 {
     fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {

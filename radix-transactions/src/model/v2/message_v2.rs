@@ -12,6 +12,10 @@ pub enum MessageV2 {
     Encrypted(EncryptedMessageV2),
 }
 
+impl TransactionPartialPrepare for MessageV2 {
+    type Prepared = PreparedMessageV2;
+}
+
 //============================================================================
 // ENCRYPTED MESSAGE
 //============================================================================

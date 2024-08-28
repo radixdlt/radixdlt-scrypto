@@ -28,11 +28,7 @@ pub struct PreparedNotarizedTransactionV1 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedNotarizedTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedNotarizedTransactionV1);
 
 impl TransactionPreparableFromValue for PreparedNotarizedTransactionV1 {
     fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
@@ -75,8 +71,8 @@ impl HasTransactionIntentHash for PreparedNotarizedTransactionV1 {
 }
 
 impl HasSignedTransactionIntentHash for PreparedNotarizedTransactionV1 {
-    fn signed_intent_hash(&self) -> SignedTransactionIntentHash {
-        self.signed_intent.signed_intent_hash()
+    fn signed_transaction_intent_hash(&self) -> SignedTransactionIntentHash {
+        self.signed_intent.signed_transaction_intent_hash()
     }
 }
 
