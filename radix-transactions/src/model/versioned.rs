@@ -344,12 +344,16 @@ mod tests {
         create_checked_childless_subintent_v2(&network);
     }
 
-    fn create_checked_childless_subintent_v2(network: &NetworkDefinition) -> (SubintentV2, SubintentHash) {
+    fn create_checked_childless_subintent_v2(
+        network: &NetworkDefinition,
+    ) -> (SubintentV2, SubintentHash) {
         let (header, expected_header_hash) = create_intent_header_v2(network);
         let (blobs, expected_blobs_hash) = create_blobs_v1();
-        let (instructions, expected_instructions_hash) = create_childless_subintent_instructions_v2();
+        let (instructions, expected_instructions_hash) =
+            create_childless_subintent_instructions_v2();
         let (message, expected_message_hash) = create_message_v2();
-        let (child_intent_constraints, expected_constraints_hash) = create_childless_child_intents_v2();
+        let (child_intent_constraints, expected_constraints_hash) =
+            create_childless_child_intents_v2();
 
         let subintent = SubintentV2 {
             intent_core: IntentCoreV2 {

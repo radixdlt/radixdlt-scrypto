@@ -137,7 +137,7 @@ impl InstructionVersion for InstructionV2 {}
     settings(
         comparison_between_versions = "EXPR: |s| s.allow_all_name_changes()",
         comparison_between_current_and_latest = "EXPR: |s| s",
-    ),
+    )
 )]
 pub enum InstructionV2 {
     //==============

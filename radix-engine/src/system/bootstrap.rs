@@ -513,7 +513,7 @@ pub fn create_system_bootstrap_transaction(
         manifest_builder = manifest_builder.call_function(
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             FungibleResourceManagerCreateWithInitialSupplyManifestInput {
                 owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
                 track_total_supply: false,
