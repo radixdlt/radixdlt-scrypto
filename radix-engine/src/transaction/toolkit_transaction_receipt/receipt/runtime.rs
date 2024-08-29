@@ -5,7 +5,6 @@ use crate::object_modules::metadata::*;
 use crate::system::system_modules::execution_trace::WorktopChange;
 use crate::system::system_substates::*;
 use crate::transaction::toolkit_transaction_receipt::error::*;
-use crate::transaction::toolkit_transaction_receipt::ContextualTryInto;
 use crate::transaction::*;
 use radix_common::prelude::*;
 use radix_engine_interface::prelude::{MetadataValue, *};

@@ -1,19 +1,10 @@
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 #[serde_as]
-#[derive(
-    Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,
-)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(transparent)]
-#[schemars(transparent)]
-#[schemars(bound = "")]
-pub struct AsHex<T>(
-    #[schemars(with = "String")]
-    #[serde_as(as = "serde_with::hex::Hex")]
-    T,
-)
+pub struct AsHex<T>(#[serde_as(as = "serde_with::hex::Hex")] T)
 where
     T: AsRef<[u8]> + TryFrom<Vec<u8>>;
 

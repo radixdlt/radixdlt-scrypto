@@ -1,4 +1,3 @@
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -6,17 +5,9 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 #[serde_as]
-#[derive(
-    Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,
-)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(transparent)]
-#[schemars(transparent)]
-#[schemars(bound = "")]
-pub struct AsStr<T>(
-    #[schemars(with = "String")]
-    #[serde_as(as = "serde_with::DisplayFromStr")]
-    T,
-)
+pub struct AsStr<T>(#[serde_as(as = "serde_with::DisplayFromStr")] T)
 where
     T: Display + FromStr,
     <T as FromStr>::Err: Display;

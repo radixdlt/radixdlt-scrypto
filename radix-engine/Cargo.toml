@@ -48,7 +48,6 @@ lazy_static = { workspace = true }
 
 # Serde dependencies - primarily used in the RET's receipt.
 serde = { workspace = true }
-schemars = { workspace = true }
 serde_with = { workspace = true }
 
 [dev-dependencies]
