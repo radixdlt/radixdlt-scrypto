@@ -1,7 +1,10 @@
+use std::path::PathBuf;
+
 use radix_engine::system::system_modules::execution_trace::{ResourceSpecifier, WorktopChange};
 use radix_engine_interface::prelude::MetadataValue;
 use radix_engine_tests::*;
 use radix_engine_toolkit::receipt::*;
+use radix_transaction_scenarios::executor::*;
 use scrypto::*;
 use scrypto_test::prelude::*;
 
@@ -26,6 +29,93 @@ fn test_toolkit_receipt_roundtrip_property() {
 
     // Assert
     check_and_convert_receipt_to_runtime_receipt(receipt);
+}
+
+#[test]
+fn test_toolkit_receipt_roundtrip_property_on_scenario_receipts() {
+    let network_definition = NetworkDefinition::simulator();
+    DefaultTransactionScenarioExecutor::new(
+        InMemorySubstateDatabase::standard(),
+        &network_definition,
+    )
+    .scenario_execution_config(ExecutionConfig::for_preview(network_definition.clone()))
+    .on_transaction_executed(|_, _, receipt, _| {
+        check_and_convert_receipt_to_runtime_receipt(receipt.clone());
+    })
+    .execute_every_protocol_update_and_scenario()
+    .expect("Must succeed!");
+}
+
+#[test]
+#[ignore = "Run this test to output the transaction receipts to the file system"]
+fn output_scenario_serialized_transaction_receipts_to_file_system() {
+    let network_definition = NetworkDefinition::simulator();
+    DefaultTransactionScenarioExecutor::new(
+        InMemorySubstateDatabase::standard(),
+        &network_definition,
+    )
+    .scenario_execution_config(ExecutionConfig::for_preview(network_definition.clone()))
+    .on_transaction_executed(|metadata, transaction, receipt, _| {
+        let runtime_toolkit_receipt =
+            RuntimeToolkitTransactionReceipt::try_from(receipt.clone()).unwrap();
+
+        // Convert to a serializable transaction receipt.
+        let encoder = AddressBech32Encoder::for_simulator();
+        let serializable_toolkit_receipt =
+            SerializableToolkitTransactionReceipt::contextual_try_from(
+                runtime_toolkit_receipt.clone(),
+                &encoder,
+            )
+            .expect("Failed during runtime -> serializable conversion");
+
+        // Serialize the serializable receipt to JSON through serde_json.
+        let serialized_receipt = serde_json::to_string_pretty(&serializable_toolkit_receipt)
+            .expect("Serializing through serde_json failed");
+
+        // Create a file for this transaction receipt.
+        let directory_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("assets")
+            .join("serialized_receipts")
+            .join(metadata.logical_name);
+        std::fs::create_dir_all(&directory_path).expect("Creation failed!");
+        let file_path = directory_path.join(format!("{}.json", transaction.logical_name));
+        std::fs::write(file_path, serialized_receipt).expect("Writing the receipt failed");
+    })
+    .execute_every_protocol_update_and_scenario()
+    .expect("Must succeed!");
+}
+
+#[test]
+fn test_serialized_scenario_transaction_receipts_can_be_deserialized_and_converted_to_a_runtime_receipt(
+) {
+    // Arrange
+    let mut receipt_strings = Vec::new();
+    let directory_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("assets")
+        .join("serialized_receipts");
+    for entry in walkdir::WalkDir::new(directory_path) {
+        let entry = entry.unwrap();
+        let path = entry.into_path();
+        if path.extension().and_then(|value| value.to_str()) == Some("json") {
+            receipt_strings.push(std::fs::read_to_string(path).unwrap());
+        }
+    }
+
+    // Act
+    let converted_receipts = receipt_strings
+        .into_iter()
+        .map(|receipt| {
+            let decoder = AddressBech32Decoder::for_simulator();
+            serde_json::from_str::<SerializableToolkitTransactionReceipt>(&receipt)
+                .ok()
+                .and_then(|value| {
+                    RuntimeToolkitTransactionReceipt::contextual_try_from(value, &decoder).ok()
+                })
+        })
+        .collect::<Vec<_>>();
+
+    // Assert
+    assert!(converted_receipts.iter().all(|value| value.is_some()));
 }
 
 #[test]
