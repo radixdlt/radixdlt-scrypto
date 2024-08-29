@@ -607,7 +607,7 @@ fn handle_fixed(
                 use sbor::rust::prelude::String;
                 let mut error = String::new();
                 writeln!(&mut error, "{error_message}").unwrap();
-                writeln!(&mut error, "If you are sure the fixed version is incorrect, you can regenerate by changing to `#[sbor_assert(fixed(..), generate)]` and re-running the test.").unwrap();
+                writeln!(&mut error, "If you are sure the fixed version is incorrect, you can regenerate by changing to `#[sbor_assert(fixed(..), regenerate)]` and re-running the test.").unwrap();
                 panic!("{error}");
             }
         }
