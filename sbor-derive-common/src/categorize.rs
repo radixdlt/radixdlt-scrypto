@@ -214,7 +214,7 @@ fn handle_impl_variant_trait(
     fields_data: &FieldsData,
     is_flattened: bool,
 ) -> Result<TokenStream> {
-    let unique_type = fields_data.unique_unskipped_field().map_err(|()| {
+    let unique_type = fields_data.unique_unskipped_field().ok_or_else(|| {
         Error::new(
             variant_name.span(),
             "impl_variant_trait is active but this variant does not have a single unskipped field",
@@ -280,7 +280,7 @@ fn handle_transparent_categorize(
         Data::Struct(s) => {
             let single_field = process_fields(&s.fields)?
                 .unique_unskipped_field()
-                .map_err(|()| Error::new(
+                .ok_or_else(|| Error::new(
                     Span::call_site(),
                     "The transparent attribute is only supported for structs with a single unskipped field.",
                 ))?;

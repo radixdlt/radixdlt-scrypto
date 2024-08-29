@@ -55,7 +55,7 @@ fn cannot_deposit_into_frozen_deposit_fungible_vault() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, token_address, 1)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
@@ -88,7 +88,7 @@ fn cannot_withdraw_from_frozen_fungible_vault() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, token_address, 1)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
@@ -122,7 +122,7 @@ fn can_recall_from_frozen_fungible_vault() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .recall(vault_address, 1)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
@@ -157,7 +157,7 @@ fn can_withdraw_from_unfrozen_fungible_vault() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, token_address, 1)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
@@ -221,7 +221,7 @@ fn cannot_deposit_into_frozen_deposit_non_fungible_vault() {
             token_address,
             [NonFungibleLocalId::integer(1)],
         )
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
@@ -258,7 +258,7 @@ fn cannot_withdraw_from_frozen_non_fungible_vault() {
             token_address,
             [NonFungibleLocalId::integer(1)],
         )
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);

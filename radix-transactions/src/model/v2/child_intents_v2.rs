@@ -10,6 +10,12 @@ impl TransactionPartialPrepare for ChildIntentsV2 {
     type Prepared = PreparedChildIntentsV2;
 }
 
+/// A new-type representing the index of a referenced intent.
+/// The first few of these will be the children of the given intent.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+#[sbor(transparent)]
+pub struct ManifestIntent(u32);
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PreparedChildIntentsV2 {
     pub children: Vec<SubintentHash>,

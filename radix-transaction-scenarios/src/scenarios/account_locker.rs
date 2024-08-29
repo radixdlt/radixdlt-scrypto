@@ -743,7 +743,9 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     resource_address: state.fungible_resource.unwrap(),
                                 },
                             )
-                            .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
+                            .deposit_entire_worktop(
+                                state.account_rejecting_fungible_resource.unwrap(),
+                            )
                     },
                     vec![&config.account_rejecting_fungible_resource_],
                 )
@@ -762,7 +764,9 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     resource_address: state.non_fungible_resource.unwrap(),
                                 },
                             )
-                            .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
+                            .deposit_entire_worktop(
+                                state.account_rejecting_fungible_resource.unwrap(),
+                            )
                     },
                     vec![&config.account_rejecting_fungible_resource_],
                 )
@@ -781,7 +785,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     ids: indexset![NonFungibleLocalId::integer(3)],
                                 },
                             )
-                            .deposit_batch(state.account_accepting_all_resources.unwrap())
+                            .deposit_entire_worktop(state.account_accepting_all_resources.unwrap())
                     },
                     vec![&config.account_accepting_all_resources_],
                 )
@@ -805,7 +809,9 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     resource_address: state.fungible_resource.unwrap(),
                                 },
                             )
-                            .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
+                            .deposit_entire_worktop(
+                                state.account_rejecting_fungible_resource.unwrap(),
+                            )
                     },
                     vec![
                         &config.account_locker_admin_account_,
@@ -832,7 +838,9 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     resource_address: state.non_fungible_resource.unwrap(),
                                 },
                             )
-                            .deposit_batch(state.account_rejecting_fungible_resource.unwrap())
+                            .deposit_entire_worktop(
+                                state.account_rejecting_fungible_resource.unwrap(),
+                            )
                     },
                     vec![
                         &config.account_locker_admin_account_,
@@ -861,7 +869,9 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
                                     ids: indexset![NonFungibleLocalId::integer(15)],
                                 },
                             )
-                            .deposit_batch(state.account_rejecting_non_fungible_resource.unwrap())
+                            .deposit_entire_worktop(
+                                state.account_rejecting_non_fungible_resource.unwrap(),
+                            )
                     },
                     vec![
                         &config.account_locker_admin_account_,

@@ -84,7 +84,7 @@ impl AuthScenariosEnv {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(package_address, "Swappy", "create", manifest_args!(cerb))
-            .deposit_batch(acco)
+            .deposit_entire_worktop(acco)
             .build();
         let receipt = ledger.execute_manifest(manifest, vec![virtua_sig.clone()]);
         let result = receipt.expect_commit_success();
@@ -101,7 +101,7 @@ impl AuthScenariosEnv {
                 "create",
                 manifest_args!(cerb, swappy),
             )
-            .deposit_batch(acco)
+            .deposit_entire_worktop(acco)
             .build();
         let receipt = ledger.execute_manifest(manifest, vec![virtua_sig.clone()]);
         let result = receipt.expect_commit_success();
@@ -253,7 +253,7 @@ fn scenario_5() {
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .call_method(env.big_fi, "mint_cerb", manifest_args!())
-        .deposit_batch(env.acco)
+        .deposit_entire_worktop(env.acco)
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
@@ -378,7 +378,7 @@ fn scenario_10() {
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungible(env.acco, env.cerb_badge)
         .call_method(env.big_fi, "recall_cerb", manifest_args!(env.cerb_vault))
-        .deposit_batch(env.acco)
+        .deposit_entire_worktop(env.acco)
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
@@ -502,7 +502,7 @@ fn scenario_15() {
         .with_bucket("bucket", |builder, bucket| {
             builder.call_method(env.big_fi, "call_swappy_with_badge", manifest_args!(bucket))
         })
-        .deposit_batch(env.acco)
+        .deposit_entire_worktop(env.acco)
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
@@ -807,7 +807,7 @@ fn scenario_27() {
         .with_bucket("swappy", |builder, bucket| {
             builder.call_method(env.big_fi, "assert_in_subservio", manifest_args!(bucket))
         })
-        .deposit_batch(env.acco)
+        .deposit_entire_worktop(env.acco)
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 
@@ -844,7 +844,7 @@ fn scenario_28() {
                 manifest_args!(bucket),
             )
         })
-        .deposit_batch(env.acco)
+        .deposit_entire_worktop(env.acco)
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![env.virtua_sig]);
 

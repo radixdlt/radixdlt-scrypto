@@ -51,7 +51,7 @@ fn handle_transparent_describe(
         Data::Struct(s) => {
             let single_field = process_fields(&s.fields)?
                 .unique_unskipped_field()
-                .map_err(|()| Error::new(
+                .ok_or_else(|| Error::new(
                     Span::call_site(),
                     "The transparent attribute is only supported for structs with a single unskipped field.",
                 ))?;

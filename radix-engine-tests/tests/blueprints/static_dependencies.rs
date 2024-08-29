@@ -1,9 +1,7 @@
 use radix_common::prelude::*;
-use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use radix_engine_tests::common::*;
-use radix_transactions::model::InstructionV1;
 use scrypto_test::prelude::*;
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -93,12 +91,9 @@ fn static_component_should_be_callable() {
     let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
     ledger.publish_package_at_address(PackageLoader::get("static_dependencies"), package_address);
     let receipt = ledger.execute_system_transaction(
-        vec![InstructionV1::CallFunction {
-            package_address: package_address.into(),
-            blueprint_name: "Preallocated".to_string(),
-            function_name: "new".to_string(),
-            args: manifest_args!(ManifestAddressReservation(0), "my_secret".to_string()).into(),
-        }],
+        ManifestBuilder::new()
+            .call_function(package_address, "Preallocated", "new", (ManifestAddressReservation(0), "my_secret"))
+            .build(),
         btreeset!(),
         vec![(
             BlueprintId::new(&package_address, "Preallocated"),
@@ -140,39 +135,28 @@ fn static_resource_should_be_callable() {
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (key, _priv, account) = ledger.new_account(false);
     let receipt = ledger.execute_system_transaction(
-        vec![
-            InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE.into(),
-                blueprint_name: "FungibleResourceManager".to_string(),
-                function_name: "create_with_initial_supply".to_string(),
-                args: manifest_decode(
-                    &manifest_encode(
-                        &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                            owner_role: OwnerRole::None,
-                            track_total_supply: true,
-                            divisibility: 0u8,
-                            resource_roles: FungibleResourceRoles::default(),
-                            metadata: metadata!(),
-                            initial_supply: Decimal::from(10),
-                            address_reservation: Some(ManifestAddressReservation(0)),
-                        },
-                    )
-                    .unwrap(),
-                )
-                .unwrap(),
-            },
-            InstructionV1::CallMethod {
-                address: account.into(),
-                method_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
-                args: manifest_args!(ManifestExpression::EntireWorktop).into(),
-            },
-        ],
+        ManifestBuilder::new()
+            .call_function(
+                RESOURCE_PACKAGE,
+                "FungibleResourceManager",
+                "create_with_initial_supply",
+                FungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                    owner_role: OwnerRole::None,
+                    track_total_supply: true,
+                    divisibility: 0u8,
+                    resource_roles: FungibleResourceRoles::default(),
+                    metadata: metadata!(),
+                    initial_supply: Decimal::from(10),
+                    address_reservation: Some(ManifestAddressReservation(0)),
+                },
+            )
+            .deposit_entire_worktop(account)
+            .build(),
         btreeset!(NonFungibleGlobalId::from_public_key(&key)),
         vec![(
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::new_or_panic(PRE_ALLOCATED_RESOURCE),
-        )
-            .into()],
+        ).into()],
     );
     receipt.expect_commit_success();
 

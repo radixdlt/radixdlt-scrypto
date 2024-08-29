@@ -1,6 +1,7 @@
 use crate::blueprints::native_schema::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
+use manifest_instruction::*;
 use radix_blueprint_schema_init::*;
 use radix_common::data::manifest::*;
 use radix_common::prelude::*;
@@ -17,63 +18,38 @@ use radix_engine_interface::object_modules::royalty::*;
 use radix_transactions::prelude::*;
 
 pub fn validate_call_arguments_to_native_components(
-    instructions: &[InstructionV1],
+    instructions: &[impl ManifestInstruction],
 ) -> Result<(), LocatedInstructionSchemaValidationError> {
     for (index, instruction) in instructions.iter().enumerate() {
-        let (invocation, args) = match instruction {
-            InstructionV1::CallFunction {
-                package_address: DynamicPackageAddress::Static(address),
-                blueprint_name,
-                function_name,
+        let (invocation, args) = match instruction.side_effect() {
+            ManifestInstructionSideEffect::Invocation {
+                kind:
+                    InvocationKind::Function {
+                        address: DynamicPackageAddress::Static(address),
+                        blueprint,
+                        function,
+                    },
                 args,
             } => (
-                Invocation::Function(
-                    *address,
-                    blueprint_name.to_owned(),
-                    function_name.to_owned(),
-                ),
+                Invocation::Function(*address, blueprint.to_owned(), function.to_owned()),
                 args,
             ),
-            InstructionV1::CallMethod {
-                address: DynamicGlobalAddress::Static(address),
-                method_name,
+            ManifestInstructionSideEffect::Invocation {
+                kind:
+                    InvocationKind::Method {
+                        address: DynamicGlobalAddress::Static(address),
+                        module_id,
+                        method,
+                    },
                 args,
             } => (
-                Invocation::Method(*address, ModuleId::Main, method_name.to_owned()),
+                Invocation::Method(*address, module_id, method.to_owned()),
                 args,
             ),
-            InstructionV1::CallMetadataMethod {
-                address: DynamicGlobalAddress::Static(address),
-                method_name,
+            ManifestInstructionSideEffect::Invocation {
+                kind: InvocationKind::DirectMethod { address, method },
                 args,
-            } => (
-                Invocation::Method(*address, ModuleId::Metadata, method_name.to_owned()),
-                args,
-            ),
-            InstructionV1::CallRoyaltyMethod {
-                address: DynamicGlobalAddress::Static(address),
-                method_name,
-                args,
-            } => (
-                Invocation::Method(*address, ModuleId::Royalty, method_name.to_owned()),
-                args,
-            ),
-            InstructionV1::CallRoleAssignmentMethod {
-                address: DynamicGlobalAddress::Static(address),
-                method_name,
-                args,
-            } => (
-                Invocation::Method(*address, ModuleId::RoleAssignment, method_name.to_owned()),
-                args,
-            ),
-            InstructionV1::CallDirectVaultMethod {
-                address,
-                method_name,
-                args,
-            } => (
-                Invocation::DirectMethod(*address, method_name.to_owned()),
-                args,
-            ),
+            } => (Invocation::DirectMethod(*address, method.to_owned()), args),
             _ => continue,
         };
 

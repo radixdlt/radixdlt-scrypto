@@ -1,4 +1,3 @@
-use super::*;
 use crate::internal_prelude::*;
 
 /// This is used in the node to increment rounds.
@@ -14,7 +13,7 @@ impl RoundUpdateTransactionV1 {
     /// Note - we purposefully restrict what the content of a Round Update transaction can do
     /// so we convert it to instructions at run-time.
     pub fn create_instructions(&self) -> Vec<InstructionV1> {
-        vec![InstructionV1::CallMethod {
+        vec![InstructionV1::CallMethod(CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
             args: to_manifest_value(&ConsensusManagerNextRoundInput {
@@ -23,7 +22,7 @@ impl RoundUpdateTransactionV1 {
                 leader_proposal_history: self.leader_proposal_history.clone(),
             })
             .expect("round update input encoding should succeed"),
-        }]
+        })]
     }
 
     #[allow(deprecated)]

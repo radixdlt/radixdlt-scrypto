@@ -331,24 +331,25 @@ pub(crate) fn process_enum_variants(
                 }));
             }
             let impl_variant_trait = variant_attributes.get_bool_value("impl_variant_trait")?;
-            let fields_handling = match variant_attributes.remove("flatten") {
-                Some(AttributeValue::None(span)) => {
-                    let unique_field = fields_data.unique_unskipped_field()
-                        .map_err(|()| Error::new(
-                            span,
-                            "The flatten attribute can only be used by an enum variant with exactly one unskipped field, and that child must be an SBOR tuple.",
-                        ))?;
-                    FieldsHandling::Flatten {
-                        unique_field,
-                        fields_data,
+
+            let fields_handling = match fields_data.unique_unskipped_field() {
+                Some(unique_field) if unique_field.is_flattened() => FieldsHandling::Flatten {
+                    unique_field,
+                    fields_data,
+                },
+                _ => {
+                    // TODO: At some point, this can be generalized to allow handling more than one flattened field.
+                    // This will require a new EncodeFields / DecodeFields traits to enable flattening to occur.
+                    if let Some(field) = fields_data.unskipped().find(|f| f.is_flattened()) {
+                        return Err(Error::new(
+                            field.field_type().span(),
+                            "At present, only unique unskipped fields can be flattened",
+                        ));
                     }
+                    FieldsHandling::Standard(fields_data)
                 }
-                Some(unsupported_value) => return Err(Error::new(
-                    unsupported_value.span(),
-                    "The flatten attribute can't have any associated value.",
-                )),
-                None => FieldsHandling::Standard(fields_data),
             };
+
             reachable_variants_count += 1;
             let discriminator =
                 resolve_discriminator(use_repr_discriminators, i, variant, variant_attributes)?;
@@ -536,11 +537,6 @@ pub fn get_sbor_attribute_bool_value(
     attribute_name: &str,
 ) -> Result<LitBool> {
     extract_sbor_typed_attributes(attributes)?.get_bool_value(attribute_name)
-}
-
-pub fn is_skipped(f: &Field) -> Result<bool> {
-    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
-    Ok(attributes.get_bool_value("skip")?.value())
 }
 
 pub enum DeriveStrategy {
@@ -789,31 +785,31 @@ pub(crate) enum FieldsData {
 }
 
 impl FieldsData {
-    pub fn unskipped(&self) -> Box<dyn Iterator<Item = Box<dyn FieldReference>> + '_> {
+    pub fn unskipped(&self) -> Box<dyn Iterator<Item = &dyn FieldReference> + '_> {
         match self {
-            Self::Named(fields) => Box::new(fields.unskipped().map(NamedField::as_box_dyn)),
-            Self::Unnamed(fields) => Box::new(fields.unskipped().map(UnnamedField::as_box_dyn)),
+            Self::Named(fields) => Box::new(fields.unskipped().map(NamedField::as_dyn)),
+            Self::Unnamed(fields) => Box::new(fields.unskipped().map(UnnamedField::as_dyn)),
             Self::Unit => Box::new(std::iter::empty()),
         }
     }
 
-    pub fn unique_unskipped_field(&self) -> core::result::Result<SingleField, ()> {
+    pub fn unique_unskipped_field(&self) -> Option<SingleField> {
         match self {
             Self::Named(fields) => {
                 if let Some((field,)) = fields.unskipped().collect_tuple() {
-                    Ok(SingleField::NamedField(field.clone()))
+                    Some(SingleField::NamedField(field.clone()))
                 } else {
-                    Err(())
+                    None
                 }
             }
             Self::Unnamed(fields) => {
                 if let Some((field,)) = fields.unskipped().collect_tuple() {
-                    Ok(SingleField::UnnamedField(field.clone()))
+                    Some(SingleField::UnnamedField(field.clone()))
                 } else {
-                    Err(())
+                    None
                 }
             }
-            Self::Unit => Err(()),
+            Self::Unit => None,
         }
     }
 
@@ -880,6 +876,7 @@ pub(crate) trait FieldReference {
     fn self_field_reference(&self) -> TokenStream;
     fn field_type(&self) -> &Type;
     fn variable_name_from_unpacking(&self) -> &Ident;
+    fn is_flattened(&self) -> bool;
 }
 
 #[derive(Clone)]
@@ -907,6 +904,13 @@ impl FieldReference for SingleField {
         match self {
             Self::NamedField(field) => field.variable_name_from_unpacking(),
             Self::UnnamedField(field) => field.variable_name_from_unpacking(),
+        }
+    }
+
+    fn is_flattened(&self) -> bool {
+        match self {
+            Self::NamedField(field) => field.is_flattened,
+            Self::UnnamedField(field) => field.is_flattened,
         }
     }
 }
@@ -949,12 +953,13 @@ impl UnnamedFieldsData {
 pub(crate) struct NamedField {
     pub name: Ident,
     pub field_type: Type,
+    pub is_flattened: bool,
     pub is_skipped: bool,
 }
 
 impl NamedField {
-    fn as_box_dyn(&self) -> Box<dyn FieldReference> {
-        Box::new(self.clone())
+    fn as_dyn(&self) -> &dyn FieldReference {
+        self
     }
 }
 
@@ -971,6 +976,10 @@ impl FieldReference for NamedField {
     fn variable_name_from_unpacking(&self) -> &Ident {
         &self.name
     }
+
+    fn is_flattened(&self) -> bool {
+        self.is_flattened
+    }
 }
 
 #[derive(Clone)]
@@ -979,11 +988,12 @@ pub(crate) struct UnnamedField {
     pub variable_name_from_unpacking: Ident,
     pub field_type: Type,
     pub is_skipped: bool,
+    pub is_flattened: bool,
 }
 
 impl UnnamedField {
-    fn as_box_dyn(&self) -> Box<dyn FieldReference> {
-        Box::new(self.clone())
+    fn as_dyn(&self) -> &dyn FieldReference {
+        self
     }
 }
 
@@ -1000,6 +1010,10 @@ impl FieldReference for UnnamedField {
     fn variable_name_from_unpacking(&self) -> &Ident {
         &self.variable_name_from_unpacking
     }
+
+    fn is_flattened(&self) -> bool {
+        self.is_flattened
+    }
 }
 
 pub(crate) fn process_fields(fields: &syn::Fields) -> Result<FieldsData> {
@@ -1010,11 +1024,14 @@ pub(crate) fn process_fields(fields: &syn::Fields) -> Result<FieldsData> {
                 .iter()
                 .map(|f| -> Result<_> {
                     let ident = f.ident.as_ref().unwrap().clone();
-                    let is_skipped = is_skipped(f)?;
+                    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
+                    let is_skipped = attributes.get_bool_value("skip")?.value();
+                    let is_flattened = attributes.get_bool_value("flatten")?.value();
                     Ok(NamedField {
                         name: ident,
                         field_type: f.ty.clone(),
                         is_skipped,
+                        is_flattened,
                     })
                 })
                 .collect::<Result<_>>()?;
@@ -1028,7 +1045,9 @@ pub(crate) fn process_fields(fields: &syn::Fields) -> Result<FieldsData> {
                 .enumerate()
                 .map(|(i, f)| -> Result<_> {
                     let index = Index::from(i);
-                    let is_skipped = is_skipped(f)?;
+                    let attributes = extract_sbor_typed_attributes(&f.attrs)?;
+                    let is_skipped = attributes.get_bool_value("skip")?.value();
+                    let is_flattened = attributes.get_bool_value("flatten")?.value();
                     let unpacked_variable_name = if is_skipped {
                         format_ident!("_")
                     } else {
@@ -1038,6 +1057,7 @@ pub(crate) fn process_fields(fields: &syn::Fields) -> Result<FieldsData> {
                         index,
                         field_type: f.ty.clone(),
                         is_skipped,
+                        is_flattened,
                         variable_name_from_unpacking: unpacked_variable_name,
                     })
                 })

@@ -207,102 +207,46 @@ impl NotarizedTransactionValidatorV1 {
         // semantic analysis
         let mut id_validator = ManifestValidator::new();
         for inst in instructions {
-            match inst {
-                InstructionV1::TakeAllFromWorktop { .. } => {
+            let side_effect = inst.side_effect();
+            match side_effect {
+                ManifestInstructionSideEffect::None => {}
+                ManifestInstructionSideEffect::CreateBucket => {
                     let _ = id_validator.new_bucket();
                 }
-                InstructionV1::TakeFromWorktop { .. } => {
-                    let _ = id_validator.new_bucket();
+                ManifestInstructionSideEffect::CreateProof(proof_kind) => {
+                    let _ = id_validator
+                        .new_proof(proof_kind)
+                        .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                    let _ = id_validator.new_bucket();
-                }
-                InstructionV1::ReturnToWorktop { bucket_id } => {
+                ManifestInstructionSideEffect::ConsumeBucket(bucket_id) => {
                     id_validator
                         .drop_bucket(&bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::AssertWorktopContainsAny { .. } => {}
-                InstructionV1::AssertWorktopContains { .. } => {}
-                InstructionV1::AssertWorktopContainsNonFungibles { .. } => {}
-                InstructionV1::PopFromAuthZone => {
-                    let _ = id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::PushToAuthZone { proof_id } => {
+                ManifestInstructionSideEffect::ConsumeProof(proof_id) => {
                     id_validator
                         .drop_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::DropAuthZoneProofs => {}
-                InstructionV1::DropAuthZoneRegularProofs => {}
-                InstructionV1::DropAuthZoneSignatureProofs => {}
-                InstructionV1::CreateProofFromAuthZoneOfAmount { .. } => {
-                    let _ = id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::CreateProofFromAuthZoneOfNonFungibles { .. } => {
-                    let _ = id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::CreateProofFromAuthZoneOfAll { .. } => {
-                    let _ = id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::CreateProofFromBucketOfAmount { bucket_id, .. } => {
-                    let _ = id_validator
-                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, .. } => {
-                    let _ = id_validator
-                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::CreateProofFromBucketOfAll { bucket_id, .. } => {
-                    let _ = id_validator
-                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::CloneProof { proof_id } => {
+                ManifestInstructionSideEffect::CloneProof(proof_id) => {
                     let _ = id_validator
                         .clone_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::DropProof { proof_id } => {
-                    id_validator
-                        .drop_proof(&proof_id)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::DropNamedProofs => {
-                    id_validator
-                        .drop_all_named_proofs()
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::DropAllProofs => {
+                ManifestInstructionSideEffect::DropAllAuthZoneProofs
+                | ManifestInstructionSideEffect::DropAllAuthZoneNonSignatureProofs
+                | ManifestInstructionSideEffect::DropAllAuthZoneSignatureProofs => {}
+                ManifestInstructionSideEffect::DropNamedProofs
+                | ManifestInstructionSideEffect::DropAllProofs => {
                     id_validator
                         .drop_all_named_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::CallFunction { args, .. }
-                | InstructionV1::CallMethod { args, .. }
-                | InstructionV1::CallRoyaltyMethod { args, .. }
-                | InstructionV1::CallMetadataMethod { args, .. }
-                | InstructionV1::CallRoleAssignmentMethod { args, .. }
-                | InstructionV1::CallDirectVaultMethod { args, .. } => {
+                ManifestInstructionSideEffect::Invocation { args, .. } => {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                InstructionV1::BurnResource { bucket_id } => {
-                    id_validator
-                        .drop_bucket(&bucket_id)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::AllocateGlobalAddress { .. } => {
+                ManifestInstructionSideEffect::CreateAddressAndReservation => {
                     let _ = id_validator.new_address_reservation();
                     id_validator.new_named_address();
                 }
@@ -890,17 +834,18 @@ mod tests {
             123,
             vec![55],
             66,
+            #[allow(deprecated)]
             ManifestBuilder::new()
                 .take_from_worktop(XRD, dec!(100), "bucket")
                 .create_proof_from_bucket_of_amount("bucket", dec!(5), "proof1")
                 .then(|builder| {
                     let lookup = builder.name_lookup();
                     let proof_id = lookup.proof("proof1");
+
                     builder
                         .drop_proof("proof1")
                         .return_to_worktop("bucket")
-                        .add_instruction_advanced(InstructionV1::CloneProof { proof_id })
-                        .0
+                        .add_raw_instruction_ignoring_all_side_effects(CloneProof { proof_id })
                 })
                 .build(),
         );

@@ -20,23 +20,18 @@ use lazy_static::lazy_static;
 use radix_common::crypto::Secp256k1PublicKey;
 use radix_common::math::traits::*;
 use radix_common::types::ComponentAddress;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerConfig, ConsensusManagerCreateManifestInput, CONSENSUS_MANAGER_BLUEPRINT,
-    CONSENSUS_MANAGER_CREATE_IDENT,
-};
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::object_modules::metadata::{MetadataValue, UncheckedUrl};
 use radix_engine_interface::object_modules::ModuleConfig;
-use radix_engine_interface::{
-    burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
-};
+use radix_engine_interface::*;
 use radix_substate_store_interface::interface::*;
 use radix_substate_store_interface::{
     db_key_mapper::SpreadPrefixKeyMapper, interface::SubstateDatabase,
 };
 use radix_transactions::model::*;
-use radix_transactions::prelude::{BlobV1, PreAllocatedAddress};
+use radix_transactions::prelude::*;
 use radix_transactions::validation::ManifestIdAllocator;
 
 lazy_static! {
@@ -506,9 +501,8 @@ pub fn create_system_bootstrap_transaction(
     faucet_supply: Decimal,
 ) -> SystemTransactionV1 {
     let mut id_allocator = ManifestIdAllocator::new();
-    let mut instructions = Vec::new();
+    let mut manifest_builder = ManifestBuilder::new();
     let mut pre_allocated_addresses = vec![];
-    let mut blobs = vec![];
 
     // XRD Token
     {
@@ -516,42 +510,39 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(XRD),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                .to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
-                    track_total_supply: false,
-                    divisibility: 18,
-                    resource_roles: FungibleResourceRoles {
-                        mint_roles: mint_roles! {
-                            minter => rule!(require(global_caller(CONSENSUS_MANAGER)));
-                            minter_updater => rule!(deny_all);
-                        },
-                        burn_roles: burn_roles! {
-                            burner => rule!(require(global_caller(CONSENSUS_MANAGER)));
-                            burner_updater => rule!(deny_all);
-                        },
-                        ..Default::default()
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            FungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                track_total_supply: false,
+                divisibility: 18,
+                resource_roles: FungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(global_caller(CONSENSUS_MANAGER)));
+                        minter_updater => rule!(deny_all);
                     },
-                    metadata: metadata! {
-                        init {
-                            "symbol" => "XRD".to_owned(), locked;
-                            "name" => "Radix".to_owned(), locked;
-                            "description" => "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned(), locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-xrd-32x32.png".to_owned()), locked;
-                            "info_url" => UncheckedUrl::of("https://tokens.radixdlt.com".to_owned()), locked;
-                            "tags" => Vec::<String>::new(), locked;
-                        }
+                    burn_roles: burn_roles! {
+                        burner => rule!(require(global_caller(CONSENSUS_MANAGER)));
+                        burner_updater => rule!(deny_all);
                     },
-                    initial_supply: Decimal::zero(),
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+                    ..Default::default()
+                },
+                metadata: metadata! {
+                    init {
+                        "symbol" => "XRD".to_owned(), locked;
+                        "name" => "Radix".to_owned(), locked;
+                        "description" => "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.".to_owned(), locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-xrd-32x32.png".to_owned()), locked;
+                        "info_url" => UncheckedUrl::of("https://tokens.radixdlt.com".to_owned()), locked;
+                        "tags" => Vec::<String>::new(), locked;
+                    }
+                },
+                initial_supply: Decimal::zero(),
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            },
+        );
     }
 
     // Package Token
@@ -560,35 +551,33 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_RESOURCE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
-                    id_type: NonFungibleIdType::Bytes,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                    resource_roles: NonFungibleResourceRoles {
-                        withdraw_roles: withdraw_roles! {
-                            withdrawer => rule!(deny_all);
-                            withdrawer_updater => rule!(deny_all);
-                        },
-                        ..Default::default()
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
+                non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                resource_roles: NonFungibleResourceRoles {
+                    withdraw_roles: withdraw_roles! {
+                        withdrawer => rule!(deny_all);
+                        withdrawer_updater => rule!(deny_all);
                     },
-                    metadata: metadata! {
-                        init {
-                            "name" => "Package Virtual Badges".to_owned(), locked;
-                            "description" => "Virtual badges generated automatically by the Radix system to represent the authority of the package for a direct caller. These badges cease to exist at the end of their transaction.".to_owned(), locked;
-                            "tags" => vec!["badge".to_owned()], locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png".to_owned()), locked;
-                        }
-                    },
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+                    ..Default::default()
+                },
+                metadata: metadata! {
+                    init {
+                        "name" => "Package Virtual Badges".to_owned(), locked;
+                        "description" => "Virtual badges generated automatically by the Radix system to represent the authority of the package for a direct caller. These badges cease to exist at the end of their transaction.".to_owned(), locked;
+                        "tags" => vec!["badge".to_owned()], locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png".to_owned()), locked;
+                    }
+                },
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            },
+        );
     }
 
     // Object Token
@@ -597,35 +586,33 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(GLOBAL_CALLER_RESOURCE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
-                    id_type: NonFungibleIdType::Bytes,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                    resource_roles: NonFungibleResourceRoles {
-                        withdraw_roles: withdraw_roles! {
-                            withdrawer => rule!(deny_all);
-                            withdrawer_updater => rule!(deny_all);
-                        },
-                        ..Default::default()
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
+                non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                resource_roles: NonFungibleResourceRoles {
+                    withdraw_roles: withdraw_roles! {
+                        withdrawer => rule!(deny_all);
+                        withdrawer_updater => rule!(deny_all);
                     },
-                    metadata: metadata! {
-                        init {
-                            "name" => "Global Caller Virtual Badges".to_owned(), locked;
-                            "description" => "Virtual badges generated automatically by the Radix system to represent the authority of a global caller. These badges cease to exist at the end of their transaction.".to_owned(), locked;
-                            "tags" => vec!["badge".to_owned()], locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png".to_owned()), locked;
-                        }
-                    },
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+                    ..Default::default()
+                },
+                metadata: metadata! {
+                    init {
+                        "name" => "Global Caller Virtual Badges".to_owned(), locked;
+                        "description" => "Virtual badges generated automatically by the Radix system to represent the authority of a global caller. These badges cease to exist at the end of their transaction.".to_owned(), locked;
+                        "tags" => vec!["badge".to_owned()], locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png".to_owned()), locked;
+                    }
+                },
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            },
+        );
     }
 
     // Package Owner Token
@@ -634,35 +621,33 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(PACKAGE_OWNER_BADGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))),
-                    id_type: NonFungibleIdType::Bytes,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<PackageOwnerBadgeData>(),
-                    resource_roles: NonFungibleResourceRoles {
-                        mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE)));
-                            minter_updater => rule!(deny_all);
-                        },
-                        ..Default::default()
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))),
+                id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
+                non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<PackageOwnerBadgeData>(),
+                resource_roles: NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE)));
+                        minter_updater => rule!(deny_all);
                     },
-                    metadata: metadata! {
-                        init {
-                            "name" => "Package Owner Badges".to_owned(), locked;
-                            "description" => "Badges created by the Radix system that provide individual control over blueprint packages deployed by developers.".to_owned(), locked;
-                            "tags" => vec!["badge".to_owned(), "package".to_owned()], locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_owner_badge.png".to_owned()), locked;
-                        }
-                    },
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+                    ..Default::default()
+                },
+                metadata: metadata! {
+                    init {
+                        "name" => "Package Owner Badges".to_owned(), locked;
+                        "description" => "Badges created by the Radix system that provide individual control over blueprint packages deployed by developers.".to_owned(), locked;
+                        "tags" => vec!["badge".to_owned(), "package".to_owned()], locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-package_owner_badge.png".to_owned()), locked;
+                    }
+                },
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            },
+        );
     }
 
     // Identity Package
@@ -671,45 +656,43 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(IDENTITY_OWNER_BADGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(global_caller(IDENTITY_PACKAGE)))),
-                    id_type: NonFungibleIdType::Bytes,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<IdentityOwnerBadgeData>(),
-                    resource_roles: NonFungibleResourceRoles {
-                        mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE)));
-                            minter_updater => rule!(deny_all);
-                        },
-                        ..Default::default()
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(global_caller(IDENTITY_PACKAGE)))),
+                id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
+                non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<IdentityOwnerBadgeData>(),
+                resource_roles: NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE)));
+                        minter_updater => rule!(deny_all);
                     },
-                    metadata: metadata! {
-                        init {
-                            "name" => "Identity Owner Badges".to_owned(), locked;
-                            "description" => "Badges created by the Radix system that provide individual control over identity components.".to_owned(), locked;
-                            "tags" => vec!["badge".to_owned(), "identity".to_owned()], locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png".to_owned()), locked;
-                        }
-                    },
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+                    ..Default::default()
+                },
+                metadata: metadata! {
+                    init {
+                        "name" => "Identity Owner Badges".to_owned(), locked;
+                        "description" => "Badges created by the Radix system that provide individual control over identity components.".to_owned(), locked;
+                        "tags" => vec!["badge".to_owned(), "identity".to_owned()], locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png".to_owned()), locked;
+                    }
+                },
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            },
+        );
 
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(IDENTITY_PACKAGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+        manifest_builder = manifest_builder.call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_NATIVE_IDENT,
+            PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 definition: IdentityNativePackage::definition(),
                 native_package_code_id: NativeCodeId::IdentityCode1 as u64,
@@ -717,8 +700,8 @@ pub fn create_system_bootstrap_transaction(
                     "name" => "Identity Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of identity components.".to_owned(), locked;
                 },
-            }),
-        });
+            },
+        );
     }
 
     // ConsensusManager Package
@@ -727,11 +710,11 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(CONSENSUS_MANAGER_PACKAGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+        manifest_builder = manifest_builder.call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_NATIVE_IDENT,
+            PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 definition: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: NativeCodeId::ConsensusManagerCode1 as u64,
@@ -739,8 +722,8 @@ pub fn create_system_bootstrap_transaction(
                     "name" => "Consensus Manager Package".to_owned(), locked;
                     "description" => "A native package that may be used to get network consensus information.".to_owned(), locked;
                 },
-            }),
-        });
+            },
+        );
     }
 
     // Account Package
@@ -749,48 +732,46 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(ACCOUNT_OWNER_BADGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(global_caller(ACCOUNT_PACKAGE)))),
-                    id_type: NonFungibleIdType::Bytes,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<AccountOwnerBadgeData>(),
-                    resource_roles: NonFungibleResourceRoles {
-                        mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE)));
-                            minter_updater => rule!(deny_all);
-                        },
-                        ..Default::default()
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(global_caller(ACCOUNT_PACKAGE)))),
+                id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
+                non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<AccountOwnerBadgeData>(),
+                resource_roles: NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE)));
+                        minter_updater => rule!(deny_all);
                     },
-                    metadata: metadata! {
-                        init {
-                            "name" => "Account Owner Badges".to_owned(), locked;
-                            "description" => "Badges created by the Radix system that provide individual control over account components.".to_owned(), locked;
-                            "tags" => vec![
-                                "badge".to_owned(),
-                                "account".to_owned(),
-                            ], locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
-                        }
-                    },
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+                    ..Default::default()
+                },
+                metadata: metadata! {
+                    init {
+                        "name" => "Account Owner Badges".to_owned(), locked;
+                        "description" => "Badges created by the Radix system that provide individual control over account components.".to_owned(), locked;
+                        "tags" => vec![
+                            "badge".to_owned(),
+                            "account".to_owned(),
+                        ], locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
+                    }
+                },
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            },
+        );
 
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(ACCOUNT_PACKAGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+        manifest_builder = manifest_builder.call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_NATIVE_IDENT,
+            PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 definition: AccountNativePackage::definition(),
                 native_package_code_id: NativeCodeId::AccountCode1 as u64,
@@ -798,8 +779,8 @@ pub fn create_system_bootstrap_transaction(
                     "name" => "Account Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of account components.".to_owned(), locked;
                 },
-            }),
-        });
+            },
+        );
     }
 
     // AccessController Package
@@ -808,11 +789,11 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(ACCESS_CONTROLLER_PACKAGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+        manifest_builder = manifest_builder.call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_NATIVE_IDENT,
+            PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 definition: AccessControllerV1NativePackage::definition(),
                 metadata: metadata_init! {
@@ -820,8 +801,8 @@ pub fn create_system_bootstrap_transaction(
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
                 },
                 native_package_code_id: NativeCodeId::AccessControllerCode1 as u64,
-            }),
-        });
+            },
+        );
     }
 
     // Pool Package
@@ -830,11 +811,11 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(POOL_PACKAGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+        manifest_builder = manifest_builder.call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_NATIVE_IDENT,
+            PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 definition: PoolNativePackage::definition(PoolV1MinorVersion::Zero),
                 metadata: metadata_init! {
@@ -842,8 +823,8 @@ pub fn create_system_bootstrap_transaction(
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
                 },
                 native_package_code_id: NativeCodeId::PoolCode1 as u64,
-            }),
-        });
+            },
+        );
     }
 
     // ECDSA Secp256k1
@@ -852,29 +833,27 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(SECP256K1_SIGNATURE_RESOURCE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
-                    id_type: NonFungibleIdType::Bytes,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                    resource_roles: NonFungibleResourceRoles::default(),
-                    metadata: metadata! {
-                        init {
-                            "name" => "ECDSA secp256k1 Virtual Badges".to_owned(), locked;
-                            "description" => "Virtual badges generated automatically by the Radix system to represent ECDSA secp256k1 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
-                            "tags" => vec!["badge".to_owned()], locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png".to_owned()), locked;
-                        }
-                    },
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
+                non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                resource_roles: NonFungibleResourceRoles::default(),
+                metadata: metadata! {
+                    init {
+                        "name" => "ECDSA secp256k1 Virtual Badges".to_owned(), locked;
+                        "description" => "Virtual badges generated automatically by the Radix system to represent ECDSA secp256k1 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
+                        "tags" => vec!["badge".to_owned()], locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png".to_owned()), locked;
+                    }
+                },
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            }
+        );
     }
 
     // Ed25519
@@ -883,114 +862,108 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(ED25519_SIGNATURE_RESOURCE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
-                    id_type: NonFungibleIdType::Bytes,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                    resource_roles: NonFungibleResourceRoles::default(),
-                    metadata: metadata! {
-                        init {
-                            "name" => "EdDSA Ed25519 Virtual Badges".to_owned(), locked;
-                            "description" => "Virtual badges generated automatically by the Radix system to represent EdDSA Ed25519 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
-                            "tags" => vec!["badge".to_owned()], locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png".to_owned()), locked;
-                        }
-                    },
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                id_type: NonFungibleIdType::Bytes,
+                track_total_supply: false,
+                non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                resource_roles: NonFungibleResourceRoles::default(),
+                metadata: metadata! {
+                    init {
+                        "name" => "EdDSA Ed25519 Virtual Badges".to_owned(), locked;
+                        "description" => "Virtual badges generated automatically by the Radix system to represent EdDSA Ed25519 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
+                        "tags" => vec!["badge".to_owned()], locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png".to_owned()), locked;
+                    }
+                },
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            },
+        );
     }
 
-    // System Token
+    // System Execution Resource
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(SYSTEM_EXECUTION_RESOURCE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
-                    id_type: NonFungibleIdType::Integer,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
-                    resource_roles: NonFungibleResourceRoles::default(),
-                    metadata: metadata! {
-                        init {
-                            "name" => "System Transaction Badge".to_owned(), locked;
-                            "description" => "Virtual badges are created under this resource to represent the Radix system's authority at genesis and to affect changes to system entities during protocol updates, or to represent the Radix system's authority in the regularly occurring system transactions including round and epoch changes.".to_owned(), locked;
-                            "tags" => vec!["badge".to_owned(), "system badge".to_owned()], locked;
-                            "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
-                        }
-                    },
-                    address_reservation: Some(id_allocator.new_address_reservation_id()),
-                }
-            ),
-        });
+        manifest_builder = manifest_builder.call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
+                owner_role: OwnerRole::Fixed(rule!(require(system_execution(SystemExecution::Protocol)))),
+                id_type: NonFungibleIdType::Integer,
+                track_total_supply: false,
+                non_fungible_schema: NonFungibleDataSchema::new_local_without_self_package_replacement::<()>(),
+                resource_roles: NonFungibleResourceRoles::default(),
+                metadata: metadata! {
+                    init {
+                        "name" => "System Transaction Badge".to_owned(), locked;
+                        "description" => "Virtual badges are created under this resource to represent the Radix system's authority at genesis and to affect changes to system entities during protocol updates, or to represent the Radix system's authority in the regularly occurring system transactions including round and epoch changes.".to_owned(), locked;
+                        "tags" => vec!["badge".to_owned(), "system badge".to_owned()], locked;
+                        "icon_url" => UncheckedUrl::of("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
+                    }
+                },
+                address_reservation: Some(id_allocator.new_address_reservation_id()),
+            },
+        );
     }
 
     // Faucet Package
     {
-        let faucet_code = include_bytes!("../../assets/faucet.wasm").to_vec();
-        let faucet_abi = include_bytes!("../../assets/faucet.rpd").to_vec();
-        let faucet_code_hash = hash(&faucet_code);
-        blobs.push(BlobV1(faucet_code));
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(FAUCET_PACKAGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
+        let code_blob_ref =
+            manifest_builder.add_blob(include_bytes!("../../assets/faucet.wasm").to_vec());
+        let rpd = include_bytes!("../../assets/faucet.rpd");
+        manifest_builder = manifest_builder.call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+            PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                code: ManifestBlobRef(faucet_code_hash.0),
-                definition: manifest_decode(&faucet_abi).unwrap(),
+                code: code_blob_ref,
+                definition: manifest_decode(rpd).unwrap(),
                 metadata: metadata_init!{
                     "name" => "Faucet Package".to_owned(), locked;
                     "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
                 },
                 owner_role: OwnerRole::None,
-            }),
-        });
+            },
+        );
     }
 
     // Genesis helper package
     {
-        let genesis_helper_code = include_bytes!("../../assets/genesis_helper.wasm").to_vec();
-        let genesis_helper_abi = include_bytes!("../../assets/genesis_helper.rpd").to_vec();
-        let genesis_helper_code_hash = hash(&genesis_helper_code);
-        blobs.push(BlobV1(genesis_helper_code));
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(GENESIS_HELPER_PACKAGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
+        let code_blob_ref =
+            manifest_builder.add_blob(include_bytes!("../../assets/genesis_helper.wasm").to_vec());
+        let rpd = include_bytes!("../../assets/genesis_helper.rpd");
+        manifest_builder = manifest_builder.call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+            PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                code: ManifestBlobRef(genesis_helper_code_hash.0),
-                definition: manifest_decode(&genesis_helper_abi).unwrap(),
+                code: code_blob_ref,
+                definition: manifest_decode(rpd).unwrap(),
                 metadata: metadata_init! {
                     "name" => "Genesis Helper Package".to_owned(), locked;
                     "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
                 },
                 owner_role: OwnerRole::None,
-            }),
-        });
+            },
+        );
     }
 
     // Create ConsensusManager
@@ -1003,19 +976,19 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&CONSENSUS_MANAGER_PACKAGE, CONSENSUS_MANAGER_BLUEPRINT),
             GlobalAddress::from(CONSENSUS_MANAGER),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: CONSENSUS_MANAGER_PACKAGE.into(),
-            blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
-            function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateManifestInput {
+        manifest_builder = manifest_builder.call_function(
+            CONSENSUS_MANAGER_PACKAGE,
+            CONSENSUS_MANAGER_BLUEPRINT,
+            CONSENSUS_MANAGER_CREATE_IDENT,
+            ConsensusManagerCreateManifestInput {
                 validator_owner_token_address: id_allocator.new_address_reservation_id(),
                 component_address: id_allocator.new_address_reservation_id(),
                 initial_epoch,
                 initial_config,
                 initial_time_ms,
                 initial_current_leader,
-            }),
-        });
+            },
+        );
     }
 
     // Create GenesisHelper
@@ -1024,17 +997,16 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&GENESIS_HELPER_PACKAGE, GENESIS_HELPER_BLUEPRINT),
             GlobalAddress::from(GENESIS_HELPER),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: GENESIS_HELPER_PACKAGE.into(),
-            blueprint_name: GENESIS_HELPER_BLUEPRINT.to_string(),
-            function_name: "new".to_string(),
-            args: manifest_args!(
+        manifest_builder = manifest_builder.call_function(
+            GENESIS_HELPER_PACKAGE,
+            GENESIS_HELPER_BLUEPRINT,
+            "new",
+            (
                 id_allocator.new_address_reservation_id(),
                 CONSENSUS_MANAGER,
-                system_execution(SystemExecution::Protocol)
-            )
-            .into(),
-        });
+                system_execution(SystemExecution::Protocol),
+            ),
+        );
     }
 
     // Intent Hash Store package
@@ -1043,17 +1015,17 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(TRANSACTION_TRACKER_PACKAGE),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+        manifest_builder = manifest_builder.call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_NATIVE_IDENT,
+            PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: NativeCodeId::TransactionTrackerCode1 as u64,
                 definition: TransactionTrackerNativePackage::definition(),
                 metadata: metadata_init!(),
-            }),
-        });
+            },
+        );
     }
 
     // Intent Hash Store component
@@ -1062,12 +1034,12 @@ pub fn create_system_bootstrap_transaction(
             BlueprintId::new(&TRANSACTION_TRACKER_PACKAGE, TRANSACTION_TRACKER_BLUEPRINT),
             GlobalAddress::from(TRANSACTION_TRACKER),
         ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: TRANSACTION_TRACKER_PACKAGE.into(),
-            blueprint_name: TRANSACTION_TRACKER_BLUEPRINT.to_string(),
-            function_name: TRANSACTION_TRACKER_CREATE_IDENT.to_string(),
-            args: manifest_args!(id_allocator.new_address_reservation_id()).into(),
-        });
+        manifest_builder = manifest_builder.call_function(
+            TRANSACTION_TRACKER_PACKAGE,
+            TRANSACTION_TRACKER_BLUEPRINT,
+            TRANSACTION_TRACKER_CREATE_IDENT,
+            (id_allocator.new_address_reservation_id(),),
+        );
     }
 
     // Faucet
@@ -1081,63 +1053,45 @@ pub fn create_system_bootstrap_transaction(
 
         // Mint XRD for the faucet, and then deposit it into the new faucet
         // Note - on production environments, the faucet will be empty
-        let faucet_xrd_bucket = id_allocator.new_bucket_id();
-        instructions.push(
-            InstructionV1::CallMethod {
-                address: XRD.clone().into(),
-                method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                args: manifest_args!(faucet_supply).into(),
-            }
-            .into(),
-        );
-        instructions.push(
-            InstructionV1::TakeFromWorktop {
-                resource_address: XRD,
-                amount: faucet_supply,
-            }
-            .into(),
-        );
-        instructions.push(InstructionV1::CallFunction {
-            package_address: FAUCET_PACKAGE.into(),
-            blueprint_name: FAUCET_BLUEPRINT.to_string(),
-            function_name: "new".to_string(),
-            args: manifest_args!(id_allocator.new_address_reservation_id(), faucet_xrd_bucket)
-                .into(),
-        });
+        manifest_builder = manifest_builder
+            .call_method(
+                XRD,
+                FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+                FungibleResourceManagerMintInput {
+                    amount: faucet_supply,
+                },
+            )
+            .take_from_worktop(XRD, faucet_supply, "xrd")
+            .call_function_with_name_lookup(FAUCET_PACKAGE, FAUCET_BLUEPRINT, "new", |lookup| {
+                (
+                    id_allocator.new_address_reservation_id(),
+                    lookup.bucket("xrd"),
+                )
+            });
     }
 
-    SystemTransactionV1 {
-        instructions: InstructionsV1(Rc::new(instructions)),
-        pre_allocated_addresses: pre_allocated_addresses
+    SystemTransactionV1::new(
+        manifest_builder.build(),
+        hash(format!("Genesis Bootstrap")),
+        pre_allocated_addresses
             .into_iter()
             .map(|allocation_pair| allocation_pair.into())
             .collect(),
-        blobs: BlobsV1 { blobs },
-        hash_for_execution: hash(format!("Genesis Bootstrap")),
-    }
+    )
 }
 
 pub fn create_genesis_data_ingestion_transaction(
-    genesis_helper: &ComponentAddress,
     chunk: GenesisDataChunk,
     chunk_number: usize,
 ) -> SystemTransactionV1 {
-    let mut instructions = Vec::new();
-
     let (chunk, pre_allocated_addresses) = map_address_allocations_for_manifest(chunk);
 
-    instructions.push(InstructionV1::CallMethod {
-        address: genesis_helper.clone().into(),
-        method_name: "ingest_data_chunk".to_string(),
-        args: manifest_args!(chunk).into(),
-    });
+    let manifest = ManifestBuilder::new()
+        .call_method(GENESIS_HELPER, "ingest_data_chunk", (chunk,))
+        .build();
 
-    SystemTransactionV1 {
-        instructions: InstructionsV1(Rc::new(instructions)),
-        pre_allocated_addresses,
-        blobs: BlobsV1 { blobs: vec![] },
-        hash_for_execution: hash(format!("Genesis Data Chunk: {}", chunk_number)),
-    }
+    let unique_hash = hash(format!("Genesis Data Chunk: {}", chunk_number));
+    SystemTransactionV1::new(manifest, unique_hash, pre_allocated_addresses)
 }
 
 fn map_address_allocations_for_manifest(
@@ -1196,18 +1150,11 @@ fn map_address_allocations_for_manifest(
 }
 
 pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
-    let mut instructions = Vec::new();
+    let manifest = ManifestBuilder::new()
+        .call_method(GENESIS_HELPER, "wrap_up", ())
+        .build();
 
-    instructions.push(InstructionV1::CallMethod {
-        address: GENESIS_HELPER.clone().into(),
-        method_name: "wrap_up".to_string(),
-        args: manifest_args!().into(),
-    });
-
-    SystemTransactionV1 {
-        instructions: InstructionsV1(Rc::new(instructions)),
-        pre_allocated_addresses: vec![],
-        blobs: BlobsV1 { blobs: vec![] },
-        hash_for_execution: hash(format!("Genesis Wrap Up")),
-    }
+    let unique_hash = hash(format!("Genesis Wrap Up"));
+    let preallocated_addresses = vec![];
+    SystemTransactionV1::new(manifest, unique_hash, preallocated_addresses)
 }

@@ -66,32 +66,32 @@ const V2_SIGNED_PARTIAL_TRANSACTION: u8 = 14;
     settings(allow_name_changes)
 )]
 pub enum VersionedTransactionPayload {
-    #[sbor(flatten, discriminator(V1_INTENT))]
-    TransactionIntentV1(IntentV1),
-    #[sbor(flatten, discriminator(V1_SIGNED_INTENT))]
-    SignedTransactionIntentV1(SignedIntentV1),
-    #[sbor(flatten, discriminator(V1_NOTARIZED_TRANSACTION))]
-    NotarizedTransactionV1(NotarizedTransactionV1),
-    #[sbor(flatten, discriminator(V1_SYSTEM_TRANSACTION))]
-    SystemTransactionV1(SystemTransactionV1),
-    #[sbor(flatten, discriminator(V1_ROUND_UPDATE_TRANSACTION))]
-    RoundUpdateTransactionV1(RoundUpdateTransactionV1),
+    #[sbor(discriminator(V1_INTENT))]
+    TransactionIntentV1(#[sbor(flatten)] IntentV1),
+    #[sbor(discriminator(V1_SIGNED_INTENT))]
+    SignedTransactionIntentV1(#[sbor(flatten)] SignedIntentV1),
+    #[sbor(discriminator(V1_NOTARIZED_TRANSACTION))]
+    NotarizedTransactionV1(#[sbor(flatten)] NotarizedTransactionV1),
+    #[sbor(discriminator(V1_SYSTEM_TRANSACTION))]
+    SystemTransactionV1(#[sbor(flatten)] SystemTransactionV1),
+    #[sbor(discriminator(V1_ROUND_UPDATE_TRANSACTION))]
+    RoundUpdateTransactionV1(#[sbor(flatten)] RoundUpdateTransactionV1),
     #[sbor(discriminator(V1_LEDGER_TRANSACTION))] // Not flattened because it's an enum
     LedgerTransaction(LedgerTransaction),
-    #[sbor(flatten, discriminator(V1_FLASH_TRANSACTION))]
-    FlashTransactionV1(FlashTransactionV1),
-    #[sbor(flatten, discriminator(V2_TRANSACTION_INTENT))]
-    TransactionIntentV2(TransactionIntentV2),
-    #[sbor(flatten, discriminator(V2_SIGNED_TRANSACTION_INTENT))]
-    SignedTransactionIntentV2(SignedTransactionIntentV2),
-    #[sbor(flatten, discriminator(V2_SUBINTENT))]
-    SubintentV2(SubintentV2),
-    #[sbor(flatten, discriminator(V2_NOTARIZED_TRANSACTION))]
-    NotarizedTransactionV2(NotarizedTransactionV2),
-    #[sbor(flatten, discriminator(V2_PARTIAL_TRANSACTION))]
-    PartialTransactionV2(PartialTransactionV2),
-    #[sbor(flatten, discriminator(V2_SIGNED_PARTIAL_TRANSACTION))]
-    SignedPartialTransactionV2(SignedPartialTransactionV2),
+    #[sbor(discriminator(V1_FLASH_TRANSACTION))]
+    FlashTransactionV1(#[sbor(flatten)] FlashTransactionV1),
+    #[sbor(discriminator(V2_TRANSACTION_INTENT))]
+    TransactionIntentV2(#[sbor(flatten)] TransactionIntentV2),
+    #[sbor(discriminator(V2_SIGNED_TRANSACTION_INTENT))]
+    SignedTransactionIntentV2(#[sbor(flatten)] SignedTransactionIntentV2),
+    #[sbor(discriminator(V2_SUBINTENT))]
+    SubintentV2(#[sbor(flatten)] SubintentV2),
+    #[sbor(discriminator(V2_NOTARIZED_TRANSACTION))]
+    NotarizedTransactionV2(#[sbor(flatten)] NotarizedTransactionV2),
+    #[sbor(discriminator(V2_PARTIAL_TRANSACTION))]
+    PartialTransactionV2(#[sbor(flatten)] PartialTransactionV2),
+    #[sbor(discriminator(V2_SIGNED_PARTIAL_TRANSACTION))]
+    SignedPartialTransactionV2(#[sbor(flatten)] SignedPartialTransactionV2),
 }
 
 #[cfg(test)]
@@ -102,8 +102,14 @@ mod tests {
     use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
 
-    fn hash_manifest_encoded_without_prefix_byte<T: ManifestEncode>(value: T) -> Hash {
+    fn hash_encoded_sbor_value<T: ManifestEncode>(value: T) -> Hash {
+        // Ignore the version byte
         hash(&manifest_encode(&value).unwrap()[1..])
+    }
+
+    fn hash_encoded_sbor_value_body<T: ManifestEncode>(value: T) -> Hash {
+        // Ignore the version byte AND the value kind
+        hash(&manifest_encode(&value).unwrap()[2..])
     }
 
     /// This test demonstrates how the hashes and payloads are constructed in a valid user transaction.
@@ -129,10 +135,10 @@ mod tests {
             notary_is_signatory: false,
             tip_percentage: 0,
         };
-        let expected_header_hash = hash_manifest_encoded_without_prefix_byte(&header_v1);
+        let expected_header_hash = hash_encoded_sbor_value(&header_v1);
 
-        let instructions = vec![InstructionV1::DropAuthZoneProofs];
-        let expected_instructions_hash = hash_manifest_encoded_without_prefix_byte(&instructions);
+        let instructions = vec![InstructionV1::DropAuthZoneProofs(DropAuthZoneProofs)];
+        let expected_instructions_hash = hash_encoded_sbor_value(&instructions);
         let instructions_v1 = InstructionsV1(Rc::new(instructions));
 
         let blob1: Vec<u8> = vec![0, 1, 2, 3];
@@ -148,7 +154,7 @@ mod tests {
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let message_v1 = MessageV1::default();
-        let expected_attachments_hash = hash_manifest_encoded_without_prefix_byte(&message_v1);
+        let expected_attachments_hash = hash_encoded_sbor_value(&message_v1);
 
         let intent_v1 = IntentV1 {
             header: header_v1.clone(),
@@ -212,8 +218,7 @@ mod tests {
         let intent_signatures_v1 = IntentSignaturesV1 {
             signatures: vec![IntentSignatureV1(sig1), IntentSignatureV1(sig2)],
         };
-        let expected_intent_signatures_hash =
-            hash_manifest_encoded_without_prefix_byte(&intent_signatures_v1);
+        let expected_intent_signatures_hash = hash_encoded_sbor_value(&intent_signatures_v1);
 
         let signed_intent_v1 = SignedIntentV1 {
             intent: intent_v1.clone(),
@@ -270,8 +275,7 @@ mod tests {
         let notary_signature = notary_private_key.sign(&signed_intent_hash);
 
         let notary_signature_v1 = NotarySignatureV1(notary_signature.into());
-        let expected_notary_signature_v1_hash =
-            hash_manifest_encoded_without_prefix_byte(&notary_signature_v1);
+        let expected_notary_signature_v1_hash = hash_encoded_sbor_value(&notary_signature_v1);
 
         let notarized_transaction_v1 = NotarizedTransactionV1 {
             signed_intent: signed_intent_v1.clone(),
@@ -330,12 +334,133 @@ mod tests {
         );
     }
 
+    /// This test demonstrates how the hashes and payloads are constructed in a valid user transaction.
+    /// It also provides an example payload which can be used in other implementations.
+    #[test]
+    pub fn v2_notarized_transaction_structure() {
+        let network = NetworkDefinition::simulator();
+
+        // TODO - add more of the structure
+        create_checked_childless_subintent_v2(&network);
+    }
+
+    fn create_checked_childless_subintent_v2(network: &NetworkDefinition) -> (SubintentV2, SubintentHash) {
+        let (header, expected_header_hash) = create_intent_header_v2(network);
+        let (blobs, expected_blobs_hash) = create_blobs_v1();
+        let (instructions, expected_instructions_hash) = create_childless_subintent_instructions_v2();
+        let (message, expected_message_hash) = create_message_v2();
+        let (child_intent_constraints, expected_constraints_hash) = create_childless_child_intents_v2();
+
+        let subintent = SubintentV2 {
+            intent_core: IntentCoreV2 {
+                header,
+                instructions,
+                blobs,
+                message,
+                children: child_intent_constraints,
+            },
+        };
+        let expected_intent_core_hash = hash(
+            [
+                expected_header_hash.as_slice(),
+                expected_instructions_hash.as_slice(),
+                expected_blobs_hash.as_slice(),
+                expected_message_hash.as_slice(),
+                expected_constraints_hash.as_slice(),
+            ]
+            .concat(),
+        );
+        let expected_subintent_hash = SubintentHash(hash(
+            [
+                [
+                    TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
+                    TransactionDiscriminator::V2Subintent as u8,
+                ]
+                .as_slice(),
+                expected_intent_core_hash.as_slice(),
+            ]
+            .concat(),
+        ));
+
+        let prepared = subintent.prepare().unwrap();
+        let actual_subintent_hash = prepared.subintent_hash();
+        assert_eq!(expected_subintent_hash, actual_subintent_hash);
+        assert_eq!(
+            expected_subintent_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "subtxid_sim1qv2w94k2nhsx9k0ev7yqur0c7e2q60jrxw0g078dtv7dsngt2fxsm5q9ew",
+        );
+
+        (subintent, actual_subintent_hash)
+    }
+
+    fn create_intent_header_v2(network: &NetworkDefinition) -> (IntentHeaderV2, Hash) {
+        let intent_header = IntentHeaderV2 {
+            network_id: network.id,
+            start_epoch_inclusive: Epoch::of(1),
+            end_epoch_exclusive: Epoch::of(10),
+            min_proposer_timestamp_inclusive: None,
+            max_proposer_timestamp_exclusive: Some(Instant::new(0)),
+            intent_discriminator: 0,
+        };
+        let expected_hash = hash_encoded_sbor_value_body(&intent_header);
+        let actual_hash = intent_header.prepare_partial().unwrap().get_summary().hash;
+        assert_eq!(expected_hash, actual_hash);
+        (intent_header, expected_hash)
+    }
+
+    fn create_blobs_v1() -> (BlobsV1, Hash) {
+        let blob1: Vec<u8> = vec![0, 1, 2, 3];
+        let blob2: Vec<u8> = vec![5, 6];
+        let expected_hash = hash([hash(&blob1).0.as_slice(), hash(&blob2).0.as_slice()].concat());
+
+        let blobs_v1 = BlobsV1 {
+            blobs: vec![BlobV1(blob1), BlobV1(blob2)],
+        };
+
+        let actual_hash = blobs_v1.prepare_partial().unwrap().get_summary().hash;
+        assert_eq!(expected_hash, actual_hash);
+
+        (blobs_v1, expected_hash)
+    }
+
+    fn create_childless_subintent_instructions_v2() -> (InstructionsV2, Hash) {
+        let instructions = InstructionsV2(Rc::new(vec![]));
+        let expected_hash = hash_encoded_sbor_value_body(&instructions);
+
+        let actual_hash = instructions.prepare_partial().unwrap().get_summary().hash;
+        assert_eq!(expected_hash, actual_hash);
+
+        (instructions, expected_hash)
+    }
+
+    fn create_message_v2() -> (MessageV2, Hash) {
+        let message = MessageV2::Plaintext(PlaintextMessageV1::text("Hello world!"));
+        let expected_hash = hash_encoded_sbor_value_body(&message);
+
+        let actual_hash = message.prepare_partial().unwrap().get_summary().hash;
+        assert_eq!(expected_hash, actual_hash);
+
+        (message, expected_hash)
+    }
+
+    fn create_childless_child_intents_v2() -> (ChildIntentsV2, Hash) {
+        let children: ChildIntentsV2 = ChildIntentsV2 { children: vec![] };
+        // Concatenation of all hashes
+        let empty: [u8; 0] = [];
+        let expected_hash = hash(&empty);
+
+        let actual_hash = children.prepare_partial().unwrap().get_summary().hash;
+        assert_eq!(expected_hash, actual_hash);
+
+        (children, expected_hash)
+    }
+
     /// This test demonstrates how the hashes and payloads are constructed in a valid system transaction.
     /// A system transaction can be embedded into the node's LedgerTransaction structure, eg as part of Genesis
     #[test]
     pub fn v1_system_transaction_structure() {
-        let instructions = vec![InstructionV1::DropAuthZoneProofs];
-        let expected_instructions_hash = hash_manifest_encoded_without_prefix_byte(&instructions);
+        let instructions = vec![InstructionV1::DropAuthZoneProofs(DropAuthZoneProofs)];
+        let expected_instructions_hash = hash_encoded_sbor_value(&instructions);
         let instructions_v1 = InstructionsV1(Rc::new(instructions));
 
         let blob1: Vec<u8> = vec![0, 1, 2, 3];
@@ -355,7 +480,7 @@ mod tests {
             address: XRD.into(),
         }];
         let expected_preallocated_addresses_hash =
-            hash_manifest_encoded_without_prefix_byte(&pre_allocated_addresses_v1);
+            hash_encoded_sbor_value(&pre_allocated_addresses_v1);
 
         let hash_for_execution = hash(format!("Pretend genesis transaction"));
 
