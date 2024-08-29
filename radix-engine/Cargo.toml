@@ -10,7 +10,7 @@ repository = "https://github.com/radixdlt/radixdlt-scrypto"
 [dependencies]
 sbor = { workspace = true }
 radix-engine-interface = { workspace = true }
-radix-common = { workspace = true, features = ["secp256k1_sign_and_validate", "serde"]}
+radix-common = { workspace = true, features = ["secp256k1_sign_and_validate"]}
 radix-substate-store-interface = { workspace = true }
 radix-blueprint-schema-init = { workspace = true }
 radix-native-sdk = { workspace = true }
@@ -45,10 +45,6 @@ radix-wasm-instrument = { workspace = true,  features = ["ignore_custom_section"
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
 wasmi = {  workspace = true, features = ["no-hash-maps"] }
 lazy_static = { workspace = true }
-
-# Serde dependencies - primarily used in the RET's receipt.
-serde = { workspace = true }
-serde_with = { workspace = true }
 
 [dev-dependencies]
 wabt = { workspace = true }

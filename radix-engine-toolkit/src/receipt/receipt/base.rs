@@ -1,7 +1,7 @@
+use core::hash::Hash;
 use radix_common::prelude::{IndexMap, IndexSet};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use std::hash::Hash;
 
 /// The transaction receipt DTO which is used in the communication between the CoreAPI and the Radix
 /// Engine Toolkit.
@@ -123,20 +123,20 @@ pub struct StateUpdatesSummary<T: TypeSelector> {
 /// as runtime.
 pub trait TypeSelector {
     /// The usize type to use.
-    type Usize: std::fmt::Debug + PartialEq + Eq + Clone + Hash;
+    type Usize: core::fmt::Debug + PartialEq + Eq + Clone + Hash;
     /// The bytes type to use.
-    type Bytes: std::fmt::Debug + PartialEq + Eq + Clone;
+    type Bytes: core::fmt::Debug + PartialEq + Eq + Clone;
     /// The decimal type to use.
-    type Decimal: std::fmt::Debug + PartialEq + Eq + Clone;
+    type Decimal: core::fmt::Debug + PartialEq + Eq + Clone;
 
     /// The node id type to use.
-    type NodeId: std::fmt::Debug + PartialEq + Eq + Clone + Hash;
+    type NodeId: core::fmt::Debug + PartialEq + Eq + Clone + Hash;
     /// The non-fungible global id to use.
-    type NonFungibleGlobalId: std::fmt::Debug + PartialEq + Eq + Clone + Hash;
+    type NonFungibleGlobalId: core::fmt::Debug + PartialEq + Eq + Clone + Hash;
 
     /// The metadata value to use.
-    type MetadataValue: std::fmt::Debug + PartialEq + Eq + std::fmt::Debug + Clone;
+    type MetadataValue: core::fmt::Debug + PartialEq + Eq + core::fmt::Debug + Clone;
 
     /// The type used for worktop updates.
-    type WorktopChange: std::fmt::Debug + PartialEq + Eq + Clone;
+    type WorktopChange: core::fmt::Debug + PartialEq + Eq + Clone;
 }

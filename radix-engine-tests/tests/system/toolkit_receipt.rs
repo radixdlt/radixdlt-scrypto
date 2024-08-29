@@ -1,7 +1,7 @@
 use radix_engine::system::system_modules::execution_trace::{ResourceSpecifier, WorktopChange};
-use radix_engine::transaction::toolkit_transaction_receipt::*;
 use radix_engine_interface::prelude::MetadataValue;
 use radix_engine_tests::*;
+use radix_engine_toolkit::receipt::*;
 use scrypto::*;
 use scrypto_test::prelude::*;
 

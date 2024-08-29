@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use std::fmt::Display;
-use std::str::FromStr;
+use core::fmt::Display;
+use core::str::FromStr;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -12,7 +12,7 @@ where
     T: Display + FromStr,
     <T as FromStr>::Err: Display;
 
-impl<T> std::ops::Deref for AsStr<T>
+impl<T> core::ops::Deref for AsStr<T>
 where
     T: Display + FromStr,
     <T as FromStr>::Err: Display,
@@ -24,7 +24,7 @@ where
     }
 }
 
-impl<T> std::ops::DerefMut for AsStr<T>
+impl<T> core::ops::DerefMut for AsStr<T>
 where
     T: Display + FromStr,
     <T as FromStr>::Err: Display,

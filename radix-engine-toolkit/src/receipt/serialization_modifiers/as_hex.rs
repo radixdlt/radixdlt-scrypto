@@ -8,7 +8,7 @@ pub struct AsHex<T>(#[serde_as(as = "serde_with::hex::Hex")] T)
 where
     T: AsRef<[u8]> + TryFrom<Vec<u8>>;
 
-impl<T> std::ops::Deref for AsHex<T>
+impl<T> core::ops::Deref for AsHex<T>
 where
     T: AsRef<[u8]> + TryFrom<Vec<u8>>,
 {
@@ -19,7 +19,7 @@ where
     }
 }
 
-impl<T> std::ops::DerefMut for AsHex<T>
+impl<T> core::ops::DerefMut for AsHex<T>
 where
     T: AsRef<[u8]> + TryFrom<Vec<u8>>,
 {

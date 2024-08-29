@@ -20,6 +20,7 @@ radix-rust = { workspace = true }
 radix-engine-profiling = { workspace = true, optional = true, features = [
     "resource_tracker",
 ] }
+radix-engine-toolkit = { workspace = true }
 radix-engine-profiling-derive = { workspace = true }
 scrypto-test = { workspace = true }
 lazy_static = { workspace = true }
