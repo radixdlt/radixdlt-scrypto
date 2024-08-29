@@ -34,55 +34,49 @@ fn test_toolkit_receipt_roundtrip_property() {
 #[test]
 fn test_toolkit_receipt_roundtrip_property_on_scenario_receipts() {
     let network_definition = NetworkDefinition::simulator();
-    DefaultTransactionScenarioExecutor::new(
-        InMemorySubstateDatabase::standard(),
-        &network_definition,
-    )
-    .scenario_execution_config(ExecutionConfig::for_preview(network_definition.clone()))
-    .on_transaction_executed(|_, _, receipt, _| {
-        check_and_convert_receipt_to_runtime_receipt(receipt.clone());
-    })
-    .execute_every_protocol_update_and_scenario()
-    .expect("Must succeed!");
+    TransactionScenarioExecutor::new(InMemorySubstateDatabase::standard(), &network_definition)
+        .scenario_execution_config(ExecutionConfig::for_preview(network_definition.clone()))
+        .on_transaction_executed(|_, _, receipt, _| {
+            check_and_convert_receipt_to_runtime_receipt(receipt.clone());
+        })
+        .execute_every_protocol_update_and_scenario()
+        .expect("Must succeed!");
 }
 
 #[test]
 #[ignore = "Run this test to output the transaction receipts to the file system"]
 fn output_scenario_serialized_transaction_receipts_to_file_system() {
     let network_definition = NetworkDefinition::simulator();
-    DefaultTransactionScenarioExecutor::new(
-        InMemorySubstateDatabase::standard(),
-        &network_definition,
-    )
-    .scenario_execution_config(ExecutionConfig::for_preview(network_definition.clone()))
-    .on_transaction_executed(|metadata, transaction, receipt, _| {
-        let runtime_toolkit_receipt =
-            RuntimeToolkitTransactionReceipt::try_from(receipt.clone()).unwrap();
+    TransactionScenarioExecutor::new(InMemorySubstateDatabase::standard(), &network_definition)
+        .scenario_execution_config(ExecutionConfig::for_preview(network_definition.clone()))
+        .on_transaction_executed(|metadata, transaction, receipt, _| {
+            let runtime_toolkit_receipt =
+                RuntimeToolkitTransactionReceipt::try_from(receipt.clone()).unwrap();
 
-        // Convert to a serializable transaction receipt.
-        let encoder = AddressBech32Encoder::for_simulator();
-        let serializable_toolkit_receipt =
-            SerializableToolkitTransactionReceipt::contextual_try_from(
-                runtime_toolkit_receipt.clone(),
-                &encoder,
-            )
-            .expect("Failed during runtime -> serializable conversion");
+            // Convert to a serializable transaction receipt.
+            let encoder = AddressBech32Encoder::for_simulator();
+            let serializable_toolkit_receipt =
+                SerializableToolkitTransactionReceipt::contextual_try_from(
+                    runtime_toolkit_receipt.clone(),
+                    &encoder,
+                )
+                .expect("Failed during runtime -> serializable conversion");
 
-        // Serialize the serializable receipt to JSON through serde_json.
-        let serialized_receipt = serde_json::to_string_pretty(&serializable_toolkit_receipt)
-            .expect("Serializing through serde_json failed");
+            // Serialize the serializable receipt to JSON through serde_json.
+            let serialized_receipt = serde_json::to_string_pretty(&serializable_toolkit_receipt)
+                .expect("Serializing through serde_json failed");
 
-        // Create a file for this transaction receipt.
-        let directory_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("assets")
-            .join("serialized_receipts")
-            .join(metadata.logical_name);
-        std::fs::create_dir_all(&directory_path).expect("Creation failed!");
-        let file_path = directory_path.join(format!("{}.json", transaction.logical_name));
-        std::fs::write(file_path, serialized_receipt).expect("Writing the receipt failed");
-    })
-    .execute_every_protocol_update_and_scenario()
-    .expect("Must succeed!");
+            // Create a file for this transaction receipt.
+            let directory_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("assets")
+                .join("serialized_receipts")
+                .join(metadata.logical_name);
+            std::fs::create_dir_all(&directory_path).expect("Creation failed!");
+            let file_path = directory_path.join(format!("{}.json", transaction.logical_name));
+            std::fs::write(file_path, serialized_receipt).expect("Writing the receipt failed");
+        })
+        .execute_every_protocol_update_and_scenario()
+        .expect("Must succeed!");
 }
 
 #[test]
