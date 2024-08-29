@@ -3,7 +3,6 @@ use super::serializable::SerializableToolkitTransactionReceipt;
 use crate::blueprints::resource::*;
 use crate::object_modules::metadata::*;
 use crate::system::system_modules::execution_trace::WorktopChange;
-use crate::system::system_substates::*;
 use crate::transaction::toolkit_transaction_receipt::error::*;
 use crate::transaction::*;
 use radix_common::prelude::*;
@@ -195,7 +194,7 @@ impl TryFrom<TransactionReceiptV1> for RuntimeToolkitTransactionReceipt {
                                                     )
                                                 })?;
                                         let value = scrypto_decode::<
-                                            KeyValueEntrySubstate<NonFungibleResourceManagerDataEntryPayload>,
+                                            NonFungibleResourceManagerDataEntrySubstate,
                                         >(&value)
                                         .ok()
                                         .and_then(|value| value.into_value())
