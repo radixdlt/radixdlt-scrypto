@@ -4,7 +4,7 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine_interface::rule;
 use scrypto_test::prelude::*;
 
-use radix_transactions::validation::NotarizedTransactionValidator;
+use radix_transactions::validation::NotarizedTransactionValidatorV1;
 use radix_transactions::validation::{TransactionValidator, ValidationConfig};
 
 #[test]
@@ -179,12 +179,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 #[test]
 fn test_preview_no_auth() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let network = NetworkDefinition::simulator();
 
     let preview_flags = PreviewFlags {
@@ -369,7 +364,7 @@ fn validate<'a>(
     network: &'a NetworkDefinition,
     transaction: &'a NotarizedTransactionV1,
 ) -> ValidatedNotarizedTransactionV1 {
-    NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
+    NotarizedTransactionValidatorV1::new(ValidationConfig::default(network.id))
         .validate(transaction.prepare().unwrap())
         .unwrap()
 }

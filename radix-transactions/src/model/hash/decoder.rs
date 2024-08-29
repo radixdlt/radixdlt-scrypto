@@ -20,19 +20,11 @@ impl TransactionHashBech32Decoder {
 
     pub fn validate_and_decode<T>(&self, hash: &str) -> Result<T, TransactionHashBech32DecodeError>
     where
-        T: HashHasHrp,
+        T: IsTransactionHash,
     {
         // Decode the hash string
         let (hrp, data, variant) = bech32::decode(hash)
             .map_err(|err| TransactionHashBech32DecodeError::Bech32mDecodingError(err))?;
-
-        // Validate the HRP
-        let expected_hrp = T::hrp(&self.hrp_set);
-        if hrp == expected_hrp {
-            Ok(())
-        } else {
-            Err(TransactionHashBech32DecodeError::InvalidHrp)
-        }?;
 
         // Validate the Bech32 variant to ensure that is is Bech32m
         match variant {
@@ -51,7 +43,9 @@ impl TransactionHashBech32Decoder {
             .map_err(|_| TransactionHashBech32DecodeError::InvalidLength)?;
 
         // Validation complete, return data bytes
-        Ok(T::from(hash))
+        T::create_from_hrp_and_hash(&hrp, hash, &self.hrp_set).map_err(|err| match err {
+            HashCreationError::InvalidHrp => TransactionHashBech32DecodeError::InvalidHrp,
+        })
     }
 }
 
@@ -70,7 +64,7 @@ mod tests {
 
         // Act
         let decoded = decoder
-            .validate_and_decode::<IntentHash>(encoded_hash)
+            .validate_and_decode::<TransactionIntentHash>(encoded_hash)
             .unwrap();
 
         // Assert
@@ -89,7 +83,7 @@ mod tests {
 
         // Act
         let decoded = decoder
-            .validate_and_decode::<SignedIntentHash>(encoded_hash)
+            .validate_and_decode::<SignedTransactionIntentHash>(encoded_hash)
             .unwrap();
 
         // Assert

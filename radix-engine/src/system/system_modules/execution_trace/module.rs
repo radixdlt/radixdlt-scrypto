@@ -103,7 +103,7 @@ trait SystemModuleApiResourceSnapshotExtension {
     fn read_proof_uncosted(&self, proof_id: &NodeId) -> Option<ProofSnapshot>;
 }
 
-impl<'a, V: SystemCallbackObject, E, K: KernelInternalApi<System = System<V, E>>>
+impl<'a, V: SystemCallbackObject, K: KernelInternalApi<System = System<V>>>
     SystemModuleApiResourceSnapshotExtension for SystemModuleApiImpl<'a, K>
 {
     fn read_bucket_uncosted(&self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
@@ -450,8 +450,9 @@ impl ResourceSummary {
 
 impl InitSystemModule for ExecutionTraceModule {}
 impl ResolvableSystemModule for ExecutionTraceModule {
-    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
-        &mut system.modules.execution_trace
+    #[inline]
+    fn resolve_from_system(system: &mut impl HasModules) -> &mut Self {
+        &mut system.modules_mut().execution_trace
     }
 }
 impl PrivilegedSystemModule for ExecutionTraceModule {}

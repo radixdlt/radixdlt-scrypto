@@ -55,11 +55,11 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p sbor
+        run: cargo nextest run -p sbor --no-fail-fast
       - name: Run tests (no_std)
-        run: cargo nextest run -p sbor --no-default-features --features alloc
+        run: cargo nextest run -p sbor --no-default-features --features alloc --no-fail-fast
       - name: Run derive tests
-        run: cargo nextest run -p sbor-derive-common
+        run: cargo nextest run -p sbor-derive-common --no-fail-fast
 
   sbor-integration-tests:
     name: Run SBOR integration tests
@@ -69,9 +69,9 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p sbor-tests
+        run: cargo nextest run -p sbor-tests --no-fail-fast
       - name: Run tests (no_std)
-        run: cargo nextest run -p sbor-tests --no-default-features --features alloc
+        run: cargo nextest run -p sbor-tests --no-default-features --features alloc --no-fail-fast
       - name: Run bench
         run: cargo bench -p sbor-tests
 
@@ -83,13 +83,13 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p scrypto
+        run: cargo nextest run -p scrypto --no-fail-fast
       - name: Run tests (no_std)
-        run: cargo nextest run -p scrypto --no-default-features --features alloc
+        run: cargo nextest run -p scrypto --no-default-features --features alloc --no-fail-fast
       - name: Run abi tests
-        run: cargo nextest run -p radix-blueprint-schema-init
+        run: cargo nextest run -p radix-blueprint-schema-init --no-fail-fast
       - name: Run derive tests
-        run: cargo nextest run -p scrypto-derive
+        run: cargo nextest run -p scrypto-derive --no-fail-fast
 
   scrypto-derive-tests:
     name: Run Scrypto derive tests
@@ -99,9 +99,9 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p scrypto-derive-tests
+        run: cargo nextest run -p scrypto-derive-tests --no-fail-fast
       - name: Run tests with no_std
-        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc
+        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc --no-fail-fast
 
   scrypto-examples:
     name: Run Scrypto examples
@@ -113,12 +113,12 @@ jobs:
       - name: Build and test hello-world
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release
+          cargo nextest run --release --no-fail-fast
         working-directory: examples/hello-world
       - name: Build and test everything
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release
+          cargo nextest run --release --no-fail-fast
         working-directory: examples/everything
       - name: Build no-std
         run: cargo build --target wasm32-unknown-unknown --release
@@ -163,7 +163,8 @@ jobs:
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
-            -p radix-engine-tests
+            -p radix-engine-tests \
+            --no-fail-fast
           ./check_stack_usage.sh
 
   radix-engine-release:
@@ -186,7 +187,8 @@ jobs:
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
-            -p radix-engine-tests
+            -p radix-engine-tests \
+            --no-fail-fast
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
@@ -204,7 +206,8 @@ jobs:
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
-            -p radix-engine-tests
+            -p radix-engine-tests \
+            --no-fail-fast
 
   radix-engine-bench:
     name: Run Radix Engine benchmarks
@@ -236,7 +239,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p radix-transactions
+        run: cargo nextest run -p radix-transactions --no-fail-fast
 
   radix-transaction-scenarios:
     name: Run transaction scenarios
@@ -246,7 +249,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p radix-transaction-scenarios
+        run: cargo nextest run -p radix-transaction-scenarios --no-fail-fast
 
   radix-clis:
     name: Run CLI tests
@@ -268,12 +271,12 @@ jobs:
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
       - name: Run Unit tests
-        run: cargo nextest run
+        run: cargo nextest run --no-fail-fast
         working-directory: radix-clis
-      - name: Run tests
+      - name: Run resim shell tests
         run: bash ./tests/resim.sh
         working-directory: radix-clis
-      - name: Run tests
+      - name: Run manifest shell tests
         run: bash ./tests/manifest.sh
         working-directory: radix-clis
 

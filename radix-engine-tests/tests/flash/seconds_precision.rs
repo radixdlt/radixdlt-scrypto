@@ -1,7 +1,6 @@
 use radix_common::constants::CONSENSUS_MANAGER;
 use radix_common::prelude::*;
 use radix_common::prelude::{manifest_args, Round};
-use radix_common::types::Epoch;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::updates::*;
@@ -10,10 +9,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::prelude::system_execution;
 use radix_engine_tests::common::PackageLoader;
-use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
-use radix_substate_store_interface::interface::CommittableSubstateDatabase;
 use radix_transactions::builder::ManifestBuilder;
-use scrypto_test::prelude::{CreateDatabaseUpdates, CustomGenesis, LedgerSimulatorBuilder};
+use scrypto_test::prelude::*;
 
 #[test]
 fn get_current_time_rounded_to_seconds_without_state_flash_should_fail() {
@@ -28,31 +25,18 @@ fn get_current_time_rounded_to_seconds_with_state_flash_should_succeed() {
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(CustomGenesis::default(
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-        ))
-        .with_protocol_version(ProtocolVersion::Babylon)
+
+        .with_custom_protocol(|builder| builder.only_babylon())
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
 
     // Act
     if flash_substates {
-        let anemone_protocol_update_batch_generator = AnemoneSettings::all_disabled()
-            .enable(|item| &mut item.seconds_precision)
-            .create_batch_generator();
-        for batch_index in 0..anemone_protocol_update_batch_generator.batch_count() {
-            let batch = anemone_protocol_update_batch_generator
-                .generate_batch(ledger.substate_db(), batch_index);
-            for ProtocolUpdateTransactionDetails::FlashV1Transaction(
-                FlashProtocolUpdateTransactionDetails { state_updates, .. },
-            ) in batch.transactions
-            {
-                ledger
-                    .substate_db_mut()
-                    .commit(&state_updates.create_database_updates::<SpreadPrefixKeyMapper>())
-            }
-        }
+        ProtocolUpdateExecutor::new(
+            NetworkDefinition::simulator(),
+            AnemoneSettings::all_disabled()
+                .enable(|item| &mut item.seconds_precision),
+        ).run_and_commit(ledger.substate_db_mut())
     }
 
     let time_to_set_ms = 1669663688996;

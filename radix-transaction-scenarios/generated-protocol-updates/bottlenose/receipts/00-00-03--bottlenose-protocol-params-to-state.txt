@@ -1,0 +1,60 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 1 entity
+└─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 1 partitions
+  └─ Partition(32): 1 change
+    └─ Set: SystemBoot
+       Value: SystemBoot::V1(
+         SystemParameters {
+           network_definition: NetworkDefinition {
+             id: 242u8,
+             logical_name: "simulator",
+             hrp_suffix: "sim",
+           },
+           costing_module_config: CostingModuleConfig {
+             max_per_function_royalty_in_xrd: Decimal("166.666666666666666666"),
+             apply_execution_cost_2: true,
+             apply_boot_ref_check_costing: true,
+           },
+           costing_parameters: CostingParameters {
+             execution_cost_unit_price: Decimal("0.00000005"),
+             execution_cost_unit_limit: 100000000u32,
+             execution_cost_unit_loan: 4000000u32,
+             finalization_cost_unit_price: Decimal("0.00000005"),
+             finalization_cost_unit_limit: 50000000u32,
+             usd_price: Decimal("16.666666666666666666"),
+             state_storage_price: Decimal("0.00009536743"),
+             archive_storage_price: Decimal("0.00009536743"),
+           },
+           limit_parameters: LimitParameters {
+             max_call_depth: 8u64,
+             max_heap_substate_total_bytes: 67108864u64,
+             max_track_substate_total_bytes: 67108864u64,
+             max_substate_key_size: 1024u64,
+             max_substate_value_size: 2097152u64,
+             max_invoke_input_size: 1048576u64,
+             max_event_size: 32768u64,
+             max_log_size: 32768u64,
+             max_panic_message_size: 32768u64,
+             max_number_of_logs: 256u64,
+             max_number_of_events: 256u64,
+           },
+         },
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0

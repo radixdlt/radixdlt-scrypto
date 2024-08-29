@@ -5,7 +5,6 @@ use crate::internal_prelude::*;
 use crate::kernel::call_frame::*;
 use crate::kernel::kernel_api::*;
 use crate::kernel::kernel_callback_api::*;
-use crate::kernel::kernel_callback_api::{ExecutionReceipt, KernelTransactionCallbackObject};
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::*;
@@ -14,6 +13,7 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
+use radix_transactions::model::Executable;
 use sbor::rust::mem;
 
 macro_rules! as_read_only {
@@ -52,7 +52,7 @@ pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabas
 
 impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Executes a transaction
-    pub fn execute(self, executable: M::Executable) -> M::Receipt {
+    pub fn execute(self, executable: impl Executable) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker =
@@ -60,15 +60,12 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
 
         #[cfg(not(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics")))]
         {
-            self.execute_internal(executable.clone())
-                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason))
+            self.execute_internal(executable)
         }
 
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         {
-            let mut receipt = self
-                .execute_internal(executable.clone())
-                .unwrap_or_else(|reason| M::Receipt::from_rejection(executable, reason));
+            let mut receipt = self.execute_internal(executable);
 
             // Stop hardware resource usage tracker
             receipt.set_resource_usage(resources_tracker.end_measurement());
@@ -77,10 +74,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
         }
     }
 
-    fn execute_internal(
-        mut self,
-        executable: M::Executable,
-    ) -> Result<M::Receipt, RejectionReason> {
+    fn execute_internal(mut self, executable: impl Executable) -> M::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();
@@ -99,21 +93,30 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
             .unwrap_or(KernelBoot::babylon());
 
         // Upper Layer Initialization
-        let (mut callback, call_frame_init) =
-            M::init(&mut self.track, executable, self.init.clone())?;
+        let system_init_result = M::init(&mut self.track, &executable, self.init.clone());
+
+        let (mut system, call_frame_inits) = match system_init_result {
+            Ok(success) => success,
+            Err(receipt) => return receipt,
+        };
 
         // Kernel Initialization
         let mut kernel = Kernel::new(
             &mut self.track,
             &mut self.id_allocator,
-            &mut callback,
-            call_frame_init,
+            &mut system,
+            // TODO: Fix to take call frame inits for each intent
+            {
+                let mut call_frame_inits = call_frame_inits;
+                let first_call_frame_init = call_frame_inits.drain(..).next().unwrap();
+                first_call_frame_init
+            },
         );
 
         // Execution
         let result = || -> Result<M::ExecutionOutput, RuntimeError> {
             // Invoke transaction processor
-            let output = M::start(&mut kernel)?;
+            let output = M::start(&mut kernel, executable)?;
 
             // Sanity check call frame
             assert!(kernel.prev_frame_stack.is_empty());
@@ -130,9 +133,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
         .map_err(|e| TransactionExecutionError::RuntimeError(e));
 
         // Create receipt representing the result of a transaction
-        let receipt = M::create_receipt(callback, self.track, result);
-
-        Ok(receipt)
+        system.create_receipt(self.track, result)
     }
 }
 
@@ -429,6 +430,11 @@ where
     }
 }
 
+#[deprecated = "Deprecated as a reminder to remove this when threads are implemented"]
+fn single_intent_index() -> usize {
+    0
+}
+
 // TODO: Remove
 impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
     for Kernel<'g, M, S>
@@ -437,6 +443,11 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
 
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
+    }
+
+    fn kernel_get_intent_index(&self) -> usize {
+        // TODO - fix when threading is implemented!
+        single_intent_index()
     }
 
     fn kernel_get_current_depth(&self) -> usize {
@@ -485,6 +496,11 @@ impl<'g, M: KernelCallbackObject> KernelInternalApi for KernelReadOnly<'g, M> {
 
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
+    }
+
+    fn kernel_get_intent_index(&self) -> usize {
+        // TODO - fix when threading is implemented!
+        single_intent_index()
     }
 
     fn kernel_get_current_depth(&self) -> usize {

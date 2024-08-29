@@ -7,6 +7,7 @@ use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::transaction::CostingParameters;
+use radix_engine::updates::BabylonSettings;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::types::FromPublicKey;
 use radix_engine_tests::common::*;
@@ -77,10 +78,10 @@ fn genesis_epoch_has_correct_initial_validators() {
         },
     ];
 
-    let genesis = CustomGenesis {
+    let genesis = BabylonSettings {
         genesis_data_chunks,
         genesis_epoch: initial_epoch,
-        initial_config: CustomGenesis::default_consensus_manager_config()
+        consensus_manager_config: ConsensusManagerConfig::test_default()
             .with_max_validators(max_validators),
         initial_time_ms: 1,
         initial_current_leader: Some(0),
@@ -88,9 +89,10 @@ fn genesis_epoch_has_correct_initial_validators() {
     };
 
     // Act
-    let (_, validator_set) = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
-        .build_and_get_epoch();
+    let (_, epoch_change) = LedgerSimulatorBuilder::new()
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
+        .build_and_get_post_genesis_epoch_change();
+    let validator_set = epoch_change.unwrap().validator_set;
 
     // Assert
     assert_eq!(validator_set.validator_count(), max_validators as usize);
@@ -182,24 +184,33 @@ fn next_round_without_supervisor_auth_fails() {
     });
 }
 
+fn configured_ledger(
+    genesis_epoch: Epoch,
+    min_round_count: u64,
+    max_round_count: u64,
+) -> DefaultLedgerSimulator {
+    let genesis = BabylonSettings::test_default()
+        .with_genesis_epoch(genesis_epoch)
+        .with_consensus_manager_config(
+            ConsensusManagerConfig::test_default().with_epoch_change_condition(
+                EpochChangeCondition {
+                    min_round_count,
+                    max_round_count,
+                    target_duration_millis: 1000,
+                },
+            )
+        );
+    LedgerSimulatorBuilder::new()
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
+        .build()
+}
+
 #[test]
 fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let initial_epoch = Epoch::of(1);
     let rounds_per_epoch = 5;
-    let genesis = CustomGenesis::default(
-        initial_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
-            EpochChangeCondition {
-                min_round_count: rounds_per_epoch,
-                max_round_count: rounds_per_epoch,
-                target_duration_millis: 1000,
-            },
-        ),
-    );
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
-        .build();
+    let mut ledger = configured_ledger(initial_epoch, rounds_per_epoch, rounds_per_epoch);
 
     // Act
     let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch - 1));
@@ -216,19 +227,7 @@ fn next_round_causes_epoch_change_on_reaching_max_rounds() {
     let initial_epoch = genesis_epoch.next().unwrap();
     let rounds_per_epoch = 100;
     let epoch_duration_millis = 1000;
-    let genesis = CustomGenesis::default(
-        genesis_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
-            EpochChangeCondition {
-                min_round_count: 0,
-                max_round_count: rounds_per_epoch,
-                target_duration_millis: 1000,
-            },
-        ),
-    );
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
-        .build();
+    let mut ledger = configured_ledger(genesis_epoch, 0, rounds_per_epoch);
 
     // Act
     let receipt = ledger
@@ -245,21 +244,9 @@ fn next_round_fails_if_time_moves_backward() {
     // Arrange
     let genesis_epoch = Epoch::of(5);
     let rounds_per_epoch = 100;
-    let target_epoch_duration_millis = 1000;
     let genesis_start_time_millis: i64 = 0;
-    let genesis = CustomGenesis::default(
-        genesis_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
-            EpochChangeCondition {
-                min_round_count: 0,
-                max_round_count: rounds_per_epoch,
-                target_duration_millis: target_epoch_duration_millis,
-            },
-        ),
-    );
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
-        .build();
+
+    let mut ledger = configured_ledger(genesis_epoch, 0, rounds_per_epoch);
 
     // Act 1 - a small jump in timestamp should be fine
     let next_round = Round::of(1);
@@ -297,19 +284,7 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
     let rounds_per_epoch = 100;
     let target_epoch_duration_millis = 1000;
     let genesis_start_time_millis: i64 = 0;
-    let genesis = CustomGenesis::default(
-        genesis_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
-            EpochChangeCondition {
-                min_round_count: 0,
-                max_round_count: rounds_per_epoch,
-                target_duration_millis: target_epoch_duration_millis,
-            },
-        ),
-    );
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
-        .build();
+    let mut ledger = configured_ledger(genesis_epoch, 0, rounds_per_epoch);
 
     // Prepare for first epoch
     let current_epoch = initial_epoch;
@@ -403,19 +378,8 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
     let genesis_epoch = Epoch::of(5);
     let rounds_per_epoch = 100;
     let epoch_duration_millis = 1000;
-    let genesis = CustomGenesis::default(
-        genesis_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
-            EpochChangeCondition {
-                min_round_count: rounds_per_epoch / 2,
-                max_round_count: rounds_per_epoch,
-                target_duration_millis: epoch_duration_millis,
-            },
-        ),
-    );
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
-        .build();
+
+    let mut ledger = configured_ledger(genesis_epoch, rounds_per_epoch / 2, rounds_per_epoch);
 
     // Act
     let receipt = ledger.advance_to_round_at_timestamp(Round::of(1), epoch_duration_millis as i64);
@@ -554,16 +518,16 @@ fn register_validator_with_auth_succeeds() {
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Act
@@ -592,16 +556,16 @@ fn register_validator_without_auth_fails() {
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Act
@@ -627,16 +591,16 @@ fn unregister_validator_with_auth_succeeds() {
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Act
@@ -665,16 +629,16 @@ fn unregister_validator_without_auth_fails() {
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Act
@@ -699,16 +663,16 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
@@ -790,18 +754,17 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let genesis_epoch = Epoch::of(5);
     let initial_epoch = genesis_epoch.next().unwrap();
     let rounds_per_epoch = 2;
-    let genesis = CustomGenesis::default(
-        genesis_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
+    let genesis = BabylonSettings::test_default()
+        .with_genesis_epoch(genesis_epoch)
+        .with_consensus_manager_config(ConsensusManagerConfig::test_default().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
                 max_round_count: rounds_per_epoch,
                 target_duration_millis: 1000,
             },
-        ),
-    );
+        ));
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let (pub_key, _, account_address) = ledger.new_account(false);
     let validator_address = ledger.new_validator_with_pub_key(pub_key, account_address);
@@ -873,10 +836,10 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
             allocations,
         },
     ];
-    let genesis = CustomGenesis {
+    let genesis = BabylonSettings {
         genesis_data_chunks,
         genesis_epoch,
-        initial_config: CustomGenesis::default_consensus_manager_config()
+        consensus_manager_config: ConsensusManagerConfig::test_default()
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: 1,
                 max_round_count: 1, // deliberate, to go through rounds/epoch without gaps
@@ -890,7 +853,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
 
     // Act
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let receipt = ledger.advance_to_round(Round::of(1));
 
@@ -1001,13 +964,13 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     let min_required_reliability = dec!("0.2"); // ...which barely meets the threshold
     let validator_pub_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let validator_initial_stake = dec!("500.0");
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         validator_initial_stake,
         Decimal::ZERO,
         ComponentAddress::preallocated_account_from_public_key(&validator_pub_key),
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
                 max_round_count: rounds_per_epoch,
@@ -1019,7 +982,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
 
     // Act
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
@@ -1094,13 +1057,13 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     let min_required_reliability = dec!("0.3"); // ...which does NOT meet the threshold
     let validator_pub_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let validator_stake = dec!("500.0");
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         validator_stake,
         Decimal::ZERO,
         ComponentAddress::preallocated_account_from_public_key(&validator_pub_key),
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
                 max_round_count: rounds_per_epoch,
@@ -1112,7 +1075,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
 
     // Act
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let receipt = ledger.advance_to_round(Round::of(rounds_per_epoch));
 
@@ -1175,13 +1138,13 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     let next_epoch_fee_factor = dec!("0.25"); // for easier asserts
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         initial_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: 1,
@@ -1190,7 +1153,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
             }),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
 
@@ -1331,13 +1294,13 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let increased_fee_factor = dec!("0.25");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         initial_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_num_fee_increase_delay_epochs(fee_increase_delay_epochs)
             .with_epoch_change_condition(EpochChangeCondition {
@@ -1347,7 +1310,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
             }),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let stake_xrd_vault_id = ledger
@@ -1473,7 +1436,7 @@ fn create_custom_genesis(
     initial_stakes: Decimal,
     accounts_xrd_balance: Decimal,
     num_accounts: usize,
-) -> (CustomGenesis, Vec<(Secp256k1PublicKey, ComponentAddress)>) {
+) -> (BabylonSettings, Vec<(Secp256k1PublicKey, ComponentAddress)>) {
     let mut stake_allocations = Vec::new();
     let mut validators = Vec::new();
     let mut accounts = Vec::new();
@@ -1526,10 +1489,10 @@ fn create_custom_genesis(
         GenesisDataChunk::XrdBalances(xrd_balances),
     ];
 
-    let genesis = CustomGenesis {
+    let genesis = BabylonSettings {
         genesis_data_chunks,
         genesis_epoch: initial_epoch,
-        initial_config: CustomGenesis::default_consensus_manager_config()
+        consensus_manager_config: ConsensusManagerConfig::test_default()
             .with_max_validators(max_validators as u32)
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
@@ -1707,7 +1670,7 @@ fn registered_validator_test(
     );
     let (pub_key, account_address) = accounts[0];
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = register_and_stake_new_validator(
         register_and_stake_txn_type,
@@ -1822,7 +1785,7 @@ fn test_registering_and_staking_many_validators() {
     let mut rng = ChaCha8Rng::seed_from_u64(1234);
 
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let mut all_manifests = Vec::new();
     for (pub_key, account_address) in accounts {
@@ -1871,13 +1834,13 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account_address =
         ComponentAddress::preallocated_account_from_public_key(&validator_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key.clone(),
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
+        ConsensusManagerConfig::test_default().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
                 max_round_count: rounds_per_epoch,
@@ -1886,7 +1849,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         ),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
@@ -1926,13 +1889,13 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account_address =
         ComponentAddress::preallocated_account_from_public_key(&validator_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key.clone(),
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
+        ConsensusManagerConfig::test_default().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
                 max_round_count: rounds_per_epoch,
@@ -1941,7 +1904,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         ),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let next_validator_pub_key = Secp256k1PrivateKey::from_u64(3u64).unwrap().public_key();
@@ -1989,16 +1952,16 @@ fn cannot_claim_unstake_immediately() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
         Decimal::ZERO,
         account_with_su,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -2037,17 +2000,17 @@ fn can_claim_unstake_after_epochs() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
         Decimal::ZERO,
         account_with_su,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -2089,16 +2052,16 @@ fn owner_can_lock_stake_units() {
     let stake_units_to_lock_amount = dec!("2.2");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         total_stake_amount,
         Decimal::ZERO,
         validator_account,
         Epoch::of(5),
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -2155,17 +2118,17 @@ fn owner_can_start_unlocking_stake_units() {
     let stake_units_to_unlock_amount = dec!("0.1");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         total_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = ledger
@@ -2257,17 +2220,17 @@ fn owner_can_start_unlock_of_max_should_not_panic() {
     let stake_units_to_unlock_amount = dec!("0.1");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         total_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = ledger
@@ -2342,17 +2305,17 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     let stake_units_to_unlock_amounts = vec![dec!("0.1"), dec!("0.3"), dec!("1.2")];
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         total_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = ledger
@@ -2459,17 +2422,17 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         .unwrap();
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         total_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = ledger
@@ -2582,17 +2545,17 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     let stake_units_to_unlock_amount = dec!("0.1");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         total_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = ledger
@@ -2706,17 +2669,17 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     let stake_units_to_unlock_amount = dec!("0.1");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         total_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = ledger
@@ -2822,13 +2785,13 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
 
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
         Decimal::ZERO,
         account_with_su,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
+        ConsensusManagerConfig::test_default().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
                 max_round_count: rounds_per_epoch,
@@ -2837,7 +2800,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         ),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -2907,7 +2870,7 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
                 Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
                 Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
                 1u64,
-                CustomGenesis::default_consensus_manager_config(),
+                ConsensusManagerConfig::test_default(),
                 120000i64
             )
             .into(),
@@ -2960,7 +2923,7 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
                 validator_owner_token_address: ManifestAddressReservation(0),
                 component_address: ManifestAddressReservation(1),
                 initial_epoch: Epoch::of(1),
-                initial_config: CustomGenesis::default_consensus_manager_config(),
+                initial_config: ConsensusManagerConfig::test_default(),
                 initial_time_ms: 120000i64,
                 initial_current_leader: Some(0),
             }),
@@ -2989,13 +2952,13 @@ fn test_tips_and_fee_distribution_single_validator() {
     let emission_xrd_per_epoch = dec!("0");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         initial_stake_amount,
         Decimal::ZERO,
         validator_account,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: 1,
@@ -3004,7 +2967,7 @@ fn test_tips_and_fee_distribution_single_validator() {
             }),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Do some transaction
@@ -3054,7 +3017,7 @@ fn test_tips_and_fee_distribution_two_validators() {
     let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
     let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
     let staker_account = ComponentAddress::preallocated_account_from_public_key(&staker_key);
-    let genesis = CustomGenesis::validators_and_single_staker(
+    let genesis = BabylonSettings::validators_and_single_staker(
         vec![
             (validator1_key, initial_stake_amount1),
             (validator2_key, initial_stake_amount2),
@@ -3062,7 +3025,7 @@ fn test_tips_and_fee_distribution_two_validators() {
         staker_account,
         Decimal::ZERO,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: 1,
@@ -3071,7 +3034,7 @@ fn test_tips_and_fee_distribution_two_validators() {
             }),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Do some transaction
@@ -3150,7 +3113,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
         })
         .collect();
     let staker_key = Secp256k1PrivateKey::from_u64(10u64).unwrap().public_key();
-    let genesis = CustomGenesis::validators_and_single_staker(
+    let genesis = BabylonSettings::validators_and_single_staker(
         vec![
             (validators_keys[0], dec!("10")),
             (validators_keys[1], dec!("10")),
@@ -3160,7 +3123,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
         ComponentAddress::preallocated_account_from_public_key(&staker_key),
         Decimal::ZERO,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_total_emission_xrd_per_epoch(Decimal::zero())
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
@@ -3169,7 +3132,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
             }),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .without_kernel_trace()
         .build();
 
@@ -3253,17 +3216,17 @@ fn cannot_unstake_with_wrong_resource() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
         Decimal::ZERO,
         account_with_su,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
@@ -3294,17 +3257,17 @@ fn cannot_claim_unstake_after_epochs_with_wrong_resource() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
         Decimal::ZERO,
         account_with_su,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -3400,17 +3363,17 @@ fn can_stake_with_zero_bucket() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
         Decimal::ZERO,
         account_with_su,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
 
@@ -3438,17 +3401,17 @@ fn can_unstake_with_zero_bucket() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
         Decimal::ZERO,
         account_with_su,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -3478,17 +3441,17 @@ fn can_claim_unstake_after_epochs_with_zero_bucket() {
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::preallocated_account_from_public_key(&account_pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_pub_key,
         Decimal::from(10),
         Decimal::ZERO,
         account_with_su,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -3528,16 +3491,16 @@ fn can_lock_owner_stake_with_zero_bucket() {
     let total_stake_amount = dec!("10.5");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account = ComponentAddress::preallocated_account_from_public_key(&validator_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         validator_key,
         total_stake_amount,
         Decimal::ZERO,
         validator_account,
         Epoch::of(5),
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
     let validator_address = ledger.get_active_validator_with_key(&validator_key);
     let validator_substate = ledger.get_validator_info(validator_address);
@@ -3584,7 +3547,7 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
     let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
     let staker_key = Secp256k1PrivateKey::from_u64(7u64).unwrap().public_key();
     let staker_account = ComponentAddress::preallocated_account_from_public_key(&staker_key);
-    let genesis = CustomGenesis::validators_and_single_staker(
+    let genesis = BabylonSettings::validators_and_single_staker(
         vec![
             (validator1_key, initial_stake_amount1),
             (validator2_key, initial_stake_amount2),
@@ -3592,7 +3555,7 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
         staker_account,
         Decimal::ZERO,
         genesis_epoch,
-        CustomGenesis::default_consensus_manager_config()
+        ConsensusManagerConfig::test_default()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: 1,
@@ -3601,7 +3564,7 @@ fn test_tips_and_fee_distribution_when_one_validator_has_zero_stake() {
             }),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
         .build();
 
     // Do some transaction

@@ -1,0 +1,2090 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 1 entity
+└─ package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l across 5 partitions
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "AccessController", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDefinitionEntryPayload::V1(
+         BlueprintDefinition {
+           interface: BlueprintInterface {
+             blueprint_type: BlueprintType::Outer,
+             is_transient: false,
+             generics: [],
+             feature_set: [],
+             state: IndexedStateSchema {
+               fields: Option::Some(
+                 Tuple(
+                   PartitionDescription::Logical(
+                     PartitionOffset(
+                       0u8,
+                     ),
+                   ),
+                   [
+                     FieldSchema {
+                       field: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                           LocalTypeId::SchemaLocalIndex(
+                             0u64,
+                           ),
+                         ),
+                       ),
+                       condition: Condition::Always,
+                       transience: FieldTransience::NotTransient,
+                     },
+                   ],
+                 ),
+               ),
+               collections: [],
+               num_logical_partitions: 1u8,
+             },
+             functions: {
+               "create" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       14u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       16u64,
+                     ),
+                   ),
+                 ),
+               },
+               "create_proof" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       17u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(164u8),
+                     ),
+                   ),
+                 ),
+               },
+               "initiate_recovery_as_primary" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       18u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "initiate_recovery_as_recovery" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       19u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "quick_confirm_primary_role_recovery_proposal" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       20u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "quick_confirm_recovery_role_recovery_proposal" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       21u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "timed_confirm_recovery" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       22u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "cancel_primary_role_recovery_proposal" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       23u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "cancel_recovery_role_recovery_proposal" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       24u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "lock_primary_role" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       25u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "unlock_primary_role" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       26u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "stop_timed_recovery" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       27u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "initiate_badge_withdraw_attempt_as_primary" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       28u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "initiate_badge_withdraw_attempt_as_recovery" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       29u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "quick_confirm_primary_role_badge_withdraw_attempt" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       30u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "quick_confirm_recovery_role_badge_withdraw_attempt" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       31u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "cancel_primary_role_badge_withdraw_attempt" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       32u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "cancel_recovery_role_badge_withdraw_attempt" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       33u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "mint_recovery_badges" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       34u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "lock_recovery_fee" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       36u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "withdraw_recovery_fee" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       37u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "contribute_recovery_fee" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::SchemaLocalIndex(
+                       38u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+             },
+             events: {
+               "InitiateRecoveryEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     39u64,
+                   ),
+                 ),
+               ),
+               "RuleSetUpdateEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     41u64,
+                   ),
+                 ),
+               ),
+               "CancelRecoveryProposalEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     42u64,
+                   ),
+                 ),
+               ),
+               "LockPrimaryRoleEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     43u64,
+                   ),
+                 ),
+               ),
+               "UnlockPrimaryRoleEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     44u64,
+                   ),
+                 ),
+               ),
+               "StopTimedRecoveryEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     45u64,
+                   ),
+                 ),
+               ),
+               "InitiateBadgeWithdrawAttemptEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     46u64,
+                   ),
+                 ),
+               ),
+               "BadgeWithdrawEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     47u64,
+                   ),
+                 ),
+               ),
+               "CancelBadgeWithdrawAttemptEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     48u64,
+                   ),
+                 ),
+               ),
+               "DepositRecoveryXrdEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     49u64,
+                   ),
+                 ),
+               ),
+               "WithdrawRecoveryXrdEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c")),
+                   LocalTypeId::SchemaLocalIndex(
+                     50u64,
+                   ),
+                 ),
+               ),
+             },
+             types: {},
+           },
+           function_exports: {
+             "create" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "create",
+             },
+             "create_proof" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "create_proof",
+             },
+             "initiate_recovery_as_primary" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "initiate_recovery_as_primary",
+             },
+             "initiate_recovery_as_recovery" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "initiate_recovery_as_recovery",
+             },
+             "quick_confirm_primary_role_recovery_proposal" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "quick_confirm_primary_role_recovery_proposal",
+             },
+             "quick_confirm_recovery_role_recovery_proposal" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "quick_confirm_recovery_role_recovery_proposal",
+             },
+             "timed_confirm_recovery" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "timed_confirm_recovery",
+             },
+             "cancel_primary_role_recovery_proposal" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "cancel_primary_role_recovery_proposal",
+             },
+             "cancel_recovery_role_recovery_proposal" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "cancel_recovery_role_recovery_proposal",
+             },
+             "lock_primary_role" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "lock_primary_role",
+             },
+             "unlock_primary_role" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "unlock_primary_role",
+             },
+             "stop_timed_recovery" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "stop_timed_recovery",
+             },
+             "initiate_badge_withdraw_attempt_as_primary" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "initiate_badge_withdraw_attempt_as_primary",
+             },
+             "initiate_badge_withdraw_attempt_as_recovery" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "initiate_badge_withdraw_attempt_as_recovery",
+             },
+             "quick_confirm_primary_role_badge_withdraw_attempt" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "quick_confirm_primary_role_badge_withdraw_attempt",
+             },
+             "quick_confirm_recovery_role_badge_withdraw_attempt" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "quick_confirm_recovery_role_badge_withdraw_attempt",
+             },
+             "cancel_primary_role_badge_withdraw_attempt" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "cancel_primary_role_badge_withdraw_attempt",
+             },
+             "cancel_recovery_role_badge_withdraw_attempt" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "cancel_recovery_role_badge_withdraw_attempt",
+             },
+             "mint_recovery_badges" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "mint_recovery_badges",
+             },
+             "lock_recovery_fee" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "lock_recovery_fee",
+             },
+             "withdraw_recovery_fee" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "withdraw_recovery_fee",
+             },
+             "contribute_recovery_fee" => PackageExport {
+               code_hash: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf")),
+               export_name: "contribute_recovery_fee",
+             },
+           },
+           hook_exports: {},
+         },
+       )
+  ├─ Partition(68): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "AccessController", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionAuthConfigEntryPayload::V1(
+         AuthConfig {
+           function_auth: FunctionAuth::AllowAll,
+           method_auth: MethodAuthTemplate::StaticRoleDefinition(
+             StaticRoleDefinition {
+               roles: RoleSpecification::Normal(
+                 {
+                   RoleKey("primary") => RoleList([
+                     RoleKey("_self_"),
+                   ]),
+                   RoleKey("recovery") => RoleList([
+                     RoleKey("_self_"),
+                   ]),
+                   RoleKey("confirmation") => RoleList([
+                     RoleKey("_self_"),
+                   ]),
+                 },
+               ),
+               methods: {
+                 MethodKey("timed_confirm_recovery") => MethodAccessibility::Public,
+                 MethodKey("create_proof") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                   ]),
+                 ),
+                 MethodKey("initiate_recovery_as_primary") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                   ]),
+                 ),
+                 MethodKey("cancel_primary_role_recovery_proposal") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                   ]),
+                 ),
+                 MethodKey("initiate_badge_withdraw_attempt_as_primary") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                   ]),
+                 ),
+                 MethodKey("cancel_primary_role_badge_withdraw_attempt") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                   ]),
+                 ),
+                 MethodKey("initiate_recovery_as_recovery") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("cancel_recovery_role_recovery_proposal") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("initiate_badge_withdraw_attempt_as_recovery") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("cancel_recovery_role_badge_withdraw_attempt") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("lock_primary_role") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("unlock_primary_role") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("quick_confirm_primary_role_recovery_proposal") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recovery"),
+                     RoleKey("confirmation"),
+                   ]),
+                 ),
+                 MethodKey("quick_confirm_primary_role_badge_withdraw_attempt") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recovery"),
+                     RoleKey("confirmation"),
+                   ]),
+                 ),
+                 MethodKey("quick_confirm_recovery_role_recovery_proposal") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                     RoleKey("confirmation"),
+                   ]),
+                 ),
+                 MethodKey("quick_confirm_recovery_role_badge_withdraw_attempt") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                     RoleKey("confirmation"),
+                   ]),
+                 ),
+                 MethodKey("mint_recovery_badges") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("stop_timed_recovery") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                     RoleKey("confirmation"),
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("lock_recovery_fee") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                     RoleKey("confirmation"),
+                     RoleKey("recovery"),
+                   ]),
+                 ),
+                 MethodKey("withdraw_recovery_fee") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("primary"),
+                   ]),
+                 ),
+                 MethodKey("contribute_recovery_fee") => MethodAccessibility::Public,
+               },
+             },
+           ),
+         },
+       )
+  ├─ Partition(70): 2 changes
+    ├─ Delete: CodeHash(hex("8e3fff91d87f0b078794596423d2a6b2e5722c28b0a1af5119ac55328d539a9e"))
+    └─ Set: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf"))
+       Value: LOCKED PackageCodeOriginalCodeEntryPayload::V1(
+         PackageCodeOriginalCodeV1(hex("0000000000000017")),
+       )
+  ├─ Partition(69): 2 changes
+    ├─ Delete: CodeHash(hex("8e3fff91d87f0b078794596423d2a6b2e5722c28b0a1af5119ac55328d539a9e"))
+    └─ Set: CodeHash(hex("b65743a11ca52cda1990de4f53adedbebcf8bf5085a517662f66a6e95df636bf"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::Native,
+       )
+  └─ Partition(1): 2 changes
+    ├─ Delete: SchemaHash(c61b810003e18a1a58b178ea08bd01015ee0f31183934c638f882d35013ecaeb)
+    └─ Set: SchemaHash(c111d20eb3b1e02dc9dfc649dca83dfb9ce2fc8cd11a05c0dcd98212f7a5bc4c)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [
+                         LocalTypeId::SchemaLocalIndex(
+                           1u64,
+                         ),
+                       ],
+                       1u8 => [
+                         LocalTypeId::SchemaLocalIndex(
+                           12u64,
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(167u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         3u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(9u8),
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         4u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         5u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         8u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         9u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         11u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [],
+                     },
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [
+                         LocalTypeId::SchemaLocalIndex(
+                           6u64,
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         7u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(224u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(224u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(224u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [],
+                     },
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [
+                         LocalTypeId::SchemaLocalIndex(
+                           10u64,
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [
+                         LocalTypeId::SchemaLocalIndex(
+                           6u64,
+                         ),
+                       ],
+                       1u8 => [
+                         LocalTypeId::SchemaLocalIndex(
+                           6u64,
+                         ),
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(196u8),
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(167u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         13u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         3u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(167u8),
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(161u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         7u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         15u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(171u8),
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Custom(
+                     ScryptoCustomTypeKind::Reference,
+                   ),
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         7u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         7u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         7u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         7u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         7u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         7u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         2u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         35u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Array {
+                     element_type: LocalTypeId::WellKnown(
+                       WellKnownTypeId(194u8),
+                     ),
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(192u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(192u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(161u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         40u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         6u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         40u64,
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         6u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         40u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         40u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         40u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         40u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(192u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(192u8),
+                       ),
+                     ],
+                   },
+                 ],
+                 type_metadata: [
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerV2StateFieldPayload",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "V1",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "V2",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerSubstate",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "controlled_asset",
+                           "timed_recovery_delay_in_minutes",
+                           "recovery_badge",
+                           "state",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "Option",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "None",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Some",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "PrimaryRoleLockingState",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Unlocked",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Locked",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "PrimaryRoleRecoveryAttemptState",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "NoRecoveryAttempt",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "RecoveryAttempt",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "RecoveryProposal",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "rule_set",
+                           "timed_recovery_delay_in_minutes",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "RuleSet",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "primary_role",
+                           "recovery_role",
+                           "confirmation_role",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "PrimaryRoleBadgeWithdrawAttemptState",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "NoBadgeWithdrawAttempt",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "BadgeWithdrawAttempt",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "RecoveryRoleRecoveryAttemptState",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "NoRecoveryAttempt",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "RecoveryAttempt",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "RecoveryRoleRecoveryState",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "UntimedRecovery",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "TimedRecovery",
+                             ),
+                             child_names: Option::Some(
+                               ChildNames::NamedFields(
+                                 [
+                                   "proposal",
+                                   "timed_recovery_allowed_after",
+                                 ],
+                               ),
+                             ),
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "RecoveryRoleBadgeWithdrawAttemptState",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "NoBadgeWithdrawAttempt",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "BadgeWithdrawAttempt",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerSubstate",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "controlled_asset",
+                           "xrd_fee_vault",
+                           "timed_recovery_delay_in_minutes",
+                           "recovery_badge",
+                           "state",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "Option",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "None",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Some",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerCreateInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "controlled_asset",
+                           "rule_set",
+                           "timed_recovery_delay_in_minutes",
+                           "address_reservation",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "Option",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "None",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Some",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "GlobalAccessController",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerCreateProofInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerInitiateRecoveryAsPrimaryInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "rule_set",
+                           "timed_recovery_delay_in_minutes",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerInitiateRecoveryAsRecoveryInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "rule_set",
+                           "timed_recovery_delay_in_minutes",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "rule_set",
+                           "timed_recovery_delay_in_minutes",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerQuickConfirmRecoveryRoleRecoveryProposalInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "rule_set",
+                           "timed_recovery_delay_in_minutes",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerTimedConfirmRecoveryInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "rule_set",
+                           "timed_recovery_delay_in_minutes",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerCancelPrimaryRoleRecoveryProposalInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerCancelRecoveryRoleRecoveryProposalInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerLockPrimaryRoleInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerUnlockPrimaryRoleInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerStopTimedRecoveryInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "rule_set",
+                           "timed_recovery_delay_in_minutes",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerInitiateBadgeWithdrawAttemptAsRecoveryInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerCancelRecoveryRoleBadgeWithdrawAttemptInput",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerMintRecoveryBadgesInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "non_fungible_local_ids",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerLockRecoveryFeeInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "amount",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerWithdrawRecoveryFeeInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "amount",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccessControllerContributeRecoveryFeeInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "bucket",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "InitiateRecoveryEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "proposer",
+                           "proposal",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "Proposer",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Primary",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Recovery",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "RuleSetUpdateEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "proposer",
+                           "proposal",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "CancelRecoveryProposalEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "proposer",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "LockPrimaryRoleEvent",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "UnlockPrimaryRoleEvent",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "StopTimedRecoveryEvent",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "InitiateBadgeWithdrawAttemptEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "proposer",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "BadgeWithdrawEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "proposer",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "CancelBadgeWithdrawAttemptEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "proposer",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "DepositRecoveryXrdEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "amount",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "WithdrawRecoveryXrdEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "amount",
+                         ],
+                       ),
+                     ),
+                   },
+                 ],
+                 type_validations: [
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::Custom(
+                     ScryptoCustomTypeValidation::Reference(
+                       ReferenceValidation::IsGlobalTyped(
+                         Option::Some(
+                           PackageAddress(Reference("package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l")),
+                         ),
+                         "AccessController",
+                       ),
+                     ),
+                   ),
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                 ],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 0

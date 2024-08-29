@@ -1,9 +1,9 @@
 Name: non_fungible_resource_with_remote_type
 
 == SUMMARY HASHES ==
-These Bottlenose hashes are permitted to change only until the scenario is deployed to a permanent network, else it can cause divergence.
-State changes: 05505bff77029c76 (allowed to change if not deployed to any network)
-Events       : c1e3b3d35e25af71 (allowed to change if not deployed to any network)
+These Bottlenose hashes should NEVER change, else they will cause divergence when run historically.
+State changes: 05505bff77029c76 (should never change)
+Events       : c1e3b3d35e25af71 (should never change)
 
 == INTERESTING ADDRESSES ==
 - package_with_registered_types: package_sim1p4lm0y29mmmv8vplavve8he4swd06mvvtux6z6t9phyj63hgejdt2t

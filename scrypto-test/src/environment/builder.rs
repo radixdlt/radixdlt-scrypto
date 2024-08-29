@@ -6,7 +6,6 @@ use radix_engine::kernel::kernel::*;
 use radix_engine::kernel::substate_io::*;
 use radix_engine::kernel::substate_locks::*;
 use radix_engine::system::actor::*;
-use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::auth::*;
@@ -27,7 +26,6 @@ use radix_substate_store_impls::memory_db::*;
 use radix_substate_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
-use radix_transactions::model::*;
 
 use crate::sdk::PackageFactory;
 
@@ -50,10 +48,8 @@ where
     /// Additional references to add to the root [`CallFrame`] upon its creation.
     added_global_references: IndexSet<GlobalAddress>,
 
-    /// Specifies whether the builder should run genesis and bootstrap the environment or not.
-    bootstrap: bool,
-
-    /// The protocol updates the the user wishes to execute. This defaults to all.
+    /// The protocol updates the the user wishes to execute.
+    /// This defaults to all from genesis.
     protocol_executor: ProtocolExecutor,
 }
 
@@ -69,8 +65,7 @@ impl TestEnvironmentBuilder<InMemorySubstateDatabase> {
             database: InMemorySubstateDatabase::standard(),
             flash_database: FlashSubstateDatabase::standard(),
             added_global_references: Default::default(),
-            bootstrap: true,
-            protocol_executor: ProtocolBuilder::for_simulator().until_latest_protocol_version(),
+            protocol_executor: ProtocolBuilder::for_simulator().from_bootstrap_to_latest(),
         }
     }
 }
@@ -177,11 +172,12 @@ where
             database,
             added_global_references: self.added_global_references,
             flash_database: self.flash_database,
-            bootstrap: self.bootstrap,
             protocol_executor: self.protocol_executor,
         }
     }
 
+    /// Can be used to configure whether to bootstrap and which protocol
+    /// updates to run.
     pub fn with_protocol(
         mut self,
         executor: impl FnOnce(ProtocolBuilder) -> ProtocolExecutor,
@@ -190,34 +186,17 @@ where
         self
     }
 
-    pub fn bootstrap(mut self, value: bool) -> Self {
-        self.bootstrap = value;
-        self
-    }
-
     pub fn build(mut self) -> TestEnvironment<D> {
         // Create the various VMs we will use
         let native_vm = NativeVm::new();
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let vm_init = VmInit::new(&scrypto_vm, NoExtension);
 
-        if self.bootstrap {
-            // Run genesis against the substate store.
-            let mut bootstrapper = Bootstrapper::new(
-                NetworkDefinition::simulator(),
-                &mut self.database,
-                vm_init,
-                false,
-            );
-            bootstrapper.bootstrap_test_default().unwrap();
-        }
+        // Run bootstrap and any protocol updates against the database, if requested.
+        self.protocol_executor
+            .commit_each_protocol_update(&mut self.database);
 
         // Create the Id allocator we will be using throughout this test
         let id_allocator = IdAllocator::new(Self::DEFAULT_INTENT_HASH);
-
-        // Determine if any protocol updates need to be run against the database.
-        self.protocol_executor
-            .commit_each_protocol_update(&mut self.database);
 
         // If a flash is specified execute it.
         let database_updates = self.flash_database.database_updates();
@@ -250,10 +229,7 @@ where
                     Self::DEFAULT_INTENT_HASH,
                 );
 
-                let auth_module = AuthModule::new(AuthZoneParams {
-                    initial_proofs: Default::default(),
-                    virtual_resources: Default::default(),
-                });
+                let auth_module = AuthModule::new(AuthZoneParams::default());
 
                 let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
 
@@ -289,7 +265,7 @@ where
                         costing_module,
                         ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
                     ),
-                    executable: (),
+                    finalization: Default::default(),
                 }
             },
             |system_config, track, id_allocator| {

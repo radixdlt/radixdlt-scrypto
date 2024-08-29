@@ -35,6 +35,7 @@ impl TestTransaction {
         }
     }
 
+    #[allow(deprecated)]
     pub fn prepare(self) -> Result<PreparedTestTransaction, PrepareError> {
         let prepared_instructions = self.instructions.prepare_partial()?;
         Ok(PreparedTestTransaction {
@@ -47,26 +48,25 @@ impl TestTransaction {
 }
 
 impl PreparedTestTransaction {
-    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> Executable {
-        Executable::new(
+    pub fn get_executable(
+        &self,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> ExecutableTransactionV1 {
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             self.references.clone(),
             self.blobs.clone(),
             ExecutionContext {
-                intent_hash: TransactionIntentHash::NotToCheck {
-                    intent_hash: self.hash,
-                },
+                unique_hash: self.hash,
+                intent_hash_nullification: IntentHashNullification::None,
                 epoch_range: None,
                 payload_size: self.encoded_instructions.len()
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),
                 // For testing purpose, assume `num_of_signature_validations = num_of_initial_proofs + 1`
                 num_of_signature_validations: initial_proofs.len() + 1,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_init: AuthZoneInit::proofs(initial_proofs),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: DEFAULT_TIP_PERCENTAGE,
+                    tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

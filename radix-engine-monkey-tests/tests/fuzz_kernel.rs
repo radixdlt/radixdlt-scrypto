@@ -1,5 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{RejectionReason, RuntimeError};
+use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::call_frame::CallFrameMessage;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
@@ -7,20 +7,13 @@ use radix_engine::kernel::kernel_api::{
     KernelApi, KernelInternalApi, KernelInvocation, KernelInvokeApi, KernelNodeApi,
     KernelSubstateApi,
 };
-use radix_engine::kernel::kernel_callback_api::{
-    CallFrameReferences, CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent,
-    ExecutionReceipt, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent,
-    RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent,
-    WriteSubstateEvent,
-};
+use radix_engine::kernel::kernel_callback_api::*;
 use radix_engine::system::checkers::KernelDatabaseChecker;
 use radix_engine::track::{to_state_updates, CommitableSubstateStore, Track};
-use radix_engine::transaction::ResourcesUsage;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::CommittableSubstateDatabase;
-use radix_transactions::model::Executable;
 use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -47,18 +40,6 @@ impl CallFrameReferences for TestCallFrameData {
     fn len(&self) -> usize {
         0usize
     }
-}
-
-struct TestReceipt;
-
-impl ExecutionReceipt for TestReceipt {
-    type Executed = Executable;
-
-    fn from_rejection(_executable: Executable, _reason: RejectionReason) -> Self {
-        TestReceipt
-    }
-
-    fn set_resource_usage(&mut self, _resources_usage: ResourcesUsage) {}
 }
 
 struct TestCallbackObject;

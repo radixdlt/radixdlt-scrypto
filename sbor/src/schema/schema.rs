@@ -69,7 +69,7 @@ impl<S: CustomSchema> TypeCollectionSchema<S> {
         Self { schema, type_ids }
     }
 
-    pub fn from<T: IntoComparableSchema<Self, S>>(from: &T) -> Self {
+    pub fn from<T: IntoComparableSchema<Self, S>>(from: T) -> Self {
         from.into_schema()
     }
 

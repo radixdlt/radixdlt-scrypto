@@ -5,8 +5,7 @@ use clap::Parser;
 use flate2::read::GzDecoder;
 use flume;
 use radix_common::prelude::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::VmModules;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_substate_store_interface::interface::*;
@@ -74,12 +73,12 @@ impl TxnExecute {
         let mut database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
         let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
-            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+            let vm_modules = VmModules::default();
             let iter = rx.iter();
             for tx_payload in iter {
                 let state_updates = execute_ledger_transaction(
                     &database,
-                    &scrypto_vm,
+                    &vm_modules,
                     &network,
                     &tx_payload,
                     trace,

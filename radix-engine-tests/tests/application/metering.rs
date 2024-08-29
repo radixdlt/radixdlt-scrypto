@@ -31,20 +31,21 @@ fn run_cost_tests() {
 
 #[cfg(not(feature = "alloc"))]
 fn run_all(mode: CostingTaskMode) {
-    for protocol_version in ProtocolVersion::VARIANTS.into_iter() {
-        let folder = path_local_metering_assets(protocol_version.logical_name());
+    use radix_engine_tests::path_local_metering_receipts;
 
-        let folder = folder.as_str();
+    for protocol_version in ProtocolVersion::VARIANTS.into_iter() {
+        let base_path = path_local_metering_receipts!();
         let execute = move |run: &dyn Fn(DefaultLedgerSimulator) -> TransactionReceipt,
                             file: &'static str| {
             let ledger = LedgerSimulatorBuilder::new()
-                .with_custom_protocol(|builder| builder.until(protocol_version))
+                .with_custom_protocol(|builder| builder.from_bootstrap_to(protocol_version))
                 .without_kernel_trace()
                 .build();
             let receipt = run(ledger);
+            let relative_file_path = format!("{}/{}", protocol_version.logical_name(), file);
             mode.run(
-                folder,
-                file,
+                &base_path,
+                &relative_file_path,
                 &receipt.fee_summary,
                 &receipt.fee_details.unwrap(),
             )

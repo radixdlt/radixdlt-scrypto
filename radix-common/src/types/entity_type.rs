@@ -200,7 +200,7 @@ impl EntityType {
         matches!(self, EntityType::GlobalNonFungibleResourceManager)
     }
 
-    pub const fn is_global_virtual(&self) -> bool {
+    pub const fn is_global_preallocated(&self) -> bool {
         match self {
             EntityType::GlobalPreallocatedSecp256k1Account
             | EntityType::GlobalPreallocatedEd25519Account

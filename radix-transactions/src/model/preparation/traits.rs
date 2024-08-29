@@ -22,6 +22,7 @@ where
         Ok(self.to_payload_bytes()?.into())
     }
 
+    /// Prefer [`to_raw`] which encapsulates the bytes in a nice wrapper.
     fn to_payload_bytes(&self) -> Result<Vec<u8>, EncodeError> {
         manifest_encode(&self.as_encodable_variant())
     }
@@ -45,39 +46,72 @@ where
     }
 }
 
-pub trait TransactionPartialEncode: ManifestEncode {
-    type Prepared: TransactionFullChildPreparable;
+pub trait TransactionPartialPrepare: ManifestEncode {
+    type Prepared: TransactionPreparableFromValue;
 
     fn prepare_partial(&self) -> Result<Self::Prepared, PrepareError> {
-        Ok(Self::Prepared::prepare_as_full_body_child_from_payload(
-            &manifest_encode(self)?,
-        )?)
-    }
-}
-
-pub trait TransactionChildBodyPreparable: HasSummary + Sized {
-    /// Prepares value from a manifest decoder by reading the inner body (without the value kind)
-    fn prepare_as_inner_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
-
-    fn value_kind() -> ManifestValueKind;
-}
-
-pub trait TransactionFullChildPreparable: HasSummary + Sized {
-    /// Prepares value from a manifest decoder by reading the full SBOR value body (with the value kind)
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
-
-    /// Only exposed for testing
-    fn prepare_as_full_body_child_from_payload(payload: &[u8]) -> Result<Self, PrepareError> {
-        let mut manifest_decoder = ManifestDecoder::new(payload, MANIFEST_SBOR_V1_MAX_DEPTH);
+        let payload = manifest_encode(self).unwrap();
+        let mut manifest_decoder = ManifestDecoder::new(&payload, MANIFEST_SBOR_V1_MAX_DEPTH);
         manifest_decoder.read_and_check_payload_prefix(MANIFEST_SBOR_V1_PAYLOAD_PREFIX)?;
         let mut transaction_decoder = TransactionDecoder::new(manifest_decoder);
-        let prepared = Self::prepare_as_full_body_child(&mut transaction_decoder)?;
+        let prepared = Self::Prepared::prepare_from_value(&mut transaction_decoder)?;
         transaction_decoder.destructure().check_end()?;
         Ok(prepared)
     }
 }
 
-pub trait TransactionPayloadPreparable: HasSummary + Sized {
+/// Intended for use when the value is encoded without a prefix byte,
+/// e.g. when it's under an array.
+///
+/// Should only decode the value body, NOT read the SBOR value kind.
+///
+/// NOTE:
+/// * The hash should align with the hash from other means.
+///   Ideally this means the hash should _not_ include the header byte.
+/// * Ideally the summary should not include costing for reading the value kind byte.
+pub trait TransactionPreparableFromValueBody: HasSummary + Sized {
+    /// Prepares value from a manifest decoder by reading the inner body (without the value kind)
+    fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
+
+    fn value_kind() -> ManifestValueKind;
+}
+
+impl<T: TransactionPreparableFromValueBody> TransactionPreparableFromValue for T {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        decoder.read_and_check_value_kind(Self::value_kind())?;
+        let mut prepared = Self::prepare_from_value_body(decoder)?;
+        // Add the extra byte to the effective length
+        prepared.summary_mut().effective_length = prepared
+            .get_summary()
+            .effective_length
+            .checked_add(1)
+            .ok_or(PrepareError::LengthOverflow)?;
+        Ok(prepared)
+    }
+}
+
+/// Should read the SBOR value kind, and then the rest of the SBOR value.
+///
+/// NOTE:
+/// * In V1, the hash included the value kind byte.
+/// * In V2, the hash does _not_ include the value kind byte (which enables the
+///   hash to be the same when a Vec child as well as when full values).
+///
+/// There is a blanket implementation of `TransactionPreparableFromValue` for types
+/// which support `TransactionPreparableFromValueBody`, therefore from V2 onwards,
+/// this should not be implemented directly.
+pub trait TransactionPreparableFromValue: HasSummary + Sized {
+    /// Prepares value from a manifest decoder by reading the full SBOR value
+    /// That is - the value kind, and then the value body.
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError>;
+}
+
+/// Transaction payloads are models which are intended to be passed around in their raw form.
+///
+/// They should have a hash over a payload which starts with the bytes:
+/// * `TRANSACTION_HASHABLE_PAYLOAD_PREFIX`
+/// * `TransactionDiscriminator::X as u8`
+pub trait TransactionPayloadPreparable: Sized {
     type Raw: RawTransactionPayload;
 
     /// Prepares value from a manifest decoder by reading the full SBOR value body (with the value kind)
@@ -97,6 +131,75 @@ pub trait TransactionPayloadPreparable: HasSummary + Sized {
         Ok(prepared)
     }
 }
+
+macro_rules! transaction_payload_v2 {
+    (
+        $transaction:ident,
+        $raw:ty,
+        $prepared:ident {
+            $($field_name:ident: $field_type:ty,)*
+        },
+        $discriminator:expr,
+    ) => {
+        #[derive(Debug, Clone, Eq, PartialEq)]
+        pub struct $prepared {
+            $(pub $field_name: $field_type,)*
+            pub summary: Summary,
+        }
+
+        impl TransactionPayload for $transaction {
+            type Prepared = $prepared;
+            type Raw = $raw;
+        }
+
+        impl HasSummary for $prepared {
+            fn get_summary(&self) -> &Summary {
+                &self.summary
+            }
+
+            fn summary_mut(&mut self) -> &mut Summary {
+                &mut self.summary
+            }
+        }
+
+        impl TransactionPayloadPreparable for $prepared {
+            type Raw = $raw;
+
+            fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+                // When embedded as full payload, it's SBOR encoded as an enum
+                let (($($field_name,)*), summary) = ConcatenatedDigest::prepare_from_transaction_payload_enum(
+                    decoder,
+                    $discriminator,
+                )?;
+                Ok(Self {
+                    $($field_name,)*
+                    summary,
+                })
+            }
+        }
+
+        impl TransactionPreparableFromValueBody for $prepared {
+            fn prepare_from_value_body(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+                // When embedded as an child body, it's SBOR encoded as a struct body (without value kind)
+                let (($($field_name,)*), summary) =
+                    ConcatenatedDigest::prepare_from_transaction_child_struct_body(
+                        decoder,
+                        $discriminator,
+                    )?;
+                Ok(Self {
+                    $($field_name,)*
+                    summary,
+                })
+            }
+
+            fn value_kind() -> ManifestValueKind {
+                ManifestValueKind::Tuple
+            }
+        }
+    };
+}
+
+pub(crate) use transaction_payload_v2;
 
 pub trait RawTransactionPayload: AsRef<[u8]> + From<Vec<u8>> + Into<Vec<u8>> {
     fn as_slice(&self) -> &[u8] {

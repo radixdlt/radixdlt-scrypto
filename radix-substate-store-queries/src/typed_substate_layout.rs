@@ -34,7 +34,7 @@ use radix_engine::system::system_substates::KeyValueEntrySubstate;
 pub use radix_engine::system::type_info::*;
 use radix_engine::vm::VmBoot;
 pub use radix_engine_interface::object_modules::royalty::*;
-use radix_transactions::prelude::IntentHash;
+use radix_transactions::prelude::TransactionIntentHash;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -161,7 +161,7 @@ pub enum TypedMainModuleSubstateKey {
     MultiResourcePool(MultiResourcePoolTypedSubstateKey),
     AccountLocker(AccountLockerTypedSubstateKey),
     TransactionTrackerField(TransactionTrackerField),
-    TransactionTrackerCollectionEntry(IntentHash),
+    TransactionTrackerCollectionEntry(TransactionIntentHash),
     // Objects - Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // KVStores - Generic KV Stores
@@ -363,7 +363,7 @@ fn to_typed_object_substate_key_internal(
             } else {
                 if let Some(key) = substate_key.for_map() {
                     TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
-                        IntentHash::from_hash(scrypto_decode(key).map_err(|_| ())?),
+                        TransactionIntentHash::from_hash(scrypto_decode(key).map_err(|_| ())?),
                     )
                 } else {
                     return Err(());

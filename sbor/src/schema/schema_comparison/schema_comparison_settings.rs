@@ -41,26 +41,66 @@ impl SchemaComparisonSettings {
         }
     }
 
-    pub const fn completeness_settings(
+    pub fn with_completeness(
         mut self,
-        checks: SchemaComparisonCompletenessSettings,
+        builder: impl FnOnce(
+            SchemaComparisonCompletenessSettings,
+        ) -> SchemaComparisonCompletenessSettings,
     ) -> Self {
-        self.completeness = checks;
+        self.completeness = builder(self.completeness);
         self
     }
 
-    pub const fn structure_settings(mut self, checks: SchemaComparisonStructureSettings) -> Self {
-        self.structure = checks;
+    pub const fn set_completeness(
+        mut self,
+        settings: SchemaComparisonCompletenessSettings,
+    ) -> Self {
+        self.completeness = settings;
         self
     }
 
-    pub const fn metadata_settings(mut self, checks: SchemaComparisonMetadataSettings) -> Self {
-        self.metadata = checks;
+    pub fn with_structure(
+        mut self,
+        builder: impl FnOnce(SchemaComparisonStructureSettings) -> SchemaComparisonStructureSettings,
+    ) -> Self {
+        self.structure = builder(self.structure);
         self
     }
 
-    pub const fn validation_settings(mut self, checks: SchemaComparisonValidationSettings) -> Self {
-        self.validation = checks;
+    pub const fn set_structure(mut self, settings: SchemaComparisonStructureSettings) -> Self {
+        self.structure = settings;
+        self
+    }
+
+    pub fn with_metadata(
+        mut self,
+        builder: impl FnOnce(SchemaComparisonMetadataSettings) -> SchemaComparisonMetadataSettings,
+    ) -> Self {
+        self.metadata = builder(self.metadata);
+        self
+    }
+
+    pub const fn set_metadata(mut self, settings: SchemaComparisonMetadataSettings) -> Self {
+        self.metadata = settings;
+        self
+    }
+
+    /// An easy method for a common setting change
+    pub const fn allow_all_name_changes(mut self) -> Self {
+        self.metadata = SchemaComparisonMetadataSettings::allow_all_changes();
+        self
+    }
+
+    pub fn with_validation(
+        mut self,
+        builder: impl FnOnce(SchemaComparisonValidationSettings) -> SchemaComparisonValidationSettings,
+    ) -> Self {
+        self.validation = builder(self.validation);
+        self
+    }
+
+    pub const fn set_validation(mut self, settings: SchemaComparisonValidationSettings) -> Self {
+        self.validation = settings;
         self
     }
 }

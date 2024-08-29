@@ -1,6 +1,7 @@
 use radix_common::prelude::*;
 use radix_engine::errors::RejectionReason;
 use radix_engine::transaction::ExecutionConfig;
+use radix_engine::updates::BabylonSettings;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
 use radix_transactions::errors::TransactionValidationError;
 use scrypto_test::prelude::*;
@@ -11,18 +12,23 @@ use radix_transactions::validation::*;
 fn test_transaction_replay_protection() {
     let init_epoch = Epoch::of(1);
     let rounds_per_epoch = 5;
-    let genesis = CustomGenesis::default(
-        init_epoch,
-        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
-            EpochChangeCondition {
-                min_round_count: rounds_per_epoch,
-                max_round_count: rounds_per_epoch,
-                target_duration_millis: 1000,
-            },
-        ),
-    );
+    let genesis = BabylonSettings::test_default()
+        .with_consensus_manager_config(
+            ConsensusManagerConfig::test_default()
+                .with_epoch_change_condition(
+                    EpochChangeCondition {
+                        min_round_count: rounds_per_epoch,
+                        max_round_count: rounds_per_epoch,
+                        target_duration_millis: 1000,
+                    },
+                )
+        );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| {
+            builder
+                .configure_babylon(|_| genesis)
+                .from_bootstrap_to_latest()
+        })
         .build();
 
     // 1. Run a notarized transaction
@@ -79,10 +85,10 @@ fn test_transaction_replay_protection() {
     // ... and it had empty new contents.
     assert!(partition_resets[0].is_empty());
 
-    // 5. Run the transaction the 3rd time (with epoch range check disabled)
+    // 5. Run the transaction the 3rd time (with epoch range and intent hash checks disabled)
     // Note that in production, this won't be possible.
     let receipt = ledger.execute_transaction(
-        validated.get_executable().skip_epoch_range_check(),
+        validated.get_executable().skip_epoch_range_check().skip_intent_hash_nullification(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();
@@ -91,7 +97,7 @@ fn test_transaction_replay_protection() {
 fn get_validated(
     transaction: &NotarizedTransactionV1,
 ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
+    let validator = NotarizedTransactionValidatorV1::new(ValidationConfig::simulator());
 
     validator.validate(transaction.prepare().unwrap())
 }

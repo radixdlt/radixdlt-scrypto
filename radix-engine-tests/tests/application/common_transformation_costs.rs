@@ -359,7 +359,7 @@ fn estimate_notarizing(notary_is_signatory: bool, max: Decimal) {
     let receipt1 = ledger.preview_manifest(
         manifest.clone(),
         vec![], // signed by nobody
-        DEFAULT_TIP_PERCENTAGE,
+        0,
         PreviewFlags::default(),
     );
     receipt1.expect_commit_success();

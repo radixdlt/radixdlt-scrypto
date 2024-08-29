@@ -1,6 +1,7 @@
 use crate::resim::*;
 use radix_common::prelude::*;
 use radix_engine::updates::*;
+use radix_engine::vm::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -10,7 +11,7 @@ pub struct SimulatorEnvironment {
     // Db
     pub db: RocksdbSubstateStore,
     // VMs
-    pub scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    pub vm_modules: DefaultVmModules,
     pub network_definition: NetworkDefinition,
 }
 
@@ -20,11 +21,11 @@ impl SimulatorEnvironment {
         let db = RocksdbSubstateStore::standard(get_data_dir()?);
 
         // Create the VMs
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let vm_modules = VmModules::default();
 
         let mut env = Self {
             db,
-            scrypto_vm,
+            vm_modules,
             network_definition: NetworkDefinition::simulator(),
         };
         env.bootstrap();
@@ -42,17 +43,14 @@ impl SimulatorEnvironment {
     }
 
     fn bootstrap(&mut self) {
-        let vm = VmInit::new(&self.scrypto_vm, NoExtension);
-
-        // Bootstrap
-        Bootstrapper::new(self.network_definition.clone(), &mut self.db, vm, false)
-            .bootstrap_test_default();
-
-        // Run the protocol updates - for now, unlike the test runner, the user has no way in whether they
-        // get these protocol updates or not.
-        ProtocolBuilder::for_network(&self.network_definition)
-            .until_latest_protocol_version()
-            .commit_each_protocol_update(&mut self.db);
+        // Ideally if we stored "protocol update state" in the substate database we could actually
+        // automate discovery of where the protocol should start; and we then can simply
+        // "update to latest" here automatically.
+        if !ProtocolExecutor::is_bootstrapped(&mut self.db) {
+            ProtocolBuilder::for_network(&self.network_definition)
+                .from_bootstrap_to_latest()
+                .commit_each_protocol_update(&mut self.db)
+        }
     }
 }
 

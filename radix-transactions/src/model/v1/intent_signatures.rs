@@ -52,4 +52,5 @@ pub struct IntentSignaturesV1 {
     pub signatures: Vec<IntentSignatureV1>,
 }
 
-pub type PreparedIntentSignaturesV1 = SummarizedRawFullBody<IntentSignaturesV1>;
+#[allow(deprecated)]
+pub type PreparedIntentSignaturesV1 = SummarizedRawFullValue<IntentSignaturesV1>;

@@ -4,7 +4,6 @@ use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::Kernel;
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
-use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::system_callback::{System, SystemLockData};
 use radix_engine::system::system_modules::auth::AuthModule;
 use radix_engine::system::system_modules::costing::{
@@ -16,8 +15,9 @@ use radix_engine::system::system_modules::limits::LimitsModule;
 use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use radix_engine::system::system_modules::{EnabledModules, SystemModuleMixer};
 use radix_engine::track::Track;
+use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm, VmBoot, VmInit};
+use radix_engine::vm::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::prelude::*;
 use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -26,6 +26,7 @@ use radix_substate_store_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };
 use radix_transactions::prelude::*;
+use scrypto_test::prelude::{AuthZoneParams, UniqueTransaction};
 
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {
@@ -40,20 +41,11 @@ pub fn test_open_substate_of_invisible_package_address() {
     let mut database = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
-    let vm_init = VmInit {
-        scrypto_vm: &scrypto_vm,
-        native_vm_extension: NoExtension,
-    };
-    Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut database,
-        vm_init,
-        false,
-    );
+    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut database);
 
+    let auth_zone_inits: Vec<_> = executable.intents().iter().map(|i| i.auth_zone_init().clone()).collect();
     // Create kernel
     let mut system = System {
-        executable: (),
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
@@ -67,16 +59,18 @@ pub fn test_open_substate_of_invisible_package_address() {
             KernelTraceModule,
             TransactionRuntimeModule::new(
                 NetworkDefinition::simulator(),
-                executable.intent_hash().to_hash(),
+                *executable.unique_hash(),
             ),
-            AuthModule::new(executable.auth_zone_params().clone()),
+            AuthModule::new(AuthZoneParams {
+                auth_zone_init_for_each_intent: auth_zone_inits,
+            }),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,
                 fee_reserve: SystemLoanFeeReserve::default(),
                 fee_table: FeeTable::new(),
                 tx_payload_len: executable.payload_size(),
-                tx_num_of_signature_validations: executable.auth_zone_params().initial_proofs.len(),
+                tx_num_of_signature_validations: executable.num_of_signature_validations(),
                 config: CostingModuleConfig::babylon_genesis(),
                 cost_breakdown: None,
                 detailed_cost_breakdown: None,
@@ -84,9 +78,10 @@ pub fn test_open_substate_of_invisible_package_address() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
+        finalization: Default::default(),
     };
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&database);
-    let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
+    let mut id_allocator = IdAllocator::new(executable.unique_seed_for_id_allocator());
     let mut kernel = Kernel::new_no_refs(&mut track, &mut id_allocator, &mut system);
 
     // Lock package substate

@@ -1,6 +1,4 @@
-use super::{ExecutionContext, TransactionCostingParameters};
 use crate::internal_prelude::*;
-use crate::model::{AuthZoneParams, Executable};
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct SystemTransactionV1 {
@@ -15,8 +13,9 @@ impl TransactionPayload for SystemTransactionV1 {
     type Raw = RawSystemTransaction;
 }
 
-type PreparedPreAllocatedAddresses = SummarizedRawFullBody<Vec<PreAllocatedAddress>>;
-type PreparedHash = SummarizedHash;
+#[allow(deprecated)]
+type PreparedPreAllocatedAddresses = SummarizedRawFullValue<Vec<PreAllocatedAddress>>;
+type PreparedHash = RawHash;
 
 pub struct PreparedSystemTransactionV1 {
     pub encoded_instructions: Rc<Vec<u8>>,
@@ -27,18 +26,15 @@ pub struct PreparedSystemTransactionV1 {
     pub summary: Summary,
 }
 
+impl_has_summary!(PreparedSystemTransactionV1);
+
 impl HasSystemTransactionHash for PreparedSystemTransactionV1 {
     fn system_transaction_hash(&self) -> SystemTransactionHash {
         SystemTransactionHash::from_hash(self.summary.hash)
     }
 }
 
-impl HasSummary for PreparedSystemTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
-
+#[allow(deprecated)]
 impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
     type Raw = RawSystemTransaction;
 
@@ -61,8 +57,9 @@ impl TransactionPayloadPreparable for PreparedSystemTransactionV1 {
     }
 }
 
-impl TransactionFullChildPreparable for PreparedSystemTransactionV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+#[allow(deprecated)]
+impl TransactionPreparableFromValue for PreparedSystemTransactionV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let ((prepared_instructions, blobs, pre_allocated_addresses, hash_for_execution), summary) =
             ConcatenatedDigest::prepare_from_transaction_child_struct::<(
                 PreparedInstructionsV1,
@@ -94,25 +91,25 @@ impl SystemTransactionV1 {
     }
 }
 
+#[allow(deprecated)]
 impl PreparedSystemTransactionV1 {
-    pub fn get_executable(&self, initial_proofs: BTreeSet<NonFungibleGlobalId>) -> Executable {
-        Executable::new(
+    pub fn get_executable(
+        &self,
+        initial_proofs: BTreeSet<NonFungibleGlobalId>,
+    ) -> ExecutableTransactionV1 {
+        ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
             self.references.clone(),
             self.blobs.blobs_by_hash.clone(),
             ExecutionContext {
-                intent_hash: TransactionIntentHash::NotToCheck {
-                    intent_hash: self.hash_for_execution.hash,
-                },
+                unique_hash: self.hash_for_execution.hash,
+                intent_hash_nullification: IntentHashNullification::None,
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
-                auth_zone_params: AuthZoneParams {
-                    initial_proofs,
-                    virtual_resources: BTreeSet::new(),
-                },
+                auth_zone_init: AuthZoneInit::proofs(initial_proofs),
                 costing_parameters: TransactionCostingParameters {
-                    tip_percentage: 0,
+                    tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },

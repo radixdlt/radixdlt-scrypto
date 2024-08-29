@@ -6,6 +6,7 @@ use crate::internal_prelude::*;
 // See versioned.rs for tests and a demonstration for the calculation of hashes etc
 //=================================================================================
 
+/// This should really be `TransactionIntentV1`, but keeping the old name to avoid refactoring in node.
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct IntentV1 {
     pub header: TransactionHeaderV1,
@@ -16,7 +17,7 @@ pub struct IntentV1 {
 
 impl TransactionPayload for IntentV1 {
     type Prepared = PreparedIntentV1;
-    type Raw = RawIntent;
+    type Raw = RawTransactionIntent;
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -28,14 +29,10 @@ pub struct PreparedIntentV1 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedIntentV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedIntentV1);
 
-impl TransactionFullChildPreparable for PreparedIntentV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+impl TransactionPreparableFromValue for PreparedIntentV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as an child, it's SBOR encoded as a struct
         let ((header, instructions, blobs, attachments), summary) =
             ConcatenatedDigest::prepare_from_transaction_child_struct(
@@ -53,7 +50,7 @@ impl TransactionFullChildPreparable for PreparedIntentV1 {
 }
 
 impl TransactionPayloadPreparable for PreparedIntentV1 {
-    type Raw = RawIntent;
+    type Raw = RawTransactionIntent;
 
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         // When embedded as full payload, it's SBOR encoded as an enum
@@ -72,8 +69,8 @@ impl TransactionPayloadPreparable for PreparedIntentV1 {
     }
 }
 
-impl HasIntentHash for PreparedIntentV1 {
-    fn intent_hash(&self) -> IntentHash {
-        IntentHash::from_hash(self.summary.hash)
+impl HasTransactionIntentHash for PreparedIntentV1 {
+    fn transaction_intent_hash(&self) -> TransactionIntentHash {
+        TransactionIntentHash::from_hash(self.summary.hash)
     }
 }

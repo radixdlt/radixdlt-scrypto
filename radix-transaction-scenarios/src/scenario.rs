@@ -36,7 +36,7 @@ impl NextTransaction {
 
     pub fn validate(
         &self,
-        validator: &NotarizedTransactionValidator,
+        validator: &NotarizedTransactionValidatorV1,
     ) -> Result<ValidatedNotarizedTransactionV1, ScenarioError> {
         validator
             .validate_from_raw(&self.raw_transaction)
@@ -379,6 +379,15 @@ pub struct ScenarioMetadata {
     /// Note that setting this will change the definition of the given protocol update,
     /// so shouldn't be changed once the protocol update is locked in.
     pub testnet_run_at: Option<ProtocolVersion>,
+    /// This setting should be `true` for new scenarios, because new scenarios should
+    /// not use pre-allocated account addresses which may already exist on-ledger,
+    /// which could break scenario execution.
+    ///
+    /// A test validates adherence to this:
+    /// * If `!safe_to_run_on_used_ledger` then `testnet_run_at` is not past genesis.
+    /// * If `safe_to_run_on_used_ledger` then pre-allocated account/identity addresses
+    ///   do not appear in well-known addresses.
+    pub safe_to_run_on_used_ledger: bool,
 }
 
 pub trait ScenarioCreator: Sized + 'static + Send + Sync {

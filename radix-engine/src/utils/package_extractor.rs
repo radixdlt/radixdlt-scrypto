@@ -39,9 +39,9 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     // Execute with empty state (with default cost unit limit)
     let wasm_engine = DefaultWasmEngine::default();
     let fee_reserve = SystemLoanFeeReserve::new(
-        &CostingParameters::babylon_genesis(),
-        &TransactionCostingParameters {
-            tip_percentage: 0,
+        CostingParameters::babylon_genesis(),
+        TransactionCostingParameters {
+            tip: Default::default(),
             free_credit_in_xrd: Decimal::try_from(PREVIEW_CREDIT_IN_XRD).unwrap(),
             abort_when_loan_repaid: false,
         },

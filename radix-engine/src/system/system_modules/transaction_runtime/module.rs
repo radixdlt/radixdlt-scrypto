@@ -1,7 +1,6 @@
 use crate::internal_prelude::*;
 use crate::system::module::*;
 use crate::system::system_callback::*;
-use crate::system::system_callback_api::SystemCallbackObject;
 use radix_common::crypto::Hash;
 use radix_engine_interface::api::actor_api::EventFlags;
 use radix_engine_interface::api::ModuleId;
@@ -106,8 +105,9 @@ impl TransactionRuntimeModule {
 
 impl InitSystemModule for TransactionRuntimeModule {}
 impl ResolvableSystemModule for TransactionRuntimeModule {
-    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
-        &mut system.modules.transaction_runtime
+    #[inline]
+    fn resolve_from_system(system: &mut impl HasModules) -> &mut Self {
+        &mut system.modules_mut().transaction_runtime
     }
 }
 impl PrivilegedSystemModule for TransactionRuntimeModule {}

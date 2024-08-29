@@ -4,7 +4,6 @@ use crate::kernel::kernel_callback_api::*;
 use crate::system::actor::Actor;
 use crate::system::module::*;
 use crate::system::system_callback::*;
-use crate::system::system_callback_api::*;
 use crate::track::interface::IOAccess;
 use crate::transaction::LimitParameters;
 use crate::{errors::RuntimeError, errors::SystemModuleError};
@@ -181,8 +180,9 @@ impl LimitsModule {
 
 impl InitSystemModule for LimitsModule {}
 impl ResolvableSystemModule for LimitsModule {
-    fn resolve_from_system<V: SystemCallbackObject, E>(system: &mut System<V, E>) -> &mut Self {
-        &mut system.modules.limits
+    #[inline]
+    fn resolve_from_system(system: &mut impl HasModules) -> &mut Self {
+        &mut system.modules_mut().limits
     }
 }
 impl PrivilegedSystemModule for LimitsModule {}

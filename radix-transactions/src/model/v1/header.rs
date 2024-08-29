@@ -2,8 +2,6 @@ use crate::internal_prelude::*;
 use radix_common::types::Epoch;
 use radix_common::{crypto::PublicKey, ManifestSbor};
 
-use crate::model::SummarizedRawFullBody;
-
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
 pub struct TransactionHeaderV1 {
     pub network_id: u8,
@@ -15,4 +13,5 @@ pub struct TransactionHeaderV1 {
     pub tip_percentage: u16,
 }
 
-pub type PreparedTransactionHeaderV1 = SummarizedRawFullBody<TransactionHeaderV1>;
+#[allow(deprecated)]
+pub type PreparedTransactionHeaderV1 = SummarizedRawFullValue<TransactionHeaderV1>;

@@ -1,0 +1,20 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6")
+    "ingest_data_chunk"
+    Enum<3u8>(
+        Array<Address>(
+            Address("account_sim168fghy4kapzfnwpmq7t7753425lwklk65r82ys7pz2xzleehgpzql2")
+        ),
+        Array<Tuple>(
+            Tuple(
+                Address("resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w"),
+                Array<Tuple>(
+                    Tuple(
+                        0u32,
+                        Decimal("10")
+                    )
+                )
+            )
+        )
+    )
+;

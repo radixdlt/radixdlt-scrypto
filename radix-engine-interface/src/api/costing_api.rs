@@ -31,7 +31,7 @@ pub trait SystemCostingApi<E> {
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, E>;
 
     /// Retrieve the tip percentage of the transaction
-    fn tip_percentage(&mut self) -> Result<u32, E>;
+    fn tip_percentage_truncated(&mut self) -> Result<u32, E>;
 
     /// Retrieve the current fee balance in XRD
     fn fee_balance(&mut self) -> Result<Decimal, E>;

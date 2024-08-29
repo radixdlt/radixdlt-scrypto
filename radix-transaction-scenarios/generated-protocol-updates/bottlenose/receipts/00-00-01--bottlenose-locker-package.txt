@@ -1,0 +1,1106 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 0
+
+STATE UPDATES: 1 entity
+└─ package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6 across 10 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")),
+               blueprint_name: "Package",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::None,
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Global {
+             modules: {
+               AttachedModuleId::Metadata => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+               AttachedModuleId::RoleAssignment => BlueprintVersion {
+                 major: 1u32,
+                 minor: 0u32,
+                 patch: 0u32,
+               },
+             },
+           },
+         },
+       )
+  ├─ Partition(1): 1 change
+    └─ Set: SchemaHash(caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8)
+       Value: KeyValueEntrySubstate::V1(
+         KeyValueEntrySubstateV1 {
+           value: Option::Some(
+             PackageSchemaEntryPayload::V1(
+               SchemaV1 {
+                 type_kinds: [
+                   TypeKind::Custom(
+                     ScryptoCustomTypeKind::Reference,
+                   ),
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(160u8),
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(230u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(224u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(224u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(224u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(224u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         3u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(171u8),
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Custom(
+                     ScryptoCustomTypeKind::Reference,
+                   ),
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(1u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         4u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(161u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(161u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(1u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         9u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(161u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(1u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Map {
+                     key_type: LocalTypeId::SchemaLocalIndex(
+                       0u64,
+                     ),
+                     value_type: LocalTypeId::SchemaLocalIndex(
+                       10u64,
+                     ),
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(192u8),
+                         ),
+                       ],
+                       1u8 => [
+                         LocalTypeId::SchemaLocalIndex(
+                           11u64,
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Array {
+                     element_type: LocalTypeId::WellKnown(
+                       WellKnownTypeId(194u8),
+                     ),
+                   },
+                   TypeKind::Enum {
+                     variants: {
+                       0u8 => [],
+                       1u8 => [
+                         LocalTypeId::WellKnown(
+                           WellKnownTypeId(161u8),
+                         ),
+                       ],
+                     },
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(192u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         11u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(192u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         11u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(9u8),
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         10u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         10u64,
+                       ),
+                     ],
+                   },
+                   TypeKind::Tuple {
+                     field_types: [
+                       LocalTypeId::SchemaLocalIndex(
+                         0u64,
+                       ),
+                       LocalTypeId::WellKnown(
+                         WellKnownTypeId(133u8),
+                       ),
+                       LocalTypeId::SchemaLocalIndex(
+                         10u64,
+                       ),
+                     ],
+                   },
+                 ],
+                 type_metadata: [
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "GlobalAccount",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerAccountClaimsEntryPayload",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "V1",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerInstantiateInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "owner_role",
+                           "storer_role",
+                           "storer_updater_role",
+                           "recoverer_role",
+                           "recoverer_updater_role",
+                           "address_reservation",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "Option",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "None",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Some",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "GlobalAccountLocker",
+                     ),
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerInstantiateSimpleInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "allow_recover",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerStoreInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "bucket",
+                           "try_direct_send",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerAirdropInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimants",
+                           "bucket",
+                           "try_direct_send",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "ResourceSpecifier",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Fungible",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "NonFungible",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::None,
+                     child_names: Option::None,
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "Option",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::EnumVariants(
+                         {
+                           0u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "None",
+                             ),
+                             child_names: Option::None,
+                           },
+                           1u8 => TypeMetadata {
+                             type_name: Option::Some(
+                               "Some",
+                             ),
+                             child_names: Option::None,
+                           },
+                         },
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerRecoverInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                           "amount",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerRecoverNonFungiblesInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                           "ids",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerClaimInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                           "amount",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerClaimNonFungiblesInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                           "ids",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerGetAmountInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "AccountLockerGetNonFungibleLocalIdsInput",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                           "limit",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "StoreEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                           "resources",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "RecoverEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                           "resources",
+                         ],
+                       ),
+                     ),
+                   },
+                   TypeMetadata {
+                     type_name: Option::Some(
+                       "ClaimEvent",
+                     ),
+                     child_names: Option::Some(
+                       ChildNames::NamedFields(
+                         [
+                           "claimant",
+                           "resource_address",
+                           "resources",
+                         ],
+                       ),
+                     ),
+                   },
+                 ],
+                 type_validations: [
+                   TypeValidation::Custom(
+                     ScryptoCustomTypeValidation::Reference(
+                       ReferenceValidation::IsGlobalTyped(
+                         Option::Some(
+                           PackageAddress(Reference("package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6")),
+                         ),
+                         "Account",
+                       ),
+                     ),
+                   ),
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::Custom(
+                     ScryptoCustomTypeValidation::Reference(
+                       ReferenceValidation::IsGlobalTyped(
+                         Option::Some(
+                           PackageAddress(Reference("package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6")),
+                         ),
+                         "AccountLocker",
+                       ),
+                     ),
+                   ),
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                   TypeValidation::None,
+                 ],
+               },
+             ),
+           ),
+           lock_status: LockStatus::Locked,
+         },
+       )
+  ├─ Partition(2): 2 changes
+    ├─ Set: "name"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "Locker Package",
+         ),
+       )
+    └─ Set: "description"
+       Value: LOCKED MetadataEntryEntryPayload::V1(
+         GenericMetadataValue::String(
+           "A native package that defines the logic for dApp-owned lockers to send resources to specified account addresses.",
+         ),
+       )
+  ├─ Partition(5): 1 change
+    └─ Set: Field(0)
+       Value: LOCKED RoleAssignmentOwnerFieldPayload::V1(
+         OwnerRoleSubstate {
+           rule: AccessRule::DenyAll,
+           updater: OwnerRoleUpdater::None,
+         },
+       )
+  ├─ Partition(65): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "AccountLocker", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDefinitionEntryPayload::V1(
+         BlueprintDefinition {
+           interface: BlueprintInterface {
+             blueprint_type: BlueprintType::Outer,
+             is_transient: false,
+             generics: [],
+             feature_set: [],
+             state: IndexedStateSchema {
+               fields: Option::None,
+               collections: [
+                 Tuple(
+                   PartitionDescription::Logical(
+                     PartitionOffset(
+                       0u8,
+                     ),
+                   ),
+                   BlueprintCollectionSchema::KeyValueStore(
+                     BlueprintKeyValueSchema {
+                       key: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                           LocalTypeId::SchemaLocalIndex(
+                             0u64,
+                           ),
+                         ),
+                       ),
+                       value: BlueprintPayloadDef::Static(
+                         ScopedTypeId(
+                           SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                           LocalTypeId::SchemaLocalIndex(
+                             1u64,
+                           ),
+                         ),
+                       ),
+                       allow_ownership: true,
+                     },
+                   ),
+                 ),
+               ],
+               num_logical_partitions: 1u8,
+             },
+             functions: {
+               "instantiate" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       2u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       4u64,
+                     ),
+                   ),
+                 ),
+               },
+               "instantiate_simple" => FunctionSchema {
+                 receiver: Option::None,
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       5u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       6u64,
+                     ),
+                   ),
+                 ),
+               },
+               "store" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       7u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(66u8),
+                     ),
+                   ),
+                 ),
+               },
+               "airdrop" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       8u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       12u64,
+                     ),
+                   ),
+                 ),
+               },
+               "recover" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       13u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "recover_non_fungibles" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       14u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "claim" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       15u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "claim_non_fungibles" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRefMut,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       16u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(161u8),
+                     ),
+                   ),
+                 ),
+               },
+               "get_amount" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       17u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::WellKnown(
+                       WellKnownTypeId(192u8),
+                     ),
+                   ),
+                 ),
+               },
+               "get_non_fungible_local_ids" => FunctionSchema {
+                 receiver: Option::Some(
+                   ReceiverInfo {
+                     receiver: Receiver::SelfRef,
+                     ref_types: RefTypes {
+                       bits: 1u32,
+                     },
+                   },
+                 ),
+                 input: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       18u64,
+                     ),
+                   ),
+                 ),
+                 output: BlueprintPayloadDef::Static(
+                   ScopedTypeId(
+                     SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                     LocalTypeId::SchemaLocalIndex(
+                       11u64,
+                     ),
+                   ),
+                 ),
+               },
+             },
+             events: {
+               "StoreEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                   LocalTypeId::SchemaLocalIndex(
+                     19u64,
+                   ),
+                 ),
+               ),
+               "RecoverEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                   LocalTypeId::SchemaLocalIndex(
+                     20u64,
+                   ),
+                 ),
+               ),
+               "ClaimEvent" => BlueprintPayloadDef::Static(
+                 ScopedTypeId(
+                   SchemaHash(hex("caf5a7b927b93cca065e8e834bcb66bb408ce4f03a54198af766e66e404142e8")),
+                   LocalTypeId::SchemaLocalIndex(
+                     21u64,
+                   ),
+                 ),
+               ),
+             },
+             types: {},
+           },
+           function_exports: {
+             "instantiate" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "instantiate_account_locker",
+             },
+             "instantiate_simple" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "instantiate_simple_account_locker",
+             },
+             "store" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "store_account_locker",
+             },
+             "airdrop" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "airdrop_account_locker",
+             },
+             "recover" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "recover_account_locker",
+             },
+             "recover_non_fungibles" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "recover_non_fungibles_account_locker",
+             },
+             "claim" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "claim_account_locker",
+             },
+             "claim_non_fungibles" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "claim_non_fungibles_account_locker",
+             },
+             "get_amount" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "get_amount_account_locker",
+             },
+             "get_non_fungible_local_ids" => PackageExport {
+               code_hash: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823")),
+               export_name: "get_non_fungible_local_ids_account_locker",
+             },
+           },
+           hook_exports: {},
+         },
+       )
+  ├─ Partition(66): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "AccountLocker", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionDependenciesEntryPayload::V1(
+         BlueprintDependencies([]),
+       )
+  ├─ Partition(67): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "AccountLocker", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionRoyaltyConfigEntryPayload::V1(
+         PackageRoyaltyConfig::Disabled,
+       )
+  ├─ Partition(68): 1 change
+    └─ Set: BlueprintVersionKey { blueprint: "AccountLocker", version: BlueprintVersion { major: 1u32, minor: 0u32, patch: 0u32 } }
+       Value: LOCKED PackageBlueprintVersionAuthConfigEntryPayload::V1(
+         AuthConfig {
+           function_auth: FunctionAuth::AllowAll,
+           method_auth: MethodAuthTemplate::StaticRoleDefinition(
+             StaticRoleDefinition {
+               roles: RoleSpecification::Normal(
+                 {
+                   RoleKey("storer") => RoleList([
+                     RoleKey("storer_updater"),
+                   ]),
+                   RoleKey("storer_updater") => RoleList([
+                     RoleKey("storer_updater"),
+                   ]),
+                   RoleKey("recoverer") => RoleList([
+                     RoleKey("recoverer_updater"),
+                   ]),
+                   RoleKey("recoverer_updater") => RoleList([
+                     RoleKey("recoverer_updater"),
+                   ]),
+                 },
+               ),
+               methods: {
+                 MethodKey("store") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("storer"),
+                   ]),
+                 ),
+                 MethodKey("airdrop") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("storer"),
+                   ]),
+                 ),
+                 MethodKey("recover") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recoverer"),
+                   ]),
+                 ),
+                 MethodKey("recover_non_fungibles") => MethodAccessibility::RoleProtected(
+                   RoleList([
+                     RoleKey("recoverer"),
+                   ]),
+                 ),
+                 MethodKey("claim") => MethodAccessibility::Public,
+                 MethodKey("claim_non_fungibles") => MethodAccessibility::Public,
+                 MethodKey("get_amount") => MethodAccessibility::Public,
+                 MethodKey("get_non_fungible_local_ids") => MethodAccessibility::Public,
+               },
+             },
+           ),
+         },
+       )
+  ├─ Partition(69): 1 change
+    └─ Set: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823"))
+       Value: LOCKED PackageCodeVmTypeEntryPayload::V1(
+         PackageCodeVmTypeV1::Native,
+       )
+  └─ Partition(70): 1 change
+    └─ Set: CodeHash(hex("68e84cee2cbf2815db10a87adfbb6abb699c7b536d4e3f2428ae137559e56823"))
+       Value: LOCKED PackageCodeOriginalCodeEntryPayload::V1(
+         PackageCodeOriginalCodeV1(hex("0000000000000013")),
+       )
+
+OUTPUTS: 0
+
+BALANCE CHANGES: 0
+
+NEW ENTITIES: 1
+└─ Package: package_sim1pkgxxxxxxxxxlckerxxxxxxxxxx000208064247xxxxxxxxxpnfcn6

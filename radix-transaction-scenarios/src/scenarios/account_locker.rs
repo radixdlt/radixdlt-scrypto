@@ -51,6 +51,7 @@ impl ScenarioCreator for AccountLockerScenarioCreator {
         logical_name: "account_locker",
         protocol_min_requirement: ProtocolVersion::Bottlenose,
         testnet_run_at: Some(ProtocolVersion::Bottlenose),
+        safe_to_run_on_used_ledger: true,
     };
 
     fn create_with_config_and_state(

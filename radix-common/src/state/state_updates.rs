@@ -74,6 +74,15 @@ impl NodeStateUpdates {
         }
     }
 
+    pub fn of_partition_ref(
+        &self,
+        partition_num: PartitionNumber,
+    ) -> Option<&PartitionStateUpdates> {
+        match self {
+            NodeStateUpdates::Delta { by_partition } => by_partition.get(&partition_num),
+        }
+    }
+
     pub fn without_empty_entries(&self) -> Option<Self> {
         match self {
             NodeStateUpdates::Delta { by_partition } => {
@@ -123,6 +132,17 @@ impl PartitionStateUpdates {
         *self = PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
             new_substate_values: index_map_new(),
         });
+    }
+
+    pub fn contains_set_update_for(&self, key: &SubstateKey) -> bool {
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => {
+                matches!(by_substate.get(key), Some(DatabaseUpdate::Set(_)))
+            }
+            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
+                new_substate_values,
+            }) => new_substate_values.contains_key(key),
+        }
     }
 
     /// Applies the given updates on top of the current updates to the partition.

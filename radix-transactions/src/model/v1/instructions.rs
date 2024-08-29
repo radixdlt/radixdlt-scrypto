@@ -5,9 +5,10 @@ use crate::internal_prelude::*;
 #[sbor(transparent)]
 pub struct InstructionsV1(pub Rc<Vec<InstructionV1>>);
 
-impl TransactionPartialEncode for InstructionsV1 {
+impl TransactionPartialPrepare for InstructionsV1 {
     type Prepared = PreparedInstructionsV1;
 }
 
 // We summarize all the transactions as a single unit (not transaction-by-transaction)
-pub type PreparedInstructionsV1 = SummarizedRawFullBodyWithReferences<InstructionsV1>;
+#[allow(deprecated)]
+pub type PreparedInstructionsV1 = SummarizedRawFullValueWithReferences<InstructionsV1>;

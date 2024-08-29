@@ -10,8 +10,7 @@ use crate::system::system_substate_schemas::*;
 use crate::transaction::SystemStructure;
 use colored::*;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
-use radix_transactions::model::Executable;
-use radix_transactions::prelude::TransactionCostingParametersReceipt;
+use radix_transactions::prelude::TransactionCostingParametersReceiptV1;
 use sbor::representations::*;
 
 define_single_versioned! {
@@ -32,7 +31,7 @@ define_single_versioned! {
         //   This will allow us to add new receipt versions, but ensuring they can still map to the preview model.
         // * Change the API to return some kind of explicit extensible preview DTO.
         #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(fixed("FILE:receipt_schema_bottlenose.txt"))]
+        #[sbor_assert(fixed("FILE:receipt_schema_bottlenose.txt"), settings(allow_name_changes))]
     ],
 }
 
@@ -41,7 +40,7 @@ pub struct TransactionReceiptV1 {
     /// Costing parameters
     pub costing_parameters: CostingParameters,
     /// Transaction costing parameters
-    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
+    pub transaction_costing_parameters: TransactionCostingParametersReceiptV1,
     /// Transaction fee summary
     pub fee_summary: TransactionFeeSummary,
     /// Transaction fee detail
@@ -210,21 +209,7 @@ impl TransactionReceiptV1 {
     }
 }
 
-impl ExecutionReceipt for TransactionReceipt {
-    type Executed = Executable;
-
-    fn from_rejection(executable: Executable, reason: RejectionReason) -> Self {
-        TransactionReceipt {
-            costing_parameters: CostingParameters::babylon_genesis(),
-            transaction_costing_parameters: executable.costing_parameters().clone().into(),
-            fee_summary: Default::default(),
-            fee_details: Default::default(),
-            result: TransactionResult::Reject(RejectResult { reason }),
-            resources_usage: Default::default(),
-            debug_information: Default::default(),
-        }
-    }
-
+impl ExecutionReceipt for TransactionReceiptV1 {
     fn set_resource_usage(&mut self, resources_usage: ResourcesUsage) {
         self.resources_usage = Some(resources_usage);
     }
@@ -567,6 +552,12 @@ impl TransactionReceipt {
             resources_usage: Default::default(),
             debug_information: Default::default(),
         }
+    }
+
+    pub fn empty_commit_success() -> Self {
+        Self::empty_with_commit(CommitResult::empty_with_outcome(
+            TransactionOutcome::Success(vec![]),
+        ))
     }
 
     pub fn is_commit_success(&self) -> bool {
@@ -945,7 +936,7 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
         self
     }
 
-    pub fn schema_lookup_from_db(mut self, db: &'a impl SubstateDatabase) -> Self {
+    pub fn schema_lookup_from_db(mut self, db: &'a dyn SubstateDatabase) -> Self {
         self.0.system_database_reader = Some(SystemDatabaseReader::new(db));
         self
     }
@@ -1678,4 +1669,37 @@ pub enum FlamegraphError {
     IOError(std::io::Error),
     CreationError,
     DetailedCostBreakdownNotAvailable,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // This is an effective copy of the V1 contents of the local transaction execution store in the node.
+    // This needs to be decodable!
+    // By all means introduce _new versions_ of the included types, with conversions between them,
+    // and we can introduce a higher LocalTransactionExecutionVX in the node.
+    // But this schema can't change, else we won't be able to decode existing executions in the node.
+    // NOTE: This is just copied here to catch issues / changes earlier; an identical test exists in the node.
+    #[derive(ScryptoSbor, ScryptoSborAssertion)]
+    #[sbor_assert(
+        backwards_compatible(
+            bottlenose = "FILE:node_local_transaction_execution_v1_bottlenose.txt"
+        ),
+        settings(allow_name_changes)
+    )]
+    struct LocalTransactionExecutionV1 {
+        outcome: Result<(), RuntimeError>,
+        fee_summary: TransactionFeeSummary,
+        fee_source: FeeSource,
+        fee_destination: FeeDestination,
+        engine_costing_parameters: CostingParameters,
+        transaction_costing_parameters: TransactionCostingParametersReceiptV1,
+        application_logs: Vec<(Level, String)>,
+        state_update_summary: StateUpdateSummary,
+        global_balance_summary: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
+        substates_system_structure: Vec<SubstateSystemStructure>,
+        events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
+        next_epoch: Option<EpochChangeEvent>,
+    }
 }

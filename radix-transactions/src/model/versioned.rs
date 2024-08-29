@@ -18,6 +18,12 @@ pub enum TransactionDiscriminator {
     V1RoundUpdate = V1_ROUND_UPDATE_TRANSACTION,
     V1Ledger = V1_LEDGER_TRANSACTION,
     V1Flash = V1_FLASH_TRANSACTION,
+    V2TransactionIntent = V2_TRANSACTION_INTENT,
+    V2SignedTransactionIntent = V2_SIGNED_TRANSACTION_INTENT,
+    V2Subintent = V2_SUBINTENT,
+    V2Notarized = V2_NOTARIZED_TRANSACTION,
+    V2PartialTransaction = V2_PARTIAL_TRANSACTION,
+    V2SignedPartialTransaction = V2_SIGNED_PARTIAL_TRANSACTION,
 }
 
 const V1_INTENT: u8 = 1;
@@ -29,6 +35,12 @@ const V1_ROUND_UPDATE_TRANSACTION: u8 = 5;
 //       but they have never been serialized, so 6 is free for re-use
 const V1_LEDGER_TRANSACTION: u8 = 7;
 const V1_FLASH_TRANSACTION: u8 = 8;
+const V2_TRANSACTION_INTENT: u8 = 9;
+const V2_SIGNED_TRANSACTION_INTENT: u8 = 10;
+const V2_SUBINTENT: u8 = 11;
+const V2_NOTARIZED_TRANSACTION: u8 = 12;
+const V2_PARTIAL_TRANSACTION: u8 = 13;
+const V2_SIGNED_PARTIAL_TRANSACTION: u8 = 14;
 
 /// An enum of a variety of different transaction payload types.
 ///
@@ -48,15 +60,16 @@ const V1_FLASH_TRANSACTION: u8 = 8;
     // we use `backwards_compatible` here. But most individual transaction models
     // should themselves be `fixed`, e.g. NotarizedTransactionV1
     backwards_compatible(
-        bottlenose = "FILE:any_transaction_payload_schema.txt"
+        bottlenose = "FILE:any_transaction_payload_schema_bottlenose.txt",
+        cuttlefish = "FILE:any_transaction_payload_schema_cuttlefish.txt"
     ),
     settings(allow_name_changes)
 )]
 pub enum VersionedTransactionPayload {
     #[sbor(flatten, discriminator(V1_INTENT))]
-    IntentV1(IntentV1),
+    TransactionIntentV1(IntentV1),
     #[sbor(flatten, discriminator(V1_SIGNED_INTENT))]
-    SignedIntentV1(SignedIntentV1),
+    SignedTransactionIntentV1(SignedIntentV1),
     #[sbor(flatten, discriminator(V1_NOTARIZED_TRANSACTION))]
     NotarizedTransactionV1(NotarizedTransactionV1),
     #[sbor(flatten, discriminator(V1_SYSTEM_TRANSACTION))]
@@ -67,6 +80,18 @@ pub enum VersionedTransactionPayload {
     LedgerTransaction(LedgerTransaction),
     #[sbor(flatten, discriminator(V1_FLASH_TRANSACTION))]
     FlashTransactionV1(FlashTransactionV1),
+    #[sbor(flatten, discriminator(V2_TRANSACTION_INTENT))]
+    TransactionIntentV2(TransactionIntentV2),
+    #[sbor(flatten, discriminator(V2_SIGNED_TRANSACTION_INTENT))]
+    SignedTransactionIntentV2(SignedTransactionIntentV2),
+    #[sbor(flatten, discriminator(V2_SUBINTENT))]
+    SubintentV2(SubintentV2),
+    #[sbor(flatten, discriminator(V2_NOTARIZED_TRANSACTION))]
+    NotarizedTransactionV2(NotarizedTransactionV2),
+    #[sbor(flatten, discriminator(V2_PARTIAL_TRANSACTION))]
+    PartialTransactionV2(PartialTransactionV2),
+    #[sbor(flatten, discriminator(V2_SIGNED_PARTIAL_TRANSACTION))]
+    SignedPartialTransactionV2(SignedPartialTransactionV2),
 }
 
 #[cfg(test)]
@@ -119,10 +144,7 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 = PreparedBlobsV1::prepare_as_full_body_child_from_payload(
-            &manifest_encode(&blobs_v1).unwrap(),
-        )
-        .unwrap();
+        let prepared_blobs_v1 = blobs_v1.prepare_partial().unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let message_v1 = MessageV1::default();
@@ -134,7 +156,7 @@ mod tests {
             blobs: blobs_v1.clone(),
             message: message_v1.clone(),
         };
-        let expected_intent_hash = IntentHash::from_hash(hash(
+        let expected_intent_hash = TransactionIntentHash::from_hash(hash(
             [
                 [
                     TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
@@ -160,14 +182,17 @@ mod tests {
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
         assert_eq!(
             intent_as_versioned,
-            VersionedTransactionPayload::IntentV1(intent_v1.clone())
+            VersionedTransactionPayload::TransactionIntentV1(intent_v1.clone())
         );
 
         let prepared_intent =
             PreparedIntentV1::prepare_from_payload(&intent_payload_bytes).unwrap();
-        assert_eq!(expected_intent_hash, prepared_intent.intent_hash());
+        assert_eq!(
+            expected_intent_hash,
+            prepared_intent.transaction_intent_hash()
+        );
 
-        let intent_hash = prepared_intent.intent_hash();
+        let intent_hash = prepared_intent.transaction_intent_hash();
 
         assert_eq!(
             intent_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
@@ -194,7 +219,7 @@ mod tests {
             intent: intent_v1.clone(),
             intent_signatures: intent_signatures_v1.clone(),
         };
-        let expected_signed_intent_hash = SignedIntentHash::from_hash(hash(
+        let expected_signed_intent_hash = SignedTransactionIntentHash::from_hash(hash(
             [
                 [
                     TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
@@ -214,16 +239,19 @@ mod tests {
             manifest_decode::<VersionedTransactionPayload>(&signed_intent_payload_bytes).unwrap();
         assert_eq!(
             signed_intent_as_versioned,
-            VersionedTransactionPayload::SignedIntentV1(signed_intent_v1.clone())
+            VersionedTransactionPayload::SignedTransactionIntentV1(signed_intent_v1.clone())
         );
 
         let prepared_signed_intent =
             PreparedSignedIntentV1::prepare_from_payload(&signed_intent_payload_bytes).unwrap();
         assert_eq!(
             expected_signed_intent_hash,
-            prepared_signed_intent.signed_intent_hash()
+            prepared_signed_intent.signed_transaction_intent_hash()
         );
-        assert_eq!(intent_hash, prepared_signed_intent.intent_hash());
+        assert_eq!(
+            intent_hash,
+            prepared_signed_intent.transaction_intent_hash()
+        );
 
         let signed_intent_hash = expected_signed_intent_hash;
 
@@ -285,9 +313,12 @@ mod tests {
         let notarized_transaction_hash = expected_notarized_transaction_hash;
         assert_eq!(
             signed_intent_hash,
-            prepared_notarized_transaction.signed_intent_hash()
+            prepared_notarized_transaction.signed_transaction_intent_hash()
         );
-        assert_eq!(intent_hash, prepared_notarized_transaction.intent_hash());
+        assert_eq!(
+            intent_hash,
+            prepared_notarized_transaction.transaction_intent_hash()
+        );
 
         assert_eq!(
             notarized_transaction_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
@@ -316,10 +347,7 @@ mod tests {
             blobs: vec![BlobV1(blob1), BlobV1(blob2)],
         };
 
-        let prepared_blobs_v1 = PreparedBlobsV1::prepare_as_full_body_child_from_payload(
-            &manifest_encode(&blobs_v1).unwrap(),
-        )
-        .unwrap();
+        let prepared_blobs_v1 = blobs_v1.prepare_partial().unwrap();
         assert_eq!(prepared_blobs_v1.get_summary().hash, expected_blobs_hash);
 
         let pre_allocated_addresses_v1 = vec![PreAllocatedAddress {

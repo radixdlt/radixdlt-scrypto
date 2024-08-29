@@ -50,6 +50,7 @@ impl ScenarioCreator for AccessControllerV2ScenarioCreator {
         logical_name: "access-controller-v2",
         protocol_min_requirement: ProtocolVersion::Bottlenose,
         testnet_run_at: Some(ProtocolVersion::Bottlenose),
+        safe_to_run_on_used_ledger: true,
     };
 
     fn create_with_config_and_state(

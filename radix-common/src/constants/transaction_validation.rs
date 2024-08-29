@@ -4,6 +4,9 @@ pub const MAX_NUMBER_OF_INTENT_SIGNATURES: usize = 16;
 
 pub const MAX_NUMBER_OF_BLOBS: usize = 64;
 
+pub const V2_MAX_NUMBER_OF_CHILD_SUBINTENTS_IN_INTENT: usize = 128;
+pub const V2_MAX_NUMBER_OF_SUBINTENTS_IN_TRANSACTION: usize = 128;
+
 /// The minimum value of tip percentage
 ///
 /// 100 means 100%

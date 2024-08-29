@@ -14,7 +14,7 @@ use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;
 use radix_native_sdk::runtime::Runtime;
 
-pub const TRANSACTION_TRACKER_BLUEPRINT: &str = "TransactionTracker";
+pub use radix_common::prelude::TRANSACTION_TRACKER_BLUEPRINT;
 
 pub const TRANSACTION_TRACKER_CREATE_IDENT: &str = "create";
 

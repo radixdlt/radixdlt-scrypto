@@ -2,6 +2,7 @@ use radix_common::prelude::*;
 use radix_engine::blueprints::consensus_manager::ValidatorError;
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine::updates::BabylonSettings;
 use radix_engine_interface::blueprints::consensus_manager::{
     ValidatorAcceptsDelegatedStakeInput, VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
     VALIDATOR_GET_REDEMPTION_VALUE_IDENT,
@@ -18,16 +19,20 @@ where
     let initial_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::preallocated_account_from_public_key(&pub_key);
-    let genesis = CustomGenesis::single_validator_and_staker(
+    let genesis = BabylonSettings::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         Decimal::ZERO,
         validator_account_address,
         initial_epoch,
-        CustomGenesis::default_consensus_manager_config(),
+        ConsensusManagerConfig::test_default(),
     );
     let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
+        .with_custom_protocol(|builder| {
+            builder
+                .configure_babylon(|_| genesis)
+                .from_bootstrap_to_latest()
+        })
         .build();
 
     // Act
@@ -82,14 +87,7 @@ fn cannot_signal_protocol_update_if_wrong_length() {
 #[test]
 fn check_if_validator_accepts_delegated_stake() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
-    let genesis = CustomGenesis::default(
-        initial_epoch,
-        CustomGenesis::default_consensus_manager_config(),
-    );
-    let mut ledger = LedgerSimulatorBuilder::new()
-        .with_custom_genesis(genesis)
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pub_key, _, account) = ledger.new_account(false);
 
     let validator_address = ledger.new_validator_with_pub_key(pub_key, account);

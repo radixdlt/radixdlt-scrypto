@@ -21,6 +21,7 @@ use radix_engine::blueprints::consensus_manager::EpochChangeEvent;
 use radix_engine::blueprints::pool::v1::constants::*;
 use radix_engine::errors::{NativeRuntimeError, RuntimeError, VmError};
 use radix_engine::transaction::{TransactionOutcome, TransactionResult};
+use radix_engine::updates::BabylonSettings;
 use radix_engine::vm::OverridePackageCode;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::blueprints::pool::{
@@ -37,7 +38,7 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use scrypto_test::prelude::{CustomGenesis, LedgerSimulator, LedgerSimulatorBuilder};
+use scrypto_test::prelude::{LedgerSimulator, LedgerSimulatorBuilder};
 
 pub struct SystemTestFuzzer {
     rng: ChaCha8Rng,
@@ -326,19 +327,28 @@ impl<T: TxnFuzzer> FuzzTest<T> {
     fn new(seed: u64) -> Self {
         let mut fuzzer = SystemTestFuzzer::new(seed);
         let initial_epoch = Epoch::of(5);
-        let genesis = CustomGenesis::default_with_xrd_amount(
+        let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
+        let genesis = BabylonSettings::single_validator_and_staker(
+            pub_key,
+            Decimal::one(),
             Decimal::from(24_000_000_000u64),
+            ComponentAddress::preallocated_account_from_public_key(&pub_key),
             initial_epoch,
-            CustomGenesis::default_consensus_manager_config(),
+            ConsensusManagerConfig::test_default(),
         );
 
-        let (mut ledger, validator_set) = LedgerSimulatorBuilder::new()
-            .with_custom_genesis(genesis)
+        let (mut ledger, epoch_change) = LedgerSimulatorBuilder::new()
+            .with_custom_protocol(|builder| {
+                builder
+                    .configure_babylon(|_| genesis)
+                    .from_bootstrap_to_latest()
+            })
             .with_custom_extension(OverridePackageCode::new(
                 CUSTOM_PACKAGE_CODE_ID,
                 ResourceTestInvoke,
             ))
-            .build_and_get_epoch();
+            .build_and_get_post_genesis_epoch_change();
+        let validator_set = epoch_change.unwrap().validator_set;
         let public_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         let account = ComponentAddress::preallocated_account_from_public_key(&public_key);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);

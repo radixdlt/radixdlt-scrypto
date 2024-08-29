@@ -20,11 +20,7 @@ impl TransactionPayload for FlashTransactionV1 {
 
 define_raw_transaction_payload!(RawFlashTransactionV1);
 
-impl HasSummary for PreparedFlashTransactionV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedFlashTransactionV1);
 
 impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
     fn flash_transaction_hash(&self) -> FlashTransactionHash {
@@ -32,12 +28,13 @@ impl HasFlashTransactionHash for PreparedFlashTransactionV1 {
     }
 }
 
-impl TransactionFullChildPreparable for PreparedFlashTransactionV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+#[allow(deprecated)]
+impl TransactionPreparableFromValue for PreparedFlashTransactionV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let ((name, state_updates), summary) =
             ConcatenatedDigest::prepare_from_transaction_child_struct::<(
-                SummarizedRawFullBody<String>,
-                SummarizedRawFullBody<StateUpdates>,
+                SummarizedRawFullValue<String>,
+                SummarizedRawFullValue<StateUpdates>,
             )>(decoder, TransactionDiscriminator::V1Flash)?;
         Ok(Self {
             name: name.inner,
@@ -47,14 +44,15 @@ impl TransactionFullChildPreparable for PreparedFlashTransactionV1 {
     }
 }
 
+#[allow(deprecated)]
 impl TransactionPayloadPreparable for PreparedFlashTransactionV1 {
     type Raw = RawFlashTransactionV1;
 
     fn prepare_for_payload(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
         let ((name, state_updates), summary) =
             ConcatenatedDigest::prepare_from_transaction_payload_enum::<(
-                SummarizedRawFullBody<String>,
-                SummarizedRawFullBody<StateUpdates>,
+                SummarizedRawFullValue<String>,
+                SummarizedRawFullValue<StateUpdates>,
             )>(decoder, TransactionDiscriminator::V1Flash)?;
         Ok(Self {
             name: name.inner,

@@ -5,6 +5,7 @@ use radix_engine::kernel::vm::ScryptoInterpreter;
 use radix_engine::ledger::*;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{CostingParameters, ExecutionConfig, ResourcesUsage};
+use radix_engine::updates::ProtocolBuilder;
 use radix_engine::wasm::{DefaultWasmEngine, WasmValidatorConfig};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
@@ -125,14 +126,10 @@ fn transfer_test(c: &mut Criterion) {
     // Set up environment.
     let mut fwk = ResourceInfoFramework::new();
 
-    let mut scrypto_interpreter = ScryptoInterpreter {
-        wasm_engine: DefaultWasmEngine::default(),
-        wasm_validator_config: WasmValidatorConfig::new(),
-    };
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let _ = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
-        .bootstrap_test_default()
-        .unwrap();
+    ProtocolBuilder::for_simulator()
+        .from_bootstrap_to_latest()
+        .commit_each_protocol_update(&mut substate_db);
 
     // Create a key pair
     let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();

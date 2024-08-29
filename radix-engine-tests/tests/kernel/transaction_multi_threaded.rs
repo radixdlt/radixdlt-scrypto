@@ -2,10 +2,9 @@
 #[cfg(not(feature = "resource_tracker"))]
 mod multi_threaded_test {
     use radix_common::prelude::*;
-    use radix_engine::system::bootstrap::Bootstrapper;
     use radix_engine::transaction::ExecutionConfig;
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
-    use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
+    use radix_engine::updates::ProtocolBuilder;
     use radix_engine_interface::prelude::*;
     use radix_engine_interface::rule;
     use radix_substate_store_impls::memory_db::InMemorySubstateDatabase;
@@ -15,29 +14,15 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
-    use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
+    use radix_engine::vm::VmModules;
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
     fn test_multithread_transfer() {
         // Set up environment.
-        let scrypto_vm = ScryptoVm {
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_validator_config: WasmValidatorConfigV1::new(),
-        };
-        let vm_init = VmInit {
-            scrypto_vm: &scrypto_vm,
-            native_vm_extension: NoExtension,
-        };
+        let vm_modules = VmModules::default();
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(
-            NetworkDefinition::simulator(),
-            &mut substate_db,
-            vm_init.clone(),
-            false,
-        )
-        .bootstrap_test_default()
-        .unwrap();
+        ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
         // Create a key pair
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();
@@ -55,7 +40,7 @@ mod multi_threaded_test {
                     .build();
                 let account = execute_and_commit_transaction(
                     &mut substate_db,
-                    vm_init.clone(),
+                    &vm_modules,
                     &ExecutionConfig::for_test_transaction(),
                     TestTransaction::new(manifest, hash(format!("Account creation: {i}")))
                         .prepare()
@@ -82,7 +67,7 @@ mod multi_threaded_test {
         for nonce in 0..10 {
             execute_and_commit_transaction(
                 &mut substate_db,
-                vm_init.clone(),
+                &vm_modules,
                 &ExecutionConfig::for_test_transaction(),
                 TestTransaction::new(manifest.clone(), hash(format!("Fill account: {}", nonce)))
                     .prepare()
@@ -107,7 +92,7 @@ mod multi_threaded_test {
                 s.spawn(|_| {
                     let receipt = execute_transaction(
                         &substate_db,
-                        vm_init.clone(),
+                        &vm_modules,
                         &ExecutionConfig::for_test_transaction(),
                         TestTransaction::new(manifest.clone(), hash(format!("Transfer")))
                             .prepare()

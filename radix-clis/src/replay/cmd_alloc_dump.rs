@@ -5,8 +5,7 @@ use clap::Parser;
 use flate2::read::GzDecoder;
 use flume;
 use radix_common::prelude::*;
-use radix_engine::vm::wasm::*;
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::VmModules;
 use radix_engine_profiling::info_alloc::*;
 use radix_substate_store_impls::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use radix_substate_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
@@ -58,6 +57,7 @@ impl TxnAllocDump {
             Some(n) => NetworkDefinition::from_str(n).map_err(Error::ParseNetworkError)?,
             None => NetworkDefinition::mainnet(),
         };
+        let address_encoder = TransactionHashBech32Encoder::new(&network);
 
         let cur_version = {
             let database = RocksDBWithMerkleTreeSubstateStore::standard(self.database_dir.clone());
@@ -118,7 +118,7 @@ impl TxnAllocDump {
         );
         let trace = self.trace;
         let txn_write_thread_handle = thread::spawn(move || {
-            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+            let vm_modules = VmModules::default();
             let iter = rx.iter();
             for tx_payload in iter {
                 let prepared = prepare_ledger_transaction(&tx_payload);
@@ -128,7 +128,7 @@ impl TxnAllocDump {
 
                 let receipt = execute_prepared_ledger_transaction(
                     &database,
-                    &scrypto_vm,
+                    &vm_modules,
                     &network,
                     &prepared,
                     trace,
@@ -151,8 +151,8 @@ impl TxnAllocDump {
                             writeln!(
                                 output,
                                 "user,{},{},{},{},{}",
-                                TransactionHashBech32Encoder::new(&network)
-                                    .encode(&IntentHash(tx.signed_intent.intent.summary.hash))
+                                address_encoder
+                                    .encode(&tx.transaction_intent_hash())
                                     .unwrap(),
                                 execution_cost_units.unwrap(),
                                 heap_allocations_sum,
@@ -197,6 +197,22 @@ impl TxnAllocDump {
                                 "flash,{},{},{},{},{}",
                                 tx.summary.hash,
                                 execution_cost_units.unwrap_or_default(),
+                                heap_allocations_sum,
+                                heap_current_level,
+                                heap_peak_memory
+                            )
+                            .map_err(Error::IOError)?
+                        }
+                    }
+                    PreparedLedgerTransactionInner::UserV2(tx) => {
+                        if dump_user {
+                            writeln!(
+                                output,
+                                "user,{},{},{},{},{}",
+                                address_encoder
+                                    .encode(&tx.transaction_intent_hash())
+                                    .unwrap(),
+                                execution_cost_units.unwrap(),
                                 heap_allocations_sum,
                                 heap_current_level,
                                 heap_peak_memory

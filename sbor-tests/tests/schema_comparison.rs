@@ -24,8 +24,7 @@ fn assert_equality<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
 }
 
 fn assert_equality_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
-    let settings = SchemaComparisonSettings::require_equality()
-        .metadata_settings(SchemaComparisonMetadataSettings::allow_all_changes());
+    let settings = SchemaComparisonSettings::require_equality().allow_all_name_changes();
     compare_single_type_schemas::<NoCustomSchema>(
         &settings,
         &T1::single_type_schema_version(),
@@ -45,8 +44,7 @@ fn assert_extension<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
 }
 
 fn assert_extension_ignoring_name_changes<T1: DerivableTypeSchema, T2: DerivableTypeSchema>() {
-    let settings = SchemaComparisonSettings::allow_extension()
-        .metadata_settings(SchemaComparisonMetadataSettings::allow_all_changes());
+    let settings = SchemaComparisonSettings::allow_extension().allow_all_name_changes();
     compare_single_type_schemas::<NoCustomSchema>(
         &settings,
         &T1::single_type_schema_version(),

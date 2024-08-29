@@ -1,11 +1,11 @@
 #![cfg(feature = "std")]
 
+use auth::AuthZoneParams;
 use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::*;
 use radix_engine::kernel::kernel::*;
 use radix_engine::kernel::kernel_api::*;
-use radix_engine::system::bootstrap::*;
 use radix_engine::system::system::*;
 use radix_engine::system::system_callback::*;
 use radix_engine::system::system_modules::auth::AuthModule;
@@ -16,6 +16,7 @@ use radix_engine::system::system_modules::limits::LimitsModule;
 use radix_engine::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use radix_engine::system::system_modules::*;
 use radix_engine::track::*;
+use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::wasm::*;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::account::*;
@@ -57,15 +58,7 @@ fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
 fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
-
-    let _ = Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
-        false,
-    )
-    .bootstrap_test_default()
-    .unwrap();
+    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -73,7 +66,6 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 
     let intent_hash = Hash([0; 32]);
     let mut system = System {
-        executable: (),
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
@@ -86,10 +78,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
-            AuthModule::new(AuthZoneParams {
-                initial_proofs: Default::default(),
-                virtual_resources: Default::default(),
-            }),
+            AuthModule::new(AuthZoneParams::default()),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,
@@ -104,6 +93,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
+        finalization: Default::default(),
     };
 
     let mut id_allocator = IdAllocator::new(intent_hash);
@@ -136,15 +126,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
-
-    let _ = Bootstrapper::new(
-        NetworkDefinition::simulator(),
-        &mut substate_db,
-        VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
-        false,
-    )
-    .bootstrap_test_default()
-    .unwrap();
+    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
 
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -152,7 +134,6 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 
     let intent_hash = Hash([0; 32]);
     let mut system = System {
-        executable: (),
         blueprint_cache: NonIterMap::new(),
         auth_cache: NonIterMap::new(),
         schema_cache: NonIterMap::new(),
@@ -165,10 +146,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
-            AuthModule::new(AuthZoneParams {
-                initial_proofs: Default::default(),
-                virtual_resources: Default::default(),
-            }),
+            AuthModule::new(AuthZoneParams::default()),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,
@@ -183,6 +161,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             },
             ExecutionTraceModule::new(MAX_EXECUTION_TRACE_DEPTH),
         ),
+        finalization: Default::default(),
     };
 
     let mut id_allocator = IdAllocator::new(intent_hash);

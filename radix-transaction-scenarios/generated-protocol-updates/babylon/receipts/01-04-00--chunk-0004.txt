@@ -1,0 +1,101 @@
+TRANSACTION STATUS: COMMITTED SUCCESS
+
+TRANSACTION COST: 0 XRD
+├─ Network execution: 0 XRD, 0 execution cost units
+├─ Network finalization: 0 XRD, 0 finalization cost units
+├─ Tip: 0 XRD
+├─ Network Storage: 0 XRD
+└─ Royalties: 0 XRD
+
+LOGS: 0
+
+EVENTS: 4
+├─ Emitter: Method { node: resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w, module_id: Main }
+   Event: MintFungibleResourceEvent {
+     amount: Decimal("10"),
+   }
+├─ Emitter: Method { node: resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w, module_id: Main }
+   Event: VaultCreationEvent {
+     vault_id: NodeId(hex("5864fb679a263faa3a9d03cd2c403f767e7d6645ccab6c03001892a87575")),
+   }
+├─ Emitter: Method { node: internal_vault_sim1tpj0keu6ycl65w5aq0xjcsplwel86ej9ej4kcqcqrzf2sat4qmv3l4, module_id: Main }
+   Event: DepositEvent {
+     amount: Decimal("10"),
+   }
+└─ Emitter: Method { node: account_sim168fghy4kapzfnwpmq7t7753425lwklk65r82ys7pz2xzleehgpzql2, module_id: Main }
+   Event: DepositEvent::Fungible(
+     ResourceAddress(Reference("resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w")),
+     Decimal("10"),
+   )
+
+STATE UPDATES: 5 entities
+├─ component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED GenesisHelper {
+         consensus_manager: GlobalConsensusManager(Reference("consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl")),
+         validators: KeyValueStore(Own("internal_keyvaluestore_sim1kpkxjgh28rp2e2fudwfx3ck9sau86xzt3ckc7gnl25rd6dlt6cr7a9")),
+       }
+├─ resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(1)
+       Value: UNLOCKED FungibleResourceManagerTotalSupplyFieldPayload::V1(
+         Decimal("10"),
+       )
+├─ account_sim168fghy4kapzfnwpmq7t7753425lwklk65r82ys7pz2xzleehgpzql2 across 1 partitions
+  └─ Partition(65): 1 change
+    └─ Set: ResourceAddress(Reference("resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w"))
+       Value: UNLOCKED AccountResourceVaultEntryPayload::V1(
+         Vault(Own("internal_vault_sim1tpj0keu6ycl65w5aq0xjcsplwel86ej9ej4kcqcqrzf2sat4qmv3l4")),
+       )
+├─ internal_vault_sim1tpj0keu6ycl65w5aq0xjcsplwel86ej9ej4kcqcqrzf2sat4qmv3l4 across 2 partitions
+  ├─ Partition(0): 1 change
+    └─ Set: TypeInfo
+       Value: TypeInfoSubstate::Object(
+         ObjectInfo {
+           blueprint_info: BlueprintInfo {
+             blueprint_id: BlueprintId {
+               package_address: PackageAddress(Reference("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")),
+               blueprint_name: "FungibleVault",
+             },
+             blueprint_version: BlueprintVersion {
+               major: 1u32,
+               minor: 0u32,
+               patch: 0u32,
+             },
+             outer_obj_info: OuterObjectInfo::Some {
+               outer_object: GlobalAddress(Reference("resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w")),
+             },
+             features: [],
+             generic_substitutions: [],
+           },
+           object_type: ObjectType::Owned,
+         },
+       )
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED FungibleVaultBalanceFieldPayload::V1(
+         LiquidFungibleResource(Decimal("10")),
+       )
+└─ transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2 across 1 partitions
+  └─ Partition(64): 1 change
+    └─ Set: Field(0)
+       Value: UNLOCKED TransactionTrackerSubstate::V1(
+         TransactionTrackerSubstateV1 {
+           start_epoch: 1u64,
+           start_partition: 65u8,
+           partition_range_start_inclusive: 65u8,
+           partition_range_end_inclusive: 255u8,
+           epochs_per_partition: 100u64,
+         },
+       )
+
+OUTPUTS: 1
+└─ Unit
+
+BALANCE CHANGES: 1
+└─ Vault: internal_vault_sim1tpj0keu6ycl65w5aq0xjcsplwel86ej9ej4kcqcqrzf2sat4qmv3l4
+   ResAddr: resource_sim1tkdhrsuhdnxscqk3xy8z29kq3mwfmzm02lxddqxk8fxcuuk6vpen9w
+   Change: 10
+
+NEW ENTITIES: 0

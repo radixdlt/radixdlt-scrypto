@@ -13,7 +13,7 @@ pub struct BlobsV1 {
     pub blobs: Vec<BlobV1>,
 }
 
-impl TransactionPartialEncode for BlobsV1 {
+impl TransactionPartialPrepare for BlobsV1 {
     type Prepared = PreparedBlobsV1;
 }
 
@@ -23,18 +23,15 @@ pub struct PreparedBlobsV1 {
     pub summary: Summary,
 }
 
-impl HasSummary for PreparedBlobsV1 {
-    fn get_summary(&self) -> &Summary {
-        &self.summary
-    }
-}
+impl_has_summary!(PreparedBlobsV1);
 
-impl TransactionFullChildPreparable for PreparedBlobsV1 {
-    fn prepare_as_full_body_child(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
-        let (blobs, summary) = ConcatenatedDigest::prepare_from_sbor_array::<
-            Vec<SummarizedRawInnerBodyRawBytes>,
+#[allow(deprecated)]
+impl TransactionPreparableFromValue for PreparedBlobsV1 {
+    fn prepare_from_value(decoder: &mut TransactionDecoder) -> Result<Self, PrepareError> {
+        let (blobs, summary) = ConcatenatedDigest::prepare_from_sbor_array_full_value::<
+            Vec<SummarizedRawValueBodyRawBytes>,
             MAX_NUMBER_OF_BLOBS,
-        >(decoder, HashAccumulator::new(), ValueType::Blob)?;
+        >(decoder, ValueType::Blob)?;
 
         let mut blobs_by_hash = index_map_with_capacity(blobs.len());
         for blob in blobs {

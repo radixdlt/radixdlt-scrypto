@@ -1,6 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::errors::{RejectionReason, TransactionExecutionError};
-use radix_engine::errors::{RuntimeError, SystemModuleError};
+use radix_engine::errors::*;
 use radix_engine::kernel::call_frame::{CallFrameInit, CallFrameMessage, NodeVisibility};
 use radix_engine::kernel::kernel_api::*;
 use radix_engine::kernel::kernel_callback_api::*;
@@ -28,7 +27,7 @@ pub struct InjectCostingErrorInput<I> {
 
 pub struct InjectCostingError<K: SystemCallbackObject> {
     fail_after: Rc<RefCell<u64>>,
-    system: System<K, Executable>,
+    system: System<K>,
 }
 
 impl<K: SystemCallbackObject> InjectCostingError<K> {
@@ -68,31 +67,31 @@ macro_rules! wrapped_internal_api {
 
 impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingError<K> {
     type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
-    type Executable = Executable;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
-    fn init<S: BootStore + CommitableSubstateStore>(
+    fn init<S: BootStore + CommitableSubstateStore, E: Executable>(
         store: &mut S,
-        executable: Executable,
+        executable: &E,
         init_input: Self::Init,
-    ) -> Result<(Self, CallFrameInit<Actor>), RejectionReason> {
-        let (mut system, call_frame_init) =
-            System::<K, _>::init(store, executable, init_input.system_input)?;
+    ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
+        let (mut system, call_frame_inits) =
+            System::<K>::init(store, executable, init_input.system_input)?;
 
         let fail_after = Rc::new(RefCell::new(init_input.error_after_count));
         system.modules.costing_mut().unwrap().on_apply_cost = OnApplyCost::ForceFailOnCount {
             fail_after: fail_after.clone(),
         };
 
-        Ok((Self { fail_after, system }, call_frame_init))
+        Ok((Self { fail_after, system }, call_frame_inits))
     }
 
-    fn start<Y: KernelApi<CallbackObject = Self>>(
+    fn start<Y: KernelApi<CallbackObject = Self>, E: Executable>(
         api: &mut Y,
+        executable: E,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
-        System::start(&mut api)
+        System::start(&mut api, executable)
     }
 
     fn finish(&mut self, store_commit_info: StoreCommitInfo) -> Result<(), RuntimeError> {
@@ -109,7 +108,7 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
     }
 }
 
-type InternalSystem<V> = System<V, Executable>;
+type InternalSystem<V> = System<V>;
 
 impl<V: SystemCallbackObject> KernelCallbackObject for InjectCostingError<V> {
     type LockData = SystemLockData;
@@ -495,15 +494,19 @@ impl<'a, M: SystemCallbackObject + 'a, K: KernelApi<CallbackObject = InjectCosti
 impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>>
     KernelInternalApi for WrappedKernelApi<'a, M, K>
 {
-    type System = System<M, Executable>;
+    type System = System<M>;
 
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, Executable>> {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M>> {
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.system,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
+    }
+
+    fn kernel_get_intent_index(&self) -> usize {
+        self.api.kernel_get_intent_index()
     }
 
     fn kernel_get_current_depth(&self) -> usize {
@@ -528,7 +531,7 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingErr
 impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingError<M>>> KernelApi
     for WrappedKernelApi<'a, M, K>
 {
-    type CallbackObject = System<M, Executable>;
+    type CallbackObject = System<M>;
 }
 
 pub struct WrappedKernelInternalApi<
@@ -542,15 +545,19 @@ pub struct WrappedKernelInternalApi<
 impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingError<M>>>
     KernelInternalApi for WrappedKernelInternalApi<'a, M, K>
 {
-    type System = System<M, Executable>;
+    type System = System<M>;
 
-    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M, Executable>> {
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, System<M>> {
         let state = self.api.kernel_get_system_state();
         SystemState {
             system: &mut state.system.system,
             caller_call_frame: state.caller_call_frame,
             current_call_frame: state.current_call_frame,
         }
+    }
+
+    fn kernel_get_intent_index(&self) -> usize {
+        self.api.kernel_get_intent_index()
     }
 
     fn kernel_get_current_depth(&self) -> usize {

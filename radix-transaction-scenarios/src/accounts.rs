@@ -9,8 +9,8 @@ use crate::internal_prelude::ScenarioCore;
 ///
 /// # Warning
 ///
-/// Any scenario that is run after genesis can not use virtual accounts as users could find private
-/// key we're using (these are public private key anyway and we're not trying to hide them) and
+/// Any scenario that is run after genesis can not use virtual accounts as users could find the private
+/// key we're using (these are public and we're not trying to hide them) and
 /// change the account's settings or perhaps even the access rule of the account leading scenarios
 /// to fail. An allocated account **MUST** be used for any scenario that runs after genesis.
 pub struct PreallocatedAccount {
