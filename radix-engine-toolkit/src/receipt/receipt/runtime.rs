@@ -149,43 +149,15 @@ impl TryFrom<TransactionReceiptV1> for RuntimeToolkitTransactionReceipt {
                                     )
                                     .unwrap();
 
-                                let data_key_value_partition_updates =
-                                    updates_by_partition.get(&partition_number)?;
-                                let mut non_fungible_data = IndexMap::new();
-                                match data_key_value_partition_updates {
-                                    PartitionStateUpdates::Delta { by_substate } => {
-                                        non_fungible_data.extend(by_substate.into_iter().filter_map(
-                                            |(substate_key, database_update)| match (
-                                                substate_key,
-                                                database_update,
-                                            ) {
-                                                (SubstateKey::Map(key), DatabaseUpdate::Set(value)) => {
-                                                    Some((key.clone(), value.clone()))
-                                                }
-                                                _ => None,
-                                            },
-                                        ))
-                                    }
-                                    PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
-                                        new_substate_values,
-                                    }) => {
-                                        non_fungible_data.extend(new_substate_values.into_iter().filter_map(
-                                            |(key, value)| {
-                                                if let SubstateKey::Map(key) = key {
-                                                    Some((key.clone(), value.clone()))
-                                                } else {
-                                                    None
-                                                }
-                                            },
-                                        ));
-                                    }
-                                }
-
-                                non_fungible_data
-                                    .into_iter()
+                                updates_by_partition.get(&partition_number)?
+                                    .iter_map_entries()
+                                    .filter_map(|(key, value)| match value {
+                                        DatabaseUpdateRef::Set(value) => Some((key, value)),
+                                        DatabaseUpdateRef::Delete => None,
+                                    })
                                     .map(|(key, value)| -> Option<_> {
                                         let key =
-                                            scrypto_decode::<NonFungibleResourceManagerDataKeyPayload>(&key)
+                                            scrypto_decode::<NonFungibleResourceManagerDataKeyPayload>(key)
                                                 .ok()
                                                 .map(|id| {
                                                     NonFungibleGlobalId::new(
@@ -195,7 +167,7 @@ impl TryFrom<TransactionReceiptV1> for RuntimeToolkitTransactionReceipt {
                                                 })?;
                                         let value = scrypto_decode::<
                                             NonFungibleResourceManagerDataEntrySubstate,
-                                        >(&value)
+                                        >(value)
                                         .ok()
                                         .and_then(|value| value.into_value())
                                         .and_then(|value| scrypto_encode(&value).ok())?;
