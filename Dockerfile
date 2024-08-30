@@ -37,8 +37,9 @@ ADD sbor-derive-common /app/sbor-derive-common
 ADD scrypto-bindgen /app/scrypto-bindgen
 ADD scrypto-compiler /app/scrypto-compiler
 
-# Add non-production dependencies which have to be added because they're in the root manifest
-# Ideally, to minimize this image size, we would replace these with an empty Cargo.toml
+# Add non-production dependencies...
+# These only need to be included because cargo tries to read their Cargo.toml files when it's preparing the workspace
+# Ideally, to minimize the image size, we could probably just write an almost-empty Cargo.toml file at each of these paths
 # Will save this optimization for a later day
 ADD radix-engine-monkey-tests /app/radix-engine-monkey-tests
 ADD radix-engine-tests /app/radix-engine-tests
@@ -54,7 +55,7 @@ WORKDIR /app
 RUN cargo install --path ./radix-clis
 
 FROM base-image
-COPY --from=builder /app/radix-clis/target/release/scrypto /usr/local/bin/scrypto
+COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
 WORKDIR /src
 
