@@ -58,5 +58,4 @@ echo "Building examples..."
     | xargs -I '{}' bash -c "set -x; cd '{}'; $scrypto build"
 )
 
-# We don't rebuild `radix-engine/assets` because they are fixed at genesis/the relevant protocol update,
-# and they no longer compile
+# We don't rebuild `radix-engine/assets` because they are fixed at genesis/the relevant protocol update, and they no longer compile
