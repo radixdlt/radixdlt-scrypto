@@ -1,7 +1,6 @@
 {
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
-        "radix-clis/Cargo.toml",
     ],
     "cSpell.words": [
         "accesscontroller",

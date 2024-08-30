@@ -59,16 +59,18 @@ pub struct ScryptoCompilerInputParams {
     pub target_directory: Option<PathBuf>,
     /// Compilation profile. If not specified default profile: Release will be used.
     pub profile: Profile,
-    /// List of environment variables to set or unest during compilation. Optional field.
+    /// List of environment variables to set or unset during compilation. Optional field.
     pub environment_variables: IndexMap<String, EnvironmentVariableAction>,
     /// List of features, used for 'cargo build --features'. Optional field.
     pub features: IndexSet<String>,
-    /// If set to true then '--no-default-features' option is passed to 'cargo build'. Defult value is false.
+    /// If set to true then '--no-default-features' option is passed to 'cargo build'. The default value is false.
     pub no_default_features: bool,
-    /// If set to true then '--all-features' option is passed to 'cargo build'. Defult value is false.
+    /// If set to true then '--all-features' option is passed to 'cargo build'. The default value is false.
     pub all_features: bool,
     /// List of packages to compile, used for 'cargo build --package'. Optional field.
     pub package: IndexSet<String>,
+    /// If set to true then '--locked' option is passed to 'cargo build', which enforces using the `Cargo.lock` file without changes. The default value is false.
+    pub locked: bool,
     /// List of custom options, passed as 'cargo build' arguments without any modifications. Optional field.
     /// Add each option as separate entry (for instance: '-j 1' must be added as two entires: '-j' and '1' one by one).
     pub custom_options: IndexSet<String>,
@@ -98,6 +100,7 @@ impl Default for ScryptoCompilerInputParams {
             all_features: false,
             package: indexset!(),
             custom_options: indexset!(),
+            locked: false,
             wasm_optimization,
         };
         // Apply default log level features
@@ -720,6 +723,22 @@ impl ScryptoCompiler {
             command.arg("--all_features");
         }
 
+        #[cfg(feature = "std")]
+        {
+            // We supprt 
+            let force_locked = std::env::var("SCRYPTO_BUILD_USE_CARGO_LOCK").is_ok_and(|val| {
+                let normalized = val.to_lowercase();
+                &normalized == "true" || &normalized == "1"
+            });
+            if force_locked || self.input_params.locked {
+                command.arg("--locked");
+            }
+        }
+        #[cfg(not(feature = "std"))]
+        if self.input_params.locked {
+            command.arg("--locked");
+        }
+
         self.input_params
             .environment_variables
             .iter()
@@ -750,7 +769,7 @@ impl ScryptoCompiler {
         }
     }
 
-    // Create lock file for each compiled package to protect compilation in case it is invoked multiple times in parallel.
+    // Create scrypto build lock file for each compiled package to protect compilation in case it is invoked multiple times in parallel.
     fn lock_packages(&self) -> Result<Vec<PackageLock>, ScryptoCompilerError> {
         let mut package_locks: Vec<PackageLock> = vec![];
         // Create target folder if it doesn't exist
@@ -1230,6 +1249,11 @@ impl ScryptoCompilerBuilder {
 
     pub fn all_features(&mut self) -> &mut Self {
         self.input_params.all_features = true;
+        self
+    }
+
+    pub fn locked(&mut self) -> &mut Self {
+        self.input_params.locked = true;
         self
     }
 

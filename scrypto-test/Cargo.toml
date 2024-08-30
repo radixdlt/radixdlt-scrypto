@@ -25,6 +25,7 @@ serde_json = { workspace = true }
 scrypto-compiler = { workspace = true }
 
 [dev-dependencies]
+# Used as a test case for testing TestEnvironment
 tuple-return = { path = "./tests/blueprints/tuple-return", features = ["test"], default-features = false }
 
 [features]

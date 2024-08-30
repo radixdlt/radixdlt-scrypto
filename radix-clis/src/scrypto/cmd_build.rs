@@ -59,6 +59,12 @@ pub struct Build {
     #[clap(long)]
     all_features: bool,
 
+    /// Ensures the Cargo.lock file is used as-is. Equivalent to `cargo build --locked`.
+    /// Alternatively, the `SCRYPTO_BUILD_USE_CARGO_LOCK` environment variable can be used,
+    /// which makes it easy to set in CI.
+    #[clap(long)]
+    locked: bool,
+
     /// Pass any additional option to `cargo build` call.
     #[clap(long)]
     custom_option: Option<Vec<String>>,
@@ -91,6 +97,9 @@ impl Build {
         }
         if self.all_features {
             compiler_builder.all_features();
+        }
+        if self.locked {
+            compiler_builder.locked();
         }
         if let Some(features) = &self.features {
             features.split(',').for_each(|f| {
