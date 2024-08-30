@@ -58,7 +58,7 @@ impl Coverage {
 
         let output_str = String::from_utf8(output.stdout).expect("Failed to read rustc output");
         let is_nightly = output_str.contains("nightly");
-        let llvm_major_version = Regex::new(r"LLVM version: (\d+)")
+        let llvm_major_version = Regex::new(r"LLVM version: ([0-9]+)")
             .unwrap()
             .captures(&output_str)
             .and_then(|cap| cap.get(1).map(|m| m.as_str()))
