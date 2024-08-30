@@ -38,6 +38,7 @@ Cargo.lock
 # - Various test scrypto packages. We don't care too much about either way - but we do want CI to run without a lock, so let's git ignore these.
 #   Also make sure to blanket ignore all the old Cargo.locks before they moved to blueprints, to avoid developer git issues
 !scrypto-test/assets/blueprints/Cargo.lock
+!scrypto-test/tests/blueprints/Cargo.lock
 !radix-engine-tests/assets/blueprints/Cargo.lock
 !radix-clis/tests/blueprints/Cargo.lock
 

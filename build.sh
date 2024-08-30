@@ -12,9 +12,10 @@ echo "Building the workspace packages (with all extended features)..."
 
 echo "Building scrypto packages using cargo build, to catch errors quickly..."
 
-(set -x; cd radix-engine-tests/tests/blueprints; cargo build)
+(set -x; cd radix-engine-tests/assets/blueprints; cargo build)
 (set -x; cd radix-clis/tests/blueprints; cargo build)
 (set -x; cd scrypto-test/tests/blueprints; cargo build)
+(set -x; cd scrypto-test/assets/blueprints; cargo build)
 (set -x; cd radix-transaction-scenarios/assets/blueprints; cargo build)
 
 echo "Building the engine in different configurations..."
@@ -29,7 +30,7 @@ scrypto="scrypto"
 
 echo "Building scrypto packages used in tests with scrypto build..."
 (
-    find "radix-engine-tests/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "radix-engine-tests/assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
 )
@@ -40,6 +41,11 @@ echo "Building scrypto packages used in tests with scrypto build..."
 )
 (
     find "scrypto-test/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
+)
+(
+    find "scrypto-test/assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
 )
