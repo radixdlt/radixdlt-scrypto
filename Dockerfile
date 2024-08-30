@@ -1,5 +1,5 @@
 # Below version includes rust 1.79.0
-ARG RUST_IMAGE_VERSION=@sha256:6b450f2bd3ccb713d052777f99c54495beea8f3adf0965e9b366a2c307c23b35
+ARG RUST_IMAGE_VERSION=@sha256:b514dde8cc7bbada14d33981ae4b13521e92261e37c50547e6dcd8d8c8795f42
 # If you want to use latest version then uncomment next line
 # ARG RUST_IMAGE_VERSION=:slim-bullseye
 # Alternatively you can build docker with argument: --build-arg="RUST_IMAGE_VERSION=:slim-bullseye"
