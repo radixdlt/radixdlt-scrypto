@@ -725,7 +725,8 @@ impl ScryptoCompiler {
 
         #[cfg(feature = "std")]
         {
-            // We supprt 
+            // We support an environment variable to make it easy to turn `--locked` mode
+            // on in CI, without having to rewrite all the code/plumbing.
             let force_locked = std::env::var("SCRYPTO_BUILD_USE_CARGO_LOCK").is_ok_and(|val| {
                 let normalized = val.to_lowercase();
                 &normalized == "true" || &normalized == "1"

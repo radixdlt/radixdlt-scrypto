@@ -13,6 +13,8 @@ failed=0
 
 cd "$(dirname "$0")"
 
+# NOTE: These should align with `format.sh`
+
 packages=$(cat Cargo.toml | \
     awk '/members/{flag=1;next} /\]/{flag=0} flag' | \
     awk -F '"' '{print $2}')
@@ -28,12 +30,18 @@ for package in $packages; do
         { echo "Code format check FAILED for $package"; failed=1; }
 done
 
-packages="
-    examples/hello-world/Cargo.toml \
-    examples/everything/Cargo.toml \
-    examples/no-std/Cargo.toml \
-    "
-packages+=$(find radix-engine-tests/tests/blueprints -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))
+packages="radix-clis/tests/blueprints/Cargo.toml"
+packages+=$'\n'
+packages+=$(find radix-engine-tests/assets/blueprints -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))
+packages+=$'\n'
+packages+=$(find scrypto-test/tests/blueprints -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))
+packages+=$'\n'
+packages+=$(find radix-transaction-scenarios/assets/blueprints -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))
+packages+=$'\n'
+packages+=$(find examples -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))
+
+# Uncomment to see all the packages
+# echo "$packages";
 
 for package in $packages; do
     cargo fmt --check --quiet --manifest-path $package ||

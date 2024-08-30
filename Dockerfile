@@ -4,7 +4,7 @@ ARG RUST_IMAGE_VERSION=@sha256:6b450f2bd3ccb713d052777f99c54495beea8f3adf0965e9b
 # ARG RUST_IMAGE_VERSION=:slim-bullseye
 # Alternatively you can build docker with argument: --build-arg="RUST_IMAGE_VERSION=:slim-bullseye"
 
-FROM rust${RUST_IMAGE_VERSION} as base-image
+FROM rust${RUST_IMAGE_VERSION} AS base-image
 
 RUN apt update && apt install -y \
     cmake=3.18.4-2+deb11u1 \
@@ -12,13 +12,14 @@ RUN apt update && apt install -y \
     build-essential=12.9 \
     llvm=1:11.0-51+nmu5
 
-FROM base-image as builder
+FROM base-image AS builder
 
 # Copy library crates
 ADD Cargo.toml /app/Cargo.toml
 ADD radix-blueprint-schema-init /app/radix-blueprint-schema-init
 ADD radix-common /app/radix-common
 ADD radix-common-derive /app/radix-common-derive
+ADD radix-clis /app/radix-clis
 ADD radix-engine /app/radix-engine
 ADD radix-engine-interface /app/radix-engine-interface
 ADD radix-engine-profiling /app/radix-engine-profiling
@@ -35,9 +36,6 @@ ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
 ADD scrypto-bindgen /app/scrypto-bindgen
 ADD scrypto-compiler /app/scrypto-compiler
-
-# Copy radix-clis crate
-ADD radix-clis /app/radix-clis
 
 WORKDIR /app
 
