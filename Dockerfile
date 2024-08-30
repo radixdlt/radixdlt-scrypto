@@ -1,16 +1,16 @@
-# Below version includes rust 1.79.0
-ARG RUST_IMAGE_VERSION=@sha256:6b450f2bd3ccb713d052777f99c54495beea8f3adf0965e9b366a2c307c23b35
+# Below version includes rust 1.80.1
+ARG RUST_IMAGE_VERSION=@sha256:e8e40c50bfb54c0a76218f480cc69783b908430de87b59619c1dca847fdbd753
 # If you want to use latest version then uncomment next line
-# ARG RUST_IMAGE_VERSION=:slim-bullseye
-# Alternatively you can build docker with argument: --build-arg="RUST_IMAGE_VERSION=:slim-bullseye"
+# ARG RUST_IMAGE_VERSION=:slim-bookworm
+# Alternatively you can build docker with argument: --build-arg="RUST_IMAGE_VERSION=:slim-bookworm"
 
 FROM rust${RUST_IMAGE_VERSION} as base-image
 
 RUN apt update && apt install -y \
-    cmake=3.18.4-2+deb11u1 \
-    clang=1:11.0-51+nmu5 \
+    cmake=3.25.1-1 \
+    clang=1:14.0-55.7~deb12u1 \
     build-essential=12.9 \
-    llvm=1:11.0-51+nmu5
+    llvm=1:14.0-55.7~deb12u1
 
 FROM base-image as builder
 
