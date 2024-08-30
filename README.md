@@ -47,24 +47,18 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
      ```bash
      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
      ```
-2. [Optional] Set Rust version to 1.79, which is currently recommended for Radix Engine
-   ```bash
-   rustup install 1.79.0
-   rustup default 1.79.0
-   ```
-
-3. Enable `cargo` in the current shell:
+2. Enable `cargo` in the current shell:
    - Windows:
      - Start a new PowerShell
    - Linux and macOS:
      ```bash
      source $HOME/.cargo/env
      ```
-4. Add WebAssembly target
+3. Add WebAssembly target
    ```bash
    rustup target add wasm32-unknown-unknown
    ```
-5. Install Radix CLIs
+4. Install Radix CLIs
    ```bash
    cargo install radix-clis
    ```
