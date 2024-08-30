@@ -7,10 +7,10 @@ ARG RUST_IMAGE_VERSION=@sha256:073c8e7ae12d2637d1d541cb0f3f9d92bfa22c97e2e45db87
 FROM rust${RUST_IMAGE_VERSION} as base-image
 
 RUN apt update && apt install -y \
-    cmake=3.18.4-2+deb11u1 \
-    clang=1:11.0-51+nmu5 \
+    cmake=3.25.1-1 \
+    clang=1:14.0-55.7~deb12u1 \
     build-essential=12.9 \
-    llvm=1:11.0-51+nmu5
+    llvm=1:14.0-55.7~deb12u1
 
 FROM base-image as builder
 
