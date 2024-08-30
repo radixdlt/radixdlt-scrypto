@@ -18,18 +18,28 @@ pub trait Executable {
     fn intents(&self) -> Vec<&Self::Intent>;
 
     fn all_blob_hashes(&self) -> IndexSet<Hash> {
-        self.intents()
-            .iter()
-            .flat_map(|i| i.blobs().keys())
-            .cloned()
-            .collect()
+        let mut hashes = indexset!();
+
+        for intent in self.intents() {
+            let blobs = intent.blobs();
+            for hash in blobs.keys() {
+                hashes.insert(*hash);
+            }
+        }
+
+        hashes
     }
     fn all_references(&self) -> IndexSet<Reference> {
-        self.intents()
-            .iter()
-            .flat_map(|i| i.references())
-            .cloned()
-            .collect()
+        let mut references = indexset!();
+
+        for intent in self.intents() {
+            let refs = intent.references();
+            for reference in refs.iter() {
+                references.insert(reference.clone());
+            }
+        }
+
+        references
     }
 }
 
@@ -37,8 +47,8 @@ pub trait IntentDetails {
     fn executable_instructions(&self) -> ExecutableInstructions;
     fn intent_hash_nullification(&self) -> &IntentHashNullification;
     fn auth_zone_init(&self) -> &AuthZoneInit;
-    fn blobs(&self) -> &IndexMap<Hash, Vec<u8>>;
-    fn references(&self) -> &IndexSet<Reference>;
+    fn blobs(&self) -> Rc<IndexMap<Hash, Vec<u8>>>;
+    fn references(&self) -> Rc<IndexSet<Reference>>;
 
     /// Indices against the parent Executable.
     /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
@@ -230,9 +240,9 @@ impl From<TransactionCostingParametersReceiptV1> for TransactionCostingParameter
     }
 }
 
-pub enum ExecutableInstructions<'a> {
+pub enum ExecutableInstructions {
     /// Instructions V1, using Babylon processor
-    V1Processor(&'a [u8]),
+    V1Processor(Rc<Vec<u8>>),
     /// Instructions V2, using V2 capable subintent processor
-    V2Processor(&'a [u8]),
+    V2Processor(Rc<Vec<u8>>),
 }

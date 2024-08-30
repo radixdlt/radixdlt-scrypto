@@ -7,7 +7,7 @@ use crate::internal_prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableTransactionV1 {
     pub(crate) encoded_instructions_v1: Rc<Vec<u8>>,
-    pub(crate) references: IndexSet<Reference>,
+    pub(crate) references: Rc<IndexSet<Reference>>,
     pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub(crate) context: ExecutionContext,
     pub(crate) system: bool,
@@ -55,7 +55,7 @@ impl ExecutableTransactionV1 {
 
         Self {
             encoded_instructions_v1,
-            references,
+            references: Rc::new(references),
             blobs,
             context,
             system,
@@ -131,7 +131,7 @@ impl Executable for ExecutableTransactionV1 {
 
 impl IntentDetails for ExecutableTransactionV1 {
     fn executable_instructions(&self) -> ExecutableInstructions {
-        ExecutableInstructions::V1Processor(self.encoded_instructions_v1.as_ref())
+        ExecutableInstructions::V1Processor(self.encoded_instructions_v1.clone())
     }
 
     fn intent_hash_nullification(&self) -> &IntentHashNullification {
@@ -142,12 +142,12 @@ impl IntentDetails for ExecutableTransactionV1 {
         &self.context.auth_zone_init
     }
 
-    fn blobs(&self) -> &IndexMap<Hash, Vec<u8>> {
-        &self.blobs
+    fn blobs(&self) -> Rc<IndexMap<Hash, Vec<u8>>> {
+        self.blobs.clone()
     }
 
-    fn references(&self) -> &IndexSet<Reference> {
-        &self.references
+    fn references(&self) -> Rc<IndexSet<Reference>> {
+        self.references.clone()
     }
 
     fn children_intent_indices(&self) -> &[usize] {
