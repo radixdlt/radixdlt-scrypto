@@ -37,6 +37,18 @@ ADD sbor-derive-common /app/sbor-derive-common
 ADD scrypto-bindgen /app/scrypto-bindgen
 ADD scrypto-compiler /app/scrypto-compiler
 
+# Add non-production dependencies which have to be added because they're in the root manifest
+# Ideally, to minimize this image size, we would replace these with an empty Cargo.toml
+# Will save this optimization for a later day
+ADD radix-engine-monkey-tests /app/radix-engine-monkey-tests
+ADD radix-engine-tests /app/radix-engine-tests
+ADD radix-transaction-scenarios /app/radix-transaction-scenarios
+ADD sbor-tests /app/sbor-tests
+ADD scrypto /app/scrypto
+ADD scrypto-derive /app/scrypto-derive
+ADD scrypto-derive-tests /app/scrypto-derive-tests
+ADD scrypto-test /app/scrypto-test
+
 WORKDIR /app
 
 RUN cargo install --path ./radix-clis
