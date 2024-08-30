@@ -14,7 +14,8 @@ cd "$(dirname "$0")"
 (set -x; cd radix-clis/tests/blueprints; cargo fmt)
 (set -x; cd scrypto-test/tests/blueprints; cargo fmt)
 (set -x; cd scrypto-test/assets/blueprints; cargo fmt)
-(set -x; cd radix-transaction-scenarios/assets/blueprints; cargo fmt)
+(set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo fmt)
+(set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo fmt)
 
 (
     find "examples" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \

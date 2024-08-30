@@ -71,6 +71,10 @@ pub struct ScryptoCompilerInputParams {
     pub package: IndexSet<String>,
     /// If set to true then '--locked' option is passed to 'cargo build', which enforces using the `Cargo.lock` file without changes. The default value is false.
     pub locked: bool,
+    /// If set, the `SCRYPTO_BUILD_USE_CARGO_LOCK` environment variable is ignored.
+    /// This is useful for unit tests in this repo, which need to run successfully independent of this setting.
+    /// Defaults to false.
+    pub ignore_locked_env_var: bool,
     /// List of custom options, passed as 'cargo build' arguments without any modifications. Optional field.
     /// Add each option as separate entry (for instance: '-j 1' must be added as two entires: '-j' and '1' one by one).
     pub custom_options: IndexSet<String>,
@@ -100,6 +104,7 @@ impl Default for ScryptoCompilerInputParams {
             all_features: false,
             package: indexset!(),
             custom_options: indexset!(),
+            ignore_locked_env_var: false,
             locked: false,
             wasm_optimization,
         };
@@ -218,12 +223,14 @@ pub struct CompilerManifestDefinition {
     pub target_directory: PathBuf,
     /// Target binary name
     pub target_binary_name: String,
-    /// Path to target binary WASM file.
-    pub target_binary_wasm_path: PathBuf,
+    /// Path to target binary WASM file from phase 1.
+    pub target_phase_1_build_wasm_output_path: PathBuf,
+    /// Path to target binary WASM file from phase 2.
+    pub target_phase_2_build_wasm_output_path: PathBuf,
     /// Path to target binary RPD file.
-    pub target_binary_rpd_path: PathBuf,
+    pub target_output_binary_rpd_path: PathBuf,
     /// Path to target binary WASM file with schema.
-    pub target_binary_wasm_with_schema_path: PathBuf,
+    pub target_copied_wasm_with_schema_path: PathBuf,
 }
 
 // Helper enum to unify different iterator types
@@ -426,22 +433,7 @@ impl ScryptoCompiler {
         input_params: &ScryptoCompilerInputParams,
         manifest_path: &Path,
     ) -> Result<CompilerManifestDefinition, ScryptoCompilerError> {
-        let (
-            target_directory,
-            target_binary_name,
-            target_binary_wasm_path,
-            target_binary_rpd_path,
-            target_binary_wasm_with_schema_path,
-        ) = ScryptoCompiler::prepare_paths_for_manifest(input_params, manifest_path)?;
-
-        Ok(CompilerManifestDefinition {
-            manifest_path: manifest_path.to_path_buf(),
-            target_directory,
-            target_binary_name,
-            target_binary_wasm_path,
-            target_binary_rpd_path,
-            target_binary_wasm_with_schema_path,
-        })
+        ScryptoCompiler::prepare_paths_for_manifest(input_params, manifest_path)
     }
 
     fn get_default_target_directory(manifest_path: &Path) -> Result<String, ScryptoCompilerError> {
@@ -597,7 +589,7 @@ impl ScryptoCompiler {
     fn prepare_paths_for_manifest(
         input_params: &ScryptoCompilerInputParams,
         manifest_path: &Path,
-    ) -> Result<(PathBuf, String, PathBuf, PathBuf, PathBuf), ScryptoCompilerError> {
+    ) -> Result<CompilerManifestDefinition, ScryptoCompilerError> {
         // Generate target directory
         let target_directory = if let Some(directory) = &input_params.target_directory {
             // If target directory is explicitly specified as compiler parameter then use it as is
@@ -608,54 +600,62 @@ impl ScryptoCompiler {
             PathBuf::from(&Self::get_default_target_directory(&manifest_path)?)
         };
 
-        let (
-            target_binary_name,
-            target_binary_wasm_path,
-            target_binary_rpd_path,
-            target_binary_wasm_with_schema_path,
-        ) = if let Some(target_binary_name) = Self::get_target_binary_name(&manifest_path)? {
-            let mut target_binary_wasm_path = target_directory.clone();
-            target_binary_wasm_path.push(BUILD_TARGET);
-            target_binary_wasm_path.push(input_params.profile.as_target_directory_name());
+        let definition = if let Some(target_binary_name) =
+            Self::get_target_binary_name(&manifest_path)?
+        {
+            // First in phase 1, we build the package with schema extract facilities
+            // This has to be built in the release profile
+            let mut target_phase_1_build_wasm_output_path = target_directory.clone();
+            target_phase_1_build_wasm_output_path.push(BUILD_TARGET);
+            target_phase_1_build_wasm_output_path.push(Profile::Release.as_target_directory_name());
+            target_phase_1_build_wasm_output_path.push(target_binary_name.clone());
+            target_phase_1_build_wasm_output_path.set_extension("wasm");
 
-            let mut target_binary_wasm_with_schema_path = target_binary_wasm_path.clone();
-
-            target_binary_wasm_path.push(target_binary_name.clone());
-            target_binary_wasm_path.set_extension("wasm");
-
-            target_binary_wasm_with_schema_path
+            let mut target_copied_wasm_with_schema_path = target_directory.clone();
+            target_copied_wasm_with_schema_path.push(BUILD_TARGET);
+            target_copied_wasm_with_schema_path.push(Profile::Release.as_target_directory_name());
+            target_copied_wasm_with_schema_path
                 .push(format!("{}_with_schema", target_binary_name.clone()));
-            target_binary_wasm_with_schema_path.set_extension("wasm");
+            target_copied_wasm_with_schema_path.set_extension("wasm");
 
-            let mut target_binary_rpd_path = target_directory.clone();
-            target_binary_rpd_path.push(BUILD_TARGET);
-            target_binary_rpd_path.push(Profile::Release.as_target_directory_name());
-            target_binary_rpd_path.push(target_binary_name.clone());
-            target_binary_rpd_path.set_extension("rpd");
+            // In phase 2, we build the package in the requested profile
+            let mut target_phase_2_build_wasm_output_path = target_directory.clone();
+            target_phase_2_build_wasm_output_path.push(BUILD_TARGET);
+            target_phase_2_build_wasm_output_path
+                .push(input_params.profile.as_target_directory_name());
+            target_phase_2_build_wasm_output_path.push(target_binary_name.clone());
+            target_phase_2_build_wasm_output_path.set_extension("wasm");
 
-            (
+            // We output the rpd in the target profile
+            let mut target_output_binary_rpd_path = target_directory.clone();
+            target_output_binary_rpd_path.push(BUILD_TARGET);
+            target_output_binary_rpd_path.push(input_params.profile.as_target_directory_name());
+            target_output_binary_rpd_path.push(target_binary_name.clone());
+            target_output_binary_rpd_path.set_extension("rpd");
+
+            CompilerManifestDefinition {
+                manifest_path: manifest_path.to_path_buf(),
+                target_directory,
                 target_binary_name,
-                target_binary_wasm_path,
-                target_binary_rpd_path,
-                target_binary_wasm_with_schema_path,
-            )
+                target_phase_1_build_wasm_output_path,
+                target_phase_2_build_wasm_output_path,
+                target_output_binary_rpd_path,
+                target_copied_wasm_with_schema_path,
+            }
         } else {
-            // for workspace compilation these paths are empty
-            (
-                String::new(),
-                PathBuf::new(),
-                PathBuf::new(),
-                PathBuf::new(),
-            )
+            CompilerManifestDefinition {
+                manifest_path: manifest_path.to_path_buf(),
+                target_directory,
+                // for workspace compilation these paths are empty
+                target_binary_name: String::new(),
+                target_phase_1_build_wasm_output_path: PathBuf::new(),
+                target_phase_2_build_wasm_output_path: PathBuf::new(),
+                target_output_binary_rpd_path: PathBuf::new(),
+                target_copied_wasm_with_schema_path: PathBuf::new(),
+            }
         };
 
-        Ok((
-            target_directory,
-            target_binary_name,
-            target_binary_wasm_path,
-            target_binary_rpd_path,
-            target_binary_wasm_with_schema_path,
-        ))
+        Ok(definition)
     }
 
     // Prepares OS command arguments
@@ -711,6 +711,9 @@ impl ScryptoCompiler {
             .args(features);
 
         if for_package_extract {
+            // At package extract time, we have to use release mode, else we get an error
+            // when running the WASM:
+            // Err(SchemaExtractionError(InvalidWasm(TooManyFunctionLocals { max: 256, actual: 257 })))
             command.arg("--release");
         } else {
             command.args(self.input_params.profile.as_command_args());
@@ -727,10 +730,11 @@ impl ScryptoCompiler {
         {
             // We support an environment variable to make it easy to turn `--locked` mode
             // on in CI, without having to rewrite all the code/plumbing.
-            let force_locked = std::env::var("SCRYPTO_BUILD_USE_CARGO_LOCK").is_ok_and(|val| {
-                let normalized = val.to_lowercase();
-                &normalized == "true" || &normalized == "1"
-            });
+            let force_locked = !self.input_params.ignore_locked_env_var
+                && std::env::var("SCRYPTO_BUILD_USE_CARGO_LOCK").is_ok_and(|val| {
+                    let normalized = val.to_lowercase();
+                    &normalized == "true" || &normalized == "1"
+                });
             if force_locked || self.input_params.locked {
                 command.arg("--locked");
             }
@@ -918,13 +922,13 @@ impl ScryptoCompiler {
         // which allows to customize settings on lower level. It is very likely it would implicate
         // more changes. And we don't want to complicate things more. So lets just rename the file.
         std::fs::rename(
-            &manifest_def.target_binary_wasm_path,
-            &manifest_def.target_binary_wasm_with_schema_path,
+            &manifest_def.target_phase_1_build_wasm_output_path,
+            &manifest_def.target_copied_wasm_with_schema_path,
         )
         .map_err(|err| {
             ScryptoCompilerError::IOErrorWithPath(
                 err,
-                manifest_def.target_binary_wasm_path.clone(),
+                manifest_def.target_phase_1_build_wasm_output_path.clone(),
                 Some(String::from("Rename WASM file failed.")),
             )
         })?;
@@ -957,10 +961,10 @@ impl ScryptoCompiler {
     ) -> Result<BuildArtifacts, ScryptoCompilerError> {
         // TODO: code was already read to calculate hash. Optimize it.
         let code =
-            std::fs::read(&manifest_def.target_binary_wasm_with_schema_path).map_err(|e| {
+            std::fs::read(&manifest_def.target_copied_wasm_with_schema_path).map_err(|e| {
                 ScryptoCompilerError::IOErrorWithPath(
                     e,
-                    manifest_def.target_binary_wasm_with_schema_path.clone(),
+                    manifest_def.target_copied_wasm_with_schema_path.clone(),
                     Some(String::from("Read WASM file for RPD extract failed.")),
                 )
             })?;
@@ -970,34 +974,35 @@ impl ScryptoCompiler {
             extract_definition(&code).map_err(ScryptoCompilerError::SchemaExtractionError)?;
 
         std::fs::write(
-            &manifest_def.target_binary_rpd_path,
+            &manifest_def.target_output_binary_rpd_path,
             manifest_encode(&package_definition)
                 .map_err(ScryptoCompilerError::SchemaEncodeError)?,
         )
         .map_err(|err| {
             ScryptoCompilerError::IOErrorWithPath(
                 err,
-                manifest_def.target_binary_rpd_path.clone(),
+                manifest_def.target_output_binary_rpd_path.clone(),
                 Some(String::from("RPD file write failed.")),
             )
         })?;
 
-        self.wasm_optimize(&manifest_def.target_binary_wasm_path.clone())?;
+        self.wasm_optimize(&manifest_def.target_phase_2_build_wasm_output_path.clone())?;
 
-        let code = std::fs::read(&manifest_def.target_binary_wasm_path).map_err(|e| {
-            ScryptoCompilerError::IOErrorWithPath(
-                e,
-                manifest_def.target_binary_wasm_path.clone(),
-                Some(String::from("Read optimized WASM file failed.")),
-            )
-        })?;
+        let code =
+            std::fs::read(&manifest_def.target_phase_2_build_wasm_output_path).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    manifest_def.target_phase_2_build_wasm_output_path.clone(),
+                    Some(String::from("Read optimized WASM file failed.")),
+                )
+            })?;
 
         let package_definition = BuildArtifact {
-            path: manifest_def.target_binary_rpd_path.clone(),
+            path: manifest_def.target_output_binary_rpd_path.clone(),
             content: package_definition,
         };
         let wasm = BuildArtifact {
-            path: manifest_def.target_binary_wasm_path.clone(),
+            path: manifest_def.target_phase_2_build_wasm_output_path.clone(),
             content: code,
         };
         let artifacts = BuildArtifacts {
@@ -1030,7 +1035,12 @@ impl ScryptoCompiler {
         // WASM optimizations are optional and might be configured on different ways.
         // They are applied in 2nd compilation, which means one can receive different WASMs
         // for the same WASM files from 1st compilation.
-        let options = format!("{:?}{:?}", code_hash, self.input_params.wasm_optimization);
+        let options = format!(
+            "{:?}/{:?}/{:?}",
+            code_hash,
+            self.input_params.profile.as_target_directory_name(),
+            self.input_params.wasm_optimization
+        );
         let hash_dir = hash(options);
 
         let cache_path = manifest_def
@@ -1113,10 +1123,10 @@ impl ScryptoCompiler {
         manifest_def: &CompilerManifestDefinition,
     ) -> Result<Option<BuildArtifacts>, ScryptoCompilerError> {
         let code =
-            std::fs::read(&manifest_def.target_binary_wasm_with_schema_path).map_err(|e| {
+            std::fs::read(&manifest_def.target_copied_wasm_with_schema_path).map_err(|e| {
                 ScryptoCompilerError::IOErrorWithPath(
                     e,
-                    manifest_def.target_binary_wasm_with_schema_path.clone(),
+                    manifest_def.target_copied_wasm_with_schema_path.clone(),
                     Some(String::from("Read WASM with schema file failed.")),
                 )
             })?;
@@ -1148,10 +1158,20 @@ impl ScryptoCompiler {
             })?;
 
             // Store artifacts into release folder
-            std::fs::write(&manifest_def.target_binary_rpd_path, rpd).map_err(|e| {
+            let rpd_output_parent = manifest_def.target_output_binary_rpd_path.parent().unwrap();
+            std::fs::create_dir_all(rpd_output_parent).map_err(|e| {
                 ScryptoCompilerError::IOErrorWithPath(
                     e,
-                    manifest_def.target_binary_rpd_path.clone(),
+                    rpd_output_parent.to_path_buf(),
+                    Some(String::from(
+                        "Error creating the RPD file's parent folder if it doesn't exist.",
+                    )),
+                )
+            })?;
+            std::fs::write(&manifest_def.target_output_binary_rpd_path, rpd).map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    manifest_def.target_output_binary_rpd_path.clone(),
                     Some(String::from("Write RPD file failed.")),
                 )
             })?;
@@ -1163,29 +1183,48 @@ impl ScryptoCompiler {
             // Which in turn would be reused in the next recompilation resulting with a
             // `target_binary_wasm_with_schema_path` not including the schema.
             // So if `target_binary_wasm_path` exists just remove it assuming it is a hard-link.
-            if std::fs::metadata(&manifest_def.target_binary_wasm_path).is_ok() {
-                std::fs::remove_file(&manifest_def.target_binary_wasm_path).map_err(|e| {
-                    ScryptoCompilerError::IOErrorWithPath(
-                        e,
-                        manifest_def.target_binary_wasm_path.clone(),
-                        Some(String::from("Remove WASM file failed.")),
-                    )
-                })?;
-            }
-            std::fs::write(&manifest_def.target_binary_wasm_path, wasm.clone()).map_err(|e| {
+            let wasm_output_parent = manifest_def
+                .target_phase_2_build_wasm_output_path
+                .parent()
+                .unwrap();
+            std::fs::create_dir_all(wasm_output_parent).map_err(|e| {
                 ScryptoCompilerError::IOErrorWithPath(
                     e,
-                    manifest_def.target_binary_wasm_path.clone(),
+                    wasm_output_parent.to_path_buf(),
+                    Some(String::from(
+                        "Error creating the WASM file's parent folder if it doesn't exist.",
+                    )),
+                )
+            })?;
+            if std::fs::metadata(&manifest_def.target_phase_2_build_wasm_output_path).is_ok() {
+                std::fs::remove_file(&manifest_def.target_phase_2_build_wasm_output_path).map_err(
+                    |e| {
+                        ScryptoCompilerError::IOErrorWithPath(
+                            e,
+                            manifest_def.target_phase_2_build_wasm_output_path.clone(),
+                            Some(String::from("Remove WASM file failed.")),
+                        )
+                    },
+                )?;
+            }
+            std::fs::write(
+                &manifest_def.target_phase_2_build_wasm_output_path,
+                wasm.clone(),
+            )
+            .map_err(|e| {
+                ScryptoCompilerError::IOErrorWithPath(
+                    e,
+                    manifest_def.target_phase_2_build_wasm_output_path.clone(),
                     Some(String::from("Write WASM file failed.")),
                 )
             })?;
 
             let wasm = BuildArtifact {
-                path: manifest_def.target_binary_wasm_path.clone(),
+                path: manifest_def.target_phase_2_build_wasm_output_path.clone(),
                 content: wasm,
             };
             let package_definition = BuildArtifact {
-                path: manifest_def.target_binary_rpd_path.clone(),
+                path: manifest_def.target_output_binary_rpd_path.clone(),
                 content: package_definition,
             };
 
@@ -1255,6 +1294,11 @@ impl ScryptoCompilerBuilder {
 
     pub fn locked(&mut self) -> &mut Self {
         self.input_params.locked = true;
+        self
+    }
+
+    pub fn ignore_locked_env_var(&mut self) -> &mut Self {
+        self.input_params.ignore_locked_env_var = true;
         self
     }
 
@@ -1394,7 +1438,7 @@ mod tests {
             "./tests/target/wasm32-unknown-unknown/release/test_blueprint.wasm",
             compiler
                 .main_manifest
-                .target_binary_wasm_path
+                .target_phase_1_build_wasm_output_path
                 .display()
                 .to_string()
         );
@@ -1413,10 +1457,12 @@ mod tests {
 
         // Act
         ScryptoCompiler::builder()
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
         ScryptoCompiler::builder()
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1441,11 +1487,13 @@ mod tests {
         // Act
         ScryptoCompiler::builder()
             .manifest_path(&manifest_path)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
         ScryptoCompiler::builder()
             .manifest_path(&manifest_path)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1469,11 +1517,13 @@ mod tests {
         // Act
         ScryptoCompiler::builder()
             .target_directory(&target_path)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
         ScryptoCompiler::builder()
             .target_directory(&target_path)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1501,6 +1551,7 @@ mod tests {
             .log_level(Level::Trace)
             .feature("feature_1")
             .no_default_features()
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
@@ -1508,6 +1559,7 @@ mod tests {
             .log_level(Level::Trace)
             .feature("feature_1")
             .no_default_features()
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1533,11 +1585,13 @@ mod tests {
         // Act
         ScryptoCompiler::builder()
             .log_level(Level::Error)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
         ScryptoCompiler::builder()
             .log_level(Level::Error)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1561,11 +1615,13 @@ mod tests {
         // Act
         ScryptoCompiler::builder()
             .manifest_path(&manifest_path)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
         ScryptoCompiler::builder()
             .manifest_path(&manifest_path)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1592,6 +1648,7 @@ mod tests {
             .manifest_path(&manifest_path)
             .package("test_blueprint")
             .package("test_blueprint_3")
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
@@ -1599,6 +1656,7 @@ mod tests {
             .manifest_path(&manifest_path)
             .package("test_blueprint")
             .package("test_blueprint_3")
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1624,11 +1682,13 @@ mod tests {
         // Act
         ScryptoCompiler::builder()
             .profile(Profile::Debug)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
         ScryptoCompiler::builder()
             .profile(Profile::Debug)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1655,11 +1715,13 @@ mod tests {
         // Ensure that no-schema is properly used across both phase compilation, even if specified explicitly by the user.
         ScryptoCompiler::builder()
             .feature(SCRYPTO_NO_SCHEMA)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
         ScryptoCompiler::builder()
             .feature(SCRYPTO_NO_SCHEMA)
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1686,12 +1748,14 @@ mod tests {
         ScryptoCompiler::builder()
             .coverage()
             .target_directory(target_path.clone())
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_1(&mut cmd_phase_1);
         ScryptoCompiler::builder()
             .coverage()
             .target_directory(target_path.clone())
+            .ignore_locked_env_var()
             .build()
             .unwrap()
             .prepare_command_phase_2(&mut cmd_phase_2);
@@ -1721,6 +1785,7 @@ mod tests {
         ScryptoCompiler::builder()
             .coverage()
             .target_directory(target_path.clone())
+            .ignore_locked_env_var()
             .env("CARGO_ENCODED_RUSTFLAGS", action.clone()) // CARGO_ENCODED_RUSTFLAGS must be removed for 1st phase
             .build()
             .unwrap()
@@ -1728,6 +1793,7 @@ mod tests {
         ScryptoCompiler::builder()
             .coverage()
             .target_directory(target_path.clone())
+            .ignore_locked_env_var()
             .env("CARGO_ENCODED_RUSTFLAGS", action.clone())
             .build()
             .unwrap()

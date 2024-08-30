@@ -30,7 +30,12 @@ for package in $packages; do
         { echo "Code format check FAILED for $package"; failed=1; }
 done
 
-packages="radix-clis/tests/blueprints/Cargo.toml"
+packages=""
+packages+="radix-clis/tests/blueprints/Cargo.toml"
+packages+=$'\n'
+packages+="scrypto-compiler/tests/assets/scenario_1/Cargo.toml"
+packages+=$'\n'
+packages+="scrypto-compiler/tests/assets/scenario_2/Cargo.toml"
 packages+=$'\n'
 packages+=$(find radix-engine-tests/assets/blueprints -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))
 packages+=$'\n'

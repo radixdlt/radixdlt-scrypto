@@ -17,6 +17,8 @@ echo "Building scrypto packages using cargo build, to catch errors quickly..."
 (set -x; cd scrypto-test/tests/blueprints; cargo build)
 (set -x; cd scrypto-test/assets/blueprints; cargo build)
 (set -x; cd radix-transaction-scenarios/assets/blueprints; cargo build)
+(set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo build)
+(set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo build)
 
 echo "Building the engine in different configurations..."
 

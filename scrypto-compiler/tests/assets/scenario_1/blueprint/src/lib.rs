@@ -14,7 +14,5 @@ mod test_blueprint {
     }
 }
 
-
 #[test]
-fn some_test() {
-}
+fn some_test() {}

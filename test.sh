@@ -15,6 +15,7 @@ test_crates_features \
     sbor-derive \
     sbor-tests \
     scrypto \
+    scrypto-compiler \
     scrypto-derive \
     scrypto-derive-tests \
     radix-sbor-derive \

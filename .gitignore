@@ -12,7 +12,7 @@ target/
 # First off - let's blanket ignore all Cargo.lock files, so any old/historic ones stay ignored,
 # to try to limit the amount of git breakage which will occur when we start to source control
 # these
-Cargo.lock
+!Cargo.lock
 
 # TYPE 1:
 # - The root workspace of libraries.
