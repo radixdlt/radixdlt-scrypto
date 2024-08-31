@@ -312,6 +312,12 @@ fn metadata_updates_show_in_receipt() {
             /* Transient key */
             .set_metadata(account, "transient_key", 1)
             .set_metadata(account, "transient_key", None)
+            /* Transient key 2 */
+            .set_metadata(account, "transient_key2", 1)
+            .set_metadata(account, "transient_key2", None)
+            .set_metadata(account, "transient_key2", 1)
+            .set_metadata(account, "transient_key2", None)
+            .set_metadata(account, "transient_key2", 2u32)
             .build(),
         vec![public_key.into()],
         0,
@@ -351,6 +357,13 @@ fn metadata_updates_show_in_receipt() {
             .get(account.as_node_id())
             .and_then(|value| value.get("transient_key")),
         None
+    );
+    assert_eq!(
+        state_updates_summary
+            .metadata_updates
+            .get(account.as_node_id())
+            .and_then(|value| value.get("transient_key2")),
+        Some(&MetadataUpdate::Set(MetadataValue::U32(2)))
     );
 }
 
