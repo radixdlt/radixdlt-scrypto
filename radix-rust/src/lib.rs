@@ -8,6 +8,7 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 mod contextual_display;
 #[cfg(feature = "serde")]
 mod contextual_serialize;
+mod contextual_try_from_into;
 pub mod iterators;
 pub mod rust;
 mod slice;
@@ -15,6 +16,7 @@ mod slice;
 pub use contextual_display::*;
 #[cfg(feature = "serde")]
 pub use contextual_serialize::*;
+pub use contextual_try_from_into::*;
 pub use slice::*;
 
 /// Each module should have its own prelude, which:
@@ -31,6 +33,7 @@ pub mod prelude {
     pub use crate::contextual_display::*;
     #[cfg(feature = "serde")]
     pub use crate::contextual_serialize::*;
+    pub use crate::contextual_try_from_into::*;
     pub use crate::iterators::*;
     pub use crate::slice::*;
 }

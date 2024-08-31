@@ -1,0 +1,23 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [
+      "component_sim1crqym5y3wr2x42ayq92kcnej3quexdzepu7vlvemcrye6ksedhgdwu",
+      "package_sim1phczwnx2kdtxsa7pf6lxw5kav0wadag6x3uhxx3xpwkp2kj7uzdwsx"
+    ],
+    "metadata_updates": {},
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {},
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.7482746",
+    "finalization_fees_in_xrd": "0.1288607",
+    "storage_fees_in_xrd": "30.25159783773",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}

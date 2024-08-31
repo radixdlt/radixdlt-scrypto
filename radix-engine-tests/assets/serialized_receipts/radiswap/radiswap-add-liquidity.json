@@ -1,0 +1,139 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [],
+    "metadata_updates": {},
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {
+    "1": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "10000"
+        }
+      }
+    ],
+    "2": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726",
+          "amount": "7000"
+        }
+      }
+    ],
+    "3": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
+          "amount": "5000"
+        }
+      }
+    ],
+    "4": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77",
+          "amount": "8000"
+        }
+      }
+    ],
+    "5": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "10000"
+        }
+      }
+    ],
+    "6": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726",
+          "amount": "7000"
+        }
+      }
+    ],
+    "7": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+          "amount": "8366.600265340755479781"
+        }
+      }
+    ],
+    "8": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
+          "amount": "5000"
+        }
+      }
+    ],
+    "9": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77",
+          "amount": "8000"
+        }
+      }
+    ],
+    "10": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc",
+          "amount": "6324.555320336758663997"
+        }
+      }
+    ],
+    "11": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+          "amount": "8366.600265340755479781"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc",
+          "amount": "6324.555320336758663997"
+        }
+      }
+    ]
+  },
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.7892822",
+    "finalization_fees_in_xrd": "0.10602725",
+    "storage_fees_in_xrd": "0.39758681567",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}
