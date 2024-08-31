@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use std::path::PathBuf;
 
 use radix_engine::system::system_modules::execution_trace::{ResourceSpecifier, WorktopChange};
