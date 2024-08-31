@@ -57,6 +57,10 @@ impl ValidatedPreviewIntent {
 
         ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
+            AuthZoneInit::new(
+                initial_proofs,
+                simulate_every_proof_under_resources,
+            ),
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
@@ -76,10 +80,6 @@ impl ValidatedPreviewIntent {
                 },
                 payload_size: self.intent.summary.effective_length,
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
-                auth_zone_init: AuthZoneInit::new(
-                    initial_proofs,
-                    simulate_every_proof_under_resources,
-                ),
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],
             },

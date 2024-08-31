@@ -99,6 +99,7 @@ impl PreparedSystemTransactionV1 {
     ) -> ExecutableTransactionV1 {
         ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
+            AuthZoneInit::proofs(initial_proofs),
             self.references.clone(),
             self.blobs.blobs_by_hash.clone(),
             ExecutionContext {
@@ -109,7 +110,6 @@ impl PreparedSystemTransactionV1 {
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
-                auth_zone_init: AuthZoneInit::proofs(initial_proofs),
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,

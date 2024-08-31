@@ -94,6 +94,9 @@ impl PreparedRoundUpdateTransactionV1 {
     pub fn get_executable(&self) -> ExecutableTransactionV1 {
         ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
+            AuthZoneInit::proofs(btreeset!(system_execution(
+                SystemExecution::Validator
+            ))),
             self.references.clone(),
             self.blobs.clone(),
             ExecutionContext {
@@ -102,9 +105,6 @@ impl PreparedRoundUpdateTransactionV1 {
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
-                auth_zone_init: AuthZoneInit::proofs(btreeset!(system_execution(
-                    SystemExecution::Validator
-                ))),
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,

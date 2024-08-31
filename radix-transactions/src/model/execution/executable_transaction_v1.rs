@@ -9,6 +9,7 @@ pub struct ExecutableTransactionV1 {
     pub(crate) encoded_instructions_v1: Rc<Vec<u8>>,
     pub(crate) references: Rc<IndexSet<Reference>>,
     pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    pub(crate) auth_zone_init: AuthZoneInit,
     pub(crate) context: ExecutionContext,
     pub(crate) system: bool,
 }
@@ -22,13 +23,13 @@ pub struct ExecutionContext {
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub num_of_signature_validations: usize,
-    pub auth_zone_init: AuthZoneInit,
     pub costing_parameters: TransactionCostingParameters,
 }
 
 impl ExecutableTransactionV1 {
     pub fn new(
         encoded_instructions_v1: Rc<Vec<u8>>,
+        auth_zone_init: AuthZoneInit,
         references: IndexSet<Reference>,
         blobs: Rc<IndexMap<Hash, Vec<u8>>>,
         context: ExecutionContext,
@@ -36,10 +37,10 @@ impl ExecutableTransactionV1 {
     ) -> Self {
         let mut references = references;
 
-        for proof in &context.auth_zone_init.initial_non_fungible_id_proofs {
+        for proof in &auth_zone_init.initial_non_fungible_id_proofs {
             references.insert(proof.resource_address().clone().into());
         }
-        for resource in &context.auth_zone_init.simulate_every_proof_under_resources {
+        for resource in &auth_zone_init.simulate_every_proof_under_resources {
             references.insert(resource.clone().into());
         }
 
@@ -58,6 +59,7 @@ impl ExecutableTransactionV1 {
             references: Rc::new(references),
             blobs,
             context,
+            auth_zone_init,
             system,
         }
     }
@@ -140,7 +142,7 @@ impl IntentDetails for ExecutableTransactionV1 {
     }
 
     fn auth_zone_init(&self) -> &AuthZoneInit {
-        &self.context.auth_zone_init
+        &self.auth_zone_init
     }
 
     fn blobs(&self) -> Rc<IndexMap<Hash, Vec<u8>>> {

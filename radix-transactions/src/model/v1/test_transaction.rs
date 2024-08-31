@@ -52,8 +52,10 @@ impl PreparedTestTransaction {
         &self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
     ) -> ExecutableTransactionV1 {
+        let num_of_signature_validations = initial_proofs.len() + 1;
         ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
+            AuthZoneInit::proofs(initial_proofs),
             self.references.clone(),
             self.blobs.clone(),
             ExecutionContext {
@@ -63,8 +65,7 @@ impl PreparedTestTransaction {
                 payload_size: self.encoded_instructions.len()
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),
                 // For testing purpose, assume `num_of_signature_validations = num_of_initial_proofs + 1`
-                num_of_signature_validations: initial_proofs.len() + 1,
-                auth_zone_init: AuthZoneInit::proofs(initial_proofs),
+                num_of_signature_validations,
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,

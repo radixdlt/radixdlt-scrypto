@@ -37,6 +37,7 @@ impl ValidatedNotarizedTransactionV1 {
 
         ExecutableTransactionV1::new(
             self.encoded_instructions.clone(),
+            AuthZoneInit::proofs(AuthAddresses::signer_set(&self.signer_keys)),
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
@@ -52,7 +53,6 @@ impl ValidatedNotarizedTransactionV1 {
                 }),
                 payload_size: summary.effective_length,
                 num_of_signature_validations: self.num_of_signature_validations,
-                auth_zone_init: AuthZoneInit::proofs(AuthAddresses::signer_set(&self.signer_keys)),
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::Percentage(intent.header.inner.tip_percentage),
                     free_credit_in_xrd: Decimal::ZERO,
