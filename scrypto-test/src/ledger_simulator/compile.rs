@@ -78,25 +78,27 @@ impl Compile {
         // Check if binary exists in coverage directory, if it doesn't only then build it
         if _use_coverage {
             let manifest = compiler.get_main_manifest_definition();
-            if manifest.target_binary_rpd_path.exists() && manifest.target_binary_wasm_path.exists()
+            if manifest.target_output_binary_rpd_path.exists()
+                && manifest.target_phase_2_build_wasm_output_path.exists()
             {
-                let code = std::fs::read(&manifest.target_binary_wasm_path).unwrap_or_else(|err| {
-                    panic!(
-                        "Failed to read built WASM from path {:?} - {:?}",
-                        &manifest.target_binary_wasm_path, err
-                    )
-                });
-                let definition =
-                    std::fs::read(&manifest.target_binary_rpd_path).unwrap_or_else(|err| {
+                let code = std::fs::read(&manifest.target_phase_2_build_wasm_output_path)
+                    .unwrap_or_else(|err| {
+                        panic!(
+                            "Failed to read built WASM from path {:?} - {:?}",
+                            &manifest.target_phase_2_build_wasm_output_path, err
+                        )
+                    });
+                let definition = std::fs::read(&manifest.target_output_binary_rpd_path)
+                    .unwrap_or_else(|err| {
                         panic!(
                             "Failed to read package definition from path {:?} - {:?}",
-                            &manifest.target_binary_rpd_path, err
+                            &manifest.target_output_binary_rpd_path, err
                         )
                     });
                 let definition = manifest_decode(&definition).unwrap_or_else(|err| {
                     panic!(
                         "Failed to parse package definition from path {:?} - {:?}",
-                        &manifest.target_binary_rpd_path, err
+                        &manifest.target_output_binary_rpd_path, err
                     )
                 });
                 return (code, definition);
