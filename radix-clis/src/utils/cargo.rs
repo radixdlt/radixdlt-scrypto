@@ -89,7 +89,12 @@ pub fn build_package<P: AsRef<Path>>(
 }
 
 /// Runs tests within a package.
-pub fn test_package<P: AsRef<Path>, I, S>(path: P, args: I, coverage: bool) -> Result<(), TestError>
+pub fn test_package<P: AsRef<Path>, I, S>(
+    path: P,
+    args: I,
+    coverage: bool,
+    locked: bool,
+) -> Result<(), TestError>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
@@ -101,17 +106,25 @@ where
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
     if cargo.exists() {
-        let features = if coverage {
-            vec!["--features", "scrypto-test/coverage"]
-        } else {
-            vec![]
-        };
         let status = Command::new("cargo")
             .arg("test")
             .arg("--release")
             .arg("--manifest-path")
             .arg(cargo.to_str().unwrap())
-            .args(features)
+            .args({
+                if coverage {
+                    vec!["--features", "scrypto-test/coverage"]
+                } else {
+                    vec![]
+                }
+            })
+            .args({
+                if locked {
+                    vec!["--locked"]
+                } else {
+                    vec![]
+                }
+            })
             .arg("--")
             .args(args)
             .status()

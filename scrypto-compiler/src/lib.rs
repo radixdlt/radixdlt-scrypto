@@ -71,7 +71,7 @@ pub struct ScryptoCompilerInputParams {
     pub package: IndexSet<String>,
     /// If set to true then '--locked' option is passed to 'cargo build', which enforces using the `Cargo.lock` file without changes. The default value is false.
     pub locked: bool,
-    /// If set, the `SCRYPTO_BUILD_USE_CARGO_LOCK` environment variable is ignored.
+    /// If set, the `SCRYPTO_CARGO_LOCKED` environment variable is ignored.
     /// This is useful for unit tests in this repo, which need to run successfully independent of this setting.
     /// Defaults to false.
     pub ignore_locked_env_var: bool,
@@ -726,21 +726,11 @@ impl ScryptoCompiler {
             command.arg("--all_features");
         }
 
-        #[cfg(feature = "std")]
-        {
-            // We support an environment variable to make it easy to turn `--locked` mode
-            // on in CI, without having to rewrite all the code/plumbing.
-            let force_locked = !self.input_params.ignore_locked_env_var
-                && std::env::var("SCRYPTO_BUILD_USE_CARGO_LOCK").is_ok_and(|val| {
-                    let normalized = val.to_lowercase();
-                    &normalized == "true" || &normalized == "1"
-                });
-            if force_locked || self.input_params.locked {
-                command.arg("--locked");
-            }
-        }
-        #[cfg(not(feature = "std"))]
-        if self.input_params.locked {
+        // We support an environment variable to make it easy to turn `--locked` mode
+        // on in CI, without having to rewrite all the code/plumbing.
+        let force_locked =
+            !self.input_params.ignore_locked_env_var && is_scrypto_cargo_locked_env_var_active();
+        if force_locked || self.input_params.locked {
             command.arg("--locked");
         }
 
@@ -1388,6 +1378,19 @@ impl ScryptoCompilerBuilder {
     ) -> Result<Vec<BuildArtifacts>, ScryptoCompilerError> {
         self.build()?.compile_with_stdio(stdin, stdout, stderr)
     }
+}
+
+#[cfg(feature = "std")]
+pub fn is_scrypto_cargo_locked_env_var_active() -> bool {
+    std::env::var("SCRYPTO_CARGO_LOCKED").is_ok_and(|val| {
+        let normalized = val.to_lowercase();
+        &normalized == "true" || &normalized == "1"
+    })
+}
+
+#[cfg(not(feature = "std"))]
+pub fn is_scrypto_cargo_locked_env_var_active() -> bool {
+    false
 }
 
 #[cfg(test)]

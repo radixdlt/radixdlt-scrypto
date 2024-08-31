@@ -60,8 +60,8 @@ pub struct Build {
     all_features: bool,
 
     /// Ensures the Cargo.lock file is used as-is. Equivalent to `cargo build --locked`.
-    /// Alternatively, the `SCRYPTO_BUILD_USE_CARGO_LOCK` environment variable can be used,
-    /// which makes it easy to set in CI.
+    /// Alternatively, the `SCRYPTO_CARGO_LOCKED` environment variable can be used,
+    /// which makes it easy to set universally in CI.
     #[clap(long)]
     locked: bool,
 

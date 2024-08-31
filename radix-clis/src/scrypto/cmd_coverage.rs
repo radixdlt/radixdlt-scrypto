@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine_interface::types::Level;
 use regex::Regex;
+use scrypto_compiler::is_scrypto_cargo_locked_env_var_active;
 use std::env;
 use std::env::current_dir;
 use std::fs;
@@ -18,6 +19,12 @@ use crate::utils::*;
 pub struct Coverage {
     /// The arguments to be passed to the test executable
     arguments: Vec<String>,
+
+    /// Ensures the Cargo.lock file is used as-is. Equivalent to `cargo test --locked`.
+    /// Alternatively, the `SCRYPTO_CARGO_LOCKED` environment variable can be used,
+    /// which makes it easy to set universally in CI.
+    #[clap(long)]
+    locked: bool,
 
     /// The package directory
     #[clap(long)]
@@ -154,9 +161,14 @@ impl Coverage {
         );
 
         // Run tests
-        test_package(path, self.arguments.clone(), true)
-            .map(|_| ())
-            .map_err(Error::TestError)?;
+        test_package(
+            path,
+            self.arguments.clone(),
+            true,
+            is_scrypto_cargo_locked_env_var_active() || self.locked,
+        )
+        .map(|_| ())
+        .map_err(Error::TestError)?;
 
         // Merge profraw files into profdata file
         let profraw_files: Vec<String> = WalkDir::new(&data_path)

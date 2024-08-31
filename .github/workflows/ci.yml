@@ -12,7 +12,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SCRYPTO_BUILD_USE_CARGO_LOCK: 1
+  SCRYPTO_CARGO_LOCKED: 1
 
 concurrency:
   group: ci-${{ github.ref }}
