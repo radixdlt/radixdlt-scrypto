@@ -33,7 +33,6 @@ ADD radix-transactions /app/radix-transactions
 ADD sbor /app/sbor
 ADD sbor-derive /app/sbor-derive
 ADD sbor-derive-common /app/sbor-derive-common
-ADD scrypto-bindgen /app/scrypto-bindgen
 ADD scrypto-compiler /app/scrypto-compiler
 
 # Copy radix-clis crate
