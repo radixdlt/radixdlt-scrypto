@@ -19,6 +19,7 @@ use radix_engine_interface::blueprints::resource::{
     AccessRule, AuthZoneAssertAccessRuleInput, AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
 };
 use radix_engine_interface::prelude::NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
+use radix_engine_interface::prelude::FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 use scrypto::engine::scrypto_env::ScryptoVmV1Api;
 
 /// The transaction runtime.
@@ -47,6 +48,18 @@ impl Runtime {
                 RESOURCE_PACKAGE.as_bytes().len(),
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.as_ptr(),
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.len(),
+            )
+        });
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    pub fn allocate_fungible_address() -> (GlobalAddressReservation, ResourceAddress) {
+        let bytes = copy_buffer(unsafe {
+            addr::address_allocate(
+                RESOURCE_PACKAGE.as_bytes().as_ptr(),
+                RESOURCE_PACKAGE.as_bytes().len(),
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.as_ptr(),
+                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.len(),
             )
         });
         scrypto_decode(&bytes).unwrap()
