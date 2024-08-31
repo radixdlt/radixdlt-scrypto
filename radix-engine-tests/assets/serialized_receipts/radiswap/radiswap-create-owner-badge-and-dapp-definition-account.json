@@ -1,0 +1,97 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [
+      "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd",
+      "resource_sim1nffzs2zlcuna0scr307jnkrws4yjqedqrer6nape2e5vwrn8vlgstn"
+    ],
+    "metadata_updates": {
+      "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd": {
+        "account_type": {
+          "Set": {
+            "kind": "String",
+            "value": "dapp definition"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radiswap dApp Definition"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "[EXAMPLE] The Radiswap dApp definition account"
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "dex",
+              "pool",
+              "radiswap"
+            ]
+          }
+        },
+        "info_url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://radiswap.radixdlt.com/"
+          }
+        },
+        "claimed_websites": {
+          "Set": {
+            "kind": "OriginArray",
+            "value": [
+              "https://radiswap.radixdlt.com"
+            ]
+          }
+        }
+      }
+    },
+    "non_fungible_data_updates": {
+      "resource_sim1nffzs2zlcuna0scr307jnkrws4yjqedqrer6nape2e5vwrn8vlgstn:#1#": "5c2100"
+    },
+    "newly_minted_non_fungibles": [
+      "resource_sim1nffzs2zlcuna0scr307jnkrws4yjqedqrer6nape2e5vwrn8vlgstn:#1#"
+    ]
+  },
+  "worktop_changes": {
+    "1": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Ids",
+          "resource_address": "resource_sim1nffzs2zlcuna0scr307jnkrws4yjqedqrer6nape2e5vwrn8vlgstn",
+          "ids": [
+            "#1#"
+          ]
+        }
+      }
+    ],
+    "2": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Ids",
+          "resource_address": "resource_sim1nffzs2zlcuna0scr307jnkrws4yjqedqrer6nape2e5vwrn8vlgstn",
+          "ids": [
+            "#1#"
+          ]
+        }
+      }
+    ]
+  },
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.3535163",
+    "finalization_fees_in_xrd": "0.21777715",
+    "storage_fees_in_xrd": "0.56056975354",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}

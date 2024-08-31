@@ -1,0 +1,26 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [
+      "account_sim1c87cyhcdrezltflny2jvgccm9guhpyq66umlpg29at6qpy0257llt0",
+      "account_sim1c9avh8xzsuvlmtxa9qf0pj5cyuc0u6tgga28f3cqe2z2fgrl3tuugq",
+      "account_sim1cyles4a57e6pe2kzu2sua048zedrx83vgr3gj3t88aa7hqssxkf767",
+      "account_sim1cx3e9ezcwyvntqhxqxkxhv3lgj2gh4ens0wxp4f0pdsxr8yg24du86",
+      "account_sim1cxa4qrlsdx4595cyfjmpj5kp6r927re4nw2x67sxxtaxfr7n80h6ep"
+    ],
+    "metadata_updates": {},
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {},
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.2345573",
+    "finalization_fees_in_xrd": "0.13526745",
+    "storage_fees_in_xrd": "0.31232833325",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}
