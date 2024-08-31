@@ -17,6 +17,8 @@ pub trait Executable {
     /// The first intent at index 0 is required to be the root transaction intent
     fn intents(&self) -> Vec<&Self::Intent>;
 
+    fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification>;
+
     fn all_blob_hashes(&self) -> IndexSet<Hash> {
         let mut hashes = indexset!();
 
@@ -45,7 +47,6 @@ pub trait Executable {
 
 pub trait IntentDetails {
     fn executable_instructions(&self) -> ExecutableInstructions;
-    fn intent_hash_nullification(&self) -> &IntentHashNullification;
     fn auth_zone_init(&self) -> &AuthZoneInit;
     fn blobs(&self) -> Rc<IndexMap<Hash, Vec<u8>>>;
     fn references(&self) -> Rc<IndexSet<Reference>>;
@@ -120,8 +121,9 @@ pub enum IntentHashNullification {
         expiry_epoch: Epoch,
         ignore_duplicate: bool,
     },
-    /// For where there's no intent hash
-    None,
+    /// For system transactions which currently need to go through
+    /// nullification process.
+    System,
 }
 
 impl IntentHashNullification {
@@ -133,7 +135,7 @@ impl IntentHashNullification {
             IntentHashNullification::Subintent { intent_hash, .. } => {
                 Some(IntentHash::Sub(*intent_hash))
             }
-            IntentHashNullification::None => None,
+            IntentHashNullification::System => None,
         }
     }
 }

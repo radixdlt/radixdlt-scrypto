@@ -98,7 +98,7 @@ impl PreparedRoundUpdateTransactionV1 {
             self.blobs.clone(),
             ExecutionContext {
                 unique_hash: self.summary.hash,
-                intent_hash_nullification: IntentHashNullification::None,
+                intent_hash_nullifications: vec![],
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,

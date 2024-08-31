@@ -103,7 +103,9 @@ impl PreparedSystemTransactionV1 {
             self.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: self.hash_for_execution.hash,
-                intent_hash_nullification: IntentHashNullification::None,
+                intent_hash_nullifications: vec![
+                    IntentHashNullification::System
+                ],
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,

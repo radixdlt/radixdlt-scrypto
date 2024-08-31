@@ -41,11 +41,11 @@ impl ValidatedNotarizedTransactionV1 {
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: intent_hash.0,
-                intent_hash_nullification: IntentHashNullification::TransactionIntent {
+                intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch: header.end_epoch_exclusive,
                     ignore_duplicate: false,
-                },
+                }],
                 epoch_range: Some(EpochRange {
                     start_epoch_inclusive: header.start_epoch_inclusive,
                     end_epoch_exclusive: header.end_epoch_exclusive,

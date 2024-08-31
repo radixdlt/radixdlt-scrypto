@@ -61,11 +61,11 @@ impl ValidatedPreviewIntent {
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: intent_hash.0,
-                intent_hash_nullification: IntentHashNullification::TransactionIntent {
+                intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch: intent.header.inner.end_epoch_exclusive,
                     ignore_duplicate: flags.skip_epoch_check,
-                },
+                }],
                 epoch_range: if flags.skip_epoch_check {
                     None
                 } else {

@@ -17,7 +17,7 @@ pub struct ExecutableTransactionV1 {
 pub struct ExecutionContext {
     /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
     pub unique_hash: Hash,
-    pub intent_hash_nullification: IntentHashNullification,
+    pub intent_hash_nullifications: Vec<IntentHashNullification>,
     pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
@@ -70,7 +70,7 @@ impl ExecutableTransactionV1 {
     }
 
     pub fn skip_intent_hash_nullification(mut self) -> Self {
-        self.context.intent_hash_nullification = IntentHashNullification::None;
+        self.context.intent_hash_nullifications.clear();
         self
     }
 
@@ -127,15 +127,16 @@ impl Executable for ExecutableTransactionV1 {
     fn intents(&self) -> Vec<&Self::Intent> {
         vec![&self]
     }
+
+    fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification> {
+        &self.context.intent_hash_nullifications
+    }
+
 }
 
 impl IntentDetails for ExecutableTransactionV1 {
     fn executable_instructions(&self) -> ExecutableInstructions {
         ExecutableInstructions::V1Processor(self.encoded_instructions_v1.clone())
-    }
-
-    fn intent_hash_nullification(&self) -> &IntentHashNullification {
-        &self.context.intent_hash_nullification
     }
 
     fn auth_zone_init(&self) -> &AuthZoneInit {

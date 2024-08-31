@@ -58,7 +58,7 @@ impl PreparedTestTransaction {
             self.blobs.clone(),
             ExecutionContext {
                 unique_hash: self.hash,
-                intent_hash_nullification: IntentHashNullification::None,
+                intent_hash_nullifications: vec![],
                 epoch_range: None,
                 payload_size: self.encoded_instructions.len()
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),

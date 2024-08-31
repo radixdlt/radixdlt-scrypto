@@ -672,7 +672,7 @@ impl<C: SystemCallbackObject> System<C> {
                     None
                 }
             }
-            IntentHashNullification::None => None,
+            IntentHashNullification::System => None,
         };
 
         if let Some((intent_hash, expiry_epoch)) = mark_intent_result {
@@ -1285,8 +1285,8 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             }
         }
 
-        for intent in executable.intents() {
-            let intent_hash_validation_result = match intent.intent_hash_nullification() {
+        for hash_nullification in executable.intent_hash_nullifications() {
+            let intent_hash_validation_result = match hash_nullification {
                 IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch,
@@ -1317,7 +1317,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
                         )
                     }
                 }
-                IntentHashNullification::None => Ok(()),
+                IntentHashNullification::System => Ok(()),
             };
             match intent_hash_validation_result {
                 Ok(()) => {}
@@ -1343,10 +1343,8 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             callback,
             modules,
             finalization: SystemFinalization {
-                intent_nullifications: executable
-                    .intents()
+                intent_nullifications: executable.intent_hash_nullifications()
                     .iter()
-                    .map(|i| i.intent_hash_nullification())
                     .cloned()
                     .collect(),
             },

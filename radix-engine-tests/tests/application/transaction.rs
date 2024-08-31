@@ -211,7 +211,7 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
         Rc::new(blobs),
         ExecutionContext {
             unique_hash: Hash([0; 32]),
-            intent_hash_nullification: IntentHashNullification::None,
+            intent_hash_nullifications: vec![],
             epoch_range: Default::default(),
             pre_allocated_addresses: Default::default(),
             payload_size: 4,

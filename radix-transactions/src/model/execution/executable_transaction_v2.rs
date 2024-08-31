@@ -25,12 +25,12 @@ pub struct ExecutionContextV2 {
     pub(crate) overall_start_timestamp_inclusive: Option<Instant>,
     pub(crate) overall_end_timestamp_exclusive: Option<Instant>,
     pub(crate) disable_limits_and_costing_modules: bool,
+    pub(crate) intent_hash_nullifications: Vec<IntentHashNullification>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableIntentV2 {
     pub(crate) encoded_instructions_v2: Rc<Vec<u8>>,
-    pub(crate) intent_hash_nullification: IntentHashNullification,
     pub(crate) auth_zone_init: AuthZoneInit,
     pub(crate) references: Rc<IndexSet<Reference>>,
     pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
@@ -76,6 +76,10 @@ impl Executable for ExecutableTransactionV2 {
         self.context.disable_limits_and_costing_modules
     }
 
+    fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification> {
+        &self.context.intent_hash_nullifications
+    }
+
     fn intents(&self) -> Vec<&Self::Intent> {
         self.intents.iter().collect()
     }
@@ -84,10 +88,6 @@ impl Executable for ExecutableTransactionV2 {
 impl IntentDetails for ExecutableIntentV2 {
     fn executable_instructions(&self) -> ExecutableInstructions {
         ExecutableInstructions::V2Processor(self.encoded_instructions_v2.clone())
-    }
-
-    fn intent_hash_nullification(&self) -> &IntentHashNullification {
-        &self.intent_hash_nullification
     }
 
     fn auth_zone_init(&self) -> &AuthZoneInit {
