@@ -6,6 +6,12 @@ err_report() {
     echo "Something went wrong on line $1"
 }
 
+quiet_flag=""
+
+if [ "$1" = "--quiet" ]
+  then quiet_flag="--quiet"
+fi
+
 trap 'err_report $LINENO' ERR
 
 failed=0
@@ -27,7 +33,7 @@ packages+="$(find examples -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \
 
 for package in $packages; do
     folder=$(dirname $package)
-    (cd $folder; cargo fmt --check) || { echo "$lf>> Code format check FAILED for $package$lf"; failed=1; }
+    (cd $folder; cargo fmt --check $quiet_flag) || { echo "$lf>> Code format check FAILED for $package$lf"; failed=1; }
 done
 
 [ $failed -eq 0 ] && echo "Code format check passed!"
