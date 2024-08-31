@@ -1,0 +1,4 @@
+{
+  "kind": "CommitFailure",
+  "reason": "ApplicationError(AccountError(NotAnAuthorizedDepositor { depositor: Resource(ResourceAddress(9a4c6318c6318c6ee30e98cc6318c6318cf7eb5aabd4a7e946318c6318c6)) }))"
+}

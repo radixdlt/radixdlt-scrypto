@@ -1,0 +1,51 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [
+      "resource_sim1n2vy9s7m3e9gnwumh0xuhgl2mh83wzf9nklhtzflmtvw3d7dnyv63f"
+    ],
+    "metadata_updates": {},
+    "non_fungible_data_updates": {
+      "resource_sim1n2vy9s7m3e9gnwumh0xuhgl2mh83wzf9nklhtzflmtvw3d7dnyv63f:#1#": "5c2102a00000f444829163450000000000000000000000000000000020210202805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6a0000064a7b3b6e00d0000000000000000000000000000000002805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6a0000064a7b3b6e00d00000000000000000000000000000000"
+    },
+    "newly_minted_non_fungibles": [
+      "resource_sim1n2vy9s7m3e9gnwumh0xuhgl2mh83wzf9nklhtzflmtvw3d7dnyv63f:#1#"
+    ]
+  },
+  "worktop_changes": {
+    "1": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Ids",
+          "resource_address": "resource_sim1n2vy9s7m3e9gnwumh0xuhgl2mh83wzf9nklhtzflmtvw3d7dnyv63f",
+          "ids": [
+            "#1#"
+          ]
+        }
+      }
+    ],
+    "2": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Ids",
+          "resource_address": "resource_sim1n2vy9s7m3e9gnwumh0xuhgl2mh83wzf9nklhtzflmtvw3d7dnyv63f",
+          "ids": [
+            "#1#"
+          ]
+        }
+      }
+    ]
+  },
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.27765965",
+    "finalization_fees_in_xrd": "0.1362648",
+    "storage_fees_in_xrd": "0.31986236022",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}

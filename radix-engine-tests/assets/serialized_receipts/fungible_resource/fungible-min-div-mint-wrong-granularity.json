@@ -1,0 +1,4 @@
+{
+  "kind": "CommitFailure",
+  "reason": "ApplicationError(FungibleResourceManagerError(InvalidAmount(1.1, 0)))"
+}
