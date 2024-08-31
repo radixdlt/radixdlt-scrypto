@@ -219,7 +219,9 @@ impl Coverage {
             .expect("Failed to read IR file");
 
         // Modify IR file according to https://github.com/hknio/code-coverage-for-webassembly
-        let modified_ir_contents = Regex::new(r"(?ms)^(define[^\n]*\n).*?^}\s*$")
+        // We use [\t\n\v\f\r ] like https://docs.rs/regex-lite/latest/regex_lite/ instead of \s so we don't need to enable
+        // the unicode features in the regex crate
+        let modified_ir_contents = Regex::new(r"(?ms)^(define[^\n]*\n).*?^}[\t\n\v\f\r ]*$")
             .unwrap()
             .replace_all(&ir_contents, "${1}start:\n  unreachable\n}\n")
             .to_string();
