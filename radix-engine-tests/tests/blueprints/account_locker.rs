@@ -1418,28 +1418,33 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             )
         });
 
-    fn set_disallowed_preference(builder: ManifestBuilder, account: ComponentAddress, resource: ResourceAddress) -> ManifestBuilder {
-        builder.call_method(
-            account,
-            ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
-            AccountSetResourcePreferenceInput {
-                resource_address: resource,
-                resource_preference: ResourcePreference::Disallowed,
-            }
-        )
+    trait ManifestBuilderExt {
+        fn set_disallowed_preference(self, account: ComponentAddress, resource: ResourceAddress) -> Self;
     }
-
-    let builder = ManifestBuilder::new();
-    let builder = set_disallowed_preference(builder, user_account1, fungible_resource1);
-    let builder = set_disallowed_preference(builder, user_account1, non_fungible_resource3);
-    let builder = set_disallowed_preference(builder, user_account2, fungible_resource2);
-    let builder = set_disallowed_preference(builder, user_account2, non_fungible_resource2);
-    let builder = set_disallowed_preference(builder, user_account3, fungible_resource3);
-    let builder = set_disallowed_preference(builder, user_account3, non_fungible_resource1);
+        
+    impl ManifestBuilderExt for ManifestBuilder {
+        fn set_disallowed_preference(self, account: ComponentAddress, resource: ResourceAddress) -> Self {
+            self.call_method(
+                account,
+                ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+                AccountSetResourcePreferenceInput {
+                    resource_address: resource,
+                    resource_preference: ResourcePreference::Disallowed,
+                }
+            )
+        }
+    }
 
     ledger
         .execute_manifest_with_enabled_modules(
-            builder.build(),
+            ManifestBuilder::new()
+                .set_disallowed_preference(user_account1, fungible_resource1)
+                .set_disallowed_preference(user_account1, non_fungible_resource3)
+                .set_disallowed_preference(user_account2, fungible_resource2)
+                .set_disallowed_preference(user_account2, non_fungible_resource2)
+                .set_disallowed_preference(user_account3, fungible_resource3)
+                .set_disallowed_preference(user_account3, non_fungible_resource1)
+                .build(),
             true,
             true,
         )
