@@ -41,3 +41,42 @@ impl TransactionManifestV1 {
         )
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct TransactionManifestV2 {
+    pub instructions: Vec<InstructionV2>,
+    pub blobs: IndexMap<Hash, Vec<u8>>,
+    pub children: Vec<SubintentHash>,
+}
+
+impl TransactionManifestV2 {
+    pub fn from_intent(intent: &IntentCoreV2) -> Self {
+        Self {
+            instructions: intent.instructions.0.deref().clone(),
+            blobs: intent
+                .blobs
+                .blobs
+                .iter()
+                .map(|blob| (hash(&blob.0), blob.0.clone()))
+                .collect(),
+            children: intent.children.children.clone(),
+        }
+    }
+
+    pub fn for_intent(self) -> (InstructionsV2, BlobsV1, ChildIntentsV2) {
+        (
+            InstructionsV2(Rc::new(self.instructions)),
+            BlobsV1 {
+                blobs: self
+                    .blobs
+                    .into_values()
+                    .into_iter()
+                    .map(|blob| BlobV1(blob))
+                    .collect(),
+            },
+            ChildIntentsV2 {
+                children: self.children,
+            },
+        )
+    }
+}

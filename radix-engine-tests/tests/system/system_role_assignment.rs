@@ -12,7 +12,6 @@ use radix_engine_interface::blueprints::package::{
 };
 use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};
 use radix_transactions::builder::ManifestBuilder;
-use radix_transactions::model::{DynamicPackageAddress, InstructionV1};
 use scrypto_test::prelude::*;
 
 #[test]
@@ -47,20 +46,22 @@ fn cannot_define_more_than_50_roles() {
 
     // Act
     let receipt = ledger.execute_system_transaction(
-        vec![InstructionV1::CallFunction {
-            package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                definition: PackageDefinition::new_roles_only_test_definition(
-                    BLUEPRINT_NAME,
-                    roles
-                ),
-                native_package_code_id: CUSTOM_PACKAGE_CODE_ID,
-                metadata: MetadataInit::default(),
-                package_address: None,
-            }),
-        }],
+        ManifestBuilder::new()
+            .call_function(
+                PACKAGE_PACKAGE,
+                PACKAGE_BLUEPRINT,
+                PACKAGE_PUBLISH_NATIVE_IDENT,
+                PackagePublishNativeManifestInput {
+                    definition: PackageDefinition::new_roles_only_test_definition(
+                        BLUEPRINT_NAME,
+                        roles
+                    ),
+                    native_package_code_id: CUSTOM_PACKAGE_CODE_ID,
+                    metadata: MetadataInit::default(),
+                    package_address: None,
+                }
+            )
+            .build(),
         btreeset!(system_execution(SystemExecution::Protocol)),
         vec![],
     );
@@ -109,20 +110,22 @@ fn cannot_define_role_name_larger_than_max() {
 
     // Act
     let receipt = ledger.execute_system_transaction(
-        vec![InstructionV1::CallFunction {
-            package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                definition: PackageDefinition::new_roles_only_test_definition(
-                    BLUEPRINT_NAME,
-                    roles
-                ),
-                native_package_code_id: CUSTOM_PACKAGE_CODE_ID,
-                metadata: MetadataInit::default(),
-                package_address: None,
-            }),
-        }],
+        ManifestBuilder::new()
+            .call_function(
+                PACKAGE_PACKAGE,
+                PACKAGE_BLUEPRINT,
+                PACKAGE_PUBLISH_NATIVE_IDENT,
+                PackagePublishNativeManifestInput {
+                    definition: PackageDefinition::new_roles_only_test_definition(
+                        BLUEPRINT_NAME,
+                        roles
+                    ),
+                    native_package_code_id: CUSTOM_PACKAGE_CODE_ID,
+                    metadata: MetadataInit::default(),
+                    package_address: None,
+                }
+            )
+            .build(),
         btreeset!(system_execution(SystemExecution::Protocol)),
         vec![],
     );

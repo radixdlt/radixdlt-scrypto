@@ -140,7 +140,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
     let manifest1 = ManifestBuilder::new()
         .lock_fee(account, 20)
         .withdraw_from_account(account, resource_address, AMOUNT)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let tx1 = create_notarized_transaction_advanced(
         &mut ledger,
@@ -162,7 +162,7 @@ fn estimate_asserting_worktop_contains_fungible_resource() {
         .lock_fee(account, 20)
         .withdraw_from_account(account, resource_address, AMOUNT)
         .assert_worktop_contains(resource_address, AMOUNT)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let tx2 = create_notarized_transaction_advanced(
         &mut ledger,
@@ -211,7 +211,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
     let manifest1 = ManifestBuilder::new()
         .lock_fee(account, 20)
         .withdraw_from_account(account, resource_address, AMOUNT)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let tx1 = create_notarized_transaction_advanced(
         &mut ledger,
@@ -233,7 +233,7 @@ fn estimate_asserting_worktop_contains_non_fungible_resource() {
         .lock_fee(account, 20)
         .withdraw_from_account(account, resource_address, AMOUNT)
         .assert_worktop_contains(resource_address, AMOUNT)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let tx2 = create_notarized_transaction_advanced(
         &mut ledger,

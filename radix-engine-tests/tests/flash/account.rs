@@ -31,7 +31,7 @@ fn before_protocol_update_try_deposit_or_refund_fails_if_claimed_authorized_depo
                     bucket,
                 )
             })
-            .deposit_batch(user_account)
+            .deposit_entire_worktop(user_account)
             .build(),
         [&user_public_key].map(NonFungibleGlobalId::from_public_key),
     );
@@ -77,7 +77,7 @@ fn after_protocol_update_try_deposit_or_refund_refunds_resources_if_claimed_auth
                     bucket,
                 )
             })
-            .deposit_batch(user_account)
+            .deposit_entire_worktop(user_account)
             .build(),
         [&user_public_key].map(NonFungibleGlobalId::from_public_key),
     );

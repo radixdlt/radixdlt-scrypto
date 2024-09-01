@@ -9,7 +9,6 @@ use radix_substate_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::ListableSubstateDatabase,
 };
-use radix_transactions::model::InstructionV1;
 
 use crate::resim::*;
 
@@ -106,15 +105,15 @@ impl ShowLedger {
     }
 
     pub fn get_current_epoch<O: std::io::Write>(out: &mut O) -> Result<Epoch, Error> {
-        let instructions = vec![InstructionV1::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentEpochInput),
-        }];
-        let blobs = vec![];
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                CONSENSUS_MANAGER,
+                CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+                ConsensusManagerGetCurrentEpochInput,
+            )
+            .build();
         let initial_proofs = btreeset![];
-        let receipt =
-            handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
+        let receipt = handle_system_transaction(manifest, initial_proofs, false, false, out)?;
         Ok(receipt.expect_commit(true).output(0))
     }
 
@@ -122,17 +121,15 @@ impl ShowLedger {
         out: &mut O,
         precision: TimePrecisionV1,
     ) -> Result<Instant, Error> {
-        let instructions = vec![InstructionV1::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInputV1 {
-                precision
-            }),
-        }];
-        let blobs = vec![];
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                CONSENSUS_MANAGER,
+                CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
+                ConsensusManagerGetCurrentTimeInputV1 { precision },
+            )
+            .build();
         let initial_proofs = btreeset![];
-        let receipt =
-            handle_system_transaction(instructions, blobs, initial_proofs, false, false, out)?;
+        let receipt = handle_system_transaction(manifest, initial_proofs, false, false, out)?;
         Ok(receipt.expect_commit(true).output(0))
     }
 }

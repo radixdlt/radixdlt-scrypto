@@ -304,10 +304,8 @@ pub const NON_FUNGIBLE_DATA_SCHEMA_VARIANT_REMOTE: u8 = 1;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub enum NonFungibleDataSchema {
     // TODO: ignore this variant in Scrypto for smaller code size
-    #[sbor(flatten)]
-    Local(LocalNonFungibleDataSchema),
-    #[sbor(flatten)]
-    Remote(RemoteNonFungibleDataSchema),
+    Local(#[sbor(flatten)] LocalNonFungibleDataSchema),
+    Remote(#[sbor(flatten)] RemoteNonFungibleDataSchema),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

@@ -68,9 +68,6 @@ use radix_engine_interface::types::FromPublicKey;
 use radix_rust::ContextualDisplay;
 use radix_substate_store_impls::rocks_db::RocksdbSubstateStore;
 use radix_transactions::manifest::decompile;
-use radix_transactions::model::TestTransaction;
-use radix_transactions::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};
-use radix_transactions::model::{SystemTransactionV1, TransactionPayload};
 use radix_transactions::prelude::*;
 use std::env;
 use std::fs;
@@ -146,8 +143,7 @@ pub fn run() -> Result<(), String> {
 }
 
 pub fn handle_system_transaction<O: std::io::Write>(
-    instructions: Vec<InstructionV1>,
-    blobs: Vec<Vec<u8>>,
+    manifest: TransactionManifestV1,
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
     trace: bool,
     print_receipt: bool,
@@ -158,14 +154,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
     } = SimulatorEnvironment::new()?;
 
     let nonce = get_nonce()?;
-    let transaction = SystemTransactionV1 {
-        instructions: InstructionsV1(Rc::new(instructions)),
-        blobs: BlobsV1 {
-            blobs: blobs.into_iter().map(|blob| BlobV1(blob)).collect(),
-        },
-        hash_for_execution: hash(format!("Simulator system transaction: {}", nonce)),
-        pre_allocated_addresses: vec![],
-    };
+    let unique_hash = hash(format!("Simulator system transaction: {}", nonce));
+    let transaction = SystemTransactionV1::new(manifest, unique_hash, vec![]);
 
     let receipt = execute_and_commit_transaction(
         &mut db,
