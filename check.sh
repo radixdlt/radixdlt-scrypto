@@ -21,7 +21,7 @@ cd "$(dirname "$0")"
 
 # We use the cd trick to avoid issues like this: https://github.com/rust-lang/rustfmt/issues/4432
 
-# NOTE: These should align with `format.sh`
+# This should align with format.sh, build.sh, test.sh, update-cargo-locks-minimally.sh
 packages="Cargo.toml$lf"
 packages+="radix-engine-tests/assets/blueprints/Cargo.toml$lf"
 packages+="radix-clis/tests/blueprints/Cargo.toml$lf"

@@ -1319,7 +1319,6 @@ dependencies = [
  "radix-transactions",
  "radix-wasm-instrument",
  "sbor",
- "serde_json",
  "strum",
  "syn 1.0.109",
  "tempfile",

@@ -6,6 +6,8 @@ set -e
 cd "$(dirname "$0")"
 source test_utils.sh
 
+# This should align with check.sh, build.sh, test.sh, update-cargo-locks-minimally.sh
+
 setup_test_runner
 
 # echo "Testing crates..."

@@ -4,21 +4,21 @@ set -e
 
 cd "$(dirname "$0")"
 
+# This should align with format.sh, check.sh, test.sh, update-cargo-locks-minimally.sh
+
 echo "Building the workspace packages (with all extended features)..."
 
-(set -x; cargo build)
-(set -x; cargo test --no-run)
-(set -x; cargo bench --no-run)
+(set -x; cargo build; cargo test --no-run; cargo bench --no-run)
 
 echo "Building scrypto packages using cargo build, to catch errors quickly..."
 
-(set -x; cd radix-engine-tests/assets/blueprints; cargo build)
-(set -x; cd radix-clis/tests/blueprints; cargo build)
-(set -x; cd scrypto-test/tests/blueprints; cargo build)
-(set -x; cd scrypto-test/assets/blueprints; cargo build)
-(set -x; cd radix-transaction-scenarios/assets/blueprints; cargo build)
-(set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo build)
-(set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo build)
+(set -x; cd radix-engine-tests/assets/blueprints; cargo build; cargo test --no-run; cargo bench --no-run)
+(set -x; cd radix-clis/tests/blueprints; cargo build; cargo test --no-run; cargo bench --no-run)
+(set -x; cd scrypto-test/tests/blueprints; cargo build; cargo test --no-run; cargo bench --no-run)
+(set -x; cd scrypto-test/assets/blueprints; cargo build; cargo test --no-run; cargo bench --no-run)
+(set -x; cd radix-transaction-scenarios/assets/blueprints; cargo build; cargo test --no-run; cargo bench --no-run)
+(set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo build; cargo test --no-run; cargo bench --no-run)
+(set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo buil; cargo test --no-run; cargo bench --no-run)
 
 echo "Building the engine in different configurations..."
 

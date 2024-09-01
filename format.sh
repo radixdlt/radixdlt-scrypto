@@ -4,12 +4,10 @@ set -e
 
 cd "$(dirname "$0")"
 
-# NOTE: These should align with `check.sh`
+# This should align with check.sh, build.sh, test.sh, update-cargo-locks-minimally.sh
 
-# Format all main package crates
-(set -x; cargo fmt)
+(set -x; cd .; cargo fmt)
 
-# Format assets / blueprints
 (set -x; cd radix-engine-tests/assets/blueprints; cargo fmt)
 (set -x; cd radix-clis/tests/blueprints; cargo fmt)
 (set -x; cd scrypto-test/tests/blueprints; cargo fmt)
