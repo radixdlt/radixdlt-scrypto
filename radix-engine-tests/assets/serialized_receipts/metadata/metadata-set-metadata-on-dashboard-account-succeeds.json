@@ -1,0 +1,43 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [
+      "account_sim16xygyhqp3x3awxlz3c5dzrm7jqghgpgs776v4af0yfr7xljqv060nu"
+    ],
+    "metadata_updates": {
+      "account_sim16xygyhqp3x3awxlz3c5dzrm7jqghgpgs776v4af0yfr7xljqv060nu": {
+        "account_type": {
+          "Set": {
+            "kind": "String",
+            "value": "dapp definition"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radix Dashboard"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "A collection of tools to assist with standard actions, and a place to look up anything on the ledger."
+          }
+        }
+      }
+    },
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {},
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.2318574",
+    "finalization_fees_in_xrd": "0.0560115",
+    "storage_fees_in_xrd": "0.19073486",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}

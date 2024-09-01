@@ -1,0 +1,37 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [
+      "account_sim168ydk240yx69yl7zdz2mzkdjc3r5p6n4gwypqsype2d6d942vg95h3"
+    ],
+    "metadata_updates": {
+      "account_sim168ydk240yx69yl7zdz2mzkdjc3r5p6n4gwypqsype2d6d942vg95h3": {
+        "account_type": {
+          "Set": {
+            "kind": "String",
+            "value": "dapp definition"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radix Sandbox dApp"
+          }
+        }
+      }
+    },
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {},
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.2217338",
+    "finalization_fees_in_xrd": "0.0507586",
+    "storage_fees_in_xrd": "0.1440048193",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}
