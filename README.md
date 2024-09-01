@@ -9,44 +9,51 @@ Documentation: https://docs.radixdlt.com/docs/scrypto-1
 
 ## Installation
 
-1. Install Rust - this requires Rust 1.70+ (if rust is already installed, upgrade with `rustup update`)
-   - Windows:
-     - Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
-     - Install "Desktop development with C++" with [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
-     - Install [LLVM 13.0.1](https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/LLVM-13.0.1-win64.exe) (make sure you tick the option that adds LLVM to the system PATH)
-     - Enable git long path support:
-     ```bash
-     git config --system core.longpaths true
-     ```
-   - macOS:
-     - Make sure you have the `xcode` command line tools: `xcode-select --install`.
-     - Install cmake: `brew install cmake llvm`<br>
-       Add LLVM to the system path by adding below line to the:
-       - `~/.profile` if `bash` is the default shell
-       - `~/.zshrc` if `zsh` is the default shell
-       - respective config file in case of other shell
-       ```
-       PATH="$(brew --prefix llvm)/bin:$PATH"
-       ```
-
-       You can check, which shell is the default one by inspecting `$SHELL` variable:
+1. Install Rust - we recommend to use Rust 1.80.1
+    - Install Rust (if Rust is installed you can skip this step)
+     - Windows:
+       - Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
+       - Install "Desktop development with C++" with [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
+       - Install [LLVM 13.0.1](https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/LLVM-13.0.1-win64.exe) (make sure you tick the option that adds LLVM to the system PATH)
+       - Enable git long path support:
        ```bash
-       echo $SHELL
+       git config --system core.longpaths true
        ```
+     - macOS:
+       - Make sure you have the `xcode` command line tools: `xcode-select --install`.
+       - Install cmake: `brew install cmake llvm`<br>
+         Add LLVM to the system path by adding below line to the:
+         - `~/.profile` if `bash` is the default shell
+         - `~/.zshrc` if `zsh` is the default shell
+         - respective config file in case of other shell
+         ```
+         PATH="$(brew --prefix llvm)/bin:$PATH"
+         ```
 
-     - Install the Rust compiler:
-     ```bash
-     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-     ```
-   - Linux:
-     - Make sure a C++ compiler, LLVM, cmake and clang is installed:
-     ```bash
-     sudo apt install build-essential llvm cmake clang
-     ```
-     - Install the Rust compiler:
-     ```bash
-     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-     ```
+         You can check, which shell is the default one by inspecting `$SHELL` variable:
+         ```bash
+         echo $SHELL
+         ```
+
+       - Install the Rust compiler:
+       ```bash
+       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+       ```
+     - Linux:
+       - Make sure a C++ compiler, LLVM, cmake and clang is installed:
+       ```bash
+       sudo apt install build-essential llvm cmake clang
+       ```
+       - Install the Rust compiler:
+       ```bash
+       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+       ```
+    - Set Rust version
+    ```bash
+    rustup update
+    rustup default 1.80.1
+    ```
+
 2. Enable `cargo` in the current shell:
    - Windows:
      - Start a new PowerShell

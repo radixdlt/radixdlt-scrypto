@@ -180,6 +180,33 @@ impl PartitionStateUpdates {
             }
         }
     }
+
+    pub fn iter_map_entries(&self) -> Box<dyn Iterator<Item = (&MapKey, DatabaseUpdateRef)> + '_> {
+        match self {
+            PartitionStateUpdates::Delta { by_substate } => {
+                Box::new(by_substate.iter().filter_map(|(key, value)| match key {
+                    SubstateKey::Map(map_key) => {
+                        let value = match value {
+                            DatabaseUpdate::Set(value) => DatabaseUpdateRef::Set(value),
+                            DatabaseUpdate::Delete => DatabaseUpdateRef::Delete,
+                        };
+                        Some((map_key, value))
+                    }
+                    SubstateKey::Field(_) | SubstateKey::Sorted(_) => None,
+                }))
+            }
+            PartitionStateUpdates::Batch(BatchPartitionStateUpdate::Reset {
+                new_substate_values,
+            }) => Box::new(
+                new_substate_values
+                    .iter()
+                    .filter_map(|(key, value)| match key {
+                        SubstateKey::Map(map_key) => Some((map_key, DatabaseUpdateRef::Set(value))),
+                        SubstateKey::Field(_) | SubstateKey::Sorted(_) => None,
+                    }),
+            ),
+        }
+    }
 }
 
 /// A description of a batch update affecting an entire Partition.

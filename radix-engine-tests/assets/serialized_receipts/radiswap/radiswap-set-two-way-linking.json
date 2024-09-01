@@ -1,0 +1,262 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [],
+    "metadata_updates": {
+      "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd": {
+        "claimed_entities": {
+          "Set": {
+            "kind": "GlobalAddressArray",
+            "value": [
+              "component_sim1czsu8y5227rhq3th2m9e9zpp2jwr54k6lgrhws7aff9hg2g3n2kq0d",
+              "pool_sim1c4c5vzh0j8lrn7elgrnywpdrgv9g73qtyl553ntng0ugmqlrpe8dha",
+              "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+              "component_sim1czj58wxmdrzl3x66gg2s8ctyxvurqrcz43kwu93tjgm0u4255zkj2y",
+              "pool_sim1ck6c2rx3mqu3ffvyeq63xdupjfex79pkx9ru3myjslv47tmhret9ge",
+              "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc"
+            ]
+          }
+        }
+      },
+      "component_sim1czsu8y5227rhq3th2m9e9zpp2jwr54k6lgrhws7aff9hg2g3n2kq0d": {
+        "dapp_definition": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radiswap 1 - XRD/BTC: Component"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\""
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "badge",
+              "dex",
+              "pool",
+              "radiswap"
+            ]
+          }
+        },
+        "info_url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://radiswap.radixdlt.com/"
+          }
+        }
+      },
+      "component_sim1czj58wxmdrzl3x66gg2s8ctyxvurqrcz43kwu93tjgm0u4255zkj2y": {
+        "dapp_definition": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radiswap 2 - ETH/ETC: Component"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\""
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "badge",
+              "dex",
+              "pool",
+              "radiswap"
+            ]
+          }
+        },
+        "info_url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://radiswap.radixdlt.com/"
+          }
+        }
+      },
+      "pool_sim1c4c5vzh0j8lrn7elgrnywpdrgv9g73qtyl553ntng0ugmqlrpe8dha": {
+        "dapp_definition": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radiswap 1 - XRD/BTC: Pool"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\""
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "badge",
+              "dex",
+              "pool",
+              "radiswap"
+            ]
+          }
+        },
+        "info_url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://radiswap.radixdlt.com/"
+          }
+        }
+      },
+      "pool_sim1ck6c2rx3mqu3ffvyeq63xdupjfex79pkx9ru3myjslv47tmhret9ge": {
+        "dapp_definition": {
+          "Set": {
+            "kind": "GlobalAddress",
+            "value": "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd"
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radiswap 2 - ETH/ETC: Pool"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\""
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "badge",
+              "dex",
+              "pool",
+              "radiswap"
+            ]
+          }
+        },
+        "info_url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://radiswap.radixdlt.com/"
+          }
+        }
+      },
+      "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz": {
+        "dapp_definitions": {
+          "Set": {
+            "kind": "GlobalAddressArray",
+            "value": [
+              "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd"
+            ]
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radiswap 1 - XRD/BTC: Pool Units"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\""
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "badge",
+              "dex",
+              "pool",
+              "radiswap"
+            ]
+          }
+        },
+        "info_url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://radiswap.radixdlt.com/"
+          }
+        }
+      },
+      "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc": {
+        "dapp_definitions": {
+          "Set": {
+            "kind": "GlobalAddressArray",
+            "value": [
+              "account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd"
+            ]
+          }
+        },
+        "name": {
+          "Set": {
+            "kind": "String",
+            "value": "Radiswap 2 - ETH/ETC: Pool Units"
+          }
+        },
+        "description": {
+          "Set": {
+            "kind": "String",
+            "value": "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"ETH\" and \"ETC\""
+          }
+        },
+        "tags": {
+          "Set": {
+            "kind": "StringArray",
+            "value": [
+              "badge",
+              "dex",
+              "pool",
+              "radiswap"
+            ]
+          }
+        },
+        "info_url": {
+          "Set": {
+            "kind": "Url",
+            "value": "https://radiswap.radixdlt.com/"
+          }
+        }
+      }
+    },
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {},
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.648213",
+    "finalization_fees_in_xrd": "0.1830488",
+    "storage_fees_in_xrd": "0.98485944961",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [
+      "resource_sim1ngdarsctu6cuqa02az4jg8ce9g8dp5td3ylyung9sfwmatd4f6zqk3"
+    ],
+    "metadata_updates": {},
+    "non_fungible_data_updates": {
+      "resource_sim1ngdarsctu6cuqa02az4jg8ce9g8dp5td3ylyung9sfwmatd4f6zqk3:<my_nft>": "5c2103095b030000200c0164686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968696869686968692101230c2100"
+    },
+    "newly_minted_non_fungibles": [
+      "resource_sim1ngdarsctu6cuqa02az4jg8ce9g8dp5td3ylyung9sfwmatd4f6zqk3:<my_nft>"
+    ]
+  },
+  "worktop_changes": {
+    "1": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Ids",
+          "resource_address": "resource_sim1ngdarsctu6cuqa02az4jg8ce9g8dp5td3ylyung9sfwmatd4f6zqk3",
+          "ids": [
+            "<my_nft>"
+          ]
+        }
+      }
+    ],
+    "2": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Ids",
+          "resource_address": "resource_sim1ngdarsctu6cuqa02az4jg8ce9g8dp5td3ylyung9sfwmatd4f6zqk3",
+          "ids": [
+            "<my_nft>"
+          ]
+        }
+      }
+    ]
+  },
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.2733241",
+    "finalization_fees_in_xrd": "0.1362671",
+    "storage_fees_in_xrd": "0.35161971441",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}

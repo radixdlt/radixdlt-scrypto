@@ -37,11 +37,11 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p sbor
+        run: cargo nextest run -p sbor --no-fail-fast
       - name: Run tests (no_std)
-        run: cargo nextest run -p sbor --no-default-features --features alloc
+        run: cargo nextest run -p sbor --no-default-features --features alloc --no-fail-fast
       - name: Run derive tests
-        run: cargo nextest run -p sbor-derive-common
+        run: cargo nextest run -p sbor-derive-common --no-fail-fast
 
   sbor-integration-tests:
     name: Run SBOR integration tests
@@ -51,9 +51,9 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p sbor-tests
+        run: cargo nextest run -p sbor-tests --no-fail-fast
       - name: Run tests (no_std)
-        run: cargo nextest run -p sbor-tests --no-default-features --features alloc
+        run: cargo nextest run -p sbor-tests --no-default-features --features alloc --no-fail-fast
       - name: Run bench
         run: cargo bench -p sbor-tests
 
@@ -65,13 +65,13 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p scrypto
+        run: cargo nextest run -p scrypto --no-fail-fast
       - name: Run tests (no_std)
-        run: cargo nextest run -p scrypto --no-default-features --features alloc
+        run: cargo nextest run -p scrypto --no-default-features --features alloc --no-fail-fast
       - name: Run abi tests
-        run: cargo nextest run -p radix-blueprint-schema-init
+        run: cargo nextest run -p radix-blueprint-schema-init --no-fail-fast
       - name: Run derive tests
-        run: cargo nextest run -p scrypto-derive
+        run: cargo nextest run -p scrypto-derive --no-fail-fast
 
   scrypto-derive-tests:
     name: Run Scrypto derive tests
@@ -81,9 +81,9 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p scrypto-derive-tests
+        run: cargo nextest run -p scrypto-derive-tests --no-fail-fast
       - name: Run tests with no_std
-        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc
+        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc --no-fail-fast
 
   scrypto-examples:
     name: Run Scrypto examples
@@ -95,12 +95,12 @@ jobs:
       - name: Build and test hello-world
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release
+          cargo nextest run --release --no-fail-fast
         working-directory: examples/hello-world
       - name: Build and test everything
         run: |
           cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release
+          cargo nextest run --release --no-fail-fast
         working-directory: examples/everything
       - name: Build no-std
         run: cargo build --target wasm32-unknown-unknown --release
@@ -145,7 +145,8 @@ jobs:
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
-            -p radix-engine-tests
+            -p radix-engine-tests \
+            --no-fail-fast
           ./check_stack_usage.sh
 
   radix-engine-release:
@@ -168,7 +169,8 @@ jobs:
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
-            -p radix-engine-tests
+            -p radix-engine-tests \
+            --no-fail-fast
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
@@ -180,29 +182,14 @@ jobs:
       - name: Run tests
         run: |
           cargo nextest run \
-            --no-default-features --features alloc \
+            --no-default-features \
+            --features alloc \
             -p radix-common \
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
-            -p radix-engine-tests
-
-  radix-engine-wasmer:
-    name: Run Radix Engine tests (wasmer)
-    runs-on: ubuntu-16-cores-selfhosted
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: |
-          cargo nextest run \
-            --features wasmer \
-            -p radix-common \
-            -p radix-sbor-derive \
-            -p radix-engine-interface \
-            -p radix-engine \
-            -p radix-engine-tests
+            -p radix-engine-tests \
+            --no-fail-fast
 
   radix-engine-bench:
     name: Run Radix Engine benchmarks
@@ -234,7 +221,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p radix-transactions
+        run: cargo nextest run -p radix-transactions --no-fail-fast
 
   radix-transaction-scenarios:
     name: Run transaction scenarios
@@ -244,7 +231,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p radix-transaction-scenarios
+        run: cargo nextest run -p radix-transaction-scenarios --no-fail-fast
 
   radix-clis:
     name: Run CLI tests
@@ -266,12 +253,12 @@ jobs:
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
       - name: Run Unit tests
-        run: cargo nextest run
+        run: cargo nextest run --no-fail-fast
         working-directory: radix-clis
-      - name: Run tests
+      - name: Run resim shell tests
         run: bash ./tests/resim.sh
         working-directory: radix-clis
-      - name: Run tests
+      - name: Run manifest shell tests
         run: bash ./tests/manifest.sh
         working-directory: radix-clis
 
@@ -311,22 +298,29 @@ jobs:
           shared-key: radix-clis-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
-      - name: Install rustc 1.78.0-nightly
+      - name: Install rustc 1.81.0-nightly
         run: |
-          rustup toolchain install nightly-2024-02-08
-          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-02-08
-          rustup default nightly-2024-02-08
+          rustup toolchain install nightly-2024-07-18
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-18
+          rustup default nightly-2024-07-18
           rustup show
-      - name: Install LLVM 17
+      - name: Install LLVM 18
         run: |
-          sudo apt install lsb-release wget software-properties-common gnupg
+          sudo apt-get install -y lsb-release wget software-properties-common gnupg
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 17
+          sudo ./llvm.sh 18
+          # llvm.sh does not explicitly install llvm-18, which is needed here.
+          # It shall be installed as a dependency, but it was observed that
+          # it is not always installed. Reason unknown, might be related to below, which was also observed:
+          #  The following packages have unmet dependencies:
+          #   libllvm18 : Breaks: llvm-18-dev (< 1:18.1.8-4) but 1:18.1.8~++20240717051017+3b5b5c1ec4a3-1~exp1~20240717171122.141 is to be installed
+          # So, just in case, try to install them here.
+          sudo apt-get install -y llvm-18
       - name: Run tests
         working-directory: radix-clis
         run: bash ./tests/scrypto_coverage.sh
-        
+
   cargo-check:
     name: Run cargo check
     runs-on: ${{ matrix.os }}
@@ -360,7 +354,7 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Cargo Check
         run: |
-          sudo apt-get install libclang-dev -y 
+          sudo apt-get install libclang-dev -y
           curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
           sudo apt-get install git-lfs -y
       - name: Setup environment
@@ -374,4 +368,4 @@ jobs:
             --max-version 50000 \
             --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d
         working-directory: radix-clis
-  
+

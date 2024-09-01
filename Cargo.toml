@@ -18,6 +18,7 @@ members = [
     "radix-blueprint-schema-init",
     "radix-common-derive",
     "radix-common",
+    "radix-engine-toolkit",
     "radix-engine-interface",
     "radix-engine-monkey-tests",
     "radix-engine-profiling-derive",
@@ -48,6 +49,7 @@ radix-blueprint-schema-init = { version = "1.2.0", path = "./radix-blueprint-sch
 radix-common = { version = "1.2.0", path = "./radix-common", default-features = false }
 radix-common-derive = { version = "1.2.0", path = "./radix-common-derive", default-features = false }
 radix-engine = { version = "1.2.0", path = "./radix-engine", default-features = false }
+radix-engine-toolkit = { version = "1.2.0", path = "./radix-engine-toolkit", default-features = false }
 radix-engine-interface = { version = "1.2.0", path = "./radix-engine-interface", default-features = false }
 radix-engine-profiling = { version = "1.2.0", path = "./radix-engine-profiling", default-features = false }
 radix-engine-profiling-derive = { version = "1.2.0", path = "./radix-engine-profiling-derive", default-features = false }
@@ -113,6 +115,7 @@ rug = { version = "1.18" }
 secp256k1 = { version = "0.28.0", default-features = false, features = ["recovery"] }
 serde = { version = "1.0.144", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.105" }
+serde_with = { version = "3.9.0", default-features = false, features = ["macros", "hex"] }
 sha3 = { version = "0.10.8", default-features = false, optional = false }
 shared_memory = { version = "0.12.4" }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
