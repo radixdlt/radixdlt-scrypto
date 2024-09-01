@@ -37,5 +37,4 @@ trace = ["sbor-derive/trace"]
 fuzzing = ["arbitrary", "radix-rust/fuzzing"]
 
 [lib]
-doctest = false
 bench = false

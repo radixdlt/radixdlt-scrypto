@@ -16,8 +16,11 @@ use proc_macro::TokenStream;
 /// # Example
 ///
 /// ```ignore
-/// use manifest::prelude::*;
-///
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ManifestEncode)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
@@ -36,8 +39,11 @@ pub fn manifest_encode(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use manifest::prelude::*;
-///
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ManifestDecode)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
@@ -56,8 +62,11 @@ pub fn manifest_decode(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use manifest::prelude::*;
-///
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ManifestCategorize)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
@@ -72,7 +81,6 @@ pub fn manifest_categorize(input: TokenStream) -> TokenStream {
 }
 
 /// A shortcut for [`ManifestCategorize`], [`ManifestEncode`] and [`ManifestDecode`] derives.
-///
 #[proc_macro_derive(ManifestSbor, attributes(sbor))]
 pub fn manifest_sbor(input: TokenStream) -> TokenStream {
     manifest_sbor::handle_manifest_sbor(proc_macro2::TokenStream::from(input))
@@ -85,8 +93,11 @@ pub fn manifest_sbor(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use scrypto::prelude::*;
-///
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoEncode)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
@@ -105,8 +116,11 @@ pub fn scrypto_encode(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use scrypto::prelude::*;
-///
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoDecode)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
@@ -125,8 +139,11 @@ pub fn scrypto_decode(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use scrypto::prelude::*;
-///
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoCategorize)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
@@ -145,8 +162,11 @@ pub fn scrypto_categorize(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use scrypto::prelude::*;
-///
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoDescribe)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
@@ -162,6 +182,20 @@ pub fn scrypto_describe(input: TokenStream) -> TokenStream {
 
 /// A shortcut for [`ScryptoCategorize`], [`ScryptoEncode`], [`ScryptoDecode`], and [`ScryptoDescribe`] derives.
 ///
+/// # Example
+///
+/// ```ignore
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
+/// #[derive(ScryptoSbor)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
+/// }
+/// ```
 #[proc_macro_derive(ScryptoSbor, attributes(sbor))]
 pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
     scrypto_sbor::handle_scrypto_sbor(proc_macro2::TokenStream::from(input))
@@ -193,7 +227,12 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 ///
 /// The test will then panic to ensure it fails, and can't be left accidentally in (re)generate state.
 ///
-/// ```no_run
+/// ```ignore
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(fixed("FILE:MyType-schema-v1.txt"), generate)]
 /// struct MyType {
@@ -204,7 +243,12 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// ## Fixed schema verification
 ///
 /// To verify the type's schema is unchanged, do:
-/// ```no_run
+/// ```ignore
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(fixed("FILE:MyType-schema-v1.txt"))]
 /// struct MyType {
@@ -218,7 +262,12 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// ## Backwards compatibility verification
 ///
 /// To allow multiple backwards-compatible versions, you can do this:
-/// ```no_run
+/// ```ignore
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(backwards_compatible(
 ///     version1 = "FILE:MyType-schema-v1.txt",
@@ -236,7 +285,16 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 /// the latest named schema; and each named schema with its predecessor, you can use:
 ///
 /// ```ignore
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
+/// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(backwards_compatible("EXPR:<Expression>"))
+/// struct MyType {
+///     // ...
+/// }
 /// ```
 /// Where the expression (such as `params_builder()`) has to generate a `SingleTypeSchemaCompatibilityParameters<ScryptoCustomSchema>`.
 ///
@@ -257,7 +315,12 @@ pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
 ///    
 ///
 /// For example:
-/// ```no_run
+/// ```ignore
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoSbor, ScryptoSborAssertion)]
 /// #[sbor_assert(
 ///     fixed("FILE:MyType-schema-v1.txt"),
@@ -300,8 +363,11 @@ pub fn scrypto_sbor_assertion(input: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// use scrypto::prelude::*;
-///
+/// # // Ignored because the generated code references sbor and radix-common which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate radix_sbor_derive;
+/// # use radix_sbor_derive::*;
+/// #
 /// #[derive(ScryptoEvent)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,

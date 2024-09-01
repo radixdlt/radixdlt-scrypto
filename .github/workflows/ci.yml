@@ -10,6 +10,15 @@ on:
       - release\/*
   pull_request:
 
+# NOTES:
+# - nextest doesn't run doc tests, so we run them separately explicitly. See:
+#   https://github.com/nextest-rs/nextest/issues/16
+# - We run tests from different crates separately for better parallelism
+# - The following are run on demand, so aren't tested here:
+#   > radix-engine-monkey-tests
+#   > radix-engine-profiling-derive
+#   > radix-engine-profiling
+
 env:
   CARGO_TERM_COLOR: always
   SCRYPTO_CARGO_LOCKED: 1
@@ -55,11 +64,11 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p sbor --no-fail-fast --locked
+        run: cargo nextest run -p sbor -p radix-rust -p sbor-derive -p sbor-derive-common --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p sbor -p radix-rust -p sbor-derive -p sbor-derive-common --no-fail-fast --locked
       - name: Run tests (no_std)
-        run: cargo nextest run -p sbor --no-default-features --features alloc --no-fail-fast --locked
-      - name: Run derive tests
-        run: cargo nextest run -p sbor-derive-common --no-fail-fast --locked
+        run: cargo nextest run -p sbor -p radix-rust --no-default-features --features alloc --no-fail-fast --locked
 
   sbor-integration-tests:
     name: Run SBOR integration tests
@@ -70,6 +79,8 @@ jobs:
         uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p sbor-tests --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p sbor-tests --no-fail-fast --locked
       - name: Run tests (no_std)
         run: cargo nextest run -p sbor-tests --no-default-features --features alloc --no-fail-fast --locked
       - name: Run bench
@@ -83,13 +94,15 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p scrypto --no-fail-fast --locked
+        run: cargo nextest run -p scrypto -p scrypto-bindgen --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p scrypto -p scrypto-bindgen --no-fail-fast --locked
       - name: Run tests (no_std)
         run: cargo nextest run -p scrypto --no-default-features --features alloc --no-fail-fast --locked
       - name: Run abi tests
         run: cargo nextest run -p radix-blueprint-schema-init --no-fail-fast --locked
-      - name: Run derive tests
-        run: cargo nextest run -p scrypto-derive --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p radix-blueprint-schema-init --no-fail-fast --locked
 
   scrypto-derive-tests:
     name: Run Scrypto derive tests
@@ -98,8 +111,10 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
       - name: Setup environment
         uses: ./.github/actions/setup-env
-      - name: Run tests
-        run: cargo nextest run -p scrypto-derive-tests --no-fail-fast --locked
+      - name: Run derive tests
+        run: cargo nextest run -p scrypto-derive -p scrypto-derive-tests --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p scrypto-derive -p scrypto-derive-tests --no-fail-fast --locked
       - name: Run tests with no_std
         run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc --no-fail-fast --locked
 
@@ -112,6 +127,8 @@ jobs:
         uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p scrypto-compiler --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p scrypto-compiler --no-fail-fast --locked
 
   radix-engine-toolkit-tests:
     name: Run Radix Engine Toolkit tests
@@ -122,6 +139,8 @@ jobs:
         uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p radix-engine-toolkit --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p radix-engine-toolkit --no-fail-fast --locked
 
   scrypto-examples:
     name: Run Scrypto examples
@@ -180,12 +199,31 @@ jobs:
         run: |
           cargo nextest run \
             -p radix-common \
+            -p radix-common-derive \
+            -p radix-native-sdk \
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
+            -p radix-substate-store-impls \
+            -p radix-substate-store-interface \
+            -p radix-substate-store-queries \
             -p radix-engine-tests \
             --no-fail-fast --locked
           ./check_stack_usage.sh
+      - name: Run doc tests
+        run: |
+          cargo test --doc \
+            -p radix-common \
+            -p radix-common-derive \
+            -p radix-native-sdk \
+            -p radix-sbor-derive \
+            -p radix-engine-interface \
+            -p radix-engine \
+            -p radix-substate-store-impls \
+            -p radix-substate-store-interface \
+            -p radix-substate-store-queries \
+            -p radix-engine-tests \
+            --no-fail-fast --locked
 
   radix-engine-release:
     # Run tests in release variant.
@@ -204,9 +242,14 @@ jobs:
           cargo nextest run \
             --release \
             -p radix-common \
+            -p radix-common-derive \
+            -p radix-native-sdk \
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
+            -p radix-substate-store-impls \
+            -p radix-substate-store-interface \
+            -p radix-substate-store-queries \
             -p radix-engine-tests \
             --no-fail-fast --locked
 
@@ -223,6 +266,8 @@ jobs:
             --no-default-features \
             --features alloc \
             -p radix-common \
+            -p radix-common-derive \
+            -p radix-native-sdk \
             -p radix-sbor-derive \
             -p radix-engine-interface \
             -p radix-engine \
@@ -260,6 +305,8 @@ jobs:
         uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p radix-transactions --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p radix-transactions --no-fail-fast --locked
 
   radix-transaction-scenarios:
     name: Run transaction scenarios
@@ -270,6 +317,8 @@ jobs:
         uses: ./.github/actions/setup-env
       - name: Run tests
         run: cargo nextest run -p radix-transaction-scenarios --no-fail-fast --locked
+      - name: Run doc tests
+        run: cargo test --doc -p radix-transaction-scenarios --no-fail-fast --locked
 
   radix-clis:
     name: Run CLI tests
@@ -292,6 +341,9 @@ jobs:
           workspaces: radix-clis
       - name: Run Unit tests
         run: cargo nextest run --no-fail-fast --locked
+        working-directory: radix-clis
+      - name: Run doc tests
+        run: cargo test --doc --no-fail-fast --locked
         working-directory: radix-clis
       - name: Run resim shell tests
         run: bash ./tests/resim.sh

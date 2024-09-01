@@ -9,6 +9,7 @@ cd "$(dirname "$0")"
 echo "Building the workspace packages and tests (with all extended features)..."
 
 (set -x; cargo build; cargo test --no-run; cargo bench --no-run)
+(set -x; cargo build -p radix-engine-profiling --all-features; cargo test -p radix-engine-profiling --all-features --no-run; cargo bench -p radix-engine-profiling --all-features --no-run)
 
 echo "Building scrypto packages and tests using cargo build, to catch errors quickly..."
 

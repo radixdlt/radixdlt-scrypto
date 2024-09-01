@@ -88,6 +88,15 @@ pub use radix_common::prelude::*;
 pub use radix_engine_interface::prelude::*;
 pub use radix_transactions::prelude::*;
 
+/* Scrypto exports which don't clash with this crate's */
+pub use scrypto::prelude::{
+    blueprint, component_royalties, component_royalty_config, debug, enable_function_auth,
+    enable_method_auth, enable_package_royalties, error, extern_blueprint_internal, info,
+    internal_add_role, internal_component_royalty_entry, main_accessibility,
+    method_accessibilities, method_accessibility, role_list, roles, to_role_key, trace, warn,
+    NonFungibleData,
+};
+
 /* This Crate */
 pub use crate::environment::*;
 pub use crate::ledger_simulator::*;

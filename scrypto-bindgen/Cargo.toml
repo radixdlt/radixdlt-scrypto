@@ -7,23 +7,39 @@ readme = "README.md"
 license-file = "../LICENSE"
 
 [dependencies]
-radix-engine-interface = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
 radix-common = { workspace = true }
 radix-engine = { workspace = true }
+radix-engine-interface = { workspace = true }
 radix-rust = { workspace = true }
+
 serde_json = { workspace = true }
 wasm-opt = { workspace = true }
 cargo_toml = { workspace = true }
-radix-blueprint-schema-init = { workspace = true }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }
 
 [lib]
-doctest = false
 bench = false
 
 [features]
 default = ["std"]
-std = ["serde_json/std", "radix-engine-interface/std", "radix-common/std", "radix-engine/std", "radix-engine/moka", "radix-rust/std"]
-alloc = ["serde_json/alloc", "radix-engine-interface/alloc", "radix-common/alloc", "radix-engine/alloc", "radix-engine/lru", "radix-rust/alloc"]
+std = [
+    "serde_json/std",
+    "radix-blueprint-schema-init/std",
+    "radix-engine-interface/std",
+    "radix-common/std",
+    "radix-engine/std",
+    "radix-engine/moka",
+    "radix-rust/std"
+]
+alloc = [
+    "serde_json/alloc",
+    "radix-blueprint-schema-init/alloc",
+    "radix-engine-interface/alloc",
+    "radix-common/alloc",
+    "radix-engine/alloc",
+    "radix-engine/lru",
+    "radix-rust/alloc"
+]

@@ -84,9 +84,12 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///
 /// An example of case 1:
 /// ```rust
+/// # extern crate sbor_derive;
+/// # use sbor_derive::*;
+/// #
 /// macro_rules! impl_new_type {
 ///     {
-///         $vis $my_type($my_inner_type)
+///         $vis:vis $my_type:ident($my_inner_type:ty)
 ///     } => {eager_replace!{
 ///         #[sbor(as_type = [!stringify! $my_inner_type])]
 ///         $vis struct $my_type($my_inner_type)
@@ -104,6 +107,9 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 /// This also makes the intention of the macro writer much clearer, similar to [quote!](https://docs.rs/quote/latest/quote/)
 /// in procedural macros:
 /// ```rust
+/// # extern crate sbor_derive;
+/// # use sbor_derive::*;
+/// #
 /// macro_rules! impl_marker_traits {
 ///     {
 ///         $vis:vis $type_name:ident
@@ -111,7 +117,7 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///         $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? $( = $deflt:tt)? ),+ >)?
 ///         [
 ///             $($trait:ident),*
-///             $(,) // Optional trailing comma
+///             $(,)? // Optional trailing comma
 ///         ]
 ///     } => {eager_replace!{
 ///         [!SET! #ImplGenerics = $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?]
@@ -128,6 +134,9 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 ///
 /// An example of case 4 - a simple count function, without needing recursive macros:
 /// ```rust
+/// # extern crate sbor_derive;
+/// # use sbor_derive::*;
+/// #
 /// macro_rules! count_idents {
 ///     {
 ///         $($value: ident),*
@@ -166,7 +175,7 @@ pub fn permit_sbor_attributes(_: TokenStream) -> TokenStream {
 /// * `[!stringify! X Y " " Z]` gives `"X Y \" \" Z"` - IMPORTANT: This uses `token_stream.into_string()` which is compiler-version dependent. Do not use if that is important. Instead, the output from `concat` should be independent of compiler version.
 ///
 /// Note that all functions except `raw` resolve in a nested manner as you would expected, e.g.
-/// ```rust
+/// ```rust,ignore
 /// [!ident! X Y [!ident! Hello World] Z] // "XYHelloWorldZ"
 /// ```
 ///
@@ -301,7 +310,12 @@ pub fn basic_sbor(input: TokenStream) -> TokenStream {
 ///
 /// The test will then panic to ensure it fails, and can't be left accidentally in (re)generate state.
 ///
-/// ```no_run
+/// ```ignore
+/// # // Ignored because the generated code references sbor which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate sbor_derive;
+/// # use sbor_derive::*;
+/// #
 /// #[derive(BasicSbor, BasicSborAssertion)]
 /// #[sbor_assert(fixed("FILE:MyType-schema-v1.txt"), generate)]
 /// struct MyType {
@@ -312,7 +326,12 @@ pub fn basic_sbor(input: TokenStream) -> TokenStream {
 /// ## Fixed schema verification
 ///
 /// To verify the type's schema is unchanged, do:
-/// ```no_run
+/// ```ignore
+/// # // Ignored because the generated code references sbor which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate sbor_derive;
+/// # use sbor_derive::*;
+/// #
 /// #[derive(BasicSbor, BasicSborAssertion)]
 /// #[sbor_assert(fixed("FILE:MyType-schema-v1.txt"))]
 /// struct MyType {
@@ -326,7 +345,12 @@ pub fn basic_sbor(input: TokenStream) -> TokenStream {
 /// ## Backwards compatibility verification
 ///
 /// To allow multiple backwards-compatible versions, you can do this:
-/// ```no_run
+/// ```ignore
+/// # // Ignored because the generated code references sbor which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate sbor_derive;
+/// # use sbor_derive::*;
+/// #
 /// #[derive(BasicSbor, BasicSborAssertion)]
 /// #[sbor_assert(backwards_compatible(
 ///     version1 = "FILE:MyType-schema-v1.txt",
@@ -344,6 +368,11 @@ pub fn basic_sbor(input: TokenStream) -> TokenStream {
 /// the latest named schema; and each named schema with its predecessor, you can use:
 ///
 /// ```ignore
+/// # // Ignored because the generated code references sbor which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate sbor_derive;
+/// # use sbor_derive::*;
+/// #
 /// #[sbor_assert(backwards_compatible("EXPR:<Expression>"))
 /// ```
 /// Where the expression (such as `params_builder()`) has to generate a `SingleTypeSchemaCompatibilityParameters<NoCustomSchema>`.
@@ -365,7 +394,12 @@ pub fn basic_sbor(input: TokenStream) -> TokenStream {
 ///    
 ///
 /// For example:
-/// ```no_run
+/// ```ignore
+/// # // Ignored because the generated code references sbor which can't be imported
+/// # // by the doctest framework, because it doesn't know what those crates are
+/// # extern crate sbor_derive;
+/// # use sbor_derive::*;
+/// #
 /// #[derive(BasicSbor, BasicSborAssertion)]
 /// #[sbor_assert(
 ///     fixed("FILE:MyType-schema-v1.txt"),

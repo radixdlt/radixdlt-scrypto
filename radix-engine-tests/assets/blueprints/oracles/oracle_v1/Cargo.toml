@@ -14,5 +14,4 @@ default = []
 test = []
 
 [lib]
-doctest = false
 crate-type = ["cdylib", "lib"]
