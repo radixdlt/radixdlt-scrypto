@@ -99,7 +99,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                     |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
-                            .deposit_batch(config.from_account.address)
+                            .deposit_entire_worktop(config.from_account.address)
                             .done()
                     },
                     vec![&config.from_account.key],

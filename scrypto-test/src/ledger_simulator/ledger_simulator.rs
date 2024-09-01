@@ -961,7 +961,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                         manifest_args!(bucket),
                     )
                 })
-                .deposit_batch(account)
+                .deposit_entire_worktop(account)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pub_key)],
         );
@@ -976,17 +976,19 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         definition: PackageDefinition,
     ) -> PackageAddress {
         let receipt = self.execute_system_transaction(
-            vec![InstructionV1::CallFunction {
-                package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
-                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-                function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                    definition,
-                    native_package_code_id,
-                    metadata: MetadataInit::default(),
-                    package_address: None,
-                }),
-            }],
+            ManifestBuilder::new()
+                .call_function(
+                    PACKAGE_PACKAGE,
+                    PACKAGE_BLUEPRINT,
+                    PACKAGE_PUBLISH_NATIVE_IDENT,
+                    PackagePublishNativeManifestInput {
+                        definition,
+                        native_package_code_id,
+                        metadata: MetadataInit::default(),
+                        package_address: None,
+                    },
+                )
+                .build(),
             btreeset!(system_execution(SystemExecution::Protocol)),
             vec![],
         );
@@ -1003,36 +1005,30 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         address: PackageAddress,
     ) {
         let (code, definition) = source.into().code_and_definition();
-        let code_hash = hash(&code);
-        let nonce = self.next_transaction_nonce();
-
-        let receipt = self.execute_transaction(
-            SystemTransactionV1 {
-                instructions: InstructionsV1(Rc::new(vec![InstructionV1::CallFunction {
-                    package_address: PACKAGE_PACKAGE.into(),
-                    blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-                    function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-                    args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
-                        code: ManifestBlobRef(code_hash.0),
-                        definition: definition,
-                        metadata: metadata_init!(),
-                        package_address: Some(ManifestAddressReservation(0)),
-                        owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
-                    }),
-                }])),
-                blobs: BlobsV1 {
-                    blobs: vec![BlobV1(code)],
+        let mut manifest_builder = ManifestBuilder::new();
+        let code_blob = manifest_builder.add_blob(code);
+        let manifest = manifest_builder
+            .call_function(
+                PACKAGE_PACKAGE,
+                PACKAGE_BLUEPRINT,
+                PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+                PackagePublishWasmAdvancedManifestInput {
+                    code: code_blob,
+                    definition,
+                    metadata: metadata_init!(),
+                    package_address: Some(ManifestAddressReservation(0)),
+                    owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
                 },
-                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses: vec![PreAllocatedAddress {
-                    blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-                    address: address.into(),
-                }],
-            }
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(btreeset!(system_execution(SystemExecution::Protocol))),
-            ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
+            )
+            .build();
+
+        let receipt = self.execute_system_transaction(
+            manifest,
+            btreeset!(system_execution(SystemExecution::Protocol)),
+            vec![PreAllocatedAddress {
+                blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                address: address.into(),
+            }],
         );
 
         receipt.expect_commit_success();
@@ -1268,22 +1264,17 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn execute_system_transaction(
         &mut self,
-        instructions: Vec<InstructionV1>,
+        manifest: TransactionManifestV1,
         proofs: BTreeSet<NonFungibleGlobalId>,
         pre_allocated_addresses: Vec<PreAllocatedAddress>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
-
+        let unique_hash = hash(format!("Test runner txn: {}", nonce));
         self.execute_transaction(
-            SystemTransactionV1 {
-                instructions: InstructionsV1(Rc::new(instructions)),
-                blobs: BlobsV1 { blobs: vec![] },
-                hash_for_execution: hash(format!("Test runner txn: {}", nonce)),
-                pre_allocated_addresses,
-            }
-            .prepare()
-            .expect("expected transaction to be preparable")
-            .get_executable(proofs),
+            SystemTransactionV1::new(manifest, unique_hash, pre_allocated_addresses)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(proofs),
             ExecutionConfig::for_system_transaction(NetworkDefinition::simulator()),
         )
     }
@@ -1959,11 +1950,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn get_current_epoch(&mut self) -> Epoch {
         let receipt = self.execute_system_transaction(
-            vec![InstructionV1::CallMethod {
-                address: CONSENSUS_MANAGER.into(),
-                method_name: CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentEpochInput),
-            }],
+            ManifestBuilder::new()
+                .call_method(
+                    CONSENSUS_MANAGER,
+                    CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
+                    ConsensusManagerGetCurrentEpochInput,
+                )
+                .build(),
             btreeset![system_execution(SystemExecution::Validator)],
             vec![],
         );
@@ -1980,21 +1973,23 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> TransactionReceipt {
         let expected_round_number = self.get_consensus_manager_state().round.number() + 1;
         self.execute_system_transaction(
-            vec![InstructionV1::CallMethod {
-                address: CONSENSUS_MANAGER.into(),
-                method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput {
-                    round,
-                    proposer_timestamp_ms,
-                    leader_proposal_history: LeaderProposalHistory {
-                        gap_round_leaders: (expected_round_number..round.number())
-                            .map(|_| 0)
-                            .collect(),
-                        current_leader: 0,
-                        is_fallback: false,
+            ManifestBuilder::new()
+                .call_method(
+                    CONSENSUS_MANAGER,
+                    CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+                    ConsensusManagerNextRoundInput {
+                        round,
+                        proposer_timestamp_ms,
+                        leader_proposal_history: LeaderProposalHistory {
+                            gap_round_leaders: (expected_round_number..round.number())
+                                .map(|_| 0)
+                                .collect(),
+                            current_leader: 0,
+                            is_fallback: false,
+                        },
                     },
-                }),
-            }],
+                )
+                .build(),
             btreeset![system_execution(SystemExecution::Validator)],
             vec![],
         )
@@ -2035,13 +2030,13 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let receipt = self.execute_system_transaction(
-            vec![InstructionV1::CallMethod {
-                address: CONSENSUS_MANAGER.into(),
-                method_name: CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&ConsensusManagerGetCurrentTimeInputV2 {
-                    precision
-                }),
-            }],
+            ManifestBuilder::new()
+                .call_method(
+                    CONSENSUS_MANAGER,
+                    CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
+                    ConsensusManagerGetCurrentTimeInputV2 { precision },
+                )
+                .build(),
             btreeset![system_execution(SystemExecution::Validator)],
             vec![],
         );

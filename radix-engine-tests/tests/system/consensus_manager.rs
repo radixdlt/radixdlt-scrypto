@@ -2862,19 +2862,21 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
             .into(),
     );
     let receipt = ledger.execute_system_transaction(
-        vec![InstructionV1::CallFunction {
-            package_address: CONSENSUS_MANAGER_PACKAGE.into(),
-            blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
-            function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: manifest_args!(
-                Into::<[u8; NodeId::LENGTH]>::into(VALIDATOR_OWNER_BADGE),
-                Into::<[u8; NodeId::LENGTH]>::into(CONSENSUS_MANAGER),
-                1u64,
-                ConsensusManagerConfig::test_default(),
-                120000i64
+        ManifestBuilder::new()
+            .call_function(
+                CONSENSUS_MANAGER_PACKAGE,
+                CONSENSUS_MANAGER_BLUEPRINT,
+                CONSENSUS_MANAGER_CREATE_IDENT,
+                ConsensusManagerCreateManifestInput {
+                    validator_owner_token_address: ManifestAddressReservation(0),
+                    component_address: ManifestAddressReservation(1),
+                    initial_epoch: Epoch::of(1),
+                    initial_config: ConsensusManagerConfig::test_default(),
+                    initial_time_ms: 120000i64,
+                    initial_current_leader: Some(1),
+                }
             )
-            .into(),
-        }],
+            .build(),
         // No validator proofs
         btreeset![],
         pre_allocated_addresses,
@@ -2915,19 +2917,21 @@ fn consensus_manager_create_should_succeed_with_system_privilege() {
             .into(),
     );
     let receipt = ledger.execute_system_transaction(
-        vec![InstructionV1::CallFunction {
-            package_address: CONSENSUS_MANAGER_PACKAGE.into(),
-            blueprint_name: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
-            function_name: CONSENSUS_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateManifestInput {
-                validator_owner_token_address: ManifestAddressReservation(0),
-                component_address: ManifestAddressReservation(1),
-                initial_epoch: Epoch::of(1),
-                initial_config: ConsensusManagerConfig::test_default(),
-                initial_time_ms: 120000i64,
-                initial_current_leader: Some(0),
-            }),
-        }],
+        ManifestBuilder::new()
+            .call_function(
+                CONSENSUS_MANAGER_PACKAGE,
+                CONSENSUS_MANAGER_BLUEPRINT,
+                CONSENSUS_MANAGER_CREATE_IDENT,
+                ConsensusManagerCreateManifestInput {
+                    validator_owner_token_address: ManifestAddressReservation(0),
+                    component_address: ManifestAddressReservation(1),
+                    initial_epoch: Epoch::of(1),
+                    initial_config: ConsensusManagerConfig::test_default(),
+                    initial_time_ms: 120000i64,
+                    initial_current_leader: Some(0),
+                }
+            )
+            .build(),
         btreeset![system_execution(SystemExecution::Protocol)],
         pre_allocated_addresses,
     );

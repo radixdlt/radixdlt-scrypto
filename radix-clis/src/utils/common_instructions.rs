@@ -390,6 +390,7 @@ fn build_call_argument<'a>(
 #[cfg(test)]
 mod test {
     use super::*;
+    use manifest_instruction::*;
     use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
     use radix_transactions::model::InstructionV1;
 
@@ -781,10 +782,10 @@ mod test {
             // Assert
             assert_eq!(
                 instructions.get(0).unwrap(),
-                &InstructionV1::TakeFromWorktop {
+                &InstructionV1::TakeFromWorktop(TakeFromWorktop {
                     resource_address: XRD,
                     amount: amount.into()
-                }
+                })
             );
             assert_eq!(parsed_arg, ManifestBucket(0u32));
         }
@@ -830,10 +831,10 @@ mod test {
             // Assert
             assert_eq!(
                 instructions.get(0).unwrap(),
-                &InstructionV1::TakeNonFungiblesFromWorktop {
+                &InstructionV1::TakeNonFungiblesFromWorktop(TakeNonFungiblesFromWorktop {
                     resource_address,
                     ids
-                }
+                })
             );
             assert_eq!(parsed_arg, ManifestBucket(0u32));
         }

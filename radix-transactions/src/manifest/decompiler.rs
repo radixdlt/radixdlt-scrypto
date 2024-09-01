@@ -1,51 +1,10 @@
 use crate::data::*;
 use crate::internal_prelude::*;
-use crate::model::*;
 use crate::validation::*;
 use radix_common::address::AddressBech32Encoder;
-use radix_common::constants::PACKAGE_PACKAGE;
-use radix_common::constants::{
-    ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
-};
 use radix_common::data::manifest::model::*;
 use radix_common::data::manifest::*;
 use radix_common::network::NetworkDefinition;
-use radix_common::prelude::CONSENSUS_MANAGER;
-use radix_engine_interface::blueprints::access_controller::{
-    ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT,
-};
-use radix_engine_interface::blueprints::account::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT, ACCOUNT_CREATE_IDENT,
-};
-use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT;
-use radix_engine_interface::blueprints::identity::{
-    IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_CREATE_IDENT,
-};
-use radix_engine_interface::blueprints::package::PACKAGE_BLUEPRINT;
-use radix_engine_interface::blueprints::package::PACKAGE_CLAIM_ROYALTIES_IDENT;
-use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
-use radix_engine_interface::blueprints::package::PACKAGE_PUBLISH_WASM_IDENT;
-use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT, FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
-    NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT, VAULT_FREEZE_IDENT, VAULT_RECALL_IDENT,
-    VAULT_UNFREEZE_IDENT,
-};
-use radix_engine_interface::object_modules::metadata::METADATA_SET_IDENT;
-use radix_engine_interface::object_modules::metadata::{
-    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
-};
-use radix_engine_interface::object_modules::role_assignment::{
-    ROLE_ASSIGNMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
-};
-use radix_engine_interface::object_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
-    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -183,14 +142,14 @@ impl<'a> DecompilationContext<'a> {
 /// Contract: if the instructions are from a validated notarized transaction, no error
 /// should be returned.
 pub fn decompile(
-    instructions: &[InstructionV1],
+    instructions: &[impl InstructionVersion],
     network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
     decompile_with_known_naming(instructions, network, Default::default())
 }
 
 pub fn decompile_with_known_naming(
-    instructions: &[InstructionV1],
+    instructions: &[impl InstructionVersion],
     network: &NetworkDefinition,
     known_object_names: ManifestObjectNames,
 ) -> Result<String, DecompileError> {
@@ -198,485 +157,52 @@ pub fn decompile_with_known_naming(
     let mut buf = String::new();
     let mut context = DecompilationContext::new(&address_bech32_encoder, known_object_names);
     for inst in instructions {
-        decompile_instruction(&mut buf, inst, &mut context)?;
+        let decompiled = inst.decompile(&mut context)?;
+        output_instruction(&mut buf, &context, decompiled)?;
     }
 
     Ok(buf)
 }
 
-pub fn decompile_instruction<F: fmt::Write>(
+pub struct DecompiledInstruction {
+    command: &'static str,
+    fields: Vec<ManifestValue>,
+}
+
+impl DecompiledInstruction {
+    pub fn new(instruction: &'static str) -> Self {
+        Self {
+            command: instruction,
+            fields: vec![],
+        }
+    }
+
+    pub fn add_value_argument(mut self, value: ManifestValue) -> Self {
+        self.fields.push(value);
+        self
+    }
+
+    pub fn add_argument(self, value: impl ManifestEncode) -> Self {
+        let encoded = manifest_encode(&value).unwrap();
+        let value = manifest_decode(&encoded).unwrap();
+        self.add_value_argument(value)
+    }
+}
+
+pub fn output_instruction<F: fmt::Write>(
     f: &mut F,
-    instruction: &InstructionV1,
-    context: &mut DecompilationContext,
+    context: &DecompilationContext,
+    DecompiledInstruction { command, fields }: DecompiledInstruction,
 ) -> Result<(), DecompileError> {
-    let (display_name, display_parameters) = match instruction {
-        InstructionV1::TakeFromWorktop {
-            resource_address,
-            amount,
-        } => {
-            let bucket = context.new_bucket();
-            (
-                "TAKE_FROM_WORKTOP",
-                to_manifest_value(&(resource_address, amount, bucket))?,
-            )
-        }
-        InstructionV1::TakeNonFungiblesFromWorktop {
-            ids,
-            resource_address,
-        } => {
-            let bucket = context.new_bucket();
-            (
-                "TAKE_NON_FUNGIBLES_FROM_WORKTOP",
-                to_manifest_value(&(resource_address, ids, bucket))?,
-            )
-        }
-        InstructionV1::TakeAllFromWorktop { resource_address } => {
-            let bucket = context.new_bucket();
-            (
-                "TAKE_ALL_FROM_WORKTOP",
-                to_manifest_value(&(resource_address, bucket))?,
-            )
-        }
-        InstructionV1::ReturnToWorktop { bucket_id } => {
-            ("RETURN_TO_WORKTOP", to_manifest_value(&(bucket_id,))?)
-        }
-        InstructionV1::AssertWorktopContains {
-            amount,
-            resource_address,
-        } => (
-            "ASSERT_WORKTOP_CONTAINS",
-            to_manifest_value(&(resource_address, amount))?,
-        ),
-        InstructionV1::AssertWorktopContainsNonFungibles {
-            resource_address,
-            ids,
-        } => (
-            "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES",
-            to_manifest_value(&(resource_address, ids))?,
-        ),
-        InstructionV1::AssertWorktopContainsAny { resource_address } => (
-            "ASSERT_WORKTOP_CONTAINS_ANY",
-            to_manifest_value(&(resource_address,))?,
-        ),
-        InstructionV1::PopFromAuthZone => {
-            let proof = context.new_proof();
-            ("POP_FROM_AUTH_ZONE", to_manifest_value(&(proof,))?)
-        }
-        InstructionV1::PushToAuthZone { proof_id } => {
-            ("PUSH_TO_AUTH_ZONE", to_manifest_value(&(proof_id,))?)
-        }
-        InstructionV1::DropAuthZoneProofs => {
-            ("DROP_AUTH_ZONE_PROOFS", to_manifest_value_and_unwrap!(&()))
-        }
-        InstructionV1::DropAuthZoneRegularProofs => (
-            "DROP_AUTH_ZONE_REGULAR_PROOFS",
-            to_manifest_value_and_unwrap!(&()),
-        ),
-        InstructionV1::DropAuthZoneSignatureProofs => (
-            "DROP_AUTH_ZONE_SIGNATURE_PROOFS",
-            to_manifest_value_and_unwrap!(&()),
-        ),
-        InstructionV1::CreateProofFromAuthZoneOfAmount {
-            resource_address,
-            amount,
-        } => {
-            let proof = context.new_proof();
-
-            (
-                "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT",
-                to_manifest_value(&(resource_address, amount, proof))?,
-            )
-        }
-        InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
-            resource_address,
-            ids,
-        } => {
-            let proof = context.new_proof();
-            (
-                "CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES",
-                to_manifest_value(&(resource_address, ids, proof))?,
-            )
-        }
-        InstructionV1::CreateProofFromAuthZoneOfAll { resource_address } => {
-            let proof = context.new_proof();
-            (
-                "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL",
-                to_manifest_value(&(resource_address, proof))?,
-            )
-        }
-
-        InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
-            let proof = context.new_proof();
-            (
-                "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT",
-                to_manifest_value(&(bucket_id, amount, proof))?,
-            )
-        }
-        InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids } => {
-            let proof = context.new_proof();
-            (
-                "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES",
-                to_manifest_value(&(bucket_id, ids, proof))?,
-            )
-        }
-        InstructionV1::CreateProofFromBucketOfAll { bucket_id } => {
-            let proof = context.new_proof();
-            (
-                "CREATE_PROOF_FROM_BUCKET_OF_ALL",
-                to_manifest_value(&(bucket_id, proof))?,
-            )
-        }
-        InstructionV1::BurnResource { bucket_id } => {
-            ("BURN_RESOURCE", to_manifest_value(&(bucket_id,))?)
-        }
-        InstructionV1::CloneProof { proof_id } => {
-            let proof_id2 = context.new_proof();
-            ("CLONE_PROOF", to_manifest_value(&(proof_id, proof_id2))?)
-        }
-        InstructionV1::DropProof { proof_id } => ("DROP_PROOF", to_manifest_value(&(proof_id,))?),
-        InstructionV1::CallFunction {
-            package_address,
-            blueprint_name,
-            function_name,
-            args,
-        } => {
-            let mut fields = Vec::new();
-            let name = match (
-                package_address,
-                blueprint_name.as_str(),
-                function_name.as_str(),
-            ) {
-                (package_address, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_IDENT)
-                    if package_address.is_static_global_package_of(&PACKAGE_PACKAGE) =>
-                {
-                    "PUBLISH_PACKAGE"
-                }
-                (package_address, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT)
-                    if package_address.is_static_global_package_of(&PACKAGE_PACKAGE) =>
-                {
-                    "PUBLISH_PACKAGE_ADVANCED"
-                }
-                (package_address, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_ADVANCED_IDENT)
-                    if package_address.is_static_global_package_of(&ACCOUNT_PACKAGE) =>
-                {
-                    "CREATE_ACCOUNT_ADVANCED"
-                }
-                (package_address, ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_IDENT)
-                    if package_address.is_static_global_package_of(&ACCOUNT_PACKAGE) =>
-                {
-                    "CREATE_ACCOUNT"
-                }
-                (package_address, IDENTITY_BLUEPRINT, IDENTITY_CREATE_ADVANCED_IDENT)
-                    if package_address.is_static_global_package_of(&IDENTITY_PACKAGE) =>
-                {
-                    "CREATE_IDENTITY_ADVANCED"
-                }
-                (package_address, IDENTITY_BLUEPRINT, IDENTITY_CREATE_IDENT)
-                    if package_address.is_static_global_package_of(&IDENTITY_PACKAGE) =>
-                {
-                    "CREATE_IDENTITY"
-                }
-                (package_address, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_IDENT)
-                    if package_address.is_static_global_package_of(&ACCESS_CONTROLLER_PACKAGE) =>
-                {
-                    "CREATE_ACCESS_CONTROLLER"
-                }
-                (
-                    package_address,
-                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
-                    "CREATE_FUNGIBLE_RESOURCE"
-                }
-                (
-                    package_address,
-                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
-                    "CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY"
-                }
-                (
-                    package_address,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
-                    "CREATE_NON_FUNGIBLE_RESOURCE"
-                }
-                (
-                    package_address,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-                ) if package_address.is_static_global_package_of(&RESOURCE_PACKAGE) => {
-                    "CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY"
-                }
-                _ => {
-                    fields.push(package_address.to_instruction_argument());
-                    fields.push(to_manifest_value(blueprint_name)?);
-                    fields.push(to_manifest_value(function_name)?);
-                    "CALL_FUNCTION"
-                }
-            };
-
-            if let Value::Tuple { fields: arg_fields } = args {
-                fields.extend(arg_fields.clone());
-            } else {
-                return Err(DecompileError::InvalidArguments);
-            }
-
-            let parameters = Value::Tuple { fields };
-            (name, parameters)
-        }
-        InstructionV1::CallMethod {
-            address,
-            method_name,
-            args,
-        } => {
-            let mut fields = Vec::new();
-            let name = match (address, method_name.as_str()) {
-                // Nb - For Main method call, we also check the address type to avoid name clashing.
-
-                /* Package */
-                (address, PACKAGE_CLAIM_ROYALTIES_IDENT) if address.is_static_global_package() => {
-                    fields.push(address.to_instruction_argument());
-                    "CLAIM_PACKAGE_ROYALTIES"
-                }
-
-                /* Resource manager */
-                (address, FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
-                    if address.is_static_global_fungible_resource_manager() =>
-                {
-                    fields.push(address.to_instruction_argument());
-                    "MINT_FUNGIBLE"
-                }
-                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT)
-                    if address.is_static_global_non_fungible_resource_manager() =>
-                {
-                    fields.push(address.to_instruction_argument());
-                    "MINT_NON_FUNGIBLE"
-                }
-                (address, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT)
-                    if address.is_static_global_non_fungible_resource_manager() =>
-                {
-                    fields.push(address.to_instruction_argument());
-                    "MINT_RUID_NON_FUNGIBLE"
-                }
-
-                /* Validator */
-                (address, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT)
-                    if address == &CONSENSUS_MANAGER.into() =>
-                {
-                    "CREATE_VALIDATOR"
-                }
-
-                /* Default */
-                _ => {
-                    fields.push(address.to_instruction_argument());
-                    fields.push(to_manifest_value(method_name)?);
-                    "CALL_METHOD"
-                }
-            };
-
-            if let Value::Tuple { fields: arg_fields } = args {
-                fields.extend(arg_fields.clone());
-            } else {
-                return Err(DecompileError::InvalidArguments);
-            }
-
-            let parameters = Value::Tuple { fields };
-            (name, parameters)
-        }
-        InstructionV1::CallRoyaltyMethod {
-            address,
-            method_name,
-            args,
-        } => {
-            let mut fields = Vec::new();
-            let name = match (address, method_name.as_str()) {
-                /* Component royalty */
-                (address, COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "SET_COMPONENT_ROYALTY"
-                }
-                (address, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "LOCK_COMPONENT_ROYALTY"
-                }
-                (address, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "CLAIM_COMPONENT_ROYALTIES"
-                }
-
-                /* Default */
-                _ => {
-                    fields.push(address.to_instruction_argument());
-                    fields.push(to_manifest_value(method_name)?);
-                    "CALL_ROYALTY_METHOD"
-                }
-            };
-
-            if let Value::Tuple { fields: arg_fields } = args {
-                fields.extend(arg_fields.clone());
-            } else {
-                return Err(DecompileError::InvalidArguments);
-            }
-
-            let parameters = Value::Tuple { fields };
-            (name, parameters)
-        }
-        InstructionV1::CallMetadataMethod {
-            address,
-            method_name,
-            args,
-        } => {
-            let mut fields = Vec::new();
-            let name = match (address, method_name.as_str()) {
-                /* Metadata */
-                (address, METADATA_SET_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "SET_METADATA"
-                }
-                (address, METADATA_REMOVE_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "REMOVE_METADATA"
-                }
-                (address, METADATA_LOCK_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "LOCK_METADATA"
-                }
-
-                /* Default */
-                _ => {
-                    fields.push(address.to_instruction_argument());
-                    fields.push(to_manifest_value(method_name)?);
-                    "CALL_METADATA_METHOD"
-                }
-            };
-
-            if let Value::Tuple { fields: arg_fields } = args {
-                fields.extend(arg_fields.clone());
-            } else {
-                return Err(DecompileError::InvalidArguments);
-            }
-
-            let parameters = Value::Tuple { fields };
-            (name, parameters)
-        }
-        InstructionV1::CallRoleAssignmentMethod {
-            address,
-            method_name,
-            args,
-        } => {
-            let mut fields = Vec::new();
-            let name = match (address, method_name.as_str()) {
-                /* Access rules */
-                (address, ROLE_ASSIGNMENT_SET_OWNER_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "SET_OWNER_ROLE"
-                }
-                (address, ROLE_ASSIGNMENT_LOCK_OWNER_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "LOCK_OWNER_ROLE"
-                }
-                (address, ROLE_ASSIGNMENT_SET_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "SET_ROLE"
-                }
-
-                /* Default */
-                _ => {
-                    fields.push(address.to_instruction_argument());
-                    fields.push(to_manifest_value(method_name)?);
-                    "CALL_ROLE_ASSIGNMENT_METHOD"
-                }
-            };
-
-            if let Value::Tuple { fields: arg_fields } = args {
-                fields.extend(arg_fields.clone());
-            } else {
-                return Err(DecompileError::InvalidArguments);
-            }
-
-            let parameters = Value::Tuple { fields };
-            (name, parameters)
-        }
-        InstructionV1::CallDirectVaultMethod {
-            address: vault_id,
-            method_name,
-            args,
-        } => {
-            let mut fields = Vec::new();
-            let name = match method_name.as_str() {
-                VAULT_RECALL_IDENT => {
-                    fields.push(to_manifest_value(vault_id)?);
-                    "RECALL_FROM_VAULT"
-                }
-                VAULT_FREEZE_IDENT => {
-                    fields.push(to_manifest_value(vault_id)?);
-                    "FREEZE_VAULT"
-                }
-                VAULT_UNFREEZE_IDENT => {
-                    fields.push(to_manifest_value(vault_id)?);
-                    "UNFREEZE_VAULT"
-                }
-                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
-                    fields.push(to_manifest_value(vault_id)?);
-                    "RECALL_NON_FUNGIBLES_FROM_VAULT"
-                }
-                /* Default */
-                _ => {
-                    fields.push(to_manifest_value(vault_id)?);
-                    fields.push(to_manifest_value(method_name)?);
-                    "CALL_DIRECT_VAULT_METHOD"
-                }
-            };
-
-            if let Value::Tuple { fields: arg_fields } = args {
-                fields.extend(arg_fields.clone());
-            } else {
-                return Err(DecompileError::InvalidArguments);
-            }
-
-            let parameters = Value::Tuple { fields };
-            (name, parameters)
-        }
-
-        InstructionV1::DropNamedProofs => ("DROP_NAMED_PROOFS", to_manifest_value(&())?),
-        InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())?),
-        InstructionV1::AllocateGlobalAddress {
-            package_address,
-            blueprint_name,
-        } => {
-            let address_reservation = context.new_address_reservation();
-            let named_address = context.new_address();
-            (
-                "ALLOCATE_GLOBAL_ADDRESS",
-                to_manifest_value(&(
-                    package_address,
-                    blueprint_name,
-                    address_reservation,
-                    named_address,
-                ))?,
-            )
-        }
-    };
-
-    write!(f, "{}", display_name)?;
-    if let Value::Tuple { fields } = display_parameters {
-        let field_count = fields.len();
-        for field in fields {
-            write!(f, "\n")?;
-            format_manifest_value(f, &field, &context.for_value_display(), true, 0)?;
-        }
-        if field_count > 0 {
-            write!(f, "\n;\n")?;
-        } else {
-            write!(f, ";\n")?;
-        }
+    write!(f, "{}", command)?;
+    for field in fields.iter() {
+        write!(f, "\n")?;
+        format_manifest_value(f, field, &context.for_value_display(), true, 0)?;
+    }
+    if fields.len() > 0 {
+        write!(f, "\n;\n")?;
     } else {
-        panic!(
-            "Parameters are not a tuple: name = {:?}, parameters = {:?}",
-            display_name, display_parameters
-        );
+        write!(f, ";\n")?;
     }
 
     Ok(())

@@ -252,8 +252,7 @@ impl ProtocolUpdateBatchGenerator for BabylonBatchGenerator {
                     .unwrap()
                     .clone();
                 let chunk_number = batch_index;
-                let transaction =
-                    create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
+                let transaction = create_genesis_data_ingestion_transaction(chunk, chunk_number);
                 ProtocolUpdateBatch::single(ProtocolUpdateTransactionDetails::genesis_transaction(
                     &format!("chunk-{chunk_number:04}"),
                     transaction,

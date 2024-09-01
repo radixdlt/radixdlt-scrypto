@@ -77,27 +77,31 @@ impl ScenarioCreator for AccountAuthorizedDepositorsScenarioCreator {
                                 .then(|builder| {
                                     let address_reservation =
                                         builder.address_reservation("address_reservation");
-                                    builder.add_instruction_advanced(InstructionV1::CallFunction {
-                                        package_address: DynamicPackageAddress::Static(RESOURCE_PACKAGE),
-                                        blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                                        function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
-                                        args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                                    builder.call_function(
+                                        RESOURCE_PACKAGE,
+                                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
+                                        FungibleResourceManagerCreateWithInitialSupplyManifestInput {
                                             owner_role: OwnerRole::None,
                                             track_total_supply: true,
                                             divisibility: 18,
                                             initial_supply: 1.into(),
                                             resource_roles: Default::default(),
                                             metadata: Default::default(),
-                                            address_reservation: Some(address_reservation)
-                                        }),
-                                    }).0
+                                            address_reservation: Some(address_reservation),
+                                        },
+                                    )
                                 })
                                 .then(|builder| {
                                     let named_address = builder.named_address("address");
                                     let badge = ManifestValue::Enum { discriminator: 1, fields: vec![ManifestValue::Custom { value: ManifestCustomValue::Address(named_address) }] };
-                                    builder.add_instruction_advanced(InstructionV1::CallMethod { address: DynamicGlobalAddress::Static(destination_account.address.into()), method_name: ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(), args: ManifestValue::Tuple { fields: vec![badge] } }).0
+                                    builder.call_method(
+                                        destination_account.address,
+                                        ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
+                                        (badge,),
+                                    )
                                 })
-                                .deposit_batch(source_account.address)
+                                .deposit_entire_worktop(source_account.address)
                         },
                         vec![
                             &source_account.key,

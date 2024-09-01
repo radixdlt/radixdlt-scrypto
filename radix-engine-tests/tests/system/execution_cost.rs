@@ -19,7 +19,7 @@ fn transaction_previews_do_no_contains_debug_information() {
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .deposit_batch(account)
+            .deposit_entire_worktop(account)
             .build(),
         vec![pk.into()],
         0,
@@ -49,7 +49,7 @@ fn executing_transactions_with_debug_information_outputs_the_detailed_cost_break
         ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
-            .deposit_batch(account)
+            .deposit_entire_worktop(account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk)],
         ExecutionConfig::for_debug_transaction(),
@@ -82,7 +82,7 @@ fn generate_flamegraph_of_faucet_lock_fee_and_free_xrd_method() {
                 ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .get_free_xrd_from_faucet()
-                    .deposit_batch(account)
+                    .deposit_entire_worktop(account)
                     .build(),
                 vec![pk.into()],
             )

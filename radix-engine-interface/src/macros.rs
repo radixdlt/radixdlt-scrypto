@@ -3,60 +3,60 @@
 macro_rules! access_and_or {
     (|| $tt:tt) => {{
         let next = $crate::composite_requirement!($tt);
-        move |e: CompositeRequirement| e.or(next)
+        move |e: $crate::blueprints::resource::CompositeRequirement| e.or(next)
     }};
     (|| $right1:ident $right2:tt) => {{
         let next = $crate::composite_requirement!($right1 $right2);
-        move |e: CompositeRequirement| e.or(next)
+        move |e: $crate::blueprints::resource::CompositeRequirement| e.or(next)
     }};
     (|| $right:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::composite_requirement!($right);
-        move |e: CompositeRequirement| e.or(f(next))
+        move |e: $crate::blueprints::resource::CompositeRequirement| e.or(f(next))
     }};
     (|| $right:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::composite_requirement!($right);
-        move |e: CompositeRequirement| f(e.or(next))
+        move |e: $crate::blueprints::resource::CompositeRequirement| f(e.or(next))
     }};
     (|| $right1:ident $right2:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::composite_requirement!($right1 $right2);
-        move |e: CompositeRequirement| e.or(f(next))
+        move |e: $crate::blueprints::resource::CompositeRequirement| e.or(f(next))
     }};
     (|| $right1:ident $right2:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::composite_requirement!($right1 $right2);
-        move |e: CompositeRequirement| f(e.or(next))
+        move |e: $crate::blueprints::resource::CompositeRequirement| f(e.or(next))
     }};
 
     (&& $tt:tt) => {{
         let next = $crate::composite_requirement!($tt);
-        move |e: CompositeRequirement| e.and(next)
+        move |e: $crate::blueprints::resource::CompositeRequirement| e.and(next)
     }};
     (&& $right1:ident $right2:tt) => {{
         let next = $crate::composite_requirement!($right1 $right2);
-        move |e: CompositeRequirement| e.and(next)
+        move |e: $crate::blueprints::resource::CompositeRequirement| e.and(next)
     }};
     (&& $right:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::composite_requirement!($right);
-        move |e: CompositeRequirement| f(e.and(next))
+        move |e: $crate::blueprints::resource::CompositeRequirement| f(e.and(next))
     }};
     (&& $right:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::composite_requirement!($right);
-        move |e: CompositeRequirement| f(e.and(next))
+        move |e: $crate::blueprints::resource::CompositeRequirement| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
         let f = $crate::access_and_or!(&& $($rest)+);
         let next = $crate::composite_requirement!($right1 $right2);
-        move |e: CompositeRequirement| f(e.and(next))
+        move |e: $crate::blueprints::resource::CompositeRequirement| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
         let f = $crate::access_and_or!(|| $($rest)+);
         let next = $crate::composite_requirement!($right1 $right2);
-        move |e: CompositeRequirement| f(e.and(next))
+        move |e: $crate::blueprints::resource::CompositeRequirement| f(e.and(next))
     }};
 }
 

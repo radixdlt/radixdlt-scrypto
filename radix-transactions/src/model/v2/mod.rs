@@ -1,6 +1,7 @@
 use super::*;
 
 mod child_intents_v2;
+mod instruction_v2;
 mod instructions_v2;
 mod intent_core_v2;
 mod intent_header_v2;
@@ -17,6 +18,7 @@ mod transaction_intent_v2;
 mod validated_notarized_transaction_v2;
 
 pub use child_intents_v2::*;
+pub use instruction_v2::*;
 pub use instructions_v2::*;
 pub use intent_core_v2::*;
 pub use intent_header_v2::*;

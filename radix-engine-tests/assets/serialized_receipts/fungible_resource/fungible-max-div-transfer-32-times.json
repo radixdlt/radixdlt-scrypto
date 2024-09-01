@@ -1,0 +1,361 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [],
+    "metadata_updates": {},
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {
+    "1": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "10"
+        }
+      }
+    ],
+    "2": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "4": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "6": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "8": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "10": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "12": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "14": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "16": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "18": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "20": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "22": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "24": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "26": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "28": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "30": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "32": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "34": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "36": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "38": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "40": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "42": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "44": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "46": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "48": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "50": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "52": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "54": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "56": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "58": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "60": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "62": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "64": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "0.001"
+        }
+      }
+    ],
+    "66": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4j9dq56cmadw30xxumhkkudnznev45825shmgq9mgt0f74l34m39m",
+          "amount": "9.968"
+        }
+      }
+    ]
+  },
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.7663539",
+    "finalization_fees_in_xrd": "0.05254265",
+    "storage_fees_in_xrd": "1.06859205315",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}

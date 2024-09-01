@@ -13,16 +13,12 @@ use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::account::ResourcePreference;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::account::*;
-use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
-    CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-};
+use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::package::BlueprintPayloadIdentifier;
 use radix_engine_interface::object_modules::metadata::MetadataValue;
 use radix_engine_interface::object_modules::ModuleConfig;
 use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, recall_roles};
 use radix_engine_tests::common::*;
-use radix_transactions::model::InstructionV1;
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
 use scrypto_test::prelude::*;
@@ -957,15 +953,17 @@ fn consensus_manager_round_update_emits_correct_event() {
 
     // Act
     let receipt = ledger.execute_system_transaction(
-        vec![InstructionV1::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-                Round::of(1),
-                0,
-                180000i64,
-            )),
-        }],
+        ManifestBuilder::new()
+            .call_method(
+                CONSENSUS_MANAGER,
+                CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+                ConsensusManagerNextRoundInput::successful(
+                    Round::of(1),
+                    0,
+                    180000i64,
+                )
+            )
+            .build(),
         btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
@@ -1017,15 +1015,17 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
 
     // Act: perform the most usual successful next round
     let receipt = ledger.execute_system_transaction(
-        vec![InstructionV1::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-                Round::of(rounds_per_epoch),
-                0,
-                180000i64,
-            )),
-        }],
+        ManifestBuilder::new()
+            .call_method(
+                CONSENSUS_MANAGER,
+                CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+                ConsensusManagerNextRoundInput::successful(
+                    Round::of(rounds_per_epoch),
+                    0,
+                    180000i64,
+                )
+            )
+            .build(),
         btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
@@ -1069,15 +1069,17 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
 
     // Act
     let receipt = ledger.execute_system_transaction(
-        vec![InstructionV1::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_NEXT_ROUND_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-                Round::of(1),
-                0,
-                180000i64,
-            )),
-        }],
+        ManifestBuilder::new()
+            .call_method(
+                CONSENSUS_MANAGER,
+                CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
+                ConsensusManagerNextRoundInput::successful(
+                    Round::of(1),
+                    0,
+                    180000i64,
+                )
+            )
+            .build(),
         btreeset![system_execution(SystemExecution::Validator)],
         vec![],
     );
@@ -1851,7 +1853,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .mint_fungible(resource_address, dec!(30))
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     ledger
         .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
@@ -1957,7 +1959,7 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
                 (NonFungibleLocalId::integer(5), EmptyNonFungibleData {}),
             ],
         )
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     ledger
         .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
@@ -2583,7 +2585,7 @@ fn account_deposit_batch_methods_emits_expected_events_when_deposit_fails() {
         .withdraw_from_account(account, XRD, 1)
         .withdraw_from_account(account, resource_address, 3)
         .try_deposit_entire_worktop_or_refund(account, None)
-        .deposit_batch(account)
+        .deposit_entire_worktop(account)
         .build();
     let receipt = ledger.preview_manifest(
         manifest,

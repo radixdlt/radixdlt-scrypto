@@ -32,7 +32,7 @@ pub fn should_be_able_to_withdraw_from_maximum_vault_size_access_controller() {
                 ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT,
                 manifest_args!(),
             )
-            .deposit_batch(account)
+            .deposit_entire_worktop(account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&key)],
     );

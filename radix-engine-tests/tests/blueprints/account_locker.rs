@@ -202,7 +202,7 @@ fn store_can_only_be_called_by_storer_role() {
                         },
                     )
                 })
-                .deposit_batch(account)
+                .deposit_entire_worktop(account)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -280,7 +280,7 @@ fn airdrop_can_only_be_called_by_storer_role() {
                         },
                     )
                 })
-                .deposit_batch(account)
+                .deposit_entire_worktop(account)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -355,7 +355,7 @@ fn recover_can_only_be_called_by_recoverer_role() {
                         amount: dec!(0),
                     },
                 )
-                .deposit_batch(account)
+                .deposit_entire_worktop(account)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -430,7 +430,7 @@ fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
                         ids: indexset! {},
                     },
                 )
-                .deposit_batch(account)
+                .deposit_entire_worktop(account)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -705,7 +705,7 @@ fn claim_is_public_and_callable_by_all() {
                         amount: dec!(0),
                     },
                 )
-                .deposit_batch(account)
+                .deposit_entire_worktop(account)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -780,7 +780,7 @@ fn claim_non_fungibles_is_public_and_callable_by_all() {
                         ids: indexset! {},
                     },
                 )
-                .deposit_batch(account)
+                .deposit_entire_worktop(account)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&public_key)],
         );
@@ -884,7 +884,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
                     amount: dec!(10_000),
                 },
             )
-            .deposit_batch(user_account1)
+            .deposit_entire_worktop(user_account1)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
             &user_account1_public_key,
@@ -983,7 +983,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
                     amount: dec!(10_000),
                 },
             )
-            .deposit_batch(user_account1)
+            .deposit_entire_worktop(user_account1)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
             &user_account2_public_key,
@@ -1083,7 +1083,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
                     amount: dec!(10_000),
                 },
             )
-            .deposit_batch(badge_holder_account)
+            .deposit_entire_worktop(badge_holder_account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
             &badge_holder_account_public_key,
@@ -1182,7 +1182,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
                     amount: dec!(10_000),
                 },
             )
-            .deposit_batch(badge_holder_account)
+            .deposit_entire_worktop(badge_holder_account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(
             &badge_holder_account_public_key,
@@ -1418,32 +1418,33 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
             )
         });
 
+    trait ManifestBuilderExt {
+        fn set_disallowed_preference(self, account: ComponentAddress, resource: ResourceAddress) -> Self;
+    }
+        
+    impl ManifestBuilderExt for ManifestBuilder {
+        fn set_disallowed_preference(self, account: ComponentAddress, resource: ResourceAddress) -> Self {
+            self.call_method(
+                account,
+                ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
+                AccountSetResourcePreferenceInput {
+                    resource_address: resource,
+                    resource_preference: ResourcePreference::Disallowed,
+                }
+            )
+        }
+    }
+
     ledger
         .execute_manifest_with_enabled_modules(
-            TransactionManifestV1 {
-                instructions: [
-                    (user_account1, fungible_resource1),
-                    (user_account1, non_fungible_resource3),
-                    (user_account2, fungible_resource2),
-                    (user_account2, non_fungible_resource2),
-                    (user_account3, fungible_resource3),
-                    (user_account3, non_fungible_resource1),
-                ]
-                .map(|(account, resource)| InstructionV1::CallMethod {
-                    address: account.into(),
-                    method_name: ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT.to_owned(),
-                    args: manifest_decode(
-                        &manifest_encode(&AccountSetResourcePreferenceInput {
-                            resource_address: resource,
-                            resource_preference: ResourcePreference::Disallowed,
-                        })
-                        .unwrap(),
-                    )
-                    .unwrap(),
-                })
-                .to_vec(),
-                blobs: Default::default(),
-            },
+            ManifestBuilder::new()
+                .set_disallowed_preference(user_account1, fungible_resource1)
+                .set_disallowed_preference(user_account1, non_fungible_resource3)
+                .set_disallowed_preference(user_account2, fungible_resource2)
+                .set_disallowed_preference(user_account2, non_fungible_resource2)
+                .set_disallowed_preference(user_account3, fungible_resource3)
+                .set_disallowed_preference(user_account3, non_fungible_resource1)
+                .build(),
             true,
             true,
         )
@@ -2860,7 +2861,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                             amount,
                         },
                     )
-                    .deposit_batch(claimant)
+                    .deposit_entire_worktop(claimant)
                     .build(),
                 [
                     &user_account1_public_key,
@@ -2885,7 +2886,7 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
                             ids,
                         },
                     )
-                    .deposit_batch(claimant)
+                    .deposit_entire_worktop(claimant)
                     .build(),
                 [
                     &user_account1_public_key,

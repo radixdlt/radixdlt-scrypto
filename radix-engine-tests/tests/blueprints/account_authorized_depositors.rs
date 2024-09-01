@@ -102,7 +102,7 @@ fn try_authorized_deposit_or_refund_performs_a_refund_when_badge_is_not_in_depos
                 },
             )
         })
-        .deposit_batch(account2)
+        .deposit_entire_worktop(account2)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
@@ -361,7 +361,7 @@ fn try_authorized_deposit_batch_or_refund_performs_a_refund_when_badge_is_not_in
                 },
             )
         })
-        .deposit_batch(account2)
+        .deposit_entire_worktop(account2)
         .build();
     let receipt =
         ledger.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk2)]);
@@ -910,7 +910,7 @@ fn authorized_depositor_badge_is_checked_when_deposit_cant_go_without_it() {
                     ),
                 )
             })
-            .deposit_batch(sink)
+            .deposit_entire_worktop(sink)
             .build();
         let receipt = ledger.execute_manifest(
             manifest,

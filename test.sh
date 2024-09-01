@@ -24,6 +24,7 @@ test_crates_features \
     radix-engine \
     radix-engine-tests \
     radix-transaction-scenarios \
+    radix-engine-toolkit \
     radix-transactions"
 
 echo "Testing scrypto packages..."

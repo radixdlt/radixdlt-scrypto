@@ -591,7 +591,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
                         metadata!(),
                         Some(ids),
                     )
-                    .deposit_batch(account)
+                    .deposit_entire_worktop(account)
                     .build(),
                 vec![virtual_signature_badge.clone()],
             );
@@ -727,7 +727,7 @@ impl<T: TxnFuzzer> FuzzTest<T> {
             // Execute transaction
             let result = {
                 let manifest = builder
-                    .deposit_batch(self.validators[0].account_address)
+                    .deposit_entire_worktop(self.validators[0].account_address)
                     .build();
 
                 let receipt = if let Some(error_after_count) = error_after_system_callback_count {

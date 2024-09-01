@@ -77,7 +77,7 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                                     },
                                     OwnerRole::None,
                                 )
-                                .deposit_batch(config.main_account.address)
+                                .deposit_entire_worktop(config.main_account.address)
                         },
                         vec![&config.main_account.key],
                     )
@@ -128,7 +128,7 @@ impl ScenarioCreator for NonFungibleResourceWithRemoteTypeScenarioCreator {
                                         ),
                                     }
                                 )
-                                .deposit_batch(config.main_account.address)
+                                .deposit_entire_worktop(config.main_account.address)
                         },
                         vec![&config.main_account.key],
                     )
