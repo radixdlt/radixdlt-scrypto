@@ -222,7 +222,6 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
             start_timestamp_inclusive: None,
             end_timestamp_exclusive: None,
         },
-        false,
     );
 
     // Act

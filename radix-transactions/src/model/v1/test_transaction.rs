@@ -76,7 +76,6 @@ impl PreparedTestTransaction {
                 start_timestamp_inclusive: None,
                 end_timestamp_exclusive: None,
             },
-            false,
         )
     }
 }

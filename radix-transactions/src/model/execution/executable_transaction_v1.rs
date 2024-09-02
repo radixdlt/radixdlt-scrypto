@@ -11,7 +11,6 @@ pub struct ExecutableTransactionV1 {
     pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
     pub(crate) auth_zone_init: AuthZoneInit,
     pub(crate) context: ExecutionContext,
-    pub(crate) system: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -36,7 +35,6 @@ impl ExecutableTransactionV1 {
         references: IndexSet<Reference>,
         blobs: Rc<IndexMap<Hash, Vec<u8>>>,
         context: ExecutionContext,
-        system: bool,
     ) -> Self {
         let mut references = references;
 
@@ -63,7 +61,6 @@ impl ExecutableTransactionV1 {
             blobs,
             context,
             auth_zone_init,
-            system,
         }
     }
 
@@ -126,7 +123,7 @@ impl Executable for ExecutableTransactionV1 {
     }
 
     fn disable_limits_and_costing_modules(&self) -> bool {
-        self.system
+        self.context.disable_limits_and_costing_modules
     }
 
     fn intents(&self) -> Vec<&Self::Intent> {

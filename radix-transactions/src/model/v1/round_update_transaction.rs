@@ -114,7 +114,6 @@ impl PreparedRoundUpdateTransactionV1 {
                 start_timestamp_inclusive: None,
                 end_timestamp_exclusive: None,
             },
-            true,
         )
     }
 }
