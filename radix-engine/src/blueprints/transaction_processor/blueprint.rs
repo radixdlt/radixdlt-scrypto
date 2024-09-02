@@ -7,6 +7,7 @@ use radix_common::prelude::{GlobalAddressReservation, Reference};
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_rust::prelude::{IndexMap, IndexSet};
+use radix_transactions::model::InstructionV1;
 use std::rc::Rc;
 
 #[cfg(not(feature = "coverage"))]
@@ -56,7 +57,7 @@ impl TransactionProcessorBlueprint {
             TransactionProcessorV1MinorVersion::Zero => usize::MAX,
             TransactionProcessorV1MinorVersion::One => MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
         };
-        let txn_processor = TxnProcessor::init(
+        let txn_processor = TxnProcessor::<InstructionV1>::init(
             manifest_encoded_instructions,
             global_address_reservations,
             blobs,
