@@ -884,7 +884,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         is_virtual: bool,
     ) -> ComponentAddress {
         if is_virtual {
-            ComponentAddress::virtual_identity_from_public_key(&pk)
+            ComponentAddress::preallocated_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let manifest = ManifestBuilder::new()
