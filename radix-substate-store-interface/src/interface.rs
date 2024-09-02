@@ -114,6 +114,19 @@ impl DatabaseUpdate {
             DatabaseUpdate::Delete => SubstateChange::Delete,
         }
     }
+
+    pub fn as_ref(&self) -> DatabaseUpdateRef<'_> {
+        match self {
+            DatabaseUpdate::Set(update) => DatabaseUpdateRef::Set(update),
+            DatabaseUpdate::Delete => DatabaseUpdateRef::Delete,
+        }
+    }
+}
+
+/// A 1:1 counterpart of [`DatabaseUpdate`], but operating on references.
+pub enum DatabaseUpdateRef<'v> {
+    Set(&'v [u8]),
+    Delete,
 }
 
 impl DatabaseUpdates {

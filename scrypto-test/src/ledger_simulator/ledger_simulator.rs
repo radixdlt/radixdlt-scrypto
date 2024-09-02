@@ -1304,6 +1304,25 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         )
     }
 
+    pub fn execute_manifest_with_execution_config<T>(
+        &mut self,
+        manifest: TransactionManifestV1,
+        initial_proofs: T,
+        execution_config: ExecutionConfig,
+    ) -> TransactionReceipt
+    where
+        T: IntoIterator<Item = NonFungibleGlobalId>,
+    {
+        let nonce = self.next_transaction_nonce();
+        self.execute_transaction(
+            TestTransaction::new_from_nonce(manifest, nonce)
+                .prepare()
+                .expect("expected transaction to be preparable")
+                .get_executable(initial_proofs.into_iter().collect()),
+            execution_config,
+        )
+    }
+
     pub fn execute_manifest_with_costing_params<T>(
         &mut self,
         manifest: TransactionManifestV1,
