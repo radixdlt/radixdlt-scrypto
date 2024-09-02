@@ -4,8 +4,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-# This should align with format.sh, check.sh, test.sh, update-cargo-locks-minimally.sh
-
+# This should align with format.sh, check.sh, test.sh, clean.sh, update-cargo-locks-minimally.sh
 echo "Building the workspace packages and tests (with all extended features)..."
 
 (set -x; cargo build; cargo test --no-run; cargo bench --no-run)

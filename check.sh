@@ -21,7 +21,10 @@ cd "$(dirname "$0")"
 
 # We use the cd trick to avoid issues like this: https://github.com/rust-lang/rustfmt/issues/4432
 
-# This should align with format.sh, build.sh, test.sh, update-cargo-locks-minimally.sh
+# This should align with format.sh, build.sh, test.sh, clean.sh, update-cargo-locks-minimally.sh
+# ... and at some point, we should replace all these with a shared
+#     workspace lister function which returns this list stripped of Cargo.tomls
+#     and can be used by all these scripts to save duplication.
 packages="Cargo.toml$lf"
 packages+="radix-engine-tests/assets/blueprints/Cargo.toml$lf"
 packages+="radix-clis/tests/blueprints/Cargo.toml$lf"

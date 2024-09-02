@@ -49,6 +49,6 @@ for toml_file in ${RADIX_CARGO_FILES[@]}; do
     done
 done
 
-./update-cargo-locks.sh
+./update-cargo-locks-minimally.sh
 
 echo "Done"
