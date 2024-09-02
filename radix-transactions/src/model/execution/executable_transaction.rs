@@ -26,11 +26,8 @@ pub struct ExecutableIntentV2 {
 }
 
 /// This is an executable form of the transaction, post stateless validation.
-///
-/// [`ExecutableTransactionV1`] originally launched with Babylon.
-/// Uses [`InstructionV1`] and [`NotarizedTransactionV1`]`.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutableTransactionV1 {
+pub struct ExecutableTransaction {
     pub(crate) intents: ExecutableIntents,
     pub(crate) context: ExecutionContext,
 }
@@ -50,8 +47,8 @@ pub struct ExecutionContext {
     pub intent_hash_nullifications: Vec<IntentHashNullification>,
 }
 
-impl ExecutableTransactionV1 {
-    pub fn new(
+impl ExecutableTransaction {
+    pub fn new_v1(
         encoded_instructions_v1: Rc<Vec<u8>>,
         auth_zone_init: AuthZoneInit,
         references: IndexSet<Reference>,
@@ -84,7 +81,7 @@ impl ExecutableTransactionV1 {
                 references: Rc::new(references),
                 blobs,
                 auth_zone_init,
-            })
+            }),
         }
     }
 
@@ -109,51 +106,89 @@ impl ExecutableTransactionV1 {
         self.context.costing_parameters.abort_when_loan_repaid = true;
         self
     }
-}
 
-impl Executable for ExecutableTransactionV1 {
-    fn unique_hash(&self) -> &Hash {
+    pub fn unique_hash(&self) -> &Hash {
         &self.context.unique_hash
     }
 
-    fn overall_epoch_range(&self) -> Option<&EpochRange> {
+    pub fn overall_epoch_range(&self) -> Option<&EpochRange> {
         self.context.epoch_range.as_ref()
     }
 
-    fn overall_start_timestamp_inclusive(&self) -> Option<Instant> {
+    pub fn overall_start_timestamp_inclusive(&self) -> Option<Instant> {
         None
     }
 
-    fn overall_end_timestamp_exclusive(&self) -> Option<Instant> {
+    pub fn overall_end_timestamp_exclusive(&self) -> Option<Instant> {
         None
     }
 
-    fn costing_parameters(&self) -> &TransactionCostingParameters {
+    pub fn costing_parameters(&self) -> &TransactionCostingParameters {
         &self.context.costing_parameters
     }
 
-    fn pre_allocated_addresses(&self) -> &[PreAllocatedAddress] {
+    pub fn pre_allocated_addresses(&self) -> &[PreAllocatedAddress] {
         &self.context.pre_allocated_addresses
     }
 
-    fn payload_size(&self) -> usize {
+    pub fn payload_size(&self) -> usize {
         self.context.payload_size
     }
 
-    fn num_of_signature_validations(&self) -> usize {
+    pub fn num_of_signature_validations(&self) -> usize {
         self.context.num_of_signature_validations
     }
 
-    fn disable_limits_and_costing_modules(&self) -> bool {
+    pub fn disable_limits_and_costing_modules(&self) -> bool {
         self.context.disable_limits_and_costing_modules
     }
 
-    fn intents(&self) -> &ExecutableIntents {
+    pub fn intents(&self) -> &ExecutableIntents {
         &self.intents
     }
 
-    fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification> {
+    pub fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification> {
         &self.context.intent_hash_nullifications
     }
 
+    pub fn all_blob_hashes(&self) -> IndexSet<Hash> {
+        let mut hashes = indexset!();
+
+        match self.intents() {
+            ExecutableIntents::V1(intent) => {
+                for hash in intent.blobs.keys() {
+                    hashes.insert(*hash);
+                }
+            }
+            ExecutableIntents::V2(intents) => {
+                for intent in intents {
+                    for hash in intent.blobs.keys() {
+                        hashes.insert(*hash);
+                    }
+                }
+            }
+        }
+
+        hashes
+    }
+    pub fn all_references(&self) -> IndexSet<Reference> {
+        let mut references = indexset!();
+
+        match self.intents() {
+            ExecutableIntents::V1(intent) => {
+                for reference in intent.references.iter() {
+                    references.insert(reference.clone());
+                }
+            }
+            ExecutableIntents::V2(intents) => {
+                for intent in intents {
+                    for reference in intent.references.iter() {
+                        references.insert(reference.clone());
+                    }
+                }
+            }
+        }
+
+        references
+    }
 }

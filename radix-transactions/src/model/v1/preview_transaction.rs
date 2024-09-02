@@ -25,7 +25,7 @@ pub struct ValidatedPreviewIntent {
 
 #[allow(deprecated)]
 impl ValidatedPreviewIntent {
-    pub fn get_executable(&self) -> ExecutableTransactionV1 {
+    pub fn get_executable(&self) -> ExecutableTransaction {
         let intent = &self.intent;
         let flags = &self.flags;
 
@@ -55,12 +55,9 @@ impl ValidatedPreviewIntent {
 
         let intent_hash = intent.transaction_intent_hash();
 
-        ExecutableTransactionV1::new(
+        ExecutableTransaction::new_v1(
             self.encoded_instructions.clone(),
-            AuthZoneInit::new(
-                initial_proofs,
-                simulate_every_proof_under_resources,
-            ),
+            AuthZoneInit::new(initial_proofs, simulate_every_proof_under_resources),
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {

@@ -99,17 +99,15 @@ impl PreparedSystemTransactionV1 {
     pub fn get_executable(
         &self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> ExecutableTransactionV1 {
-        ExecutableTransactionV1::new(
+    ) -> ExecutableTransaction {
+        ExecutableTransaction::new_v1(
             self.encoded_instructions.clone(),
             AuthZoneInit::proofs(initial_proofs),
             self.references.clone(),
             self.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: self.hash_for_execution.hash,
-                intent_hash_nullifications: vec![
-                    IntentHashNullification::System
-                ],
+                intent_hash_nullifications: vec![IntentHashNullification::System],
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,

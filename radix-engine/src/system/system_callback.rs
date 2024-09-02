@@ -233,7 +233,7 @@ impl<C: SystemCallbackObject> System<C> {
 
 impl<C: SystemCallbackObject> System<C> {
     #[cfg(not(feature = "alloc"))]
-    fn print_executable(executable: &impl Executable) {
+    fn print_executable(executable: &ExecutableTransaction) {
         println!("{:-^120}", "Executable");
         println!("Intent hash: {}", executable.unique_hash());
         println!("Payload size: {}", executable.payload_size());
@@ -829,7 +829,6 @@ impl<C: SystemCallbackObject> System<C> {
         modules: &mut SystemModuleMixer,
         store: &mut (impl BootStore + CommitableSubstateStore),
     ) -> Result<Vec<CallFrameInit<Actor>>, BootloadingError> {
-
         match intents {
             ExecutableIntents::V1(intent) => {
                 let mut global_addresses = indexset!();
@@ -846,7 +845,8 @@ impl<C: SystemCallbackObject> System<C> {
 
                     if node_id.is_global_preallocated() {
                         // Allow global virtual and add reference
-                        global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                        global_addresses
+                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                         continue;
                     }
 
@@ -860,10 +860,12 @@ impl<C: SystemCallbackObject> System<C> {
 
                     match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
                         StableReferenceType::Global => {
-                            global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                            global_addresses
+                                .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
                         }
                         StableReferenceType::DirectAccess => {
-                            direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                            direct_accesses
+                                .insert(InternalAddress::new_or_panic(node_id.clone().into()));
                         }
                     }
                 }
@@ -1137,7 +1139,7 @@ impl<C: SystemCallbackObject> System<C> {
 
     fn resolve_modules(
         store: &mut impl BootStore,
-        executable: &impl Executable,
+        executable: &ExecutableTransaction,
         init_input: &SystemInit<C::Init>,
     ) -> SystemModuleMixer {
         let system_boot = store
@@ -1206,9 +1208,10 @@ impl<C: SystemCallbackObject> System<C> {
             ExecutableIntents::V1(intent) => {
                 vec![intent.auth_zone_init.clone()]
             }
-            ExecutableIntents::V2(intents) => {
-                intents.iter().map(|intent| intent.auth_zone_init.clone()).collect()
-            }
+            ExecutableIntents::V2(intents) => intents
+                .iter()
+                .map(|intent| intent.auth_zone_init.clone())
+                .collect(),
         };
 
         SystemModuleMixer::new(
@@ -1219,7 +1222,7 @@ impl<C: SystemCallbackObject> System<C> {
                 *executable.unique_hash(),
             ),
             AuthModule::new(AuthZoneParams {
-                auth_zone_init_for_each_intent
+                auth_zone_init_for_each_intent,
             }),
             LimitsModule::from_params(system_parameters.limit_parameters),
             CostingModule {
@@ -1253,13 +1256,13 @@ impl<C: SystemCallbackObject> System<C> {
 
 impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     type Init = SystemInit<C::Init>;
-    type Executable = ExecutableTransactionV1;
+    type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceiptV1;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &ExecutableTransactionV1,
+        executable: &ExecutableTransaction,
         init_input: SystemInit<C::Init>,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
@@ -1339,13 +1342,14 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             }
         }
 
-        let call_frame_inits =
-            match Self::build_call_frame_inits_with_reference_check(executable.intents(), &mut modules, store) {
-                Ok(call_frame_inits) => {
-                    call_frame_inits
-                }
-                Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
-            };
+        let call_frame_inits = match Self::build_call_frame_inits_with_reference_check(
+            executable.intents(),
+            &mut modules,
+            store,
+        ) {
+            Ok(call_frame_inits) => call_frame_inits,
+            Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
+        };
 
         let system = System {
             blueprint_cache: NonIterMap::new(),
@@ -1354,7 +1358,8 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             callback,
             modules,
             finalization: SystemFinalization {
-                intent_nullifications: executable.intent_hash_nullifications()
+                intent_nullifications: executable
+                    .intent_hash_nullifications()
                     .iter()
                     .cloned()
                     .collect(),
@@ -1366,7 +1371,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
 
     fn start<Y: SystemBasedKernelApi>(
         api: &mut Y,
-        executable: ExecutableTransactionV1,
+        executable: ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system_service = SystemService::new(api);
 
@@ -1395,7 +1400,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
                         references: intent.references.clone(),
                         blobs: intent.blobs.clone(),
                     })
-                        .unwrap(),
+                    .unwrap(),
                 )?;
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output

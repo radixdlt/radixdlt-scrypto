@@ -51,9 +51,9 @@ impl PreparedTestTransaction {
     pub fn get_executable(
         &self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> ExecutableTransactionV1 {
+    ) -> ExecutableTransaction {
         let num_of_signature_validations = initial_proofs.len() + 1;
-        ExecutableTransactionV1::new(
+        ExecutableTransaction::new_v1(
             self.encoded_instructions.clone(),
             AuthZoneInit::proofs(initial_proofs),
             self.references.clone(),

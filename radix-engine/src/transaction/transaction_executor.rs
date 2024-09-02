@@ -268,7 +268,7 @@ pub trait UniqueTransaction {
     fn unique_seed_for_id_allocator(&self) -> Hash;
 }
 
-impl<T: Executable> UniqueTransaction for T {
+impl UniqueTransaction for ExecutableTransaction {
     fn unique_seed_for_id_allocator(&self) -> Hash {
         *self.unique_hash()
     }
@@ -308,14 +308,11 @@ where
     }
 }
 
-pub fn execute_transaction_with_configuration<
-    S: SubstateDatabase,
-    V: SystemCallbackObject,
->(
+pub fn execute_transaction_with_configuration<S: SubstateDatabase, V: SystemCallbackObject>(
     substate_db: &S,
     vm_init: V::Init,
     execution_config: &ExecutionConfig,
-    executable: ExecutableTransactionV1,
+    executable: ExecutableTransaction,
 ) -> TransactionReceipt {
     let system_init = SystemInit {
         enable_kernel_trace: execution_config.enable_kernel_trace,
@@ -332,7 +329,7 @@ pub fn execute_transaction<'s, V: VmInitialize>(
     substate_db: &impl SubstateDatabase,
     vm_modules: &'s V,
     execution_config: &ExecutionConfig,
-    executable: ExecutableTransactionV1,
+    executable: ExecutableTransaction,
 ) -> TransactionReceipt {
     execute_transaction_with_configuration::<_, Vm<'s, V::WasmEngine, V::NativeVmExtension>>(
         substate_db,
@@ -346,17 +343,15 @@ pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
     substate_db: &mut (impl SubstateDatabase + CommittableSubstateDatabase),
     vm_modules: &'s V,
     execution_config: &ExecutionConfig,
-    executable: ExecutableTransactionV1,
+    executable: ExecutableTransaction,
 ) -> TransactionReceipt {
-    let receipt = execute_transaction_with_configuration::<
-        _,
-        Vm<'s, V::WasmEngine, V::NativeVmExtension>,
-    >(
-        substate_db,
-        vm_modules.create_vm_init(),
-        execution_config,
-        executable,
-    );
+    let receipt =
+        execute_transaction_with_configuration::<_, Vm<'s, V::WasmEngine, V::NativeVmExtension>>(
+            substate_db,
+            vm_modules.create_vm_init(),
+            execution_config,
+            executable,
+        );
     if let TransactionResult::Commit(commit) = &receipt.result {
         substate_db.commit(
             &commit

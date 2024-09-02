@@ -90,12 +90,10 @@ impl TransactionPreparableFromValue for PreparedRoundUpdateTransactionV1 {
 }
 
 impl PreparedRoundUpdateTransactionV1 {
-    pub fn get_executable(&self) -> ExecutableTransactionV1 {
-        ExecutableTransactionV1::new(
+    pub fn get_executable(&self) -> ExecutableTransaction {
+        ExecutableTransaction::new_v1(
             self.encoded_instructions.clone(),
-            AuthZoneInit::proofs(btreeset!(system_execution(
-                SystemExecution::Validator
-            ))),
+            AuthZoneInit::proofs(btreeset!(system_execution(SystemExecution::Validator))),
             self.references.clone(),
             self.blobs.clone(),
             ExecutionContext {

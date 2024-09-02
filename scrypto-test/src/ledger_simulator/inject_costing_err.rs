@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::ExecutableTransactionV1;
+use radix_transactions::model::ExecutableTransaction;
 
 pub type InjectSystemCostingError<'a, E> = InjectCostingError<Vm<'a, DefaultWasmEngine, E>>;
 
@@ -67,13 +67,13 @@ macro_rules! wrapped_internal_api {
 
 impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingError<K> {
     type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
-    type Executable = ExecutableTransactionV1;
+    type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
     fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &ExecutableTransactionV1,
+        executable: &ExecutableTransaction,
         init_input: Self::Init,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         let (mut system, call_frame_inits) =
@@ -89,7 +89,7 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
 
     fn start<Y: KernelApi<CallbackObject = Self>>(
         api: &mut Y,
-        executable: ExecutableTransactionV1,
+        executable: ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
         System::start(&mut api, executable)

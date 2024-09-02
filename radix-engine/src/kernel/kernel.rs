@@ -13,8 +13,6 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::Executable;
-use radix_transactions::prelude::ExecutableTransactionV1;
 use sbor::rust::mem;
 
 macro_rules! as_read_only {

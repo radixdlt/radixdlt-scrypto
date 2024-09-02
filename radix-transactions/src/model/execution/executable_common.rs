@@ -1,64 +1,5 @@
 use crate::internal_prelude::*;
 
-pub trait Executable {
-    /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
-    fn unique_hash(&self) -> &Hash;
-    fn overall_epoch_range(&self) -> Option<&EpochRange>;
-    fn overall_start_timestamp_inclusive(&self) -> Option<Instant>;
-    fn overall_end_timestamp_exclusive(&self) -> Option<Instant>;
-    fn costing_parameters(&self) -> &TransactionCostingParameters;
-    fn pre_allocated_addresses(&self) -> &[PreAllocatedAddress];
-    fn payload_size(&self) -> usize;
-    fn num_of_signature_validations(&self) -> usize;
-    fn disable_limits_and_costing_modules(&self) -> bool;
-
-    /// The first intent at index 0 is required to be the root transaction intent
-    fn intents(&self) -> &ExecutableIntents;
-
-    fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification>;
-
-    fn all_blob_hashes(&self) -> IndexSet<Hash> {
-        let mut hashes = indexset!();
-
-        match self.intents() {
-            ExecutableIntents::V1(intent) => {
-                for hash in intent.blobs.keys() {
-                    hashes.insert(*hash);
-                }
-            }
-            ExecutableIntents::V2(intents) => {
-                for intent in intents {
-                    for hash in intent.blobs.keys() {
-                        hashes.insert(*hash);
-                    }
-                }
-            }
-        }
-
-        hashes
-    }
-    fn all_references(&self) -> IndexSet<Reference> {
-        let mut references = indexset!();
-
-        match self.intents() {
-            ExecutableIntents::V1(intent) => {
-                for reference in intent.references.iter() {
-                    references.insert(reference.clone());
-                }
-            }
-            ExecutableIntents::V2(intents) => {
-                for intent in intents {
-                    for reference in intent.references.iter() {
-                        references.insert(reference.clone());
-                    }
-                }
-            }
-        }
-
-        references
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct AuthZoneInit {
     pub initial_non_fungible_id_proofs: BTreeSet<NonFungibleGlobalId>,
@@ -243,11 +184,4 @@ impl From<TransactionCostingParametersReceiptV1> for TransactionCostingParameter
             free_credit_in_xrd: value.free_credit_in_xrd,
         }
     }
-}
-
-pub enum ExecutableInstructions {
-    /// Instructions V1, using Babylon processor
-    V1Processor(Rc<Vec<u8>>),
-    /// Instructions V2, using V2 capable subintent processor
-    V2Processor(Rc<Vec<u8>>),
 }

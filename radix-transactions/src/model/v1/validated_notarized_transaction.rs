@@ -29,13 +29,13 @@ impl HasNotarizedTransactionHash for ValidatedNotarizedTransactionV1 {
 
 #[allow(deprecated)]
 impl ValidatedNotarizedTransactionV1 {
-    pub fn get_executable(&self) -> ExecutableTransactionV1 {
+    pub fn get_executable(&self) -> ExecutableTransaction {
         let intent = &self.prepared.signed_intent.intent;
         let header = &intent.header.inner;
         let intent_hash = intent.transaction_intent_hash();
         let summary = &self.prepared.summary;
 
-        ExecutableTransactionV1::new(
+        ExecutableTransaction::new_v1(
             self.encoded_instructions.clone(),
             AuthZoneInit::proofs(AuthAddresses::signer_set(&self.signer_keys)),
             intent.instructions.references.clone(),
