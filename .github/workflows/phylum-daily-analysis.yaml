@@ -18,10 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        branch: [main, develop, release/bottlenose]
+        branch: [main, develop, release/babylon, release/anemone, release/bottlenose]
         include:
           - branch: main
           - branch: develop
+          - branch: release/babylon
+          - branch: release/anemone
           - branch: release/bottlenose
       fail-fast: false 
     steps:
