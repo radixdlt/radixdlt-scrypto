@@ -100,8 +100,6 @@ impl ExecutableTransactionV1 {
 }
 
 impl Executable for ExecutableTransactionV1 {
-    type Intent = Self;
-
     fn unique_hash(&self) -> &Hash {
         &self.context.unique_hash
     }
@@ -147,35 +145,3 @@ impl Executable for ExecutableTransactionV1 {
     }
 
 }
-
-impl IntentDetails for ExecutableTransactionV1 {
-    fn executable_instructions(&self) -> ExecutableInstructions {
-        match &self.intents {
-            ExecutableIntents::V1(intent) => ExecutableInstructions::V1Processor(intent.encoded_instructions.clone())
-        }
-    }
-
-    fn auth_zone_init(&self) -> &AuthZoneInit {
-        match &self.intents {
-            ExecutableIntents::V1(intent) => &intent.auth_zone_init
-        }
-    }
-
-    fn blobs(&self) -> Rc<IndexMap<Hash, Vec<u8>>> {
-        match &self.intents {
-            ExecutableIntents::V1(intent) => intent.blobs.clone()
-        }
-    }
-
-    fn references(&self) -> Rc<IndexSet<Reference>> {
-        match &self.intents {
-            ExecutableIntents::V1(intent) => intent.references.clone()
-        }
-    }
-
-    fn children_intent_indices(&self) -> &[usize] {
-        &NO_CHILDREN
-    }
-}
-
-static NO_CHILDREN: [usize; 0] = [];

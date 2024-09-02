@@ -19,12 +19,12 @@ pub struct ExecutableIntent {
     pub(crate) auth_zone_init: AuthZoneInit,
     pub(crate) references: Rc<IndexSet<Reference>>,
     pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    /// Indices against the parent Executable.
+    /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
     pub(crate) children_intent_indices: Vec<usize>,
 }
 
 impl Executable for ExecutableTransactionV2 {
-    type Intent = ExecutableIntent;
-
     fn unique_hash(&self) -> &Hash {
         &self.context.unique_hash
     }
@@ -67,27 +67,5 @@ impl Executable for ExecutableTransactionV2 {
 
     fn intents(&self) -> &ExecutableIntents {
         unimplemented!();
-    }
-}
-
-impl IntentDetails for ExecutableIntent {
-    fn executable_instructions(&self) -> ExecutableInstructions {
-        ExecutableInstructions::V2Processor(self.encoded_instructions.clone())
-    }
-
-    fn auth_zone_init(&self) -> &AuthZoneInit {
-        &self.auth_zone_init
-    }
-
-    fn blobs(&self) -> Rc<IndexMap<Hash, Vec<u8>>> {
-        self.blobs.clone()
-    }
-
-    fn references(&self) -> Rc<IndexSet<Reference>> {
-        self.references.clone()
-    }
-
-    fn children_intent_indices(&self) -> &[usize] {
-        &self.children_intent_indices
     }
 }

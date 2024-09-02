@@ -1,8 +1,6 @@
 use crate::internal_prelude::*;
 
 pub trait Executable {
-    type Intent: IntentDetails;
-
     /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
     fn unique_hash(&self) -> &Hash;
     fn overall_epoch_range(&self) -> Option<&EpochRange>;
@@ -45,17 +43,6 @@ pub trait Executable {
 
         references
     }
-}
-
-pub trait IntentDetails {
-    fn executable_instructions(&self) -> ExecutableInstructions;
-    fn auth_zone_init(&self) -> &AuthZoneInit;
-    fn blobs(&self) -> Rc<IndexMap<Hash, Vec<u8>>>;
-    fn references(&self) -> Rc<IndexSet<Reference>>;
-
-    /// Indices against the parent Executable.
-    /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
-    fn children_intent_indices(&self) -> &[usize];
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
