@@ -27,7 +27,7 @@ scrypto-compiler = { version = "1.2.0", path = "../scrypto-compiler" }
 flate2 = { version = "1.0.27" }
 tar = { version = "0.4.40" }
 rocksdb = { version = "0.21.0" }
-serde = { version = "1.0.137", features = ["derive"] }
+serde = { version = "^1.0.166", features = ["derive"] }
 serde_json = { version = "1.0.81" }
 clap = { version = "3.1.17", features = ["derive", "cargo"] }
 dirs = { version = "4.0.0" }
