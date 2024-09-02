@@ -76,7 +76,7 @@ bencher = { version = "0.1.5" }
 bincode = { version = "2.0.0-rc.1", default-features = false, features = ["derive"] }
 bitflags = { version = "1.3" }
 blake2 = { version = "0.10.6", default-features = false }
-blst = { version = "0.3.11", default-features = false, optional = false }
+blst = { version = "0.3.11", default-features = false, features = ["portable"], optional = false }
 bnum = { version = "0.11.0", default-features = false, features = ["numtraits"] }
 cargo_toml = { version = "0.15.3" }
 clap = { version = "3.1.17", features = ["derive", "cargo"] } # Used in radix-clis for parsing
@@ -119,7 +119,6 @@ secp256k1 = { version = "0.28.0", default-features = false, features = ["recover
 serde = { version = "1.0.144", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.105" }
 serde_with = { version = "3.9.0", default-features = false, features = ["macros", "hex"] }
-schemars = { version = "0.8.21", features = ["preserve_order"] }
 sha3 = { version = "0.10.8", default-features = false, optional = false }
 shared_memory = { version = "0.12.4" }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
