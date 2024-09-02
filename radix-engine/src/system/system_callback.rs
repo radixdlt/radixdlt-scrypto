@@ -1376,25 +1376,25 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
         let intent = *intents.get(0).unwrap();
 
         // Call TX processor
-        let encoded_instructions = match intent.executable_instructions() {
-            ExecutableInstructions::V1Processor(instructions) => instructions,
+        let output = match intent.executable_instructions() {
+            ExecutableInstructions::V1Processor(instructions) => {
+                let rtn = system_service.call_function(
+                    TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                    TRANSACTION_PROCESSOR_RUN_IDENT,
+                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                        manifest_encoded_instructions: instructions,
+                        global_address_reservations,
+                        references: intent.references(),
+                        blobs: intent.blobs(),
+                    })
+                        .unwrap(),
+                )?;
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            },
             ExecutableInstructions::V2Processor(_) => unimplemented!(),
         };
-
-        let rtn = system_service.call_function(
-            TRANSACTION_PROCESSOR_PACKAGE,
-            TRANSACTION_PROCESSOR_BLUEPRINT,
-            TRANSACTION_PROCESSOR_RUN_IDENT,
-            scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions: encoded_instructions,
-                global_address_reservations,
-                references: intent.references(),
-                blobs: intent.blobs(),
-            })
-            .unwrap(),
-        )?;
-
-        let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
 
         Ok(output)
     }

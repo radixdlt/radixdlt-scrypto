@@ -218,6 +218,9 @@ fn transaction_processor_produces_expected_error_for_undecodable_instructions() 
             payload_size: 4,
             num_of_signature_validations: 0,
             costing_parameters: Default::default(),
+            disable_limits_and_costing_modules: false,
+            start_timestamp_inclusive: None,
+            end_timestamp_exclusive: None,
         },
         false,
     );

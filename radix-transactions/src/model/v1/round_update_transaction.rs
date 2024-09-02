@@ -111,6 +111,9 @@ impl PreparedRoundUpdateTransactionV1 {
                     abort_when_loan_repaid: false,
                 },
                 pre_allocated_addresses: vec![],
+                disable_limits_and_costing_modules: true,
+                start_timestamp_inclusive: None,
+                end_timestamp_exclusive: None,
             },
             true,
         )

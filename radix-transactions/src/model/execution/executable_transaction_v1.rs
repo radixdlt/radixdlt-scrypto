@@ -18,12 +18,15 @@ pub struct ExecutableTransactionV1 {
 pub struct ExecutionContext {
     /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
     pub unique_hash: Hash,
-    pub intent_hash_nullifications: Vec<IntentHashNullification>,
-    pub epoch_range: Option<EpochRange>,
     pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
     pub payload_size: usize,
     pub num_of_signature_validations: usize,
     pub costing_parameters: TransactionCostingParameters,
+    pub epoch_range: Option<EpochRange>,
+    pub start_timestamp_inclusive: Option<Instant>,
+    pub end_timestamp_exclusive: Option<Instant>,
+    pub disable_limits_and_costing_modules: bool,
+    pub intent_hash_nullifications: Vec<IntentHashNullification>,
 }
 
 impl ExecutableTransactionV1 {

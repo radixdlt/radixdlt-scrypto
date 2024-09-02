@@ -82,6 +82,9 @@ impl ValidatedPreviewIntent {
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],
+                disable_limits_and_costing_modules: false,
+                start_timestamp_inclusive: None,
+                end_timestamp_exclusive: None,
             },
             false,
         )
