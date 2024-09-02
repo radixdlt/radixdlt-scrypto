@@ -229,7 +229,7 @@ where
                     Self::DEFAULT_INTENT_HASH,
                 );
 
-                let auth_module = AuthModule::new(AuthZoneParams::default());
+                let auth_module = AuthModule::new();
 
                 let limits_module = LimitsModule::from_params(LimitParameters::babylon_genesis());
 

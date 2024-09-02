@@ -1,5 +1,4 @@
 use super::module::*;
-use super::system_modules::auth::AuthZoneParams;
 use super::system_modules::costing::{CostingModuleConfig, ExecutionCostingEntry};
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_PREALLOCATED_ED25519_ID;
@@ -1204,14 +1203,11 @@ impl<C: SystemCallbackObject> System<C> {
             }
         }
 
-        let auth_zone_init_for_each_intent = match executable.intents() {
+        let auth_module = match executable.intents() {
             ExecutableIntents::V1(intent) => {
-                vec![intent.auth_zone_init.clone()]
+                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
             }
-            ExecutableIntents::V2(intents) => intents
-                .iter()
-                .map(|intent| intent.auth_zone_init.clone())
-                .collect(),
+            ExecutableIntents::V2(_) => AuthModule::new(),
         };
 
         SystemModuleMixer::new(
@@ -1221,9 +1217,7 @@ impl<C: SystemCallbackObject> System<C> {
                 system_parameters.network_definition,
                 *executable.unique_hash(),
             ),
-            AuthModule::new(AuthZoneParams {
-                auth_zone_init_for_each_intent,
-            }),
+            auth_module,
             LimitsModule::from_params(system_parameters.limit_parameters),
             CostingModule {
                 // The current depth is set to zero since at the start of the execution of transactions

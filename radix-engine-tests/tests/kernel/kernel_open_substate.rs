@@ -26,7 +26,7 @@ use radix_substate_store_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
 };
 use radix_transactions::prelude::*;
-use scrypto_test::prelude::{AuthZoneParams, UniqueTransaction};
+use scrypto_test::prelude::UniqueTransaction;
 
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {
@@ -42,11 +42,6 @@ pub fn test_open_substate_of_invisible_package_address() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
     ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut database);
-
-    let auth_zone_inits: Vec<_> = match executable.intents() {
-        ExecutableIntents::V1(intent) => vec![intent.auth_zone_init.clone()],
-        ExecutableIntents::V2(intents) => intents.iter().map(|intent| intent.auth_zone_init.clone()).collect(),
-    };
 
     // Create kernel
     let mut system = System {
@@ -65,9 +60,7 @@ pub fn test_open_substate_of_invisible_package_address() {
                 NetworkDefinition::simulator(),
                 *executable.unique_hash(),
             ),
-            AuthModule::new(AuthZoneParams {
-                auth_zone_init_for_each_intent: auth_zone_inits,
-            }),
+            AuthModule::new(),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,
