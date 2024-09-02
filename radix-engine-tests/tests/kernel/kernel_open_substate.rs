@@ -43,7 +43,10 @@ pub fn test_open_substate_of_invisible_package_address() {
     let native_vm = DefaultNativeVm::new();
     ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut database);
 
-    let auth_zone_inits: Vec<_> = executable.intents().iter().map(|i| i.auth_zone_init().clone()).collect();
+    let auth_zone_inits: Vec<_> = match executable.intents() {
+        ExecutableIntents::V1(intent) => vec![intent.auth_zone_init.clone()]
+    };
+
     // Create kernel
     let mut system = System {
         blueprint_cache: NonIterMap::new(),

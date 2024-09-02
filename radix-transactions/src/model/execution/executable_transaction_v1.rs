@@ -1,15 +1,25 @@
 use crate::internal_prelude::*;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExecutableIntents {
+    V1(ExecutableIntentV1),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutableIntentV1 {
+    pub encoded_instructions: Rc<Vec<u8>>,
+    pub auth_zone_init: AuthZoneInit,
+    pub references: Rc<IndexSet<Reference>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+}
+
 /// This is an executable form of the transaction, post stateless validation.
 ///
 /// [`ExecutableTransactionV1`] originally launched with Babylon.
 /// Uses [`InstructionV1`] and [`NotarizedTransactionV1`]`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableTransactionV1 {
-    pub(crate) encoded_instructions_v1: Rc<Vec<u8>>,
-    pub(crate) references: Rc<IndexSet<Reference>>,
-    pub(crate) blobs: Rc<IndexMap<Hash, Vec<u8>>>,
-    pub(crate) auth_zone_init: AuthZoneInit,
+    pub(crate) intents: ExecutableIntents,
     pub(crate) context: ExecutionContext,
 }
 
@@ -56,11 +66,13 @@ impl ExecutableTransactionV1 {
         }
 
         Self {
-            encoded_instructions_v1,
-            references: Rc::new(references),
-            blobs,
             context,
-            auth_zone_init,
+            intents: ExecutableIntents::V1(ExecutableIntentV1 {
+                encoded_instructions: encoded_instructions_v1,
+                references: Rc::new(references),
+                blobs,
+                auth_zone_init,
+            })
         }
     }
 
@@ -126,8 +138,8 @@ impl Executable for ExecutableTransactionV1 {
         self.context.disable_limits_and_costing_modules
     }
 
-    fn intents(&self) -> Vec<&Self::Intent> {
-        vec![&self]
+    fn intents(&self) -> &ExecutableIntents {
+        &self.intents
     }
 
     fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification> {
@@ -138,19 +150,27 @@ impl Executable for ExecutableTransactionV1 {
 
 impl IntentDetails for ExecutableTransactionV1 {
     fn executable_instructions(&self) -> ExecutableInstructions {
-        ExecutableInstructions::V1Processor(self.encoded_instructions_v1.clone())
+        match &self.intents {
+            ExecutableIntents::V1(intent) => ExecutableInstructions::V1Processor(intent.encoded_instructions.clone())
+        }
     }
 
     fn auth_zone_init(&self) -> &AuthZoneInit {
-        &self.auth_zone_init
+        match &self.intents {
+            ExecutableIntents::V1(intent) => &intent.auth_zone_init
+        }
     }
 
     fn blobs(&self) -> Rc<IndexMap<Hash, Vec<u8>>> {
-        self.blobs.clone()
+        match &self.intents {
+            ExecutableIntents::V1(intent) => intent.blobs.clone()
+        }
     }
 
     fn references(&self) -> Rc<IndexSet<Reference>> {
-        self.references.clone()
+        match &self.intents {
+            ExecutableIntents::V1(intent) => intent.references.clone()
+        }
     }
 
     fn children_intent_indices(&self) -> &[usize] {

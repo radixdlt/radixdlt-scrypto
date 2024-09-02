@@ -15,17 +15,18 @@ pub trait Executable {
     fn disable_limits_and_costing_modules(&self) -> bool;
 
     /// The first intent at index 0 is required to be the root transaction intent
-    fn intents(&self) -> Vec<&Self::Intent>;
+    fn intents(&self) -> &ExecutableIntents;
 
     fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification>;
 
     fn all_blob_hashes(&self) -> IndexSet<Hash> {
         let mut hashes = indexset!();
 
-        for intent in self.intents() {
-            let blobs = intent.blobs();
-            for hash in blobs.keys() {
-                hashes.insert(*hash);
+        match self.intents() {
+            ExecutableIntents::V1(intent) => {
+                for hash in intent.blobs.keys() {
+                    hashes.insert(*hash);
+                }
             }
         }
 
@@ -34,10 +35,11 @@ pub trait Executable {
     fn all_references(&self) -> IndexSet<Reference> {
         let mut references = indexset!();
 
-        for intent in self.intents() {
-            let refs = intent.references();
-            for reference in refs.iter() {
-                references.insert(reference.clone());
+        match self.intents() {
+            ExecutableIntents::V1(intent) => {
+                for reference in intent.references.iter() {
+                    references.insert(reference.clone());
+                }
             }
         }
 
