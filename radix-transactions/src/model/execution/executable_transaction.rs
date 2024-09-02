@@ -116,11 +116,11 @@ impl ExecutableTransaction {
     }
 
     pub fn overall_start_timestamp_inclusive(&self) -> Option<Instant> {
-        None
+        self.context.start_timestamp_inclusive
     }
 
     pub fn overall_end_timestamp_exclusive(&self) -> Option<Instant> {
-        None
+        self.context.end_timestamp_exclusive
     }
 
     pub fn costing_parameters(&self) -> &TransactionCostingParameters {
