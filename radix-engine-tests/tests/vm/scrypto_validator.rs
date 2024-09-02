@@ -48,7 +48,7 @@ fn can_call_total_stake_xrd_amount_in_scrypto() {
             .withdraw_from_account(account, XRD, 10)
             .take_all_from_worktop(XRD, "xrd")
             .stake_validator_as_owner(validator_address, "xrd")
-            .deposit_batch(account)
+            .deposit_entire_worktop(account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -92,7 +92,7 @@ fn can_call_total_stake_unit_supply_in_scrypto() {
             .withdraw_from_account(account, XRD, 10)
             .take_all_from_worktop(XRD, "xrd")
             .stake_validator_as_owner(validator_address, "xrd")
-            .deposit_batch(account)
+            .deposit_entire_worktop(account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );
@@ -136,7 +136,7 @@ fn can_call_validator_get_redemption_value_in_scrypto() {
             .withdraw_from_account(account, XRD, 10)
             .take_all_from_worktop(XRD, "xrd")
             .stake_validator_as_owner(validator_address, "xrd")
-            .deposit_batch(account)
+            .deposit_entire_worktop(account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pub_key)],
     );

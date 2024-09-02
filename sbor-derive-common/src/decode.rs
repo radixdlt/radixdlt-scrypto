@@ -49,7 +49,7 @@ pub fn handle_transparent_decode(
             let fields_data = process_fields(&s.fields)?;
             let single_field = fields_data
                 .unique_unskipped_field()
-                .map_err(|()| Error::new(
+                .ok_or_else(|| Error::new(
                     Span::call_site(),
                     "The transparent attribute is only supported for structs with a single unskipped field.",
                 ))?;
@@ -216,6 +216,7 @@ fn decode_fields_content(
                      name,
                      field_type,
                      is_skipped,
+                     ..
                  }| {
                     if *is_skipped {
                         quote! { #name: <#field_type>::default() }
@@ -266,7 +267,7 @@ pub(crate) fn decode_unique_unskipped_field_from_value(
     self_constructor: TokenStream,
     fields_data: &FieldsData,
 ) -> Result<TokenStream> {
-    if fields_data.unique_unskipped_field().is_err() {
+    if fields_data.unique_unskipped_field().is_none() {
         panic!("Should already have checked that there is only one unique unskipped field before calling this method");
     }
 
@@ -277,6 +278,7 @@ pub(crate) fn decode_unique_unskipped_field_from_value(
                      name,
                      field_type,
                      is_skipped,
+                     ..
                  }| {
                     if *is_skipped {
                         quote! { #name: <#field_type>::default() }

@@ -338,13 +338,14 @@ where
             let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            InstructionV1::TakeFromWorktop {
+            TakeFromWorktop {
                 amount: generate_decimal(amount)?,
                 resource_address: generate_resource_address(
                     resource_address,
                     address_bech32_decoder,
                 )?,
             }
+            .into()
         }
         ast::Instruction::TakeNonFungiblesFromWorktop {
             resource_address,
@@ -354,13 +355,14 @@ where
             let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            InstructionV1::TakeNonFungiblesFromWorktop {
+            TakeNonFungiblesFromWorktop {
                 ids: generate_non_fungible_local_ids(ids)?,
                 resource_address: generate_resource_address(
                     resource_address,
                     address_bech32_decoder,
                 )?,
             }
+            .into()
         }
         ast::Instruction::TakeAllFromWorktop {
             resource_address,
@@ -369,41 +371,45 @@ where
             let bucket_id = id_validator.new_bucket();
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            InstructionV1::TakeAllFromWorktop {
+            TakeAllFromWorktop {
                 resource_address: generate_resource_address(
                     resource_address,
                     address_bech32_decoder,
                 )?,
             }
+            .into()
         }
         ast::Instruction::ReturnToWorktop { bucket } => {
             let (bucket_id, span) = generate_bucket(bucket, resolver)?;
             id_validator
                 .drop_bucket(&bucket_id)
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            InstructionV1::ReturnToWorktop { bucket_id }
+            ReturnToWorktop { bucket_id }.into()
         }
         ast::Instruction::AssertWorktopContains {
             resource_address,
             amount,
-        } => InstructionV1::AssertWorktopContains {
+        } => AssertWorktopContains {
             amount: generate_decimal(amount)?,
             resource_address: generate_resource_address(resource_address, address_bech32_decoder)?,
-        },
+        }
+        .into(),
         ast::Instruction::AssertWorktopContainsNonFungibles {
             resource_address,
             ids,
-        } => InstructionV1::AssertWorktopContainsNonFungibles {
+        } => AssertWorktopContainsNonFungibles {
             resource_address: generate_resource_address(resource_address, address_bech32_decoder)?,
             ids: generate_non_fungible_local_ids(ids)?,
-        },
+        }
+        .into(),
         ast::Instruction::AssertWorktopContainsAny { resource_address } => {
-            InstructionV1::AssertWorktopContainsAny {
+            AssertWorktopContainsAny {
                 resource_address: generate_resource_address(
                     resource_address,
                     address_bech32_decoder,
                 )?,
             }
+            .into()
         }
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
@@ -411,18 +417,18 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            InstructionV1::PopFromAuthZone
+            PopFromAuthZone.into()
         }
         ast::Instruction::PushToAuthZone { proof } => {
             let (proof_id, span) = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(&proof_id)
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            InstructionV1::PushToAuthZone { proof_id }
+            PushToAuthZone { proof_id }.into()
         }
-        ast::Instruction::DropAuthZoneProofs => InstructionV1::DropAuthZoneProofs,
-        ast::Instruction::DropAuthZoneRegularProofs => InstructionV1::DropAuthZoneRegularProofs,
-        ast::Instruction::DropAuthZoneSignatureProofs => InstructionV1::DropAuthZoneSignatureProofs,
+        ast::Instruction::DropAuthZoneProofs => DropAuthZoneProofs.into(),
+        ast::Instruction::DropAuthZoneRegularProofs => DropAuthZoneRegularProofs.into(),
+        ast::Instruction::DropAuthZoneSignatureProofs => DropAuthZoneSignatureProofs.into(),
 
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
             resource_address,
@@ -437,10 +443,11 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            InstructionV1::CreateProofFromAuthZoneOfAmount {
+            CreateProofFromAuthZoneOfAmount {
                 amount,
                 resource_address,
             }
+            .into()
         }
         ast::Instruction::CreateProofFromAuthZoneOfNonFungibles {
             resource_address,
@@ -455,10 +462,11 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
+            CreateProofFromAuthZoneOfNonFungibles {
                 ids,
                 resource_address,
             }
+            .into()
         }
         ast::Instruction::CreateProofFromAuthZoneOfAll {
             resource_address,
@@ -471,7 +479,7 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }
+            CreateProofFromAuthZoneOfAll { resource_address }.into()
         }
 
         ast::Instruction::BurnResource { bucket } => {
@@ -479,7 +487,7 @@ where
             id_validator
                 .drop_bucket(&bucket_id)
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            InstructionV1::BurnResource { bucket_id }
+            BurnResource { bucket_id }.into()
         }
 
         ast::Instruction::CreateProofFromBucketOfAmount {
@@ -494,7 +502,7 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount }
+            CreateProofFromBucketOfAmount { bucket_id, amount }.into()
         }
         ast::Instruction::CreateProofFromBucketOfNonFungibles {
             bucket,
@@ -508,7 +516,7 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, ids }
+            CreateProofFromBucketOfNonFungibles { bucket_id, ids }.into()
         }
         ast::Instruction::CreateProofFromBucketOfAll { bucket, new_proof } => {
             let (bucket_id, span) = generate_bucket(bucket, resolver)?;
@@ -517,7 +525,7 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            InstructionV1::CreateProofFromBucketOfAll { bucket_id }
+            CreateProofFromBucketOfAll { bucket_id }.into()
         }
 
         ast::Instruction::CloneProof { proof, new_proof } => {
@@ -527,14 +535,14 @@ where
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
-            InstructionV1::CloneProof { proof_id }
+            CloneProof { proof_id }.into()
         }
         ast::Instruction::DropProof { proof } => {
             let (proof_id, span) = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(&proof_id)
                 .map_err(|err| generate_id_validation_error(resolver, err, span))?;
-            InstructionV1::DropProof { proof_id }
+            DropProof { proof_id }.into()
         }
 
         ast::Instruction::CallFunction {
@@ -556,12 +564,13 @@ where
                 generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
 
-            InstructionV1::CallFunction {
+            CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
                 args: args_inner,
             }
+            .into()
         }
         ast::Instruction::CallMethod {
             address,
@@ -575,11 +584,12 @@ where
             id_validator.process_call_data(&args_inner).map_err(|err| {
                 generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
-            InstructionV1::CallMethod {
+            CallMethod {
                 address,
                 method_name,
                 args: args_inner,
             }
+            .into()
         }
         ast::Instruction::CallRoyaltyMethod {
             address,
@@ -593,11 +603,12 @@ where
             id_validator.process_call_data(&args_inner).map_err(|err| {
                 generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
-            InstructionV1::CallRoyaltyMethod {
+            CallRoyaltyMethod {
                 address,
                 method_name,
                 args: args_inner,
             }
+            .into()
         }
         ast::Instruction::CallMetadataMethod {
             address,
@@ -611,11 +622,12 @@ where
             id_validator.process_call_data(&args_inner).map_err(|err| {
                 generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
-            InstructionV1::CallMetadataMethod {
+            CallMetadataMethod {
                 address,
                 method_name,
                 args: args_inner,
             }
+            .into()
         }
         ast::Instruction::CallRoleAssignmentMethod {
             address,
@@ -629,11 +641,12 @@ where
             id_validator.process_call_data(&args_inner).map_err(|err| {
                 generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
-            InstructionV1::CallRoleAssignmentMethod {
+            CallRoleAssignmentMethod {
                 address,
                 method_name,
                 args: args_inner,
             }
+            .into()
         }
         ast::Instruction::CallDirectVaultMethod {
             address,
@@ -646,25 +659,26 @@ where
             id_validator.process_call_data(&args_inner).map_err(|err| {
                 generate_id_validation_error(resolver, err, get_span!(instruction, args))
             })?;
-            InstructionV1::CallDirectVaultMethod {
+            CallDirectVaultMethod {
                 address,
                 method_name,
                 args: args_inner,
             }
+            .into()
         }
 
         ast::Instruction::DropNamedProofs => {
             id_validator
                 .drop_all_named_proofs()
                 .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
-            InstructionV1::DropNamedProofs
+            DropNamedProofs.into()
         }
 
         ast::Instruction::DropAllProofs => {
             id_validator
                 .drop_all_named_proofs()
                 .map_err(|err| generate_id_validation_error(resolver, err, instruction.span))?;
-            InstructionV1::DropAllProofs
+            DropAllProofs.into()
         }
 
         ast::Instruction::AllocateGlobalAddress {
@@ -679,217 +693,206 @@ where
             let address_id = id_validator.new_named_address();
             declare_named_address(named_address, resolver, address_id)?;
 
-            InstructionV1::AllocateGlobalAddress {
+            AllocateGlobalAddress {
                 package_address: generate_package_address(package_address, address_bech32_decoder)?,
                 blueprint_name: generate_string(blueprint_name)?,
             }
+            .into()
         }
 
         /* direct vault method aliases */
-        ast::Instruction::RecallFromVault { vault_id, args } => {
-            InstructionV1::CallDirectVaultMethod {
-                address: generate_local_address(vault_id, address_bech32_decoder)?,
-                method_name: VAULT_RECALL_IDENT.to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
+        ast::Instruction::RecallFromVault { vault_id, args } => CallDirectVaultMethod {
+            address: generate_local_address(vault_id, address_bech32_decoder)?,
+            method_name: VAULT_RECALL_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
-        ast::Instruction::FreezeVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
+        .into(),
+        ast::Instruction::FreezeVault { vault_id, args } => CallDirectVaultMethod {
             address: generate_local_address(vault_id, address_bech32_decoder)?,
             method_name: VAULT_FREEZE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::UnfreezeVault { vault_id, args } => {
-            InstructionV1::CallDirectVaultMethod {
-                address: generate_local_address(vault_id, address_bech32_decoder)?,
-                method_name: VAULT_UNFREEZE_IDENT.to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
         }
-        ast::Instruction::RecallNonFungiblesFromVault { vault_id, args } => {
-            InstructionV1::CallDirectVaultMethod {
-                address: generate_local_address(vault_id, address_bech32_decoder)?,
-                method_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
+        .into(),
+        ast::Instruction::UnfreezeVault { vault_id, args } => CallDirectVaultMethod {
+            address: generate_local_address(vault_id, address_bech32_decoder)?,
+            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
+        .into(),
+        ast::Instruction::RecallNonFungiblesFromVault { vault_id, args } => CallDirectVaultMethod {
+            address: generate_local_address(vault_id, address_bech32_decoder)?,
+            method_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        }
+        .into(),
 
         /* call function aliases */
-        ast::Instruction::PublishPackage { args } => InstructionV1::CallFunction {
+        ast::Instruction::PublishPackage { args } => CallFunction {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::PublishPackageAdvanced { args } => InstructionV1::CallFunction {
+        }
+        .into(),
+        ast::Instruction::PublishPackageAdvanced { args } => CallFunction {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateFungibleResource { args } => InstructionV1::CallFunction {
+        }
+        .into(),
+        ast::Instruction::CreateFungibleResource { args } => CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateFungibleResourceWithInitialSupply { args } => {
-            InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE.into(),
-                blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                    .to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
         }
-        ast::Instruction::CreateNonFungibleResource { args } => InstructionV1::CallFunction {
+        .into(),
+        ast::Instruction::CreateFungibleResourceWithInitialSupply { args } => CallFunction {
+            package_address: RESOURCE_PACKAGE.into(),
+            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        }
+        .into(),
+        ast::Instruction::CreateNonFungibleResource { args } => CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateNonFungibleResourceWithInitialSupply { args } => {
-            InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE.into(),
-                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                    .to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
         }
-        ast::Instruction::CreateAccessController { args } => InstructionV1::CallFunction {
+        .into(),
+        ast::Instruction::CreateNonFungibleResourceWithInitialSupply { args } => CallFunction {
+            package_address: RESOURCE_PACKAGE.into(),
+            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
+                .to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        }
+        .into(),
+        ast::Instruction::CreateAccessController { args } => CallFunction {
             package_address: ACCESS_CONTROLLER_PACKAGE.into(),
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateIdentity { args } => InstructionV1::CallFunction {
+        }
+        .into(),
+        ast::Instruction::CreateIdentity { args } => CallFunction {
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateIdentityAdvanced { args } => InstructionV1::CallFunction {
+        }
+        .into(),
+        ast::Instruction::CreateIdentityAdvanced { args } => CallFunction {
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateAccount { args } => InstructionV1::CallFunction {
+        }
+        .into(),
+        ast::Instruction::CreateAccount { args } => CallFunction {
             package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateAccountAdvanced { args } => InstructionV1::CallFunction {
+        }
+        .into(),
+        ast::Instruction::CreateAccountAdvanced { args } => CallFunction {
             package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
+        }
+        .into(),
 
         /* call non-main method aliases */
-        ast::Instruction::SetMetadata { address, args } => InstructionV1::CallMetadataMethod {
+        ast::Instruction::SetMetadata { address, args } => CallMetadataMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: METADATA_SET_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::RemoveMetadata { address, args } => InstructionV1::CallMetadataMethod {
+        }
+        .into(),
+        ast::Instruction::RemoveMetadata { address, args } => CallMetadataMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: METADATA_REMOVE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::LockMetadata { address, args } => InstructionV1::CallMetadataMethod {
+        }
+        .into(),
+        ast::Instruction::LockMetadata { address, args } => CallMetadataMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: METADATA_LOCK_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::SetComponentRoyalty { address, args } => {
-            InstructionV1::CallRoyaltyMethod {
-                address: generate_dynamic_global_address(
-                    address,
-                    address_bech32_decoder,
-                    resolver,
-                )?,
-                method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
         }
-        ast::Instruction::LockComponentRoyalty { address, args } => {
-            InstructionV1::CallRoyaltyMethod {
-                address: generate_dynamic_global_address(
-                    address,
-                    address_bech32_decoder,
-                    resolver,
-                )?,
-                method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
+        .into(),
+        ast::Instruction::SetComponentRoyalty { address, args } => CallRoyaltyMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
-        ast::Instruction::ClaimComponentRoyalties { address, args } => {
-            InstructionV1::CallRoyaltyMethod {
-                address: generate_dynamic_global_address(
-                    address,
-                    address_bech32_decoder,
-                    resolver,
-                )?,
-                method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
+        .into(),
+        ast::Instruction::LockComponentRoyalty { address, args } => CallRoyaltyMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
-        ast::Instruction::SetOwnerRole { address, args } => {
-            InstructionV1::CallRoleAssignmentMethod {
-                address: generate_dynamic_global_address(
-                    address,
-                    address_bech32_decoder,
-                    resolver,
-                )?,
-                method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
+        .into(),
+        ast::Instruction::ClaimComponentRoyalties { address, args } => CallRoyaltyMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
-        ast::Instruction::LockOwnerRole { address, args } => {
-            InstructionV1::CallRoleAssignmentMethod {
-                address: generate_dynamic_global_address(
-                    address,
-                    address_bech32_decoder,
-                    resolver,
-                )?,
-                method_name: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
-                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-            }
+        .into(),
+        ast::Instruction::SetOwnerRole { address, args } => CallRoleAssignmentMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         }
-        ast::Instruction::SetRole { address, args } => InstructionV1::CallRoleAssignmentMethod {
+        .into(),
+        ast::Instruction::LockOwnerRole { address, args } => CallRoleAssignmentMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        }
+        .into(),
+        ast::Instruction::SetRole { address, args } => CallRoleAssignmentMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
+        }
+        .into(),
 
         /* call main method aliases */
-        ast::Instruction::MintFungible { address, args } => InstructionV1::CallMethod {
+        ast::Instruction::MintFungible { address, args } => CallMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::MintNonFungible { address, args } => InstructionV1::CallMethod {
+        }
+        .into(),
+        ast::Instruction::MintNonFungible { address, args } => CallMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::MintRuidNonFungible { address, args } => InstructionV1::CallMethod {
+        }
+        .into(),
+        ast::Instruction::MintRuidNonFungible { address, args } => CallMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::ClaimPackageRoyalties { address, args } => InstructionV1::CallMethod {
+        }
+        .into(),
+        ast::Instruction::ClaimPackageRoyalties { address, args } => CallMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateValidator { args } => InstructionV1::CallMethod {
+        }
+        .into(),
+        ast::Instruction::CreateValidator { args } => CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
+        }
+        .into(),
     })
 }
 
@@ -1950,7 +1953,7 @@ mod tests {
                     &AddressBech32Decoder::new(&NetworkDefinition::simulator()),
                     &MockBlobProvider::default()
                 ),
-                Ok($expected)
+                Ok($expected.into())
             );
         }}
     }
@@ -2149,25 +2152,25 @@ mod tests {
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Decimal("1")  Bucket("xrd_bucket");"#,
-            InstructionV1::TakeFromWorktop {
+            TakeFromWorktop {
                 amount: Decimal::from(1),
                 resource_address,
             },
         );
         generate_instruction_ok!(
             r#"TAKE_ALL_FROM_WORKTOP  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Bucket("xrd_bucket");"#,
-            InstructionV1::TakeAllFromWorktop { resource_address },
+            TakeAllFromWorktop { resource_address },
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS  Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")  Decimal("1");"#,
-            InstructionV1::AssertWorktopContains {
+            AssertWorktopContains {
                 amount: Decimal::from(1),
                 resource_address,
             },
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  Address("package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
-            InstructionV1::CallFunction {
+            CallFunction {
                 package_address: package_address.into(),
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
@@ -2176,7 +2179,7 @@ mod tests {
         );
         generate_instruction_ok!(
             r#"CALL_METHOD  Address("component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu")  "refill";"#,
-            InstructionV1::CallMethod {
+            CallMethod {
                 address: component.into(),
                 method_name: "refill".to_string(),
                 args: manifest_args!().into()
@@ -2184,7 +2187,7 @@ mod tests {
         );
         generate_instruction_ok!(
             r#"MINT_FUNGIBLE Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez") Decimal("100");"#,
-            InstructionV1::CallMethod {
+            CallMethod {
                 address: resource_address.into(),
                 method_name: "mint".to_string(),
                 args: manifest_args!(dec!("100")).into()
@@ -2196,7 +2199,7 @@ mod tests {
     fn test_publish_instruction() {
         generate_instruction_ok!(
             r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Map<String, Tuple>() Map<String, Enum>() Map<String, Enum>() Map<String, Enum>();"#,
-            InstructionV1::CallFunction {
+            CallFunction {
                 package_address: PACKAGE_PACKAGE.into(),
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
                 function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
@@ -2256,7 +2259,7 @@ mod tests {
                     Map<String, Enum>()
                 )
                 Enum<0u8>();"#,
-            InstructionV1::CallFunction {
+            CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
@@ -2299,7 +2302,7 @@ mod tests {
         println!(
             "{}",
             crate::manifest::decompile(
-                &[InstructionV1::CallFunction {
+                &[InstructionV1::CallFunction(CallFunction {
                     package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
@@ -2317,7 +2320,7 @@ mod tests {
                             address_reservation: None,
                         }
                     ),
-                }],
+                })],
                 &NetworkDefinition::simulator(),
             )
             .unwrap()
@@ -2367,7 +2370,7 @@ mod tests {
                 )
                 Enum<0u8>()
             ;"##,
-            InstructionV1::CallFunction {
+            CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
@@ -2423,7 +2426,7 @@ mod tests {
                 )
                 Enum<0u8>()
             ;"#,
-            InstructionV1::CallFunction {
+            CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
@@ -2467,7 +2470,7 @@ mod tests {
                 )
                 Enum<0u8>()
             ;"#,
-            InstructionV1::CallFunction {
+            CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
@@ -2506,7 +2509,7 @@ mod tests {
                 Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
                 Map<NonFungibleLocalId, Tuple>(NonFungibleLocalId("#1#") => Tuple(Tuple("Hello World", Decimal("12"))));
             "##,
-            InstructionV1::CallMethod {
+            CallMethod {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerMintManifestInput {
@@ -2539,7 +2542,7 @@ mod tests {
                     Tuple(Tuple("Hello World", Decimal("12")))
                 );
             "#,
-            InstructionV1::CallMethod {
+            CallMethod {
                 address: resource_address.into(),
                 method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(
@@ -2578,7 +2581,7 @@ mod tests {
                 &AddressBech32Decoder::new(&NetworkDefinition::simulator()),
                 &MockBlobProvider::default()
             ),
-            Ok(InstructionV1::CallMethod {
+            Ok(CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(
@@ -2588,7 +2591,8 @@ mod tests {
                         xrd_payment: ManifestBucket(0u32)
                     }
                 ),
-            })
+            }
+            .into())
         );
     }
 

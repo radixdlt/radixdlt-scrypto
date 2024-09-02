@@ -2,13 +2,10 @@
 resolver = "2"
 
 # NOTES:
-# This workspace is intended to be used for the primary scrypto/radix engine library crates.
+# This workspace is intended to be used for the primary scrypto/radix engine library crates,
+# and the cli applications.
 #
 # In particular:
-# * We purposefully don't include radix-clis - as it's an application, not a library
-#   The radix-clis receives its own separate Cargo.lock, that we source control.
-#   We don't source control the Cargo.lock for this workspace, because it's a workspace of libraries:
-#   https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries
 #
 # * We don't include any Scrypto packages here - they should be loaded/built separately, as they need separate profiles.
 #   They either include their own shared workspace for a set of tests, or a [workspace] in each of their Cargo.tomls
@@ -18,6 +15,7 @@ members = [
     "radix-blueprint-schema-init",
     "radix-common-derive",
     "radix-common",
+    "radix-clis",
     "radix-engine-toolkit",
     "radix-engine-interface",
     "radix-engine-monkey-tests",
@@ -66,7 +64,7 @@ sbor = { version = "1.3.0-dev", path = "./sbor", default-features = false }
 sbor-derive = { version = "1.3.0-dev", path = "./sbor-derive", default-features = false }
 sbor-derive-common = { version = "1.3.0-dev", path = "./sbor-derive-common", default-features = false }
 scrypto = { version = "1.3.0-dev", path = "./scrypto", default-features = false }
-scrypto-bindgen = { version = "1.3.0-dev", path = "./scrypto", default-features = false }
+scrypto-bindgen = { version = "1.3.0-dev", path = "./scrypto-bindgen", default-features = false }
 scrypto-compiler = { version = "1.3.0-dev", path = "./scrypto-compiler", default-features = false }
 scrypto-derive = { version = "1.3.0-dev", path = "./scrypto-derive", default-features = false }
 scrypto-test = { version = "1.3.0-dev", path = "./scrypto-test", default-features = false }
@@ -78,16 +76,20 @@ bencher = { version = "0.1.5" }
 bincode = { version = "2.0.0-rc.1", default-features = false, features = ["derive"] }
 bitflags = { version = "1.3" }
 blake2 = { version = "0.10.6", default-features = false }
-blst = { version = "0.3.11", default-features = false, optional = false }
+blst = { version = "0.3.11", default-features = false, features = ["portable"], optional = false }
 bnum = { version = "0.11.0", default-features = false, features = ["numtraits"] }
 cargo_toml = { version = "0.15.3" }
-colored = { version = "2.0.0", default-features = false }
+clap = { version = "3.1.17", features = ["derive", "cargo"] } # Used in radix-clis for parsing
+colored = { version = "2.0.0", default-features = false } # Used for transaction receipts + radix-clis
 const-sha1 = { version = "0.3.0", default-features = false }
 criterion = { version = "0.3", features = ["html_reports"] }
 crossbeam = { version = "0.8.2" }
+dirs = { version = "4.0.0" } # Used in radix-clis
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
 ethnum = {version = "1.3.2", default-features = false }
 fixedstr = { version = "0.2.9" }
+flate2 = { version = "1.0.27" } # Used in radix-clis for GzDecoder
+flume = { version = "0.11.0" } # Used in radix-clis for multi-threaded channels
 hashbrown = { version = "0.13.2" }
 hex = { version = "0.4.3", default-features = false }
 indexmap = { version = "2.2.5", default-features = false }
@@ -117,11 +119,12 @@ secp256k1 = { version = "0.28.0", default-features = false, features = ["recover
 serde = { version = "1.0.144", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.105" }
 serde_with = { version = "3.9.0", default-features = false, features = ["macros", "hex"] }
-schemars = { version = "0.8.21", features = ["preserve_order"] }
 sha3 = { version = "0.10.8", default-features = false, optional = false }
 shared_memory = { version = "0.12.4" }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 syn = { version = "1.0.93", features = ["full", "extra-traits"] }
+tar = { version = "0.4.40" } # Used in radix-clis
+temp-env = { version = "0.2.0" } # Used in radix-clis
 trybuild = { version = "1.0.85" }
 wabt = { version = "0.10.0" }
 walkdir = { version = "2.3.3", default-features = false }

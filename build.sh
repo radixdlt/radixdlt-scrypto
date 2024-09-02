@@ -4,16 +4,21 @@ set -e
 
 cd "$(dirname "$0")"
 
-echo "Building the workspace packages (with all extended features)..."
+# This should align with format.sh, check.sh, test.sh, update-cargo-locks-minimally.sh
 
-(set -x; cargo build)
-(set -x; cargo test --no-run)
-(set -x; cargo bench --no-run)
+echo "Building the workspace packages and tests (with all extended features)..."
 
-echo "Building the radix-clis packages..."
+(set -x; cargo build; cargo test --no-run; cargo bench --no-run)
 
-(set -x; cd radix-clis; cargo build)
-(set -x; cd radix-clis; cargo test --no-run)
+echo "Building scrypto packages and tests using cargo build, to catch errors quickly..."
+
+(set -x; cd radix-engine-tests/assets/blueprints; cargo build; cargo test --no-run)
+(set -x; cd radix-clis/tests/blueprints; cargo build; cargo test --no-run)
+(set -x; cd scrypto-test/tests/blueprints; cargo build; cargo test --no-run)
+(set -x; cd scrypto-test/assets/blueprints; cargo build; cargo test --no-run)
+(set -x; cd radix-transaction-scenarios/assets/blueprints; cargo build; cargo test --no-run)
+(set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo build; cargo test --no-run)
+(set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo build; cargo test --no-run)
 
 echo "Building the engine in different configurations..."
 
@@ -25,24 +30,34 @@ echo "Building the engine in different configurations..."
 # scrypto="cargo run --manifest-path $PWD/radix-clis/Cargo.toml --bin scrypto $@ --"
 scrypto="scrypto"
 
-echo "Building scrypto packages used in tests..."
+echo "Building scrypto packages used in tests with scrypto build..."
 (
-    find "radix-engine-tests/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "radix-engine-tests/assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
 )
 (
-    find "radix-clis/tests" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    find "radix-clis/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
+)
+(
+    find "scrypto-test/tests/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
+)
+(
+    find "scrypto-test/assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
+)
+(
+    find "radix-transaction-scenarios/assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
 )
 
-echo "Building assets and examples..."
-(
-    find "assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
-    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
-    | xargs -I '{}' bash -c "set -x; $scrypto build --path {}"
-)
+echo "Building examples..."
 # Note - We use a slightly different formulation for the scrypto build line so that scrypto build picks up the `rust-toolchain` file and compiles with nightly
 # This is possibly a rustup bug where it doesn't look for the toolchain file correctly (https://rust-lang.github.io/rustup/overrides.html) when using the `--manifest-path` flag
 (
@@ -50,3 +65,5 @@ echo "Building assets and examples..."
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
     | xargs -I '{}' bash -c "set -x; cd '{}'; $scrypto build"
 )
+
+# We don't rebuild `radix-engine/assets` because they are fixed at genesis/the relevant protocol update, and they no longer compile

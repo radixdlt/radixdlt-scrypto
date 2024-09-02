@@ -52,11 +52,11 @@ fn test_non_fungible_resource_with_schema<F: FnOnce(TransactionReceipt)>(
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .add_instruction_advanced(InstructionV1::CallFunction {
-            package_address: RESOURCE_PACKAGE.into(),
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateManifestInput {
+        .call_function(
+            RESOURCE_PACKAGE,
+            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+            NonFungibleResourceManagerCreateManifestInput {
                 owner_role: OwnerRole::None,
                 id_type: NonFungibleIdType::Integer,
                 track_total_supply: true,
@@ -64,9 +64,8 @@ fn test_non_fungible_resource_with_schema<F: FnOnce(TransactionReceipt)>(
                 resource_roles: NonFungibleResourceRoles::default(),
                 metadata: ModuleConfig::default(),
                 address_reservation: None,
-            }),
-        })
-        .0
+            },
+        )
         .build();
     let receipt = ledger.execute_manifest(manifest, vec![]);
 

@@ -27,6 +27,7 @@ std = [
     "radix-rust/std",
     "radix-common/std",
     "radix-engine/std",
+    "radix-engine/moka",
     "serde/std",
     "serde_with/std",
 ]
@@ -36,6 +37,7 @@ alloc = [
     "radix-rust/alloc",
     "radix-common/alloc",
     "radix-engine/alloc",
+    "radix-engine/lru",
     "serde/alloc",
     "serde_with/alloc",
 ]

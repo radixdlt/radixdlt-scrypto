@@ -1,9 +1,14 @@
 #!/bin/bash
 
+# This hook ensures that code formatting is good before allowing you to commit.
+# Install me by running: `cp .githooks/pre-commit .git/hooks`
+# Remove me by running: `rm .git/hooks/pre-commit`
 set -e
 
 cd "$(dirname "$0")"
 
-echo "Running code format check...If it stops you from committing, try running script './format.sh' first"
+echo "[PRE-COMMIT] Formatting assertion"
 
-../check.sh
+../../check.sh --quiet || { echo "[PRE-COMMIT] Formatting check FAIL: Committing aborted"; exit 1; }
+
+echo "[PRE-COMMIT] Formatting check PASS"

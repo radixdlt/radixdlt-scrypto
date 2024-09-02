@@ -6,6 +6,8 @@ set -e
 cd "$(dirname "$0")"
 source test_utils.sh
 
+# This should align with check.sh, build.sh, test.sh, update-cargo-locks-minimally.sh
+
 setup_test_runner
 
 # echo "Testing crates..."
@@ -15,6 +17,7 @@ test_crates_features \
     sbor-derive \
     sbor-tests \
     scrypto \
+    scrypto-compiler \
     scrypto-derive \
     scrypto-derive-tests \
     radix-sbor-derive \

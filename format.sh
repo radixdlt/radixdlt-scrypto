@@ -4,22 +4,19 @@ set -e
 
 cd "$(dirname "$0")"
 
-# Format all main package crates
-(set -x; cargo fmt)
+# This should align with check.sh, build.sh, test.sh, update-cargo-locks-minimally.sh
 
-# Format the radix-clis crate
-(set -x; cd radix-clis; cargo fmt)
+(set -x; cd .; cargo fmt)
+
+(set -x; cd radix-engine-tests/assets/blueprints; cargo fmt)
+(set -x; cd radix-clis/tests/blueprints; cargo fmt)
+(set -x; cd scrypto-test/tests/blueprints; cargo fmt)
+(set -x; cd scrypto-test/assets/blueprints; cargo fmt)
+(set -x; cd scrypto-compiler/tests/assets/scenario_1; cargo fmt)
+(set -x; cd scrypto-compiler/tests/assets/scenario_2; cargo fmt)
 
 (
     find "examples" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
-    | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
-)
-(
-    find "radix-engine-tests/assets/blueprints" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
-    | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
-)
-(
-    find "radix-clis/tests" -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | xargs -I '{}' bash -c "set -x; cargo fmt --manifest-path {}"
 )
 
