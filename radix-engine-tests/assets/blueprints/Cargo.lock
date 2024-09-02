@@ -3,6 +3,22 @@
 version = 3
 
 [[package]]
+name = "address"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "address_reservation"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "ahash"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16,10 +32,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "aliasable"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "250f629c0161ad8107cf89319e990051fae62832fd343083bea452d93e2205fd"
+name = "allocated_address"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "annotate-snippets"
@@ -87,16 +105,40 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f538837af36e6f6a9be0faa67f9a314f8119e4e4b5867c6ab40ed60360142519"
 
 [[package]]
+name = "arguments"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
+name = "auth_scenarios"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
+
+[[package]]
+name = "balance_changes"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "bech32"
@@ -150,7 +192,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c94087b935a822949d3291a9989ad2b2051ea141eda0fd4e478a75f6aa3e604b"
 dependencies = [
  "cc",
- "glob 0.3.1",
+ "glob",
  "threadpool",
  "zeroize",
 ]
@@ -163,6 +205,14 @@ checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
 dependencies = [
  "num-integer",
  "num-traits",
+]
+
+[[package]]
+name = "bucket"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -215,13 +265,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "cargo_toml"
-version = "0.15.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "599aa35200ffff8f04c1925aa1acc92fa2e08874379ef42e210a80e527e60838"
+name = "cast"
+version = "1.0.0"
 dependencies = [
- "serde",
- "toml",
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -230,7 +278,6 @@ version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1174fb0b6ec23863f8b971027804a42614e347eafb0a95bf0b12cdae21fc4d0"
 dependencies = [
- "jobserver",
  "libc",
 ]
 
@@ -281,22 +328,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1462739cb27611015575c0c11df5df7601141071f07518d56fcc1be504cbec97"
 
 [[package]]
-name = "cmake"
-version = "0.1.51"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb1e43aa7fd152b1f968787f7dbcdeb306d1867ff373c69955211876c053f91a"
+name = "clock"
+version = "1.0.0"
 dependencies = [
- "cc",
-]
-
-[[package]]
-name = "codespan-reporting"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3538270d33cc669650c4b093848450d380def10c331d38c768e34cac80576e6e"
-dependencies = [
- "termcolor",
- "unicode-width",
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -317,10 +353,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "component"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "consensus_manager"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "const-sha1"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d8a42181e0652c2997ae4d217f25b63c5337a52fd2279736e97b832fa0a3cff"
+
+[[package]]
+name = "core"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "costing"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "cpufeatures"
@@ -366,6 +434,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto_scrypto"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "curve25519-dalek"
 version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -376,50 +452,6 @@ dependencies = [
  "rand_core",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "cxx"
-version = "1.0.126"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c4eae4b7fc8dcb0032eb3b1beee46b38d371cdeaf2d0c64b9944f6f69ad7755"
-dependencies = [
- "cc",
- "cxxbridge-flags",
- "cxxbridge-macro",
- "link-cplusplus",
-]
-
-[[package]]
-name = "cxx-build"
-version = "1.0.126"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c822bf7fb755d97328d6c337120b6f843678178751cba33c9da25cf522272e0"
-dependencies = [
- "cc",
- "codespan-reporting",
- "once_cell",
- "proc-macro2",
- "quote",
- "scratch",
- "syn 2.0.76",
-]
-
-[[package]]
-name = "cxxbridge-flags"
-version = "1.0.126"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "719d6197dc016c88744aff3c0d0340a01ecce12e8939fc282e7c8f583ee64bc6"
-
-[[package]]
-name = "cxxbridge-macro"
-version = "1.0.126"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35de3b547387863c8f82013c4f79f1c2162edee956383e4089e1d04c18c4f16c"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.76",
 ]
 
 [[package]]
@@ -434,6 +466,30 @@ dependencies = [
  "lock_api",
  "once_cell",
  "parking_lot_core",
+]
+
+[[package]]
+name = "data_validation"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "decimal"
+version = "1.0.0-rc1"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "deep_sbor"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -536,26 +592,80 @@ dependencies = [
 ]
 
 [[package]]
+name = "event-replacement"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "events"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "events_invalid"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "execution_trace"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "external_blueprint_caller"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "fake_bucket"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6999dc1837253364c2ebb0704ba97994bd874e8f195d665c50b7548f6ea92764"
 
 [[package]]
+name = "fee"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "fee_reserve_states"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "fixedstr"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f830c31a9c9fb94e2d27fbc76daf642784ce14eb3910d4719e29b50ccda5d0f0"
-
-[[package]]
-name = "fslock"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04412b8935272e3a9bae6f48c7bfff74c2911f60525404edfdd28e49884c3bfb"
-dependencies = [
- "libc",
- "winapi",
-]
 
 [[package]]
 name = "generic-array"
@@ -591,12 +701,6 @@ dependencies = [
 
 [[package]]
 name = "glob"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8be18de09a56b60ed0edf84bc9df007e30040691af7acd1c41874faac5895bfb"
-
-[[package]]
-name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
@@ -627,14 +731,6 @@ name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
-
-[[package]]
-name = "hello-world"
-version = "1.0.0"
-dependencies = [
- "scrypto",
- "scrypto-test",
-]
 
 [[package]]
 name = "hermit-abi"
@@ -734,15 +830,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 
 [[package]]
-name = "jobserver"
-version = "0.1.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "936cfd212a0155903bcbc060e316fb6cc7cbf2e1907329391ebadc1fe0ce77c2"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "keccak"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -752,10 +839,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "kv_store"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "large_package"
+version = "1.0.0"
+dependencies = [
+ "address",
+ "allocated_address",
+ "auth_scenarios",
+ "bucket",
+ "fake_bucket",
+ "fee_reserve_states",
+ "non_fungible",
+ "package",
+ "proof",
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+
+[[package]]
+name = "leaks"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "leb128"
@@ -776,19 +896,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
-name = "link-cplusplus"
-version = "1.0.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d240c6f7e1ba3a28b0249f774e6a9dd0175054b52dfbb61b16eb8505c3785c9"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "linux-raw-sys"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78b3ae25bc7c8c38cec158d1f2757ee79e9b3740fbc7ccf0e59e4b08d793fa89"
+
+[[package]]
+name = "local_component"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "local_recursion"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "lock_api"
@@ -807,10 +934,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
+name = "logger"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+
+[[package]]
+name = "metadata_component"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "module"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "moka"
@@ -839,6 +990,14 @@ name = "multi-stash"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "685a9ac4b61f4e728e1d2c6a7844609c16527aeb5e6c865915c08e619c16410f"
+
+[[package]]
+name = "non_fungible"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "num-bigint"
@@ -914,27 +1073,83 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
-name = "ouroboros"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2ba07320d39dfea882faa70554b4bd342a5f273ed59ba7c1c6b4c840492c954"
+name = "oracle_generic_proxy_with_global"
+version = "1.0.0"
 dependencies = [
- "aliasable",
- "ouroboros_macro",
- "static_assertions",
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
-name = "ouroboros_macro"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec4c6225c69b4ca778c0aea097321a64c421cf4577b331c61b229267edabb6f8"
+name = "oracle_proxy_with_global"
+version = "1.0.0"
 dependencies = [
- "heck 0.4.1",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn 2.0.76",
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "oracle_proxy_with_owned"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "oracle_v1"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "oracle_v2"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "oracle_v3"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "package"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "package_invalid"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "package_schema"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "package_token"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -973,36 +1188,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
-name = "proc-macro-error"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
-dependencies = [
- "proc-macro-error-attr",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "version_check",
-]
-
-[[package]]
-name = "proc-macro-error-attr"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
-dependencies = [
- "proc-macro2",
- "quote",
- "version_check",
-]
-
-[[package]]
 name = "proc-macro2"
 version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e719e8df665df0d1c8fbfd238015744736151d4445ec0836b8e628aae103b77"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "proof"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "proof_creation"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "publish_package"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -1177,18 +1392,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-substate-store-impls"
-version = "1.3.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "radix-common",
- "radix-rust",
- "radix-substate-store-interface",
- "sbor",
-]
-
-[[package]]
 name = "radix-substate-store-interface"
 version = "1.3.0-dev"
 dependencies = [
@@ -1196,22 +1399,6 @@ dependencies = [
  "itertools",
  "radix-common",
  "radix-rust",
- "sbor",
-]
-
-[[package]]
-name = "radix-substate-store-queries"
-version = "1.3.0-dev"
-dependencies = [
- "hex",
- "itertools",
- "paste",
- "radix-common",
- "radix-engine",
- "radix-engine-interface",
- "radix-rust",
- "radix-substate-store-interface",
- "radix-transactions",
  "sbor",
 ]
 
@@ -1285,12 +1472,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "recall"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "recursion"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "567664f262709473930a4bf9e51bf2ebf3348f2e748ccc50dea20646858f8f29"
 dependencies = [
  "bitflags 1.3.2",
+]
+
+[[package]]
+name = "reentrancy"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "reference"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -1319,12 +1538,68 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5ea92a5b6195c6ef2a0295ea818b312502c6fc94dde986c5553242e18fd4ce2"
 
 [[package]]
+name = "remote_generic_args"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "resource"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "rgb"
 version = "0.8.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cd5a1e95672f201913966f39baf355b53b5d92833431847295ae0346a5b939"
 dependencies = [
  "bytemuck",
+]
+
+[[package]]
+name = "role-assignment-edge-cases"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "role_assignment"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "royalty"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "royalty-auth"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "royalty-edge-cases"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -1420,12 +1695,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
-name = "scratch"
-version = "1.0.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3cf7c11c38cb994f3d40e8a8cde3bbd1f72a435e4c49e85d6553d8312306152"
-
-[[package]]
 name = "scrypto"
 version = "1.3.0-dev"
 dependencies = [
@@ -1445,20 +1714,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "scrypto-compiler"
-version = "1.3.0-dev"
-dependencies = [
- "cargo_toml",
- "fslock",
- "radix-common",
- "radix-engine",
- "radix-engine-interface",
- "radix-rust",
- "serde_json",
- "wasm-opt",
-]
-
-[[package]]
 name = "scrypto-derive"
 version = "1.3.0-dev"
 dependencies = [
@@ -1474,23 +1729,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "scrypto-test"
-version = "1.3.0-dev"
+name = "scrypto_env"
+version = "1.0.0"
 dependencies = [
- "ouroboros",
- "paste",
- "radix-common",
  "radix-engine",
- "radix-engine-interface",
- "radix-native-sdk",
- "radix-substate-store-impls",
- "radix-substate-store-interface",
- "radix-substate-store-queries",
- "radix-transactions",
- "sbor",
- "scrypto-compiler",
- "serde_json",
- "wabt",
+ "scrypto",
 ]
 
 [[package]]
@@ -1553,15 +1796,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_spanned"
-version = "0.6.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb5b1b31579f3811bf615c144393417496f152e12ac8b7663bf664f4a815306d"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "sha2"
 version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1599,7 +1833,7 @@ dependencies = [
  "bytecount",
  "cargo_metadata",
  "error-chain",
- "glob 0.3.1",
+ "glob",
  "pulldown-cmark",
  "tempfile",
  "walkdir",
@@ -1618,10 +1852,60 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 
 [[package]]
-name = "static_assertions"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+name = "static_dependencies"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "static_dependencies2"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "steal"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "storage"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "stored_external_component"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "stored_resource"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "stored_values"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "str_stack"
@@ -1697,6 +1981,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "system"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "system_wasm_buffers"
+version = "0.1.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "tagptr"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1713,15 +2013,6 @@ dependencies = [
  "redox_syscall",
  "rustix",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "termcolor"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
-dependencies = [
- "winapi-util",
 ]
 
 [[package]]
@@ -1754,37 +2045,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "toml"
-version = "0.7.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd79e69d3b627db300ff956027cc6c3798cef26d22526befdfcd12feeb6d2257"
+name = "transaction_limits"
+version = "1.0.0"
 dependencies = [
- "serde",
- "serde_spanned",
- "toml_datetime",
- "toml_edit",
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
-name = "toml_datetime"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
+name = "transaction_runtime"
+version = "1.0.0"
 dependencies = [
- "serde",
-]
-
-[[package]]
-name = "toml_edit"
-version = "0.19.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
-dependencies = [
- "indexmap 2.2.6",
- "serde",
- "serde_spanned",
- "toml_datetime",
- "winnow",
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -1792,6 +2065,14 @@ name = "triomphe"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0eee8098afad3fb0c54a9007aab6804558410503ad676d4633f9c2559a00ac0f"
+
+[[package]]
+name = "tx_processor_access"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
 
 [[package]]
 name = "typenum"
@@ -1836,33 +2117,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "validator"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
+name = "vault"
+version = "1.0.0"
+dependencies = [
+ "radix-engine",
+ "scrypto",
+]
+
+[[package]]
 name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "wabt"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00bef93d5e6c81a293bccf107cf43aa47239382f455ba14869d36695d8963b9c"
-dependencies = [
- "serde",
- "serde_derive",
- "serde_json",
- "wabt-sys",
-]
-
-[[package]]
-name = "wabt-sys"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a4e043159f63e16986e713e9b5e1c06043df4848565bf672e27c523864c7791"
-dependencies = [
- "cc",
- "cmake",
- "glob 0.2.11",
-]
 
 [[package]]
 name = "walkdir"
@@ -1896,43 +2170,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasm-opt"
-version = "0.114.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "effbef3bd1dde18acb401f73e740a6f3d4a1bc651e9773bddc512fe4d8d68f67"
+name = "wasm_non_mvp"
+version = "1.0.0"
 dependencies = [
- "anyhow",
- "libc",
- "strum",
- "strum_macros",
- "tempfile",
- "thiserror",
- "wasm-opt-cxx-sys",
- "wasm-opt-sys",
-]
-
-[[package]]
-name = "wasm-opt-cxx-sys"
-version = "0.114.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c09e24eb283919ace2ed5733bda4842a59ce4c8de110ef5c6d98859513d17047"
-dependencies = [
- "anyhow",
- "cxx",
- "cxx-build",
- "wasm-opt-sys",
-]
-
-[[package]]
-name = "wasm-opt-sys"
-version = "0.114.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36f2f817bed2e8d65eb779fa37317e74de15585751f903c9118342d1970703a4"
-dependencies = [
- "anyhow",
- "cc",
- "cxx",
- "cxx-build",
+ "radix-engine",
+ "scrypto",
 ]
 
 [[package]]
@@ -2183,15 +2425,6 @@ name = "windows_x86_64_msvc"
 version = "0.52.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bec47e5bfd1bff0eeaf6d8b485cc1074891a197ab4225d504cb7a1ab88b02bf0"
-
-[[package]]
-name = "winnow"
-version = "0.5.40"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
-dependencies = [
- "memchr",
-]
 
 [[package]]
 name = "zerocopy"

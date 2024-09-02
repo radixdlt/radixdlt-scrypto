@@ -184,14 +184,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
-name = "flash_loan"
-version = "1.0.0"
-dependencies = [
- "sbor",
- "scrypto",
-]
-
-[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -217,14 +209,6 @@ name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
-
-[[package]]
-name = "global_n_owned"
-version = "1.0.0"
-dependencies = [
- "sbor",
- "scrypto",
-]
 
 [[package]]
 name = "hashbrown"
@@ -289,14 +273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kv_store"
-version = "1.0.0"
-dependencies = [
- "sbor",
- "scrypto",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -309,26 +285,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8adc4bb1803a324070e64a98ae98f38934d91957a99cfb3a43dcbc01bc56439"
 
 [[package]]
-name = "max_transaction"
-version = "1.0.0"
-dependencies = [
- "sbor",
- "scrypto",
-]
-
-[[package]]
 name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
-
-[[package]]
-name = "metadata"
-version = "1.0.0"
-dependencies = [
- "sbor",
- "scrypto",
-]
 
 [[package]]
 name = "num-bigint"
@@ -407,18 +367,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "radiswap"
-version = "1.0.0"
-dependencies = [
- "sbor",
- "scrypto",
-]
-
-[[package]]
 name = "radix-blueprint-schema-init"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9a744eb07ded9effa0a6ab1e3d4dba1707a980ec0acb8ebeb37cdb78b373cd1"
+version = "1.3.0-dev"
 dependencies = [
  "bitflags",
  "radix-common",
@@ -428,9 +378,7 @@ dependencies = [
 
 [[package]]
 name = "radix-common"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1ce97ee67264628b4651706ec6808e443fbb0ecba766824a0e94887a5b54969"
+version = "1.3.0-dev"
 dependencies = [
  "bech32",
  "blake2",
@@ -455,9 +403,7 @@ dependencies = [
 
 [[package]]
 name = "radix-common-derive"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc0ac980f09b21f849aa12f2473adfa366e70829ed634f5735512532066f71ad"
+version = "1.3.0-dev"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -468,9 +414,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69a96a51e803213f13cf199c92eaafa3884292c1e66d8afc1d8aef7e15625ff0"
+version = "1.3.0-dev"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -490,9 +434,7 @@ dependencies = [
 
 [[package]]
 name = "radix-rust"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6010fd7ebd7c2d3a3d270525c54a0dcb43fbaf3447fb32b42a0bcc4326109c64"
+version = "1.3.0-dev"
 dependencies = [
  "indexmap",
  "serde",
@@ -500,9 +442,7 @@ dependencies = [
 
 [[package]]
 name = "radix-sbor-derive"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cc92b5760b129af15be9a82fe2e8118aa851da81b22c8a12d56ab494f071321"
+version = "1.3.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -577,14 +517,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5ea92a5b6195c6ef2a0295ea818b312502c6fc94dde986c5553242e18fd4ce2"
 
 [[package]]
-name = "royalties"
-version = "1.0.0"
-dependencies = [
- "sbor",
- "scrypto",
-]
-
-[[package]]
 name = "rustversion"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -598,9 +530,7 @@ checksum = "1ad4cc8da4ef723ed60bced201181d83791ad433213d8c24efffda1eec85d741"
 
 [[package]]
 name = "sbor"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17d72c7d255b90198cf83c4cc4907021a927f484586939d8d50bdcd045287bde"
+version = "1.3.0-dev"
 dependencies = [
  "const-sha1",
  "hex",
@@ -613,9 +543,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a51a6bd2e7849a2a8826a473e83a9a995011af21892acee89e62ce93f0d7c42"
+version = "1.3.0-dev"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -624,11 +552,10 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02f1209a1d8c81d724c45afc06e41aa4e64a18b389e8cdece53da61bad1c1620"
+version = "1.3.0-dev"
 dependencies = [
  "const-sha1",
+ "indexmap",
  "itertools",
  "proc-macro2",
  "quote",
@@ -637,9 +564,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc8a64aa6af83ed0dfc588a278c54138d9e7d855cf7b3a22287c5239a964285e"
+version = "1.3.0-dev"
 dependencies = [
  "bech32",
  "const-sha1",
@@ -658,9 +583,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c369a0c3f292e4704bd71d47c80a2d6162b1e0212e9c34f130634ee29e58c0ed"
+version = "1.3.0-dev"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -800,6 +723,34 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "test_blueprint"
+version = "1.1.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
+name = "test_blueprint_2"
+version = "1.1.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
+name = "test_blueprint_3"
+version = "1.1.0"
+dependencies = [
+ "scrypto",
+]
+
+[[package]]
+name = "test_blueprint_4"
+version = "1.1.0"
+dependencies = [
+ "scrypto",
 ]
 
 [[package]]

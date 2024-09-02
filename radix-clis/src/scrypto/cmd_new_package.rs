@@ -1,4 +1,5 @@
 use clap::Parser;
+use regex::Regex;
 use std::fs;
 use std::path::PathBuf;
 
@@ -59,6 +60,14 @@ impl NewPackage {
             )
             .map_err(Error::IOError)?;
 
+            // This is tested in `./tests/scrypto.sh` by verifying that a newly
+            // created package can be built with --locked against the lock file.
+            let cargo_lock = Self::insert_own_entry_into_cargo_lock(
+                include_str!("../../assets/template/Cargo.lock_template"),
+                &self.package_name,
+            );
+            fs::write(child_of(&path, "Cargo.lock"), cargo_lock).map_err(Error::IOError)?;
+
             fs::write(
                 child_of(&path, ".gitignore"),
                 include_str!("../../assets/template/.gitignore"),
@@ -79,6 +88,48 @@ impl NewPackage {
             .map_err(Error::IOError)?;
 
             Ok(())
+        }
+    }
+
+    fn insert_own_entry_into_cargo_lock(lock_file_contents: &str, package_name: &str) -> String {
+        let name_regex = Regex::new(r#"name = "([^"]+)""#).unwrap();
+        let name_line_to_inject_before = name_regex
+            .captures_iter(&lock_file_contents)
+            .find(|captures| {
+                let dependency_name = captures.get(1).unwrap();
+                dependency_name.as_str() > package_name
+            })
+            .map(|captures| captures.get(0).unwrap().as_str());
+
+        if let Some(line) = name_line_to_inject_before {
+            lock_file_contents.replace(
+                line,
+                &format!(
+                    r#"name = "{package_name}"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+ "scrypto-test",
+]
+
+[[package]]
+{line}"#
+                ),
+            )
+        } else {
+            let mut contents = lock_file_contents.to_string();
+            contents.push_str(&format!(
+                r#"
+[[package]]
+name = "{package_name}"
+version = "1.0.0"
+dependencies = [
+ "scrypto",
+ "scrypto-test",
+]
+"#
+            ));
+            contents
         }
     }
 }

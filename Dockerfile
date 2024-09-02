@@ -4,7 +4,7 @@ ARG RUST_IMAGE_VERSION=@sha256:e8e40c50bfb54c0a76218f480cc69783b908430de87b59619
 # ARG RUST_IMAGE_VERSION=:slim-bookworm
 # Alternatively you can build docker with argument: --build-arg="RUST_IMAGE_VERSION=:slim-bookworm"
 
-FROM rust${RUST_IMAGE_VERSION} as base-image
+FROM rust${RUST_IMAGE_VERSION} AS base-image
 
 RUN apt update && apt install -y \
     cmake=3.25.1-1 \
@@ -12,13 +12,14 @@ RUN apt update && apt install -y \
     build-essential=12.9 \
     llvm=1:14.0-55.7~deb12u1
 
-FROM base-image as builder
+FROM base-image AS builder
 
 # Copy library crates
 ADD Cargo.toml /app/Cargo.toml
 ADD radix-blueprint-schema-init /app/radix-blueprint-schema-init
 ADD radix-common /app/radix-common
 ADD radix-common-derive /app/radix-common-derive
+ADD radix-clis /app/radix-clis
 ADD radix-engine /app/radix-engine
 ADD radix-engine-interface /app/radix-engine-interface
 ADD radix-engine-profiling /app/radix-engine-profiling
@@ -36,15 +37,26 @@ ADD sbor-derive-common /app/sbor-derive-common
 ADD scrypto-bindgen /app/scrypto-bindgen
 ADD scrypto-compiler /app/scrypto-compiler
 
-# Copy radix-clis crate
-ADD radix-clis /app/radix-clis
+# Add non-production dependencies...
+# These only need to be included because cargo tries to read their Cargo.toml files when it's preparing the workspace
+# Ideally, to minimize the image size, we could probably just write an almost-empty Cargo.toml file at each of these paths
+# Will save this optimization for a later day
+ADD radix-engine-monkey-tests /app/radix-engine-monkey-tests
+ADD radix-engine-tests /app/radix-engine-tests
+ADD radix-engine-toolkit /app/radix-engine-toolkit
+ADD radix-transaction-scenarios /app/radix-transaction-scenarios
+ADD sbor-tests /app/sbor-tests
+ADD scrypto /app/scrypto
+ADD scrypto-derive /app/scrypto-derive
+ADD scrypto-derive-tests /app/scrypto-derive-tests
+ADD scrypto-test /app/scrypto-test
 
 WORKDIR /app
 
 RUN cargo install --path ./radix-clis
 
 FROM base-image
-COPY --from=builder /app/radix-clis/target/release/scrypto /usr/local/bin/scrypto
+COPY --from=builder /app/target/release/scrypto /usr/local/bin/scrypto
 RUN rustup target add wasm32-unknown-unknown
 WORKDIR /src
 

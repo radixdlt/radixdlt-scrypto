@@ -1,6 +1,3 @@
-[workspace]
-# It's its own workspace - hide it from the root workspace
-
 [package]
 name = "radix-clis"
 version = "1.3.0-dev"
@@ -11,40 +8,36 @@ license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-radix-blueprint-schema-init = { version = "1.3.0-dev", path = "../radix-blueprint-schema-init" }
-radix-common = { version = "1.3.0-dev", path = "../radix-common" }
-radix-engine = { version = "1.3.0-dev", path = "../radix-engine" }
-radix-engine-interface = { version = "1.3.0-dev", path = "../radix-engine-interface" }
-radix-engine-profiling = { version = "1.3.0-dev", path = "../radix-engine-profiling", features = ["ram_metrics"] }
-radix-rust = { version = "1.3.0-dev", path = "../radix-rust" }
-radix-substate-store-impls = { version = "1.3.0-dev", path = "../radix-substate-store-impls", features = ["rocksdb"] }
-radix-substate-store-interface = { version = "1.3.0-dev", path = "../radix-substate-store-interface" }
-radix-substate-store-queries = { version = "1.3.0-dev", path = "../radix-substate-store-queries" }
-radix-transactions = { version = "1.3.0-dev", path = "../radix-transactions" }
-sbor = { version = "1.3.0-dev", path = "../sbor" }
-scrypto-bindgen = { version = "1.3.0-dev", path = "../scrypto-bindgen" }
-scrypto-compiler = { version = "1.3.0-dev", path = "../scrypto-compiler" }
+radix-blueprint-schema-init = { workspace = true, features = ["std"] }
+radix-common = { workspace = true, features = ["std"] }
+radix-engine = { workspace = true, features = ["std"] }
+radix-engine-interface = { workspace = true, features = ["std"] }
+radix-engine-profiling = { workspace = true, features = ["ram_metrics"] }
+radix-rust = { workspace = true, features = ["std"] }
+radix-substate-store-impls = { workspace = true, features = ["std", "rocksdb"] }
+radix-substate-store-interface = { workspace = true, features = ["std"] }
+radix-substate-store-queries = { workspace = true, features = ["std"] }
+radix-transactions = { workspace = true, features = ["std"] }
+sbor = { workspace = true, features = ["std"] }
+scrypto-bindgen = { workspace = true, features = ["std"] }
+scrypto-compiler = { workspace = true, features = ["std"] }
 
-flate2 = { version = "1.0.27" }
-tar = { version = "0.4.40" }
-rocksdb = { version = "0.21.0" }
-serde = { version = "1.0.137", features = ["derive"] }
-serde_json = { version = "1.0.81" }
-clap = { version = "3.1.17", features = ["derive", "cargo"] }
-dirs = { version = "4.0.0" }
-colored = { version = "2.0.0" }
-hex = { version = "0.4.3" }
-rand = { version = "0.8.5" }
-regex = { version = "1.5.5" }
-temp-env = { version = "0.2.0" }
-wasm-opt = { version = "0.114.1" }
-syn = { version = "1.0.93", features = ["full", "extra-traits"] }
-quote = { version = "1.0.18" }
-proc-macro2 = { version = "1.0.38" }
-heck = "0.4.1"
-tempfile = "3.8.0"
-flume = { version = "0.11.0" }
-walkdir = "2.3.3"
+flate2 = { workspace = true }
+tar = { workspace = true }
+rocksdb = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+clap = { workspace = true, features = ["derive", "cargo"] }
+dirs = { workspace = true }
+colored = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+regex = { workspace = true }
+temp-env = { workspace = true }
+quote = { workspace = true }
+tempfile = { workspace = true }
+flume = { workspace = true }
+walkdir = { workspace = true }
 
 [[bin]]
 name = "resim"
@@ -79,6 +72,3 @@ bench = false
 [lib]
 doctest = false
 bench = false
-
-[profile.bench]
-debug = true

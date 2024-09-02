@@ -95,7 +95,6 @@ mod tests {
     use crate::address::AddressBech32Encoder;
     use crate::types::*;
     use radix_rust::ContextualSerialize;
-    use sbor::rust::vec;
     use serde::Serialize;
     use serde_json::{json, to_string, to_value, Value as JsonValue};
 

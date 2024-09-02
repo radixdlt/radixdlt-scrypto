@@ -6,13 +6,13 @@ on:
       - main
       - develop
       - docs
-      - alphanet
-      - betanet
+      - develop\/*
       - release\/*
   pull_request:
 
 env:
   CARGO_TERM_COLOR: always
+  SCRYPTO_CARGO_LOCKED: 1
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -55,11 +55,11 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p sbor --no-fail-fast
+        run: cargo nextest run -p sbor --no-fail-fast --locked
       - name: Run tests (no_std)
-        run: cargo nextest run -p sbor --no-default-features --features alloc --no-fail-fast
+        run: cargo nextest run -p sbor --no-default-features --features alloc --no-fail-fast --locked
       - name: Run derive tests
-        run: cargo nextest run -p sbor-derive-common --no-fail-fast
+        run: cargo nextest run -p sbor-derive-common --no-fail-fast --locked
 
   sbor-integration-tests:
     name: Run SBOR integration tests
@@ -69,11 +69,11 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p sbor-tests --no-fail-fast
+        run: cargo nextest run -p sbor-tests --no-fail-fast --locked
       - name: Run tests (no_std)
-        run: cargo nextest run -p sbor-tests --no-default-features --features alloc --no-fail-fast
+        run: cargo nextest run -p sbor-tests --no-default-features --features alloc --no-fail-fast --locked
       - name: Run bench
-        run: cargo bench -p sbor-tests
+        run: cargo bench -p sbor-tests --locked
 
   scrypto-tests:
     name: Run Scrypto tests
@@ -83,13 +83,13 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p scrypto --no-fail-fast
+        run: cargo nextest run -p scrypto --no-fail-fast --locked
       - name: Run tests (no_std)
-        run: cargo nextest run -p scrypto --no-default-features --features alloc --no-fail-fast
+        run: cargo nextest run -p scrypto --no-default-features --features alloc --no-fail-fast --locked
       - name: Run abi tests
-        run: cargo nextest run -p radix-blueprint-schema-init --no-fail-fast
+        run: cargo nextest run -p radix-blueprint-schema-init --no-fail-fast --locked
       - name: Run derive tests
-        run: cargo nextest run -p scrypto-derive --no-fail-fast
+        run: cargo nextest run -p scrypto-derive --no-fail-fast --locked
 
   scrypto-derive-tests:
     name: Run Scrypto derive tests
@@ -99,9 +99,29 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p scrypto-derive-tests --no-fail-fast
+        run: cargo nextest run -p scrypto-derive-tests --no-fail-fast --locked
       - name: Run tests with no_std
-        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc --no-fail-fast
+        run: cargo nextest run -p scrypto-derive-tests --no-default-features --features alloc --no-fail-fast --locked
+
+  scrypto-compiler-tests:
+    name: Run Scrypto compiler tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - name: Run tests
+        run: cargo nextest run -p scrypto-compiler --no-fail-fast --locked
+
+  radix-engine-toolkit-tests:
+    name: Run Radix Engine Toolkit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - name: Run tests
+        run: cargo nextest run -p radix-engine-toolkit --no-fail-fast --locked
 
   scrypto-examples:
     name: Run Scrypto examples
@@ -112,16 +132,16 @@ jobs:
         uses: ./.github/actions/setup-env
       - name: Build and test hello-world
         run: |
-          cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release --no-fail-fast
+          cargo build --target wasm32-unknown-unknown --release --locked
+          cargo nextest run --release --no-fail-fast --locked
         working-directory: examples/hello-world
       - name: Build and test everything
         run: |
-          cargo build --target wasm32-unknown-unknown --release
-          cargo nextest run --release --no-fail-fast
+          cargo build --target wasm32-unknown-unknown --release --locked
+          cargo nextest run --release --no-fail-fast --locked
         working-directory: examples/everything
       - name: Build no-std
-        run: cargo build --target wasm32-unknown-unknown --release
+        run: cargo build --target wasm32-unknown-unknown --release --locked
         working-directory: examples/no-std
 
   scrypto-stubs:
@@ -147,7 +167,7 @@ jobs:
       - name: Install dependency
         run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
       - name: Build with additional features
-        run: cargo build -p radix-engine -p radix-substate-store-impls --features radix-engine/resource_tracker,radix-engine/cpu_ram_metrics,radix-substate-store-impls/rocksdb
+        run: cargo build -p radix-engine -p radix-substate-store-impls --features radix-engine/resource_tracker,radix-engine/cpu_ram_metrics,radix-substate-store-impls/rocksdb --locked
 
   radix-engine-test:
     name: Run Radix Engine tests
@@ -164,7 +184,7 @@ jobs:
             -p radix-engine-interface \
             -p radix-engine \
             -p radix-engine-tests \
-            --no-fail-fast
+            --no-fail-fast --locked
           ./check_stack_usage.sh
 
   radix-engine-release:
@@ -188,7 +208,7 @@ jobs:
             -p radix-engine-interface \
             -p radix-engine \
             -p radix-engine-tests \
-            --no-fail-fast
+            --no-fail-fast --locked
 
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
@@ -207,7 +227,7 @@ jobs:
             -p radix-engine-interface \
             -p radix-engine \
             -p radix-engine-tests \
-            --no-fail-fast
+            --no-fail-fast --locked
 
   radix-engine-bench:
     name: Run Radix Engine benchmarks
@@ -217,7 +237,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run bench
-        run: cargo bench
+        run: cargo bench --locked
         working-directory: radix-engine-tests
 
   radix-common-bench:
@@ -228,7 +248,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run bench
-        run: cargo bench
+        run: cargo bench --locked
         working-directory: radix-common
 
   radix-transactions:
@@ -239,7 +259,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p radix-transactions --no-fail-fast
+        run: cargo nextest run -p radix-transactions --no-fail-fast --locked
 
   radix-transaction-scenarios:
     name: Run transaction scenarios
@@ -249,7 +269,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Run tests
-        run: cargo nextest run -p radix-transaction-scenarios --no-fail-fast
+        run: cargo nextest run -p radix-transaction-scenarios --no-fail-fast --locked
 
   radix-clis:
     name: Run CLI tests
@@ -271,7 +291,7 @@ jobs:
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
       - name: Run Unit tests
-        run: cargo nextest run --no-fail-fast
+        run: cargo nextest run --no-fail-fast --locked
         working-directory: radix-clis
       - name: Run resim shell tests
         run: bash ./tests/resim.sh
@@ -316,6 +336,8 @@ jobs:
           shared-key: radix-clis-debug-${{ runner.os }}
           cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
           workspaces: radix-clis
+      # Coverage needs a nightly compiler.
+      # This should be at or in front of the default toolchain defined in action.yml
       - name: Install rustc 1.81.0-nightly
         run: |
           rustup toolchain install nightly-2024-07-18
@@ -350,7 +372,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Cargo Check
-        run: cargo check --all
+        run: cargo check --all --locked
 
   cargo-check-post-run-db-check:
     name: Run cargo check with post run db check
@@ -363,7 +385,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
       - name: Cargo Check
-        run: cargo check --all --features post_run_db_check
+        run: cargo check --all --features post_run_db_check --locked
 
   determinism-test:
     name: Run determinism test
@@ -381,7 +403,7 @@ jobs:
         run: git lfs pull
       - name: Replay transactions
         run: |
-            cargo run --release --bin replay -- \
+            cargo run --release --locked --bin replay -- \
             execute-in-memory ../assets-lfs/babylon-mainnet-transactions-2023-10-11.tar.gz \
             --max-version 50000 \
             --breakpoints 10:91850a10dad5ec6d9a974663e87243b3f3ff8f8b1c0dd74135e8ddd097aa6276,100:8ac9b0caf4daad6f821038f325b215932e90fbabce089ca42bc0330c867aa8f8,1000:6b621e9c7f9674c3d71832aec822b695b0e90010dc6158a18e43fbacf296ef69,500000:7dd4403a757f43f4a885e914b8dc38086fdbaf96082fa90067acf1500075e85d

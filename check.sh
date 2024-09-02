@@ -6,38 +6,34 @@ err_report() {
     echo "Something went wrong on line $1"
 }
 
+quiet_flag=""
+
+if [ "$1" = "--quiet" ]
+  then quiet_flag="--quiet"
+fi
+
 trap 'err_report $LINENO' ERR
 
-
 failed=0
+lf=$'\n'
 
 cd "$(dirname "$0")"
 
-packages=$(cat Cargo.toml | \
-    awk '/members/{flag=1;next} /\]/{flag=0} flag' | \
-    awk -F '"' '{print $2}')
+# We use the cd trick to avoid issues like this: https://github.com/rust-lang/rustfmt/issues/4432
+
+# This should align with format.sh, build.sh, test.sh, update-cargo-locks-minimally.sh
+packages="Cargo.toml$lf"
+packages+="radix-engine-tests/assets/blueprints/Cargo.toml$lf"
+packages+="radix-clis/tests/blueprints/Cargo.toml$lf"
+packages+="scrypto-test/tests/blueprints/Cargo.toml$lf"
+packages+="scrypto-test/assets/blueprints/Cargo.toml$lf"
+packages+="scrypto-compiler/tests/assets/scenario_1/Cargo.toml$lf"
+packages+="scrypto-compiler/tests/assets/scenario_2/Cargo.toml$lf"
+packages+="$(find examples -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))$lf"
 
 for package in $packages; do
-    # Subdirectories requires --all param (https://github.com/rust-lang/rustfmt/issues/4432)
-    if [[ "$package" == */* ]]; then
-        all_param="--all"
-    else
-        all_param=""
-    fi
-    cargo fmt -p $package --check --quiet $all_param ||
-        { echo "Code format check FAILED for $package"; failed=1; }
-done
-
-packages="
-    examples/hello-world/Cargo.toml \
-    examples/everything/Cargo.toml \
-    examples/no-std/Cargo.toml \
-    "
-packages+=$(find radix-engine-tests/tests/blueprints -mindepth 2 -maxdepth 2 -type f \( -name Cargo.toml \))
-
-for package in $packages; do
-    cargo fmt --check --quiet --manifest-path $package ||
-        { echo "Code format check FAILED for $package"; failed=1; }
+    folder=$(dirname $package)
+    (cd $folder; cargo fmt --check $quiet_flag) || { echo "$lf>> Code format check FAILED for $package$lf"; failed=1; }
 done
 
 [ $failed -eq 0 ] && echo "Code format check passed!"

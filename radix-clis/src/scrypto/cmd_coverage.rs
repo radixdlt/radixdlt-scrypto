@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine_interface::types::Level;
 use regex::Regex;
+use scrypto_compiler::is_scrypto_cargo_locked_env_var_active;
 use std::env;
 use std::env::current_dir;
 use std::fs;
@@ -18,6 +19,12 @@ use crate::utils::*;
 pub struct Coverage {
     /// The arguments to be passed to the test executable
     arguments: Vec<String>,
+
+    /// Ensures the Cargo.lock file is used as-is. Equivalent to `cargo test --locked`.
+    /// Alternatively, the `SCRYPTO_CARGO_LOCKED` environment variable can be used,
+    /// which makes it easy to set universally in CI.
+    #[clap(long)]
+    locked: bool,
 
     /// The package directory
     #[clap(long)]
@@ -58,7 +65,7 @@ impl Coverage {
 
         let output_str = String::from_utf8(output.stdout).expect("Failed to read rustc output");
         let is_nightly = output_str.contains("nightly");
-        let llvm_major_version = Regex::new(r"LLVM version: (\d+)")
+        let llvm_major_version = Regex::new(r"LLVM version: ([0-9]+)")
             .unwrap()
             .captures(&output_str)
             .and_then(|cap| cap.get(1).map(|m| m.as_str()))
@@ -154,9 +161,14 @@ impl Coverage {
         );
 
         // Run tests
-        test_package(path, self.arguments.clone(), true)
-            .map(|_| ())
-            .map_err(Error::TestError)?;
+        test_package(
+            path,
+            self.arguments.clone(),
+            true,
+            is_scrypto_cargo_locked_env_var_active() || self.locked,
+        )
+        .map(|_| ())
+        .map_err(Error::TestError)?;
 
         // Merge profraw files into profdata file
         let profraw_files: Vec<String> = WalkDir::new(&data_path)
@@ -207,7 +219,9 @@ impl Coverage {
             .expect("Failed to read IR file");
 
         // Modify IR file according to https://github.com/hknio/code-coverage-for-webassembly
-        let modified_ir_contents = Regex::new(r"(?ms)^(define[^\n]*\n).*?^}\s*$")
+        // We use [\t\n\v\f\r ] like https://docs.rs/regex-lite/latest/regex_lite/ instead of \s so we don't need to enable
+        // the unicode features in the regex crate
+        let modified_ir_contents = Regex::new(r"(?ms)^(define[^\n]*\n).*?^}[\t\n\v\f\r ]*$")
             .unwrap()
             .replace_all(&ir_contents, "${1}start:\n  unreachable\n}\n")
             .to_string();
