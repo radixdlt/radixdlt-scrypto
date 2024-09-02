@@ -286,7 +286,7 @@ where
 impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    V: KernelTransactionCallbackObject,
+    V: KernelTransactionCallbackObject<Executable: UniqueTransaction>,
 {
     pub fn new(substate_db: &'s S, system_init: V::Init) -> Self {
         Self {
@@ -296,7 +296,7 @@ where
         }
     }
 
-    pub fn execute(&mut self, executable: impl Executable) -> V::Receipt {
+    pub fn execute(&mut self, executable: V::Executable) -> V::Receipt {
         let kernel_boot = BootLoader {
             id_allocator: IdAllocator::new(executable.unique_seed_for_id_allocator()),
             track: Track::<_, SpreadPrefixKeyMapper>::new(self.substate_db),
@@ -311,12 +311,11 @@ where
 pub fn execute_transaction_with_configuration<
     S: SubstateDatabase,
     V: SystemCallbackObject,
-    E: Executable,
 >(
     substate_db: &S,
     vm_init: V::Init,
     execution_config: &ExecutionConfig,
-    executable: E,
+    executable: ExecutableTransactionV1,
 ) -> TransactionReceipt {
     let system_init = SystemInit {
         enable_kernel_trace: execution_config.enable_kernel_trace,
@@ -333,9 +332,9 @@ pub fn execute_transaction<'s, V: VmInitialize>(
     substate_db: &impl SubstateDatabase,
     vm_modules: &'s V,
     execution_config: &ExecutionConfig,
-    executable: impl Executable,
+    executable: ExecutableTransactionV1,
 ) -> TransactionReceipt {
-    execute_transaction_with_configuration::<_, Vm<'s, V::WasmEngine, V::NativeVmExtension>, _>(
+    execute_transaction_with_configuration::<_, Vm<'s, V::WasmEngine, V::NativeVmExtension>>(
         substate_db,
         vm_modules.create_vm_init(),
         execution_config,
@@ -347,12 +346,11 @@ pub fn execute_and_commit_transaction<'s, V: VmInitialize>(
     substate_db: &mut (impl SubstateDatabase + CommittableSubstateDatabase),
     vm_modules: &'s V,
     execution_config: &ExecutionConfig,
-    executable: impl Executable,
+    executable: ExecutableTransactionV1,
 ) -> TransactionReceipt {
     let receipt = execute_transaction_with_configuration::<
         _,
         Vm<'s, V::WasmEngine, V::NativeVmExtension>,
-        _,
     >(
         substate_db,
         vm_modules.create_vm_init(),

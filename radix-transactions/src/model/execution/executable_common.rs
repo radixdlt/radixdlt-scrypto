@@ -26,6 +26,13 @@ pub trait Executable {
                     hashes.insert(*hash);
                 }
             }
+            ExecutableIntents::V2(intents) => {
+                for intent in intents {
+                    for hash in intent.blobs.keys() {
+                        hashes.insert(*hash);
+                    }
+                }
+            }
         }
 
         hashes
@@ -37,6 +44,13 @@ pub trait Executable {
             ExecutableIntents::V1(intent) => {
                 for reference in intent.references.iter() {
                     references.insert(reference.clone());
+                }
+            }
+            ExecutableIntents::V2(intents) => {
+                for intent in intents {
+                    for reference in intent.references.iter() {
+                        references.insert(reference.clone());
+                    }
                 }
             }
         }

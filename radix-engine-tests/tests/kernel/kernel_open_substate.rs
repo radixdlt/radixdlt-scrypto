@@ -44,7 +44,8 @@ pub fn test_open_substate_of_invisible_package_address() {
     ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut database);
 
     let auth_zone_inits: Vec<_> = match executable.intents() {
-        ExecutableIntents::V1(intent) => vec![intent.auth_zone_init.clone()]
+        ExecutableIntents::V1(intent) => vec![intent.auth_zone_init.clone()],
+        ExecutableIntents::V2(intents) => intents.iter().map(|intent| intent.auth_zone_init.clone()).collect(),
     };
 
     // Create kernel

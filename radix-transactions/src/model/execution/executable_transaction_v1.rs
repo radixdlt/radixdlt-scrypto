@@ -3,6 +3,7 @@ use crate::internal_prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExecutableIntents {
     V1(ExecutableIntentV1),
+    V2(Vec<ExecutableIntentV2>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,6 +12,17 @@ pub struct ExecutableIntentV1 {
     pub auth_zone_init: AuthZoneInit,
     pub references: Rc<IndexSet<Reference>>,
     pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutableIntentV2 {
+    pub encoded_instructions: Rc<Vec<u8>>,
+    pub auth_zone_init: AuthZoneInit,
+    pub references: Rc<IndexSet<Reference>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    /// Indices against the parent Executable.
+    /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
+    pub children_intent_indices: Vec<usize>,
 }
 
 /// This is an executable form of the transaction, post stateless validation.

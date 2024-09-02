@@ -14,6 +14,7 @@ use radix_engine_profiling_derive::trace_resources;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
 use radix_transactions::model::Executable;
+use radix_transactions::prelude::ExecutableTransactionV1;
 use sbor::rust::mem;
 
 macro_rules! as_read_only {
@@ -52,7 +53,7 @@ pub struct BootLoader<'h, M: KernelTransactionCallbackObject, S: SubstateDatabas
 
 impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h, M, S> {
     /// Executes a transaction
-    pub fn execute(self, executable: impl Executable) -> M::Receipt {
+    pub fn execute(self, executable: M::Executable) -> M::Receipt {
         // Start hardware resource usage tracker
         #[cfg(all(target_os = "linux", feature = "std", feature = "cpu_ram_metrics"))]
         let mut resources_tracker =
@@ -74,7 +75,7 @@ impl<'h, M: KernelTransactionCallbackObject, S: SubstateDatabase> BootLoader<'h,
         }
     }
 
-    fn execute_internal(mut self, executable: impl Executable) -> M::Receipt {
+    fn execute_internal(mut self, executable: M::Executable) -> M::Receipt {
         #[cfg(feature = "resource_tracker")]
         radix_engine_profiling::QEMU_PLUGIN_CALIBRATOR.with(|v| {
             v.borrow_mut();

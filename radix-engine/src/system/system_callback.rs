@@ -824,7 +824,7 @@ impl<C: SystemCallbackObject> System<C> {
     }
 
     /// Checks that references exist in the store
-    fn build_call_frame_init_with_reference_check(
+    fn build_call_frame_inits_with_reference_check(
         intents: &ExecutableIntents,
         modules: &mut SystemModuleMixer,
         store: &mut (impl BootStore + CommitableSubstateStore),
@@ -873,6 +873,9 @@ impl<C: SystemCallbackObject> System<C> {
                     global_addresses,
                     direct_accesses,
                 }])
+            }
+            ExecutableIntents::V2(_) => {
+                unimplemented!();
             }
         }
     }
@@ -1203,6 +1206,9 @@ impl<C: SystemCallbackObject> System<C> {
             ExecutableIntents::V1(intent) => {
                 vec![intent.auth_zone_init.clone()]
             }
+            ExecutableIntents::V2(intents) => {
+                intents.iter().map(|intent| intent.auth_zone_init.clone()).collect()
+            }
         };
 
         SystemModuleMixer::new(
@@ -1247,12 +1253,13 @@ impl<C: SystemCallbackObject> System<C> {
 
 impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     type Init = SystemInit<C::Init>;
+    type Executable = ExecutableTransactionV1;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceiptV1;
 
-    fn init<S: BootStore + CommitableSubstateStore, E: Executable>(
+    fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &E,
+        executable: &ExecutableTransactionV1,
         init_input: SystemInit<C::Init>,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
@@ -1333,7 +1340,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
         }
 
         let call_frame_inits =
-            match Self::build_call_frame_init_with_reference_check(executable.intents(), &mut modules, store) {
+            match Self::build_call_frame_inits_with_reference_check(executable.intents(), &mut modules, store) {
                 Ok(call_frame_inits) => {
                     call_frame_inits
                 }
@@ -1357,9 +1364,9 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
         Ok((system, call_frame_inits))
     }
 
-    fn start<Y: SystemBasedKernelApi, E: Executable>(
+    fn start<Y: SystemBasedKernelApi>(
         api: &mut Y,
-        executable: E,
+        executable: ExecutableTransactionV1,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system_service = SystemService::new(api);
 
@@ -1392,6 +1399,9 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
                 )?;
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output
+            }
+            ExecutableIntents::V2(_) => {
+                unimplemented!();
             }
         };
 
