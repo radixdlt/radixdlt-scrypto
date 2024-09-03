@@ -64,7 +64,7 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
                 .from_bootstrap_to_latest(),
-            with_kernel_trace: true,
+            with_kernel_trace: false,
             with_receipt_substate_check: true,
         }
     }
@@ -884,7 +884,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         is_virtual: bool,
     ) -> ComponentAddress {
         if is_virtual {
-            ComponentAddress::virtual_identity_from_public_key(&pk)
+            ComponentAddress::preallocated_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let manifest = ManifestBuilder::new()

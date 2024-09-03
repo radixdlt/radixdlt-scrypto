@@ -540,19 +540,22 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     ///
     /// ### Example
     ///
-    /// ```
-    /// let resource_manage: ResourceManage = ResourceBuilder::new_fungible(OwnerRole::None)
+    /// ```no_run
+    /// # // Can't run because it tries to call into the radix engine
+    /// # use scrypto::prelude::*;
+    /// # let address_reservation: GlobalAddressReservation = todo!();
+    /// let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None)
     ///     .mint_roles(mint_roles! {
     ///         minter => rule!(deny_all);
     ///         minter_updater => rule!(deny_all);
     ///     })
-    ///     .metadata(ModuleConfig {
-    ///         init: metadata.into(),
-    ///         roles: RoleAssignmentInit::default(),
+    ///     .metadata(metadata! {
+    ///         init {
+    ///             "name" => "Super Admin Badge", locked;
+    ///         }
     ///     })
-    ///     .with_address(resource.address_reservation)
-    ///     .create_with_no_initial_supply()
-    ///     .into()
+    ///     .with_address(address_reservation)
+    ///     .create_with_no_initial_supply();
     /// ```
     pub fn create_with_no_initial_supply(self) -> FungibleResourceManager {
         let metadata = self.metadata_config.unwrap_or_else(|| Default::default());
@@ -590,6 +593,13 @@ impl<
     /// ### Example
     ///
     /// ```no_run
+    /// # use scrypto::prelude::*;
+    /// #[derive(ScryptoSbor, NonFungibleData)]
+    /// struct Sandwich {
+    ///     name: String,
+    ///     with_ham: bool,
+    /// }
+    ///
     /// let resource_manager: ResourceManager =
     ///     ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
     ///         .mint_roles(mint_roles! {
@@ -630,8 +640,8 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     /// ### Examples
     ///
     /// ```no_run
-    /// use scrypto::prelude::*;
-    ///
+    /// # use scrypto::prelude::*;
+    /// #
     /// // Only permits whole-number balances.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .divisibility(0);

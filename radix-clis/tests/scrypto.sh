@@ -21,16 +21,8 @@ $scrypto new-package hello-world --path $test_pkg --local
 # To test that the generated Cargo.lock is good, we run a build with the --locked command below.
 # This checks that the templated cargo lock is complete.
 # 
-# If this line fails, we need to update the Cargo.lock to align with the engine.
-# To do that, from the repo root, you should run:
-# ```
-# cd radix-clis/target/temp/hello-world
-# cp ../../../../Cargo.lock .
-# cargo run --bin scrypto $@ -- build
-# cp Cargo.lock ../../../assets/template/Cargo.lock_template
-# ```
-# And then manually go in and delete the `[[package]]` definition for `hello-world` - as this gets added automatically
-# in the right place by the new-package command. This test should then pass.
+# If this line fails, run ./update-cargo-locks-minimally.sh from the repo root to
+# regenerate the Cargo.lock_template which is used.
 $scrypto build --path $test_pkg --locked
 
 # Test

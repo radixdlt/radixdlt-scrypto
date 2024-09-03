@@ -1488,6 +1488,7 @@ dependencies = [
  "radix-substate-store-queries",
  "radix-transactions",
  "sbor",
+ "scrypto",
  "scrypto-compiler",
  "serde_json",
  "wabt",

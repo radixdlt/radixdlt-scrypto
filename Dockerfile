@@ -43,7 +43,7 @@ ADD scrypto-compiler /app/scrypto-compiler
 # Will save this optimization for a later day
 ADD radix-engine-monkey-tests /app/radix-engine-monkey-tests
 ADD radix-engine-tests /app/radix-engine-tests
-ADD radix-engine-toolkit /app/radix-engine-toolkit
+ADD radix-engine-toolkit-common /app/radix-engine-toolkit-common
 ADD radix-transaction-scenarios /app/radix-transaction-scenarios
 ADD sbor-tests /app/sbor-tests
 ADD scrypto /app/scrypto

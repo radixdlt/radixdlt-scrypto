@@ -41,5 +41,4 @@ post_run_db_check = ["scrypto-test/post_run_db_check"]
 resource_tracker = ["dep:radix-engine-profiling", "radix-engine-profiling-derive/resource_tracker", "radix-engine/resource_tracker", "radix-common/resource_tracker", "scrypto-test/resource_tracker"]
 
 [lib]
-doctest = false
 bench = false

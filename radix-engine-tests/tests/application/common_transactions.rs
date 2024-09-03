@@ -363,7 +363,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     ) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = ledger.new_account(false);
@@ -441,7 +441,7 @@ where
     F: Fn(&ComponentAddress, &[ComponentAddress], &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = ledger.new_account(false);

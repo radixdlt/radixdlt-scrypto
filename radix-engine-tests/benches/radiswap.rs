@@ -38,10 +38,9 @@ fn bench_radiswap(c: &mut Criterion) {
         .with_custom_database(RocksDBWithMerkleTreeSubstateStore::clear(PathBuf::from(
             "/tmp/radiswap",
         )))
-        .without_kernel_trace()
         .build();
     #[cfg(not(feature = "rocksdb"))]
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Create account and publish package
     let (pk, _, account) = ledger.new_allocated_account();
