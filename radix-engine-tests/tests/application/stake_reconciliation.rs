@@ -19,6 +19,7 @@ fn test_stake_reconciliation() {
     // Arrange
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let mut ledger = LedgerSimulatorBuilder::new()
+        .with_kernel_trace()
         .with_custom_protocol(|builder| builder
             .configure_babylon(|_| BabylonSettings::test_minimal())
             .only_babylon()

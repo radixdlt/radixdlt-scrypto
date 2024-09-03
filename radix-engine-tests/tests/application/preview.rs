@@ -9,7 +9,7 @@ use radix_transactions::validation::{TransactionValidator, ValidationConfig};
 
 #[test]
 fn test_preview_invalid_direct_access() {
-    let mut sim = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut sim = LedgerSimulatorBuilder::new().build();
     let (public_key, _, _) = sim.new_allocated_account();
 
     let manifest = ManifestBuilder::new()
@@ -229,7 +229,7 @@ fn test_preview_no_auth() {
 #[test]
 fn notary_key_is_in_initial_proofs_when_notary_as_signatory_is_true() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(true);
     let current_epoch = ledger.get_current_epoch();
 
@@ -274,7 +274,7 @@ fn notary_key_is_in_initial_proofs_when_notary_as_signatory_is_true() {
 #[test]
 fn notary_key_is_not_in_initial_proofs_when_notary_as_signatory_is_false() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(true);
     let current_epoch = ledger.get_current_epoch();
 

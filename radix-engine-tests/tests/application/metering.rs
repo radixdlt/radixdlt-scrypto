@@ -39,7 +39,7 @@ fn run_all(mode: CostingTaskMode) {
                             file: &'static str| {
             let ledger = LedgerSimulatorBuilder::new()
                 .with_custom_protocol(|builder| builder.from_bootstrap_to(protocol_version))
-                .without_kernel_trace()
+                
                 .build();
             let receipt = run(ledger);
             let relative_file_path = format!("{}/{}", protocol_version.logical_name(), file);

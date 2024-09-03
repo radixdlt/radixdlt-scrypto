@@ -5,7 +5,7 @@ use scrypto_test::prelude::*;
 #[test]
 fn test_kv_store_with_many_large_keys() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("storage"));
 
     // Act

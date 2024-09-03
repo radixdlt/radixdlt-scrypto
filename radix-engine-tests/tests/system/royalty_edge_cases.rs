@@ -447,7 +447,7 @@ package_interactions_tests! {
 #[test]
 fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = CODE_AND_DEF.clone();
 
     for blueprint_definition in definition.blueprints.values_mut() {
@@ -481,7 +481,7 @@ fn test_package_with_non_exhaustive_package_royalties_fails_instantiation() {
 #[test]
 fn component_and_package_royalties_are_both_applied() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (code, mut definition) = CODE_AND_DEF.clone();
     let royalty_amount = RoyaltyAmount::Xrd(10.into());
     update_package_royalties(&mut definition, royalty_amount);
@@ -526,7 +526,7 @@ fn component_and_package_royalties_are_both_applied() {
 #[test]
 fn test_component_with_missing_method_royalty() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(CODE_AND_DEF.clone());
 
     let manifest = ManifestBuilder::new()
@@ -643,7 +643,7 @@ macro_rules! component_instantiation_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+                let mut ledger = LedgerSimulatorBuilder::new().build();
                 let package_address =
                     ledger.publish_package_simple(CODE_AND_DEF.clone());
 
@@ -689,7 +689,7 @@ macro_rules! component_interaction_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+                let mut ledger = LedgerSimulatorBuilder::new().build();
                 let package_address =
                     ledger.publish_package_simple(CODE_AND_DEF.clone());
 
@@ -749,7 +749,7 @@ macro_rules! package_publishing_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+                let mut ledger = LedgerSimulatorBuilder::new().build();
                 let (code, mut definition) = CODE_AND_DEF.clone();
 
                 update_package_royalties(&mut definition, royalty_amount);
@@ -797,7 +797,7 @@ macro_rules! package_interactions_tests {
                 let royalty_amount: RoyaltyAmount = $royalty_amount;
                 let error_checking_fn: Option<fn(&RuntimeError) -> bool> = $error_checking_fn;
 
-                let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+                let mut ledger = LedgerSimulatorBuilder::new().build();
                 let (code, mut definition) = CODE_AND_DEF.clone();
 
                 update_package_royalties(&mut definition, royalty_amount);

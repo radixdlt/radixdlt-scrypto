@@ -378,7 +378,7 @@ fn substates_written_on_a_staging_database_from_transactions_can_be_read_later()
     let database = SubstateDatabaseOverlay::new_unmergeable(&root_database);
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_database(database)
-        .without_kernel_trace()
+        
         .build();
 
     let (public_key1, _, account1) = ledger.new_account(false);
@@ -486,7 +486,7 @@ fn run_scenarios_in_memory_and_on_overlay(
         LedgerSimulatorBuilder::new()
             .with_custom_database(overlay)
             .with_custom_protocol(|builder| builder.unbootstrapped())
-            .without_kernel_trace()
+            
             .build(),
     ));
     let network_definition = NetworkDefinition::simulator();
