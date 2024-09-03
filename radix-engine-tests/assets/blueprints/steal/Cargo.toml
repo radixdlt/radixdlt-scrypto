@@ -6,9 +6,6 @@ edition = "2021"
 [dependencies]
 scrypto = { path = "../../../../scrypto" }
 
-[dev-dependencies]
-radix-engine = { path = "../../../../radix-engine" }
-
 [lib]
 crate-type = ["cdylib", "lib"]
 

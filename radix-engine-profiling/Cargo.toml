@@ -24,6 +24,10 @@ rand = { workspace = true, optional = true }
 bench = false
 
 [features]
+# NOTE:
+# We don't enable these features by default because then
+# the default workspace cargo build will build with these features
+# but they affect the engine execution, so they should be enable-only 
 default = []
 resource_tracker = ["dep:shared_memory", "radix-common/resource_tracker"]
 rocksdb = [

@@ -6,9 +6,6 @@ edition = "2021"
 [dependencies]
 scrypto = { path = "../../../scrypto" }
 
-[dev-dependencies]
-radix-engine = { path = "../../../radix-engine" }
-
 [profile.release]
 opt-level = 'z'        # Optimize for size.
 lto = true             # Enable Link Time Optimization.
