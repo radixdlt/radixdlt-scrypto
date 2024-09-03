@@ -70,7 +70,7 @@ $resim call-method $component free_token
 $resim publish ../examples/hello-world/target/wasm32-unknown-unknown/release/hello_world.wasm
 
 # Test - export package definition
-$resim export-package-definition $package target/temp.rpd
+$resim export-package-definition $package ../examples/hello-world/target/temp.rpd
 
 # Test - dump component state
 $resim show $package
