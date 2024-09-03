@@ -87,8 +87,9 @@ impl AuthModule {
         system: &mut SystemService<Y>,
         blueprint_id: &BlueprintId,
     ) -> (BTreeSet<ResourceAddress>, BTreeSet<NonFungibleGlobalId>) {
-        let is_at_root = system.kernel_get_current_depth() == 0;
-        if is_at_root {
+        let is_root_call_frame = system.kernel_get_current_depth() == 0;
+        let is_root_thread = system.kernel_get_thread_id() == 0;
+        if is_root_call_frame && is_root_thread {
             let auth_module = &system.kernel_get_system().modules.auth;
             if let Some(auth_zone_init) = &auth_module.generate_transaction_processor_auth_zone {
                 let is_transaction_processor_blueprint = blueprint_id

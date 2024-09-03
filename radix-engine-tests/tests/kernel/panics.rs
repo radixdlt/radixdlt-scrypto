@@ -178,7 +178,7 @@ impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
         panic1!()
     }
 
-    fn kernel_get_intent_index(&self) -> usize {
+    fn kernel_get_thread_id(&self) -> usize {
         panic1!()
     }
 
