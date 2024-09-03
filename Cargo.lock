@@ -2415,7 +2415,7 @@ dependencies = [
  "radix-engine-interface",
  "radix-engine-profiling",
  "radix-engine-profiling-derive",
- "radix-engine-toolkit",
+ "radix-engine-toolkit-common",
  "radix-native-sdk",
  "radix-rust",
  "radix-substate-store-impls",
@@ -2437,7 +2437,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "radix-engine-toolkit"
+name = "radix-engine-toolkit-common"
 version = "1.3.0-dev"
 dependencies = [
  "radix-common",

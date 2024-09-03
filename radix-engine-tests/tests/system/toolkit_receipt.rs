@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use radix_engine::system::system_modules::execution_trace::{ResourceSpecifier, WorktopChange};
 use radix_engine_interface::prelude::MetadataValue;
 use radix_engine_tests::*;
-use radix_engine_toolkit::receipt::*;
+use radix_engine_toolkit_common::receipt::*;
 use radix_transaction_scenarios::executor::*;
 use scrypto::*;
 use scrypto_test::prelude::*;
