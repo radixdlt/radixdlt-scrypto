@@ -1,0 +1,4 @@
+{
+  "kind": "CommitFailure",
+  "reason": "ApplicationError(VaultError(InvalidAmount(123.12321)))"
+}

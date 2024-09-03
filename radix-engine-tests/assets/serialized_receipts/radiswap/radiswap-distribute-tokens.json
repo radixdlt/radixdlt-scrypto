@@ -1,0 +1,375 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [
+      "account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz",
+      "account_sim12yqqvfw7jnsgqat6jxzkezljclhdutrlgf9x8rq2a4sh8x3vn55tsa",
+      "account_sim12yvp2f66agxcqpe6l26cavhkvuel9x4l6cezc8k3exq6a6vhc0kz5x"
+    ],
+    "metadata_updates": {},
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {
+    "1": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "10000"
+        }
+      }
+    ],
+    "2": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "10000"
+        }
+      }
+    ],
+    "3": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "333"
+        }
+      }
+    ],
+    "4": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726",
+          "amount": "333"
+        }
+      }
+    ],
+    "5": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
+          "amount": "333"
+        }
+      }
+    ],
+    "6": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77",
+          "amount": "333"
+        }
+      }
+    ],
+    "7": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+          "amount": "333"
+        }
+      }
+    ],
+    "8": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc",
+          "amount": "333"
+        }
+      }
+    ],
+    "9": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc",
+          "amount": "333"
+        }
+      }
+    ],
+    "10": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "333"
+        }
+      }
+    ],
+    "11": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726",
+          "amount": "333"
+        }
+      }
+    ],
+    "12": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
+          "amount": "333"
+        }
+      }
+    ],
+    "13": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77",
+          "amount": "333"
+        }
+      }
+    ],
+    "14": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+          "amount": "333"
+        }
+      }
+    ],
+    "15": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc",
+          "amount": "333"
+        }
+      }
+    ],
+    "16": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc",
+          "amount": "333"
+        }
+      }
+    ],
+    "17": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "333"
+        }
+      }
+    ],
+    "18": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726",
+          "amount": "333"
+        }
+      }
+    ],
+    "19": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
+          "amount": "333"
+        }
+      }
+    ],
+    "20": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77",
+          "amount": "333"
+        }
+      }
+    ],
+    "21": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+          "amount": "333"
+        }
+      }
+    ],
+    "22": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc",
+          "amount": "333"
+        }
+      }
+    ],
+    "23": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t4ukq2x34d7set97lt5jgnhnmzlnqsy9cw3vm9d0d9gu3f06hja726",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1t5a3rvqwgkpzzvm0mvydsd48anpuymactz22hhzf78ehtc2ax2pc7y",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkepkzhrk885ev2m9l55yrjl2xtenfzlmuncqvqr2dr7tzcl3fzy77",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1th5c89avr82qqzcchslaj6aktkwq8e9syneqtwmrdrnamnhqjsqlsz",
+          "amount": "333"
+        }
+      },
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Amount",
+          "resource_address": "resource_sim1tkhxmx4e0qkwzfjz5qv8dyl6at8kjm2cl7vmkyv8qc56uwtkysmsmc",
+          "amount": "333"
+        }
+      }
+    ]
+  },
+  "fee_summary": {
+    "execution_fees_in_xrd": "1.13821365",
+    "finalization_fees_in_xrd": "0.4286135",
+    "storage_fees_in_xrd": "1.80559155219",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}

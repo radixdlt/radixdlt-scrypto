@@ -1,0 +1,47 @@
+{
+  "kind": "CommitSuccess",
+  "state_updates_summary": {
+    "new_entities": [],
+    "metadata_updates": {},
+    "non_fungible_data_updates": {},
+    "newly_minted_non_fungibles": []
+  },
+  "worktop_changes": {
+    "1": [
+      {
+        "kind": "Put",
+        "value": {
+          "kind": "Ids",
+          "resource_address": "resource_sim1nf686lm9ju7uww5fs95hmm2fg0zdnudvjvv5svkxc2erp9822zxhte",
+          "ids": [
+            "#4#",
+            "#8#"
+          ]
+        }
+      }
+    ],
+    "2": [
+      {
+        "kind": "Take",
+        "value": {
+          "kind": "Ids",
+          "resource_address": "resource_sim1nf686lm9ju7uww5fs95hmm2fg0zdnudvjvv5svkxc2erp9822zxhte",
+          "ids": [
+            "#4#",
+            "#8#"
+          ]
+        }
+      }
+    ]
+  },
+  "fee_summary": {
+    "execution_fees_in_xrd": "0.26447715",
+    "finalization_fees_in_xrd": "0.05150725",
+    "storage_fees_in_xrd": "0.13628005747",
+    "royalty_fees_in_xrd": "0"
+  },
+  "locked_fees": {
+    "contingent": "0",
+    "non_contingent": "5000"
+  }
+}
