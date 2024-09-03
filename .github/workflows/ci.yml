@@ -14,9 +14,9 @@ on:
 # - nextest doesn't run doc tests, so we run them separately explicitly. See:
 #   https://github.com/nextest-rs/nextest/issues/16
 # - We run tests from different crates separately for better parallelism
-# - The following are run on demand, so aren't tested here:
+# - Some tests aren't run as part of CI, because they are intended to be run manually.
+#   But we still test the builds here:
 #   > radix-engine-monkey-tests
-#   > radix-engine-profiling-derive
 #   > radix-engine-profiling
 
 env:
@@ -46,6 +46,7 @@ jobs:
       phylum_project_id: 851c8804-e9f6-423c-be8e-c529d22f4abd
       github_repository: ${{ github.repository }}
       add_report_comment_to_pull_request: true
+
   check-code-format:
     name: Check code format
     runs-on: ubuntu-latest
@@ -186,7 +187,19 @@ jobs:
       - name: Install dependency
         run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
       - name: Build with additional features
-        run: cargo build -p radix-engine -p radix-substate-store-impls --features radix-engine/resource_tracker,radix-engine/cpu_ram_metrics,radix-substate-store-impls/rocksdb --locked
+        # radix-engine-profiling is separate so its --all-features declaration doesn't apply to the other crates
+        run: |
+          cargo build \
+            -p radix-engine \
+            -p radix-substate-store-impls --features radix-engine/resource_tracker,radix-engine/cpu_ram_metrics,radix-substate-store-impls/rocksdb \
+            -p radix-engine-monkey-tests \
+            -p radix-engine-profiling-derive \
+            --locked
+          cargo build -p radix-engine-profiling --all-features --locked
+      - name: Build tests with additional features
+        run: |
+          cargo test -p radix-engine-monkey-tests --features std,rocksdb,post_run_db_check,resource_tracker --no-run --locked
+          cargo test -p radix-engine-profiling --all-features --no-run --locked
 
   radix-engine-test:
     name: Run Radix Engine tests
