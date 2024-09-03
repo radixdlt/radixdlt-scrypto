@@ -559,10 +559,11 @@ impl FungibleResourceManagerStub {
     ///
     /// ### Example
     /// ```no_run
+    /// # use scrypto::prelude::*;
     /// let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None)
     ///     .divisibility(DIVISIBILITY_MAXIMUM)
     ///     .create_with_no_initial_supply();
-    /// resource_manager.mint(1)
+    /// let bucket = resource_manager.mint(1);
     /// ```
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> FungibleBucket {
         self.call(
@@ -791,23 +792,26 @@ impl NonFungibleResourceManagerStub {
     ///
     /// ### Example
     /// ```no_run
+    /// # // Can't run because it tries to call into the radix engine
+    /// # use scrypto::prelude::*;
+    /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct Sandwich {
     ///     name: String,
-    ///     with_ham: boolean,
+    ///     with_ham: bool,
     /// }
     ///
     /// let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(
-    ///         OwnerRole::None,
-    ///     )
-    ///     .create_with_no_initial_supply();
+    ///     OwnerRole::None,
+    /// )
+    /// .create_with_no_initial_supply();
     ///
-    /// resource_manager.mint_non_fungible(
+    /// let bucket = resource_manager.mint_non_fungible(
     ///     &NonFungibleLocalId::integer(0),
     ///     Sandwich {
     ///         name: "IntegerNftSandwich".to_owned(),
-    ///         with_ham: False,
+    ///         with_ham: false,
     ///     },
-    // )
+    /// );
     /// ```
     pub fn mint_non_fungible<T: NonFungibleData>(
         &self,
@@ -829,22 +833,25 @@ impl NonFungibleResourceManagerStub {
     ///
     /// ### Example
     /// ```no_run
+    /// # // Can't run because it tries to call into the radix engine
+    /// # use scrypto::prelude::*;
+    /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct Sandwich {
     ///     name: String,
-    ///     with_ham: boolean,
+    ///     with_ham: bool,
     /// }
     ///
     /// let resource_manager = ResourceBuilder::new_ruid_non_fungible::<Sandwich>(
-    ///         OwnerRole::None,
-    ///     )
-    ///     .create_with_no_initial_supply();
+    ///     OwnerRole::None,
+    /// )
+    /// .create_with_no_initial_supply();
     ///
-    /// resource_manager.mint_ruid_non_fungible(
+    /// let bucket = resource_manager.mint_ruid_non_fungible(
     ///     Sandwich {
     ///         name: "RuidNftSandwich".to_owned(),
-    ///         with_ham: False,
+    ///         with_ham: false,
     ///     },
-    // )
+    /// );
     /// ```
     pub fn mint_ruid_non_fungible<T: NonFungibleData>(&self, data: T) -> NonFungibleBucket {
         let mut entries = Vec::new();

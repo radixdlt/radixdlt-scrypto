@@ -143,6 +143,9 @@ pub trait UniqueVersioned: Versioned {
 /// and the inner "Versions" type. To only apply to one type, you can include the
 /// `outer_attributes` optional argument and/or the `inner_attributes` optional argument:
 /// ```
+/// # use sbor::prelude::*;
+/// # #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+/// # pub struct FooV1;
 /// define_single_versioned! {
 ///    #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
 ///    pub VersionedFoo(FooVersions) => Foo = FooV1,
@@ -289,6 +292,17 @@ macro_rules! define_single_versioned {
 /// and the inner "Versions" type. To only apply to one type, you can include the
 /// `outer_attributes` optional argument and/or the `inner_attributes` optional argument:
 /// ```
+/// # use sbor::prelude::*;
+/// # #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+/// # pub struct FooV1;
+/// # #[derive(Clone, PartialEq, Eq, Hash, Debug, Sbor)]
+/// # pub struct FooV2;
+/// # impl From<FooV1> for FooV2 {
+/// #    fn from(value: FooV1) -> FooV2 {
+/// #        FooV2
+/// #    }
+/// # }
+///
 /// define_versioned! {
 ///     #[derive(Debug, Clone, PartialEq, Eq, Sbor)]
 ///     VersionedFoo(FooVersions) {
@@ -327,7 +341,8 @@ macro_rules! define_versioned {
             }
             $(,)? // Optional trailing comma
         }
-        $(, outer_attributes: [
+        $(,)?
+        $(outer_attributes: [
             $(#[$outer_attributes:meta])*
         ])?
         $(, inner_attributes: [

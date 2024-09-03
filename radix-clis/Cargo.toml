@@ -70,5 +70,4 @@ path = "src/bin/replay.rs"
 bench = false
 
 [lib]
-doctest = false
 bench = false

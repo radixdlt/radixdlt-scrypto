@@ -903,7 +903,7 @@ impl<A: ApplicationChecker> SystemDatabaseChecker<A> {
 ///
 /// This macro can be invoked as follows:
 ///
-/// ```no_run
+/// ```ignore
 /// define_composite_checker! {
 ///     CheckerIdent,
 ///     [

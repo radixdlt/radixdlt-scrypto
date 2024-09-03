@@ -8,10 +8,11 @@ license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [dependencies]
-radix-substate-store-interface = { workspace = true, optional = true }
-radix-substate-store-impls = { workspace = true, optional = true }
-radix-common = { workspace = true, optional = true }
-radix-engine-interface = { workspace = true, optional = true }
+radix-substate-store-interface = { workspace = true, optional = true, features = ["std"] }
+radix-substate-store-impls = { workspace = true, optional = true, features = ["std"] }
+radix-common = { workspace = true, optional = true, features = ["std"] }
+radix-engine-interface = { workspace = true, optional = true, features = ["std"] }
+
 fixedstr = { workspace = true }
 shared_memory = { workspace = true, optional = true }
 plotters = { workspace = true, optional = true }
@@ -20,12 +21,20 @@ blake2 = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 
 [lib]
-doctest = false
 bench = false
 
 [features]
+# NOTE:
+# We don't enable these features by default because then
+# the default workspace cargo build will build with these features
+# but they affect the engine execution, so they should be enable-only 
 default = []
 resource_tracker = ["dep:shared_memory", "radix-common/resource_tracker"]
-rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "radix-substate-store-impls/std", 
-           "radix-substate-store-interface/std", "radix-common/std", "radix-engine-interface/std"]
+rocksdb = [
+    "dep:plotters",
+    "dep:linreg",
+    "dep:blake2",
+    "dep:rand",
+    "radix-substate-store-impls/rocksdb",
+]
 ram_metrics = []

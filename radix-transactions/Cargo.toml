@@ -41,5 +41,4 @@ fuzzing = [
 ]
 
 [lib]
-doctest = false
 bench = false

@@ -22,6 +22,8 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// Simple use case:
 /// ```
 /// # use radix_transactions::prelude::*;
+/// # use radix_engine_interface::prelude::*;
+/// # use radix_common::prelude::*;
 /// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
 /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
 /// # );
@@ -39,6 +41,8 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// Intermediate use case, where we need to pass a bucket into a component:
 /// ```
 /// # use radix_transactions::prelude::*;
+/// # use radix_engine_interface::prelude::*;
+/// # use radix_common::prelude::*;
 /// # let package_address = RESOURCE_PACKAGE; // Just some address to get it to compile
 /// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
 /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
@@ -64,6 +68,8 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// Advanced use case, where we need to generate a collision-free bucket name:
 /// ```
 /// # use radix_transactions::prelude::*;
+/// # use radix_engine_interface::prelude::*;
+/// # use radix_common::prelude::*;
 /// # let to_account_address = ComponentAddress::preallocated_account_from_public_key(
 /// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
 /// # );
@@ -245,6 +251,8 @@ impl<I: InstructionVersion> ManifestBuilder<I> {
     /// Example usage:
     /// ```
     /// # use radix_transactions::prelude::*;
+    /// # use radix_engine_interface::prelude::*;
+    /// # use radix_common::prelude::*;
     /// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
     /// # );
@@ -913,7 +921,7 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
     /// * A struct which implements `ManifestEncode` representing the arguments
     /// * `manifest_args!(x, y, z)`
     ///
-    /// NOTE: If you need access to named buckets/proofs etc, use `call_function_with_name_lookup`
+    /// NOTE: If you need access to named buckets/proofs etc, use `then` or `call_function_with_name_lookup`
     /// instead.
     pub fn call_function(
         self,
@@ -955,6 +963,8 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
     /// callback, which takes a `lookup` (allowing for resolving named buckets, proofs, etc)
     /// and returns resolvable arguments.
     ///
+    /// You may prefer using `then` instead.
+    ///
     /// The resolvable arguments should be one of:
     /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
     ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
@@ -966,6 +976,8 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
     /// Example:
     /// ```
     /// # use radix_transactions::prelude::*;
+    /// # use radix_engine_interface::prelude::*;
+    /// # use radix_common::prelude::*;
     /// # let package_address = RESOURCE_PACKAGE; // Just some address to get it to compile
     /// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
@@ -984,6 +996,22 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
     ///             dec!("1.3")
     ///         ),
     ///     )
+    ///     .build();
+    ///
+    /// // Alternative using `then`
+    /// let manifest2 = ManifestBuilder::new()
+    ///     .lock_fee_from_faucet()
+    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .then(|builder| {
+    ///         let lookup = builder.name_lookup();
+    ///         builder.call_function(
+    ///             package_address,
+    ///             "SomeBlueprint",
+    ///             "some_function",
+    ///             ("argument1", lookup.bucket("xrd_bucket"), dec!("1.3")),
+    ///         )
+    ///     })
     ///     .build();
     /// ```
     pub fn call_function_with_name_lookup<T: ResolvableArguments>(
@@ -1195,6 +1223,8 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
     /// Example:
     /// ```
     /// # use radix_transactions::prelude::*;
+    /// # use radix_engine_interface::prelude::*;
+    /// # use radix_common::prelude::*;
     /// # let component_address = GENESIS_HELPER; // Just some address to get it to compile
     /// # let from_account_address = ComponentAddress::preallocated_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
@@ -1205,13 +1235,28 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
     ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
     ///     .call_method_with_name_lookup(
     ///         component_address,
-    ///         "some_function",
+    ///         "some_method",
     ///         |lookup| (
     ///             "argument1",
     ///             lookup.bucket("xrd_bucket"),
     ///             dec!("1.3")
     ///         ),
     ///     )
+    ///     .build();
+    ///
+    /// // Alternative using `then`
+    /// let manifest2 = ManifestBuilder::new()
+    ///     .lock_fee_from_faucet()
+    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .then(|builder| {
+    ///         let lookup = builder.name_lookup();
+    ///         builder.call_method(
+    ///             component_address,
+    ///             "some_method",
+    ///             ("argument1", lookup.bucket("xrd_bucket"), dec!("1.3")),
+    ///         )
+    ///     })
     ///     .build();
     /// ```
     pub fn call_method_with_name_lookup<T: ResolvableArguments>(

@@ -19,5 +19,4 @@ indexmap = { workspace = true }
 trace = []
 
 [lib]
-doctest = false
 bench = false
