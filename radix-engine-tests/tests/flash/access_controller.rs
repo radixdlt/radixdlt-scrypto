@@ -30,7 +30,7 @@ fn access_controller_package_definition_v1_0_matches_expected() {
 fn access_controller_instantiated_before_protocol_update_has_v1_state() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .without_kernel_trace()
+        
         .with_custom_protocol(|builder| builder.only_babylon())
         .build();
 
@@ -68,7 +68,7 @@ fn access_controller_instantiated_before_protocol_update_has_v1_state() {
 #[test]
 fn access_controller_instantiated_after_protocol_update_has_v2_state() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let access_controller = ledger
         .execute_manifest(
@@ -227,7 +227,7 @@ fn before_protocol_update_calling_any_method_on_an_access_controller_with_v1_sta
 
     for (method_name, args) in invocations {
         let mut ledger = LedgerSimulatorBuilder::new()
-            .without_kernel_trace()
+            
             .with_custom_protocol(|builder| builder.only_babylon())
             .build();
         let (_, _, account) = ledger.new_account(false);
@@ -497,7 +497,7 @@ fn after_protocol_update_calling_any_method_on_an_access_controller_with_v1_stat
 
     for (method_name, args) in invocations {
         let mut ledger = LedgerSimulatorBuilder::new()
-            .without_kernel_trace()
+            
             .with_custom_protocol(|builder| builder.only_babylon())
             .build();
         let (_, _, account) = ledger.new_account(false);
@@ -630,7 +630,7 @@ fn lock_recovery_fee_is_only_callable_by_primary_recovery_or_confirmation() {
         (Role::Recovery, true),
         (Role::Confirmation, true),
     ];
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
 
     let primary_badge_resource = ledger.create_fungible_resource(dec!(1), 0, account);
@@ -735,7 +735,7 @@ fn withdraw_recovery_fee_is_only_callable_by_primary() {
         (Role::Recovery, false),
         (Role::Confirmation, false),
     ];
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
 
     let primary_badge_resource = ledger.create_fungible_resource(dec!(1), 0, account);
@@ -835,7 +835,7 @@ fn withdraw_recovery_fee_is_only_callable_by_primary() {
 #[test]
 fn contribute_recovery_fee_is_callable_without_auth() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let access_controller = ledger
         .execute_manifest(
@@ -883,7 +883,7 @@ fn contribute_recovery_fee_is_callable_without_auth() {
 #[test]
 fn deposit_event_is_emitted_when_recovery_xrd_is_contributed() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let access_controller = ledger
         .execute_manifest(
@@ -959,7 +959,7 @@ fn deposit_event_is_emitted_when_recovery_xrd_is_contributed() {
 #[test]
 fn withdraw_event_is_emitted_when_recovery_xrd_is_withdrawn() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
 
     let access_controller = ledger
@@ -1046,7 +1046,7 @@ fn withdraw_event_is_emitted_when_recovery_xrd_is_withdrawn() {
 #[test]
 fn fees_can_be_locked_from_an_access_controller_with_a_badge_primary_role() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
 
     let primary_badge_resource = ledger.create_fungible_resource(dec!(1), 0, account);

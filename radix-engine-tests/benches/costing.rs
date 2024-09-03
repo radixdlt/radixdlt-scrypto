@@ -282,7 +282,7 @@ fn bench_deserialize_wasm(c: &mut Criterion) {
 }
 
 fn bench_prepare_wasm(c: &mut Criterion) {
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let code =
         include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec();
     let package_definition: PackageDefinition = manifest_decode(include_workspace_asset_bytes!(
@@ -304,7 +304,7 @@ fn bench_prepare_wasm(c: &mut Criterion) {
 }
 
 fn bench_execute_transaction_creating_big_vec_substates(c: &mut Criterion) {
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let (code, definition) = PackageLoader::get("transaction_limits");
     let package_address =
@@ -337,7 +337,7 @@ fn bench_execute_transaction_creating_big_vec_substates(c: &mut Criterion) {
 }
 
 fn bench_execute_transaction_reading_big_vec_substates(c: &mut Criterion) {
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let (code, definition) = PackageLoader::get("transaction_limits");
     let package_address =

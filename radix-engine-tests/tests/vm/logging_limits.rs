@@ -67,7 +67,7 @@ fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
 fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<RuntimeError>) {
     // Arrange
     let code = prepare_code(message_size, iterations);
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package(
         (code, single_function_package_definition("Test", "f")),
         BTreeMap::new(),

@@ -5,7 +5,7 @@ use scrypto_test::prelude::*;
 fn get_owner_role_method_call_fails_without_the_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .without_kernel_trace()
+        
         .with_custom_protocol(|builder| builder.only_babylon())
         .build();
 
@@ -49,7 +49,7 @@ fn get_owner_role_method_call_fails_without_the_protocol_update() {
 #[test]
 fn get_owner_role_method_call_succeeds_with_the_protocol_update1() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     // Act
     let receipt = ledger.execute_manifest(
@@ -78,7 +78,7 @@ fn get_owner_role_method_call_succeeds_with_the_protocol_update1() {
 #[test]
 fn get_owner_role_method_call_succeeds_with_the_protocol_update2() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let account =
         ledger.new_account_advanced(OwnerRole::Fixed(rule!(require_amount(dec!(100), XRD))));
 

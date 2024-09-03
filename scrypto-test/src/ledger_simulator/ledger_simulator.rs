@@ -64,7 +64,7 @@ impl LedgerSimulatorBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             protocol_executor: ProtocolBuilder::for_network(&NetworkDefinition::simulator())
                 .from_bootstrap_to_latest(),
-            with_kernel_trace: true,
+            with_kernel_trace: false,
             with_receipt_substate_check: true,
         }
     }
