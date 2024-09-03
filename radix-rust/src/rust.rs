@@ -373,13 +373,13 @@ pub mod collections {
     /// and [relevant github issue](https://github.com/bluss/indexmap/issues/184)). It uses a weird build flag to detect if no-std is present, which
     /// is hard to force unless you explicitly do eg a WASM build and see that it's missing.
     ///
-    /// The recommended way to use IndexMap is to add `use sbor::rust::collections::*` and then reference the type inline as `index_map::IndexMap`
+    /// The recommended way to use IndexMap is to add `use radix_rust::prelude::*` and then reference the type inline as `index_map::IndexMap`
     /// and create new sets using `index_map::new`, `index_map::with_capacity`, or the `index_map::indexmap!` macro. Always putting the `index_map`
     /// mod will help enforce the use of these methods instead of the methods on `IndexMap` itself.
     ///
     /// You can use these exports as follows:
     /// ```
-    /// use sbor::rust::collections::*;
+    /// use radix_rust::rust::collections::*;
     ///
     /// # type K = u32;
     /// # type V = u32;
@@ -442,7 +442,7 @@ pub mod collections {
     ///
     /// You can use these methods as follows:
     /// ```
-    /// use sbor::rust::collections::*;
+    /// use radix_rust::rust::collections::*;
     ///
     /// # type K = u32;
     /// # let n: usize = 1;

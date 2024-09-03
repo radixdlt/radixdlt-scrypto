@@ -11,7 +11,7 @@ fn database_is_consistent_before_and_after_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder.only_babylon())
-        .without_kernel_trace()
+        
         .build();
 
     let (pk, _, account) = ledger.new_account(false);
@@ -82,7 +82,7 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder.only_babylon())
-        .without_kernel_trace()
+        
         .build();
 
     let (pk, _, account) = ledger.new_account(false);
@@ -237,7 +237,7 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder.only_babylon())
-        .without_kernel_trace()
+        
         .build();
 
     let (pk, _, account) = ledger.new_account(false);

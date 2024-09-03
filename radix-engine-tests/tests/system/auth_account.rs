@@ -338,7 +338,7 @@ fn cannot_set_royalty_on_accounts() {
 #[test]
 fn can_call_function_requiring_count_of_zero() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (pk, _, account) = ledger.new_account(false);
     let package_address = ledger.publish_package_simple(PackageLoader::get("auth_scenarios"));
 

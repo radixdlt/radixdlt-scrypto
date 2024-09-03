@@ -6,9 +6,6 @@ edition = "2021"
 [dependencies]
 scrypto = { path = "../../../scrypto" }
 
-[dev-dependencies]
-radix-engine = { path = "../../../radix-engine" }
-
 [profile.release]
 opt-level = 'z'        # Optimize for size.
 lto = true             # Enable Link Time Optimization.
@@ -18,7 +15,6 @@ strip = true           # Strip the symbols.
 overflow-checks = true # Panic in the case of an overflow.
 
 [lib]
-doctest = false
 crate-type = ["cdylib", "lib"]
 
 [workspace]

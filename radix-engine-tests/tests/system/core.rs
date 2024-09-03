@@ -324,7 +324,7 @@ fn cant_store_role_assignment() {
 
 #[test]
 fn test_globalize_with_very_deep_own() {
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("core"));
 
     let manifest = ManifestBuilder::new()

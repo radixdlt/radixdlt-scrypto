@@ -15,8 +15,9 @@ use crate::prelude::*;
 ///
 /// The syntax supported by this macro is as follows:
 ///
-/// ```no_run
-/// implement_client_api! {
+/// ```rust,ignore
+/// # // Ignoring because the macro isn't exported, so this test can't use it
+/// implement_system_api! {
 ///     trait_name: {
 ///         trait_method1: (args: ArgTypes) -> ReturnTypes,
 ///         trait_method2: (args: ArgTypes) -> ReturnTypes,

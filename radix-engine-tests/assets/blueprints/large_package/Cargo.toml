@@ -16,9 +16,6 @@ package = { path = "../package" }
 auth_scenarios = { path = "../auth_scenarios" }
 proof = { path = "../proof" }
 
-[dev-dependencies]
-radix-engine = { path = "../../../../radix-engine" }
 
 [lib]
-doctest = false
 crate-type = ["cdylib", "lib"]

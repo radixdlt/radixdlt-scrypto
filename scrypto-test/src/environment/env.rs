@@ -63,15 +63,23 @@ use crate::prelude::*;
 /// ```
 /// use scrypto_test::prelude::*;
 ///
-/// // Arrange
-/// let mut env = TestEnvironment::new();
+/// fn my_test() -> Result<(), RuntimeError> {
+///     // Arrange
+///     let mut env = TestEnvironment::new();
 ///
-/// // Act
-/// let bucket = env.call_method_typed::<_, _, Bucket>(FAUCET, "free", &()).unwrap();
+///     // Act
+///     let bucket = env.call_method_typed::<_, _, Bucket>(
+///         FAUCET,
+///         "free",
+///         &(),
+///     )?;
 ///
-/// // Assert
-/// let amount = bucket.amount(&mut env).unwrap();
-/// assert_eq!(amount, dec!("10000"));
+///     // Assert
+///     let amount = bucket.amount(&mut env)?;
+///     assert_eq!(amount, dec!("10000"));
+///
+///     Ok(())
+/// }
 /// ```
 ///
 /// A few things to note about the code you see above:
@@ -109,13 +117,15 @@ use crate::prelude::*;
 /// // Act
 /// let bucket = env.with_auth_module_disabled(|env| {
 ///     /* Auth Module is disabled just before this point */
-///     ResourceManager(XRD).mint_fungible(100.into(), env).unwrap()
+///     ResourceManager(XRD).mint_fungible(100.into(), env)
 ///     /* Kernel modules are reset just after this point. */
-/// });
+/// })?;
 ///
 /// // Assert
-/// let amount = bucket.amount(&mut env).unwrap();
-/// assert_eq!(amount, dec!("100"))
+/// let amount = bucket.amount(&mut env)?;
+/// assert_eq!(amount, dec!("100"));
+///
+/// # Ok::<(), RuntimeError>(())
 /// ```
 ///
 /// ## Common Arranges or Teardowns
@@ -134,7 +144,7 @@ use crate::prelude::*;
 ///
 /// pub fn two_resource_environment<F>(func: F)
 /// where
-///     F: FnOnce(TestEnvironment, Bucket, Bucket),
+///     F: FnOnce(DefaultTestEnvironment, FungibleBucket, FungibleBucket),
 /// {
 ///     let mut env = TestEnvironment::new();
 ///     let bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
@@ -164,7 +174,9 @@ pub struct TestEnvironment<D>(pub(super) EncapsulatedRadixEngine<D>)
 where
     D: SubstateDatabase + CommittableSubstateDatabase + 'static;
 
-impl TestEnvironment<InMemorySubstateDatabase> {
+pub type DefaultTestEnvironment = TestEnvironment<InMemorySubstateDatabase>;
+
+impl DefaultTestEnvironment {
     pub fn new() -> Self {
         TestEnvironmentBuilder::new().build()
     }

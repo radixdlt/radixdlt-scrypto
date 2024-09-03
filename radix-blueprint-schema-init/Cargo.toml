@@ -23,5 +23,4 @@ alloc = ["sbor/alloc", "radix-common/alloc", "serde?/alloc"]
 serde = ["serde/derive", "sbor/serde", "radix-common/serde"]
 
 [lib]
-doctest = false
 bench = false

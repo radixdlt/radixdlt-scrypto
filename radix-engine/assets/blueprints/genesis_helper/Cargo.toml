@@ -7,5 +7,4 @@ edition = "2021"
 scrypto = { path = "../../../../scrypto" }
 
 [lib]
-doctest = false
 crate-type = ["cdylib", "lib"]

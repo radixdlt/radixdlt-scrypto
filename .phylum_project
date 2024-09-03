@@ -3,5 +3,5 @@ name: radixdlt-scrypto
 created_at: 2024-07-05T10:48:15.419011+02:00
 group_name: Protocol
 depfiles:
-  - path: ./radix-clis/Cargo.lock
+  - path: ./Cargo.lock
     type: cargo

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run this script from main radixdlt-scrypto repo folder
+cd "$(dirname "$0")/../.."
 
 qemu_app=/home/ubuntu/qemu/qemu-x86_64
 qemu_plugin=/home/ubuntu/qemu/libscrypto-qemu-plugin.so
@@ -23,5 +23,5 @@ for i in $list; do
     fi
 done
 
-# To generete results run command:
+# To generate results run command:
 #  ./radix-engine-profiling-derive/scripts/convert.py /tmp/scrypto-resources-usage

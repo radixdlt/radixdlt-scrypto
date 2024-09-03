@@ -26,8 +26,10 @@ pub const DIVISIBILITY_MAXIMUM: u8 = 18;
 /// ```no_run
 /// use scrypto_test::prelude::*;
 ///
+/// let mut env = TestEnvironment::new();
+///
 /// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-///     .mint_initial_supply(5);
+///     .mint_initial_supply(5, &mut env);
 /// ```
 pub struct ResourceBuilder;
 
@@ -75,11 +77,15 @@ impl ResourceBuilder {
 ///   `mint_initial_supply(..)`.
 ///
 /// ### Example
-/// ```no_run
+/// ```
 /// use scrypto_test::prelude::*;
 ///
+/// let mut env = TestEnvironment::new();
+///
 /// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-///     .mint_initial_supply(5);
+///     .mint_initial_supply(5, &mut env)?;
+///
+/// # Ok::<(), RuntimeError>(())
 /// ```
 #[must_use]
 pub struct InProgressResourceBuilder<T: AnyResourceType> {
@@ -414,10 +420,8 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
     ///
     /// ### Examples
     ///
-    /// ```no_run
-    /// use radix_engine_interface::non_fungible_data_update_roles;
+    /// ```rust
     /// use scrypto_test::prelude::*;
-    ///
     /// # let resource_address = XRD;
     ///
     /// #[derive(ScryptoSbor, NonFungibleData)]
@@ -561,8 +565,12 @@ impl InProgressResourceBuilder<FungibleResourceType> {
     /// ```no_run
     /// use scrypto_test::prelude::*;
     ///
+    /// let mut env = TestEnvironment::new();
+    ///
     /// let bucket: FungibleBucket = ResourceBuilder::new_fungible(OwnerRole::None)
-    ///     .mint_initial_supply(5, &mut env);
+    ///     .mint_initial_supply(5, &mut env)?;
+    ///
+    /// # Ok::<(), RuntimeError>(())
     /// ```
     pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
         mut self,
@@ -602,8 +610,10 @@ impl<D: NonFungibleData>
     /// pair provided.
     ///
     /// ### Example
-    /// ```no_run
+    /// ```
     /// use scrypto_test::prelude::*;
+    ///
+    /// let mut env = TestEnvironment::new();
     ///
     /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
@@ -613,11 +623,16 @@ impl<D: NonFungibleData>
     /// }
     ///
     /// let bucket: NonFungibleBucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
-    ///     .mint_initial_supply([
-    ///         ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
-    ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
-    ///         &mut env
-    ///     ]);
+    ///     .mint_initial_supply(
+    ///         [
+    ///             ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
+    ///             ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
+    ///         ],
+    ///         &mut env,
+    ///     )?;
+    ///
+    /// # // Make it so `?` works correctly
+    /// # Ok::<(), RuntimeError>(())
     /// ```
     pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
         mut self,
@@ -663,8 +678,10 @@ impl<D: NonFungibleData>
     /// pair provided.
     ///
     /// ### Example
-    /// ```no_run
+    /// ```
     /// use scrypto_test::prelude::*;
+    ///
+    /// let mut env = TestEnvironment::new();
     ///
     /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
@@ -674,11 +691,15 @@ impl<D: NonFungibleData>
     /// }
     ///
     /// let bucket: NonFungibleBucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
-    ///     .mint_initial_supply([
-    ///         (1u64.into(), NFData { name: "NF One".to_owned(), flag: true }),
-    ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
-    ///         &mut env
-    ///     ]);
+    ///     .mint_initial_supply(
+    ///         [
+    ///             (1u64.into(), NFData { name: "NF One".to_owned(), flag: true }),
+    ///             (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
+    ///         ],
+    ///         &mut env,
+    ///     )?;
+    ///
+    /// # Ok::<(), RuntimeError>(())
     /// ```
     pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
         mut self,
@@ -724,8 +745,10 @@ impl<D: NonFungibleData>
     /// pair provided.
     ///
     /// ### Example
-    /// ```no_run
+    /// ```
     /// use scrypto_test::prelude::*;
+    ///
+    /// let mut env = TestEnvironment::new();
     ///
     /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
@@ -735,11 +758,14 @@ impl<D: NonFungibleData>
     /// }
     ///
     /// let bucket: NonFungibleBucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
-    ///     .mint_initial_supply([
-    ///         (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
-    ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
-    ///         &mut env
-    ///     ]);
+    ///     .mint_initial_supply(
+    ///         [
+    ///             (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
+    ///             (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
+    ///         ],
+    ///         &mut env,
+    ///     )?;
+    /// # Ok::<(), RuntimeError>(())
     /// ```
     pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
         mut self,
@@ -788,8 +814,9 @@ impl<D: NonFungibleData>
     /// and assigns the given data to each.
     ///
     /// ### Example
-    /// ```no_run
+    /// ```
     /// use scrypto_test::prelude::*;
+    /// # let mut env = TestEnvironment::new();
     ///
     /// #[derive(ScryptoSbor, NonFungibleData)]
     /// struct NFData {
@@ -799,11 +826,15 @@ impl<D: NonFungibleData>
     /// }
     ///
     /// let bucket: NonFungibleBucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///     .mint_initial_supply([
-    ///         (NFData { name: "NF One".to_owned(), flag: true }),
-    ///         (NFData { name: "NF Two".to_owned(), flag: true }),
-    ///         &mut env
-    ///     ]);
+    ///     .mint_initial_supply(
+    ///         [
+    ///             (NFData { name: "NF One".to_owned(), flag: true }),
+    ///             (NFData { name: "NF Two".to_owned(), flag: true }),
+    ///         ],
+    ///         &mut env,
+    ///     )?;
+    /// # // Make it so `?` works correctly
+    /// # Ok::<(), RuntimeError>(())
     /// ```
     pub fn mint_initial_supply<Y: SystemApi<E>, E: SystemApiError>(
         mut self,
