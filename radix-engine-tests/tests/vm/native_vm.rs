@@ -58,7 +58,9 @@ fn panics_in_native_blueprints_can_be_caught_by_the_native_vm() {
 fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
-    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
+    ProtocolBuilder::for_simulator()
+        .from_bootstrap_to_latest()
+        .commit_each_protocol_update(&mut substate_db);
 
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
@@ -126,7 +128,9 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
 fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
-    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
+    ProtocolBuilder::for_simulator()
+        .from_bootstrap_to_latest()
+        .commit_each_protocol_update(&mut substate_db);
 
     let mut track = Track::<InMemorySubstateDatabase, SpreadPrefixKeyMapper>::new(&substate_db);
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();

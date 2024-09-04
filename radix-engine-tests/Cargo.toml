@@ -40,7 +40,6 @@ walkdir = { workspace = true }
 paste = { workspace = true }
 hex = { workspace = true }
 trybuild = { workspace = true }
-automod = { workspace = true }
 extend = { workspace = true }
 
 [build-dependencies]
@@ -73,10 +72,6 @@ harness = false
 [[bench]]
 name = "transaction_validation"
 harness = false
-
-[lib]
-bench = false
-test = false
 
 [features]
 # You should enable either `std` or `alloc`

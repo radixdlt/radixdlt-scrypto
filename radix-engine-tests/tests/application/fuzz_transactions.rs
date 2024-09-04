@@ -1,7 +1,5 @@
 use radix_common::prelude::*;
-use radix_engine::transaction::{
-    execute_and_commit_transaction, ExecutionConfig,
-};
+use radix_engine::transaction::{execute_and_commit_transaction, ExecutionConfig};
 use radix_engine::updates::ProtocolBuilder;
 use radix_engine::vm::*;
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -28,7 +26,9 @@ impl TransactionFuzzer {
         let rng = ChaCha8Rng::seed_from_u64(1234);
 
         let mut substate_db = InMemorySubstateDatabase::standard();
-        ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
+        ProtocolBuilder::for_simulator()
+            .from_bootstrap_to_latest()
+            .commit_each_protocol_update(&mut substate_db);
 
         Self {
             rng,

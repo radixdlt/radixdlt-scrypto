@@ -246,13 +246,13 @@ fn notary_key_is_in_initial_proofs_when_notary_as_signatory_is_true() {
                     notary_is_signatory: true,
                     tip_percentage: 0,
                 },
-                instructions: InstructionsV1(
-                    Rc::new(ManifestBuilder::new()
+                instructions: InstructionsV1(Rc::new(
+                    ManifestBuilder::new()
                         .lock_fee_and_withdraw(account, 10, XRD, 10)
                         .deposit_entire_worktop(account)
                         .build()
-                        .instructions)
-                ),
+                        .instructions,
+                )),
                 blobs: Default::default(),
                 message: Default::default(),
             },
@@ -291,13 +291,13 @@ fn notary_key_is_not_in_initial_proofs_when_notary_as_signatory_is_false() {
                     notary_is_signatory: false,
                     tip_percentage: 0,
                 },
-                instructions: InstructionsV1(
-                    Rc::new(ManifestBuilder::new()
+                instructions: InstructionsV1(Rc::new(
+                    ManifestBuilder::new()
                         .lock_fee_and_withdraw(account, 10, XRD, 10)
                         .deposit_entire_worktop(account)
                         .build()
-                        .instructions)
-                ),
+                        .instructions,
+                )),
                 blobs: Default::default(),
                 message: Default::default(),
             },

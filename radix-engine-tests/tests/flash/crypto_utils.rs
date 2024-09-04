@@ -28,7 +28,8 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
             NetworkDefinition::simulator(),
             AnemoneSettings::all_disabled()
                 .enable(|item| &mut item.vm_boot_to_enable_bls128_and_keccak256),
-        ).run_and_commit(ledger.substate_db_mut());
+        )
+        .run_and_commit(ledger.substate_db_mut());
     }
 
     // Act
@@ -64,9 +65,11 @@ fn run_flash_test_test_environment(enable_bls: bool, expect_success: bool) {
     let mut test_env = TestEnvironmentBuilder::new()
         .with_protocol(|builder| {
             builder
-                .configure_anemone(|_| AnemoneSettings::all_disabled().set(|s| {
-                    s.vm_boot_to_enable_bls128_and_keccak256 = UpdateSetting::new(enable_bls)
-                }))
+                .configure_anemone(|_| {
+                    AnemoneSettings::all_disabled().set(|s| {
+                        s.vm_boot_to_enable_bls128_and_keccak256 = UpdateSetting::new(enable_bls)
+                    })
+                })
                 .from_bootstrap_to(ProtocolVersion::Anemone)
         })
         .build();

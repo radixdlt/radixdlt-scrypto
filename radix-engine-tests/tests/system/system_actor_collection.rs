@@ -3,7 +3,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{AttachedModuleId, SystemApi, LockFlags, ACTOR_STATE_SELF};
+use radix_engine_interface::api::{AttachedModuleId, LockFlags, SystemApi, ACTOR_STATE_SELF};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_native_sdk::modules::metadata::Metadata;
 use radix_native_sdk::modules::role_assignment::RoleAssignment;

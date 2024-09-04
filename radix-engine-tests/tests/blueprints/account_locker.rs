@@ -15,7 +15,6 @@ use scrypto_test::ledger_simulator::*;
 fn account_locker_cant_be_instantiated_before_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        
         .with_custom_protocol(|builder| builder.from_bootstrap_to(ProtocolVersion::Anemone))
         .build();
     let (_, _, account) = ledger.new_account(false);
@@ -1419,18 +1418,26 @@ fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
         });
 
     trait ManifestBuilderExt {
-        fn set_disallowed_preference(self, account: ComponentAddress, resource: ResourceAddress) -> Self;
+        fn set_disallowed_preference(
+            self,
+            account: ComponentAddress,
+            resource: ResourceAddress,
+        ) -> Self;
     }
-        
+
     impl ManifestBuilderExt for ManifestBuilder {
-        fn set_disallowed_preference(self, account: ComponentAddress, resource: ResourceAddress) -> Self {
+        fn set_disallowed_preference(
+            self,
+            account: ComponentAddress,
+            resource: ResourceAddress,
+        ) -> Self {
             self.call_method(
                 account,
                 ACCOUNT_SET_RESOURCE_PREFERENCE_IDENT,
                 AccountSetResourcePreferenceInput {
                     resource_address: resource,
                     resource_preference: ResourcePreference::Disallowed,
-                }
+                },
             )
         }
     }
@@ -3394,8 +3401,9 @@ fn exceeding_one_of_the_limits_when_airdropping_returns_the_expected_error() {
         let keys_and_accounts = (1..=airdrops)
             .map(|num| Secp256k1PrivateKey::from_u64(num).unwrap())
             .map(|private_key| {
-                let address =
-                    ComponentAddress::preallocated_account_from_public_key(&private_key.public_key());
+                let address = ComponentAddress::preallocated_account_from_public_key(
+                    &private_key.public_key(),
+                );
                 (private_key, address)
             })
             .collect::<Vec<_>>();

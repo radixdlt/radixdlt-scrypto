@@ -11,7 +11,6 @@ fn database_is_consistent_before_and_after_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder.only_babylon())
-        
         .build();
 
     let (pk, _, account) = ledger.new_account(false);
@@ -68,9 +67,9 @@ fn database_is_consistent_before_and_after_protocol_update() {
     {
         ProtocolUpdateExecutor::new(
             NetworkDefinition::simulator(),
-            AnemoneSettings::all_disabled()
-                .enable(|item| &mut item.pools_update),
-        ).run_and_commit(ledger.substate_db_mut());
+            AnemoneSettings::all_disabled().enable(|item| &mut item.pools_update),
+        )
+        .run_and_commit(ledger.substate_db_mut());
     }
 
     // Assert
@@ -82,7 +81,6 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder.only_babylon())
-        
         .build();
 
     let (pk, _, account) = ledger.new_account(false);
@@ -197,9 +195,9 @@ fn single_sided_contributions_to_two_resource_pool_are_only_allowed_after_protoc
     {
         ProtocolUpdateExecutor::new(
             NetworkDefinition::simulator(),
-            AnemoneSettings::all_disabled()
-                .enable(|item| &mut item.pools_update),
-        ).run_and_commit(ledger.substate_db_mut());
+            AnemoneSettings::all_disabled().enable(|item| &mut item.pools_update),
+        )
+        .run_and_commit(ledger.substate_db_mut());
     }
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()
@@ -237,7 +235,6 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder.only_babylon())
-        
         .build();
 
     let (pk, _, account) = ledger.new_account(false);
@@ -352,9 +349,9 @@ fn single_sided_contributions_to_multi_resource_pool_are_only_allowed_after_prot
     {
         ProtocolUpdateExecutor::new(
             NetworkDefinition::simulator(),
-            AnemoneSettings::all_disabled()
-                .enable(|item| &mut item.pools_update),
-        ).run_and_commit(ledger.substate_db_mut());
+            AnemoneSettings::all_disabled().enable(|item| &mut item.pools_update),
+        )
+        .run_and_commit(ledger.substate_db_mut());
     }
     let receipt = ledger.execute_manifest(
         ManifestBuilder::new()

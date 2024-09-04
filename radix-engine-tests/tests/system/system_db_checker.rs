@@ -12,7 +12,9 @@ use radix_substate_store_interface::interface::*;
 fn system_database_checker_should_report_missing_owner_error_on_broken_db() {
     // Arrange
     let mut substate_db = InMemorySubstateDatabase::standard();
-    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
+    ProtocolBuilder::for_simulator()
+        .from_bootstrap_to_latest()
+        .commit_each_protocol_update(&mut substate_db);
     let (node_key, partition_num, sort_key, update) = (
         SpreadPrefixKeyMapper::to_db_node_key(PACKAGE_PACKAGE.as_node_id()),
         SpreadPrefixKeyMapper::to_db_partition_num(

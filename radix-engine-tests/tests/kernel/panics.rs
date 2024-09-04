@@ -39,7 +39,7 @@ macro_rules! panic1 {
 pub struct MockKernel<M: SystemCallbackObject>(PhantomData<M>);
 
 impl<M: SystemCallbackObject> KernelApi for MockKernel<M> {
-    type CallbackObject = System::<M>;
+    type CallbackObject = System<M>;
 }
 
 impl<M: SystemCallbackObject> KernelNodeApi for MockKernel<M> {
@@ -171,10 +171,8 @@ impl<M: SystemCallbackObject> KernelInvokeApi<Actor> for MockKernel<M> {
 
 impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
     type System = System<M>;
-    
-    fn kernel_get_system_state(
-        &mut self,
-    ) -> SystemState<'_, Self::System> {
+
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System> {
         panic1!()
     }
 
@@ -189,8 +187,13 @@ impl<M: SystemCallbackObject> KernelInternalApi for MockKernel<M> {
     fn kernel_get_node_visibility(&self, _: &NodeId) -> NodeVisibility {
         panic1!()
     }
-    
-    fn kernel_read_substate_uncosted(&self, _node_id: &NodeId, _partition_num: PartitionNumber, _substate_key: &SubstateKey) -> Option<&IndexedScryptoValue> {
+
+    fn kernel_read_substate_uncosted(
+        &self,
+        _node_id: &NodeId,
+        _partition_num: PartitionNumber,
+        _substate_key: &SubstateKey,
+    ) -> Option<&IndexedScryptoValue> {
         panic1!()
     }
 }

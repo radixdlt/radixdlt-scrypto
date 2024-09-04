@@ -6,9 +6,7 @@ use scrypto_test::prelude::*;
 #[test]
 fn advancing_round_changes_app_facing_minute_resolution_clock() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
 
     let epoch_seconds_rounded_to_minutes = UtcDateTime::new(2022, 1, 1, 0, 0, 0)
         .unwrap()
@@ -35,9 +33,7 @@ fn advancing_round_changes_app_facing_minute_resolution_clock() {
 #[test]
 fn advancing_round_changes_internal_milli_timestamp() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let epoch_milli = 123456789;
 
     // Act

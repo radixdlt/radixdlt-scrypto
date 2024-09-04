@@ -12,17 +12,13 @@ use radix_transactions::validation::*;
 fn test_transaction_replay_protection() {
     let init_epoch = Epoch::of(1);
     let rounds_per_epoch = 5;
-    let genesis = BabylonSettings::test_default()
-        .with_consensus_manager_config(
-            ConsensusManagerConfig::test_default()
-                .with_epoch_change_condition(
-                    EpochChangeCondition {
-                        min_round_count: rounds_per_epoch,
-                        max_round_count: rounds_per_epoch,
-                        target_duration_millis: 1000,
-                    },
-                )
-        );
+    let genesis = BabylonSettings::test_default().with_consensus_manager_config(
+        ConsensusManagerConfig::test_default().with_epoch_change_condition(EpochChangeCondition {
+            min_round_count: rounds_per_epoch,
+            max_round_count: rounds_per_epoch,
+            target_duration_millis: 1000,
+        }),
+    );
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| {
             builder
@@ -88,7 +84,10 @@ fn test_transaction_replay_protection() {
     // 5. Run the transaction the 3rd time (with epoch range and intent hash checks disabled)
     // Note that in production, this won't be possible.
     let receipt = ledger.execute_transaction(
-        validated.get_executable().skip_epoch_range_check().skip_intent_hash_nullification(),
+        validated
+            .get_executable()
+            .skip_epoch_range_check()
+            .skip_intent_hash_nullification(),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator()),
     );
     receipt.expect_commit_success();

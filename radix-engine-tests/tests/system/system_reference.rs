@@ -6,7 +6,7 @@ use radix_engine::system::system_type_checker::TypeCheckError;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
 use radix_engine_interface::api::{
-    SystemApi, FieldValue, LockFlags, ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF,
+    FieldValue, LockFlags, SystemApi, ACTOR_REF_AUTH_ZONE, ACTOR_STATE_SELF,
 };
 use radix_engine_interface::blueprints::package::{KeyOrValue, PackageDefinition};
 use radix_transactions::builder::ManifestBuilder;

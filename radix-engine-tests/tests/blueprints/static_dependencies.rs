@@ -92,7 +92,12 @@ fn static_component_should_be_callable() {
     ledger.publish_package_at_address(PackageLoader::get("static_dependencies"), package_address);
     let receipt = ledger.execute_system_transaction(
         ManifestBuilder::new()
-            .call_function(package_address, "Preallocated", "new", (ManifestAddressReservation(0), "my_secret"))
+            .call_function(
+                package_address,
+                "Preallocated",
+                "new",
+                (ManifestAddressReservation(0), "my_secret"),
+            )
             .build(),
         btreeset!(),
         vec![(
@@ -156,7 +161,8 @@ fn static_resource_should_be_callable() {
         vec![(
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::new_or_panic(PRE_ALLOCATED_RESOURCE),
-        ).into()],
+        )
+            .into()],
     );
     receipt.expect_commit_success();
 

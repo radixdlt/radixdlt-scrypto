@@ -5,7 +5,6 @@ use scrypto_test::prelude::*;
 fn before_protocol_update_try_deposit_or_refund_fails_if_claimed_authorized_depositor_is_not_one() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        
         .with_custom_protocol(|builder| builder.only_babylon())
         .build();
     let (user_public_key, _, user_account) = ledger.new_account(false);
@@ -51,9 +50,7 @@ fn before_protocol_update_try_deposit_or_refund_fails_if_claimed_authorized_depo
 fn after_protocol_update_try_deposit_or_refund_refunds_resources_if_claimed_authorized_depositor_is_not_one(
 ) {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new()
-        
-        .build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (user_public_key, _, user_account) = ledger.new_account(false);
 
     // Act

@@ -26,7 +26,9 @@ fn estimate_locking_fee_from_an_account_protected_by_signature() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable().apply_free_credit(dec!(100)),
+        validate_notarized_transaction(&network, &tx1)
+            .get_executable()
+            .apply_free_credit(dec!(100)),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );
@@ -83,7 +85,9 @@ fn estimate_locking_fee_from_an_account_protected_by_access_controller() {
         false,
     );
     let receipt1 = ledger.execute_transaction(
-        validate_notarized_transaction(&network, &tx1).get_executable().apply_free_credit(dec!(100)),
+        validate_notarized_transaction(&network, &tx1)
+            .get_executable()
+            .apply_free_credit(dec!(100)),
         ExecutionConfig::for_notarized_transaction(NetworkDefinition::simulator())
             .with_cost_breakdown(true),
     );

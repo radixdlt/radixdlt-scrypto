@@ -22,7 +22,9 @@ mod multi_threaded_test {
         // Set up environment.
         let vm_modules = VmModules::default();
         let mut substate_db = InMemorySubstateDatabase::standard();
-        ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
+        ProtocolBuilder::for_simulator()
+            .from_bootstrap_to_latest()
+            .commit_each_protocol_update(&mut substate_db);
 
         // Create a key pair
         let private_key = Secp256k1PrivateKey::from_u64(1).unwrap();

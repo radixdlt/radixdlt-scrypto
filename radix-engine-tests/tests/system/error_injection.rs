@@ -12,12 +12,8 @@ fn lock_fee_from_faucet_error_injection() {
 
     loop {
         let manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
-        let receipt = ledger
-            .execute_manifest_with_injected_error(
-                manifest,
-                vec![],
-                inject_err_after_count,
-            );
+        let receipt =
+            ledger.execute_manifest_with_injected_error(manifest, vec![], inject_err_after_count);
         if receipt.is_commit_success() {
             break;
         }
@@ -37,12 +33,8 @@ fn lock_fee_from_faucet_twice_error_injection() {
     // TODO: Use state from InjectSystemCostingError to tell when we haven't progressed
     for _ in 0..600 {
         let manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
-        let receipt = ledger
-            .execute_manifest_with_injected_error(
-                manifest,
-                vec![],
-                inject_err_after_count,
-            );
+        let receipt =
+            ledger.execute_manifest_with_injected_error(manifest, vec![], inject_err_after_count);
         if receipt.is_commit_success() {
             break;
         }
@@ -64,12 +56,11 @@ fn lock_fee_from_faucet_and_account_error_injection() {
         let manifest = ManifestBuilder::new()
             .lock_fee(account, dec!("500"))
             .build();
-        let receipt = ledger
-            .execute_manifest_with_injected_error(
-                manifest,
-                vec![NonFungibleGlobalId::from_public_key(&pub_key)],
-                inject_err_after_count,
-            );
+        let receipt = ledger.execute_manifest_with_injected_error(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&pub_key)],
+            inject_err_after_count,
+        );
         if receipt.is_commit_success() {
             break;
         }

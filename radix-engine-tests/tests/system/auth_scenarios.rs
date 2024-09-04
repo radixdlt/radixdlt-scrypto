@@ -153,12 +153,11 @@ fn scenario_1_with_injected_costing_error() {
             .create_proof_from_account_of_non_fungible(env.acco, env.swappy_badge.clone())
             .call_method(env.swappy, "protected_method", manifest_args!())
             .build();
-        let receipt = ledger
-            .execute_manifest_with_injected_error(
-                manifest,
-                vec![env.virtua_sig.clone()],
-                inject_err_after_count,
-            );
+        let receipt = ledger.execute_manifest_with_injected_error(
+            manifest,
+            vec![env.virtua_sig.clone()],
+            inject_err_after_count,
+        );
         if receipt.is_commit_success() {
             break;
         }

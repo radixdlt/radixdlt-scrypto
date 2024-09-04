@@ -460,7 +460,10 @@ fn native_blueprints_with_typed_addresses_have_expected_schema() {
         panic!("Generic output!")
     };
 
-    let schema = blueprint_definition.schema.schema.fully_update_and_into_latest_version();
+    let schema = blueprint_definition
+        .schema
+        .schema
+        .fully_update_and_into_latest_version();
     let type_kind = schema.resolve_type_kind(local_type_index).unwrap();
     let type_validation = schema.resolve_type_validation(local_type_index).unwrap();
 

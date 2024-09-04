@@ -502,7 +502,7 @@ fn test_send_and_receive_reference_wrapped_in_non_transient_wrapper() {
     receipt.expect_specific_failure(|e| {
         let error_message = format!("{e:?}");
         return error_message.contains("BlueprintPayloadValidationError")
-            && error_message.contains("Non Global Reference is not allowed")
+            && error_message.contains("Non Global Reference is not allowed");
     });
 }
 
@@ -544,7 +544,10 @@ fn manifest_to_publish_package_with_transient_blueprints<P: Into<PackagePublishi
 ) -> TransactionManifestV1 {
     let (code, mut definition) = source.into().code_and_definition();
     for blueprint in transient_blueprints.into_iter() {
-        let bp_definition_init = definition.blueprints.get_mut(&blueprint).expect("Blueprint was not found");
+        let bp_definition_init = definition
+            .blueprints
+            .get_mut(&blueprint)
+            .expect("Blueprint was not found");
         bp_definition_init.is_transient = true;
     }
     ManifestBuilder::new()

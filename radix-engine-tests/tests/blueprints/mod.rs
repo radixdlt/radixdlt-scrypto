@@ -1,0 +1,30 @@
+// We used to use automod, but it breaks various tools
+// such as cargo fmt, so let's just list them explicitly.
+mod access_controller;
+mod access_controller_big_vault;
+mod account;
+mod account_authorized_depositors;
+mod account_deposit_modes;
+mod account_locker;
+mod clock;
+mod native_blueprint_call_validator;
+mod non_fungible;
+mod non_fungible_add_remove;
+mod non_fungible_big_vault;
+mod non_fungible_vault;
+mod own;
+mod pool_arithmetic;
+mod pool_multi_resource;
+mod pool_one_resource;
+mod pool_states;
+mod pool_two_resource;
+mod proof;
+mod proof_creation;
+mod reentrancy;
+mod resource;
+mod static_dependencies;
+mod time;
+mod transaction_tracker;
+mod tx_processor;
+mod tx_processor_access;
+mod validator;
