@@ -45,7 +45,9 @@ pub struct Unauthorized {
 
 #[derive(Debug, Clone)]
 pub struct AuthModule {
-    pub params: AuthZoneParams,
+    /// Special-case the initial transaction processor function call and
+    /// add virtual resources to the transaction processor call frame
+    pub generate_transaction_processor_auth_zone: Option<AuthZoneInit>,
 }
 
 pub enum AuthorizationCheckResult {
@@ -68,22 +70,44 @@ pub enum ResolvedPermission {
     AllowAll,
 }
 
-#[derive(Debug, Clone)]
-pub struct AuthZoneParams {
-    pub auth_zone_init_for_each_intent: Vec<AuthZoneInit>,
-}
-
-impl Default for AuthZoneParams {
-    fn default() -> Self {
+impl AuthModule {
+    pub fn new() -> Self {
         Self {
-            auth_zone_init_for_each_intent: vec![Default::default()],
+            generate_transaction_processor_auth_zone: None,
         }
     }
-}
 
-impl AuthModule {
-    pub fn new(params: AuthZoneParams) -> Self {
-        Self { params }
+    pub fn new_with_transaction_processor_auth_zone(auth_zone_init: AuthZoneInit) -> Self {
+        Self {
+            generate_transaction_processor_auth_zone: Some(auth_zone_init),
+        }
+    }
+
+    fn on_call_function_auth_zone_params<Y: SystemBasedKernelApi>(
+        system: &mut SystemService<Y>,
+        blueprint_id: &BlueprintId,
+    ) -> (BTreeSet<ResourceAddress>, BTreeSet<NonFungibleGlobalId>) {
+        let is_root_call_frame = system.kernel_get_current_depth() == 0;
+        let is_root_thread = system.kernel_get_thread_id() == 0;
+        if is_root_call_frame && is_root_thread {
+            let auth_module = &system.kernel_get_system().modules.auth;
+            if let Some(auth_zone_init) = &auth_module.generate_transaction_processor_auth_zone {
+                let is_transaction_processor_blueprint = blueprint_id
+                    .package_address
+                    .eq(&TRANSACTION_PROCESSOR_PACKAGE)
+                    && blueprint_id
+                        .blueprint_name
+                        .eq(TRANSACTION_PROCESSOR_BLUEPRINT);
+                if is_transaction_processor_blueprint {
+                    return (
+                        auth_zone_init.simulate_every_proof_under_resources.clone(),
+                        auth_zone_init.initial_non_fungible_id_proofs.clone(),
+                    );
+                }
+            }
+        }
+
+        (BTreeSet::new(), BTreeSet::new())
     }
 
     pub fn on_call_function<Y: SystemBasedKernelApi>(
@@ -93,34 +117,8 @@ impl AuthModule {
     ) -> Result<NodeId, RuntimeError> {
         // Create AuthZone
         let auth_zone = {
-            // TODO: Remove special casing use of transaction processor and just have virtual resources
-            // stored in root call frame
-            let is_transaction_processor_blueprint = blueprint_id
-                .package_address
-                .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-                && blueprint_id
-                    .blueprint_name
-                    .eq(TRANSACTION_PROCESSOR_BLUEPRINT);
-            let is_at_root = system.kernel_get_current_depth() == 0;
             let (virtual_resources, virtual_non_fungibles) =
-                if is_transaction_processor_blueprint && is_at_root {
-                    let intent_index = system.kernel_get_intent_index();
-                    let auth_module = &system.kernel_get_system().modules.auth;
-                    // TODO - Can optionally replace this panic with a runtime error when we can change
-                    //        runtime error
-                    let auth_zone_init = auth_module
-                        .params
-                        .auth_zone_init_for_each_intent
-                        .get(intent_index)
-                        .expect("Executable has too few auth zone inits for the number of intents");
-                    (
-                        auth_zone_init.simulate_every_proof_under_resources.clone(),
-                        auth_zone_init.initial_non_fungible_id_proofs.clone(),
-                    )
-                } else {
-                    (BTreeSet::new(), BTreeSet::new())
-                };
-
+                Self::on_call_function_auth_zone_params(system, blueprint_id);
             Self::create_auth_zone(system, None, virtual_resources, virtual_non_fungibles)?
         };
 

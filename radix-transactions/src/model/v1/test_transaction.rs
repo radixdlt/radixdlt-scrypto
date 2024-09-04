@@ -51,28 +51,31 @@ impl PreparedTestTransaction {
     pub fn get_executable(
         &self,
         initial_proofs: BTreeSet<NonFungibleGlobalId>,
-    ) -> ExecutableTransactionV1 {
-        ExecutableTransactionV1::new(
+    ) -> ExecutableTransaction {
+        let num_of_signature_validations = initial_proofs.len() + 1;
+        ExecutableTransaction::new_v1(
             self.encoded_instructions.clone(),
+            AuthZoneInit::proofs(initial_proofs),
             self.references.clone(),
             self.blobs.clone(),
             ExecutionContext {
                 unique_hash: self.hash,
-                intent_hash_nullification: IntentHashNullification::None,
+                intent_hash_nullifications: vec![],
                 epoch_range: None,
                 payload_size: self.encoded_instructions.len()
                     + self.blobs.values().map(|x| x.len()).sum::<usize>(),
                 // For testing purpose, assume `num_of_signature_validations = num_of_initial_proofs + 1`
-                num_of_signature_validations: initial_proofs.len() + 1,
-                auth_zone_init: AuthZoneInit::proofs(initial_proofs),
+                num_of_signature_validations,
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },
                 pre_allocated_addresses: vec![],
+                disable_limits_and_costing_modules: false,
+                start_timestamp_inclusive: None,
+                end_timestamp_exclusive: None,
             },
-            false,
         )
     }
 }

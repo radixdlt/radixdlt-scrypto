@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::transaction_processor::InstructionOutput
 use radix_engine_interface::prelude::*;
 use radix_substate_store_interface::db_key_mapper::{SpreadPrefixKeyMapper, SubstateKeyContent};
 use radix_substate_store_interface::interface::SubstateDatabase;
-use radix_transactions::model::Executable;
+use radix_transactions::model::ExecutableTransaction;
 
 pub type InjectSystemCostingError<'a, E> = InjectCostingError<Vm<'a, DefaultWasmEngine, E>>;
 
@@ -67,12 +67,13 @@ macro_rules! wrapped_internal_api {
 
 impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingError<K> {
     type Init = InjectCostingErrorInput<SystemInit<K::Init>>;
+    type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceipt;
 
-    fn init<S: BootStore + CommitableSubstateStore, E: Executable>(
+    fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &E,
+        executable: &ExecutableTransaction,
         init_input: Self::Init,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         let (mut system, call_frame_inits) =
@@ -86,9 +87,9 @@ impl<K: SystemCallbackObject> KernelTransactionCallbackObject for InjectCostingE
         Ok((Self { fail_after, system }, call_frame_inits))
     }
 
-    fn start<Y: KernelApi<CallbackObject = Self>, E: Executable>(
+    fn start<Y: KernelApi<CallbackObject = Self>>(
         api: &mut Y,
-        executable: E,
+        executable: ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut api = wrapped_api!(api);
         System::start(&mut api, executable)
@@ -505,8 +506,8 @@ impl<'a, M: SystemCallbackObject, K: KernelApi<CallbackObject = InjectCostingErr
         }
     }
 
-    fn kernel_get_intent_index(&self) -> usize {
-        self.api.kernel_get_intent_index()
+    fn kernel_get_thread_id(&self) -> usize {
+        self.api.kernel_get_thread_id()
     }
 
     fn kernel_get_current_depth(&self) -> usize {
@@ -556,8 +557,8 @@ impl<'a, M: SystemCallbackObject, K: KernelInternalApi<System = InjectCostingErr
         }
     }
 
-    fn kernel_get_intent_index(&self) -> usize {
-        self.api.kernel_get_intent_index()
+    fn kernel_get_thread_id(&self) -> usize {
+        self.api.kernel_get_thread_id()
     }
 
     fn kernel_get_current_depth(&self) -> usize {

@@ -1,50 +1,5 @@
 use crate::internal_prelude::*;
 
-pub trait Executable {
-    type Intent: IntentDetails;
-
-    /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
-    fn unique_hash(&self) -> &Hash;
-    fn overall_epoch_range(&self) -> Option<&EpochRange>;
-    fn overall_start_timestamp_inclusive(&self) -> Option<Instant>;
-    fn overall_end_timestamp_exclusive(&self) -> Option<Instant>;
-    fn costing_parameters(&self) -> &TransactionCostingParameters;
-    fn pre_allocated_addresses(&self) -> &[PreAllocatedAddress];
-    fn payload_size(&self) -> usize;
-    fn num_of_signature_validations(&self) -> usize;
-    fn disable_limits_and_costing_modules(&self) -> bool;
-
-    /// The first intent at index 0 is required to be the root transaction intent
-    fn intents(&self) -> Vec<&Self::Intent>;
-
-    fn all_blob_hashes(&self) -> IndexSet<Hash> {
-        self.intents()
-            .iter()
-            .flat_map(|i| i.blobs().keys())
-            .cloned()
-            .collect()
-    }
-    fn all_references(&self) -> IndexSet<Reference> {
-        self.intents()
-            .iter()
-            .flat_map(|i| i.references())
-            .cloned()
-            .collect()
-    }
-}
-
-pub trait IntentDetails {
-    fn executable_instructions(&self) -> ExecutableInstructions;
-    fn intent_hash_nullification(&self) -> &IntentHashNullification;
-    fn auth_zone_init(&self) -> &AuthZoneInit;
-    fn blobs(&self) -> &IndexMap<Hash, Vec<u8>>;
-    fn references(&self) -> &IndexSet<Reference>;
-
-    /// Indices against the parent Executable.
-    /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
-    fn children_intent_indices(&self) -> &[usize];
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct AuthZoneInit {
     pub initial_non_fungible_id_proofs: BTreeSet<NonFungibleGlobalId>,
@@ -95,7 +50,7 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IntentHashNullification {
     /// Should be checked with transaction tracker.
     /// Will be written
@@ -110,8 +65,10 @@ pub enum IntentHashNullification {
         expiry_epoch: Epoch,
         ignore_duplicate: bool,
     },
-    /// For where there's no intent hash
-    None,
+    /// For system transactions which currently need to go through
+    /// nullification process.
+    /// TODO: Cleanup hash nullification and remove this
+    System,
 }
 
 impl IntentHashNullification {
@@ -123,7 +80,7 @@ impl IntentHashNullification {
             IntentHashNullification::Subintent { intent_hash, .. } => {
                 Some(IntentHash::Sub(*intent_hash))
             }
-            IntentHashNullification::None => None,
+            IntentHashNullification::System => None,
         }
     }
 }
@@ -228,11 +185,4 @@ impl From<TransactionCostingParametersReceiptV1> for TransactionCostingParameter
             free_credit_in_xrd: value.free_credit_in_xrd,
         }
     }
-}
-
-pub enum ExecutableInstructions<'a> {
-    /// Instructions V1, using Babylon processor
-    V1Processor(&'a [u8]),
-    /// Instructions V2, using V2 capable subintent processor
-    V2Processor(&'a [u8]),
 }
