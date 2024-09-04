@@ -7,7 +7,7 @@ build = "build.rs"
 [dependencies]
 radix-native-sdk = { workspace = true }
 sbor = { workspace = true, features = ["serde"] }
-radix-engine = { workspace = true, features = ["radix_engine_tests"] }
+radix-engine = { workspace = true, features = ["radix_engine_tests", "test_utils"] }
 radix-engine-interface = { workspace = true }
 radix-common = { workspace = true, features = ["serde"] }
 radix-substate-store-interface = { workspace = true }
