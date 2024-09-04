@@ -3,7 +3,7 @@
 set -e
 
 PACKAGES="-p radix-common -p radix-sbor-derive -p radix-engine-interface -p radix-engine -p radix-engine-tests"
-TARGET=system
+TARGET=system_folder
 FILE=arguments
 TEST=vector_of_buckets_argument_should_succeed
 
