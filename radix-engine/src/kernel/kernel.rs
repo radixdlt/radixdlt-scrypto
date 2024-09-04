@@ -444,7 +444,7 @@ impl<'g, M: KernelCallbackObject, S: CommitableSubstateStore> KernelInternalApi
         self.current_frame.get_node_visibility(node_id)
     }
 
-    fn kernel_get_intent_index(&self) -> usize {
+    fn kernel_get_thread_id(&self) -> usize {
         // TODO - fix when threading is implemented!
         single_intent_index()
     }
@@ -497,7 +497,7 @@ impl<'g, M: KernelCallbackObject> KernelInternalApi for KernelReadOnly<'g, M> {
         self.current_frame.get_node_visibility(node_id)
     }
 
-    fn kernel_get_intent_index(&self) -> usize {
+    fn kernel_get_thread_id(&self) -> usize {
         // TODO - fix when threading is implemented!
         single_intent_index()
     }

@@ -392,7 +392,7 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
 #[test]
 fn create_validator_twice() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_allocated_account();
 
     // Act
@@ -3137,7 +3137,7 @@ fn significant_protocol_updates_are_emitted_in_epoch_change_event() {
     );
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_protocol(|builder| builder.configure_babylon(|_| genesis).from_bootstrap_to_latest())
-        .without_kernel_trace()
+        
         .build();
 
     let validators_addresses: Vec<ComponentAddress> = validators_keys

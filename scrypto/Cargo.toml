@@ -46,5 +46,4 @@ log-trace = []
 coverage = ["minicov"]
 
 [lib]
-doctest = false
 bench = false

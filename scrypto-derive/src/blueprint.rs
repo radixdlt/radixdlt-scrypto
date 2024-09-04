@@ -1772,7 +1772,7 @@ fn generate_test_bindings_state(bp_struct: &ItemStruct) -> ItemStruct {
 /// This function performs the following replacement and is used for the function returns:
 ///
 /// Before:
-/// ```rust,no_run
+/// ```rust,ignore
 /// fn instantiate() -> (
 ///     Global<ThisBlueprint>,
 ///     Global<AnotherBlueprint>,
@@ -1780,7 +1780,7 @@ fn generate_test_bindings_state(bp_struct: &ItemStruct) -> ItemStruct {
 /// );
 /// ```
 /// After
-/// ```rust,no_run
+/// ```rust,ignore
 /// fn instantiate() -> (
 ///     Self,
 ///     ::scrypto::prelude::GlobalAddress,

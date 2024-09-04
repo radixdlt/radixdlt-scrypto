@@ -54,7 +54,7 @@ impl ComponentAddress {
         }
     }
 
-    pub fn virtual_identity_from_public_key<P: Into<PublicKey> + Clone>(
+    pub fn preallocated_identity_from_public_key<P: Into<PublicKey> + Clone>(
         public_key: &P,
     ) -> ComponentAddress {
         match public_key.clone().into() {
@@ -318,8 +318,9 @@ mod tests {
         assert_eq!(node_id, addr.as_node_id().as_bytes());
 
         let public_key = Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]);
-        let addr =
-            ComponentAddress::virtual_identity_from_public_key(&PublicKey::Ed25519(public_key));
+        let addr = ComponentAddress::preallocated_identity_from_public_key(&PublicKey::Ed25519(
+            public_key,
+        ));
 
         // validate conversions
         ComponentAddress::try_from_hex(&addr.to_hex()).unwrap();
@@ -382,8 +383,9 @@ mod tests {
     #[test]
     fn component_address_decode_success() {
         let public_key = Ed25519PublicKey([0; Ed25519PublicKey::LENGTH]);
-        let addr_input =
-            ComponentAddress::virtual_identity_from_public_key(&PublicKey::Ed25519(public_key));
+        let addr_input = ComponentAddress::preallocated_identity_from_public_key(
+            &PublicKey::Ed25519(public_key),
+        );
 
         let mut buf = Vec::new();
         let mut encoder = VecEncoder::<ManifestCustomValueKind>::new(&mut buf, 1);

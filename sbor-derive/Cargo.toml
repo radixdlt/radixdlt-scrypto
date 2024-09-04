@@ -8,7 +8,6 @@ license-file = "../LICENSE"
 repository = "https://github.com/radixdlt/radixdlt-scrypto"
 
 [lib]
-doctest = false
 proc-macro = true
 bench = false
 

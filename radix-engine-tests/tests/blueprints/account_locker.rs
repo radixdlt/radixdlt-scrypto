@@ -15,7 +15,7 @@ use scrypto_test::ledger_simulator::*;
 fn account_locker_cant_be_instantiated_before_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        .without_kernel_trace()
+        
         .with_custom_protocol(|builder| builder.from_bootstrap_to(ProtocolVersion::Anemone))
         .build();
     let (_, _, account) = ledger.new_account(false);
@@ -49,7 +49,7 @@ fn account_locker_cant_be_instantiated_before_protocol_update() {
 #[test]
 fn account_locker_can_be_instantiated_after_protocol_update() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
 
     // Act
@@ -76,7 +76,7 @@ fn account_locker_can_be_instantiated_after_protocol_update() {
 #[test]
 fn account_locker_has_an_account_locker_entity_type() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
 
     // Act
@@ -112,7 +112,7 @@ fn account_locker_has_an_account_locker_entity_type() {
 #[test]
 fn account_locker_component_address_have_the_expected_bech32m_encoding() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
 
     // Act
@@ -148,7 +148,7 @@ fn account_locker_component_address_have_the_expected_bech32m_encoding() {
 #[test]
 fn store_can_only_be_called_by_storer_role() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
 
     let [owner_badge, storer_badge, recoverer_badge] =
@@ -226,7 +226,7 @@ fn store_can_only_be_called_by_storer_role() {
 #[test]
 fn airdrop_can_only_be_called_by_storer_role() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
 
     let [owner_badge, storer_badge, recoverer_badge] =
@@ -304,7 +304,7 @@ fn airdrop_can_only_be_called_by_storer_role() {
 #[test]
 fn recover_can_only_be_called_by_recoverer_role() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
 
     let [owner_badge, storer_badge, recoverer_badge] =
@@ -379,7 +379,7 @@ fn recover_can_only_be_called_by_recoverer_role() {
 #[test]
 fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
 
     let [owner_badge, storer_badge, recoverer_badge] =
@@ -455,7 +455,7 @@ fn recover_non_fungibles_can_only_be_called_by_recoverer_role() {
 fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the_locker_is_not_and_authorized_depositor(
 ) {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_public_key, _, badge_holder_account) = ledger.new_account(false);
     let (user_account_public_key, _, user_account) = ledger.new_account(false);
 
@@ -551,7 +551,7 @@ fn send_or_store_stores_the_resources_if_the_account_rejects_the_deposit_and_the
 #[test]
 fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_public_key, _, badge_holder_account) = ledger.new_account(false);
     let (user_account_public_key, _, user_account) = ledger.new_account(false);
 
@@ -654,7 +654,7 @@ fn send_or_store_sends_the_resources_if_the_locker_is_an_authorized_depositor() 
 #[test]
 fn claim_is_public_and_callable_by_all() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
 
     let [owner_badge, storer_badge, recoverer_badge] =
@@ -729,7 +729,7 @@ fn claim_is_public_and_callable_by_all() {
 #[test]
 fn claim_non_fungibles_is_public_and_callable_by_all() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
 
     let [owner_badge, storer_badge, recoverer_badge] =
@@ -804,7 +804,7 @@ fn claim_non_fungibles_is_public_and_callable_by_all() {
 #[test]
 fn an_account_can_claim_its_resources_from_the_account_locker() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
     let (user_account1_public_key, _, user_account1) = ledger.new_account(false);
 
@@ -902,7 +902,7 @@ fn an_account_can_claim_its_resources_from_the_account_locker() {
 #[test]
 fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
     let (_, _, user_account1) = ledger.new_account(false);
     let (user_account2_public_key, _, _) = ledger.new_account(false);
@@ -1002,7 +1002,7 @@ fn an_account_cant_claim_another_accounts_resources_from_the_account_locker() {
 #[test]
 fn account_locker_admin_can_recover_resources_from_an_account_locker() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
     let (_, _, user_account1) = ledger.new_account(false);
 
@@ -1101,7 +1101,7 @@ fn account_locker_admin_can_recover_resources_from_an_account_locker() {
 #[test]
 fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disabled() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
     let (_, _, user_account1) = ledger.new_account(false);
 
@@ -1203,7 +1203,7 @@ fn account_locker_admin_cant_recover_resources_from_an_account_locker_when_disab
 #[test]
 fn get_amount_method_reports_the_correct_amount_in_the_vault() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
     let (_, _, user_account1) = ledger.new_account(false);
 
@@ -1294,7 +1294,7 @@ fn get_amount_method_reports_the_correct_amount_in_the_vault() {
 #[test]
 fn get_non_fungible_local_ids_method_reports_the_correct_ids_in_the_vault() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
     let (_, _, user_account1) = ledger.new_account(false);
 
@@ -1395,7 +1395,7 @@ fn get_non_fungible_local_ids_method_reports_the_correct_ids_in_the_vault() {
 
 #[test]
 fn state_of_the_account_locker_can_be_reconciled_from_events_alone() {
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
 
     let [(user_account1_public_key, _, user_account1), (user_account2_public_key, _, user_account2), (user_account3_public_key, _, user_account3)] =
@@ -3062,7 +3062,7 @@ pub impl DefaultLedgerSimulator {
 #[test]
 fn send_does_not_accept_an_address_that_is_not_an_account() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
 
     let (account_locker, account_locker_badge) = {
@@ -3145,7 +3145,7 @@ fn send_does_not_accept_an_address_that_is_not_an_account() {
 #[test]
 fn airdrop_does_not_accept_an_address_that_is_not_an_account() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
 
     let (account_locker, account_locker_badge) = {
@@ -3230,7 +3230,7 @@ fn airdrop_does_not_accept_an_address_that_is_not_an_account() {
 #[test]
 fn claim_does_not_accept_an_address_that_is_not_an_account() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
 
     let (account_locker, account_locker_badge) = {
@@ -3309,7 +3309,7 @@ fn claim_does_not_accept_an_address_that_is_not_an_account() {
 #[test]
 fn recover_does_not_accept_an_address_that_is_not_an_account() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (badge_holder_account_public_key, _, badge_holder_account) = ledger.new_account(false);
 
     let (account_locker, account_locker_badge) = {
@@ -3388,7 +3388,7 @@ fn recover_does_not_accept_an_address_that_is_not_an_account() {
 #[test]
 fn exceeding_one_of_the_limits_when_airdropping_returns_the_expected_error() {
     for airdrops in 1u64.. {
-        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+        let mut ledger = LedgerSimulatorBuilder::new().build();
         let (pk, _, account) = ledger.new_account(false);
 
         let keys_and_accounts = (1..=airdrops)

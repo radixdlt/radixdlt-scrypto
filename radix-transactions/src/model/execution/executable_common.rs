@@ -50,7 +50,7 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IntentHashNullification {
     /// Should be checked with transaction tracker.
     /// Will be written
@@ -67,6 +67,7 @@ pub enum IntentHashNullification {
     },
     /// For system transactions which currently need to go through
     /// nullification process.
+    /// TODO: Cleanup hash nullification and remove this
     System,
 }
 

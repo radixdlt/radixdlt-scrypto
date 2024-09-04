@@ -102,6 +102,7 @@ macro_rules! this_package {
 ///
 /// # Example
 /// ```ignore
+/// # // Ignoring because of include_code!
 /// use scrypto::prelude::*;
 ///
 /// // This package
@@ -138,6 +139,7 @@ macro_rules! include_code {
 ///
 /// # Example
 /// ```ignore
+/// # // Including because of include_schema!(..)
 /// use scrypto::prelude::*;
 ///
 /// // This package

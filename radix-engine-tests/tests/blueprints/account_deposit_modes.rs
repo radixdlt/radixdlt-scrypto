@@ -463,7 +463,7 @@ struct AccountDepositModesLedgerSimulator {
 
 impl AccountDepositModesLedgerSimulator {
     pub fn new(preallocated_account: bool) -> Self {
-        let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+        let mut ledger = LedgerSimulatorBuilder::new().build();
         let (public_key, _, component_address) = ledger.new_account(preallocated_account);
 
         Self {

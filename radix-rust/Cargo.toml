@@ -22,5 +22,4 @@ serde = ["serde/derive", "indexmap/serde"]
 fuzzing = ["indexmap/arbitrary"]
 
 [lib]
-doctest = false
 bench = false

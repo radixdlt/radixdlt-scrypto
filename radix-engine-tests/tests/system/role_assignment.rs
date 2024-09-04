@@ -189,7 +189,7 @@ fn component_role_assignment_can_be_mutated_to_non_fungible_resource_through_man
 #[test]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
     let component_address = {
         let manifest = ManifestBuilder::new()
@@ -227,7 +227,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 #[test]
 fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
     let package_address = ledger.publish_package_simple(PackageLoader::get("role_assignment"));
 

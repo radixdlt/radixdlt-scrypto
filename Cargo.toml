@@ -16,7 +16,7 @@ members = [
     "radix-common-derive",
     "radix-common",
     "radix-clis",
-    "radix-engine-toolkit",
+    "radix-engine-toolkit-common",
     "radix-engine-interface",
     "radix-engine-monkey-tests",
     "radix-engine-profiling-derive",
@@ -48,7 +48,7 @@ radix-blueprint-schema-init = { version = "1.3.0-dev", path = "./radix-blueprint
 radix-common = { version = "1.3.0-dev", path = "./radix-common", default-features = false }
 radix-common-derive = { version = "1.3.0-dev", path = "./radix-common-derive", default-features = false }
 radix-engine = { version = "1.3.0-dev", path = "./radix-engine", default-features = false }
-radix-engine-toolkit = { version = "1.3.0-dev", path = "./radix-engine-toolkit", default-features = false }
+radix-engine-toolkit-common = { version = "1.3.0-dev", path = "./radix-engine-toolkit-common", default-features = false }
 radix-engine-interface = { version = "1.3.0-dev", path = "./radix-engine-interface", default-features = false }
 radix-engine-profiling = { version = "1.3.0-dev", path = "./radix-engine-profiling", default-features = false }
 radix-engine-profiling-derive = { version = "1.3.0-dev", path = "./radix-engine-profiling-derive", default-features = false }

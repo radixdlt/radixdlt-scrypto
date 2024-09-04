@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use radix_engine::system::system_modules::execution_trace::{ResourceSpecifier, WorktopChange};
 use radix_engine_interface::prelude::MetadataValue;
 use radix_engine_tests::*;
-use radix_engine_toolkit::receipt::*;
+use radix_engine_toolkit_common::receipt::*;
 use radix_transaction_scenarios::executor::*;
 use scrypto::*;
 use scrypto_test::prelude::*;
@@ -13,7 +13,7 @@ use scrypto_test::prelude::*;
 #[test]
 fn test_toolkit_receipt_roundtrip_property() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
 
     // Act
@@ -147,7 +147,7 @@ fn test_serialized_scenario_transaction_receipts_can_be_deserialized_and_convert
 #[test]
 fn commit_success_receipt_is_mapped_correctly() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
     let receipt = ledger.preview_manifest(
         ManifestBuilder::new()
@@ -174,7 +174,7 @@ fn commit_success_receipt_is_mapped_correctly() {
 #[test]
 fn commit_failure_receipt_is_mapped_correctly() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
     let receipt = ledger.preview_manifest(
         ManifestBuilder::new()
@@ -204,7 +204,7 @@ fn commit_failure_receipt_is_mapped_correctly() {
 #[test]
 fn rejection_receipt_is_mapped_correctly() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
     let receipt = ledger.preview_manifest(
         ManifestBuilder::new()
@@ -230,7 +230,7 @@ fn rejection_receipt_is_mapped_correctly() {
 #[test]
 fn newly_created_entities_are_mapped_correctly_in_receipt() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (wasm, definition) = (
         include_workspace_asset_bytes!("radix-transaction-scenarios", "radiswap.wasm").to_vec(),
         manifest_decode(include_workspace_asset_bytes!(
@@ -302,7 +302,7 @@ fn newly_created_entities_are_mapped_correctly_in_receipt() {
 #[test]
 fn metadata_updates_show_in_receipt() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (public_key, _, account) = ledger.new_account(false);
     let receipt = ledger.preview_manifest(
         ManifestBuilder::new()
@@ -378,7 +378,7 @@ fn non_fungible_data_updates_are_mapped_correctly_in_receipt() {
         pub field: u32,
     }
 
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
     let execution_config = ExecutionConfig::for_preview_no_auth(NetworkDefinition::simulator());
 
@@ -488,7 +488,7 @@ fn newly_minted_non_fungibles_are_mapped_correctly_in_receipt() {
         pub field: u32,
     }
 
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account1) = ledger.new_account(false);
     let (_, _, account2) = ledger.new_account(false);
     let execution_config = ExecutionConfig::for_preview_no_auth(NetworkDefinition::simulator());
@@ -596,7 +596,7 @@ fn newly_minted_non_fungibles_are_mapped_correctly_in_receipt() {
 #[test]
 fn worktop_changes_are_mapped_correctly_in_receipt() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
     let receipt = ledger.preview_manifest(
         ManifestBuilder::new()
@@ -640,7 +640,7 @@ fn worktop_changes_are_mapped_correctly_in_receipt() {
 #[test]
 fn fee_summary_are_mapped_correctly_in_receipt() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
     let receipt = ledger.preview_manifest(
         ManifestBuilder::new()
@@ -687,7 +687,7 @@ fn fee_summary_are_mapped_correctly_in_receipt() {
 #[test]
 fn locked_fees_are_mapped_correctly_in_receipt() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let (_, _, account) = ledger.new_account(false);
     let receipt = ledger.preview_manifest(
         ManifestBuilder::new()

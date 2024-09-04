@@ -1399,7 +1399,7 @@ fn cant_create_non_fungible_with_id_type_does_not_match() {
 #[test]
 fn test_non_fungible_global_id() {
     // Arrange
-    let mut ledger = LedgerSimulatorBuilder::new().without_kernel_trace().build();
+    let mut ledger = LedgerSimulatorBuilder::new().build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("resource"));
 
     // Act

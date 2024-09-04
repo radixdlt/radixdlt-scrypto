@@ -190,8 +190,8 @@ pub trait KernelInternalApi {
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, Self::System>;
 
-    /// Gets the intent index which is currently running
-    fn kernel_get_intent_index(&self) -> usize;
+    /// Gets the thread id which is currently running
+    fn kernel_get_thread_id(&self) -> usize;
 
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
