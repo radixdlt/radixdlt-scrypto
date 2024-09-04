@@ -6,9 +6,9 @@ use radix_common::crypto::Hash;
 use radix_common::prelude::{GlobalAddressReservation, Reference};
 use radix_engine_interface::api::SystemApi;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
+use radix_rust::prelude::*;
 use radix_rust::prelude::{IndexMap, IndexSet};
 use radix_transactions::model::InstructionV1;
-use std::rc::Rc;
 
 #[cfg(not(feature = "coverage"))]
 pub const MAX_TOTAL_BLOB_SIZE_PER_INVOCATION: usize = 1024 * 1024;

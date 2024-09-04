@@ -11,6 +11,7 @@ use radix_native_sdk::resource::{
     NativeBucket, NativeFungibleBucket, NativeNonFungibleBucket, NativeProof, Worktop,
 };
 use radix_native_sdk::runtime::LocalAuthZone;
+use radix_rust::prelude::*;
 use radix_transactions::data::transform;
 use radix_transactions::model::manifest_instruction::*;
 use radix_transactions::model::InstructionV1;
