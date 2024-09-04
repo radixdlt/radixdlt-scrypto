@@ -5,7 +5,7 @@ use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
 use radix_engine_interface::api::key_value_store_api::KeyValueStoreDataSchema;
-use radix_engine_interface::api::{SystemApi, LockFlags};
+use radix_engine_interface::api::{LockFlags, SystemApi};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_transactions::builder::ManifestBuilder;
 use scrypto_test::prelude::*;

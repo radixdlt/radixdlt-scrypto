@@ -40,7 +40,6 @@ walkdir = { workspace = true }
 paste = { workspace = true }
 hex = { workspace = true }
 trybuild = { workspace = true }
-automod = { workspace = true }
 extend = { workspace = true }
 
 [build-dependencies]
@@ -75,7 +74,13 @@ name = "transaction_validation"
 harness = false
 
 [lib]
+# Our benches use criterion.rs - which requires disabling normal bench harness
+# generation below - to workaround this issue:
+# https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 bench = false
+
+# Marks that this is not a library with unit tests - but integration tests still run.
+# See https://doc.rust-lang.org/cargo/commands/cargo-test.html
 test = false
 
 [features]

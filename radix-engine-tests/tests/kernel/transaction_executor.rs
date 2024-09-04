@@ -93,7 +93,9 @@ fn test_normal_transaction_flow() {
     // Arrange
     let vm_modules = VmModules::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    ProtocolBuilder::for_simulator().from_bootstrap_to_latest().commit_each_protocol_update(&mut substate_db);
+    ProtocolBuilder::for_simulator()
+        .from_bootstrap_to_latest()
+        .commit_each_protocol_update(&mut substate_db);
 
     let execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
     let raw_transaction = create_notarized_transaction(

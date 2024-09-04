@@ -4,7 +4,7 @@ use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::object_modules::role_assignment::RoleAssignmentError;
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::vm::{OverridePackageCode, VmApi, VmInvoke};
-use radix_engine_interface::api::{SystemApi, ModuleId};
+use radix_engine_interface::api::{ModuleId, SystemApi};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_tests::common::*;
 use radix_native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject};

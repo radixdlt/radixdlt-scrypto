@@ -1,8 +1,8 @@
+use core::fmt::Write;
 use radix_common::prelude::*;
 use radix_engine::updates::BabylonSettings;
 use radix_substate_store_interface::db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper};
 use scrypto_test::prelude::*;
-use core::fmt::Write;
 
 // HELP DEBUGGING:
 // If this test diverges, it's often because of a change to genesis, which has made a substate
@@ -20,10 +20,11 @@ fn test_stake_reconciliation() {
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_kernel_trace()
-        .with_custom_protocol(|builder| builder
-            .configure_babylon(|_| BabylonSettings::test_minimal())
-            .only_babylon()
-        )
+        .with_custom_protocol(|builder| {
+            builder
+                .configure_babylon(|_| BabylonSettings::test_minimal())
+                .only_babylon()
+        })
         .build();
     let (account_pk, _, account) = ledger.new_account(false);
 
@@ -278,7 +279,8 @@ fn test_stake_reconciliation() {
             .encode(&node_id.0)
             .unwrap();
         if database_value != expected_old_value {
-            let substate_structure = &commit_result.system_structure.substate_system_structures[&node_id][&partition][&substate_key];
+            let substate_structure = &commit_result.system_structure.substate_system_structures
+                [&node_id][&partition][&substate_key];
             write!(&mut error_message, "\nThe pre-transaction value of updated substate under {address} {partition:?} {substate_key:?} has changed.").unwrap();
             write!(&mut error_message, "\n\nEXPECTED:").unwrap();
             format_receipt_substate_value(
@@ -286,14 +288,16 @@ fn test_stake_reconciliation() {
                 &substate_structure,
                 &receipt_display_context,
                 &expected_old_value,
-            ).unwrap();
+            )
+            .unwrap();
             write!(&mut error_message, "\nACTUAL:").unwrap();
             format_receipt_substate_value(
                 &mut error_message,
                 &substate_structure,
                 &receipt_display_context,
                 &database_value,
-            ).unwrap();
+            )
+            .unwrap();
             write!(&mut error_message, "\n").unwrap();
         }
         // For printing:

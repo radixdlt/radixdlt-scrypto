@@ -378,7 +378,6 @@ fn substates_written_on_a_staging_database_from_transactions_can_be_read_later()
     let database = SubstateDatabaseOverlay::new_unmergeable(&root_database);
     let mut ledger = LedgerSimulatorBuilder::new()
         .with_custom_database(database)
-        
         .build();
 
     let (public_key1, _, account1) = ledger.new_account(false);
@@ -431,7 +430,7 @@ fn database_hashes_are_identical_between_staging_and_non_staging_database_at_eac
         ) {
             let non_staging_database_hash = create_database_contents_hash(in_memory_database);
             let staging_database_hash = create_database_contents_hash(overlay_database);
-    
+
             assert_eq!(non_staging_database_hash, staging_database_hash)
         }
     }
@@ -477,47 +476,72 @@ trait DatabaseComparisonScenarioCheck {
 /// Runs the scenarios on an [`InMemorySubstateDatabase`] and a [`UnmergeableSubstateDatabaseOverlay`] wrapping
 /// an [`InMemorySubstateDatabase`]. The passed check function is executed after the execution of
 /// each scenario.
-fn run_scenarios_in_memory_and_on_overlay(
-    check_callback: impl DatabaseComparisonScenarioCheck,
-) {
+fn run_scenarios_in_memory_and_on_overlay(check_callback: impl DatabaseComparisonScenarioCheck) {
     let overlay_root = InMemorySubstateDatabase::standard();
     let overlay = SubstateDatabaseOverlay::new_unmergeable(&overlay_root);
     let ledger_with_overlay = Rc::new(RefCell::new(
         LedgerSimulatorBuilder::new()
             .with_custom_database(overlay)
             .with_custom_protocol(|builder| builder.unbootstrapped())
-            
             .build(),
     ));
     let network_definition = NetworkDefinition::simulator();
 
     struct ProtocolUpdateHooks<'a> {
-        ledger_with_overlay: Rc<RefCell<LedgerSimulator<NoExtension, SubstateDatabaseOverlay<&'a InMemorySubstateDatabase, InMemorySubstateDatabase>>>>,
+        ledger_with_overlay: Rc<
+            RefCell<
+                LedgerSimulator<
+                    NoExtension,
+                    SubstateDatabaseOverlay<&'a InMemorySubstateDatabase, InMemorySubstateDatabase>,
+                >,
+            >,
+        >,
     }
 
     impl<'a> ProtocolUpdateExecutionHooks for ProtocolUpdateHooks<'a> {
         fn on_transaction_executed(&mut self, event: OnProtocolTransactionExecuted) {
-            let OnProtocolTransactionExecuted {
-                receipt,
-                ..
-            } = event;
+            let OnProtocolTransactionExecuted { receipt, .. } = event;
             // We copy the protocol updates onto the ledger_with_overlay
-            let database_updates = receipt.expect_commit_success().state_updates.create_database_updates::<SpreadPrefixKeyMapper>();
-            self.ledger_with_overlay.borrow_mut().substate_db_mut().commit(&database_updates);
+            let database_updates = receipt
+                .expect_commit_success()
+                .state_updates
+                .create_database_updates::<SpreadPrefixKeyMapper>();
+            self.ledger_with_overlay
+                .borrow_mut()
+                .substate_db_mut()
+                .commit(&database_updates);
         }
     }
 
     struct ScenarioHooks<'a, F: DatabaseComparisonScenarioCheck> {
-        ledger_with_overlay: Rc<RefCell<LedgerSimulator<NoExtension, SubstateDatabaseOverlay<&'a InMemorySubstateDatabase, InMemorySubstateDatabase>>>>,
+        ledger_with_overlay: Rc<
+            RefCell<
+                LedgerSimulator<
+                    NoExtension,
+                    SubstateDatabaseOverlay<&'a InMemorySubstateDatabase, InMemorySubstateDatabase>,
+                >,
+            >,
+        >,
         check_callback: F,
     }
 
-    impl<'a, F: DatabaseComparisonScenarioCheck> ScenarioExecutionHooks<InMemorySubstateDatabase> for ScenarioHooks<'a, F> {
-        fn on_transaction_executed(&mut self, event: OnScenarioTransactionExecuted<InMemorySubstateDatabase>) {
-            let OnScenarioTransactionExecuted { transaction, receipt, database, .. } = event;
+    impl<'a, F: DatabaseComparisonScenarioCheck> ScenarioExecutionHooks<InMemorySubstateDatabase>
+        for ScenarioHooks<'a, F>
+    {
+        fn on_transaction_executed(
+            &mut self,
+            event: OnScenarioTransactionExecuted<InMemorySubstateDatabase>,
+        ) {
+            let OnScenarioTransactionExecuted {
+                transaction,
+                receipt,
+                database,
+                ..
+            } = event;
 
             // Execute the same transaction on the ledger simulator.
-            let receipt_from_overlay = self.ledger_with_overlay
+            let receipt_from_overlay = self
+                .ledger_with_overlay
                 .borrow_mut()
                 .execute_notarized_transaction(&transaction.raw_transaction);
 
@@ -526,27 +550,24 @@ fn run_scenarios_in_memory_and_on_overlay(
                 database,
                 &receipt,
                 self.ledger_with_overlay.borrow().substate_db(),
-                &receipt_from_overlay
+                &receipt_from_overlay,
             );
         }
     }
 
-    TransactionScenarioExecutor::new(
-        InMemorySubstateDatabase::standard(),
-        network_definition,
-    )
-    .execute_protocol_updates_and_scenarios(
-        |builder| builder.from_bootstrap_to_latest(),
-        ScenarioTrigger::AtStartOfEveryProtocolVersion,
-        ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
-        &mut ScenarioHooks {
-            ledger_with_overlay: ledger_with_overlay.clone(),
-            check_callback,
-        },
-        &mut ProtocolUpdateHooks {
-            ledger_with_overlay: ledger_with_overlay.clone(),
-        },
-        &VmModules::default(),
-    )
-    .expect("Must succeed!");
+    TransactionScenarioExecutor::new(InMemorySubstateDatabase::standard(), network_definition)
+        .execute_protocol_updates_and_scenarios(
+            |builder| builder.from_bootstrap_to_latest(),
+            ScenarioTrigger::AtStartOfEveryProtocolVersion,
+            ScenarioFilter::AllScenariosFirstValidAtProtocolVersion,
+            &mut ScenarioHooks {
+                ledger_with_overlay: ledger_with_overlay.clone(),
+                check_callback,
+            },
+            &mut ProtocolUpdateHooks {
+                ledger_with_overlay: ledger_with_overlay.clone(),
+            },
+            &VmModules::default(),
+        )
+        .expect("Must succeed!");
 }

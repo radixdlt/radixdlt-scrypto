@@ -1650,9 +1650,7 @@ struct AccessControllerLedgerSimulator {
 #[allow(dead_code)]
 impl AccessControllerLedgerSimulator {
     pub fn new(timed_recovery_delay_in_minutes: Option<u32>) -> Self {
-        let mut ledger = LedgerSimulatorBuilder::new()
-            
-            .build();
+        let mut ledger = LedgerSimulatorBuilder::new().build();
 
         // Creating a new account - this is where the badges will be held
         let (public_key, _, account) = ledger.new_account(false);

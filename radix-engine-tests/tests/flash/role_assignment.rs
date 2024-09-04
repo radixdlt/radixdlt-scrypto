@@ -5,7 +5,6 @@ use scrypto_test::prelude::*;
 fn get_owner_role_method_call_fails_without_the_protocol_update() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        
         .with_custom_protocol(|builder| builder.only_babylon())
         .build();
 

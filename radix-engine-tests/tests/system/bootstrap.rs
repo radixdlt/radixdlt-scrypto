@@ -211,9 +211,9 @@ fn assert_complete_system_structure(result: &CommitResult) {
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let vm_modules = VmModules::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
-    let token_holder = ComponentAddress::preallocated_account_from_public_key(&PublicKey::Secp256k1(
-        Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
-    ));
+    let token_holder = ComponentAddress::preallocated_account_from_public_key(
+        &PublicKey::Secp256k1(Secp256k1PrivateKey::from_u64(1).unwrap().public_key()),
+    );
     let resource_address = ResourceAddress::new_or_panic(
         NodeId::new(
             EntityType::GlobalFungibleResourceManager as u8,
@@ -319,9 +319,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         assert!(substate.is_locked());
         assert_eq!(
             substate.into_value().map(|v| v.into_unique_version()),
-            Some(MetadataValue::StringArray(
-                vec!["badge".to_owned()]
-            ))
+            Some(MetadataValue::StringArray(vec!["badge".to_owned()]))
         );
 
         assert_eq!(
@@ -426,7 +424,6 @@ fn test_genesis_stake_allocation() {
             ],
         },
     ];
-
 
     let mut hooks = GenesisReceiptExtractionHooks::new();
     ProtocolBuilder::for_simulator()
@@ -662,7 +659,7 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     let mut total_burn_amount = Decimal::ZERO;
     for tx_events in ledger.collected_events() {
         for event in tx_events {
-            match &event.0.0 {
+            match &event.0 .0 {
                 Emitter::Method(x, _) if x.eq(XRD.as_node_id()) => {}
                 _ => {
                     continue;

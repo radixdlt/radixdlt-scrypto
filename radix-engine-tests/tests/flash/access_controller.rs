@@ -30,7 +30,6 @@ fn access_controller_package_definition_v1_0_matches_expected() {
 fn access_controller_instantiated_before_protocol_update_has_v1_state() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-        
         .with_custom_protocol(|builder| builder.only_babylon())
         .build();
 
@@ -227,7 +226,6 @@ fn before_protocol_update_calling_any_method_on_an_access_controller_with_v1_sta
 
     for (method_name, args) in invocations {
         let mut ledger = LedgerSimulatorBuilder::new()
-            
             .with_custom_protocol(|builder| builder.only_babylon())
             .build();
         let (_, _, account) = ledger.new_account(false);
@@ -497,7 +495,6 @@ fn after_protocol_update_calling_any_method_on_an_access_controller_with_v1_stat
 
     for (method_name, args) in invocations {
         let mut ledger = LedgerSimulatorBuilder::new()
-            
             .with_custom_protocol(|builder| builder.only_babylon())
             .build();
         let (_, _, account) = ledger.new_account(false);

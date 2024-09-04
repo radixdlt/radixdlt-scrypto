@@ -25,7 +25,6 @@ fn get_current_time_rounded_to_seconds_with_state_flash_should_succeed() {
 fn run_flash_test(flash_substates: bool, expect_success: bool) {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new()
-
         .with_custom_protocol(|builder| builder.only_babylon())
         .build();
     let package_address = ledger.publish_package_simple(PackageLoader::get("clock"));
@@ -34,9 +33,9 @@ fn run_flash_test(flash_substates: bool, expect_success: bool) {
     if flash_substates {
         ProtocolUpdateExecutor::new(
             NetworkDefinition::simulator(),
-            AnemoneSettings::all_disabled()
-                .enable(|item| &mut item.seconds_precision),
-        ).run_and_commit(ledger.substate_db_mut())
+            AnemoneSettings::all_disabled().enable(|item| &mut item.seconds_precision),
+        )
+        .run_and_commit(ledger.substate_db_mut())
     }
 
     let time_to_set_ms = 1669663688996;

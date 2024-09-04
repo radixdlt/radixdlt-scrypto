@@ -94,7 +94,8 @@ impl KernelCallbackObject for TestCallbackObject {
 
     fn on_set_substate<Y: KernelInternalApi<System = Self>>(
         _event: SetSubstateEvent,
-        _api: &mut Y,) -> Result<(), RuntimeError> {
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
@@ -140,7 +141,9 @@ impl KernelCallbackObject for TestCallbackObject {
         Ok(())
     }
 
-    fn on_execution_start<Y: KernelInternalApi<System = Self>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_execution_start<Y: KernelInternalApi<System = Self>>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 
