@@ -1,6 +1,5 @@
 #![cfg(feature = "std")]
 
-use auth::AuthZoneParams;
 use radix_common::prelude::*;
 use radix_engine::errors::*;
 use radix_engine::kernel::id_allocator::*;
@@ -80,7 +79,7 @@ fn panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
-            AuthModule::new(AuthZoneParams::default()),
+            AuthModule::new(),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,
@@ -150,7 +149,7 @@ fn any_panics_can_be_caught_in_the_native_vm_and_converted_into_results() {
             EnabledModules::for_notarized_transaction(),
             KernelTraceModule,
             TransactionRuntimeModule::new(NetworkDefinition::simulator(), intent_hash),
-            AuthModule::new(AuthZoneParams::default()),
+            AuthModule::new(),
             LimitsModule::babylon_genesis(),
             CostingModule {
                 current_depth: 0,

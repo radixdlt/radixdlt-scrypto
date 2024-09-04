@@ -1281,7 +1281,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn execute_transaction(
         &mut self,
-        executable: impl Executable,
+        executable: ExecutableTransaction,
         mut execution_config: ExecutionConfig,
     ) -> TransactionReceipt {
         // Override the kernel trace config

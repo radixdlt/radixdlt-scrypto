@@ -25,7 +25,7 @@ pub struct ValidatedPreviewIntent {
 
 #[allow(deprecated)]
 impl ValidatedPreviewIntent {
-    pub fn get_executable(&self) -> ExecutableTransactionV1 {
+    pub fn get_executable(&self) -> ExecutableTransaction {
         let intent = &self.intent;
         let flags = &self.flags;
 
@@ -55,17 +55,18 @@ impl ValidatedPreviewIntent {
 
         let intent_hash = intent.transaction_intent_hash();
 
-        ExecutableTransactionV1::new(
+        ExecutableTransaction::new_v1(
             self.encoded_instructions.clone(),
+            AuthZoneInit::new(initial_proofs, simulate_every_proof_under_resources),
             intent.instructions.references.clone(),
             intent.blobs.blobs_by_hash.clone(),
             ExecutionContext {
                 unique_hash: intent_hash.0,
-                intent_hash_nullification: IntentHashNullification::TransactionIntent {
+                intent_hash_nullifications: vec![IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch: intent.header.inner.end_epoch_exclusive,
                     ignore_duplicate: flags.skip_epoch_check,
-                },
+                }],
                 epoch_range: if flags.skip_epoch_check {
                     None
                 } else {
@@ -76,14 +77,12 @@ impl ValidatedPreviewIntent {
                 },
                 payload_size: self.intent.summary.effective_length,
                 num_of_signature_validations: 0, // Accounted for by tests in `common_transformation_costs.rs`.
-                auth_zone_init: AuthZoneInit::new(
-                    initial_proofs,
-                    simulate_every_proof_under_resources,
-                ),
                 costing_parameters: fee_payment,
                 pre_allocated_addresses: vec![],
+                disable_limits_and_costing_modules: false,
+                start_timestamp_inclusive: None,
+                end_timestamp_exclusive: None,
             },
-            false,
         )
     }
 }

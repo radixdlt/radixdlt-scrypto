@@ -90,28 +90,28 @@ impl TransactionPreparableFromValue for PreparedRoundUpdateTransactionV1 {
 }
 
 impl PreparedRoundUpdateTransactionV1 {
-    pub fn get_executable(&self) -> ExecutableTransactionV1 {
-        ExecutableTransactionV1::new(
+    pub fn get_executable(&self) -> ExecutableTransaction {
+        ExecutableTransaction::new_v1(
             self.encoded_instructions.clone(),
+            AuthZoneInit::proofs(btreeset!(system_execution(SystemExecution::Validator))),
             self.references.clone(),
             self.blobs.clone(),
             ExecutionContext {
                 unique_hash: self.summary.hash,
-                intent_hash_nullification: IntentHashNullification::None,
+                intent_hash_nullifications: vec![],
                 epoch_range: None,
                 payload_size: 0,
                 num_of_signature_validations: 0,
-                auth_zone_init: AuthZoneInit::proofs(btreeset!(system_execution(
-                    SystemExecution::Validator
-                ))),
                 costing_parameters: TransactionCostingParameters {
                     tip: TipSpecifier::None,
                     free_credit_in_xrd: Decimal::ZERO,
                     abort_when_loan_repaid: false,
                 },
                 pre_allocated_addresses: vec![],
+                disable_limits_and_costing_modules: true,
+                start_timestamp_inclusive: None,
+                end_timestamp_exclusive: None,
             },
-            true,
         )
     }
 }

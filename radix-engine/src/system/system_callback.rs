@@ -1,5 +1,4 @@
 use super::module::*;
-use super::system_modules::auth::AuthZoneParams;
 use super::system_modules::costing::{CostingModuleConfig, ExecutionCostingEntry};
 use super::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::blueprints::account::ACCOUNT_CREATE_PREALLOCATED_ED25519_ID;
@@ -233,7 +232,7 @@ impl<C: SystemCallbackObject> System<C> {
 
 impl<C: SystemCallbackObject> System<C> {
     #[cfg(not(feature = "alloc"))]
-    fn print_executable(executable: &impl Executable) {
+    fn print_executable(executable: &ExecutableTransaction) {
         println!("{:-^120}", "Executable");
         println!("Intent hash: {}", executable.unique_hash());
         println!("Payload size: {}", executable.payload_size());
@@ -672,7 +671,7 @@ impl<C: SystemCallbackObject> System<C> {
                     None
                 }
             }
-            IntentHashNullification::None => None,
+            IntentHashNullification::System => None,
         };
 
         if let Some((intent_hash, expiry_epoch)) = mark_intent_result {
@@ -824,52 +823,62 @@ impl<C: SystemCallbackObject> System<C> {
     }
 
     /// Checks that references exist in the store
-    fn build_call_frame_init_with_reference_check(
-        intent: &impl IntentDetails,
+    fn build_call_frame_inits_with_reference_check(
+        intents: &ExecutableIntents,
         modules: &mut SystemModuleMixer,
         store: &mut (impl BootStore + CommitableSubstateStore),
-    ) -> Result<CallFrameInit<Actor>, BootloadingError> {
-        let mut global_addresses = indexset!();
-        let mut direct_accesses = indexset!();
+    ) -> Result<Vec<CallFrameInit<Actor>>, BootloadingError> {
+        match intents {
+            ExecutableIntents::V1(intent) => {
+                let mut global_addresses = indexset!();
+                let mut direct_accesses = indexset!();
 
-        // Check references
-        for reference in intent.references().iter() {
-            let node_id = &reference.0;
+                // Check references
+                for reference in intent.references.iter() {
+                    let node_id = &reference.0;
 
-            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-                // Allow always visible node and do not add reference
-                continue;
-            }
+                    if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                        // Allow always visible node and do not add reference
+                        continue;
+                    }
 
-            if node_id.is_global_preallocated() {
-                // Allow global virtual and add reference
-                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                continue;
-            }
+                    if node_id.is_global_preallocated() {
+                        // Allow global virtual and add reference
+                        global_addresses
+                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                        continue;
+                    }
 
-            let ref_value = store
-                .read_substate(
-                    node_id,
-                    TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
-                )
-                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+                    let ref_value = store
+                        .read_substate(
+                            node_id,
+                            TYPE_INFO_FIELD_PARTITION,
+                            &TypeInfoField::TypeInfo.into(),
+                        )
+                        .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
 
-            match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
-                StableReferenceType::Global => {
-                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                    match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
+                        StableReferenceType::Global => {
+                            global_addresses
+                                .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                        }
+                        StableReferenceType::DirectAccess => {
+                            direct_accesses
+                                .insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                        }
+                    }
                 }
-                StableReferenceType::DirectAccess => {
-                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
-                }
+
+                Ok(vec![CallFrameInit {
+                    data: Actor::Root,
+                    global_addresses,
+                    direct_accesses,
+                }])
+            }
+            ExecutableIntents::V2(_) => {
+                unimplemented!();
             }
         }
-
-        Ok(CallFrameInit {
-            data: Actor::Root,
-            global_addresses,
-            direct_accesses,
-        })
     }
 
     fn verify_boot_ref_value(
@@ -1129,7 +1138,7 @@ impl<C: SystemCallbackObject> System<C> {
 
     fn resolve_modules(
         store: &mut impl BootStore,
-        executable: &impl Executable,
+        executable: &ExecutableTransaction,
         init_input: &SystemInit<C::Init>,
     ) -> SystemModuleMixer {
         let system_boot = store
@@ -1194,6 +1203,13 @@ impl<C: SystemCallbackObject> System<C> {
             }
         }
 
+        let auth_module = match executable.intents() {
+            ExecutableIntents::V1(intent) => {
+                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
+            }
+            ExecutableIntents::V2(_) => AuthModule::new(),
+        };
+
         SystemModuleMixer::new(
             enabled_modules,
             KernelTraceModule,
@@ -1201,13 +1217,7 @@ impl<C: SystemCallbackObject> System<C> {
                 system_parameters.network_definition,
                 *executable.unique_hash(),
             ),
-            AuthModule::new(AuthZoneParams {
-                auth_zone_init_for_each_intent: executable
-                    .intents()
-                    .into_iter()
-                    .map(|i| i.auth_zone_init().clone())
-                    .collect(),
-            }),
+            auth_module,
             LimitsModule::from_params(system_parameters.limit_parameters),
             CostingModule {
                 // The current depth is set to zero since at the start of the execution of transactions
@@ -1240,12 +1250,13 @@ impl<C: SystemCallbackObject> System<C> {
 
 impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
     type Init = SystemInit<C::Init>;
+    type Executable = ExecutableTransaction;
     type ExecutionOutput = Vec<InstructionOutput>;
     type Receipt = TransactionReceiptV1;
 
-    fn init<S: BootStore + CommitableSubstateStore, E: Executable>(
+    fn init<S: BootStore + CommitableSubstateStore>(
         store: &mut S,
-        executable: &E,
+        executable: &ExecutableTransaction,
         init_input: SystemInit<C::Init>,
     ) -> Result<(Self, Vec<CallFrameInit<Actor>>), Self::Receipt> {
         // Dump executable
@@ -1285,8 +1296,8 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             }
         }
 
-        for intent in executable.intents() {
-            let intent_hash_validation_result = match intent.intent_hash_nullification() {
+        for hash_nullification in executable.intent_hash_nullifications() {
+            let intent_hash_validation_result = match hash_nullification {
                 IntentHashNullification::TransactionIntent {
                     intent_hash,
                     expiry_epoch,
@@ -1317,7 +1328,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
                         )
                     }
                 }
-                IntentHashNullification::None => Ok(()),
+                IntentHashNullification::System => Ok(()),
             };
             match intent_hash_validation_result {
                 Ok(()) => {}
@@ -1325,16 +1336,14 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             }
         }
 
-        let intents = executable.intents();
-        let mut call_frame_inits = Vec::with_capacity(intents.len());
-        for intent in intents {
-            match Self::build_call_frame_init_with_reference_check(intent, &mut modules, store) {
-                Ok(call_frame_init) => {
-                    call_frame_inits.push(call_frame_init);
-                }
-                Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
-            }
-        }
+        let call_frame_inits = match Self::build_call_frame_inits_with_reference_check(
+            executable.intents(),
+            &mut modules,
+            store,
+        ) {
+            Ok(call_frame_inits) => call_frame_inits,
+            Err(error) => return Err(Self::create_rejection_receipt(error, modules)),
+        };
 
         let system = System {
             blueprint_cache: NonIterMap::new(),
@@ -1344,9 +1353,8 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             modules,
             finalization: SystemFinalization {
                 intent_nullifications: executable
-                    .intents()
+                    .intent_hash_nullifications()
                     .iter()
-                    .map(|i| i.intent_hash_nullification())
                     .cloned()
                     .collect(),
             },
@@ -1355,9 +1363,9 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
         Ok((system, call_frame_inits))
     }
 
-    fn start<Y: SystemBasedKernelApi, E: Executable>(
+    fn start<Y: SystemBasedKernelApi>(
         api: &mut Y,
-        executable: E,
+        executable: ExecutableTransaction,
     ) -> Result<Vec<InstructionOutput>, RuntimeError> {
         let mut system_service = SystemService::new(api);
 
@@ -1374,29 +1382,27 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
         }
 
         let intents = executable.intents();
-        assert_eq!(intents.len(), 1, "For now we only support one intent");
-        let intent = *intents.get(0).unwrap();
-
-        // Call TX processor
-        let encoded_instructions = match intent.executable_instructions() {
-            ExecutableInstructions::V1Processor(instructions) => instructions,
-            ExecutableInstructions::V2Processor(_) => unimplemented!(),
+        let output = match intents {
+            ExecutableIntents::V1(intent) => {
+                let rtn = system_service.call_function(
+                    TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                    TRANSACTION_PROCESSOR_RUN_IDENT,
+                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                        manifest_encoded_instructions: intent.encoded_instructions.clone(),
+                        global_address_reservations,
+                        references: intent.references.clone(),
+                        blobs: intent.blobs.clone(),
+                    })
+                    .unwrap(),
+                )?;
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            }
+            ExecutableIntents::V2(_) => {
+                unimplemented!();
+            }
         };
-
-        let rtn = system_service.call_function(
-            TRANSACTION_PROCESSOR_PACKAGE,
-            TRANSACTION_PROCESSOR_BLUEPRINT,
-            TRANSACTION_PROCESSOR_RUN_IDENT,
-            scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                manifest_encoded_instructions: encoded_instructions,
-                global_address_reservations,
-                references: intent.references(),
-                blobs: intent.blobs(),
-            })
-            .unwrap(),
-        )?;
-
-        let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
 
         Ok(output)
     }

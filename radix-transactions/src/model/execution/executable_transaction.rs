@@ -1,54 +1,194 @@
 use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExecutableTransaction {
-    /// Originally launched with Babylon.
-    /// Uses [`InstructionV1`] and [`NotarizedTransactionV1`]`.
-    V1(ExecutableTransactionV1),
-    /// Originally launched with Cuttlefish.
-    /// Supports subintents.
-    /// Has support for [`InstructionV2`] and [`NotarizedTransactionV2`]`.
-    V2(ExecutableTransactionV2),
+pub enum ExecutableIntents {
+    V1(ExecutableIntentV1),
+    V2(Vec<ExecutableIntentV2>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutableIntentV1 {
+    pub encoded_instructions: Rc<Vec<u8>>,
+    pub auth_zone_init: AuthZoneInit,
+    pub references: Rc<IndexSet<Reference>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutableIntentV2 {
+    pub encoded_instructions: Rc<Vec<u8>>,
+    pub auth_zone_init: AuthZoneInit,
+    pub references: Rc<IndexSet<Reference>>,
+    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+    /// Indices against the parent Executable.
+    /// It's a required invariant from validation that each non-root intent is included in exactly one parent.
+    pub children_intent_indices: Vec<usize>,
+}
+
+/// This is an executable form of the transaction, post stateless validation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutableTransaction {
+    pub(crate) intents: ExecutableIntents,
+    pub(crate) context: ExecutionContext,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutionContext {
+    /// This is used as a source of pseudo-randomness for the id allocator and RUID generation
+    pub unique_hash: Hash,
+    pub pre_allocated_addresses: Vec<PreAllocatedAddress>,
+    pub payload_size: usize,
+    pub num_of_signature_validations: usize,
+    pub costing_parameters: TransactionCostingParameters,
+    pub epoch_range: Option<EpochRange>,
+    pub start_timestamp_inclusive: Option<Instant>,
+    pub end_timestamp_exclusive: Option<Instant>,
+    pub disable_limits_and_costing_modules: bool,
+    pub intent_hash_nullifications: Vec<IntentHashNullification>,
 }
 
 impl ExecutableTransaction {
-    pub fn into_v1(self) -> Option<ExecutableTransactionV1> {
-        match self {
-            Self::V1(inner) => Some(inner),
-            _ => None,
+    pub fn new_v1(
+        encoded_instructions_v1: Rc<Vec<u8>>,
+        auth_zone_init: AuthZoneInit,
+        references: IndexSet<Reference>,
+        blobs: Rc<IndexMap<Hash, Vec<u8>>>,
+        context: ExecutionContext,
+    ) -> Self {
+        let mut references = references;
+
+        for proof in &auth_zone_init.initial_non_fungible_id_proofs {
+            references.insert(proof.resource_address().clone().into());
+        }
+        for resource in &auth_zone_init.simulate_every_proof_under_resources {
+            references.insert(resource.clone().into());
+        }
+
+        for preallocated_address in &context.pre_allocated_addresses {
+            references.insert(
+                preallocated_address
+                    .blueprint_id
+                    .package_address
+                    .clone()
+                    .into(),
+            );
+        }
+
+        Self {
+            context,
+            intents: ExecutableIntents::V1(ExecutableIntentV1 {
+                encoded_instructions: encoded_instructions_v1,
+                references: Rc::new(references),
+                blobs,
+                auth_zone_init,
+            }),
         }
     }
 
-    pub fn uses_free_credits(&self) -> bool {
-        match self {
-            Self::V1(inner) => inner.costing_parameters().free_credit_in_xrd.is_positive(),
-            _ => unimplemented!(),
+    // Consuming builder-like customization methods:
+
+    pub fn skip_epoch_range_check(mut self) -> Self {
+        self.context.epoch_range = None;
+        self
+    }
+
+    pub fn skip_intent_hash_nullification(mut self) -> Self {
+        self.context.intent_hash_nullifications.clear();
+        self
+    }
+
+    pub fn apply_free_credit(mut self, free_credit_in_xrd: Decimal) -> Self {
+        self.context.costing_parameters.free_credit_in_xrd = free_credit_in_xrd;
+        self
+    }
+
+    pub fn abort_when_loan_repaid(mut self) -> Self {
+        self.context.costing_parameters.abort_when_loan_repaid = true;
+        self
+    }
+
+    pub fn unique_hash(&self) -> &Hash {
+        &self.context.unique_hash
+    }
+
+    pub fn overall_epoch_range(&self) -> Option<&EpochRange> {
+        self.context.epoch_range.as_ref()
+    }
+
+    pub fn overall_start_timestamp_inclusive(&self) -> Option<Instant> {
+        self.context.start_timestamp_inclusive
+    }
+
+    pub fn overall_end_timestamp_exclusive(&self) -> Option<Instant> {
+        self.context.end_timestamp_exclusive
+    }
+
+    pub fn costing_parameters(&self) -> &TransactionCostingParameters {
+        &self.context.costing_parameters
+    }
+
+    pub fn pre_allocated_addresses(&self) -> &[PreAllocatedAddress] {
+        &self.context.pre_allocated_addresses
+    }
+
+    pub fn payload_size(&self) -> usize {
+        self.context.payload_size
+    }
+
+    pub fn num_of_signature_validations(&self) -> usize {
+        self.context.num_of_signature_validations
+    }
+
+    pub fn disable_limits_and_costing_modules(&self) -> bool {
+        self.context.disable_limits_and_costing_modules
+    }
+
+    pub fn intents(&self) -> &ExecutableIntents {
+        &self.intents
+    }
+
+    pub fn intent_hash_nullifications(&self) -> &Vec<IntentHashNullification> {
+        &self.context.intent_hash_nullifications
+    }
+
+    pub fn all_blob_hashes(&self) -> IndexSet<Hash> {
+        let mut hashes = indexset!();
+
+        match self.intents() {
+            ExecutableIntents::V1(intent) => {
+                for hash in intent.blobs.keys() {
+                    hashes.insert(*hash);
+                }
+            }
+            ExecutableIntents::V2(intents) => {
+                for intent in intents {
+                    for hash in intent.blobs.keys() {
+                        hashes.insert(*hash);
+                    }
+                }
+            }
         }
-    }
 
-    pub fn apply_free_credit(self, free_credit: Decimal) -> Self {
-        match self {
-            Self::V1(inner) => Self::V1(inner.apply_free_credit(free_credit)),
-            _ => unimplemented!(),
+        hashes
+    }
+    pub fn all_references(&self) -> IndexSet<Reference> {
+        let mut references = indexset!();
+
+        match self.intents() {
+            ExecutableIntents::V1(intent) => {
+                for reference in intent.references.iter() {
+                    references.insert(reference.clone());
+                }
+            }
+            ExecutableIntents::V2(intents) => {
+                for intent in intents {
+                    for reference in intent.references.iter() {
+                        references.insert(reference.clone());
+                    }
+                }
+            }
         }
-    }
 
-    pub fn skip_epoch_range_check(self) -> Self {
-        match self {
-            Self::V1(inner) => Self::V1(inner.skip_epoch_range_check()),
-            _ => unimplemented!(),
-        }
-    }
-}
-
-impl From<ExecutableTransactionV1> for ExecutableTransaction {
-    fn from(value: ExecutableTransactionV1) -> Self {
-        Self::V1(value)
-    }
-}
-
-impl From<ExecutableTransactionV2> for ExecutableTransaction {
-    fn from(value: ExecutableTransactionV2) -> Self {
-        Self::V2(value)
+        references
     }
 }
