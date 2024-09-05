@@ -352,7 +352,7 @@ impl ManifestNameLookup {
         self.core.borrow().resolve_named_address(name)
     }
 
-    pub fn named_address_id(&self, name: impl AsRef<str>) -> u32 {
+    pub fn named_address_id(&self, name: impl AsRef<str>) -> ManifestNamedAddress {
         match self.core.borrow().resolve_named_address(name) {
             ManifestAddress::Static(_) => panic!("Named manifest address can't be static"),
             ManifestAddress::Named(id) => id,

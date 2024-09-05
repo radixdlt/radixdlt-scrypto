@@ -122,7 +122,7 @@ pub struct NameResolver {
     named_buckets: IndexMap<String, ManifestBucket>,
     named_proofs: IndexMap<String, ManifestProof>,
     named_address_reservations: IndexMap<String, ManifestAddressReservation>,
-    named_addresses: IndexMap<String, u32>,
+    named_addresses: IndexMap<String, ManifestNamedAddress>,
 }
 
 impl NameResolver {
@@ -173,7 +173,7 @@ impl NameResolver {
     pub fn insert_named_address(
         &mut self,
         name: String,
-        address_id: u32,
+        address_id: ManifestNamedAddress,
     ) -> Result<(), NameResolverError> {
         if self.named_addresses.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
@@ -207,7 +207,10 @@ impl NameResolver {
         }
     }
 
-    pub fn resolve_named_address(&mut self, name: &str) -> Result<u32, NameResolverError> {
+    pub fn resolve_named_address(
+        &mut self,
+        name: &str,
+    ) -> Result<ManifestNamedAddress, NameResolverError> {
         match self.named_addresses.get(name).cloned() {
             Some(address_id) => Ok(address_id),
             None => Err(NameResolverError::UndefinedNamedAddress(name.into())),
@@ -244,7 +247,7 @@ impl NameResolver {
         return None;
     }
 
-    pub fn resolve_named_address_name(&self, address: u32) -> Option<String> {
+    pub fn resolve_named_address_name(&self, address: ManifestNamedAddress) -> Option<String> {
         for (name, id) in self.named_addresses.iter() {
             if id.eq(&address) {
                 return Some(name.to_string());
@@ -1042,7 +1045,7 @@ fn generate_dynamic_global_address(
         },
         ast::Value::NamedAddress(inner) => {
             match &inner.value {
-                ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(*n)),
+                ast::Value::U32(n) => Ok(DynamicGlobalAddress::Named(ManifestNamedAddress(*n))),
                 ast::Value::String(s) => resolver
                     .resolve_named_address(&s)
                     .map(Into::into)
@@ -1107,7 +1110,7 @@ fn generate_dynamic_package_address(
         },
         ast::Value::NamedAddress(inner) => {
             match &inner.value {
-                ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(*n)),
+                ast::Value::U32(n) => Ok(DynamicPackageAddress::Named(ManifestNamedAddress(*n))),
                 ast::Value::String(s) => resolver
                     .resolve_named_address(&s)
                     .map(Into::into)
@@ -1241,7 +1244,7 @@ fn declare_address_reservation(
 fn declare_named_address(
     value: &ast::ValueWithSpan,
     resolver: &mut NameResolver,
-    address_id: u32,
+    address_id: ManifestNamedAddress,
 ) -> Result<(), GeneratorError> {
     match &value.value {
         ast::Value::NamedAddress(inner) => match &inner.value {
@@ -1338,7 +1341,7 @@ fn generate_named_address(
 ) -> Result<ManifestAddress, GeneratorError> {
     match &value.value {
         ast::Value::NamedAddress(inner) => match &inner.value {
-            ast::Value::U32(n) => Ok(ManifestAddress::Named(*n)),
+            ast::Value::U32(n) => Ok(ManifestAddress::Named(ManifestNamedAddress(*n))),
             ast::Value::String(s) => resolver
                 .resolve_named_address(&s)
                 .map(|x| ManifestAddress::Named(x))

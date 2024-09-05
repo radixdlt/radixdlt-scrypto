@@ -53,7 +53,7 @@ pub struct ManifestObjectNames {
     pub bucket_names: NonIterMap<ManifestBucket, String>,
     pub proof_names: NonIterMap<ManifestProof, String>,
     pub address_reservation_names: NonIterMap<ManifestAddressReservation, String>,
-    pub address_names: NonIterMap<u32, String>,
+    pub address_names: NonIterMap<ManifestNamedAddress, String>,
 }
 
 impl<'a> DecompilationContext<'a> {

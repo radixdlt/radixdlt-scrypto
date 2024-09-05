@@ -27,11 +27,11 @@ impl FormattableCustomExtension for ManifestCustomExtension {
                         write!(f, "\"{}\"", hex::encode(node_id.as_bytes()))?;
                     }
                 }
-                ManifestAddress::Named(address_id) => {
-                    if let Some(name) = context.get_address_name(&address_id) {
+                ManifestAddress::Named(value) => {
+                    if let Some(name) = context.get_address_name(&value) {
                         write!(f, "\"{}\"", name)?;
                     } else {
-                        write!(f, "\"{}\"", address_id)?;
+                        write!(f, "\"{}\"", value.0)?;
                     }
                 }
             },

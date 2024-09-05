@@ -99,7 +99,7 @@ pub struct NewSymbols {
     pub new_bucket: Option<ManifestBucket>,
     pub new_proof: Option<ManifestProof>,
     pub new_address_reservation: Option<ManifestAddressReservation>,
-    pub new_address_id: Option<u32>,
+    pub new_address_id: Option<ManifestNamedAddress>,
 }
 
 pub type ManifestV1Builder = ManifestBuilder<InstructionV1>;

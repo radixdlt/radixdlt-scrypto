@@ -33,9 +33,9 @@ impl ManifestIdAllocator {
         ManifestAddressReservation(id)
     }
 
-    pub fn new_address_id(&mut self) -> u32 {
+    pub fn new_address_id(&mut self) -> ManifestNamedAddress {
         let id = self.next_address_id;
         self.next_address_id += 1;
-        id
+        ManifestNamedAddress(id)
     }
 }
