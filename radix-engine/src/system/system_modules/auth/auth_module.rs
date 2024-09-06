@@ -87,7 +87,7 @@ impl AuthModule {
         system: &mut SystemService<Y>,
         blueprint_id: &BlueprintId,
     ) -> (BTreeSet<ResourceAddress>, BTreeSet<NonFungibleGlobalId>) {
-        let is_root_call_frame = system.kernel_get_current_depth() == 0;
+        let is_root_call_frame = system.kernel_get_system_state().current_call_frame.is_root();
         let is_root_thread = system.kernel_get_thread_id() == 0;
         if is_root_call_frame && is_root_thread {
             let auth_module = &system.kernel_get_system().modules.auth;
