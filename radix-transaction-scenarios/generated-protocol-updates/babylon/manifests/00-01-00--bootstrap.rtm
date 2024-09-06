@@ -1,3 +1,135 @@
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "FungibleResourceManager"
+    AddressReservation("reservation1")
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation2")
+    Address("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation3")
+    Address("resource_sim1nfxxxxxxxxxxglcllrxxxxxxxxx002350006550xxxxxxxxxk5870l")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation4")
+    Address("resource_sim1nfxxxxxxxxxxpkgwnrxxxxxxxxx002558553505xxxxxxxxxlah0rl")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation5")
+    Address("resource_sim1nfxxxxxxxxxxdntwnrxxxxxxxxx002876444928xxxxxxxxxnc50rl")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("reservation6")
+    Address("package_sim1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxnc59k6")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("reservation7")
+    Address("package_sim1pkgxxxxxxxxxcnsmgrxxxxxxxxx000746305335xxxxxxxxxxc06cl")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation8")
+    Address("resource_sim1nfxxxxxxxxxxaccwnrxxxxxxxxx006664022062xxxxxxxxxrn80rl")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("reservation9")
+    Address("package_sim1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxrn8jm6")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("reservation10")
+    Address("package_sim1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxxc5z0l")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("reservation11")
+    Address("package_sim1pkgxxxxxxxxxplxxxxxxxxxxxxx020379220524xxxxxxxxxl5e8k6")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation12")
+    Address("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation13")
+    Address("resource_sim1nfxxxxxxxxxxed25sgxxxxxxxxx002236757237xxxxxxxxx8x44q5")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation14")
+    Address("resource_sim1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxw002k0")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("reservation15")
+    Address("package_sim1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxhkrefh")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("reservation16")
+    Address("package_sim1pkgxxxxxxxxxgenssxxxxxxxxxx004372642773xxxxxxxxxkjv3q6")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxaj0zg9")
+    "NonFungibleResourceManager"
+    AddressReservation("reservation17")
+    Address("resource_sim1nfxxxxxxxxxxvdrwnrxxxxxxxxx004365253834xxxxxxxxxjxu0rl")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxcnsmgrxxxxxxxxx000746305335xxxxxxxxxxc06cl")
+    "ConsensusManager"
+    AddressReservation("reservation18")
+    Address("consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxgenssxxxxxxxxxx004372642773xxxxxxxxxkjv3q6")
+    "GenesisHelper"
+    AddressReservation("reservation19")
+    Address("component_sim1cptxxxxxxxxxgenssxxxxxxxxxx000977302539xxxxxxxxxkjv3q6")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
+    "Package"
+    AddressReservation("reservation20")
+    Address("package_sim1pkgxxxxxxxxxtxtrakxxxxxxxxx000595975309xxxxxxxxx4d5zd2")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxtxtrakxxxxxxxxx000595975309xxxxxxxxx4d5zd2")
+    "TransactionTracker"
+    AddressReservation("reservation21")
+    Address("transactiontracker_sim1stxxxxxxxxxxtxtrakxxxxxxxxx006844685494xxxxxxxxx4d5zd2")
+;
+USE_PREALLOCATED_ADDRESS
+    Address("package_sim1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxhkrefh")
+    "Faucet"
+    AddressReservation("reservation22")
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<1u8>(
         Enum<2u8>(
@@ -109,7 +241,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(0u32)
+        AddressReservation("reservation1")
     )
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -197,7 +329,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(1u32)
+        AddressReservation("reservation2")
     )
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -285,7 +417,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(2u32)
+        AddressReservation("reservation3")
     )
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -409,7 +541,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(3u32)
+        AddressReservation("reservation4")
     )
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -533,7 +665,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(4u32)
+        AddressReservation("reservation5")
     )
 ;
 CALL_FUNCTION
@@ -756,7 +888,7 @@ CALL_FUNCTION
         )
     )
     Enum<1u8>(
-        AddressReservation(5u32)
+        AddressReservation("reservation6")
     )
 ;
 CALL_FUNCTION
@@ -3525,7 +3657,7 @@ CALL_FUNCTION
         )
     )
     Enum<1u8>(
-        AddressReservation(6u32)
+        AddressReservation("reservation7")
     )
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -3649,7 +3781,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(7u32)
+        AddressReservation("reservation8")
     )
 ;
 CALL_FUNCTION
@@ -5570,7 +5702,7 @@ CALL_FUNCTION
         )
     )
     Enum<1u8>(
-        AddressReservation(8u32)
+        AddressReservation("reservation9")
     )
 ;
 CALL_FUNCTION
@@ -7135,7 +7267,7 @@ CALL_FUNCTION
         )
     )
     Enum<1u8>(
-        AddressReservation(9u32)
+        AddressReservation("reservation10")
     )
 ;
 CALL_FUNCTION
@@ -9438,7 +9570,7 @@ CALL_FUNCTION
         )
     )
     Enum<1u8>(
-        AddressReservation(10u32)
+        AddressReservation("reservation11")
     )
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -9517,7 +9649,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(11u32)
+        AddressReservation("reservation12")
     )
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -9596,7 +9728,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(12u32)
+        AddressReservation("reservation13")
     )
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
@@ -9676,7 +9808,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Enum>()
     )
     Enum<1u8>(
-        AddressReservation(13u32)
+        AddressReservation("reservation14")
     )
 ;
 PUBLISH_PACKAGE_ADVANCED
@@ -9943,7 +10075,7 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
     Enum<1u8>(
-        AddressReservation(14u32)
+        AddressReservation("reservation15")
     )
 ;
 PUBLISH_PACKAGE_ADVANCED
@@ -11179,15 +11311,15 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
     Enum<1u8>(
-        AddressReservation(15u32)
+        AddressReservation("reservation16")
     )
 ;
 CALL_FUNCTION
     Address("package_sim1pkgxxxxxxxxxcnsmgrxxxxxxxxx000746305335xxxxxxxxxxc06cl")
     "ConsensusManager"
     "create"
-    AddressReservation(16u32)
-    AddressReservation(17u32)
+    AddressReservation("reservation17")
+    AddressReservation("reservation18")
     1u64
     Tuple(
         10u32,
@@ -11212,7 +11344,7 @@ CALL_FUNCTION
     Address("package_sim1pkgxxxxxxxxxgenssxxxxxxxxxx004372642773xxxxxxxxxkjv3q6")
     "GenesisHelper"
     "new"
-    AddressReservation(18u32)
+    AddressReservation("reservation19")
     Address("consensusmanager_sim1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxxc06cl")
     NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxxw002k0:#0#")
 ;
@@ -14334,14 +14466,14 @@ CALL_FUNCTION
     14u64
     Map<String, Tuple>()
     Enum<1u8>(
-        AddressReservation(19u32)
+        AddressReservation("reservation20")
     )
 ;
 CALL_FUNCTION
     Address("package_sim1pkgxxxxxxxxxtxtrakxxxxxxxxx000595975309xxxxxxxxx4d5zd2")
     "TransactionTracker"
     "create"
-    AddressReservation(20u32)
+    AddressReservation("reservation21")
 ;
 MINT_FUNGIBLE
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
@@ -14356,6 +14488,6 @@ CALL_FUNCTION
     Address("package_sim1pkgxxxxxxxxxfaucetxxxxxxxxx000034355863xxxxxxxxxhkrefh")
     "Faucet"
     "new"
-    AddressReservation(21u32)
+    AddressReservation("reservation22")
     Bucket("bucket1")
 ;

@@ -1,4 +1,5 @@
 use crate::internal_prelude::*;
+use decompiler::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct AuthZoneInit {
@@ -39,6 +40,21 @@ pub struct ProposerTimestampRange {
 pub struct PreAllocatedAddress {
     pub blueprint_id: BlueprintId,
     pub address: GlobalAddress,
+}
+
+impl PreAllocatedAddress {
+    pub fn decompile_as_pseudo_instruction(
+        &self,
+        context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        // This aligns with AllocateGlobalAddress
+        let instruction = DecompiledInstruction::new("USE_PREALLOCATED_ADDRESS")
+            .add_argument(&self.blueprint_id.package_address)
+            .add_argument(&self.blueprint_id.blueprint_name)
+            .add_argument(context.new_address_reservation())
+            .add_argument(&self.address);
+        Ok(instruction)
+    }
 }
 
 impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {

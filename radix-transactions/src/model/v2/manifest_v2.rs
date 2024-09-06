@@ -12,7 +12,7 @@ use crate::internal_prelude::*;
 pub struct TransactionManifestV2 {
     pub instructions: Vec<InstructionV2>,
     pub blobs: IndexMap<Hash, Vec<u8>>,
-    pub children: Vec<SubintentHash>,
+    pub children: Vec<ChildSubintent>,
     pub object_names: ManifestObjectNames,
 }
 
@@ -27,7 +27,7 @@ impl ReadableManifest for TransactionManifestV2 {
         &self.blobs
     }
 
-    fn get_child_subintents(&self) -> &[SubintentHash] {
+    fn get_child_subintents(&self) -> &[ChildSubintent] {
         &self.children
     }
 

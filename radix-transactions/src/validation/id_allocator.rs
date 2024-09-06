@@ -6,6 +6,7 @@ pub struct ManifestIdAllocator {
     next_proof_id: u32,
     next_address_reservation_id: u32,
     next_address_id: u32,
+    next_intent_id: u32,
 }
 
 impl ManifestIdAllocator {
@@ -37,5 +38,11 @@ impl ManifestIdAllocator {
         let id = self.next_address_id;
         self.next_address_id += 1;
         ManifestNamedAddress(id)
+    }
+
+    pub fn new_intent_id(&mut self) -> ManifestIntent {
+        let id = self.next_intent_id;
+        self.next_intent_id += 1;
+        ManifestIntent(id)
     }
 }
