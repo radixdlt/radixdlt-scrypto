@@ -8,7 +8,10 @@ use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_PREALLOCATED_SECP256K1_ID;
 use crate::blueprints::resource::fungible_vault::{DepositEvent, PayFeeEvent};
 use crate::blueprints::resource::*;
-use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
+use crate::blueprints::transaction_processor::{
+    TransactionProcessorRunInputEfficientEncodable, TxnProcessor,
+    MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+};
 use crate::blueprints::transaction_tracker::*;
 use crate::errors::*;
 use crate::internal_prelude::*;
@@ -56,11 +59,22 @@ pub struct SystemParameters {
     pub limit_parameters: LimitParameters,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SystemLogicVersion {
+    V1,
+}
+
 pub type SystemBootSubstate = SystemBoot;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),
+}
+
+impl SystemBoot {
+    fn logic_version(&self) -> SystemLogicVersion {
+        SystemLogicVersion::V1
+    }
 }
 
 #[derive(Clone)]
@@ -157,6 +171,7 @@ pub struct SystemInit<C> {
 }
 
 pub struct System<C: SystemCallbackObject> {
+    pub logic_version: SystemLogicVersion,
     pub callback: C,
     pub blueprint_cache: NonIterMap<CanonicalBlueprintId, Rc<BlueprintDefinition>>,
     pub schema_cache: NonIterMap<SchemaHash, Rc<VersionedScryptoSchema>>,
@@ -822,6 +837,50 @@ impl<C: SystemCallbackObject> System<C> {
         println!("{:-^120}", "Finish");
     }
 
+    fn reference_check(
+        references: &IndexSet<Reference>,
+        modules: &mut SystemModuleMixer,
+        store: &mut (impl BootStore + CommitableSubstateStore),
+    ) -> Result<(IndexSet<GlobalAddress>, IndexSet<InternalAddress>), BootloadingError> {
+        let mut global_addresses = indexset!();
+        let mut direct_accesses = indexset!();
+
+        // Check references
+        for reference in references.iter() {
+            let node_id = &reference.0;
+
+            if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
+                // Allow always visible node and do not add reference
+                continue;
+            }
+
+            if node_id.is_global_preallocated() {
+                // Allow global virtual and add reference
+                global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                continue;
+            }
+
+            let ref_value = store
+                .read_substate(
+                    node_id,
+                    TYPE_INFO_FIELD_PARTITION,
+                    &TypeInfoField::TypeInfo.into(),
+                )
+                .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
+
+            match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
+                StableReferenceType::Global => {
+                    global_addresses.insert(GlobalAddress::new_or_panic(node_id.clone().into()));
+                }
+                StableReferenceType::DirectAccess => {
+                    direct_accesses.insert(InternalAddress::new_or_panic(node_id.clone().into()));
+                }
+            }
+        }
+
+        Ok((global_addresses, direct_accesses))
+    }
+
     /// Checks that references exist in the store
     fn build_call_frame_inits_with_reference_check(
         intents: &ExecutableIntents,
@@ -830,44 +889,8 @@ impl<C: SystemCallbackObject> System<C> {
     ) -> Result<Vec<CallFrameInit<Actor>>, BootloadingError> {
         match intents {
             ExecutableIntents::V1(intent) => {
-                let mut global_addresses = indexset!();
-                let mut direct_accesses = indexset!();
-
-                // Check references
-                for reference in intent.references.iter() {
-                    let node_id = &reference.0;
-
-                    if ALWAYS_VISIBLE_GLOBAL_NODES.contains(node_id) {
-                        // Allow always visible node and do not add reference
-                        continue;
-                    }
-
-                    if node_id.is_global_preallocated() {
-                        // Allow global virtual and add reference
-                        global_addresses
-                            .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                        continue;
-                    }
-
-                    let ref_value = store
-                        .read_substate(
-                            node_id,
-                            TYPE_INFO_FIELD_PARTITION,
-                            &TypeInfoField::TypeInfo.into(),
-                        )
-                        .ok_or_else(|| BootloadingError::ReferencedNodeDoesNotExist(*node_id))?;
-
-                    match Self::verify_boot_ref_value(modules, node_id, ref_value)? {
-                        StableReferenceType::Global => {
-                            global_addresses
-                                .insert(GlobalAddress::new_or_panic(node_id.clone().into()));
-                        }
-                        StableReferenceType::DirectAccess => {
-                            direct_accesses
-                                .insert(InternalAddress::new_or_panic(node_id.clone().into()));
-                        }
-                    }
-                }
+                let (global_addresses, direct_accesses) =
+                    Self::reference_check(intent.references.as_ref(), modules, store)?;
 
                 Ok(vec![CallFrameInit {
                     data: Actor::Root,
@@ -875,8 +898,20 @@ impl<C: SystemCallbackObject> System<C> {
                     direct_accesses,
                 }])
             }
-            ExecutableIntents::V2(_) => {
-                unimplemented!();
+            ExecutableIntents::V2(intents) => {
+                let mut init_call_frames = vec![];
+                for intent in intents {
+                    let (global_addresses, direct_accesses) =
+                        Self::reference_check(intent.references.as_ref(), modules, store)?;
+
+                    init_call_frames.push(CallFrameInit {
+                        data: Actor::Root,
+                        global_addresses,
+                        direct_accesses,
+                    });
+                }
+
+                Ok(init_call_frames)
             }
         }
     }
@@ -1140,7 +1175,7 @@ impl<C: SystemCallbackObject> System<C> {
         store: &mut impl BootStore,
         executable: &ExecutableTransaction,
         init_input: &SystemInit<C::Init>,
-    ) -> SystemModuleMixer {
+    ) -> (SystemLogicVersion, SystemModuleMixer) {
         let system_boot = store
             .read_boot_substate(
                 TRANSACTION_TRACKER.as_node_id(),
@@ -1155,6 +1190,7 @@ impl<C: SystemCallbackObject> System<C> {
                 limit_parameters: LimitParameters::babylon_genesis(),
             }));
 
+        let system_logic_version = system_boot.logic_version();
         let mut system_parameters = match system_boot {
             SystemBoot::V1(system_parameters) => system_parameters,
         };
@@ -1210,7 +1246,7 @@ impl<C: SystemCallbackObject> System<C> {
             ExecutableIntents::V2(_) => AuthModule::new(),
         };
 
-        SystemModuleMixer::new(
+        let module_mixer = SystemModuleMixer::new(
             enabled_modules,
             KernelTraceModule,
             TransactionRuntimeModule::new(
@@ -1244,7 +1280,8 @@ impl<C: SystemCallbackObject> System<C> {
                 on_apply_cost: Default::default(),
             },
             ExecutionTraceModule::new(init_input.execution_trace.unwrap_or(0)),
-        )
+        );
+        (system_logic_version, module_mixer)
     }
 }
 
@@ -1265,7 +1302,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
             Self::print_executable(executable);
         }
 
-        let mut modules = Self::resolve_modules(store, executable, &init_input);
+        let (logic_version, mut modules) = Self::resolve_modules(store, executable, &init_input);
 
         // NOTE: Have to use match pattern rather than map_err to appease the borrow checker
         let callback = match C::init(store, init_input.callback_init) {
@@ -1346,6 +1383,7 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
         };
 
         let system = System {
+            logic_version,
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
@@ -1399,8 +1437,59 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output
             }
-            ExecutableIntents::V2(_) => {
-                unimplemented!();
+            ExecutableIntents::V2(intents) => {
+                for intent in intents {
+                    let mut system_service = SystemService::new(api);
+                    let virtual_resources = intent
+                        .auth_zone_init
+                        .simulate_every_proof_under_resources
+                        .clone();
+                    let virtual_non_fungibles =
+                        intent.auth_zone_init.initial_non_fungible_id_proofs.clone();
+                    let auth_zone = AuthModule::create_auth_zone(
+                        &mut system_service,
+                        None,
+                        virtual_resources,
+                        virtual_non_fungibles,
+                    )?;
+
+                    api.kernel_set_call_frame_data(Actor::Function(FunctionActor {
+                        blueprint_id: BlueprintId::new(
+                            &TRANSACTION_PROCESSOR_PACKAGE,
+                            TRANSACTION_PROCESSOR_BLUEPRINT,
+                        ),
+                        ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
+                        auth_zone,
+                    }))?;
+                }
+
+                {
+                    let mut system_service = SystemService::new(api);
+                    let intent = intents.get(0).unwrap();
+
+                    let txn_processor = TxnProcessor::<InstructionV1>::init(
+                        intent.encoded_instructions.clone(),
+                        global_address_reservations.clone(),
+                        intent.blobs.clone(),
+                        MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+                        &mut system_service,
+                    )?;
+                    let output = txn_processor.execute(&mut system_service)?;
+
+                    let actor = api.kernel_get_system_state().current_call_frame;
+                    match actor {
+                        Actor::Function(FunctionActor { auth_zone, .. }) => {
+                            let auth_zone = auth_zone.clone();
+                            let mut system_service = SystemService::new(api);
+                            AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
+                        }
+                        _ => {
+                            panic!("unexpected");
+                        }
+                    }
+
+                    output
+                }
             }
         };
 
