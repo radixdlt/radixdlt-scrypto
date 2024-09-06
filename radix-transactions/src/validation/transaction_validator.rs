@@ -217,12 +217,18 @@ impl NotarizedTransactionValidatorV1 {
                         .new_proof(source_amount.proof_kind())
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                ManifestInstructionEffect::ConsumeBucket { bucket, .. } => {
+                ManifestInstructionEffect::ConsumeBucket {
+                    consumed_bucket: bucket,
+                    ..
+                } => {
                     id_validator
                         .drop_bucket(&bucket)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                ManifestInstructionEffect::ConsumeProof { proof, .. } => {
+                ManifestInstructionEffect::ConsumeProof {
+                    consumed_proof: proof,
+                    ..
+                } => {
                     id_validator
                         .drop_proof(&proof)
                         .map_err(TransactionValidationError::IdValidationError)?;
@@ -250,7 +256,7 @@ impl NotarizedTransactionValidatorV1 {
                     let _ = id_validator.new_address_reservation();
                     id_validator.new_named_address();
                 }
-                ManifestInstructionEffect::ResourceAssertion { .. } => {}
+                ManifestInstructionEffect::WorktopAssertion { .. } => {}
             }
         }
 

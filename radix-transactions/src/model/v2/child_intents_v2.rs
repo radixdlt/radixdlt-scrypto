@@ -32,7 +32,7 @@ impl ChildSubintent {
 
 /// A new-type representing the index of a referenced intent.
 /// The first few of these will be the children of the given intent.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ManifestSbor, ScryptoDescribe)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, ManifestSbor, ScryptoDescribe)]
 #[sbor(transparent)]
 pub struct ManifestIntent(pub u32);
 

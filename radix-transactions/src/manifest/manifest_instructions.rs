@@ -10,145 +10,15 @@ use radix_engine_interface::object_modules::metadata::*;
 use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::object_modules::royalty::*;
 
+use ManifestInstructionEffect as Effect;
+
 pub trait ManifestInstruction {
     fn decompile(
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError>;
-    fn effect(&self) -> ManifestInstructionEffect;
+    fn effect(&self) -> Effect;
 }
-
-pub enum InvocationKind<'a> {
-    Method {
-        address: &'a DynamicGlobalAddress,
-        module_id: ModuleId,
-        method: &'a str,
-    },
-    Function {
-        address: &'a DynamicPackageAddress,
-        blueprint: &'a str,
-        function: &'a str,
-    },
-    DirectMethod {
-        address: &'a InternalAddress,
-        method: &'a str,
-    },
-    YieldToParent,
-    YieldToChild {
-        child_index: ManifestIntent,
-    },
-    VerifyParent,
-}
-
-pub enum BucketSourceAmount<'a> {
-    AllOnWorktop,
-    AmountFromWorktop(Decimal),
-    NonFungiblesFromWorktop(&'a [NonFungibleLocalId]),
-}
-
-pub enum ProofSourceAmount<'a> {
-    AuthZonePopLastAddedProof,
-    AuthZoneAllOf {
-        resource_address: &'a ResourceAddress,
-    },
-    AuthZoneAmount {
-        resource_address: &'a ResourceAddress,
-        amount: Decimal,
-    },
-    AuthZoneNonFungibles {
-        resource_address: &'a ResourceAddress,
-        ids: &'a [NonFungibleLocalId],
-    },
-    BucketAllOf {
-        bucket: ManifestBucket,
-    },
-    BucketAmount {
-        bucket: ManifestBucket,
-        amount: Decimal,
-    },
-    BucketNonFungibles {
-        bucket: ManifestBucket,
-        ids: &'a [NonFungibleLocalId],
-    },
-}
-
-impl<'a> ProofSourceAmount<'a> {
-    pub fn proof_kind(&self) -> ProofKind {
-        match self {
-            ProofSourceAmount::AuthZonePopLastAddedProof
-            | ProofSourceAmount::AuthZoneAllOf { .. }
-            | ProofSourceAmount::AuthZoneAmount { .. }
-            | ProofSourceAmount::AuthZoneNonFungibles { .. } => ProofKind::AuthZoneProof,
-            ProofSourceAmount::BucketAllOf { bucket, .. }
-            | ProofSourceAmount::BucketAmount { bucket, .. }
-            | ProofSourceAmount::BucketNonFungibles { bucket, .. } => {
-                ProofKind::BucketProof(*bucket)
-            }
-        }
-    }
-}
-
-pub enum BucketDestination {
-    Worktop,
-    Burned,
-}
-
-pub enum ProofDestination {
-    AuthZone,
-    Drop,
-}
-
-pub enum ResourceAmountAssertion<'a> {
-    AnyAmountGreaterThanZero,
-    AtLeastAmount(Decimal),
-    AtLeastNonFungibles(&'a [NonFungibleLocalId]),
-}
-
-/// The new_X are only included if the effect context includes an allocator
-pub enum ManifestInstructionEffect<'a> {
-    CreateBucket {
-        resource: &'a ResourceAddress,
-        source_amount: BucketSourceAmount<'a>,
-        new_bucket: Option<ManifestBucket>,
-    },
-    CreateProof {
-        source_amount: ProofSourceAmount<'a>,
-        new_proof: Option<ManifestProof>,
-    },
-    ConsumeBucket {
-        bucket: ManifestBucket,
-        destination: BucketDestination,
-    },
-    ConsumeProof {
-        proof: ManifestProof,
-        destination: ProofDestination,
-    },
-    CloneProof {
-        cloned_proof: ManifestProof,
-        new_proof: Option<ManifestProof>,
-    },
-    DropManyProofs {
-        drop_all_named_proofs: bool,
-        drop_all_authzone_signature_proofs: bool,
-        drop_all_authzone_non_signature_proofs: bool,
-    },
-    Invocation {
-        kind: InvocationKind<'a>,
-        args: &'a ManifestValue,
-    },
-    CreateAddressAndReservation {
-        package_address: &'a PackageAddress,
-        blueprint_name: &'a str,
-        new_address_reservation: Option<ManifestAddressReservation>,
-        new_named_address: Option<ManifestAddress>,
-    },
-    ResourceAssertion {
-        resource_address: &'a ResourceAddress,
-        amount: ResourceAmountAssertion<'a>,
-    },
-}
-
-use ManifestInstructionEffect as Effect;
 
 //======================================================================
 // Worktop
@@ -176,7 +46,6 @@ impl ManifestInstruction for TakeAllFromWorktop {
         Effect::CreateBucket {
             resource: &self.resource_address,
             source_amount: BucketSourceAmount::AllOnWorktop,
-            new_bucket: None,
         }
     }
 }
@@ -205,7 +74,6 @@ impl ManifestInstruction for TakeFromWorktop {
         Effect::CreateBucket {
             resource: &self.resource_address,
             source_amount: BucketSourceAmount::AmountFromWorktop(self.amount),
-            new_bucket: None,
         }
     }
 }
@@ -234,7 +102,6 @@ impl ManifestInstruction for TakeNonFungiblesFromWorktop {
         Effect::CreateBucket {
             resource: &self.resource_address,
             source_amount: BucketSourceAmount::NonFungiblesFromWorktop(&self.ids),
-            new_bucket: None,
         }
     }
 }
@@ -257,7 +124,7 @@ impl ManifestInstruction for ReturnToWorktop {
 
     fn effect(&self) -> Effect {
         Effect::ConsumeBucket {
-            bucket: self.bucket_id,
+            consumed_bucket: self.bucket_id,
             destination: BucketDestination::Worktop,
         }
     }
@@ -280,9 +147,10 @@ impl ManifestInstruction for AssertWorktopContainsAny {
     }
 
     fn effect(&self) -> Effect {
-        Effect::ResourceAssertion {
-            resource_address: &self.resource_address,
-            amount: ResourceAmountAssertion::AnyAmountGreaterThanZero,
+        Effect::WorktopAssertion {
+            assertion: WorktopAssertion::AnyAmountGreaterThanZero {
+                resource_address: &self.resource_address,
+            },
         }
     }
 }
@@ -306,9 +174,11 @@ impl ManifestInstruction for AssertWorktopContains {
     }
 
     fn effect(&self) -> Effect {
-        Effect::ResourceAssertion {
-            resource_address: &self.resource_address,
-            amount: ResourceAmountAssertion::AtLeastAmount(self.amount),
+        Effect::WorktopAssertion {
+            assertion: WorktopAssertion::AtLeastAmount {
+                resource_address: &self.resource_address,
+                amount: self.amount,
+            },
         }
     }
 }
@@ -332,9 +202,11 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
     }
 
     fn effect(&self) -> Effect {
-        Effect::ResourceAssertion {
-            resource_address: &self.resource_address,
-            amount: ResourceAmountAssertion::AtLeastNonFungibles(&self.ids),
+        Effect::WorktopAssertion {
+            assertion: WorktopAssertion::AtLeastNonFungibles {
+                resource_address: &self.resource_address,
+                ids: &self.ids,
+            },
         }
     }
 }
@@ -360,7 +232,6 @@ impl ManifestInstruction for PopFromAuthZone {
     fn effect(&self) -> Effect {
         Effect::CreateProof {
             source_amount: ProofSourceAmount::AuthZonePopLastAddedProof,
-            new_proof: None,
         }
     }
 }
@@ -383,7 +254,7 @@ impl ManifestInstruction for PushToAuthZone {
 
     fn effect(&self) -> Effect {
         Effect::ConsumeProof {
-            proof: self.proof_id,
+            consumed_proof: self.proof_id,
             destination: ProofDestination::AuthZone,
         }
     }
@@ -414,7 +285,6 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfAmount {
                 resource_address: &self.resource_address,
                 amount: self.amount,
             },
-            new_proof: None,
         }
     }
 }
@@ -445,7 +315,6 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfNonFungibles {
                 resource_address: &self.resource_address,
                 ids: &self.ids,
             },
-            new_proof: None,
         }
     }
 }
@@ -472,7 +341,6 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfAll {
             source_amount: ProofSourceAmount::AuthZoneAllOf {
                 resource_address: &self.resource_address,
             },
-            new_proof: None,
         }
     }
 }
@@ -571,7 +439,6 @@ impl ManifestInstruction for CreateProofFromBucketOfAmount {
                 bucket: self.bucket_id,
                 amount: self.amount,
             },
-            new_proof: None,
         }
     }
 }
@@ -600,7 +467,6 @@ impl ManifestInstruction for CreateProofFromBucketOfNonFungibles {
                 bucket: self.bucket_id,
                 ids: &self.ids,
             },
-            new_proof: None,
         }
     }
 }
@@ -626,7 +492,6 @@ impl ManifestInstruction for CreateProofFromBucketOfAll {
             source_amount: ProofSourceAmount::BucketAllOf {
                 bucket: self.bucket_id,
             },
-            new_proof: None,
         }
     }
 }
@@ -647,7 +512,7 @@ impl ManifestInstruction for BurnResource {
 
     fn effect(&self) -> Effect {
         Effect::ConsumeBucket {
-            bucket: self.bucket_id,
+            consumed_bucket: self.bucket_id,
             destination: BucketDestination::Burned,
         }
     }
@@ -676,7 +541,6 @@ impl ManifestInstruction for CloneProof {
     fn effect(&self) -> Effect {
         Effect::CloneProof {
             cloned_proof: self.proof_id,
-            new_proof: None,
         }
     }
 }
@@ -698,7 +562,7 @@ impl ManifestInstruction for DropProof {
 
     fn effect(&self) -> Effect {
         Effect::ConsumeProof {
-            proof: self.proof_id,
+            consumed_proof: self.proof_id,
             destination: ProofDestination::Drop,
         }
     }
@@ -1196,8 +1060,6 @@ impl ManifestInstruction for AllocateGlobalAddress {
         Effect::CreateAddressAndReservation {
             package_address: &self.package_address,
             blueprint_name: &self.blueprint_name,
-            new_address_reservation: None,
-            new_named_address: None,
         }
     }
 }

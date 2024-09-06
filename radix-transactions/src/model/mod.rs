@@ -2,7 +2,6 @@ mod concepts;
 mod execution;
 mod hash;
 mod ledger_transaction;
-pub mod manifest_instruction; // Don't want it to appear on every prelude
 mod preparation;
 mod user_transaction;
 mod v1;

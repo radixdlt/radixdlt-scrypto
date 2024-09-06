@@ -374,10 +374,16 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
                 new_address_reservation = Some(lookup.address_reservation(reservation_name));
                 new_address_id = Some(lookup.named_address_id(address_name));
             }
-            ManifestInstructionEffect::ConsumeBucket { bucket, .. } => {
+            ManifestInstructionEffect::ConsumeBucket {
+                consumed_bucket: bucket,
+                ..
+            } => {
                 registrar.consume_bucket(bucket);
             }
-            ManifestInstructionEffect::ConsumeProof { proof, .. } => {
+            ManifestInstructionEffect::ConsumeProof {
+                consumed_proof: proof,
+                ..
+            } => {
                 registrar.consume_proof(proof);
             }
             ManifestInstructionEffect::DropManyProofs {
@@ -395,7 +401,7 @@ impl<M: BuildableManifest> ManifestBuilder<M> {
             // And at present `add_instruction_advanced` is not actually used - so I'm not wasting time now
             // implementing this edge case.
             ManifestInstructionEffect::Invocation { .. } => {}
-            ManifestInstructionEffect::ResourceAssertion { .. } => {}
+            ManifestInstructionEffect::WorktopAssertion { .. } => {}
         };
 
         (

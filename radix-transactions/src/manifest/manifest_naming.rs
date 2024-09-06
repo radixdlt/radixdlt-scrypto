@@ -20,8 +20,8 @@ pub enum ManifestObjectNamesRef<'a> {
     Known(&'a KnownManifestObjectNames),
 }
 
-impl HasManifestObjectNames for ManifestObjectNames {
-    fn as_ref(&self) -> ManifestObjectNamesRef {
+impl<'a> HasManifestObjectNames<'a, 'a> for ManifestObjectNames {
+    fn as_ref(&'a self) -> ManifestObjectNamesRef<'a> {
         match self {
             ManifestObjectNames::Unknown => ManifestObjectNamesRef::Unknown,
             ManifestObjectNames::Known(known) => ManifestObjectNamesRef::Known(known),
@@ -29,37 +29,37 @@ impl HasManifestObjectNames for ManifestObjectNames {
     }
 }
 
-impl<'a> HasManifestObjectNames for ManifestObjectNamesRef<'a> {
-    fn as_ref(&self) -> ManifestObjectNamesRef {
+impl<'s, 'a> HasManifestObjectNames<'s, 'a> for ManifestObjectNamesRef<'a> {
+    fn as_ref(&'s self) -> ManifestObjectNamesRef<'a> {
         *self
     }
 }
 
-pub trait HasManifestObjectNames {
-    fn as_ref(&self) -> ManifestObjectNamesRef;
+pub trait HasManifestObjectNames<'s, 'r> {
+    fn as_ref(&'s self) -> ManifestObjectNamesRef<'r>;
 
-    fn known_bucket_name(&self, bucket: ManifestBucket) -> Option<&str> {
+    fn known_bucket_name(&'s self, bucket: ManifestBucket) -> Option<&'r str> {
         match self.as_ref() {
             ManifestObjectNamesRef::Unknown => None,
             ManifestObjectNamesRef::Known(known) => known.known_bucket_name(bucket),
         }
     }
 
-    fn bucket_name(&self, bucket: ManifestBucket) -> String {
+    fn bucket_name(&'s self, bucket: ManifestBucket) -> String {
         match self.known_bucket_name(bucket) {
             Some(name) => name.to_owned(),
             None => format!("bucket{}", bucket.0 + 1),
         }
     }
 
-    fn known_proof_name(&self, proof: ManifestProof) -> Option<&str> {
+    fn known_proof_name(&'s self, proof: ManifestProof) -> Option<&'r str> {
         match self.as_ref() {
             ManifestObjectNamesRef::Unknown => None,
             ManifestObjectNamesRef::Known(known) => known.known_proof_name(proof),
         }
     }
 
-    fn proof_name(&self, proof: ManifestProof) -> String {
+    fn proof_name(&'s self, proof: ManifestProof) -> String {
         match self.known_proof_name(proof) {
             Some(name) => name.to_owned(),
             None => format!("proof{}", proof.0 + 1),
@@ -67,9 +67,9 @@ pub trait HasManifestObjectNames {
     }
 
     fn known_address_reservation_name(
-        &self,
+        &'s self,
         reservation: ManifestAddressReservation,
-    ) -> Option<&str> {
+    ) -> Option<&'r str> {
         match self.as_ref() {
             ManifestObjectNamesRef::Unknown => None,
             ManifestObjectNamesRef::Known(known) => {
@@ -78,24 +78,38 @@ pub trait HasManifestObjectNames {
         }
     }
 
-    fn address_reservation_name(&self, reservation: ManifestAddressReservation) -> String {
+    fn address_reservation_name(&'s self, reservation: ManifestAddressReservation) -> String {
         match self.known_address_reservation_name(reservation) {
             Some(name) => name.to_owned(),
             None => format!("reservation{}", reservation.0 + 1),
         }
     }
 
-    fn known_address_name(&self, named_address: ManifestNamedAddress) -> Option<&str> {
+    fn known_address_name(&'s self, named_address: ManifestNamedAddress) -> Option<&'r str> {
         match self.as_ref() {
             ManifestObjectNamesRef::Unknown => None,
             ManifestObjectNamesRef::Known(known) => known.known_address_name(named_address),
         }
     }
 
-    fn address_name(&self, named_address: ManifestNamedAddress) -> String {
+    fn address_name(&'s self, named_address: ManifestNamedAddress) -> String {
         match self.known_address_name(named_address) {
             Some(name) => name.to_owned(),
             None => format!("address{}", named_address.0 + 1),
+        }
+    }
+
+    fn known_intent_name(&'s self, intent: ManifestIntent) -> Option<&'r str> {
+        match self.as_ref() {
+            ManifestObjectNamesRef::Unknown => None,
+            ManifestObjectNamesRef::Known(known) => known.known_intent_name(intent),
+        }
+    }
+
+    fn intent_name(&'s self, intent: ManifestIntent) -> String {
+        match self.known_intent_name(intent) {
+            Some(name) => name.to_owned(),
+            None => format!("intent{}", intent.0 + 1),
         }
     }
 }
@@ -112,10 +126,11 @@ pub struct KnownManifestObjectNames {
     pub proof_names: IndexMap<ManifestProof, String>,
     pub address_reservation_names: IndexMap<ManifestAddressReservation, String>,
     pub address_names: IndexMap<ManifestNamedAddress, String>,
+    pub intent_names: IndexMap<ManifestIntent, String>,
 }
 
-impl HasManifestObjectNames for KnownManifestObjectNames {
-    fn as_ref(&self) -> ManifestObjectNamesRef {
+impl<'s> HasManifestObjectNames<'s, 's> for KnownManifestObjectNames {
+    fn as_ref(&'s self) -> ManifestObjectNamesRef<'s> {
         ManifestObjectNamesRef::Known(self)
     }
 
@@ -139,28 +154,9 @@ impl HasManifestObjectNames for KnownManifestObjectNames {
     fn known_address_name(&self, named_address: ManifestNamedAddress) -> Option<&str> {
         self.address_names.get(&named_address).map(|n| n.as_str())
     }
-}
 
-impl KnownManifestObjectNames {
-    pub fn known_bucket_name(&self, bucket: ManifestBucket) -> Option<&str> {
-        self.bucket_names.get(&bucket).map(|n| n.as_str())
-    }
-
-    pub fn known_proof_name(&self, proof: ManifestProof) -> Option<&str> {
-        self.proof_names.get(&proof).map(|n| n.as_str())
-    }
-
-    pub fn known_address_reservation_name(
-        &self,
-        reservation: ManifestAddressReservation,
-    ) -> Option<&str> {
-        self.address_reservation_names
-            .get(&reservation)
-            .map(|n| n.as_str())
-    }
-
-    pub fn known_address_name(&self, named_address: ManifestNamedAddress) -> Option<&str> {
-        self.address_names.get(&named_address).map(|n| n.as_str())
+    fn known_intent_name(&self, intent: ManifestIntent) -> Option<&str> {
+        self.intent_names.get(&intent).map(|n| n.as_str())
     }
 }
 
@@ -201,6 +197,14 @@ impl<'a> From<&'a KnownManifestObjectNames> for SborBackwardsCompatibleKnownMani
             "addresses".to_string(),
             value
                 .address_names
+                .iter()
+                .map(|(b, name)| (b.0, name.to_string()))
+                .collect(),
+        );
+        names.insert(
+            "intents".to_string(),
+            value
+                .intent_names
                 .iter()
                 .map(|(b, name)| (b.0, name.to_string()))
                 .collect(),
@@ -249,6 +253,16 @@ impl From<SborBackwardsCompatibleKnownManifestObjectNames> for KnownManifestObje
                     names
                         .into_iter()
                         .map(|(key, name)| (ManifestNamedAddress(key), name))
+                        .collect()
+                })
+                .unwrap_or_default(),
+            intent_names: value
+                .names
+                .remove("intents")
+                .map(|names| {
+                    names
+                        .into_iter()
+                        .map(|(key, name)| (ManifestIntent(key), name))
                         .collect()
                 })
                 .unwrap_or_default(),

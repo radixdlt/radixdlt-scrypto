@@ -390,8 +390,8 @@ fn build_call_argument<'a>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use manifest_instruction::*;
     use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
+    use radix_transactions::manifest::*;
     use radix_transactions::model::InstructionV1;
 
     #[test]

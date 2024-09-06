@@ -1,7 +1,6 @@
 use crate::blueprints::native_schema::*;
 use crate::blueprints::package::*;
 use crate::blueprints::pool::v1::constants::*;
-use manifest_instruction::*;
 use radix_blueprint_schema_init::*;
 use radix_common::data::manifest::*;
 use radix_common::prelude::*;
