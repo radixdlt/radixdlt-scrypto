@@ -33,7 +33,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         self,
         visitor: &mut V,
     ) -> Result<(), V::Error<'a>> {
-        // It's rather weird that ControlFlow doesn't implement Into<Result> :shrug:
+        // For some reason ControlFlow doesn't implement Into<Result>
         match self.interpret_internal(visitor) {
             ControlFlow::Continue(()) => Ok(()),
             ControlFlow::Break(err) => Err(err),
@@ -53,7 +53,6 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         self.handle_wrap_up::<V>()
     }
 
-    #[inline]
     fn handle_preallocated_addresses<V: ManifestInterpretationVisitor>(
         &mut self,
         visitor: &mut V,
@@ -629,7 +628,6 @@ pub enum IntentType {
 
 // TODO can add:
 // * validate_preallocated_address_against_blueprint
-// * validate_total_references
 // ...
 pub struct ValidationRuleset {
     pub validate_bucket_proof_lock: bool,
