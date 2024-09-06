@@ -216,6 +216,26 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
     }
 }
 
+/// Asserts that the worktop contains any positive amount of the specified resource.
+#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
+pub struct AssertWorktopIsEmpty {}
+
+impl ManifestInstruction for AssertWorktopIsEmpty {
+    fn decompile(
+        &self,
+        _context: &mut DecompilationContext,
+    ) -> Result<DecompiledInstruction, DecompileError> {
+        let instruction = DecompiledInstruction::new("ASSERT_WORKTOP_IS_EMPTY");
+        Ok(instruction)
+    }
+
+    fn effect(&self) -> Effect {
+        Effect::WorktopAssertion {
+            assertion: WorktopAssertion::IsEmpty,
+        }
+    }
+}
+
 //======================================================================
 // Auth zone
 //======================================================================
@@ -1169,6 +1189,7 @@ pub const INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR: u8 = 0x03;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 0x04;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x05;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
+pub const INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR: u8 = 0x07;
 
 //==============
 // Auth zone

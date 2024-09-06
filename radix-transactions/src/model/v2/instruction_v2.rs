@@ -20,6 +20,7 @@ impl ManifestInstruction for InstructionV2 {
             Self::AssertWorktopContainsAny(x) => x.decompile(context),
             Self::AssertWorktopContains(x) => x.decompile(context),
             Self::AssertWorktopContainsNonFungibles(x) => x.decompile(context),
+            Self::AssertWorktopIsEmpty(x) => x.decompile(context),
             Self::PopFromAuthZone(x) => x.decompile(context),
             Self::PushToAuthZone(x) => x.decompile(context),
             Self::CreateProofFromAuthZoneOfAmount(x) => x.decompile(context),
@@ -58,6 +59,7 @@ impl ManifestInstruction for InstructionV2 {
             Self::AssertWorktopContainsAny(x) => x.effect(),
             Self::AssertWorktopContains(x) => x.effect(),
             Self::AssertWorktopContainsNonFungibles(x) => x.effect(),
+            Self::AssertWorktopIsEmpty(x) => x.effect(),
             Self::PopFromAuthZone(x) => x.effect(),
             Self::PushToAuthZone(x) => x.effect(),
             Self::CreateProofFromAuthZoneOfAmount(x) => x.effect(),
@@ -168,6 +170,10 @@ pub enum InstructionV2 {
     /// Asserts worktop contains resource by at least the given non-fungible IDs.
     #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR))]
     AssertWorktopContainsNonFungibles(#[sbor(flatten)] AssertWorktopContainsNonFungibles),
+
+    /// Asserts the worktop contains no amount of any resource.
+    #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_IS_EMPTY_DISCRIMINATOR))]
+    AssertWorktopIsEmpty(#[sbor(flatten)] AssertWorktopIsEmpty),
 
     //==============
     // Auth zone

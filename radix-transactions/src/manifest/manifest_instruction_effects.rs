@@ -161,4 +161,5 @@ pub enum WorktopAssertion<'a> {
         resource_address: &'a ResourceAddress,
         ids: &'a [NonFungibleLocalId],
     },
+    IsEmpty,
 }
