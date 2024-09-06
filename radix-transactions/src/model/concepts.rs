@@ -61,6 +61,21 @@ impl IntentHash {
             IntentHash::Sub(hash) => hash.as_hash(),
         }
     }
+
+    pub fn to_nullification(self, expiry_epoch: Epoch) -> IntentHashNullification {
+        match self {
+            IntentHash::Transaction(tx_intent_hash) => IntentHashNullification::TransactionIntent {
+                intent_hash: tx_intent_hash,
+                expiry_epoch,
+                ignore_duplicate: false,
+            },
+            IntentHash::Sub(subintent_hash) => IntentHashNullification::Subintent {
+                intent_hash: subintent_hash,
+                expiry_epoch,
+                ignore_duplicate: false,
+            },
+        }
+    }
 }
 
 define_raw_transaction_payload!(RawSystemTransaction);

@@ -85,6 +85,13 @@ impl ExecutableTransaction {
         }
     }
 
+    pub fn new_v2(intents: Vec<ExecutableIntentV2>, context: ExecutionContext) -> Self {
+        Self {
+            context,
+            intents: ExecutableIntents::V2(intents),
+        }
+    }
+
     // Consuming builder-like customization methods:
 
     pub fn skip_epoch_range_check(mut self) -> Self {
