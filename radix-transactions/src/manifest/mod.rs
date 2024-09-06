@@ -15,6 +15,7 @@ mod manifest_instructions;
 mod manifest_naming;
 mod manifest_traits;
 pub mod parser;
+mod static_manifest_interpreter;
 pub mod token;
 
 pub use any_manifest::*;
@@ -26,3 +27,4 @@ pub use manifest_instruction_effects::*;
 pub use manifest_instructions::*;
 pub use manifest_naming::*;
 pub use manifest_traits::*;
+pub use static_manifest_interpreter::*;
