@@ -91,20 +91,23 @@ fn static_component_should_be_callable() {
     let package_address = PackageAddress::new_or_panic(PRE_ALLOCATED_PACKAGE);
     ledger.publish_package_at_address(PackageLoader::get("static_dependencies"), package_address);
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
-            .call_function(
+        ManifestBuilder::new_system_v1()
+            .preallocate_address(
+                "preallocated",
+                ComponentAddress::new_or_panic(PRE_ALLOCATED),
                 package_address,
                 "Preallocated",
-                "new",
-                (ManifestAddressReservation(0), "my_secret"),
             )
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "Preallocated",
+                    "new",
+                    (lookup.address_reservation("preallocated"), "my_secret"),
+                )
+            })
             .build(),
         btreeset!(),
-        vec![(
-            BlueprintId::new(&package_address, "Preallocated"),
-            GlobalAddress::new_or_panic(PRE_ALLOCATED),
-        )
-            .into()],
     );
     receipt.expect_commit_success();
 
@@ -139,8 +142,14 @@ fn static_resource_should_be_callable() {
     // Arrange
     let mut ledger = LedgerSimulatorBuilder::new().build();
     let (key, _priv, account) = ledger.new_account(false);
+    let mut manifest_builder = ManifestBuilder::new_system_v1();
+    let reservation = manifest_builder.add_address_preallocation(
+        ResourceAddress::new_or_panic(PRE_ALLOCATED_RESOURCE),
+        RESOURCE_PACKAGE,
+        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+    );
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
+        manifest_builder
             .call_function(
                 RESOURCE_PACKAGE,
                 "FungibleResourceManager",
@@ -152,17 +161,12 @@ fn static_resource_should_be_callable() {
                     resource_roles: FungibleResourceRoles::default(),
                     metadata: metadata!(),
                     initial_supply: Decimal::from(10),
-                    address_reservation: Some(ManifestAddressReservation(0)),
+                    address_reservation: Some(reservation),
                 },
             )
             .deposit_entire_worktop(account)
             .build(),
         btreeset!(NonFungibleGlobalId::from_public_key(&key)),
-        vec![(
-            BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::new_or_panic(PRE_ALLOCATED_RESOURCE),
-        )
-            .into()],
     );
     receipt.expect_commit_success();
 

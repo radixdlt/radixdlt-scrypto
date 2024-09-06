@@ -282,6 +282,7 @@ where
     Ok(TransactionManifestV1 {
         instructions: output,
         blobs: blobs.blobs(),
+        object_names: ManifestObjectNames::Unknown,
     })
 }
 
@@ -2302,31 +2303,28 @@ mod tests {
     #[test]
     fn test_generate_non_fungible_instruction_with_specific_data() {
         // This test is mostly to assist with generating manifest instructions for the testing harness
+        let manifest = ManifestBuilder::new_v1()
+            .call_function(
+                RESOURCE_PACKAGE,
+                NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                NonFungibleResourceManagerCreateManifestInput {
+                    owner_role: OwnerRole::None,
+                    track_total_supply: false,
+                    id_type: NonFungibleIdType::Integer,
+                    non_fungible_schema:
+                        NonFungibleDataSchema::new_local_without_self_package_replacement::<
+                            MyNonFungibleData,
+                        >(),
+                    resource_roles: NonFungibleResourceRoles::default(),
+                    metadata: metadata!(),
+                    address_reservation: None,
+                },
+            )
+            .build();
         println!(
             "{}",
-            crate::manifest::decompile(
-                &[InstructionV1::CallFunction(CallFunction {
-                    package_address: RESOURCE_PACKAGE.into(),
-                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                    args: to_manifest_value_and_unwrap!(
-                        &NonFungibleResourceManagerCreateManifestInput {
-                            owner_role: OwnerRole::None,
-                            track_total_supply: false,
-                            id_type: NonFungibleIdType::Integer,
-                            non_fungible_schema:
-                                NonFungibleDataSchema::new_local_without_self_package_replacement::<
-                                    MyNonFungibleData,
-                                >(),
-                            resource_roles: NonFungibleResourceRoles::default(),
-                            metadata: metadata!(),
-                            address_reservation: None,
-                        }
-                    ),
-                })],
-                &NetworkDefinition::simulator(),
-            )
-            .unwrap()
+            crate::manifest::decompile(&manifest, &NetworkDefinition::simulator()).unwrap()
         );
     }
 

@@ -1539,15 +1539,15 @@ CALL_METHOD
         let original_binary =
             manifest_encode(&original_compiled).expect("Compiled manifest could not be encoded");
 
-        let original_decompiled = decompile(&original_compiled.instructions, network)
-            .expect("Manifest could not be decompiled");
+        let original_decompiled =
+            decompile(&original_compiled, network).expect("Manifest could not be decompiled");
         let recompiled = compile(&original_decompiled, network, blob_provider.clone())
             .expect("Decompiled manifest could not be recompiled");
         let recompiled_binary =
             manifest_encode(&recompiled).expect("Recompiled manifest could not be encoded");
 
-        let recompiled_decompiled = decompile(&recompiled.instructions, network)
-            .expect("Recompiled manifest could not be decompiled");
+        let recompiled_decompiled =
+            decompile(&recompiled, network).expect("Recompiled manifest could not be decompiled");
         let re_recompiled = compile(&recompiled_decompiled, network, blob_provider.clone())
             .expect("Decompiled recompiled manifest could not be re-recompiled");
         let re_recompiled_binary =
@@ -1646,7 +1646,7 @@ CALL_METHOD
         // Act
         let inverted_manifest = {
             let network = NetworkDefinition::simulator();
-            let decompiled = decompile(&manifest.instructions, &network).unwrap();
+            let decompiled = decompile(&manifest, &network).unwrap();
             compile(&decompiled, &network, BlobProvider::new()).unwrap()
         };
 

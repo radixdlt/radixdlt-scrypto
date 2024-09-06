@@ -976,7 +976,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         definition: PackageDefinition,
     ) -> PackageAddress {
         let receipt = self.execute_system_transaction(
-            ManifestBuilder::new()
+            ManifestBuilder::new_system_v1()
                 .call_function(
                     PACKAGE_PACKAGE,
                     PACKAGE_BLUEPRINT,
@@ -990,7 +990,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 )
                 .build(),
             btreeset!(system_execution(SystemExecution::Protocol)),
-            vec![],
         );
         let package_address: PackageAddress = receipt.expect_commit(true).output(0);
         package_address
@@ -1005,30 +1004,22 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         address: PackageAddress,
     ) {
         let (code, definition) = source.into().code_and_definition();
-        let mut manifest_builder = ManifestBuilder::new();
-        let code_blob = manifest_builder.add_blob(code);
+        let mut manifest_builder = ManifestBuilder::new_system_v1();
+        let reservation =
+            manifest_builder.add_address_preallocation(address, PACKAGE_PACKAGE, PACKAGE_BLUEPRINT);
         let manifest = manifest_builder
-            .call_function(
-                PACKAGE_PACKAGE,
-                PACKAGE_BLUEPRINT,
-                PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-                PackagePublishWasmAdvancedManifestInput {
-                    code: code_blob,
-                    definition,
-                    metadata: metadata_init!(),
-                    package_address: Some(ManifestAddressReservation(0)),
-                    owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
-                },
+            .publish_package_advanced(
+                reservation,
+                code,
+                definition,
+                metadata_init!(),
+                OwnerRole::Fixed(AccessRule::AllowAll),
             )
             .build();
 
         let receipt = self.execute_system_transaction(
             manifest,
             btreeset!(system_execution(SystemExecution::Protocol)),
-            vec![PreAllocatedAddress {
-                blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-                address: address.into(),
-            }],
         );
 
         receipt.expect_commit_success();
@@ -1262,16 +1253,18 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
         )
     }
 
+    /// The system manifest can be created with `ManifestBuilder::new_system_v1()`.
+    /// Preallocated addresses can be created with manifest_builder.preallocate_address()
     pub fn execute_system_transaction(
         &mut self,
-        manifest: TransactionManifestV1,
+        manifest: SystemTransactionManifestV1,
         proofs: BTreeSet<NonFungibleGlobalId>,
-        pre_allocated_addresses: Vec<PreAllocatedAddress>,
     ) -> TransactionReceipt {
         let nonce = self.next_transaction_nonce();
         let unique_hash = hash(format!("Test runner txn: {}", nonce));
         self.execute_transaction(
-            SystemTransactionV1::new(manifest, unique_hash, pre_allocated_addresses)
+            manifest
+                .into_transaction(unique_hash)
                 .prepare()
                 .expect("expected transaction to be preparable")
                 .get_executable(proofs),
@@ -1950,7 +1943,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn get_current_epoch(&mut self) -> Epoch {
         let receipt = self.execute_system_transaction(
-            ManifestBuilder::new()
+            ManifestBuilder::new_system_v1()
                 .call_method(
                     CONSENSUS_MANAGER,
                     CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
@@ -1958,7 +1951,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 )
                 .build(),
             btreeset![system_execution(SystemExecution::Validator)],
-            vec![],
         );
         receipt.expect_commit(true).output(0)
     }
@@ -1973,7 +1965,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
     ) -> TransactionReceipt {
         let expected_round_number = self.get_consensus_manager_state().round.number() + 1;
         self.execute_system_transaction(
-            ManifestBuilder::new()
+            ManifestBuilder::new_system_v1()
                 .call_method(
                     CONSENSUS_MANAGER,
                     CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -1991,7 +1983,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 )
                 .build(),
             btreeset![system_execution(SystemExecution::Validator)],
-            vec![],
         )
     }
 
@@ -2030,7 +2021,7 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
         let receipt = self.execute_system_transaction(
-            ManifestBuilder::new()
+            ManifestBuilder::new_system_v1()
                 .call_method(
                     CONSENSUS_MANAGER,
                     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT,
@@ -2038,7 +2029,6 @@ impl<E: NativeVmExtension, D: TestDatabase> LedgerSimulator<E, D> {
                 )
                 .build(),
             btreeset![system_execution(SystemExecution::Validator)],
-            vec![],
         );
         receipt.expect_commit(true).output(0)
     }

@@ -46,7 +46,7 @@ fn cannot_define_more_than_50_roles() {
 
     // Act
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
+        ManifestBuilder::new_system_v1()
             .call_function(
                 PACKAGE_PACKAGE,
                 PACKAGE_BLUEPRINT,
@@ -63,7 +63,6 @@ fn cannot_define_more_than_50_roles() {
             )
             .build(),
         btreeset!(system_execution(SystemExecution::Protocol)),
-        vec![],
     );
 
     // Assert
@@ -110,7 +109,7 @@ fn cannot_define_role_name_larger_than_max() {
 
     // Act
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
+        ManifestBuilder::new_system_v1()
             .call_function(
                 PACKAGE_PACKAGE,
                 PACKAGE_BLUEPRINT,
@@ -127,7 +126,6 @@ fn cannot_define_role_name_larger_than_max() {
             )
             .build(),
         btreeset!(system_execution(SystemExecution::Protocol)),
-        vec![],
     );
 
     // Assert

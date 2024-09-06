@@ -35,11 +35,18 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
                 let transaction: PreparedNotarizedTransactionV1 =
                     PreparedNotarizedTransactionV1::prepare_from_payload(&compiled_transaction)
                         .unwrap();
-                decompile(
-                    &transaction.signed_intent.intent.instructions.inner.0,
-                    &NetworkDefinition::simulator(),
-                )
-                .unwrap()
+                let manifest = TransactionManifestV1 {
+                    instructions: transaction.signed_intent.intent.instructions.inner.into(),
+                    blobs: transaction
+                        .signed_intent
+                        .intent
+                        .blobs
+                        .blobs_by_hash
+                        .as_ref()
+                        .clone(),
+                    object_names: Default::default(),
+                };
+                decompile(&manifest, &NetworkDefinition::simulator()).unwrap()
             })
         })
     });
@@ -52,15 +59,22 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
                     let transaction =
                         PreparedNotarizedTransactionV1::prepare_from_payload(&compiled_transaction)
                             .unwrap();
-                    let manifest = decompile(
-                        &transaction.signed_intent.intent.instructions.inner.0,
-                        &NetworkDefinition::simulator(),
-                    )
-                    .unwrap();
+                    let manifest = TransactionManifestV1 {
+                        instructions: transaction.signed_intent.intent.instructions.inner.into(),
+                        blobs: transaction
+                            .signed_intent
+                            .intent
+                            .blobs
+                            .blobs_by_hash
+                            .as_ref()
+                            .clone(),
+                        object_names: Default::default(),
+                    };
+                    let decompiled = decompile(&manifest, &NetworkDefinition::simulator()).unwrap();
                     compile(
-                        &manifest,
+                        &decompiled,
                         &NetworkDefinition::simulator(),
-                        BlobProvider::new(),
+                        BlobProvider::new_with_prehashed_blobs(manifest.blobs),
                     )
                 })
             })

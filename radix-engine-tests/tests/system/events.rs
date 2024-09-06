@@ -956,7 +956,7 @@ fn consensus_manager_round_update_emits_correct_event() {
 
     // Act
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
+        ManifestBuilder::new_system_v1()
             .call_method(
                 CONSENSUS_MANAGER,
                 CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -964,7 +964,6 @@ fn consensus_manager_round_update_emits_correct_event() {
             )
             .build(),
         btreeset![system_execution(SystemExecution::Validator)],
-        vec![],
     );
 
     // Assert
@@ -1020,7 +1019,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
 
     // Act: perform the most usual successful next round
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
+        ManifestBuilder::new_system_v1()
             .call_method(
                 CONSENSUS_MANAGER,
                 CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -1032,7 +1031,6 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
             )
             .build(),
         btreeset![system_execution(SystemExecution::Validator)],
-        vec![],
     );
 
     // Assert
@@ -1078,7 +1076,7 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
 
     // Act
     let receipt = ledger.execute_system_transaction(
-        ManifestBuilder::new()
+        ManifestBuilder::new_system_v1()
             .call_method(
                 CONSENSUS_MANAGER,
                 CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -1086,7 +1084,6 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
             )
             .build(),
         btreeset![system_execution(SystemExecution::Validator)],
-        vec![],
     );
 
     // Assert

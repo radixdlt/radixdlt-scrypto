@@ -207,49 +207,50 @@ impl NotarizedTransactionValidatorV1 {
         // semantic analysis
         let mut id_validator = ManifestValidator::new();
         for inst in instructions {
-            let side_effect = inst.side_effect();
+            let side_effect = inst.effect();
             match side_effect {
-                ManifestInstructionSideEffect::None => {}
-                ManifestInstructionSideEffect::CreateBucket => {
+                ManifestInstructionEffect::CreateBucket { .. } => {
                     let _ = id_validator.new_bucket();
                 }
-                ManifestInstructionSideEffect::CreateProof(proof_kind) => {
+                ManifestInstructionEffect::CreateProof { source_amount, .. } => {
                     let _ = id_validator
-                        .new_proof(proof_kind)
+                        .new_proof(source_amount.proof_kind())
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                ManifestInstructionSideEffect::ConsumeBucket(bucket_id) => {
+                ManifestInstructionEffect::ConsumeBucket { bucket, .. } => {
                     id_validator
-                        .drop_bucket(&bucket_id)
+                        .drop_bucket(&bucket)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                ManifestInstructionSideEffect::ConsumeProof(proof_id) => {
+                ManifestInstructionEffect::ConsumeProof { proof, .. } => {
                     id_validator
-                        .drop_proof(&proof_id)
+                        .drop_proof(&proof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                ManifestInstructionSideEffect::CloneProof(proof_id) => {
+                ManifestInstructionEffect::CloneProof { cloned_proof, .. } => {
                     let _ = id_validator
-                        .clone_proof(&proof_id)
+                        .clone_proof(&cloned_proof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                ManifestInstructionSideEffect::DropAllAuthZoneProofs
-                | ManifestInstructionSideEffect::DropAllAuthZoneNonSignatureProofs
-                | ManifestInstructionSideEffect::DropAllAuthZoneSignatureProofs => {}
-                ManifestInstructionSideEffect::DropNamedProofs
-                | ManifestInstructionSideEffect::DropAllProofs => {
-                    id_validator
-                        .drop_all_named_proofs()
-                        .map_err(TransactionValidationError::IdValidationError)?;
+                ManifestInstructionEffect::DropManyProofs {
+                    drop_all_named_proofs,
+                    ..
+                } => {
+                    if drop_all_named_proofs {
+                        id_validator
+                            .drop_all_named_proofs()
+                            .map_err(TransactionValidationError::IdValidationError)?;
+                    }
                 }
-                ManifestInstructionSideEffect::Invocation { args, .. } => {
+                ManifestInstructionEffect::Invocation { args, .. } => {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                ManifestInstructionSideEffect::CreateAddressAndReservation => {
+                ManifestInstructionEffect::CreateAddressAndReservation { .. } => {
                     let _ = id_validator.new_address_reservation();
                     id_validator.new_named_address();
                 }
+                ManifestInstructionEffect::ResourceAssertion { .. } => {}
             }
         }
 

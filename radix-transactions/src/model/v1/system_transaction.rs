@@ -8,22 +8,6 @@ pub struct SystemTransactionV1 {
     pub hash_for_execution: Hash,
 }
 
-impl SystemTransactionV1 {
-    pub fn new(
-        manifest: TransactionManifestV1,
-        unique_hash: Hash,
-        pre_allocated_addresses: Vec<PreAllocatedAddress>,
-    ) -> Self {
-        let (instructions, blobs) = manifest.for_intent();
-        Self {
-            instructions,
-            blobs,
-            pre_allocated_addresses,
-            hash_for_execution: unique_hash,
-        }
-    }
-}
-
 impl TransactionPayload for SystemTransactionV1 {
     type Prepared = PreparedSystemTransactionV1;
     type Raw = RawSystemTransaction;

@@ -15,11 +15,8 @@ pub trait ManifestInstruction {
         &self,
         context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError>;
-    fn side_effect(&self) -> ManifestInstructionSideEffect;
+    fn effect(&self) -> ManifestInstructionEffect;
 }
-
-/// Traits for [`InstructionV1`], [`InstructionV2`].
-pub trait InstructionVersion: ManifestInstruction {}
 
 pub enum InvocationKind<'a> {
     Method {
@@ -40,29 +37,118 @@ pub enum InvocationKind<'a> {
     YieldToChild {
         child_index: ManifestIntent,
     },
-    AuthenticateParent,
+    VerifyParent,
 }
 
-pub enum ManifestInstructionSideEffect<'a> {
-    None,
-    CreateBucket,
-    CreateProof(ProofKind),
-    ConsumeBucket(ManifestBucket),
-    ConsumeProof(ManifestProof),
-    CloneProof(ManifestProof),
-    DropAllAuthZoneProofs,
-    DropAllAuthZoneNonSignatureProofs,
-    DropAllAuthZoneSignatureProofs,
-    DropNamedProofs,
-    DropAllProofs,
+pub enum BucketSourceAmount<'a> {
+    AllOnWorktop,
+    AmountFromWorktop(Decimal),
+    NonFungiblesFromWorktop(&'a [NonFungibleLocalId]),
+}
+
+pub enum ProofSourceAmount<'a> {
+    AuthZonePopLastAddedProof,
+    AuthZoneAllOf {
+        resource_address: &'a ResourceAddress,
+    },
+    AuthZoneAmount {
+        resource_address: &'a ResourceAddress,
+        amount: Decimal,
+    },
+    AuthZoneNonFungibles {
+        resource_address: &'a ResourceAddress,
+        ids: &'a [NonFungibleLocalId],
+    },
+    BucketAllOf {
+        bucket: ManifestBucket,
+    },
+    BucketAmount {
+        bucket: ManifestBucket,
+        amount: Decimal,
+    },
+    BucketNonFungibles {
+        bucket: ManifestBucket,
+        ids: &'a [NonFungibleLocalId],
+    },
+}
+
+impl<'a> ProofSourceAmount<'a> {
+    pub fn proof_kind(&self) -> ProofKind {
+        match self {
+            ProofSourceAmount::AuthZonePopLastAddedProof
+            | ProofSourceAmount::AuthZoneAllOf { .. }
+            | ProofSourceAmount::AuthZoneAmount { .. }
+            | ProofSourceAmount::AuthZoneNonFungibles { .. } => ProofKind::AuthZoneProof,
+            ProofSourceAmount::BucketAllOf { bucket, .. }
+            | ProofSourceAmount::BucketAmount { bucket, .. }
+            | ProofSourceAmount::BucketNonFungibles { bucket, .. } => {
+                ProofKind::BucketProof(*bucket)
+            }
+        }
+    }
+}
+
+pub enum BucketDestination {
+    Worktop,
+    Burned,
+}
+
+pub enum ProofDestination {
+    AuthZone,
+    Drop,
+}
+
+pub enum ResourceAmountAssertion<'a> {
+    AnyAmountGreaterThanZero,
+    AtLeastAmount(Decimal),
+    AtLeastNonFungibles(&'a [NonFungibleLocalId]),
+}
+
+/// The new_X are only included if the effect context includes an allocator
+pub enum ManifestInstructionEffect<'a> {
+    CreateBucket {
+        resource: &'a ResourceAddress,
+        source_amount: BucketSourceAmount<'a>,
+        new_bucket: Option<ManifestBucket>,
+    },
+    CreateProof {
+        source_amount: ProofSourceAmount<'a>,
+        new_proof: Option<ManifestProof>,
+    },
+    ConsumeBucket {
+        bucket: ManifestBucket,
+        destination: BucketDestination,
+    },
+    ConsumeProof {
+        proof: ManifestProof,
+        destination: ProofDestination,
+    },
+    CloneProof {
+        cloned_proof: ManifestProof,
+        new_proof: Option<ManifestProof>,
+    },
+    DropManyProofs {
+        drop_all_named_proofs: bool,
+        drop_all_authzone_signature_proofs: bool,
+        drop_all_authzone_non_signature_proofs: bool,
+    },
     Invocation {
         kind: InvocationKind<'a>,
         args: &'a ManifestValue,
     },
-    CreateAddressAndReservation,
+    CreateAddressAndReservation {
+        package_address: &'a PackageAddress,
+        blueprint_name: &'a str,
+        new_address_reservation: Option<ManifestAddressReservation>,
+        new_named_address: Option<ManifestAddress>,
+    },
+    ResourceAssertion {
+        resource_address: &'a ResourceAddress,
+        amount: ResourceAmountAssertion<'a>,
+    },
 }
 
-use ManifestInstructionSideEffect as SideEffect;
+use ManifestInstructionEffect as Effect;
 
 //======================================================================
 // Worktop
@@ -86,8 +172,12 @@ impl ManifestInstruction for TakeAllFromWorktop {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateBucket
+    fn effect(&self) -> Effect {
+        Effect::CreateBucket {
+            resource: &self.resource_address,
+            source_amount: BucketSourceAmount::AllOnWorktop,
+            new_bucket: None,
+        }
     }
 }
 
@@ -111,8 +201,12 @@ impl ManifestInstruction for TakeFromWorktop {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateBucket
+    fn effect(&self) -> Effect {
+        Effect::CreateBucket {
+            resource: &self.resource_address,
+            source_amount: BucketSourceAmount::AmountFromWorktop(self.amount),
+            new_bucket: None,
+        }
     }
 }
 
@@ -136,8 +230,12 @@ impl ManifestInstruction for TakeNonFungiblesFromWorktop {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateBucket
+    fn effect(&self) -> Effect {
+        Effect::CreateBucket {
+            resource: &self.resource_address,
+            source_amount: BucketSourceAmount::NonFungiblesFromWorktop(&self.ids),
+            new_bucket: None,
+        }
     }
 }
 
@@ -157,8 +255,11 @@ impl ManifestInstruction for ReturnToWorktop {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::ConsumeBucket(self.bucket_id)
+    fn effect(&self) -> Effect {
+        Effect::ConsumeBucket {
+            bucket: self.bucket_id,
+            destination: BucketDestination::Worktop,
+        }
     }
 }
 
@@ -178,8 +279,11 @@ impl ManifestInstruction for AssertWorktopContainsAny {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::None
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            resource_address: &self.resource_address,
+            amount: ResourceAmountAssertion::AnyAmountGreaterThanZero,
+        }
     }
 }
 
@@ -201,8 +305,11 @@ impl ManifestInstruction for AssertWorktopContains {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::None
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            resource_address: &self.resource_address,
+            amount: ResourceAmountAssertion::AtLeastAmount(self.amount),
+        }
     }
 }
 
@@ -224,8 +331,11 @@ impl ManifestInstruction for AssertWorktopContainsNonFungibles {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::None
+    fn effect(&self) -> Effect {
+        Effect::ResourceAssertion {
+            resource_address: &self.resource_address,
+            amount: ResourceAmountAssertion::AtLeastNonFungibles(&self.ids),
+        }
     }
 }
 
@@ -247,8 +357,11 @@ impl ManifestInstruction for PopFromAuthZone {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateProof(ProofKind::AuthZoneProof)
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::AuthZonePopLastAddedProof,
+            new_proof: None,
+        }
     }
 }
 
@@ -264,12 +377,15 @@ impl ManifestInstruction for PushToAuthZone {
         _context: &mut DecompilationContext,
     ) -> Result<DecompiledInstruction, DecompileError> {
         let instruction =
-            DecompiledInstruction::new("POP_FROM_AUTH_ZONE").add_argument(&self.proof_id);
+            DecompiledInstruction::new("PUSH_TO_AUTHZONE").add_argument(&self.proof_id);
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::ConsumeProof(self.proof_id)
+    fn effect(&self) -> Effect {
+        Effect::ConsumeProof {
+            proof: self.proof_id,
+            destination: ProofDestination::AuthZone,
+        }
     }
 }
 
@@ -292,8 +408,14 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfAmount {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateProof(ProofKind::AuthZoneProof)
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::AuthZoneAmount {
+                resource_address: &self.resource_address,
+                amount: self.amount,
+            },
+            new_proof: None,
+        }
     }
 }
 
@@ -317,8 +439,14 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfNonFungibles {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateProof(ProofKind::AuthZoneProof)
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::AuthZoneNonFungibles {
+                resource_address: &self.resource_address,
+                ids: &self.ids,
+            },
+            new_proof: None,
+        }
     }
 }
 
@@ -339,8 +467,13 @@ impl ManifestInstruction for CreateProofFromAuthZoneOfAll {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateProof(ProofKind::AuthZoneProof)
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::AuthZoneAllOf {
+                resource_address: &self.resource_address,
+            },
+            new_proof: None,
+        }
     }
 }
 
@@ -357,8 +490,12 @@ impl ManifestInstruction for DropAuthZoneProofs {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::DropAllAuthZoneProofs
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: false,
+            drop_all_authzone_signature_proofs: true,
+            drop_all_authzone_non_signature_proofs: true,
+        }
     }
 }
 
@@ -375,8 +512,12 @@ impl ManifestInstruction for DropAuthZoneRegularProofs {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::DropAllAuthZoneNonSignatureProofs
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: false,
+            drop_all_authzone_signature_proofs: false,
+            drop_all_authzone_non_signature_proofs: true,
+        }
     }
 }
 
@@ -393,8 +534,12 @@ impl ManifestInstruction for DropAuthZoneSignatureProofs {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::DropAllAuthZoneSignatureProofs
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: false,
+            drop_all_authzone_signature_proofs: true,
+            drop_all_authzone_non_signature_proofs: false,
+        }
     }
 }
 
@@ -420,8 +565,14 @@ impl ManifestInstruction for CreateProofFromBucketOfAmount {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateProof(ProofKind::BucketProof(self.bucket_id))
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::BucketAmount {
+                bucket: self.bucket_id,
+                amount: self.amount,
+            },
+            new_proof: None,
+        }
     }
 }
 
@@ -443,8 +594,14 @@ impl ManifestInstruction for CreateProofFromBucketOfNonFungibles {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateProof(ProofKind::BucketProof(self.bucket_id))
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::BucketNonFungibles {
+                bucket: self.bucket_id,
+                ids: &self.ids,
+            },
+            new_proof: None,
+        }
     }
 }
 
@@ -464,8 +621,13 @@ impl ManifestInstruction for CreateProofFromBucketOfAll {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateProof(ProofKind::BucketProof(self.bucket_id))
+    fn effect(&self) -> Effect {
+        Effect::CreateProof {
+            source_amount: ProofSourceAmount::BucketAllOf {
+                bucket: self.bucket_id,
+            },
+            new_proof: None,
+        }
     }
 }
 
@@ -483,8 +645,11 @@ impl ManifestInstruction for BurnResource {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::ConsumeBucket(self.bucket_id)
+    fn effect(&self) -> Effect {
+        Effect::ConsumeBucket {
+            bucket: self.bucket_id,
+            destination: BucketDestination::Burned,
+        }
     }
 }
 
@@ -508,8 +673,11 @@ impl ManifestInstruction for CloneProof {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CloneProof(self.proof_id)
+    fn effect(&self) -> Effect {
+        Effect::CloneProof {
+            cloned_proof: self.proof_id,
+            new_proof: None,
+        }
     }
 }
 
@@ -528,8 +696,11 @@ impl ManifestInstruction for DropProof {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::ConsumeProof(self.proof_id)
+    fn effect(&self) -> Effect {
+        Effect::ConsumeProof {
+            proof: self.proof_id,
+            destination: ProofDestination::Drop,
+        }
     }
 }
 
@@ -637,8 +808,8 @@ impl ManifestInstruction for CallFunction {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
             kind: InvocationKind::Function {
                 address: &self.package_address,
                 blueprint: &self.blueprint_name,
@@ -713,8 +884,8 @@ impl ManifestInstruction for CallMethod {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
             kind: InvocationKind::Method {
                 address: &self.address,
                 module_id: ModuleId::Main,
@@ -772,8 +943,8 @@ impl ManifestInstruction for CallRoyaltyMethod {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
             kind: InvocationKind::Method {
                 address: &self.address,
                 module_id: ModuleId::Royalty,
@@ -828,8 +999,8 @@ impl ManifestInstruction for CallMetadataMethod {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
             kind: InvocationKind::Method {
                 address: &self.address,
                 module_id: ModuleId::Metadata,
@@ -884,8 +1055,8 @@ impl ManifestInstruction for CallRoleAssignmentMethod {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
             kind: InvocationKind::Method {
                 address: &self.address,
                 module_id: ModuleId::RoleAssignment,
@@ -944,8 +1115,8 @@ impl ManifestInstruction for CallDirectVaultMethod {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
             kind: InvocationKind::DirectMethod {
                 address: &self.address,
                 method: &self.method_name,
@@ -971,8 +1142,12 @@ impl ManifestInstruction for DropNamedProofs {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::DropNamedProofs
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: true,
+            drop_all_authzone_signature_proofs: false,
+            drop_all_authzone_non_signature_proofs: false,
+        }
     }
 }
 
@@ -989,8 +1164,12 @@ impl ManifestInstruction for DropAllProofs {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::DropAllProofs
+    fn effect(&self) -> Effect {
+        Effect::DropManyProofs {
+            drop_all_named_proofs: true,
+            drop_all_authzone_signature_proofs: true,
+            drop_all_authzone_non_signature_proofs: true,
+        }
     }
 }
 
@@ -1013,8 +1192,13 @@ impl ManifestInstruction for AllocateGlobalAddress {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::CreateAddressAndReservation
+    fn effect(&self) -> Effect {
+        Effect::CreateAddressAndReservation {
+            package_address: &self.package_address,
+            blueprint_name: &self.blueprint_name,
+            new_address_reservation: None,
+            new_named_address: None,
+        }
     }
 }
 
@@ -1037,8 +1221,8 @@ impl ManifestInstruction for YieldToParent {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
             kind: InvocationKind::YieldToParent,
             args: &self.args,
         }
@@ -1062,8 +1246,8 @@ impl ManifestInstruction for YieldToChild {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
             kind: InvocationKind::YieldToChild {
                 child_index: self.child_index,
             },
@@ -1073,11 +1257,11 @@ impl ManifestInstruction for YieldToChild {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ManifestSbor, ScryptoDescribe)]
-pub struct AuthenticateParent {
+pub struct VerifyParent {
     pub access_rule: ManifestValue,
 }
 
-impl ManifestInstruction for AuthenticateParent {
+impl ManifestInstruction for VerifyParent {
     fn decompile(
         &self,
         _context: &mut DecompilationContext,
@@ -1087,9 +1271,9 @@ impl ManifestInstruction for AuthenticateParent {
         Ok(instruction)
     }
 
-    fn side_effect(&self) -> SideEffect {
-        SideEffect::Invocation {
-            kind: InvocationKind::AuthenticateParent,
+    fn effect(&self) -> Effect {
+        Effect::Invocation {
+            kind: InvocationKind::VerifyParent,
             args: &self.access_rule,
         }
     }
@@ -1167,4 +1351,4 @@ pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;
 //==============
 pub const INSTRUCTION_YIELD_TO_PARENT_DISCRIMINATOR: u8 = 0x60;
 pub const INSTRUCTION_YIELD_TO_CHILD_DISCRIMINATOR: u8 = 0x61;
-pub const INSTRUCTION_AUTHENTICATE_PARENT_DISCRIMINATOR: u8 = 0x62;
+pub const INSTRUCTION_VERIFY_PARENT_DISCRIMINATOR: u8 = 0x62;

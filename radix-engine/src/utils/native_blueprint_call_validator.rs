@@ -17,67 +17,76 @@ use radix_engine_interface::object_modules::role_assignment::*;
 use radix_engine_interface::object_modules::royalty::*;
 use radix_transactions::prelude::*;
 
-pub fn validate_call_arguments_to_native_components(
-    instructions: &[impl ManifestInstruction],
+pub fn validate_call_arguments_to_native_components_any(
+    manifest: &AnyTransactionManifest,
 ) -> Result<(), LocatedInstructionSchemaValidationError> {
-    for (index, instruction) in instructions.iter().enumerate() {
-        let (invocation, args) = match instruction.side_effect() {
-            ManifestInstructionSideEffect::Invocation {
-                kind:
-                    InvocationKind::Function {
-                        address: DynamicPackageAddress::Static(address),
-                        blueprint,
-                        function,
-                    },
-                args,
-            } => (
-                Invocation::Function(*address, blueprint.to_owned(), function.to_owned()),
-                args,
-            ),
-            ManifestInstructionSideEffect::Invocation {
-                kind:
-                    InvocationKind::Method {
-                        address: DynamicGlobalAddress::Static(address),
-                        module_id,
-                        method,
-                    },
-                args,
-            } => (
-                Invocation::Method(*address, module_id, method.to_owned()),
-                args,
-            ),
-            ManifestInstructionSideEffect::Invocation {
-                kind: InvocationKind::DirectMethod { address, method },
-                args,
-            } => (Invocation::DirectMethod(*address, method.to_owned()), args),
-            _ => continue,
-        };
+    match manifest {
+        AnyTransactionManifest::V1(m) => validate_call_arguments_to_native_components(m),
+        AnyTransactionManifest::SystemV1(m) => validate_call_arguments_to_native_components(m),
+        AnyTransactionManifest::V2(m) => validate_call_arguments_to_native_components(m),
+    }
+}
 
-        let schema = get_arguments_schema(invocation).map_err(|cause| {
+pub fn validate_call_arguments_to_native_components(
+    manifest: &impl ReadableManifest,
+) -> Result<(), LocatedInstructionSchemaValidationError> {
+    for (instruction_index, instruction) in manifest.get_instructions().iter().enumerate() {
+        validate_instruction_call_arguments_to_native_components(instruction).map_err(|cause| {
             LocatedInstructionSchemaValidationError {
-                instruction_index: index,
+                instruction_index,
                 cause,
             }
-        })?;
+        })?
+    }
+    Ok(())
+}
 
-        if let Some((TypeRef::Static(local_type_id), schema)) = schema {
-            validate_payload_against_schema::<ManifestCustomExtension, _>(
-                &manifest_encode(&args).unwrap(),
-                schema,
-                local_type_id,
-                &(),
-                MANIFEST_SBOR_V1_MAX_DEPTH,
-            )
-            .map_err(|error| LocatedInstructionSchemaValidationError {
-                instruction_index: index,
-                cause: InstructionSchemaValidationError::SchemaValidationError(format!(
-                    "{:?}",
-                    error
-                )),
-            })
-        } else {
-            Ok(())
-        }?;
+fn validate_instruction_call_arguments_to_native_components(
+    instruction: &impl ManifestInstruction,
+) -> Result<(), InstructionSchemaValidationError> {
+    let (invocation, args) = match instruction.effect() {
+        ManifestInstructionEffect::Invocation {
+            kind:
+                InvocationKind::Function {
+                    address: DynamicPackageAddress::Static(address),
+                    blueprint,
+                    function,
+                },
+            args,
+        } => (
+            Invocation::Function(*address, blueprint.to_owned(), function.to_owned()),
+            args,
+        ),
+        ManifestInstructionEffect::Invocation {
+            kind:
+                InvocationKind::Method {
+                    address: DynamicGlobalAddress::Static(address),
+                    module_id,
+                    method,
+                },
+            args,
+        } => (
+            Invocation::Method(*address, module_id, method.to_owned()),
+            args,
+        ),
+        ManifestInstructionEffect::Invocation {
+            kind: InvocationKind::DirectMethod { address, method },
+            args,
+        } => (Invocation::DirectMethod(*address, method.to_owned()), args),
+        _ => return Ok(()),
+    };
+
+    if let Some((TypeRef::Static(local_type_id), schema)) = get_arguments_schema(invocation)? {
+        validate_payload_against_schema::<ManifestCustomExtension, _>(
+            &manifest_encode(&args).unwrap(),
+            schema,
+            local_type_id,
+            &(),
+            MANIFEST_SBOR_V1_MAX_DEPTH,
+        )
+        .map_err(|error| {
+            InstructionSchemaValidationError::SchemaValidationError(error.error_message(&schema))
+        })?;
     }
 
     Ok(())

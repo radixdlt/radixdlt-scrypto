@@ -1,6 +1,4 @@
 use crate::internal_prelude::*;
-use crate::manifest::decompiler::decompile_with_known_naming;
-use crate::manifest::decompiler::ManifestObjectNames;
 use radix_engine_interface::api::ModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -86,13 +84,9 @@ use radix_engine_interface::object_modules::ModuleConfig;
 /// }
 /// let manifest = builder.build();
 /// ```
-pub struct ManifestBuilder<I: InstructionVersion = InstructionV1> {
+pub struct ManifestBuilder<M: BuildableManifest = TransactionManifestV1> {
     registrar: ManifestNameRegistrar,
-    /// Instructions generated.
-    instructions: Vec<I>,
-    /// Blobs
-    blobs: IndexMap<Hash, Vec<u8>>,
-    children: Vec<SubintentHash>,
+    manifest: M,
 }
 
 pub struct NewSymbols {
@@ -102,80 +96,123 @@ pub struct NewSymbols {
     pub new_address_id: Option<ManifestNamedAddress>,
 }
 
-pub type ManifestV1Builder = ManifestBuilder<InstructionV1>;
+pub type ManifestV1Builder = ManifestBuilder<TransactionManifestV1>;
+pub type ManifestV2Builder = ManifestBuilder<TransactionManifestV2>;
+pub type SystemV1ManifestBuilder = ManifestBuilder<SystemTransactionManifestV1>;
 
-impl ManifestBuilder<InstructionV1> {
-    /// Starts a new manifest v1 builder.
+impl ManifestV1Builder {
+    /// To create a Manifest Builder of a specific version, you may
+    /// wish to use a specific new method such as `new_v1()`, `new_v2()`
+    /// or `new_system_v1()`.
+    ///
+    /// For backwards compatibility, we had to keep
+    /// `ManifestBuilder::new()` creating a [`ManifestV1Builder`].
     pub fn new() -> Self {
-        Self::new_v1()
+        Self::new_typed()
     }
 
-    /// Call as `ManifestBuilder::new_v1()`
+    /// This exists so that you can call `ManifestBuilder::new_v1()`.
+    /// It is equivalent to:
+    /// * `ManifestBuilder::<TransactionManifestV1>::new_typed()`
+    /// * `ManifestV1Builder::new_typed()`
     pub fn new_v1() -> Self {
-        Self {
-            registrar: ManifestNameRegistrar::new(),
-            instructions: vec![],
-            blobs: IndexMap::default(),
-            children: vec![],
-        }
-    }
-
-    pub fn with_lock_fee_from_faucet() -> Self {
-        let builder = Self::new();
-        builder.lock_fee_from_faucet()
-    }
-
-    /// Builds a transaction manifest.
-    pub fn build(self) -> TransactionManifestV1 {
-        let manifest = TransactionManifestV1 {
-            instructions: self.instructions,
-            blobs: self.blobs,
-        };
-        #[cfg(feature = "dump_manifest_to_file")]
-        {
-            let bytes = manifest_encode(&manifest).unwrap();
-            let manifest_hash = hash(&bytes);
-            let path = format!("manifest_{:?}.raw", manifest_hash);
-            std::fs::write(&path, bytes).unwrap();
-            println!("manifest dumped to file {}", &path);
-        }
-        manifest
+        Self::new_typed()
     }
 }
-
-pub type ManifestV2Builder = ManifestBuilder<InstructionV2>;
 
 impl ManifestV2Builder {
-    /// Starts a new transaction builder.
+    /// This exists so that you can call `ManifestBuilder::new_v2()`.
+    /// It is equivalent to:
+    /// * `ManifestBuilder::<TransactionManifestV2>::new_typed()`
+    /// * `ManifestV2Builder::new_typed()`
+    ///
+    /// For backwards compatibility, we had to keep
+    /// `ManifestBuilder::new()` creating a [`ManifestV1Builder`].
     pub fn new_v2() -> Self {
-        Self {
-            registrar: ManifestNameRegistrar::new(),
-            instructions: vec![],
-            blobs: IndexMap::default(),
-            children: vec![],
-        }
-    }
-
-    /// Builds a transaction manifest.
-    pub fn build(self) -> TransactionManifestV2 {
-        let manifest = TransactionManifestV2 {
-            instructions: self.instructions,
-            blobs: self.blobs,
-            children: self.children,
-        };
-        #[cfg(feature = "dump_manifest_to_file")]
-        {
-            let bytes = manifest_encode(&manifest).unwrap();
-            let manifest_hash = hash(&bytes);
-            let path = format!("manifest_{:?}.raw", manifest_hash);
-            std::fs::write(&path, bytes).unwrap();
-            println!("manifest dumped to file {}", &path);
-        }
-        manifest
+        Self::new_typed()
     }
 }
 
-impl<I: InstructionVersion> ManifestBuilder<I> {
+impl SystemV1ManifestBuilder {
+    /// This exists so that you can call `ManifestBuilder::new_v1()`.
+    /// It is equivalent to:
+    /// * `ManifestBuilder::<SystemTransactionManifestV1>::new_typed()`
+    /// * `SystemV1ManifestBuilder::new_typed()`
+    pub fn new_system_v1() -> Self {
+        Self::new_typed()
+    }
+
+    pub fn add_address_preallocation(
+        &mut self,
+        fixed_address: impl Into<GlobalAddress>,
+        package_address: impl Into<PackageAddress>,
+        blueprint_name: impl Into<String>,
+    ) -> ManifestAddressReservation {
+        let existing_preallocation_count = self.manifest.preallocated_addresses.len();
+        let name = format!("preallocation_{existing_preallocation_count}");
+        let reservation = self.registrar.new_address_reservation(&name);
+        self.preallocate_address_internal(
+            reservation,
+            fixed_address,
+            package_address,
+            blueprint_name,
+        );
+        self.name_lookup().address_reservation(name)
+    }
+
+    pub fn preallocate_address(
+        mut self,
+        reservation: impl NewManifestAddressReservation,
+        fixed_address: impl Into<GlobalAddress>,
+        package_address: impl Into<PackageAddress>,
+        blueprint_name: impl Into<String>,
+    ) -> Self {
+        self.preallocate_address_internal(
+            reservation,
+            fixed_address,
+            package_address,
+            blueprint_name,
+        );
+        self
+    }
+
+    pub fn preallocate_address_internal(
+        &mut self,
+        reservation: impl NewManifestAddressReservation,
+        fixed_address: impl Into<GlobalAddress>,
+        package_address: impl Into<PackageAddress>,
+        blueprint_name: impl Into<String>,
+    ) {
+        if self
+            .registrar
+            .object_names()
+            .address_reservation_names
+            .len()
+            > self.manifest.preallocated_addresses.len()
+        {
+            panic!("You cannot call preallocate_address after you've allocated any addresses in the manifest");
+        }
+        self.manifest
+            .preallocated_addresses
+            .push(PreAllocatedAddress {
+                blueprint_id: BlueprintId {
+                    package_address: package_address.into(),
+                    blueprint_name: blueprint_name.into(),
+                },
+                address: fixed_address.into(),
+            });
+        reservation.register(&self.registrar);
+    }
+}
+
+impl<M: BuildableManifest> ManifestBuilder<M> {
+    pub fn new_typed() -> Self {
+        Self {
+            registrar: ManifestNameRegistrar::new(),
+            manifest: M::default(),
+        }
+    }
+
     pub fn name_lookup(&self) -> ManifestNameLookup {
         self.registrar.name_lookup()
     }
@@ -244,7 +281,7 @@ impl<I: InstructionVersion> ManifestBuilder<I> {
             .new_collision_free_address_reservation_name(prefix)
     }
 
-    pub fn object_names(&self) -> ManifestObjectNames {
+    pub fn object_names(&self) -> KnownManifestObjectNames {
         self.registrar.object_names()
     }
 
@@ -273,32 +310,38 @@ impl<I: InstructionVersion> ManifestBuilder<I> {
     ///     })
     ///     .build();
     /// ```
-    pub fn add_blob(&mut self, blob: Vec<u8>) -> ManifestBlobRef {
-        let hash = hash(&blob);
-        self.blobs.insert(hash, blob);
+    pub fn add_blob(&mut self, blob_content: Vec<u8>) -> ManifestBlobRef {
+        let hash = hash(&blob_content);
+        self.manifest.add_blob(hash, blob_content);
         ManifestBlobRef(hash.0)
     }
 
     /// An internal method which is used by other methods - the callers are expected to handle
     /// registering buckets/proofs/etc and consuming them
-    fn add_instruction(mut self, instruction: impl Into<I>) -> Self {
-        self.instructions.push(instruction.into());
+    fn add_instruction(mut self, instruction: impl Into<M::Instruction>) -> Self {
+        self.manifest.add_instruction(instruction.into());
         self
     }
 
     #[deprecated = "This should not be used apart from for test code purposefully constructing invalid manifests. Instead use the more-tailored instruction, or add_instruction_advanced."]
-    pub fn add_raw_instruction_ignoring_all_side_effects(self, instruction: impl Into<I>) -> Self {
+    pub fn add_raw_instruction_ignoring_all_side_effects(
+        self,
+        instruction: impl Into<M::Instruction>,
+    ) -> Self {
         self.add_instruction(instruction)
     }
 
     /// Only for use in advanced use cases.
     /// Returns all the created symbols as part of the instruction.
-    pub fn add_instruction_advanced(self, instruction: impl Into<I>) -> (Self, NewSymbols) {
+    pub fn add_instruction_advanced(
+        self,
+        instruction: impl Into<M::Instruction>,
+    ) -> (Self, NewSymbols) {
         self.add_instruction_advanced_internal(instruction.into())
     }
 
     /// Have an internal method to avoid monomorphization overhead
-    fn add_instruction_advanced_internal(self, instruction: I) -> (Self, NewSymbols) {
+    fn add_instruction_advanced_internal(self, instruction: M::Instruction) -> (Self, NewSymbols) {
         let mut new_bucket = None;
         let mut new_proof = None;
         let mut new_address_reservation = None;
@@ -307,19 +350,19 @@ impl<I: InstructionVersion> ManifestBuilder<I> {
         let registrar = &self.registrar;
         let lookup = self.name_lookup();
 
-        match instruction.side_effect() {
-            ManifestInstructionSideEffect::CreateBucket => {
+        match instruction.effect() {
+            ManifestInstructionEffect::CreateBucket { .. } => {
                 let bucket_name = registrar.new_collision_free_bucket_name("bucket");
                 registrar.register_bucket(registrar.new_bucket(&bucket_name));
                 new_bucket = Some(lookup.bucket(bucket_name));
             }
-            ManifestInstructionSideEffect::CreateProof(_)
-            | ManifestInstructionSideEffect::CloneProof(_) => {
+            ManifestInstructionEffect::CreateProof { .. }
+            | ManifestInstructionEffect::CloneProof { .. } => {
                 let proof_name = registrar.new_collision_free_proof_name("proof");
                 registrar.register_proof(registrar.new_proof(&proof_name));
                 new_proof = Some(lookup.proof(proof_name));
             }
-            ManifestInstructionSideEffect::CreateAddressAndReservation => {
+            ManifestInstructionEffect::CreateAddressAndReservation { .. } => {
                 let reservation_name =
                     registrar.new_collision_free_address_reservation_name("reservation");
                 registrar.register_address_reservation(
@@ -331,25 +374,28 @@ impl<I: InstructionVersion> ManifestBuilder<I> {
                 new_address_reservation = Some(lookup.address_reservation(reservation_name));
                 new_address_id = Some(lookup.named_address_id(address_name));
             }
-            ManifestInstructionSideEffect::ConsumeBucket(bucket) => {
+            ManifestInstructionEffect::ConsumeBucket { bucket, .. } => {
                 registrar.consume_bucket(bucket);
             }
-            ManifestInstructionSideEffect::ConsumeProof(proof) => {
+            ManifestInstructionEffect::ConsumeProof { proof, .. } => {
                 registrar.consume_proof(proof);
             }
-            ManifestInstructionSideEffect::DropNamedProofs
-            | ManifestInstructionSideEffect::DropAllProofs => registrar.consume_all_proofs(),
+            ManifestInstructionEffect::DropManyProofs {
+                drop_all_named_proofs,
+                ..
+            } => {
+                if drop_all_named_proofs {
+                    registrar.consume_all_proofs()
+                }
+            }
             // I've just noticed that this method doesn't consume things in the arguments of an invocation.
             // Ideally, much like the transaction validator, we should parse the included arguments
             // for things to consume and consume them. But this consumption is only used to catch errors
             // about re-use at manifest construction time.
             // And at present `add_instruction_advanced` is not actually used - so I'm not wasting time now
             // implementing this edge case.
-            ManifestInstructionSideEffect::Invocation { .. } => {}
-            ManifestInstructionSideEffect::None
-            | ManifestInstructionSideEffect::DropAllAuthZoneProofs
-            | ManifestInstructionSideEffect::DropAllAuthZoneNonSignatureProofs
-            | ManifestInstructionSideEffect::DropAllAuthZoneSignatureProofs => {}
+            ManifestInstructionEffect::Invocation { .. } => {}
+            ManifestInstructionEffect::ResourceAssertion { .. } => {}
         };
 
         (
@@ -363,11 +409,18 @@ impl<I: InstructionVersion> ManifestBuilder<I> {
         )
     }
 
-    pub fn to_canonical_string(
-        &self,
-        network_definition: &NetworkDefinition,
-    ) -> Result<String, DecompileError> {
-        decompile_with_known_naming(&self.instructions, network_definition, self.object_names())
+    /// Builds a transaction manifest.
+    pub fn build(mut self) -> M {
+        self.manifest.set_names(self.object_names().into());
+        #[cfg(feature = "dump_manifest_to_file")]
+        {
+            let bytes = manifest_encode(&self.manifest).unwrap();
+            let manifest_hash = hash(&bytes);
+            let path = format!("manifest_{:?}.raw", manifest_hash);
+            std::fs::write(&path, bytes).unwrap();
+            println!("manifest dumped to file {}", &path);
+        }
+        self.manifest
     }
 }
 
@@ -375,7 +428,10 @@ impl<I: InstructionVersion> ManifestBuilder<I> {
 // V1 Specific Methods
 //===========================
 
-impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
+impl<M: BuildableManifest> ManifestBuilder<M>
+where
+    M::Instruction: From<InstructionV1>,
+{
     /// An internal method which is used by other methods - the callers are expected to handle
     /// registering buckets/proofs/etc and consuming them
     fn add_v1_instruction(self, instruction: impl Into<InstructionV1>) -> Self {
@@ -577,18 +633,14 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
         self,
         package_address: impl ResolvablePackageAddress,
         blueprint_name: impl Into<String>,
-        new_address_reservation_name: impl Into<String>,
+        new_address_reservation: impl NewManifestAddressReservation,
         new_address_name: impl Into<String>,
     ) -> Self {
         let package_address = package_address.resolve_static(&self.registrar);
         let blueprint_name = blueprint_name.into();
-        let new_address_reservation = self
-            .registrar
-            .new_address_reservation(new_address_reservation_name);
         let new_named_address = self.registrar.new_named_address(new_address_name);
 
-        self.registrar
-            .register_address_reservation(new_address_reservation);
+        new_address_reservation.register(&self.registrar);
         self.registrar.register_named_address(new_named_address);
         self.add_v1_instruction(AllocateGlobalAddress {
             package_address,
@@ -1382,28 +1434,21 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
     /// Publishes a package.
     pub fn publish_package_advanced(
         mut self,
-        address_reservation: Option<String>,
+        address_reservation: impl OptionalExistingManifestAddressReservation,
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: impl Into<MetadataInit>,
         owner_role: OwnerRole,
     ) -> Self {
-        let address_reservation = if let Some(reservation_name) = address_reservation {
-            let reservation = self.name_lookup().address_reservation(reservation_name);
-            self.registrar.consume_address_reservation(reservation);
-            Some(reservation)
-        } else {
-            None
-        };
-        let code_hash = hash(&code);
-        self.blobs.insert(code_hash, code);
+        let address_reservation = address_reservation.mark_consumed(&self.registrar);
+        let code_blob_ref = self.add_blob(code);
 
         self.add_v1_instruction(CallFunction {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
-                code: ManifestBlobRef(code_hash.0),
+                code: code_blob_ref,
                 definition: definition,
                 metadata: metadata.into(),
                 package_address: address_reservation,
@@ -1721,15 +1766,9 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
     pub fn new_account_advanced(
         self,
         owner_role: OwnerRole,
-        address_reservation: Option<String>,
+        address_reservation: impl OptionalExistingManifestAddressReservation,
     ) -> Self {
-        let address_reservation = if let Some(reservation_name) = address_reservation {
-            let reservation = self.name_lookup().address_reservation(reservation_name);
-            self.registrar.consume_address_reservation(reservation);
-            Some(reservation)
-        } else {
-            None
-        };
+        let address_reservation = address_reservation.mark_consumed(&self.registrar);
 
         self.add_v1_instruction(CallFunction {
             package_address: ACCOUNT_PACKAGE.into(),
@@ -2173,7 +2212,10 @@ impl<I: InstructionVersion + From<InstructionV1>> ManifestBuilder<I> {
 // V2 Specific Methods
 //===========================
 
-impl<I: InstructionVersion + From<InstructionV2>> ManifestBuilder<I> {
+impl<M: BuildableManifest> ManifestBuilder<M>
+where
+    M::Instruction: From<InstructionV2>,
+{
     /// An internal method which is used by other methods - the callers are expected to handle
     /// registering buckets/proofs/etc and consuming them
     fn add_v2_instruction(self, instruction: impl Into<InstructionV2>) -> Self {
@@ -2198,14 +2240,14 @@ impl<I: InstructionVersion + From<InstructionV2>> ManifestBuilder<I> {
         })
     }
 
-    pub fn authenticate_parent(self, access_rule: impl ResolvableArguments) -> Self {
-        self.add_v2_instruction(AuthenticateParent {
+    pub fn verify_parent(self, access_rule: impl ResolvableArguments) -> Self {
+        self.add_v2_instruction(VerifyParent {
             access_rule: access_rule.resolve(),
         })
     }
 }
 
-impl Default for ManifestBuilder<InstructionV1> {
+impl Default for ManifestBuilder<TransactionManifestV1> {
     fn default() -> Self {
         ManifestBuilder::new()
     }

@@ -1,4 +1,4 @@
-use crate::{internal_prelude::*, manifest::decompiler::ManifestObjectNames};
+use crate::internal_prelude::*;
 
 /// This is used by a user to lookup buckets/proofs/reservations/addresses
 /// for working with a manifest builder.
@@ -40,7 +40,7 @@ struct ManifestNamerCore {
     named_proofs: IndexMap<String, ManifestObjectState<ManifestProof>>,
     named_addresses: NonIterMap<String, ManifestObjectState<ManifestAddress>>,
     named_address_reservations: NonIterMap<String, ManifestObjectState<ManifestAddressReservation>>,
-    object_names: ManifestObjectNames,
+    object_names: KnownManifestObjectNames,
 }
 
 impl ManifestNamerCore {
@@ -467,7 +467,7 @@ impl ManifestNameRegistrar {
         self.core.borrow().check_address_exists(address)
     }
 
-    pub fn object_names(&self) -> ManifestObjectNames {
+    pub fn object_names(&self) -> KnownManifestObjectNames {
         self.core.borrow().object_names.clone()
     }
 }
@@ -618,6 +618,121 @@ impl ExistingManifestProof for ManifestProof {
     }
 }
 
+//=====================
+// ADDRESS RESERVATIONS
+//=====================
+
+#[must_use]
+pub struct NamedManifestAddressReservation {
+    namer_id: ManifestNamerId,
+    name: String,
+}
+
+/// Either a string, or a new manifest address reservation from a namer.
+pub trait NewManifestAddressReservation: Sized {
+    fn into_named(self, registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation;
+
+    fn register(self, registrar: &ManifestNameRegistrar) {
+        registrar.register_address_reservation(self.into_named(registrar))
+    }
+
+    fn register_and_yield(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation {
+        let named = self.into_named(registrar);
+        let name = named.name.clone();
+        registrar.register_address_reservation(named);
+        registrar.name_lookup().address_reservation(name)
+    }
+}
+
+impl<'a> NewManifestAddressReservation for &'a str {
+    fn into_named(self, registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation {
+        registrar.new_address_reservation(self)
+    }
+}
+
+impl<'a> NewManifestAddressReservation for &'a String {
+    fn into_named(self, registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation {
+        registrar.new_address_reservation(self)
+    }
+}
+
+impl NewManifestAddressReservation for String {
+    fn into_named(self, registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation {
+        registrar.new_address_reservation(self)
+    }
+}
+
+impl NewManifestAddressReservation for NamedManifestAddressReservation {
+    fn into_named(self, _registrar: &ManifestNameRegistrar) -> NamedManifestAddressReservation {
+        self
+    }
+}
+
+pub trait OptionalExistingManifestAddressReservation: Sized {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> Option<ManifestAddressReservation>;
+
+    fn mark_consumed(
+        self,
+        registrar: &ManifestNameRegistrar,
+    ) -> Option<ManifestAddressReservation> {
+        let reservation = self.resolve(registrar);
+        if let Some(reservation) = reservation {
+            registrar.consume_address_reservation(reservation);
+        }
+        reservation
+    }
+}
+
+impl<T: ExistingManifestAddressReservation> OptionalExistingManifestAddressReservation for T {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> Option<ManifestAddressReservation> {
+        Some(<Self as ExistingManifestAddressReservation>::resolve(
+            self, registrar,
+        ))
+    }
+}
+
+// We only implement it for one Option, so that `None` has a unique implementation
+// We choose Option<String> for backwards compatibility
+impl OptionalExistingManifestAddressReservation for Option<String> {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> Option<ManifestAddressReservation> {
+        self.map(|r| <String as ExistingManifestAddressReservation>::resolve(r, registrar))
+    }
+}
+
+pub trait ExistingManifestAddressReservation: Sized {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation;
+
+    fn mark_consumed(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation {
+        let reservation = self.resolve(registrar);
+        registrar.consume_address_reservation(reservation);
+        reservation
+    }
+}
+
+impl<'a> ExistingManifestAddressReservation for &'a str {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation {
+        registrar.name_lookup().address_reservation(self)
+    }
+}
+
+impl<'a> ExistingManifestAddressReservation for &'a String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation {
+        registrar.name_lookup().address_reservation(self)
+    }
+}
+
+impl<'a> ExistingManifestAddressReservation for String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestAddressReservation {
+        registrar.name_lookup().address_reservation(self)
+    }
+}
+
+impl<'a> ExistingManifestAddressReservation for ManifestAddressReservation {
+    fn resolve(self, _registrar: &ManifestNameRegistrar) -> ManifestAddressReservation {
+        self
+    }
+}
+
 // NOTE:
 //------
 // Addresses are more complicated than buckets/proofs - eg:
@@ -625,16 +740,9 @@ impl ExistingManifestProof for ManifestProof {
 // * We want to provide tighter bounds (eg distinguish Resource / Package / Global)
 // * Addresses and Address Reservations are both used together and could be confused
 //
-// So we purposefully don't support the New_/Existing_ traits for named addresses or
-// address reservations.
+// So we purposefully don't support the New_/Existing_ traits for named addresses.
 //
 // Instead, users have to use an explicit namer
-
-#[must_use]
-pub struct NamedManifestAddressReservation {
-    namer_id: ManifestNamerId,
-    name: String,
-}
 
 #[must_use]
 pub struct NamedManifestAddress {

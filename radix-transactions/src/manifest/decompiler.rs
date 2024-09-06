@@ -45,21 +45,13 @@ impl From<RustToManifestValueError> for DecompileError {
 pub struct DecompilationContext<'a> {
     pub address_bech32_encoder: Option<&'a AddressBech32Encoder>,
     pub id_allocator: ManifestIdAllocator,
-    pub object_names: ManifestObjectNames,
-}
-
-#[derive(Default, Clone, Debug)]
-pub struct ManifestObjectNames {
-    pub bucket_names: NonIterMap<ManifestBucket, String>,
-    pub proof_names: NonIterMap<ManifestProof, String>,
-    pub address_reservation_names: NonIterMap<ManifestAddressReservation, String>,
-    pub address_names: NonIterMap<ManifestNamedAddress, String>,
+    pub object_names: ManifestObjectNamesRef<'a>,
 }
 
 impl<'a> DecompilationContext<'a> {
     pub fn new(
         address_bech32_encoder: &'a AddressBech32Encoder,
-        object_names: ManifestObjectNames,
+        object_names: ManifestObjectNamesRef<'a>,
     ) -> Self {
         Self {
             address_bech32_encoder: Some(address_bech32_encoder),
@@ -80,54 +72,25 @@ impl<'a> DecompilationContext<'a> {
     pub fn for_value_display(&'a self) -> ManifestDecompilationDisplayContext<'a> {
         ManifestDecompilationDisplayContext::with_bech32_and_names(
             self.address_bech32_encoder,
-            &self.object_names.bucket_names,
-            &self.object_names.proof_names,
-            &self.object_names.address_reservation_names,
-            &self.object_names.address_names,
+            self.object_names,
         )
         .with_multi_line(4, 4)
     }
 
     pub fn new_bucket(&mut self) -> ManifestBucket {
-        let id = self.id_allocator.new_bucket_id();
-        if !self.object_names.bucket_names.contains_key(&id) {
-            let name = format!("bucket{}", self.object_names.bucket_names.len() + 1);
-            self.object_names.bucket_names.insert(id, name);
-        }
-        id
+        self.id_allocator.new_bucket_id()
     }
 
     pub fn new_proof(&mut self) -> ManifestProof {
-        let id = self.id_allocator.new_proof_id();
-        if !self.object_names.proof_names.contains_key(&id) {
-            let name = format!("proof{}", self.object_names.proof_names.len() + 1);
-            self.object_names.proof_names.insert(id, name);
-        }
-        id
+        self.id_allocator.new_proof_id()
     }
 
     pub fn new_address_reservation(&mut self) -> ManifestAddressReservation {
-        let id = self.id_allocator.new_address_reservation_id();
-        if !self
-            .object_names
-            .address_reservation_names
-            .contains_key(&id)
-        {
-            let name = format!(
-                "reservation{}",
-                self.object_names.address_reservation_names.len() + 1
-            );
-            self.object_names.address_reservation_names.insert(id, name);
-        }
-        id
+        self.id_allocator.new_address_reservation_id()
     }
 
     pub fn new_address(&mut self) -> ManifestAddress {
         let id = self.id_allocator.new_address_id();
-        if !self.object_names.address_names.contains_key(&id) {
-            let name = format!("address{}", self.object_names.address_names.len() + 1);
-            self.object_names.address_names.insert(id, name);
-        }
         ManifestAddress::Named(id)
     }
 
@@ -139,24 +102,30 @@ impl<'a> DecompilationContext<'a> {
     }
 }
 
+pub fn decompile_any(
+    manifest: &AnyTransactionManifest,
+    network: &NetworkDefinition,
+) -> Result<String, DecompileError> {
+    match manifest {
+        AnyTransactionManifest::V1(m) => decompile(m, network),
+        AnyTransactionManifest::SystemV1(m) => decompile(m, network),
+        AnyTransactionManifest::V2(m) => decompile(m, network),
+    }
+}
+
 /// Contract: if the instructions are from a validated notarized transaction, no error
 /// should be returned.
 pub fn decompile(
-    instructions: &[impl InstructionVersion],
+    manifest: &impl ReadableManifest,
     network: &NetworkDefinition,
-) -> Result<String, DecompileError> {
-    decompile_with_known_naming(instructions, network, Default::default())
-}
-
-pub fn decompile_with_known_naming(
-    instructions: &[impl InstructionVersion],
-    network: &NetworkDefinition,
-    known_object_names: ManifestObjectNames,
 ) -> Result<String, DecompileError> {
     let address_bech32_encoder = AddressBech32Encoder::new(network);
     let mut buf = String::new();
-    let mut context = DecompilationContext::new(&address_bech32_encoder, known_object_names);
-    for inst in instructions {
+    let mut context = DecompilationContext::new(
+        &address_bech32_encoder,
+        manifest.get_known_object_names_ref(),
+    );
+    for inst in manifest.get_instructions() {
         let decompiled = inst.decompile(&mut context)?;
         output_instruction(&mut buf, &context, decompiled)?;
     }
