@@ -44,8 +44,9 @@ impl ManifestInstruction for TakeAllFromWorktop {
 
     fn effect(&self) -> Effect {
         Effect::CreateBucket {
-            resource: &self.resource_address,
-            source_amount: BucketSourceAmount::AllOnWorktop,
+            source_amount: BucketSourceAmount::AllOnWorktop {
+                resource_address: &self.resource_address,
+            },
         }
     }
 }
@@ -72,8 +73,10 @@ impl ManifestInstruction for TakeFromWorktop {
 
     fn effect(&self) -> Effect {
         Effect::CreateBucket {
-            resource: &self.resource_address,
-            source_amount: BucketSourceAmount::AmountFromWorktop(self.amount),
+            source_amount: BucketSourceAmount::AmountFromWorktop {
+                resource_address: &self.resource_address,
+                amount: self.amount,
+            },
         }
     }
 }
@@ -100,8 +103,10 @@ impl ManifestInstruction for TakeNonFungiblesFromWorktop {
 
     fn effect(&self) -> Effect {
         Effect::CreateBucket {
-            resource: &self.resource_address,
-            source_amount: BucketSourceAmount::NonFungiblesFromWorktop(&self.ids),
+            source_amount: BucketSourceAmount::NonFungiblesFromWorktop {
+                resource_address: &self.resource_address,
+                ids: &self.ids,
+            },
         }
     }
 }
