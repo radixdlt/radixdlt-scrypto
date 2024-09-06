@@ -46,6 +46,7 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
     ) -> ControlFlow<V::Error<'a>> {
         self.handle_preallocated_addresses(visitor, self.manifest.get_preallocated_addresses())?;
         self.handle_child_subintents(visitor, self.manifest.get_child_subintents())?;
+        self.handle_blobs(visitor, self.manifest.get_blobs())?;
         for (index, instruction) in self.manifest.get_instructions().iter().enumerate() {
             self.handle_instruction(visitor, index, instruction)?;
         }
@@ -80,6 +81,17 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
                 IntentHash::Sub(child_subintent.hash),
                 IntentType::Child,
             )?;
+        }
+        ControlFlow::Continue(())
+    }
+
+    fn handle_blobs<V: ManifestInterpretationVisitor>(
+        &mut self,
+        visitor: &mut V,
+        blobs: &IndexMap<Hash, Vec<u8>>,
+    ) -> ControlFlow<V::Error<'a>> {
+        for (hash, content) in blobs {
+            visitor.register_blob(ManifestBlobRef(hash.0), content.as_ref())?;
         }
         ControlFlow::Continue(())
     }
@@ -229,9 +241,8 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
                                 match address {
                                     ManifestAddress::Static(_) => {}
                                     ManifestAddress::Named(named_address) => {
-                                        // Check it exists before visiting a reference
+                                        // Check it exists
                                         self.get_existing_named_address::<V>(named_address)?;
-                                        visitor.on_named_address_reference(named_address)?;
                                     }
                                 }
                             }
@@ -352,7 +363,6 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         match source_amount.proof_kind() {
             ProofKind::BucketProof(bucket) => {
                 self.get_existing_bucket::<V>(bucket)?.proof_locks += 1;
-                visitor.on_bucket_reference(bucket)?;
             }
             ProofKind::AuthZoneProof => {}
         }
@@ -393,7 +403,6 @@ impl<'a, M: ReadableManifest> StaticManifestInterpreter<'a, M> {
         cloned_proof: ManifestProof,
     ) -> ControlFlow<V::Error<'a>> {
         let source_amount = self.get_existing_proof::<V>(cloned_proof)?.source_amount;
-        visitor.on_proof_reference(cloned_proof)?;
         self.handle_new_proof(visitor, source_amount)
     }
 
@@ -650,9 +659,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
-    fn on_bucket_reference<'a>(&mut self, bucket: ManifestBucket) -> ControlFlow<Self::Error<'a>> {
-        ControlFlow::Continue(())
-    }
+
     fn on_consume_bucket<'a>(
         &mut self,
         bucket: ManifestBucket,
@@ -660,6 +667,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
+
     fn on_new_proof<'a>(
         &mut self,
         proof: ManifestProof,
@@ -667,9 +675,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
-    fn on_proof_reference<'a>(&mut self, bucket: ManifestProof) -> ControlFlow<Self::Error<'a>> {
-        ControlFlow::Continue(())
-    }
+
     fn on_consume_proof<'a>(
         &mut self,
         proof: ManifestProof,
@@ -677,6 +683,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
+
     fn on_drop_authzone_proofs<'a>(
         &mut self,
         drop_signature_proofs: bool,
@@ -684,6 +691,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
+
     fn on_new_address_reservation<'a>(
         &mut self,
         reservation: ManifestAddressReservation,
@@ -693,6 +701,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
+
     fn on_consume_address_reservation<'a>(
         &mut self,
         reservation: ManifestAddressReservation,
@@ -700,6 +709,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
+
     fn on_new_named_address<'a>(
         &mut self,
         address: ManifestNamedAddress,
@@ -707,12 +717,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
-    fn on_named_address_reference<'a>(
-        &mut self,
-        address: ManifestNamedAddress,
-    ) -> ControlFlow<Self::Error<'a>> {
-        ControlFlow::Continue(())
-    }
+
     fn on_pass_expression<'a>(
         &mut self,
         expression: ManifestExpression,
@@ -720,6 +725,15 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
+
+    fn register_blob<'a>(
+        &mut self,
+        blob_ref: ManifestBlobRef,
+        content: &[u8],
+    ) -> ControlFlow<Self::Error<'a>> {
+        ControlFlow::Continue(())
+    }
+
     fn on_pass_blob<'a>(
         &mut self,
         blob_ref: ManifestBlobRef,
@@ -727,6 +741,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
+
     fn on_new_intent<'a>(
         &mut self,
         intent: ManifestIntent,
@@ -735,9 +750,7 @@ pub trait ManifestInterpretationVisitor {
     ) -> ControlFlow<Self::Error<'a>> {
         ControlFlow::Continue(())
     }
-    fn on_intent_reference<'a>(&mut self, address: ManifestIntent) -> ControlFlow<Self::Error<'a>> {
-        ControlFlow::Continue(())
-    }
+
     fn on_worktop_assertion<'a>(
         &mut self,
         assertion: WorktopAssertion,
