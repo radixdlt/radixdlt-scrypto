@@ -1,21 +1,7 @@
 use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExecutableIntents {
-    V1(ExecutableIntentV1),
-    V2(Vec<ExecutableIntentV2>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutableIntentV1 {
-    pub encoded_instructions: Rc<Vec<u8>>,
-    pub auth_zone_init: AuthZoneInit,
-    pub references: Rc<IndexSet<Reference>>,
-    pub blobs: Rc<IndexMap<Hash, Vec<u8>>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutableIntentV2 {
+pub struct ExecutableIntent {
     pub encoded_instructions: Rc<Vec<u8>>,
     pub auth_zone_init: AuthZoneInit,
     pub references: Rc<IndexSet<Reference>>,
@@ -28,7 +14,7 @@ pub struct ExecutableIntentV2 {
 /// This is an executable form of the transaction, post stateless validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutableTransaction {
-    pub(crate) intents: ExecutableIntents,
+    pub(crate) intents: Vec<ExecutableIntent>,
     pub(crate) context: ExecutionContext,
 }
 
@@ -76,12 +62,13 @@ impl ExecutableTransaction {
 
         Self {
             context,
-            intents: ExecutableIntents::V1(ExecutableIntentV1 {
+            intents: vec![ExecutableIntent {
                 encoded_instructions: encoded_instructions_v1,
                 references: Rc::new(references),
                 blobs,
                 auth_zone_init,
-            }),
+                children_intent_indices: vec![],
+            }],
         }
     }
 
@@ -113,13 +100,13 @@ impl ExecutableTransaction {
 
         Self {
             context,
-            intents: ExecutableIntents::V2(vec![ExecutableIntentV2 {
+            intents: vec![ExecutableIntent {
                 encoded_instructions: encoded_instructions_v1,
                 references: Rc::new(references),
                 blobs,
                 auth_zone_init,
                 children_intent_indices: vec![],
-            }]),
+            }],
         }
     }
 
@@ -181,7 +168,7 @@ impl ExecutableTransaction {
         self.context.disable_limits_and_costing_modules
     }
 
-    pub fn intents(&self) -> &ExecutableIntents {
+    pub fn intents(&self) -> &Vec<ExecutableIntent> {
         &self.intents
     }
 
@@ -192,18 +179,9 @@ impl ExecutableTransaction {
     pub fn all_blob_hashes(&self) -> IndexSet<Hash> {
         let mut hashes = indexset!();
 
-        match self.intents() {
-            ExecutableIntents::V1(intent) => {
-                for hash in intent.blobs.keys() {
-                    hashes.insert(*hash);
-                }
-            }
-            ExecutableIntents::V2(intents) => {
-                for intent in intents {
-                    for hash in intent.blobs.keys() {
-                        hashes.insert(*hash);
-                    }
-                }
+        for intent in self.intents() {
+            for hash in intent.blobs.keys() {
+                hashes.insert(*hash);
             }
         }
 
@@ -212,18 +190,9 @@ impl ExecutableTransaction {
     pub fn all_references(&self) -> IndexSet<Reference> {
         let mut references = indexset!();
 
-        match self.intents() {
-            ExecutableIntents::V1(intent) => {
-                for reference in intent.references.iter() {
-                    references.insert(reference.clone());
-                }
-            }
-            ExecutableIntents::V2(intents) => {
-                for intent in intents {
-                    for reference in intent.references.iter() {
-                        references.insert(reference.clone());
-                    }
-                }
+        for intent in self.intents() {
+            for reference in intent.references.iter() {
+                references.insert(reference.clone());
             }
         }
 
