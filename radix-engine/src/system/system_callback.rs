@@ -56,21 +56,145 @@ pub struct SystemParameters {
     pub limit_parameters: LimitParameters,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SystemLogicVersion {
-    V1,
-}
-
 pub type SystemBootSubstate = SystemBoot;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemBoot {
     V1(SystemParameters),
+    V2(SystemLogicVersion, SystemParameters),
 }
 
 impl SystemBoot {
     fn logic_version(&self) -> SystemLogicVersion {
         SystemLogicVersion::V1
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum SystemLogicVersion {
+    V1,
+}
+
+impl SystemLogicVersion {
+    fn create_auth_module(
+        &self,
+        executable: &ExecutableTransaction,
+    ) -> Result<AuthModule, RejectionReason> {
+        let auth_module = match self {
+            SystemLogicVersion::V1 => {
+                // This isn't exactly a necessary check as node logic should protect against this
+                // but keep it here for sanity
+                let intent = if executable.intents().len() != 1 {
+                    return Err(RejectionReason::TransactionNotYetSupported);
+                } else {
+                    executable.intents().get(0).unwrap()
+                };
+                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
+            } //ExecutableIntents::V2(_) => AuthModule::new(),
+        };
+
+        Ok(auth_module)
+    }
+
+    fn execute_transaction<Y: SystemBasedKernelApi>(
+        &self,
+        api: &mut Y,
+        executable: ExecutableTransaction,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+    ) -> Result<Vec<InstructionOutput>, RuntimeError> {
+        let output = match self {
+            SystemLogicVersion::V1 => {
+                let mut system_service = SystemService::new(api);
+                let intent = executable
+                    .intents()
+                    .get(0)
+                    .expect("This should have been checked in init");
+                let rtn = system_service.call_function(
+                    TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                    TRANSACTION_PROCESSOR_RUN_IDENT,
+                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
+                        manifest_encoded_instructions: intent.encoded_instructions.clone(),
+                        global_address_reservations,
+                        references: intent.references.clone(),
+                        blobs: intent.blobs.clone(),
+                    })
+                    .unwrap(),
+                )?;
+                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
+                output
+            } /*
+              ExecutableIntents::V2(intents) => {
+                  for intent in intents {
+                      let mut system_service = SystemService::new(api);
+                      let virtual_resources = intent
+                          .auth_zone_init
+                          .simulate_every_proof_under_resources
+                          .clone();
+                      let virtual_non_fungibles =
+                          intent.auth_zone_init.initial_non_fungible_id_proofs.clone();
+                      let auth_zone = AuthModule::create_auth_zone(
+                          &mut system_service,
+                          None,
+                          virtual_resources,
+                          virtual_non_fungibles,
+                      )?;
+
+                      api.kernel_set_call_frame_data(Actor::Function(FunctionActor {
+                          blueprint_id: BlueprintId::new(
+                              &TRANSACTION_PROCESSOR_PACKAGE,
+                              TRANSACTION_PROCESSOR_BLUEPRINT,
+                          ),
+                          ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
+                          auth_zone,
+                      }))?;
+                  }
+
+                  {
+                      let mut system_service = SystemService::new(api);
+                      let intent = intents.get(0).unwrap();
+
+                      let txn_processor = TxnProcessor::<InstructionV1>::init(
+                          intent.encoded_instructions.clone(),
+                          global_address_reservations.clone(),
+                          intent.blobs.clone(),
+                          MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
+                          &mut system_service,
+                      )?;
+                      let output = txn_processor.execute(&mut system_service)?;
+
+                      let actor = api.kernel_get_system_state().current_call_frame;
+                      match actor {
+                          Actor::Function(FunctionActor { auth_zone, .. }) => {
+                              let auth_zone = auth_zone.clone();
+                              let mut system_service = SystemService::new(api);
+                              AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
+                          }
+                          _ => {
+                              panic!("unexpected");
+                          }
+                      }
+
+                      output
+                  }
+              }
+               */
+        };
+
+        Ok(output)
+    }
+
+    pub fn should_consume_cost_units<Y: SystemBasedKernelApi>(&self, api: &mut Y) -> bool {
+        match self {
+            SystemLogicVersion::V1 => {
+                // Skip client-side costing requested by TransactionProcessor
+                if api.kernel_get_current_depth() == 1 {
+                    return false;
+                }
+            }
+        }
+
+        true
     }
 }
 
@@ -1176,7 +1300,9 @@ impl<C: SystemCallbackObject> System<C> {
 
         let system_logic_version = system_boot.logic_version();
         let mut system_parameters = match system_boot {
-            SystemBoot::V1(system_parameters) => system_parameters,
+            SystemBoot::V1(system_parameters) | SystemBoot::V2(_, system_parameters) => {
+                system_parameters
+            }
         };
 
         let mut enabled_modules = {
@@ -1246,26 +1372,17 @@ impl<C: SystemCallbackObject> System<C> {
             on_apply_cost: Default::default(),
         };
 
-        let auth_module = match system_logic_version {
-            SystemLogicVersion::V1 => {
-                // This isn't exactly a necessary check as node logic should protect against this
-                // but keep it here for sanity
-                let intent = if executable.intents().len() != 1 {
-                    let print_execution_summary =
-                        enabled_modules.contains(EnabledModules::KERNEL_TRACE);
-                    return Err(Self::create_non_commit_receipt(
-                        TransactionResult::Reject(RejectResult {
-                            reason: RejectionReason::TransactionNotYetSupported,
-                        }),
-                        print_execution_summary,
-                        costing_module,
-                    ));
-                } else {
-                    executable.intents().get(0).unwrap()
-                };
-                AuthModule::new_with_transaction_processor_auth_zone(intent.auth_zone_init.clone())
-            } //ExecutableIntents::V2(_) => AuthModule::new(),
-        };
+        let auth_module = system_logic_version
+            .create_auth_module(&executable)
+            .map_err(|reason| {
+                let print_execution_summary =
+                    enabled_modules.contains(EnabledModules::KERNEL_TRACE);
+                Self::create_non_commit_receipt(
+                    TransactionResult::Reject(RejectResult { reason }),
+                    print_execution_summary,
+                    costing_module.clone(),
+                )
+            })?;
 
         let module_mixer = SystemModuleMixer::new(
             enabled_modules,
@@ -1419,83 +1536,11 @@ impl<C: SystemCallbackObject> KernelTransactionCallbackObject for System<C> {
 
         let system_logic_version = system_service.system().logic_version;
 
-        let intents = executable.intents();
-        let output = match system_logic_version {
-            SystemLogicVersion::V1 => {
-                let intent = intents
-                    .get(0)
-                    .expect("This should have been checked in init");
-                let rtn = system_service.call_function(
-                    TRANSACTION_PROCESSOR_PACKAGE,
-                    TRANSACTION_PROCESSOR_BLUEPRINT,
-                    TRANSACTION_PROCESSOR_RUN_IDENT,
-                    scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                        manifest_encoded_instructions: intent.encoded_instructions.clone(),
-                        global_address_reservations,
-                        references: intent.references.clone(),
-                        blobs: intent.blobs.clone(),
-                    })
-                    .unwrap(),
-                )?;
-                let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
-                output
-            } /*
-              ExecutableIntents::V2(intents) => {
-                  for intent in intents {
-                      let mut system_service = SystemService::new(api);
-                      let virtual_resources = intent
-                          .auth_zone_init
-                          .simulate_every_proof_under_resources
-                          .clone();
-                      let virtual_non_fungibles =
-                          intent.auth_zone_init.initial_non_fungible_id_proofs.clone();
-                      let auth_zone = AuthModule::create_auth_zone(
-                          &mut system_service,
-                          None,
-                          virtual_resources,
-                          virtual_non_fungibles,
-                      )?;
-
-                      api.kernel_set_call_frame_data(Actor::Function(FunctionActor {
-                          blueprint_id: BlueprintId::new(
-                              &TRANSACTION_PROCESSOR_PACKAGE,
-                              TRANSACTION_PROCESSOR_BLUEPRINT,
-                          ),
-                          ident: TRANSACTION_PROCESSOR_RUN_IDENT.to_string(),
-                          auth_zone,
-                      }))?;
-                  }
-
-                  {
-                      let mut system_service = SystemService::new(api);
-                      let intent = intents.get(0).unwrap();
-
-                      let txn_processor = TxnProcessor::<InstructionV1>::init(
-                          intent.encoded_instructions.clone(),
-                          global_address_reservations.clone(),
-                          intent.blobs.clone(),
-                          MAX_TOTAL_BLOB_SIZE_PER_INVOCATION,
-                          &mut system_service,
-                      )?;
-                      let output = txn_processor.execute(&mut system_service)?;
-
-                      let actor = api.kernel_get_system_state().current_call_frame;
-                      match actor {
-                          Actor::Function(FunctionActor { auth_zone, .. }) => {
-                              let auth_zone = auth_zone.clone();
-                              let mut system_service = SystemService::new(api);
-                              AuthModule::teardown_auth_zone(&mut system_service, auth_zone)?;
-                          }
-                          _ => {
-                              panic!("unexpected");
-                          }
-                      }
-
-                      output
-                  }
-              }
-               */
-        };
+        let output = system_logic_version.execute_transaction(
+            api,
+            executable,
+            global_address_reservations,
+        )?;
 
         Ok(output)
     }

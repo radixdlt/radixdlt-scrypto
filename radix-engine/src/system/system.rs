@@ -2164,13 +2164,9 @@ impl<'a, Y: SystemBasedKernelApi> SystemCostingApi<RuntimeError> for SystemServi
         &mut self,
         costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
-        // Skip client-side costing requested by TransactionProcessor
-        match self.api.kernel_get_system_state().system.logic_version {
-            SystemLogicVersion::V1 => {
-                if self.api.kernel_get_current_depth() == 1 {
-                    return Ok(());
-                }
-            }
+        let system_logic = self.api.kernel_get_system_state().system.logic_version;
+        if !system_logic.should_consume_cost_units(self.api) {
+            return Ok(());
         }
 
         self.api
