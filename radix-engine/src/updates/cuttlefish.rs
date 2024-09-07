@@ -112,7 +112,7 @@ fn generate_system_logic_updates<S: SubstateDatabase + ?Sized>(db: &S) -> StateU
                         by_substate: indexmap! {
                             SubstateKey::Field(BOOT_LOADER_SYSTEM_SUBSTATE_FIELD_KEY) => DatabaseUpdate::Set(
                                 scrypto_encode(&SystemBoot::V2(
-                                    SystemLogicVersion::V1,
+                                    SystemLogicVersion::V2,
                                     cur_system_parameters,
                                 )).unwrap()
                             ),
